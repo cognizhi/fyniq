@@ -508,6 +508,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/gst-forecasts/{forecast_id}/evidence/{evidence_id}` (getGSTForecastEvidence): Get a GST forecast's file
 - `DELETE /v1/gst-forecasts/{forecast_id}/evidence/{evidence_id}` (removeGSTForecastEvidence): Remove a file from a drafted GST forecast
 - `POST /v1/gst-forecasts/{forecast_id}/record` (recordGSTForecast): Record a GST forecast
+- `GET /v1/help-state` (getHelpState): Get your first-run tour state
+- `PUT /v1/help-state/tour` (setTourState): Save where you are with the first-run tour
 - `POST /v1/holder-records` (createHolderRecord): Draft a holder record
 - `GET /v1/holder-records/{record_id}` (getHolderRecord): Get a holder record
 - `PUT /v1/holder-records/{record_id}` (replaceHolderRecord): Change a drafted holder record

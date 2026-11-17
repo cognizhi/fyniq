@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "step": {
+      "description": "The step shown last, from 0. A tour has at most seven.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "maximum": 6,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "tour": {
+      "description": "started when the caller starts, resumes or moves to a step; finished at Done; skipped when they decline the offer or stop part-way.",
+      "enum": [
+        "started",
+        "finished",
+        "skipped"
+      ],
+      "examples": [
+        "started"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "tour",
+    "step"
+  ],
+  "title": "TourChange",
+  "type": "object"
+}

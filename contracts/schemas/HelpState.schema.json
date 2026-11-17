@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "etag": {
+      "description": "The state's version, for If-Match.",
+      "examples": [
+        "\"9f1c2b7a\""
+      ],
+      "type": "string"
+    },
+    "offer": {
+      "description": "Whether to offer the tour on Home: it was never answered, or it stopped part-way, to resume there. Help replays it either way.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "set_at": {
+      "description": "When the caller last answered or moved, if ever.",
+      "examples": [
+        "2026-11-17T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "step": {
+      "description": "The step shown last, from 0; 0 before the tour starts.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "maximum": 6,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "tour": {
+      "description": "Where the caller is with the first-run tour.",
+      "enum": [
+        "not_started",
+        "started",
+        "finished",
+        "skipped"
+      ],
+      "examples": [
+        "started"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "tour",
+    "step",
+    "offer",
+    "etag"
+  ],
+  "title": "HelpState",
+  "type": "object"
+}

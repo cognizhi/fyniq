@@ -111,6 +111,13 @@
   Teaching empty states on the chart, contacts, items and review log. Test `Home.test.tsx`. **Left:** the sample
   company to explore, the checklist's later steps (opening balances, bank feeds, employees, the workbook import), the
   Plain and Accountant views.)
+  (17 Nov 2026, for the launch gate: the Plain and Accountant views (FR-UX-08). `src/view.ts` keeps each person's
+  choice (in this browser until task 4.1 stores preferences on the server) and gives Basic mode Plain view always;
+  `components/LedgerViewToggle.tsx` offers it in Expert mode on the bank categorise grid, whose money shows as Money in
+  / Money out / Suggested category or, as the money account's ledger has it, Debit / Credit / Suggested account, the
+  same figures, and under Settings › Profile and security. Guide `banking.md`, compiled. Tests
+  `LedgerViewToggle.test.tsx`, `categorise.test.tsx`. **Left:** the view on the grids still to come (journal lines,
+  budgets, opening balances) as each is built.)
 - [ ] 3.3 Favourites, recents and saved views shareable by link, comments with mentions, and no hard delete. Tests `// req: FR-UX-12`, `// req: FR-UX-13` and `// req: FR-UX-14`
   (17 Nov 2026, in part, for the launch gate: no hard delete (FR-UX-14). `TestEachRoleHoldsExactlyItsGrants` refuses a
   DELETE grant to any application role but on five tables named with why (housekeeping swept on its schedule, and an
@@ -151,6 +158,12 @@
   (20 Oct 2026, in part: the FR-UX-41 banner, `components/ReviewBanner.tsx`, reads the review register at build time
   and shows on each Settings page whose screen it lists while the area is pending. Test `ReviewBanner.test.tsx`.
   **Left:** the banner on the other screens as they are built, `/help`, context-aware help, the tour and practice.)
+  (17 Nov 2026, the tour's server half, for the launch gate: `user_help_state` (migration 000441), append-only and
+  audited, under row-level security and with the members' foreign key; `GET /v1/help-state` (offered until answered,
+  offered again to resume where it stopped) and `PUT /v1/help-state/tour` (started at a step, finished or skipped;
+  If-Match, Idempotency-Key, preview), each person's own (`HLP-01` for a caller that is not a person). Test
+  `TestTheTourSavesOnlyItsOwnState`: every save writes the state and its audit event and nothing else (G4-104).
+  **Left:** the tour itself in the web app and its end-to-end test per role (QA-UI-06).)
   (17 Nov 2026, the user guide, for the launch gate: `/help` builds every page of `docs/user-guide/` into the web app
   (`help/guide.ts`, at build time; the web image copies the guide and the release notes), lists those the person's
   roles call for, Basic ones in Basic mode with how many Expert adds, and searches them as they type; `/help/$key`
