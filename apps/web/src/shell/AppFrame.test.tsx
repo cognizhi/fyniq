@@ -55,7 +55,9 @@ describe("the app frame", () => {
     await screen.findByRole("banner");
     fireEvent.click(screen.getByRole("button", { name: "More" }));
     const more = await screen.findByRole("dialog", { name: "More" });
-    for (const name of ["Appearance", "Help", "Sign out"]) expect(within(more).getByRole("button", { name })).toBeTruthy();
+    // The account the compact header has no room for (FR-UX-37): the appearance choices, About and signing out.
+    expect(within(more).getByRole("heading", { name: "Appearance" })).toBeTruthy();
+    for (const name of ["About Fyniq", "Sign out"]) expect(within(more).getByRole("button", { name })).toBeTruthy();
     await noViolations(more);
   });
 

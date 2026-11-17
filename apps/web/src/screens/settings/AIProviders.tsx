@@ -412,7 +412,7 @@ function AddConnection({ entry, preset, onClose, onAsked }: { entry: CatalogueEn
                 Quota
               </label>
               <input id="ai-conn-quota" className="fy-input fy-num" inputMode="numeric" value={quota.amount} onChange={(e) => setQuota({ ...quota, amount: e.target.value })}
-                aria-describedby="ai-conn-quota-err" />
+                aria-invalid={Boolean(bad.quota)} aria-describedby="ai-conn-quota-err" />
             </div>
             <div className="fy-field">
               <label className="fy-label" htmlFor="ai-conn-unit">
@@ -436,13 +436,15 @@ function AddConnection({ entry, preset, onClose, onAsked }: { entry: CatalogueEn
               <label className="fy-label" htmlFor="ai-conn-fee">
                 Fee each time
               </label>
-              <input id="ai-conn-fee" className="fy-input fy-num" inputMode="decimal" value={quota.fee} onChange={(e) => setQuota({ ...quota, fee: e.target.value })} />
+              <input id="ai-conn-fee" className="fy-input fy-num" inputMode="decimal" value={quota.fee} onChange={(e) => setQuota({ ...quota, fee: e.target.value })}
+                aria-invalid={Boolean(bad.quota)} aria-describedby="ai-conn-quota-err" />
             </div>
             <div className="fy-field">
               <label className="fy-label" htmlFor="ai-conn-currency">
                 Fee's currency
               </label>
-              <input id="ai-conn-currency" className="fy-input fy-mono" value={quota.currency} maxLength={3} onChange={(e) => setQuota({ ...quota, currency: e.target.value.toUpperCase() })} />
+              <input id="ai-conn-currency" className="fy-input fy-mono" value={quota.currency} maxLength={3} onChange={(e) => setQuota({ ...quota, currency: e.target.value.toUpperCase() })}
+                aria-invalid={Boolean(bad.quota)} aria-describedby="ai-conn-quota-err" />
             </div>
             {bad.quota && (
               <span className="fy-error" id="ai-conn-quota-err">
@@ -466,19 +468,21 @@ function AddConnection({ entry, preset, onClose, onAsked }: { entry: CatalogueEn
                     The plan's published terms
                   </label>
                   <input id="ai-conn-terms-url" className="fy-input fy-mono" value={terms.url} onChange={(e) => setTerms({ ...terms, url: e.target.value })}
-                    aria-describedby="ai-conn-terms-err" />
+                    aria-invalid={Boolean(bad.terms)} aria-describedby="ai-conn-terms-err" />
                 </div>
                 <div className="fy-field">
                   <label className="fy-label" htmlFor="ai-conn-terms-title">
                     Their title
                   </label>
-                  <input id="ai-conn-terms-title" className="fy-input" value={terms.title} onChange={(e) => setTerms({ ...terms, title: e.target.value })} />
+                  <input id="ai-conn-terms-title" className="fy-input" value={terms.title} onChange={(e) => setTerms({ ...terms, title: e.target.value })}
+                    aria-invalid={Boolean(bad.terms)} aria-describedby="ai-conn-terms-err" />
                 </div>
                 <div className="fy-field">
                   <label className="fy-label" htmlFor="ai-conn-terms-day">
                     Read on
                   </label>
-                  <input id="ai-conn-terms-day" className="fy-input" type="date" value={terms.checked_on} onChange={(e) => setTerms({ ...terms, checked_on: e.target.value })} />
+                  <input id="ai-conn-terms-day" className="fy-input" type="date" value={terms.checked_on} onChange={(e) => setTerms({ ...terms, checked_on: e.target.value })}
+                    aria-invalid={Boolean(bad.terms)} aria-describedby="ai-conn-terms-err" />
                 </div>
                 {bad.terms && (
                   <span className="fy-error col-span-full" id="ai-conn-terms-err">

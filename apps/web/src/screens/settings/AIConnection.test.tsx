@@ -118,9 +118,19 @@ describe("Settings › AI › AI providers › a connection", () => {
     await waitFor(() => expect(seen.find((x) => x.path === "/v1/ai/prices/p-2/review")?.body).toEqual({ decision: "confirm" }));
     fireEvent.click(screen.getByRole("button", { name: "Enter a price for claude-sonnet" }));
     const dialog = await screen.findByRole("dialog");
+    const currency = within(dialog).getByLabelText("Currency") as HTMLInputElement;
+    const was = currency.value;
+    fireEvent.change(currency, { target: { value: "us" } });
     fireEvent.change(within(dialog).getByLabelText("A million input tokens"), { target: { value: "0" } });
+    fireEvent.change(within(dialog).getByLabelText("A million output tokens"), { target: { value: "0" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Ask to use this price" }));
     expect(await within(dialog).findByText("Give the price of a million input tokens, above zero.")).toBeTruthy();
+    expect(within(dialog).getByText("Give the price of a million output tokens, above zero.")).toBeTruthy();
+    expect(within(dialog).getByText("Give the provider's currency as three letters, such as USD.")).toBeTruthy();
+    for (const label of ["Currency", "A million input tokens", "A million output tokens"]) {
+      expect(within(dialog).getByLabelText(label).getAttribute("aria-invalid")).toBe("true");
+    }
+    fireEvent.change(currency, { target: { value: was } });
     fireEvent.change(within(dialog).getByLabelText("A million input tokens"), { target: { value: "2.50" } });
     fireEvent.change(within(dialog).getByLabelText("A million output tokens"), { target: { value: "10" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Ask to use this price" }));
@@ -143,6 +153,20 @@ describe("Settings › AI › AI providers › a connection", () => {
     expect(put?.body).toEqual({ value: "not-a-real-key" });
     expect(put?.headers.get("If-Match")).toBe('"4"');
     expect(await screen.findByText("Waiting for a second approver")).toBeTruthy();
+  });
+
+  it("refuses a change that leaves the connection without a name, marking the field", async () => {
+    const seen = page({});
+    open();
+    const settings = (await screen.findByRole("heading", { name: "Settings" })).closest("section")!;
+    fireEvent.click(within(settings as HTMLElement).getByRole("button", { name: "Change" }));
+    const dialog = await screen.findByRole("dialog", { name: /Change the connection/ });
+    const name = within(dialog).getByLabelText("Name");
+    fireEvent.change(name, { target: { value: " " } });
+    fireEvent.click(within(dialog).getByRole("button", { name: /^Ask/ }));
+    expect(await within(dialog).findByText("Give the connection a name.")).toBeTruthy();
+    expect(name.getAttribute("aria-invalid")).toBe("true");
+    expect(seen.some((x) => x.method === "PUT")).toBe(false);
   });
 
   it("shows where its prompts go and asks to change it with the whole definition", async () => {

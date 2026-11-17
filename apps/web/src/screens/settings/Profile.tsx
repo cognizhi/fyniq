@@ -18,7 +18,7 @@ import {
 import { useId, useState, type FormEvent } from "react";
 import { api, type Session, type SignInProvider } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
-import { Button } from "../../components/ui/button";
+import { Button, buttonVariants } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { browserOf, clock, date, dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
@@ -596,7 +596,7 @@ export function Profile() {
         </div>
         <div className="fy-card__body fy-stack fy-stack--2">
           <p className="fy-secondary">The assistant uses the organisation's own AI connections.</p>
-          <Link className="self-start" to="/settings/profile/ai-plan">
+          <Link className={`${buttonVariants({ variant: "secondary", size: "sm" })} self-start`} to="/settings/profile/ai-plan">
             {helpText("settings.ai-plan").label}
           </Link>
         </div>
