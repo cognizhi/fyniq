@@ -34,5 +34,6 @@
 !mise.toml
 apps/web/node_modules
 apps/web/dist
+apps/web/storybook-static
 apps/web/test-results
 apps/web/playwright-report

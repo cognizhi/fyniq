@@ -65,6 +65,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
+	"github.com/cognizhi/fyniq/internal/domain/paymentfile"
 	"github.com/cognizhi/fyniq/internal/domain/period"
 	"github.com/cognizhi/fyniq/internal/domain/planning"
 	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
@@ -367,6 +368,7 @@ var codeFacts = map[string]struct {
 	approval.CodePending:          {409, "A change to it is waiting for approval already"},
 	approval.CodeReason:           {422, "A rejection needs its reason"},
 	approval.CodeSteps:            {422, "The policy's steps cannot be signed"},
+	approval.CodeRules:            {422, "The policy's rules cannot be applied"},
 	approval.CodeFixed:            {409, "This approval policy is fixed"},
 	approval.CodeAuthority:        {409, "An earlier approver no longer holds the right: nothing was changed"},
 	approval.CodeNotYourStep:      {403, "The request's current step needs someone else"},
@@ -726,6 +728,10 @@ var codeFacts = map[string]struct {
 	banking.CodeLineState:   {409, "The line is not where that needs it"},
 	banking.CodeTyped:       {422, "A typed statement balance in Founder mode"},
 	banking.CodeDecided:     {403, "You recorded the bank transactions this sign-off covers (SOD-5)"},
+
+	// A money account's payment file (FR-BNK-12, rev 0.157).
+	paymentfile.CodeProvider: {422, "The payment file is not one the account's bank takes"},
+	paymentfile.CodeNotBuilt: {422, "The payment file is not available yet"},
 
 	// Bank transactions, matches and transfers (FR-BNK-05…09).
 	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},
@@ -1186,6 +1192,7 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		sme *statement.Error
 		cne *connector.Error
 		bke *banking.Error
+		pfe *paymentfile.Error
 		cle *claim.Error
 		dre *director.Error
 		eqe *equity.Error
@@ -1287,6 +1294,9 @@ func problemFrom(ctx context.Context, err error) *Problem {
 		return payeeProblems(pyp).(*Problem)
 	case errors.As(err, &bke):
 		return problem(bke.Code, sentence(bke.Message), sentence(bke.Fix))
+	case errors.As(err, &pfe):
+		return problem(pfe.Code, sentence(pfe.Message), sentence(pfe.Fix),
+			FieldProblem{Code: pfe.Code, Field: "body.payment_file", Message: pfe.Message, Fix: pfe.Fix})
 	case errors.As(err, &bte):
 		return problem(bte.Code, sentence(bte.Message), sentence(bte.Fix))
 	case errors.As(err, &cne):

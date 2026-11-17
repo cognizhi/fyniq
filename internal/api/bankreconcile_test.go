@@ -134,9 +134,7 @@ var matrixBankRules = map[string]func(e *env, tok string) (response, func() bool
 		}
 		r := s.call(http.MethodPost, reconciliationURL(rec)+"/sign-override", tok, map[string]any{"reason": "Matrix test"}, "If-Match", etag(rec.Version),
 			"Prefer", "return=preview")
-		return r, func() bool {
-			return s.reconciliationNow(rec).SignedBy == "" && requestsOf(s, approval.ObjectReconciliation) == 0
-		}
+		return r, func() bool { return s.reconciliationNow(rec).SignedBy == "" && requestsOf(s, approval.ObjectReconciliation) == 0 }
 	},
 	"signBankReconciliation": func(e *env, tok string) (response, func() bool) {
 		rec := e.preparedReconciliation()

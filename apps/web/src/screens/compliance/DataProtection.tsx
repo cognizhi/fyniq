@@ -216,7 +216,7 @@ function InventoryTab() {
         </div>
         <ul className="fy-list" aria-labelledby={`${id}-notheld`}>
           {d.not_held.map((n) => (
-            <li key={n.key} className="fy-list__item">
+            <li key={n.key} className="fy-list__item fy-list__item--wrap">
               <span className="fy-list__main">
                 <span className="fy-list__title">{n.what}</span>
                 <span className="fy-list__meta whitespace-normal">{n.why}</span>
@@ -347,7 +347,7 @@ function EntryForm({ entry, onClose }: { entry: Entry | null; onClose: () => voi
         {field("who", "Who reads it")}
         {field("retention", "How long it is kept")}
         {field("transfers", "Where it goes abroad")}
-        <label className="fy-check">
+        <label className="fy-row gap-2">
           <input type="checkbox" checked={form.needs_dpia} onChange={(e) => setForm({ ...form, needs_dpia: e.target.checked })} />
           It needs a data protection impact assessment
         </label>
@@ -441,7 +441,7 @@ function DPIAsTab() {
         </div>
         <ul className="fy-list" aria-labelledby={`${id}-dpias`}>
           {list.data.map((d: DPIA) => (
-            <li key={d.key} className="fy-list__item">
+            <li key={d.key} className="fy-list__item fy-list__item--wrap">
               <span className="fy-list__main">
                 <span className="fy-list__title whitespace-normal">{d.title}</span>
                 <span className="fy-list__meta whitespace-normal">
@@ -691,7 +691,7 @@ function RequestsTab() {
       ) : (
         <ul className="fy-list" aria-labelledby={`${id}-requests`}>
           {list.data.slice().reverse().map((r) => (
-            <li key={r.id} className="fy-list__item">
+            <li key={r.id} className="fy-list__item fy-list__item--wrap">
               <span className="fy-list__main">
                 <span className="fy-list__title whitespace-normal">
                   {r.kind === "access" ? "Access" : "Correction"}: {r.details}
@@ -963,7 +963,7 @@ function BreachesTab() {
         ) : (
           <ul className="fy-list" aria-labelledby={`${id}-breaches`}>
             {list.data.slice().reverse().map((b) => (
-              <li key={b.id} className="fy-list__item">
+              <li key={b.id} className="fy-list__item fy-list__item--wrap">
                 <span className="fy-list__main">
                   <span className="fy-list__title whitespace-normal">{b.title}</span>
                   <span className="fy-list__meta whitespace-normal">
@@ -1015,7 +1015,7 @@ function BreachesTab() {
         ) : (
           <ul className="fy-list" aria-labelledby={`${id}-exercises`}>
             {(ex.data ?? []).slice().reverse().map((x) => (
-              <li key={x.id} className="fy-list__item">
+              <li key={x.id} className="fy-list__item fy-list__item--wrap">
                 <span className="fy-list__main">
                   <span className="fy-list__title whitespace-normal">
                     {date(x.held_on)}: {x.scenario}
@@ -1087,7 +1087,7 @@ function BreachForm({ onClose }: { onClose: () => void }) {
         <fieldset className="fy-field">
           <legend className="fy-label">The data involved</legend>
           {(Object.keys(classWords) as BreachClass[]).map((c) => (
-            <label key={c} className="fy-check">
+            <label key={c} className="fy-row gap-2">
               <input type="checkbox" checked={form.classes.includes(c)} onChange={() => toggle(c)} />
               {classWords[c]}
             </label>
@@ -1156,11 +1156,11 @@ function BreachStepForm({ breach, onClose }: { breach: Breach; onClose: () => vo
         {form.step === "decided" && (
           <fieldset className="fy-field" aria-describedby={`${id}-forced`}>
             <legend className="fy-label">Is it notifiable?</legend>
-            <label className="fy-check">
+            <label className="fy-row gap-2">
               <input type="radio" name={`${id}-n`} checked={form.notifiable} onChange={() => setForm({ ...form, notifiable: true })} />
               Yes: likely to cause significant harm, or 500 or more people
             </label>
-            <label className="fy-check">
+            <label className="fy-row gap-2">
               <input type="radio" name={`${id}-n`} checked={!form.notifiable} disabled={forced} onChange={() => setForm({ ...form, notifiable: false })} />
               No
             </label>
@@ -1286,7 +1286,7 @@ function TransfersTab() {
         </div>
         <ul className="fy-list" aria-labelledby={`${id}-flows`}>
           {abroad.map((f) => (
-            <li key={f.key} className="fy-list__item">
+            <li key={f.key} className="fy-list__item fy-list__item--wrap">
               <span className="fy-list__main">
                 <span className="fy-list__title whitespace-normal">{f.what}</span>
                 <span className="fy-list__meta whitespace-normal">
@@ -1333,7 +1333,7 @@ function TransfersTab() {
         ) : (
           <ul className="fy-list" aria-labelledby={`${id}-transfers`}>
             {reg.data.transfers.map((t) => (
-              <li key={t.transfer_id} className="fy-list__item">
+              <li key={t.transfer_id} className="fy-list__item fy-list__item--wrap">
                 <span className="fy-list__main">
                   <span className="fy-list__title whitespace-normal">
                     {t.recipient}, {t.countries}
@@ -1490,7 +1490,7 @@ function ShreddingTab() {
         ) : (
           <ul className="fy-list" aria-labelledby={`${id}-runs`}>
             {runs.data.map((r) => (
-              <li key={r.id} className="fy-list__item">
+              <li key={r.id} className="fy-list__item fy-list__item--wrap">
                 <span className="fy-list__main">
                   <span className="fy-list__title">The year ending {date(r.cohort)}</span>
                   <span className="fy-list__meta whitespace-normal">
@@ -1537,7 +1537,7 @@ function ShreddingTab() {
         ) : (
           <ul className="fy-list" aria-labelledby={`${id}-anonymised`}>
             {(done.data ?? []).map((x) => (
-              <li key={x.id} className="fy-list__item">
+              <li key={x.id} className="fy-list__item fy-list__item--wrap">
                 <span className="fy-list__main">
                   <span className="fy-list__title">{x.contact_name}</span>
                   <span className="fy-list__meta whitespace-normal">

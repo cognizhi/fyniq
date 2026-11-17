@@ -54,7 +54,17 @@ func (ProcessorName) Schema(huma.Registry) *huma.Schema {
 func asCountry(s string) CountryCode     { return CountryCode(s) }
 func asProcessor(s string) ProcessorName { return ProcessorName(s) }
 
-func plain[T ~string](xs []T) []string {
+// countries and processors are the codes and names as plain strings: two functions, not one generic over ~string,
+// whose type parameter Semgrep's Go parser stops at, and make scan fails on a parse error.
+func countries(xs []CountryCode) []string {
+	out := make([]string, 0, len(xs))
+	for _, x := range xs {
+		out = append(out, string(x))
+	}
+	return out
+}
+
+func processors(xs []ProcessorName) []string {
 	out := make([]string, 0, len(xs))
 	for _, x := range xs {
 		out = append(out, string(x))
@@ -87,8 +97,8 @@ type AIDataHandling struct {
 func (h AIDataHandling) domain() aipolicy.Declaration {
 	d := aipolicy.Declaration{Inventory: h.InventoryID, Transfer: h.TransferID, Handling: []aipolicy.Handling{}}
 	for _, e := range h.Handling {
-		d.Handling = append(d.Handling, aipolicy.Handling{Model: e.Model, Endpoint: e.Endpoint, Feature: e.Feature, ProcessedIn: plain(e.ProcessedIn),
-			StoredIn: plain(e.StoredIn), RetentionDays: e.RetentionDays, Training: e.Training, SubProcessors: plain(e.SubProcessors), Gateways: plain(e.Gateways),
+		d.Handling = append(d.Handling, aipolicy.Handling{Model: e.Model, Endpoint: e.Endpoint, Feature: e.Feature, ProcessedIn: countries(e.ProcessedIn),
+			StoredIn: countries(e.StoredIn), RetentionDays: e.RetentionDays, Training: e.Training, SubProcessors: processors(e.SubProcessors), Gateways: processors(e.Gateways),
 			Unclear: e.Unclear, Evidence: aipolicy.Evidence{Kind: e.Evidence.Kind, URL: e.Evidence.URL, Title: e.Evidence.Title,
 				CheckedOn: e.Evidence.CheckedOn, File: e.Evidence.EvidenceID}})
 	}

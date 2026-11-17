@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/billpayment"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/director"
@@ -50,8 +51,9 @@ const (
 	CodeBatchReason     = "PB-22" // cancelling needs a reason
 )
 
-// The writer of released batches' files until the bank is chosen (rev 0.156).
-var batchWriter paymentfile.Writer = paymentfile.PaymentList{}
+// payFiles are the payment files built, whose writers a release picks from by its money account's setting (FR-BNK-12,
+// rev 0.157; p1-payment-files design D1). A test may stand in a writer for a file not built yet.
+var payFiles = paymentfile.Built()
 
 // PaymentBatchRelease is a batch's release as the API shows it: never the file's content.
 type PaymentBatchRelease struct {
@@ -59,7 +61,7 @@ type PaymentBatchRelease struct {
 	ReleasedAt   string               `json:"released_at" format:"date-time" doc:"When it was released." example:"2026-10-31T09:30:00+08:00"`
 	ApprovalID   string               `json:"approval_id,omitempty" format:"uuid" doc:"The approval it was released under; absent when it was released under break-glass." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c20"`
 	BreakGlassID string               `json:"break_glass_id,omitempty" format:"uuid" doc:"The break-glass it was released under, which approved it instead of a second person (FM-8); absent when an approval did." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c5c30"`
-	Writer       string               `json:"writer" doc:"The file's format and version: payment-list@1 is the payment list keyed into the bank (rev 0.156)." example:"payment-list@1"`
+	Writer       string               `json:"writer" doc:"The file's format and version, from the money account's payment file when it was released (rev 0.157): payment-list@1 is the payment list keyed into the bank (rev 0.156); wise-batch@N is Wise's batch payment file and dbs-uff@N DBS IDEAL's UFF, once built. A later change of the account's file never changes it." example:"payment-list@1"`
 	FileName     string               `json:"file_name" doc:"The file's name." example:"PB-0003-payment-list.csv"`
 	SHA256       string               `json:"sha256" doc:"The SHA-256 of the file as written, in hexadecimal: a downloaded copy can be checked against it." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
 	Payments     []PaymentBatchPosted `json:"payments" nullable:"false" doc:"The bill payments and reimbursements it posted, one per payee, in the file's order."`
@@ -386,7 +388,16 @@ func (a *API) releaseBatch(ctx context.Context, u storage.UnitOfWork, p authn.Pr
 func (a *API) writeRelease(ctx context.Context, u storage.UnitOfWork, p authn.Principal, doc storage.Document, b paymentbatch.Batch, v batchView,
 	approvalID, breakGlassID uuid.UUID) (map[uuid.UUID]string, error) {
 	id := doc.ID
-	// The payment list: each payee's number opened here, and the file sealed before the transaction ends.
+	// The file its money account gives now (rev 0.157; design D1, D2): one its bank takes and Fyniq writes, else nothing
+	// is released. Each payee's number is opened here, and the file sealed before the transaction ends.
+	provider, err := banking.ProviderOfAccount(ctx, u, *b.Account)
+	if err != nil {
+		return nil, err
+	}
+	writer, refused := payFiles.Writer(b.Account.PaymentFile, provider)
+	if refused != nil {
+		return nil, problem(refused.Code, sentence(refused.Message), "Change the money account's payment file to one its bank takes, such as the payment list, then release the batch")
+	}
 	f := paymentfile.File{Batch: doc.Number, PaymentDate: b.Date, Method: b.Stored.Method, Debit: paymentfile.Debit{Name: b.Account.Name, Identifier: b.Account.Identifier}}
 	names, err := memberNames(ctx, u, v.now)
 	if err != nil {
@@ -418,7 +429,7 @@ func (a *API) writeRelease(ctx context.Context, u storage.UnitOfWork, p authn.Pr
 		}
 		f.Payments = append(f.Payments, item)
 	}
-	out, err := batchWriter.Write(f)
+	out, err := writer.Write(f)
 	if err != nil {
 		return nil, err
 	}
@@ -432,7 +443,7 @@ func (a *API) writeRelease(ctx context.Context, u storage.UnitOfWork, p authn.Pr
 	}
 	release, err := u.PaymentBatches().Release(ctx, storage.PaymentBatchRelease{BatchID: id, BatchVersion: doc.Version, ApprovalID: approvalID,
 		BreakGlassID: breakGlassID, ReleasedBy: p.UserID,
-		ReleasedAt: v.now, Writer: batchWriter.Name(), FileName: out.Name, MediaType: out.MediaType, Sealed: sealed, SHA256: sum[:],
+		ReleasedAt: v.now, Writer: writer.Name(), FileName: out.Name, MediaType: out.MediaType, Sealed: sealed, SHA256: sum[:],
 		Payments: len(b.Payments), Currency: paymentbatch.SGD.Code, Total: storage.Decimal(b.Total.String())})
 	if err != nil {
 		return nil, err
@@ -607,9 +618,15 @@ func registerPaymentBatchRelease(a *API) {
 					on = d.Format("2 Jan 2006")
 				}
 				summary := fmt.Sprintf("%s %s: %s, %s SGD, on %s by %s", verb, name, payments, b.Total.String(), on, strings.ToUpper(b.Stored.Method))
+				var vendors approval.Facts // FR-APR-01: the vendors it pays, for the policy's rules
+				for _, pay := range b.Payments {
+					if pay.Director == uuid.Nil && !pay.Payee.IsPerson() && !slices.Contains(vendors.Vendors, pay.Payee.ContactID) {
+						vendors.Vendors = append(vendors.Vendors, pay.Payee.ContactID)
+					}
+				}
 				return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectPaymentBatch, ObjectKey: id.String(), Operation: op, Summary: summary,
 					Execute: map[string]any{"batch_id": id.String(), "version": fmt.Sprint(doc.Version)}, Diff: diff,
-					Amounts: []approval.Amount{{Amount: b.Total.String(), Currency: paymentbatch.SGD.Code}}})
+					Amounts: []approval.Amount{{Amount: b.Total.String(), Currency: paymentbatch.SGD.Code}}, Facts: vendors})
 			})
 			if err != nil {
 				return nil, err
@@ -651,12 +668,15 @@ func registerPaymentBatchRelease(a *API) {
 			"payment date as recording them by hand does (Dr 2010 or 2150, Cr the money account), and one repayment per director or " +
 			"shareholder (director_repayment@1: Dr 2500 or 2120 naming the person, Cr the money account; FR-EQ-05), each referenced " +
 			"with the batch's number; " +
-			"the payment list (payment-list@1), sealed (SEC-11) with the SHA-256 of the file; the release and the links, audited with the " +
-			"file's name and hash only. Download the list with getPaymentBatchFile and key it into the bank. Needs If-Match with the " +
+			"the file the money account is set to (its payment_file, rev 0.157: the payment list, payment-list@1, unless a file its bank " +
+			"takes is built and chosen; else PAYFILE-01 or PAYFILE-02 and nothing is released), sealed (SEC-11) with the SHA-256 of the " +
+			"file; the release and the links, audited with the file's name and hash only. Download the file with getPaymentBatchFile and " +
+			"key it into the bank, or upload it to the bank. Needs If-Match with the " +
 			"batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and releases nothing.",
 	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeSessionRequired,
 		CodeStepUpRequired, CodeBatchNotOpen, CodeBatchReleased, CodeBatchReapprove, CodeBatchSeparation, payee.CodeNoKeys, storage.CodeBatch,
-		storage.CodeBatchHeld, team.CodeAction}, append(append(append(locks, checkCodes...), BatchCodes...), postingCodes()...)...),
+		storage.CodeBatchHeld, team.CodeAction, paymentfile.CodeProvider, paymentfile.CodeNotBuilt},
+		append(append(append(locks, checkCodes...), BatchCodes...), postingCodes()...)...),
 		func(ctx context.Context, in *batchCommandInput) (*batchReleaseOutput, error) {
 			id, err := parseID("batch_id", in.BatchID)
 			if err != nil {
@@ -686,9 +706,10 @@ func registerPaymentBatchRelease(a *API) {
 
 	register(a, authz.GetPaymentBatchFile, huma.Operation{
 		OperationID: "getPaymentBatchFile", Method: http.MethodGet, Path: "/v1/payment-batches/{batch_id}/file", Tags: []string{"Purchases"},
-		Summary: "Download a released batch's payment list",
-		Description: "Returns the file a release wrote, as it was written, in base64, with its SHA-256 (FR-BNK-12, design D7): for the Payment " +
-			"releaser, a person stepped up in the last 5 minutes. It holds full account numbers: key it into the bank, then delete it. " +
+		Summary: "Download a released batch's payment file",
+		Description: "Returns the file a release wrote, as it was written, in base64, with its SHA-256 (FR-BNK-12, design D7): the payment list " +
+			"or the bank's own file its money account was set to when it was released (rev 0.157). For the Payment " +
+			"releaser, a person stepped up in the last 5 minutes. It holds full account numbers: key it into the bank or upload it there, then delete it. " +
 			"Side effects: an audit event of the download, with the file's hash (SEC-11). Never cached.",
 	},
 		[]string{CodeNotFound, CodeSessionRequired, CodeStepUpRequired, CodeBatchNotOpen, paymentbatch.CodeNotBatch, payee.CodeNoKeys},

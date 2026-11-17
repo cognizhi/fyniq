@@ -45,6 +45,7 @@ func hasApplyCode(err error, code string) bool {
 // req: FR-AR-18
 // req: ENG-41
 // req: INV-07
+// req: G4-045
 func TestCustomerCreditsApplyToInvoices(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ar-specialist"}})
 	s := store(t, "fyniq_api")
@@ -187,8 +188,20 @@ func TestCustomerCreditsApplyToInvoices(t *testing.T) {
 	if _, err := applications.Void(ctx, b.Org, a2.Application.ID, porttest.Day(10, 23), "Wrong invoice"); err != nil {
 		t.Fatal(err)
 	}
-	if got := open(reconcile("1597.20")); got["INV-0002"] != "500.00" || got["RC-0001"] != "-100.00" || got["INV-0003"] != "1000.00" || got["CN-0002"] != "-100.00" {
+	voided := reconcile("1597.20")
+	if got := open(voided); got["INV-0002"] != "500.00" || got["RC-0001"] != "-100.00" || got["INV-0003"] != "1000.00" || got["CN-0002"] != "-100.00" {
 		t.Fatalf("after the voids: %v", got)
+	}
+	// The ageing shows what the voids left unapplied as credits, apart from the invoices' buckets (G4-045): RC-0001's
+	// S$100.00, and CN-0002's USD 100.00 with CN-0003's USD 5.00.
+	aged, err := receivables.Age(voided, sgd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range aged.Totals {
+		if want := map[string]string{"SGD": "-100.00", "USD": "-105.00"}[row.Currency.Code]; row.Credits.String() != want {
+			t.Errorf("the %s ageing's unapplied credits: %s, want %s", row.Currency.Code, row.Credits, want)
+		}
 	}
 
 	// Every entry replays.

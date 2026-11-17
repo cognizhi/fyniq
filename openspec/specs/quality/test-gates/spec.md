@@ -254,13 +254,22 @@ Source: PRD-001 §16.2
 - **THEN** the merge is blocked
 
 ### Requirement: QA-UI-07 Device classes and motion
-Visual snapshots SHALL cover every P1 route at the five reference frames of §7.10, in light and dark; an end-to-end journey SHALL run per device class; and with motion off or reduced, no animation or transition SHALL run.
+Visual snapshots SHALL cover the key pages on every pull request and every P1 route nightly and before each release, at the five reference frames of §7.10, in light and dark; an end-to-end journey SHALL run per device class; and with motion off or reduced, no animation or transition SHALL run.
 
 Source: PRD-001 §16.2
 
 #### Scenario: Visual snapshots at the reference frames
-- **WHEN** the visual snapshot tests run
+- **WHEN** the visual snapshot tests run nightly or before a release
 - **THEN** every P1 route is captured at the five reference frames of §7.10, in light and dark
+
+#### Scenario: Key pages on every pull request
+- **WHEN** CI runs on a pull request
+- **THEN** the key pages (Home, the Inbox, a financial statement, an invoice and Settings) are captured at the five frames, in light and dark (rev 0.284)
+
+#### Scenario: A failure of the full set blocks the next release
+- **GIVEN** a nightly run in which a route's snapshot fails
+- **WHEN** the next release is prepared
+- **THEN** it is blocked until the snapshot passes or its new baseline is approved
 
 #### Scenario: Journey per device class
 - **WHEN** the end-to-end tests run
@@ -272,7 +281,7 @@ Source: PRD-001 §16.2
 - **THEN** no animation or transition runs, and the computed durations are 0
 
 #### Scenario: A failure blocks the merge
-- **GIVEN** a pull request for which a snapshot, journey or motion test fails
+- **GIVEN** a pull request for which a key page's snapshot, a journey or a motion test fails
 - **WHEN** CI runs
 - **THEN** the merge is blocked
 

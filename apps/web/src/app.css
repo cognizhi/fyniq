@@ -83,8 +83,88 @@ body {
   box-shadow: inset 2px 0 0 var(--primary);
 }
 
+/* A list row whose chips and buttons follow its text: on a narrow screen they wrap below the text instead of squeezing
+   it to a sliver (the 344 px foldable). */
+.fy-list__item--wrap {
+  flex-wrap: wrap;
+}
+.fy-list__item--wrap > .fy-list__main {
+  min-width: min(13.75rem, 100%);
+}
+
 /* Native radios and checkboxes take the brand colour (MASTER.md: teal for selection). */
 input[type="radio"],
 input[type="checkbox"] {
   accent-color: var(--primary);
+}
+
+/* The brand mark's letter is drawn, not text: the link's name is "Fyniq home", and the sidebar's visible word "Fyniq"
+   is part of it (WCAG 2.2 SC 2.5.3, label in name). */
+.fy-brand__mark[data-letter]::before {
+  content: attr(data-letter);
+}
+
+/* Focus not obscured (NFR-A11Y-03, WCAG 2.2 SC 2.4.11): an element focused or scrolled to stays clear of the sticky
+   header, and in the compact class of the bottom bar and the sticky action bar above it. */
+html {
+  scroll-padding-top: calc(var(--header-height) + var(--space-2));
+}
+@media (max-width: 599.98px) {
+  html {
+    scroll-padding-bottom: calc(var(--bottom-bar-height) + env(safe-area-inset-bottom, 0px) + var(--space-4));
+  }
+}
+
+/* Touch targets of 44 × 44 px on touch screens (FR-UX-37): the brand's link, a segmented control's options, a chip
+   that is a button, a list row or navigation item that is a link, a filter, a radio or a checkbox's label, and a link
+   that names a list row, whose hit area is the whole row (.fy-stretch). */
+@media (pointer: coarse) {
+  .fy-brand {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+    justify-content: center;
+  }
+  .fy-segmented button {
+    min-height: var(--touch-target);
+    min-width: var(--touch-target);
+  }
+  a.fy-list__item,
+  button.fy-list__item,
+  .fy-nav__item {
+    min-height: var(--touch-target);
+  }
+  /* a chip or a filter that is a control, and a radio or a checkbox with its label, whose whole label is its target */
+  button.fy-chip,
+  a.fy-chip,
+  .fy-filter {
+    min-height: var(--touch-target);
+    min-width: var(--touch-target);
+    justify-content: center;
+  }
+  label:has(> input[type="radio"]),
+  label:has(> input[type="checkbox"]) {
+    min-height: var(--touch-target);
+  }
+}
+.fy-list__item:has(.fy-stretch) {
+  position: relative;
+}
+.fy-stretch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+/* Two panes split at the hinge of a screen that spans two segments side by side, and nothing across it (FR-UX-37):
+   shell/hinge.ts sets the list's width up to the hinge and the hinge's width on the element. */
+@media (horizontal-viewport-segments: 2) {
+  .fy-listdetail[data-hinge="split"],
+  .fy-listdetail[data-hinge="split"][data-show="detail"] {
+    grid-template-columns: var(--hinge-list) minmax(0, 1fr);
+    column-gap: var(--hinge-gap);
+  }
+  .fy-listdetail[data-hinge="split"] > .fy-listdetail__list,
+  .fy-listdetail[data-hinge="split"] > .fy-listdetail__detail {
+    display: block;
+  }
 }

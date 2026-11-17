@@ -26,6 +26,13 @@ const money = (extra: Partial<MoneyAccount> = {}): MoneyAccount => ({
   waiting: 12,
   gaps: [],
   sources: [],
+  provider: "dbs",
+  payment_file: "payment-list",
+  payment_files: [
+    { format: "payment-list", offered: true },
+    { format: "wise-batch", offered: false, reason: "Payment file: Wise's batch payment file is only for a Wise account, and this account is not at Wise." },
+    { format: "dbs-uff", offered: false, reason: "Payment file: DBS IDEAL's UFF is not available yet; Fyniq writes it once DBS's specification, DBS UFF Version 2.2 is in hand." },
+  ],
   version: 1,
   ...extra,
 });

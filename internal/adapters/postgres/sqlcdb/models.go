@@ -459,6 +459,7 @@ type FyniqApprovalPolicy struct {
 	RequestID      uuid.UUID
 	CreatedBy      uuid.UUID
 	CreatedAt      time.Time
+	Rules          []byte
 }
 
 type FyniqApprovalRequest struct {
@@ -1581,6 +1582,11 @@ type FyniqInstallationConnectorSecret struct {
 	DestroyedAt *time.Time
 }
 
+type FyniqInvitationCode struct {
+	CodeHash []byte
+	Owner    uuid.UUID
+}
+
 type FyniqIpRateWindow struct {
 	Client      string
 	Kind        string
@@ -1890,6 +1896,7 @@ type FyniqMoneyAccount struct {
 	ChangedAt      time.Time
 	Version        int32
 	CardholderID   *uuid.UUID
+	PaymentFile    string
 }
 
 type FyniqMoneyAccountSource struct {
