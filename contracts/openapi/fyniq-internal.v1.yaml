@@ -221,6 +221,15 @@ components:
           examples:
             - F3a9c0d1e2b4f5a6
           type: string
+        inputs:
+          description: A calculated fact's input facts, by ID (AI-68, AI-P6).
+          examples:
+            - - F3a9c0d1e2b4f5a6
+          items:
+            type: string
+          type:
+            - array
+            - "null"
         ledger_revision:
           description: The ledger revision it was read at (ENG-46).
           examples:

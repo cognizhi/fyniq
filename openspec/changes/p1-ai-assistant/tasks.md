@@ -27,7 +27,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 - [x] 3.2 The tools through the internal `tool` operation as the person: `metrics.query`, `records.get`,
   `records.search`, `lineage.explain`, `checks.list`, `checks.explain`, `packs.get`, each returning typed facts. Tests
   `// req: AI-P1`, `// req: AI-01`, `// req: AI-68`.
-- [ ] 3.3 `calc` in the AI service: exact decimals on facts and constants, its result a fact naming its inputs. Tests
+- [x] 3.3 `calc` in the AI service: exact decimals on facts and constants, its result a fact naming its inputs. Tests
   `// req: AI-P6`.
 
 ## 4. Exclusions and untrusted text
