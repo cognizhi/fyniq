@@ -110,10 +110,15 @@
 
 ## 6. The screens
 
-- [ ] 6.1 The approval page's review of an `ai_proposal` (`ai-proposal-review`): summary, items, impact, diff, evidence,
+- [x] 6.1 The approval page's review of an `ai_proposal` (`ai-proposal-review`): summary, items, impact, diff, evidence,
   the AI's rationale in violet with the AI badge, approve, or reject with a reason; help keys; the guide
   `docs/user-guide/ai-proposals.md` compiled into `kb/`; the fragment updated locally (design D10). Tests
   `// req: AI-07`, `// req: AI-22`, Vitest with axe.
+  As built: `ProposalReview` on the approval page of an `ai_proposal` request (and `/inbox/proposals/$proposalId`, which
+  opens a pending proposal's request, or shows a decided one as it is): Fyniq's summary, the items to keep (a tier-1
+  batch whole by default; the approval names the items kept), what changes, the evidence, and the AI's reasons in an AI
+  card. The confirmation says which items the signature covers. The fragment `ProposalReview.html` already shows this
+  review, so it was not changed; the guide compiles to `kb/pages/task/ai-proposals-approve.md`.
 - [ ] 6.2 Settings → AI → AI tasks (`ai-tasks`): the catalogue with tiers, limits and status, enabling under dual
   control, and the proposal history; help keys, its guide section, the fragment updated locally. Tests
   `// req: ai/task-catalogue AI tasks page`, `// req: AI-32`, Vitest with axe.
