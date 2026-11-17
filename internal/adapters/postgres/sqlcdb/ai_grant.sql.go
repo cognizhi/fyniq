@@ -13,17 +13,18 @@ import (
 )
 
 const aIGrantClasses = `-- name: AIGrantClasses :one
-SELECT classes FROM fyniq.ai_grant WHERE turn_id = $1 AND ended_at IS NULL AND expires_at > $2
+SELECT classes FROM fyniq.ai_grant
+ WHERE (turn_id = $1::uuid OR run_id = $1::uuid) AND ended_at IS NULL AND expires_at > $2
 `
 
 type AIGrantClassesParams struct {
-	TurnID uuid.UUID
+	Origin uuid.UUID
 	Now    time.Time
 }
 
-// A live grant's classes: none when the turn has no live grant.
+// A live grant's classes: none when its turn or run has no live grant.
 func (q *Queries) AIGrantClasses(ctx context.Context, arg AIGrantClassesParams) ([]string, error) {
-	row := q.db.QueryRow(ctx, aIGrantClasses, arg.TurnID, arg.Now)
+	row := q.db.QueryRow(ctx, aIGrantClasses, arg.Origin, arg.Now)
 	var classes []string
 	err := row.Scan(&classes)
 	return classes, err
@@ -34,7 +35,11 @@ SELECT coalesce(g.user_id, '00000000-0000-0000-0000-000000000000')::uuid AS user
        coalesce(g.turn_id, '00000000-0000-0000-0000-000000000000')::uuid AS turn_id,
        coalesce(g.roles, '{}')::text[] AS roles,
        coalesce(g.expires_at, 'epoch')::timestamptz AS expires_at,
-       coalesce(g.propose, false)::boolean AS propose
+       coalesce(g.propose, false)::boolean AS propose,
+       coalesce(g.run_id, '00000000-0000-0000-0000-000000000000')::uuid AS run_id,
+       g.tools::text[] AS tools,
+       g.task_types::text[] AS task_types,
+       coalesce(g.agent, '')::text AS agent
   FROM fyniq.ai_grant_for($1::uuid, $2::bytea, $3::timestamptz) AS g
 `
 
@@ -50,6 +55,10 @@ type AIGrantForRow struct {
 	Roles     []string
 	ExpiresAt time.Time
 	Propose   bool
+	RunID     uuid.UUID
+	Tools     []string
+	TaskTypes []string
+	Agent     string
 }
 
 // A nil user means no live grant.
@@ -62,21 +71,27 @@ func (q *Queries) AIGrantFor(ctx context.Context, arg AIGrantForParams) (AIGrant
 		&i.Roles,
 		&i.ExpiresAt,
 		&i.Propose,
+		&i.RunID,
+		&i.Tools,
+		&i.TaskTypes,
+		&i.Agent,
 	)
 	return i, err
 }
 
 const endAIGrant = `-- name: EndAIGrant :execrows
-UPDATE fyniq.ai_grant SET ended_at = $1 WHERE turn_id = $2 AND ended_at IS NULL
+UPDATE fyniq.ai_grant SET ended_at = $1
+ WHERE (turn_id = $2::uuid OR run_id = $2::uuid) AND ended_at IS NULL
 `
 
 type EndAIGrantParams struct {
 	EndedAt *time.Time
-	TurnID  uuid.UUID
+	Origin  uuid.UUID
 }
 
+// A grant's origin is its turn or its run.
 func (q *Queries) EndAIGrant(ctx context.Context, arg EndAIGrantParams) (int64, error) {
-	result, err := q.db.Exec(ctx, endAIGrant, arg.EndedAt, arg.TurnID)
+	result, err := q.db.Exec(ctx, endAIGrant, arg.EndedAt, arg.Origin)
 	if err != nil {
 		return 0, err
 	}
@@ -84,15 +99,19 @@ func (q *Queries) EndAIGrant(ctx context.Context, arg EndAIGrantParams) (int64, 
 }
 
 const insertAIGrant = `-- name: InsertAIGrant :one
-INSERT INTO fyniq.ai_grant (token_hash, user_id, turn_id, issued_at, expires_at, propose)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING organisation_id, id, token_hash, user_id, turn_id, issued_at, expires_at, ended_at, classes, propose
+INSERT INTO fyniq.ai_grant (token_hash, user_id, turn_id, run_id, tools, task_types, issued_at, expires_at, propose)
+VALUES ($1, $2, $3, $4, $5, $6, $7,
+  $8, $9)
+RETURNING organisation_id, id, token_hash, user_id, turn_id, issued_at, expires_at, ended_at, classes, propose, run_id, tools, task_types
 `
 
 type InsertAIGrantParams struct {
 	TokenHash []byte
 	UserID    uuid.UUID
-	TurnID    uuid.UUID
+	TurnID    *uuid.UUID
+	RunID     *uuid.UUID
+	Tools     []string
+	TaskTypes []string
 	IssuedAt  time.Time
 	ExpiresAt time.Time
 	Propose   bool
@@ -103,6 +122,9 @@ func (q *Queries) InsertAIGrant(ctx context.Context, arg InsertAIGrantParams) (F
 		arg.TokenHash,
 		arg.UserID,
 		arg.TurnID,
+		arg.RunID,
+		arg.Tools,
+		arg.TaskTypes,
 		arg.IssuedAt,
 		arg.ExpiresAt,
 		arg.Propose,
@@ -119,23 +141,26 @@ func (q *Queries) InsertAIGrant(ctx context.Context, arg InsertAIGrantParams) (F
 		&i.EndedAt,
 		&i.Classes,
 		&i.Propose,
+		&i.RunID,
+		&i.Tools,
+		&i.TaskTypes,
 	)
 	return i, err
 }
 
 const widenAIGrant = `-- name: WidenAIGrant :execrows
 UPDATE fyniq.ai_grant SET classes = ARRAY(SELECT DISTINCT unnest(classes || $1::text[]) ORDER BY 1)
- WHERE turn_id = $2 AND ended_at IS NULL AND expires_at > $3
+ WHERE (turn_id = $2::uuid OR run_id = $2::uuid) AND ended_at IS NULL AND expires_at > $3
 `
 
 type WidenAIGrantParams struct {
 	Classes []string
-	TurnID  uuid.UUID
+	Origin  uuid.UUID
 	Now     time.Time
 }
 
 func (q *Queries) WidenAIGrant(ctx context.Context, arg WidenAIGrantParams) (int64, error) {
-	result, err := q.db.Exec(ctx, widenAIGrant, arg.Classes, arg.TurnID, arg.Now)
+	result, err := q.db.Exec(ctx, widenAIGrant, arg.Classes, arg.Origin, arg.Now)
 	if err != nil {
 		return 0, err
 	}

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"net/http"
@@ -69,14 +70,15 @@ func (a *API) internalAuthenticate(ctx huma.Context, next func(huma.Context)) {
 		refuse(http.StatusInternalServerError, problem(CodeFailure, "The turn's token could not be checked.", "Try again in a moment."))
 		return
 	}
-	if err != nil || p.Turn == uuid.Nil || !p.AI() {
-		refuse(http.StatusUnauthorized, problem(CodeUnauthenticated, "The call has no live turn's token.",
-			"Send the delegated read token the API gave the turn; it ends with the turn and after 5 minutes."))
+	if err != nil || p.Delegated() == uuid.Nil || !p.AI() {
+		refuse(http.StatusUnauthorized, problem(CodeUnauthenticated, "The call has no live turn's or run's token.",
+			"Send the delegated token the API gave the turn or the run; it ends with it, and after 5 minutes for a turn."))
 		return
 	}
 	c := context.WithValue(authn.WithPrincipal(ctx.Context(), p), turnTokenKey{}, ctx.Header("Authorization"))
 	audit := storage.AuditFrom(c)
-	audit.Actor, audit.OnBehalfOf = &storage.Actor{Type: "ai", ID: p.Client}, &storage.Actor{Type: "user", ID: p.UserID.String()}
+	// A run's agent acts by its name, on behalf of the Owner the run acts for (p1-scheduled-agents design D6).
+	audit.Actor, audit.OnBehalfOf = &storage.Actor{Type: "ai", ID: cmp.Or(p.Agent, p.Client)}, &storage.Actor{Type: "user", ID: p.UserID.String()}
 	audit.Request.Session = p.Client
 	next(huma.WithContext(ctx, storage.WithAudit(c, audit)))
 }

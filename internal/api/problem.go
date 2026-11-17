@@ -288,6 +288,7 @@ var codeFacts = map[string]struct {
 	CodeToolElse:                  {422, "Not a tool the API runs"},
 	CodeToolRefused:               {422, "The tool's read was refused"},
 	CodeToolTimeout:               {504, "The tool took too long"},
+	CodeToolGrant:                 {403, "Not one of the agent's tools"},
 	CodeProposeNotAllowed:         {403, "The AI may not propose this"},
 	CodeProposalType:              {422, "Not a task type the AI may propose"},
 	CodeTaskReason:                {422, "A dismissal needs a reason"},

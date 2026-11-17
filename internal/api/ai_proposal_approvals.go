@@ -25,9 +25,13 @@ import (
 // its policy (approval.Policies, Fixed). The final approval marks it Approved and queues it for the executor, in the same
 // transaction; the API never executes it.
 
-// turnMFA is how an AI proposal's requester is authenticated: by their live turn (AI-89), which approval_request_mfa_known
-// lets ai_proposal requests alone hold.
-const turnMFA = "ai_turn"
+// turnMFA and runMFA are how an AI proposal's requester is authenticated: by their live turn, or the live run of the
+// scheduled agent that acts for them (AI-89 rev 0.281), which approval_request_mfa_known lets ai_proposal requests alone
+// hold, each only for a proposal from a turn or a run (approval_request_ai_requester).
+const (
+	turnMFA = "ai_turn"
+	runMFA  = "ai_run"
+)
 
 // proposalRule is who signs an AI proposal's request, as its change holds it, signed in its envelope: the operation whose
 // right a signer holds as a person (AI-10), and whether the person who asked may sign (tier 1).
@@ -85,7 +89,8 @@ func seesProposal(p authn.Principal, r storage.ApprovalRequest) bool {
 }
 
 // requestProposal makes a Pending proposal's approval request (AI-89): as the person who asked, authenticated by their
-// live turn now, its envelope holding the payload's hash, its step the task type's approver roles.
+// live turn now, or the live run that acts for them, its envelope holding the payload's hash, its step the task type's
+// approver roles.
 func (a *API) requestProposal(ctx context.Context, u storage.UnitOfWork, p authn.Principal, made storage.AIProposal, tt proposal.TaskType,
 	cmd proposal.Command, impact proposal.Impact) (storage.ApprovalRequest, error) {
 	policy := approval.Policies[approval.ObjectAIProposal]
@@ -108,11 +113,14 @@ func (a *API) requestProposal(ctx context.Context, u storage.UnitOfWork, p authn
 	if err != nil {
 		return storage.ApprovalRequest{}, err
 	}
-	now := a.deps.Clock.Now()
+	now, method := a.deps.Clock.Now(), turnMFA
+	if p.Run != uuid.Nil {
+		method = runMFA
+	}
 	steps := []approval.Step{{Quorum: 1, Roles: roles}}
 	r, err := u.Approvals().Request(ctx, storage.NewApprovalRequest{ObjectType: c.ObjectType, ObjectKey: c.ObjectKey, Operation: c.Operation,
 		Summary: c.Summary, Change: change, Envelope: string(envelope), EnvelopeHash: approval.Hash(envelope), PolicyVersion: policy.Version,
-		PolicySteps: storageSteps(steps), RequestedBy: p.UserID, RequestedAt: now, RequesterMFAMethod: turnMFA, RequesterMFAAt: now,
+		PolicySteps: storageSteps(steps), RequestedBy: p.UserID, RequestedAt: now, RequesterMFAMethod: method, RequesterMFAAt: now,
 		ExpiresAt: made.ExpiresAt})
 	if err != nil {
 		return storage.ApprovalRequest{}, err

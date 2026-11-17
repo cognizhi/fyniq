@@ -135,7 +135,7 @@ func (a *API) prepareModelCall(ctx context.Context, in AIModelCall) (ai.Call, er
 	var classes []string
 	err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		now := a.deps.Clock.Now()
-		read, err := u.AIGrants().Classes(ctx, p.Turn, now)
+		read, err := u.AIGrants().Classes(ctx, p.Delegated(), now)
 		if err != nil {
 			return err
 		}
@@ -153,7 +153,7 @@ func (a *API) prepareModelCall(ctx context.Context, in AIModelCall) (ai.Call, er
 			}
 		}
 		classes = union(read, declared)
-		return u.AIGrants().Widen(ctx, p.Turn, declared, now)
+		return u.AIGrants().Widen(ctx, p.Delegated(), declared, now)
 	})
 	if errors.Is(err, ports.ErrNotFound) {
 		return ai.Call{}, problem(CodeUnauthenticated, "The turn has ended.", "Start a new turn")

@@ -169,11 +169,23 @@ func TestAProposalWaitingTooLongIsFlagged(t *testing.T) {
 		t.Errorf("with none: %q", s.Detail)
 	}
 	user := b.owner(t, 19)
+	// The proposals come from a running run of the company secretary's, acting for the Owner, as the database requires.
+	var run uuid.UUID
+	if err := b.worker.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) error {
+		queued, _, err := u.AgentRuns().Queue(ctx, storage.NewAgentRun{Agent: "company-secretary", SkillVersion: 1, SkillSHA256: strings.Repeat("c", 64),
+			Trigger: "event:filing_recorded:test", SlotAt: now.Add(-72 * time.Hour), ActsFor: user, QueuedAt: now.Add(-72 * time.Hour)})
+		if err == nil {
+			queued, err = u.AgentRuns().Start(ctx, queued.ID, queued.Version, now.Add(-72*time.Hour))
+		}
+		run = queued.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
 	pending := func(note string, waited time.Duration) {
 		t.Helper()
 		payload := `{"note":"` + note + `"}`
 		sum := sha256.Sum256([]byte(payload))
-		run := uuid.New()
 		at := now.Add(-waited)
 		if err := b.api.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) error {
 			p, err := u.AIProposals().Create(ctx, storage.AIProposal{TaskType: "sec.create_task", TaskVersion: 1, TaskSHA256: strings.Repeat("a", 64),

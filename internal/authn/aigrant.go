@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -23,6 +24,11 @@ const (
 	AITokenPrefix = "fyai_"
 	// AssistantClient is the client a delegated AI read token's calls come through.
 	AssistantClient = "fyniq-assistant"
+	// AgentClient is the client a scheduled agent's run's calls come through (AI-63).
+	AgentClient = "fyniq-agent"
+	// MaxRunDelegated is the longest a run's delegated token lives: its model step, within its caps (p1-scheduled-agents
+	// design D6).
+	MaxRunDelegated = 30 * time.Minute
 	// AIScope is all a delegated AI read token grants: reading through the AI's tools.
 	AIScope = "ai.read"
 	// AIProposeScope is the one more a turn's token holds while the organisation has a task type on: making proposals
@@ -83,6 +89,9 @@ func (a AIGrants) Authenticate(ctx context.Context, c Credentials) (Principal, e
 	}
 	p := Principal{Via: ViaToken, Subject: g.UserID.String(), UserID: g.UserID, Client: AssistantClient, Class: ClassAgent, Organisation: org,
 		Scopes: []string{AIScope}, Turn: g.Turn}
+	if g.Run != uuid.Nil { // a scheduled agent's run: its tools and task types alone (AI-63)
+		p.Client, p.Run, p.Agent, p.AITools, p.AITaskTypes = AgentClient, g.Run, g.Agent, g.Tools, g.TaskTypes
+	}
 	if g.Propose {
 		p.Scopes = append(p.Scopes, AIProposeScope)
 	}

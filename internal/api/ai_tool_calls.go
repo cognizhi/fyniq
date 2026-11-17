@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/aitool"
 	"github.com/cognizhi/fyniq/internal/authn"
@@ -59,6 +60,7 @@ const (
 	CodeToolElse    = "AI-TOOL-02" // the tool runs in the AI service, or is not built yet
 	CodeToolRefused = "AI-TOOL-03" // the operation refused it: the person may not read it, or it is not there
 	CodeToolTimeout = "AI-TOOL-04" // it took longer than the tool's limit
+	CodeToolGrant   = "AI-TOOL-05" // a run's grant does not hold the tool: its agent's skill does not name it
 )
 
 // recordPaths are where records.get reads each kind of record.
@@ -103,15 +105,18 @@ func turnToken(ctx context.Context) string {
 func registerToolCalls(a *API) {
 	internalOp(a, huma.Operation{
 		OperationID: "callAITool", Method: http.MethodPost, Path: internalBase + "/tool-calls", Tags: []string{"Assistant"},
-		Summary: "Run a read tool for a turn",
+		Summary: "Run a read tool for a turn or a run",
 		Description: "Runs one tool of the registry (contracts/ai/tools) as the turn's person (AI-01, AI-P1): through its public read " +
 			"operation with the turn's delegated token, so the person's roles and the masking apply and nothing is written. The result " +
 			"is cut to the tool's limits (rows, time and a token budget; AI-04), what was left out counted, and every figure in it is a " +
-			"typed fact (AI-68). calc runs in the AI service itself.",
-	}, []string{CodeToolInput, CodeToolElse, CodeToolRefused, CodeToolTimeout, CodeScreenIncomplete}, func(ctx context.Context, in *aiToolCallInput) (*aiToolCallOutput, error) {
+			"typed fact (AI-68). calc runs in the AI service itself. A scheduled agent's run calls only its skill's tools (AI-63).",
+	}, []string{CodeToolInput, CodeToolElse, CodeToolRefused, CodeToolTimeout, CodeToolGrant, CodeScreenIncomplete}, func(ctx context.Context, in *aiToolCallInput) (*aiToolCallOutput, error) {
 		tool, ok := aitool.Default().Get(string(in.Body.Tool))
 		if !ok {
 			return nil, problem(CodeToolInput, string(in.Body.Tool)+" is not a tool of the registry.", "Name one of the registry's read tools")
+		}
+		if p, _ := authn.From(ctx); p.Run != uuid.Nil && !slices.Contains(p.AITools, tool.Name) { // a run calls its skill's tools alone (AI-63)
+			return nil, problem(CodeToolGrant, tool.Name+" is not one of the agent's tools.", "Call one of the tools the run was offered")
 		}
 		if err := checkToolInput(tool, in.Body.Input); err != nil {
 			return nil, err
@@ -154,7 +159,7 @@ func toolClasses(tool string, in map[string]any) []string {
 func (a *API) widenTurn(ctx context.Context, classes []string) error {
 	p, _ := authn.From(ctx)
 	return a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-		return u.AIGrants().Widen(ctx, p.Turn, classes, a.deps.Clock.Now())
+		return u.AIGrants().Widen(ctx, p.Delegated(), classes, a.deps.Clock.Now())
 	})
 }
 

@@ -19,20 +19,25 @@ func (r aiGrants) Issue(ctx context.Context, g storage.AIGrant) (storage.AIGrant
 	if err := r.u.check(); err != nil {
 		return storage.AIGrant{}, err
 	}
-	row, err := r.u.q.InsertAIGrant(ctx, sqlcdb.InsertAIGrantParams{TokenHash: g.TokenHash, UserID: g.UserID, TurnID: g.Turn, IssuedAt: g.IssuedAt,
-		ExpiresAt: g.ExpiresAt, Propose: g.Propose})
+	params := sqlcdb.InsertAIGrantParams{TokenHash: g.TokenHash, UserID: g.UserID, IssuedAt: g.IssuedAt, ExpiresAt: g.ExpiresAt, Propose: g.Propose}
+	if g.Run != uuid.Nil { // a run's grant: its tools and task types, never nil
+		params.RunID, params.Tools, params.TaskTypes = &g.Run, append([]string{}, g.Tools...), append([]string{}, g.TaskTypes...)
+	} else {
+		params.TurnID = &g.Turn
+	}
+	row, err := r.u.q.InsertAIGrant(ctx, params)
 	if err != nil {
 		return storage.AIGrant{}, mapError(err)
 	}
-	return storage.AIGrant{ID: row.ID, TokenHash: row.TokenHash, UserID: row.UserID, Turn: row.TurnID, IssuedAt: row.IssuedAt, ExpiresAt: row.ExpiresAt,
-		EndedAt: row.EndedAt, Propose: row.Propose}, nil
+	return storage.AIGrant{ID: row.ID, TokenHash: row.TokenHash, UserID: row.UserID, Turn: deref(row.TurnID), Run: deref(row.RunID), Tools: row.Tools,
+		TaskTypes: row.TaskTypes, IssuedAt: row.IssuedAt, ExpiresAt: row.ExpiresAt, EndedAt: row.EndedAt, Propose: row.Propose}, nil
 }
 
-func (r aiGrants) End(ctx context.Context, turn uuid.UUID, now time.Time) error {
+func (r aiGrants) End(ctx context.Context, origin uuid.UUID, now time.Time) error {
 	if err := r.u.check(); err != nil {
 		return err
 	}
-	n, err := r.u.q.EndAIGrant(ctx, sqlcdb.EndAIGrantParams{EndedAt: &now, TurnID: turn})
+	n, err := r.u.q.EndAIGrant(ctx, sqlcdb.EndAIGrantParams{EndedAt: &now, Origin: origin})
 	if err != nil {
 		return mapError(err)
 	}
@@ -42,25 +47,25 @@ func (r aiGrants) End(ctx context.Context, turn uuid.UUID, now time.Time) error 
 	return nil
 }
 
-func (r aiGrants) Classes(ctx context.Context, turn uuid.UUID, now time.Time) ([]string, error) {
+func (r aiGrants) Classes(ctx context.Context, origin uuid.UUID, now time.Time) ([]string, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err
 	}
-	classes, err := r.u.q.AIGrantClasses(ctx, sqlcdb.AIGrantClassesParams{TurnID: turn, Now: now})
+	classes, err := r.u.q.AIGrantClasses(ctx, sqlcdb.AIGrantClassesParams{Origin: origin, Now: now})
 	if err != nil {
 		return nil, mapError(err)
 	}
 	return classes, nil
 }
 
-func (r aiGrants) Widen(ctx context.Context, turn uuid.UUID, classes []string, now time.Time) error {
+func (r aiGrants) Widen(ctx context.Context, origin uuid.UUID, classes []string, now time.Time) error {
 	if err := r.u.check(); err != nil {
 		return err
 	}
 	if classes == nil {
 		classes = []string{}
 	}
-	n, err := r.u.q.WidenAIGrant(ctx, sqlcdb.WidenAIGrantParams{TurnID: turn, Classes: classes, Now: now})
+	n, err := r.u.q.WidenAIGrant(ctx, sqlcdb.WidenAIGrantParams{Origin: origin, Classes: classes, Now: now})
 	if err != nil {
 		return mapError(err)
 	}
@@ -79,7 +84,8 @@ func (s *Store) AIGrant(ctx context.Context, org uuid.UUID, tokenHash []byte, no
 	if row.UserID == uuid.Nil {
 		return storage.AIGrantHolder{}, ports.ErrNotFound
 	}
-	return storage.AIGrantHolder{UserID: row.UserID, Turn: row.TurnID, Roles: row.Roles, ExpiresAt: row.ExpiresAt, Propose: row.Propose}, nil
+	return storage.AIGrantHolder{UserID: row.UserID, Turn: row.TurnID, Roles: row.Roles, ExpiresAt: row.ExpiresAt, Propose: row.Propose, Run: row.RunID,
+		Tools: row.Tools, TaskTypes: row.TaskTypes, Agent: row.Agent}, nil
 }
 
 var _ storage.AIGrantLookup = (*Store)(nil)

@@ -2,11 +2,15 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/agents"
+	"github.com/cognizhi/fyniq/internal/aitool"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -39,7 +43,38 @@ func (a *API) issueAIGrant(ctx context.Context, u storage.UnitOfWork, org, user,
 	return token, nil
 }
 
-// endAIGrant ends a turn's delegated read token, so nothing reads with it after the turn.
-func (a *API) endAIGrant(ctx context.Context, u storage.UnitOfWork, turn uuid.UUID) error {
-	return u.AIGrants().End(ctx, turn, a.deps.Clock.Now())
+// issueRunGrant issues a scheduled agent's run its delegated token (AI-63; p1-scheduled-agents design D6): as the Owner the
+// run acts for, in the unit of work's organisation, for at most authn.MaxRunDelegated, never anyone's session. It holds
+// the skill's tools that the release's registry has, all within the skill's permission profile, and may propose only the
+// skill's outputs that are task types on for the organisation, and only while one is. The AI exclusions and the masking
+// apply to its reads as to a turn's. It ends with the run (endAIGrant).
+func (a *API) issueRunGrant(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, run storage.AgentRun, skill agents.Skill) (string, error) {
+	if run.Status != storage.AgentRunRunning || run.Agent != skill.Name {
+		return "", fmt.Errorf("the run %s of %s is %s: only a running run of the skill's agent reads", run.ID, run.Agent, run.Status)
+	}
+	token, hash, err := authn.NewAIToken(org)
+	if err != nil {
+		return "", err
+	}
+	on, err := a.proposable(ctx, u)
+	if err != nil {
+		return "", err
+	}
+	var types []string
+	for _, t := range skill.Proposes(a.catalogue()) {
+		if slices.Contains(on, t) {
+			types = append(types, t)
+		}
+	}
+	now := a.deps.Clock.Now()
+	if _, err := u.AIGrants().Issue(ctx, storage.AIGrant{TokenHash: hash, UserID: run.ActsFor, Run: run.ID, Tools: skill.Offered(aitool.Default()),
+		TaskTypes: types, IssuedAt: now, ExpiresAt: now.Add(authn.MaxRunDelegated), Propose: len(types) > 0}); err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// endAIGrant ends a turn's or a run's delegated token, so nothing reads with it after the turn or the run.
+func (a *API) endAIGrant(ctx context.Context, u storage.UnitOfWork, origin uuid.UUID) error {
+	return u.AIGrants().End(ctx, origin, a.deps.Clock.Now())
 }

@@ -9,6 +9,7 @@
 package api
 
 import (
+	"cmp"
 	"context"
 	"crypto/rand"
 	"encoding/json"
@@ -703,7 +704,7 @@ func (a *API) authenticate(ctx huma.Context, next func(huma.Context)) {
 		actor.Type = "integration"
 	case authn.ClassAgent:
 		audit.OnBehalfOf = actor
-		actor = &storage.Actor{Type: "ai", ID: p.Client}
+		actor = &storage.Actor{Type: "ai", ID: cmp.Or(p.Agent, p.Client)} // a run's agent by its name
 	}
 	audit.Actor = actor
 	audit.Request.Session = p.Client
@@ -730,7 +731,7 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 			"Sign in again with your authenticator app, or confirm it's you with a passkey.")
 	case p.Organisation == uuid.Nil && !policy.NoOrganisation:
 		refusal = problem(CodeNoOrganisation, "Your session is not in an organisation.", "Choose an organisation and sign in to it.")
-	case p.Turn != uuid.Nil && !aiReadable(op):
+	case p.Delegated() != uuid.Nil && !aiReadable(op):
 		// The assistant's delegated token only reads, whatever the AI column grants (PRD-001 §9.3 rev 0.277, AI-19).
 		refusal = problem(CodeForbidden, "The assistant only reads: this operation changes data.",
 			"Do it yourself in Fyniq; the assistant can only answer and explain.")

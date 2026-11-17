@@ -104,10 +104,21 @@
     are raised, updated and cleared in the unit of work that finishes the run.
   - When something is new, the recipients hear (`agent.report`, in the Inbox and the daily email, which waits past
     quiet hours), the Owner too when a deadline is 7 days away or less. A scheduled run queues its entry's next slot.
-- [ ] 5.2 The run's grant (`ai_grant` with a run): the Owner's reads within the agent's profile and its tools only,
+- [x] 5.2 The run's grant (`ai_grant` with a run): the Owner's reads within the agent's profile and its tools only,
   proposing only with an output's task type on. The requester method `ai_run` is allowed in the database for
   `ai_proposal` requests from a run alone, with its attack test; the Owner may sign tier 1 (design D6). Tests
   `// req: AI-63`, `// req: AI-89`.
+  As built: migration 000386 (validated in 000387).
+  - `ai_grant` holds a turn or a run, never both. A run's grant holds its tools and task types, lives at most 30 minutes
+    (a turn's still 5) and is one per run. `ai_grant_for` resolves it to the Owner, the run and its agent's name
+    (`company_secretary`).
+  - The API's `issueRunGrant` issues it for a running run alone: the skill's tools that the registry has, and its outputs
+    that are task types on and built. Task 5.3 calls it.
+  - `callAITool` refuses a run any other tool (`AI-TOOL-05`), and `proposeAITask` any other task type.
+  - A run's proposal comes from the running run, for the Owner it acts for, `agent` the agent's name. Its request's
+    method is `ai_run`; the new trigger `approval_request_ai_requester` ties `ai_run` and `ai_turn` each to its own
+    origin.
+  - The audit names the agent (`ai`, `company_secretary`) on behalf of the Owner.
 - [ ] 5.3 The model step: `POST /internal/v1/agent-runs/{id}/model` for the worker's identity alone. The API issues the
   run's token and asks the AI service's `/runs` with the skill, its tools and the findings. The model's structured
   summary and proposals come back to the report. The rejection reasons of the run's earlier proposals reach its next

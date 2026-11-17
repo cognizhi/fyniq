@@ -42,7 +42,7 @@ fyniq_api       SELECT    ai_data_policy
 fyniq_api       INSERT    ai_feedback (given_at, rating, reason, turn_id, user_id)
 fyniq_api       SELECT    ai_feedback
 fyniq_api       UPDATE    ai_feedback (decision, reviewed_at, reviewed_by)
-fyniq_api       INSERT    ai_grant (expires_at, issued_at, propose, token_hash, turn_id, user_id)
+fyniq_api       INSERT    ai_grant (expires_at, issued_at, propose, run_id, task_types, token_hash, tools, turn_id, user_id)
 fyniq_api       SELECT    ai_grant
 fyniq_api       UPDATE    ai_grant (classes, ended_at)
 fyniq_api       EXECUTE   ai_grant_for()
