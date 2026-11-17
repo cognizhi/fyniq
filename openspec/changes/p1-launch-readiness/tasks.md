@@ -191,11 +191,17 @@ and names the requirement IDs it proves.
 
 ## 5. The browser gates against the local stack (QA-E2E-01, QA-UI-06 to QA-UI-08, QA-RPT-04)
 
-- [ ] 5.1 The journey harness (design D6), each journey also checking what the API returns:
+- [x] 5.1 The journey harness (design D6), each journey also checking what the API returns:
   - `apps/web/journeys/` runs Playwright against `make up` with the sample company loaded per journey;
   - the local sign-in page signs each journey in;
   - the replay model answers the AI.
   `make test-journeys` and its CI job. Verified by a smoke journey passing in CI.
+  Built: `cmd/seed --new-organisation` makes a journey's organisation with the sample company and an invitation per
+  person; each person signs in through the local sign-in page and accepts theirs on "Joining by invitation", the path a
+  person invited takes, since signing in alone makes no user. First-run setup runs once when the installation has none
+  (`journeys/setup.ts`). The replay model is the local build's own (`internal/adapters/local/models.go`); the AI
+  journeys use it when the assistant of `p1-ai-providers` reaches main (5.2). CI runs the journeys in the images job on
+  the stack the smoke test and the DAST scan use, and keeps a failed journey's trace.
 - [ ] 5.2 QA-E2E-01's journeys: set-up, record, sell, buy, pay, reconcile, close, the GST monitor and calendar, AI ask,
   and AI propose → approve → execute. Payroll's journey and the GST F5's are recorded `after-go-live`. Test
   `// req: QA-E2E-01`, each journey naming the scenarios it asserts.

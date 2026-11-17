@@ -47,7 +47,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set
+.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -148,6 +148,12 @@ api-check: ## The API contract: Spectral lint (NFR-API-01) and the web app's gen
 
 test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 	@$(MISE) pnpm --filter @fyniq/web test:e2e
+
+test-journeys: ## The browser journeys (QA-E2E-01; p1-launch-readiness design D6): against the local stack, started when none answers, each in an organisation of its own with the sample company, in Chrome; KEEP=1 leaves a stack it started running
+	@port=$${FYNIQ_HTTP_PORT:-8080}; started=0; \
+	if ! curl -fsS -o /dev/null "http://localhost:$$port/api/version"; then $(MAKE) --no-print-directory up || exit 1; started=1; fi; \
+	$(MISE) pnpm --filter @fyniq/web test:journeys; s=$$?; \
+	if [ $$started = 1 ] && [ "$${KEEP:-0}" != 1 ]; then $(MAKE) --no-print-directory down; fi; exit $$s
 
 storybook: ## Storybook (QA-UI-02): build it, run every shared component's stories in Chrome with axe in the four themes, and check a planted axe violation fails the run
 	@$(MISE) pnpm --filter @fyniq/web build:storybook
