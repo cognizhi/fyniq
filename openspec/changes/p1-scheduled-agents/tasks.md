@@ -17,11 +17,20 @@
 
 ## 2. Configuration
 
-- [ ] 2.1 The setting kinds `cron` (five fields, Singapore time) and `time_range`. The `agents.company_secretary.*`
+- [x] 2.1 The setting kinds `cron` (five fields, Singapore time) and `time_range`. The `agents.company_secretary.*`
   settings with their recommended defaults: the switch on only with a second approver and off at once, pause on at
   once, the schedule's entries, events, quiet hours, recipients, channels, escalation, the tool-call and per-run token
   caps. The settings page shows them (design D2). Tests `// req: AI-62`, `// req: AI-63`,
   `// req: ai/scheduled-agents Recommended default schedule`.
+  As built:
+  - `internal/domain/cron` parses five-field cron in Singapore time (with `Next`) and quiet hours (`ParseRange`,
+    wrapping past midnight); both accept `off`.
+  - The settings gain the kinds `cron`, `time_range`, `choices` (several of a list, kept in its order) and `tokens`.
+  - The thirteen `agents.company_secretary.*` keys are dual-controlled, except `paused`, which applies at once both
+    ways. `enabled` also turns off at once.
+  - The settings page reads the new kinds in words ("Daily at 07:00, Singapore time") and offers the choices as
+    checkboxes.
+  - The guide's section "Company secretary assistant" compiles into `kb/pages/concept/settings-organisation.md`.
 
 ## 3. Stores
 
