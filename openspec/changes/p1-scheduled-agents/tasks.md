@@ -75,8 +75,13 @@
   its runs. It lists each run that failed or was skipped, with why; each still queued more than 30 minutes after its
   slot; and each slot of a schedule entry no run came for, unless the agent is paused. Its items open on the AI company
   secretary's row. The checks engine raises it, so it shows on Checks.
-- [ ] 4.3 Event triggers: a period closed, a share issue or transfer, and a calendar filing recorded queue an event
+- [x] 4.3 Event triggers: a period closed, a share issue or transfer, and a calendar filing recorded queue an event
   run (design D4). Tests `// req: AI-62`.
+  As built: `API.agentEvent` queues, in the change's own unit of work, the run each running agent owes the event, once
+  per event's key (`event:<kind>:<key>`). It is called after a period's close is attested (`period_closed`), an equity
+  transaction is effective (`shares_changed`) and a calendar filing is recorded (`filing_recorded`), each when the
+  agent's events include it. Officer, address and controller changes join with `p1-company-secretary`. Deadline windows
+  are the daily monitor's.
 
 ## 5. The run
 

@@ -509,6 +509,10 @@ func registerCalendar(a *API) {
 						return StatutoryFilingView{}, err
 					}
 				}
+				p, _ := authn.From(ctx)
+				if err := a.agentEvent(ctx, u, p.Organisation, EventFilingRecorded, id.String()); err != nil { // AI-62
+					return StatutoryFilingView{}, err
+				}
 				return a.shownFiling(ctx, u, id)
 			})
 			if err != nil {
