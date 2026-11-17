@@ -123,4 +123,7 @@ type AIConversations interface {
 	Asked(ctx context.Context, user uuid.UUID, since time.Time) (int, error)
 	// Give keeps a person's feedback on a turn, once, audited.
 	Give(ctx context.Context, f AIFeedback) (AIFeedback, error)
+	// Purge removes the conversations their people deleted and those whose last question was asked before a time, with
+	// their turns, reads and feedback (§11.9): the worker's alone. It gives how many conversations and turns went.
+	Purge(ctx context.Context, before time.Time) (conversations, turns int, err error)
 }

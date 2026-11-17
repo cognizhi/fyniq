@@ -64,3 +64,6 @@ SELECT count(*)::int AS asked FROM fyniq.ai_turn WHERE user_id = sqlc.arg(user_i
 INSERT INTO fyniq.ai_feedback (turn_id, user_id, rating, reason, given_at)
 VALUES (sqlc.arg(turn_id), sqlc.arg(user_id), sqlc.arg(rating), sqlc.arg(reason), sqlc.arg(given_at))
 RETURNING id;
+
+-- name: PurgeAIConversations :one
+SELECT conversations::int AS conversations, turns::int AS turns FROM fyniq.ai_purge_conversations(sqlc.arg(before)::timestamptz);

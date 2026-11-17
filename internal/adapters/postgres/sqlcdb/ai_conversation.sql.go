@@ -557,3 +557,19 @@ func (q *Queries) InsertAITurn(ctx context.Context, arg InsertAITurnParams) (uui
 	err := row.Scan(&id)
 	return id, err
 }
+
+const purgeAIConversations = `-- name: PurgeAIConversations :one
+SELECT conversations::int AS conversations, turns::int AS turns FROM fyniq.ai_purge_conversations($1::timestamptz)
+`
+
+type PurgeAIConversationsRow struct {
+	Conversations int32
+	Turns         int32
+}
+
+func (q *Queries) PurgeAIConversations(ctx context.Context, before time.Time) (PurgeAIConversationsRow, error) {
+	row := q.db.QueryRow(ctx, purgeAIConversations, before)
+	var i PurgeAIConversationsRow
+	err := row.Scan(&i.Conversations, &i.Turns)
+	return i, err
+}
