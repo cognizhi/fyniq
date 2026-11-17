@@ -590,3 +590,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-15] compile | docs/user-guide/ai-proposals.md → ai.proposals (the reminder the AI may draft, sec.draft_reminder)
 
 ## [2026-11-15] compile | docs/user-guide/company-secretary.md → compliance.secretary (the company secretary assistant's workspace)
+
+## [2026-11-15] compile | docs/user-guide/company-secretary.md → compliance.secretary (the tasks in the Inbox)

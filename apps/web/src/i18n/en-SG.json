@@ -2444,6 +2444,10 @@
       "label": "Deadlines",
       "tooltip": "Statutory deadlines overdue or due in the next 30 days, from the statutory calendar."
     },
+    "inbox.tasks": {
+      "label": "Tasks",
+      "tooltip": "The compliance tasks for you or your role, from the company secretary assistant's checks or its approved proposals."
+    },
     "gst.monitor": {
       "label": "Registration monitor",
       "tooltip": "Last calendar year's taxable supplies and the forecast of the next 12 months against IRAS's threshold of $1 million."

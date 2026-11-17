@@ -4,7 +4,7 @@ type: task
 title: Use the company secretary assistant
 summary: What the AI company secretary assistant checks, what needs you, its drafts and runs, a run's report, Run now and pause, and its schedule
 sources:
-  - docs/user-guide/company-secretary.md sha256:7c96932a9f00a69127dca529576e0f6284291355c7189c54836143e612f52ad5
+  - docs/user-guide/company-secretary.md sha256:b82c7556355eaec462cbcd3d3099144bd41643cc7d53b69792fc27e7559faea9
 data_class: general
 taint: trusted
 status: draft
@@ -20,6 +20,8 @@ aliases:
   - run now
   - pause the assistant
   - run report
+  - compliance task
+  - dismiss a task
 ---
 
 # Use the company secretary assistant
@@ -39,6 +41,14 @@ aliases:
 - The summary never says all is well while anything is open or not assessed.
 
 (src: docs/user-guide/company-secretary.md#what-needs-you)
+
+## Tasks in the Inbox
+
+- Each finding that needs a person has one open task, raised by the assistant's checks or by a task it proposed that a person approved; the **Inbox** lists those owned by you or your role under **Tasks**, the earliest due first.
+- The Owner and the Administrator mark a task **Done**, or **Dismiss** it with the reason it needs nothing done. Done records nothing as filed: record a filing in the statutory calendar ([[compliance.calendar]]).
+- A finding that clears on a later run clears its task; one that comes back raises a new task.
+
+(src: docs/user-guide/company-secretary.md#tasks-in-the-inbox)
 
 ## Coming up and drafts
 

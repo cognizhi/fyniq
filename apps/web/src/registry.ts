@@ -453,6 +453,7 @@ export const actions = [
   { kind: "action", id: "calendar.tile-overdue", mode: "basic", help: "calendar.tile-overdue", guide: "compliance.calendar#reminders-and-checks" },
   { kind: "action", id: "calendar.tile-done", mode: "basic", help: "calendar.tile-done", guide: "compliance.calendar#record-a-filing" },
   { kind: "action", id: "inbox.deadlines", mode: "basic", help: "inbox.deadlines", guide: "compliance.calendar#reminders-and-checks" },
+  { kind: "action", id: "inbox.tasks", mode: "basic", help: "inbox.tasks", guide: "compliance.secretary#tasks-in-the-inbox" },
   { kind: "action", id: "controls.filter", mode: "expert", help: "controls.filter", guide: "compliance.controls#filter-by-framework" },
   { kind: "action", id: "inbox.controls", mode: "basic", help: "inbox.controls", guide: "compliance.controls#when-a-control-fails" },
   { kind: "action", id: "inbox.reviews", mode: "basic", help: "inbox.reviews", guide: "compliance.reviews#sign-off-a-review" },

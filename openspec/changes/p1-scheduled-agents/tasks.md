@@ -187,7 +187,13 @@
     for.
   - The guide page is `company-secretary.md` (`compliance.secretary`), compiled into the knowledge base; the fragments
     are renamed to the built headings.
-- [ ] 7.2 A run's report (`agent-run-report`) and the Inbox's tasks. Tests `// req: AI-65`, Vitest with axe.
+- [x] 7.2 A run's report (`agent-run-report`) and the Inbox's tasks. Tests `// req: AI-65`, Vitest with axe.
+  As built:
+  - The report (Expert) shows the run's findings first, the AI's summary for the directors in an AI card, what it read,
+    the findings' tasks and what it proposed.
+  - The Inbox's **Tasks** lists the open tasks owned by the person or their role, the earliest due first, overdue
+    marked. The Owner and the Administrator mark one **Done**, or **Dismiss** it with a reason, over the version shown.
+  - The guide's "Tasks in the Inbox" section is compiled into `compliance.secretary`.
 
 ## 8. Evals and controls
 
