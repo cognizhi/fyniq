@@ -477,6 +477,35 @@ wait beyond it:
 - whether the location policy refuses the global endpoint `[verify]`;
 - a read tool for pay records, when payroll arrives.
 
+`p1-ai-proposals-core` was proposed on 15 Nov 2026 (PRD-001 rev 0.279: the owner's decision that a minimal slice of
+the proposals joins the launch) and built that day. The pull requests run from #688 onwards, one per slice, stacked on
+#687. The owner decided the same day (rev 0.280, AI-89) two things:
+- an AI proposal is an approval request as it becomes Pending, its requester authenticated by their live turn, who may
+  sign their own tier-1 proposal;
+- the Company secretary approves every `sec.*` proposal.
+The parts:
+- the catalogue as versioned data, pinned by hash, with §9.6's never-list in code, and the task types turned on per
+  organisation (`ai.task_types`) only with a second approver;
+- the proposal store under its guard, each step by its own role; a turn proposes only the types that are on, through
+  the AI service, checked, screened and dry-run as the person, Pending or Invalid;
+- the approval request signing the payload's hash, with the task type's approver roles and the command's right as a
+  person; approving some items of a batch; a rejection's reason fed back, screened;
+- the executor, running an approved proposal once as its approver, or saying why not; expiry after 72 hours and the
+  check for one waiting over 48 (C.2 #19);
+- the screens `ai-proposal-review` and `ai-tasks`, with their guide compiled into `kb/`;
+- the proposal evals' harness with a fixture suite; CTL-AI-02 nightly, CTL-AI-03 and CTL-AI-04 in CI; a red team
+  against the write path;
+- the threat model `docs/security/threat-models/ai-proposals.md` for security review #4.
+
+Building it found and fixed two things:
+- the never-list in code lacked rev 0.3's and rev 0.6's items: equity, a director's balance, officers, registers and an
+  obligation marked met;
+- the expiry job's test expired other organisations' proposals in the shared test database.
+
+The release's own task types wait beyond it, each with its command, its suite and its red-team cases. The company
+secretary's three come first, with `p1-scheduled-agents` and `p1-company-secretary`. Approval quality, tier 3 and undo
+come with `p1-ai-proposals` after go-live.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |
