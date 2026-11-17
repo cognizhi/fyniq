@@ -9401,6 +9401,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/metrics:query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Query the semantic layer
+         * @description A named measure (AI-03) over a run of months, by month or their total, split by a dimension the measure offers (account, customer, vendor or department) or not: revenue, gross profit, EBITDA, net profit, costs, spend by function, net burn, cash, receivables, payables, current assets and liabilities, total liabilities, equity, each account's movement or balance, and the monthly KPIs. Each figure is a typed fact (AI-68) with its ID, period, exact value, currency and unit, sign, the ledger revision it was read at and the report it comes from: the statements, the KPIs, the trial balance and the sub-ledgers, so it equals what that report shows. A month the books have no period for is REPORT-03, a later revision REPORT-04. Saves nothing; no side effects.
+         */
+        post: operations["queryMetrics"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/migrations": {
         parameters: {
             query?: never;
@@ -35032,6 +35052,134 @@ export interface components {
              * @example owner
              */
             role: string;
+        };
+        MetricFact: {
+            /**
+             * @description An amount's currency: the base currency.
+             * @example SGD
+             */
+            currency?: string;
+            /** @example customer */
+            dimension?: string;
+            /**
+             * Format: date
+             * @description The period's first day; a stock's date.
+             * @example 2026-07-01
+             */
+            from: string;
+            /**
+             * @description The fact's ID: an answer cites it, and platform code renders the figure from it (AI-08).
+             * @example F3a9c0d1e2b4f5a6
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description The ledger revision it was read at (ENG-46).
+             * @example 1204
+             */
+            ledger_revision: number;
+            /**
+             * @description The API path of the report it comes from.
+             * @example /v1/reports/statements/pl?from=2026-07&to=2026-09&revision=1204
+             */
+            lineage: string;
+            /** @example revenue */
+            measure: string;
+            /** @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b */
+            member?: string;
+            /** @example Acme Pte Ltd */
+            member_name?: string;
+            /** @example Revenue */
+            name: string;
+            /**
+             * @description How the value is signed.
+             * @example what is owed, positive; a credit with the party, negative
+             */
+            sign: string;
+            /**
+             * @description What it is, in words.
+             * @example the profit and loss's revenue
+             */
+            source: string;
+            /**
+             * Format: date
+             * @description The period's last day; a stock's date.
+             * @example 2026-09-30
+             */
+            to: string;
+            /**
+             * @description Why the fact has no value: never 0.
+             * @example no revenue in the month
+             */
+            undefined?: string;
+            /**
+             * @example amount
+             * @enum {string}
+             */
+            unit: "amount" | "percent" | "months" | "ratio" | "days";
+            /**
+             * @description Exact decimal text, as the report shows it before rounding for display; absent when the fact has no value.
+             * @example 125000.00
+             */
+            value?: string;
+            /**
+             * @description What stands for the value, such as Not burning.
+             * @example Not burning
+             */
+            words?: string;
+        };
+        MetricsQuery: {
+            /**
+             * @description The dimension to split it by, which the measure must offer.
+             * @example customer
+             * @enum {string}
+             */
+            by?: "account" | "customer" | "vendor" | "department";
+            /**
+             * @description The first month, YYYY-MM; left out, the last month's.
+             * @example 2026-07
+             */
+            from?: string;
+            /**
+             * @description month: a fact a month; total: one over the months, a flow summed, a stock at the last month's end.
+             * @default total
+             * @example total
+             * @enum {string}
+             */
+            grain: "month" | "total";
+            /**
+             * @description A measure of the semantic layer (AI-03).
+             * @example revenue
+             * @enum {string}
+             */
+            measure: "revenue" | "gross_profit" | "ebitda" | "net_profit" | "costs" | "spend_sm" | "spend_rd" | "spend_ga" | "net_burn" | "cash" | "receivables" | "payables" | "current_assets" | "current_liabilities" | "total_liabilities" | "equity" | "account_movement" | "account_balance" | "gross_margin" | "ebitda_margin" | "net_margin" | "revenue_growth" | "booked_mrr" | "arr" | "runway" | "burn_multiple" | "current_ratio" | "quick_ratio" | "working_capital" | "dso" | "dpo";
+            /**
+             * @description Keep one member of the dimension: its ID (an account's code too).
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+             */
+            member?: string;
+            /**
+             * Format: int64
+             * @description Read the ledger as at this revision (FR-RPT-08); 0 or left out, as it stands.
+             * @example 1204
+             */
+            revision?: number;
+            /**
+             * @description The last month, YYYY-MM; left out, the month of the organisation's today.
+             * @example 2026-09
+             */
+            to?: string;
+        };
+        MetricsResult: {
+            /** @example SGD */
+            currency: string;
+            facts: components["schemas"]["MetricFact"][];
+            /**
+             * Format: int64
+             * @description The ledger revision every figure is read as at (FR-RPT-08).
+             * @example 1204
+             */
+            ledger_revision: number;
         };
         MigrationAccountMap: {
             /**
@@ -121062,6 +121210,112 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    queryMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MetricsQuery"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetricsResult"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-03` No period for the month; `REPORT-04` A revision later than the ledger; `SEMANTIC-01` Not a measure of the semantic layer; `SEMANTIC-02` The measure is not split so; `SEMANTIC-03` The measure is not given at that grain; `SEMANTIC-04` Not a member of the dimension. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

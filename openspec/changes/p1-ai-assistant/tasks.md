@@ -14,7 +14,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 2. The semantic layer
 
-- [ ] 2.1 `internal/semantic` (design D6): the measures and dimensions, compiled to the balance service and the reports,
+- [x] 2.1 `internal/semantic` (design D6): the measures and dimensions, compiled to the balance service and the reports,
   and typed facts with their IDs, ledger revision and lineage link; `POST /v1/metrics:query`. Each measure tested equal
   to the statement line or report it names on the sample company. Tests `// req: AI-03`, `// req: AI-68`.
 - [ ] 2.2 Result limits (design D6): row caps, column allow-lists, statement timeouts and a token budget per result,

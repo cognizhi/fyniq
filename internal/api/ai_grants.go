@@ -14,7 +14,7 @@ import (
 // aiReadable is whether the assistant's delegated token may call op: only reads (PRD-001 §9.3 rev 0.277, AI-19). The
 // read operations that take a body, such as the semantic layer's query, are named here as they arrive.
 func aiReadable(op *huma.Operation) bool {
-	return op.Method == http.MethodGet
+	return op.Method == http.MethodGet || op.OperationID == "queryMetrics"
 }
 
 // issueAIGrant issues the delegated read token a turn's tools read with (AI-01, AI-36; p1-ai-assistant design D2): as

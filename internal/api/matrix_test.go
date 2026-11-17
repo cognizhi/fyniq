@@ -1380,6 +1380,9 @@ var matrixCalls = map[string]matrixCall{
 	"getKpis": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/kpis?month=2026-10", tok, nil), nil
 	},
+	"queryMetrics": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/metrics:query", tok, map[string]any{"measure": "revenue", "from": "2026-10", "to": "2026-10"}), nil
+	},
 	"listKpiInputs": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/kpi-inputs", tok, nil), nil
 	},
