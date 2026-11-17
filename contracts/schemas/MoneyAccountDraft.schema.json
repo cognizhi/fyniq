@@ -72,6 +72,18 @@
       ],
       "format": "date",
       "type": "string"
+    },
+    "payment_file": {
+      "description": "The file its payment batches give when released (FR-BNK-12, rev 0.157): payment-list for any bank; wise-batch for a Wise account; dbs-uff for a DBS account, each once Fyniq writes it (payment_files says which it may be set to). Left out: the payment list when it is set up, unchanged when it is changed.",
+      "enum": [
+        "payment-list",
+        "wise-batch",
+        "dbs-uff"
+      ],
+      "examples": [
+        "payment-list"
+      ],
+      "type": "string"
     }
   },
   "required": [
