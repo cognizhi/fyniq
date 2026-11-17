@@ -164,7 +164,7 @@ export function Inbox() {
       )}
       {approvals.data && pending.length > 0 && (
         <div className="fy-stack fy-stack--2">
-          <button type="button" className="fy-btn fy-btn--ghost fy-btn--sm self-start" aria-expanded={keys} onClick={() => setKeys(!keys)}>
+          <button type="button" className="fy-btn fy-btn--ghost fy-btn--sm h-auto min-h-8 self-start py-1 text-start whitespace-normal pointer-coarse:min-h-(--touch-target)" aria-expanded={keys} onClick={() => setKeys(!keys)}>
             <Icon of={Keyboard} />
             Keyboard: J and K move, E opens, A and R confirm
           </button>

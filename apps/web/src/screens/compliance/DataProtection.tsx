@@ -347,7 +347,7 @@ function EntryForm({ entry, onClose }: { entry: Entry | null; onClose: () => voi
         {field("who", "Who reads it")}
         {field("retention", "How long it is kept")}
         {field("transfers", "Where it goes abroad")}
-        <label className="fy-check">
+        <label className="fy-row gap-2">
           <input type="checkbox" checked={form.needs_dpia} onChange={(e) => setForm({ ...form, needs_dpia: e.target.checked })} />
           It needs a data protection impact assessment
         </label>
@@ -1087,7 +1087,7 @@ function BreachForm({ onClose }: { onClose: () => void }) {
         <fieldset className="fy-field">
           <legend className="fy-label">The data involved</legend>
           {(Object.keys(classWords) as BreachClass[]).map((c) => (
-            <label key={c} className="fy-check">
+            <label key={c} className="fy-row gap-2">
               <input type="checkbox" checked={form.classes.includes(c)} onChange={() => toggle(c)} />
               {classWords[c]}
             </label>
@@ -1156,11 +1156,11 @@ function BreachStepForm({ breach, onClose }: { breach: Breach; onClose: () => vo
         {form.step === "decided" && (
           <fieldset className="fy-field" aria-describedby={`${id}-forced`}>
             <legend className="fy-label">Is it notifiable?</legend>
-            <label className="fy-check">
+            <label className="fy-row gap-2">
               <input type="radio" name={`${id}-n`} checked={form.notifiable} onChange={() => setForm({ ...form, notifiable: true })} />
               Yes: likely to cause significant harm, or 500 or more people
             </label>
-            <label className="fy-check">
+            <label className="fy-row gap-2">
               <input type="radio" name={`${id}-n`} checked={!form.notifiable} disabled={forced} onChange={() => setForm({ ...form, notifiable: false })} />
               No
             </label>

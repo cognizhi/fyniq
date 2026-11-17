@@ -214,7 +214,7 @@ function DrillForm({ onClose }: { onClose: () => void }) {
         <fieldset className="fy-field" title={helpText("restore-drills.checks").tooltip}>
           <legend className="fy-label">{helpText("restore-drills.checks").label}</legend>
           {checks.map(([k, words]) => (
-            <label key={k} className="fy-check">
+            <label key={k} className="fy-row gap-2">
               <input type="checkbox" checked={passed[k]} onChange={(e) => setPassed({ ...passed, [k]: e.target.checked })} />
               {words}
             </label>

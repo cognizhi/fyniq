@@ -9792,7 +9792,7 @@ export interface paths {
         put?: never;
         /**
          * Set up a money account
-         * @description Sets up a chart account marked a money account in Banking (FR-BNK-01): its kind, name, bank and what statements name it by, in the chart account's currency; a card's holder, an active member who completes its lines from My claims (FR-AP-18). One per chart account; an identifier is unique per currency. Its statements are uploaded as files until a source says otherwise. Side effects: the money account and its audit event, which keeps the identifier's last four characters only (SEC-15). Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         * @description Sets up a chart account marked a money account in Banking (FR-BNK-01): its kind, name, bank and what statements name it by, in the chart account's currency; a card's holder, an active member who completes its lines from My claims (FR-AP-18); the file its payment batches give, the payment list unless a file its bank takes is chosen (FR-BNK-12, rev 0.157). One per chart account; an identifier is unique per currency. Its statements are uploaded as files until a source says otherwise. Side effects: the money account and its audit event, which keeps the identifier's last four characters only (SEC-15). Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
          */
         post: operations["createMoneyAccount"];
         delete?: never;
@@ -9815,7 +9815,7 @@ export interface paths {
         get: operations["getMoneyAccount"];
         /**
          * Change a money account
-         * @description Changes a money account's kind, name, bank, identifier, the days it opened and closed, and a card's holder: never its chart account or currency. A closed account takes no more imports. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         * @description Changes a money account's kind, name, bank, identifier, the days it opened and closed, a card's holder, and the file its payment batches give (FR-BNK-12, rev 0.157): never its chart account or currency. The file, changed or kept, must be one the account's bank takes and Fyniq writes; a batch released before keeps its file. A closed account takes no more imports. Side effects: the change and its audit event, with the old and new values. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
          */
         put: operations["replaceMoneyAccount"];
         post?: never;
@@ -11729,8 +11729,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Download a released batch's payment list
-         * @description Returns the file a release wrote, as it was written, in base64, with its SHA-256 (FR-BNK-12, design D7): for the Payment releaser, a person stepped up in the last 5 minutes. It holds full account numbers: key it into the bank, then delete it. Side effects: an audit event of the download, with the file's hash (SEC-11). Never cached.
+         * Download a released batch's payment file
+         * @description Returns the file a release wrote, as it was written, in base64, with its SHA-256 (FR-BNK-12, design D7): the payment list or the bank's own file its money account was set to when it was released (rev 0.157). For the Payment releaser, a person stepped up in the last 5 minutes. It holds full account numbers: key it into the bank or upload it there, then delete it. Side effects: an audit event of the download, with the file's hash (SEC-11). Never cached.
          */
         get: operations["getPaymentBatchFile"];
         put?: never;
@@ -11792,7 +11792,7 @@ export interface paths {
         put?: never;
         /**
          * Release a payment batch
-         * @description Releases an approved batch (FR-BNK-12, design D4, D5): the Payment releaser, a person stepped up in the last 5 minutes. Every check runs again, and the batch's latest approval must still hold its payees' accounts and total (else PB-17: ask for its approval again). In Standard mode the releaser neither prepared, asked for nor approved the batch (SOD-2), nor the account change of a payee it pays (SOD-1); in Founder mode they may have, and each such release is logged for the weekly review (FM-3). Side effects, in one transaction: one bill payment per supplier and one reimbursement per claimant, posted on the batch's payment date as recording them by hand does (Dr 2010 or 2150, Cr the money account), and one repayment per director or shareholder (director_repayment@1: Dr 2500 or 2120 naming the person, Cr the money account; FR-EQ-05), each referenced with the batch's number; the payment list (payment-list@1), sealed (SEC-11) with the SHA-256 of the file; the release and the links, audited with the file's name and hash only. Download the list with getPaymentBatchFile and key it into the bank. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and releases nothing.
+         * @description Releases an approved batch (FR-BNK-12, design D4, D5): the Payment releaser, a person stepped up in the last 5 minutes. Every check runs again, and the batch's latest approval must still hold its payees' accounts and total (else PB-17: ask for its approval again). In Standard mode the releaser neither prepared, asked for nor approved the batch (SOD-2), nor the account change of a payee it pays (SOD-1); in Founder mode they may have, and each such release is logged for the weekly review (FM-3). Side effects, in one transaction: one bill payment per supplier and one reimbursement per claimant, posted on the batch's payment date as recording them by hand does (Dr 2010 or 2150, Cr the money account), and one repayment per director or shareholder (director_repayment@1: Dr 2500 or 2120 naming the person, Cr the money account; FR-EQ-05), each referenced with the batch's number; the file the money account is set to (its payment_file, rev 0.157: the payment list, payment-list@1, unless a file its bank takes is built and chosen; else PAYFILE-01 or PAYFILE-02 and nothing is released), sealed (SEC-11) with the SHA-256 of the file; the release and the links, audited with the file's name and hash only. Download the file with getPaymentBatchFile and key it into the bank, or upload it to the bank. Needs If-Match with the batch's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and releases nothing.
          */
         post: operations["releasePaymentBatch"];
         delete?: never;
@@ -36281,6 +36281,19 @@ export interface components {
              * @example 2026-01-05
              */
             opened_on?: string;
+            /**
+             * @description The file a payment batch paying from it gives when released (FR-BNK-12, rev 0.157): payment-list, the payment list keyed into any bank (the default); wise-batch, Wise's batch payment file; dbs-uff, DBS IDEAL's UFF. A batch released before a change keeps its file.
+             * @example payment-list
+             * @enum {string}
+             */
+            payment_file: "payment-list" | "wise-batch" | "dbs-uff";
+            /** @description Every payment file, whether it may be set to it now and, when not, why: a bank's own file only for an account at that bank, and only once Fyniq writes it. */
+            payment_files: components["schemas"]["PaymentFileChoice"][];
+            /**
+             * @description The bank or provider Fyniq recognises it as: its statement connector's when it syncs through one (wise, airwallex), else its institution matched by name against Fyniq's list (dbs, ocbc, uob, standard-chartered, hsbc, citibank, maybank, cimb, bank-of-china, icbc, rhb, gxs, trust, maribank, anext, aspire, airwallex, wise). Absent: another bank. It decides which payment files it may give (FR-BNK-12).
+             * @example dbs
+             */
+            provider?: string;
             /** @description Where its data comes from now; absent while its statements are uploaded as files. */
             source?: components["schemas"]["MoneySource"];
             /** @description getMoneyAccount only: every source it has had, earliest first (UC-BNK-03). */
@@ -36344,6 +36357,12 @@ export interface components {
              * @example 2026-01-05
              */
             opened_on?: string;
+            /**
+             * @description The file its payment batches give when released (FR-BNK-12, rev 0.157): payment-list for any bank; wise-batch for a Wise account; dbs-uff for a DBS account, each once Fyniq writes it (payment_files says which it may be set to). Left out: the payment list when it is set up, unchanged when it is changed.
+             * @example payment-list
+             * @enum {string}
+             */
+            payment_file?: "payment-list" | "wise-batch" | "dbs-uff";
         };
         MoneyAccountsOutputBody: {
             /** @description The organisation's money accounts, by name. */
@@ -38701,7 +38720,7 @@ export interface components {
              */
             sha256: string;
             /**
-             * @description The file's format and version: payment-list@1 is the payment list keyed into the bank (rev 0.156).
+             * @description The file's format and version, from the money account's payment file when it was released (rev 0.157): payment-list@1 is the payment list keyed into the bank (rev 0.156); wise-batch@N is Wise's batch payment file and dbs-uff@N DBS IDEAL's UFF, once built. A later change of the account's file never changes it.
              * @example payment-list@1
              */
             writer: string;
@@ -38715,6 +38734,24 @@ export interface components {
             payment_date: string;
             /** @description Every posted SGD bill with something open planned on or before the date, then every approved claim with something owed, then every settlement approved to be repaid with something open, none in an approved batch; at most the 500 items a batch holds, oldest first. */
             suggested: components["schemas"]["PaymentBatchItemRef"][];
+        };
+        PaymentFileChoice: {
+            /**
+             * @description The file.
+             * @example wise-batch
+             * @enum {string}
+             */
+            format: "payment-list" | "wise-batch" | "dbs-uff";
+            /**
+             * @description Whether the account may be set to it now.
+             * @example false
+             */
+            offered: boolean;
+            /**
+             * @description When it is not offered, why, in plain words.
+             * @example Payment file: Wise's batch payment file is only for a Wise account, and this account is not at Wise.
+             */
+            reason?: string;
         };
         PdRequestsOutputBody: {
             /** @description The requests, oldest first. */
@@ -124178,7 +124215,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANK-14` The cardholder does not fit the money account. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANK-14` The cardholder does not fit the money account; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -124426,7 +124463,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANK-14` The cardholder does not fit the money account. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `BANK-14` The cardholder does not fit the money account; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -139480,7 +139517,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-49` A line on 2700 needs its SAFE or note; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill, an approved claim or a settlement to repay; `PB-09` The bill is not in SGD; `PB-10` Nothing is open on the item; `PB-12` The payee has no approved account; `PB-15` Too many items for one batch; `PB-16` The notes are too long; `PB-25` The company owes the director less than the batch repays; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `FX-01` No exchange rate for this currency; `JOURNAL-04` The saved journal cannot be read; `JOURNAL-11` The automatic reversal is not after the journal; `LEDGER-01` The journal has no date; `LEDGER-02` The journal has too few lines; `LEDGER-03` A line is zero; `LEDGER-04` An account does not exist; `LEDGER-05` An account is a group heading; `LEDGER-06` An account is inactive; `LEDGER-07` A line needs an exchange rate; `LEDGER-08` An exchange rate does not fit; `LEDGER-09` The journal does not balance; `LEDGER-10` A currency does not balance; `LEDGER-11` A text is too long; `LEDGER-12` The entry is not posted; `LEDGER-13` A base-currency line has a rate; `LEDGER-14` A base amount is too large; `LEDGER-15` A line posts to share capital; `LEDGER-16` The reversal is dated before its entry; `LEDGER-17` An opening balance not in the base currency; `LEDGER-49` A line on 2700 needs its SAFE or note; `PAYFILE-01` The payment file is not one the account's bank takes; `PAYFILE-02` The payment file is not available yet; `PB-02` The saved batch cannot be read; `PB-03` Not an open SGD bank account; `PB-04` The payment date is not a date; `PB-05` Not FAST or GIRO; `PB-06` The batch pays nothing; `PB-07` An item is in the batch twice; `PB-08` Not a posted bill, an approved claim or a settlement to repay; `PB-09` The bill is not in SGD; `PB-10` Nothing is open on the item; `PB-12` The payee has no approved account; `PB-15` Too many items for one batch; `PB-16` The notes are too long; `PB-25` The company owes the director less than the batch repays; `STORAGE-INV-01` The entry does not balance; `STORAGE-INV-04` The account cannot take postings; `STORAGE-INV-05` An amount or rate is not valid; `STORAGE-INV-13` A manual journal cannot post to share capital. */
             422: {
                 headers: {
                     [name: string]: unknown;

@@ -123,7 +123,17 @@
 
 ## 5. Devices, accessibility and budgets
 
-- [ ] 5.1 The three device classes and layouts from 320 px, portrait and landscape, with no horizontal scroll. Tests `// req: FR-UX-37` and `// req: experience/devices-and-motion <class> device class` at the five frames (QA-UI-07)
+- [x] 5.1 The three device classes and layouts from 320 px, portrait and landscape, with no horizontal scroll. Tests `// req: FR-UX-37` and `// req: experience/devices-and-motion <class> device class` at the five frames (QA-UI-07)
+  (17 Nov 2026: `e2e/devices.spec.ts` opens each shell screen at the five reference frames, the 320 px small phone and
+  four landscapes: no sideways page scroll, the class's own navigation (sidebar, rail, or the bottom bar of four and
+  More) and the same safety information in every class; on a touch screen every control's hit area is 44 × 44 px;
+  folding, unfolding and rotating keep the page, its filters, the scroll position and an unsaved draft; and on a screen
+  that spans a hinge a list and its detail split at it (`shell/hinge.ts`, from the Viewport Segments API). Built for it:
+  the compact header's mode pill, More always in the bottom bar with the account (appearance, About, sign out) the
+  compact header has no room for, scroll padding that keeps a focused field clear of the header and the bottom bar,
+  and 44 px targets on coarse pointers (app.css); twelve radios and checkboxes had the 18 px box's class as their
+  label, now a row whose whole label is the target. **Left:** visual snapshots (QA-UI-07's hashes, p1-launch-readiness
+  5.4); devices without the Viewport Segments API split by CSS alone.)
 - [ ] 5.2 WCAG 2.2 AA with axe on every shell screen, keyboard and focus tests, focus not obscured, dragging alternatives and accessible authentication. Tests `// req: NFR-A11Y-01` through `// req: NFR-A11Y-05`
 - [ ] 5.3 Externalised strings with per-user formats and the organisation's time zone, and the page-load, interaction and bundle budgets measured in CI. Tests `// req: NFR-L10N-01`, `// req: NFR-PERF-UI-01` and `// req: NFR-PERF-UI-03`
 
