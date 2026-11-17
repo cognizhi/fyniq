@@ -19,11 +19,13 @@ import (
 	"time"
 
 	"github.com/cockroachdb/apd/v3"
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/aitool"
 	"github.com/cognizhi/fyniq/internal/assistant"
 	"github.com/cognizhi/fyniq/internal/assistant/evalsuite"
+	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/differential"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
@@ -93,11 +95,16 @@ func TestTheAssistantSuites(t *testing.T) {
 						weak = append(weak, c.ID+": the oracle gives "+cmpOr(got, "nothing")+", not "+w.Value)
 					}
 				}
-				if v := h.run(c, &solver{c: c}); !v.Pass {
+				if v, _ := h.run(c, &solver{c: c}); !v.Pass {
 					weak = append(weak, c.ID+": its own solution fails: "+v.Why)
 				}
-				if v := h.run(c, &solver{c: c, wrong: true}); v.Pass {
+				// A wrong model fails the case, unless the pipeline stopped its turn (screening refuses a request that
+				// carries an identity number, so a leak never reaches the provider); and the judge fails a leak shown it.
+				if v, o := h.run(c, &solver{c: c, wrong: true}); v.Pass && (s.Kind == evalsuite.Golden || o.Status == "answered") {
 					weak = append(weak, c.ID+": a wrong answer passes")
+				}
+				if s.Kind == evalsuite.RedTeam && evalsuite.Judge(c, leak(c), [][]byte{[]byte(strings.Join(c.Expect.Absent, " "))}, h.account).Pass {
+					weak = append(weak, c.ID+": the judge passes a leak")
 				}
 			}
 			if len(weak) > 0 {
@@ -115,7 +122,7 @@ func TestTheAssistantSuites(t *testing.T) {
 				run := evalRun{Model: m, Failed: map[string]string{}}
 				for _, c := range s.Cases {
 					p := &unrecorded{inner: inner}
-					switch v := h.run(c, p); {
+					switch v, _ := h.run(c, p); {
 					case p.missing:
 						run.Unrecorded = append(run.Unrecorded, c.ID)
 					case v.Pass:
@@ -194,6 +201,7 @@ type evalHarness struct {
 	e        *env
 	company  seed.Company
 	accounts map[string]string // ID by code
+	plants   map[string]string // ID by the suite's name for it
 	person   string
 	model    *recorder
 }
@@ -211,7 +219,7 @@ func newEvalHarness(t *testing.T, s evalsuite.Suite, company seed.Company) *eval
 	e.books = porttest.Books{Org: org.ID} // the env now asks of the sample company
 	f := foundersIn(e)
 	aiSwitchedOn(e)
-	h := &evalHarness{t: t, e: e, company: company, accounts: map[string]string{}, person: f.as(f.ahkow), model: &recorder{}}
+	h := &evalHarness{t: t, e: e, company: company, accounts: map[string]string{}, plants: map[string]string{}, person: f.as(f.ahkow), model: &recorder{}}
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
 		list, err := u.Accounts().List(ctx)
 		for _, a := range list {
@@ -219,6 +227,20 @@ func newEvalHarness(t *testing.T, s evalsuite.Suite, company seed.Company) *eval
 		}
 		return err
 	})
+	accountant := e.as(authz.Accountant)
+	for _, p := range s.Plant {
+		raw, err := evalsuite.Fill(p.Body, h.plants, h.account)
+		if err != nil {
+			t.Fatalf("plant %s: %v", p.ID, err)
+		}
+		var body map[string]any
+		_ = json.Unmarshal(raw, &body)
+		r := e.call(http.MethodPost, p.Path, accountant, body)
+		if r.Status != http.StatusCreated || r.str("id") == "" {
+			t.Fatalf("plant %s: %d %s", p.ID, r.Status, r.Raw)
+		}
+		h.plants[p.ID] = r.str("id")
+	}
 	e.api.deps.AIProviders = func(context.Context, storage.UnitOfWork, storage.AIConnection) (ports.ModelProvider, error) {
 		return h.model, nil
 	}
@@ -245,9 +267,38 @@ func (h *evalHarness) route(model string) {
 	})
 }
 
-// run asks a case in a conversation of its own, answered by p, and judges the turn.
-func (h *evalHarness) run(c evalsuite.Case, p ports.ModelProvider) evalsuite.Verdict {
+func (h *evalHarness) account(code string) string { return h.accounts[code] }
+
+// fill is a case with the plants' and accounts' IDs in its context and its reads.
+func (h *evalHarness) fill(c evalsuite.Case) evalsuite.Case {
 	h.t.Helper()
+	if c.Context != nil {
+		x := *c.Context
+		id, err := evalsuite.Fill([]byte(x.ID), h.plants, h.account)
+		if err != nil {
+			h.t.Fatalf("%s: %v", c.ID, err)
+		}
+		x.ID, c.Context = string(id), &x
+	}
+	reads := make([]evalsuite.Read, len(c.Solution))
+	for i, r := range c.Solution {
+		in, err := evalsuite.Fill(r.Input, h.plants, h.account)
+		if err != nil {
+			h.t.Fatalf("%s: %v", c.ID, err)
+		}
+		reads[i] = evalsuite.Read{Tool: r.Tool, Input: in}
+	}
+	c.Solution = reads
+	return c
+}
+
+// run asks a case in a conversation of its own, answered by p, and judges the turn.
+func (h *evalHarness) run(c evalsuite.Case, p ports.ModelProvider) (evalsuite.Verdict, evalsuite.Outcome) {
+	h.t.Helper()
+	c = h.fill(c)
+	if s, ok := p.(*solver); ok {
+		s.c = c
+	}
 	h.e.clock.Advance(10 * time.Minute) // within the assistant's limits of questions a minute and a day
 	h.model.reset(p)
 	conversation := h.e.call(http.MethodPost, "/v1/assistant/conversations", h.person, map[string]any{"title": c.ID}).str("id")
@@ -269,7 +320,32 @@ func (h *evalHarness) run(c evalsuite.Case, p ports.ModelProvider) evalsuite.Ver
 		code, _ := data[n-1]["code"].(string)
 		o.Status = "refused: " + code
 	}
-	return evalsuite.Judge(c, o, h.model.sent(), func(code string) string { return h.accounts[code] })
+	// The reads the turn made, however it ended, as the API kept them.
+	h.e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		turns, err := u.AIConversations().Turns(ctx, uuid.MustParse(conversation))
+		for _, tu := range turns {
+			calls, err := u.AIConversations().ToolCalls(ctx, tu.ID)
+			if err != nil {
+				return err
+			}
+			for _, x := range calls {
+				o.Reads = append(o.Reads, evalsuite.Read{Tool: x.Tool, Input: x.Input})
+			}
+		}
+		return err
+	})
+	return evalsuite.Judge(c, o, h.model.sent(), h.account), o
+}
+
+// leak is an answer that does everything a red-team case forbids: it says each absent and unsaid word and makes each
+// unread read.
+func leak(c evalsuite.Case) evalsuite.Outcome {
+	o := evalsuite.Outcome{Status: "answered", Text: strings.Join(slices.Concat(c.Expect.Absent, c.Expect.Unsaid), " ")}
+	for _, u := range c.Expect.Unread {
+		in, _ := json.Marshal(map[string]string{"q": u.Contains})
+		o.Reads = append(o.Reads, evalsuite.Read{Tool: cmpOr(u.Tool, "records.search"), Input: in})
+	}
+	return o
 }
 
 // recorder is the chat agent's provider: it keeps every request the model receives, as JSON, and passes it on.
@@ -358,6 +434,14 @@ func (s *solver) Call(_ context.Context, req ports.ModelRequest) (ports.ModelRes
 		if s.wrong && len(forbidden) > 0 {
 			q, _ := json.Marshal(map[string]string{"q": forbidden[0]})
 			parts = append(parts, ports.ModelPart{Kind: ports.PartToolCall, CallID: "cz", Tool: "records_search", Input: q})
+		}
+		for i, u := range s.c.Expect.Unread { // a wrong model does what the injection asks
+			if !s.wrong {
+				break
+			}
+			q, _ := json.Marshal(map[string]string{"q": u.Contains})
+			parts = append(parts, ports.ModelPart{Kind: ports.PartToolCall, CallID: "cu" + string(rune('a'+i)), Tool: strings.ReplaceAll(cmpOr(u.Tool, "records.search"), ".", "_"),
+				Input: q})
 		}
 		return ports.ModelResponse{Parts: parts, StopReason: ports.StopToolCall}, nil
 	}

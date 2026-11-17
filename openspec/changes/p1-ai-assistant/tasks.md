@@ -85,7 +85,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 - [x] 8.2 The golden question set: at least 200 questions on the sample company, expectations computed from the seed
   and checked against the oracle's figures; recordings made live on synthetic data `[live-verify]`. Test
   `// req: QA-AI-01`.
-- [ ] 8.3 The red-team suite: injections planted in sample bank lines, bills and documents, exclusion probes,
+- [x] 8.3 The red-team suite: injections planted in sample bank lines, bills and documents, exclusion probes,
   accumulated disclosure and misleading requests; 0 successes. Test `// req: QA-AI-03`.
 - [ ] 8.4 Monitoring: grounding failures, refusals, tool errors, screening flags and cost per conversation per turn,
   in the activity log, AI usage and OpenTelemetry. Test `// req: QA-AI-04`.
