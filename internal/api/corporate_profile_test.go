@@ -3,6 +3,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"slices"
 	"strings"
@@ -226,6 +227,10 @@ var matrixCorporate = map[string]func(e *env, tok string) (response, func() bool
 	"getCorporateProfile": func(e *env, tok string) (response, func() bool) {
 		matrixCorporateFixture(e)
 		return e.call(http.MethodGet, "/v1/corporate-profile", tok, nil), nil
+	},
+	"getCorporateReconciliation": func(e *env, tok string) (response, func() bool) {
+		matrixCorporateFixture(e)
+		return e.call(http.MethodGet, "/v1/corporate-profile/reconciliation", tok, nil), nil
 	},
 	"createCorporateDetail": func(e *env, tok string) (response, func() bool) {
 		f := matrixCorporateFixture(e)
@@ -584,5 +589,82 @@ func TestTheCorporateLodgementsInTheCalendar(t *testing.T) {
 		if strings.HasPrefix(x, "register_officer_appointment") {
 			t.Errorf("Tan Mei Lin's appointment, lodged, still open: %s", x)
 		}
+	}
+}
+
+// The corporate profile reconciled to ACRA's business profile (FR-CS-01, C.2 #34, design D3). Before any extract it is
+// not assessed and says so. The extract of 1 Oct 2026 lists Tan Mei Lin from 2 Mar and Lim Hui, a director the profile
+// does not have, and the office at 2 Science Park Drive: Lim Hui is missing in Fyniq and the office differs. An officer
+// typed with an NRIC in full, or appointed after the profile's day, is refused.
+// req: FR-CS-01
+// req: C.2 #34
+// req: governance/company-secretary FR-CS-01 Reconciled to the ACRA business profile
+func TestTheProfileAgainstTheACRAExtract(t *testing.T) {
+	c := newClaimants(t)
+	e := c.e
+	prep := c.as(c.weiling, authz.Accountant)
+	kow := c.as(c.ahkow, authz.Owner)
+	owner := c.as(c.weiling, authz.Owner, authz.Controller)
+	record := func(path string, body map[string]any) {
+		t.Helper()
+		d := e.call(http.MethodPost, path, prep, body)
+		at := path + "/" + d.str("id")
+		e.upload(at+"/evidence", prep, map[string]string{"evidence_type": "BizFile+"}, "ack.pdf", []byte("%PDF-1.7 ack"), "If-Match", d.Header.Get("ETag"))
+		cur := e.call(http.MethodGet, at, prep, nil)
+		req := e.call(http.MethodPost, at+"/approval", prep, nil, "If-Match", cur.Header.Get("ETag"))
+		if r := e.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/approve", kow, hashOf(req), "If-Match", `"1"`); r.Status != http.StatusOK {
+			t.Fatalf("approving %s: %d %s", at, r.Status, r.Raw)
+		}
+	}
+	reconcile := func() response {
+		t.Helper()
+		r := e.call(http.MethodGet, "/v1/corporate-profile/reconciliation", owner, nil)
+		if r.Status != http.StatusOK {
+			t.Fatalf("the reconciliation: %d %s", r.Status, r.Raw)
+		}
+		return r
+	}
+	record("/v1/corporate-profile/details", map[string]any{"from": "2026-03-02", "name": "Cognizhi Pte. Ltd.", "registered_office": "1 North Bridge Road",
+		"ssic": "62011"})
+	record("/v1/corporate-profile/officers", map[string]any{"role": "director", "name": "Tan Mei Lin", "kind": "individual", "appointed_on": "2026-03-02",
+		"nominee": false})
+	if r := reconcile(); r.Body["status"] != "not_assessed" || !strings.Contains(r.str("reason"), "No ACRA business profile is recorded") {
+		t.Errorf("before any extract: %s", r.Raw)
+	}
+
+	holder := e.call(http.MethodPost, "/v1/contacts", owner, map[string]any{"legal_name": "Ah Kow", "shareholder": true}).str("id")
+	ordinary := e.shareCapitalIn(e.books.Org)
+	extract := map[string]any{"profile_on": "2026-10-01", "holdings": []any{map[string]any{"holder_id": holder, "class_account_id": ordinary, "shares": "1000"}},
+		"registered_office": "2 Science Park Drive", "officers": []any{
+			map[string]any{"name": "TAN MEI LIN", "role": "director", "appointed_on": "2026-03-02"},
+			map[string]any{"name": "Lim Hui", "role": "director", "appointed_on": "2026-09-01"},
+		}}
+	bad := map[string]any{"profile_on": "2026-10-01", "holdings": extract["holdings"], "officers": []any{
+		map[string]any{"name": "Lim Hui S1234567D", "role": "director", "appointed_on": "2026-11-01"}}}
+	if r := e.call(http.MethodPost, "/v1/acra-extracts", prep, bad); r.Status != http.StatusUnprocessableEntity ||
+		!strings.Contains(r.Raw, `"field":"body.officers[0].name"`) || !strings.Contains(r.Raw, `"field":"body.officers[0].appointed_on"`) {
+		t.Errorf("an extract's officer that does not fit: %d %s", r.Status, r.Raw)
+	}
+	x := e.call(http.MethodPost, "/v1/acra-extracts", prep, extract)
+	if x.Status != http.StatusCreated || len(x.Body["officers"].([]any)) != 2 || x.str("registered_office") != "2 Science Park Drive" {
+		t.Fatalf("the extract drafted: %d %s", x.Status, x.Raw)
+	}
+	xpath := "/v1/acra-extracts/" + x.str("id")
+	e.upload(xpath+"/evidence", prep, map[string]string{"evidence_type": "Business profile"}, "bp.pdf", []byte("%PDF-1.7 business profile"),
+		"If-Match", x.Header.Get("ETag"))
+	cur := e.call(http.MethodGet, xpath, prep, nil)
+	if r := e.call(http.MethodPost, xpath+"/record", prep, nil, "If-Match", cur.Header.Get("ETag")); r.Status != http.StatusOK {
+		t.Fatalf("recording the extract: %d %s", r.Status, r.Raw)
+	}
+	r := reconcile()
+	var got []string
+	for _, d := range r.Body["differences"].([]any) {
+		m := d.(map[string]any)
+		got = append(got, fmt.Sprint(m["kind"], " ", m["name"], " ", m["acra"]))
+	}
+	slices.Sort(got)
+	if r.Body["status"] != "differs" || r.str("profile_on") != "2026-10-01" ||
+		strings.Join(got, "|") != "missing_in_fyniq Lim Hui 2026-09-01|office_differs <nil> 2 Science Park Drive" {
+		t.Errorf("the differences: %v %s", got, r.Raw)
 	}
 }

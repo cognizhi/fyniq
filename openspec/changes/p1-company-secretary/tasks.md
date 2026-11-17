@@ -71,8 +71,15 @@
   - Incorporation is the first detail's day; with no detail recorded, an appointment is Not assessed and names the
     details. With no sg-acra version in force, one item is Not assessed and names the pack.
   - An event before the pack's first day (16 Nov 2026) has no rule, so no item, as the calendar's own rules start.
-- [ ] 2.5 The ACRA extract's officers and registered office, and their reconciliation (design D3). Tests
+- [x] 2.5 The ACRA extract's officers and registered office, and their reconciliation (design D3). Tests
   `// req: governance/company-secretary FR-CS-01 Reconciled to the ACRA business profile`.
+  As built:
+  - The extract gains `officers` (name, role, day appointed) and `registered_office`, both optional so an extract typed
+    before stays valid; migration 000396 replaces its guard (FY297) to check them.
+  - `getCorporateReconciliation` compares the officers in office and the office on the extract's day: an officer missing
+    on either side, a day appointed that differs, an office that differs. Names match whatever their case, spacing and
+    punctuation. It is Not assessed, naming the input, with no extract, an extract with no officers typed in, or one
+    older than the profile's last recorded change. C.2 #34 reads it (3.1).
 
 ## 3. The cross-checks
 

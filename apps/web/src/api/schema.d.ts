@@ -5236,6 +5236,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/corporate-profile/reconciliation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reconcile the corporate profile with ACRA's business profile
+         * @description The corporate profile on the day of the ACRA extract in force, against the officers and registered office it lists (FR-CS-01, design D3, C.2 #34): an officer missing on either side, a day appointed that differs, an office that differs. Not assessed, naming the input, while no extract is recorded, the extract has no officers typed in, or it is older than the profile's last recorded change. Read-only; no side effects.
+         */
+        get: operations["getCorporateReconciliation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/corporate-profile/statements-approvals": {
         parameters: {
             query?: never;
@@ -18975,12 +18995,19 @@ export interface components {
              * @example Business profile bought on 1 Oct 2026
              */
             note?: string;
+            /** @description The officers it lists, to reconcile the corporate profile with (FR-CS-01, C.2 #34): an extract without them leaves the profile not assessed. */
+            officers?: components["schemas"]["AcraOfficerDraft"][] | null;
             /**
              * Format: date
              * @description The day the business profile was generated, as printed on it.
              * @example 2026-10-01
              */
             profile_on: string;
+            /**
+             * @description The registered office it gives.
+             * @example 1 North Bridge Road, #08-08, Singapore 179094
+             */
+            registered_office?: string;
         };
         AcraExtractPage: {
             items: components["schemas"]["AcraExtractView"][];
@@ -19012,6 +19039,8 @@ export interface components {
              * @example Business profile bought on 1 Oct 2026
              */
             note?: string;
+            /** @description The officers typed in; none on an extract typed before they were (design D3). */
+            officers: components["schemas"]["AcraOfficerDraft"][];
             /**
              * Format: date
              * @description The business profile's day.
@@ -19026,6 +19055,11 @@ export interface components {
             recorded_at?: string;
             /** @description Who recorded it. */
             recorded_by?: components["schemas"]["Person"];
+            /**
+             * @description The registered office typed in.
+             * @example 1 North Bridge Road, #08-08, Singapore 179094
+             */
+            registered_office?: string;
             /**
              * @description draft: waiting for its PDF and to be recorded; recorded: in force; superseded: a later business profile is recorded.
              * @example recorded
@@ -19086,6 +19120,25 @@ export interface components {
              * @example 700000
              */
             shares: string;
+        };
+        AcraOfficerDraft: {
+            /**
+             * Format: date
+             * @description The day the business profile says they were appointed.
+             * @example 2026-03-02
+             */
+            appointed_on: string;
+            /**
+             * @description Their name as the business profile lists it.
+             * @example Tan Mei Lin
+             */
+            name: string;
+            /**
+             * @description Their office.
+             * @example director
+             * @enum {string}
+             */
+            role: "director" | "secretary" | "ceo" | "auditor";
         };
         AcraReconciliation: {
             /** @description Each holding where the register differs from it on its day, by holder then class: fix the register by a reversal citing the extract, or the typing by a newer extract. */
@@ -27237,6 +27290,35 @@ export interface components {
              */
             version: number;
         };
+        CorporateDifference: {
+            /**
+             * @description What ACRA's extract lists.
+             * @example 2026-03-03
+             */
+            acra?: string;
+            /**
+             * @description missing_in_fyniq: ACRA lists an officer the profile does not have in office; missing_at_acra: the profile has one ACRA does not list; appointed_differs: the day appointed differs; office_differs: the registered office differs.
+             * @example appointed_differs
+             * @enum {string}
+             */
+            kind: "missing_in_fyniq" | "missing_at_acra" | "appointed_differs" | "office_differs";
+            /**
+             * @description The officer's name.
+             * @example Tan Mei Lin
+             */
+            name?: string;
+            /**
+             * @description What the profile holds: the day appointed, or the office.
+             * @example 2026-03-02
+             */
+            profile?: string;
+            /**
+             * @description The officer's role.
+             * @example director
+             * @enum {string}
+             */
+            role?: "director" | "secretary" | "ceo" | "auditor";
+        };
         CorporateOfficerDraft: {
             /**
              * Format: date
@@ -27484,6 +27566,33 @@ export interface components {
             secretary: boolean;
             /** @description Every directors' approval of a year's financial statements, drafts and superseded ones included, the latest first. */
             statements_approvals: components["schemas"]["StatementsApprovalView"][];
+        };
+        CorporateReconciliation: {
+            /** @description Each difference: fix the profile by a new version citing the extract, or the typing by a newer extract. */
+            differences: components["schemas"]["CorporateDifference"][];
+            /**
+             * Format: uuid
+             * @description The extract in force.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c7d01
+             */
+            extract_id?: string;
+            /**
+             * Format: date
+             * @description Its business profile's day: the day compared.
+             * @example 2026-10-01
+             */
+            profile_on?: string;
+            /**
+             * @description Why it is not assessed, naming the input.
+             * @example No ACRA business profile is recorded: type one in with its officers and registered office, with its PDF
+             */
+            reason?: string;
+            /**
+             * @description reconciled: the officers and office agree on the extract's day; differs: each difference is listed; not_assessed: the reason names the missing input.
+             * @example differs
+             * @enum {string}
+             */
+            status: "reconciled" | "differs" | "not_assessed";
         };
         CreditApplication: {
             /** @description What was applied, in their currency. */
@@ -90107,6 +90216,99 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCorporateReconciliation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporateReconciliation"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

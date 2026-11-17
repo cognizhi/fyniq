@@ -1594,6 +1594,7 @@ var (
 	ListStatementsApprovalEvidence    = Policy{Operation: "listStatementsApprovalEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
 	GetStatementsApprovalEvidence     = Policy{Operation: "getStatementsApprovalEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
 	RemoveStatementsApprovalEvidence  = Policy{Operation: "removeStatementsApprovalEvidence", Capability: CorporateProfile, Need: Create}
+	GetCorporateReconciliation        = Policy{Operation: "getCorporateReconciliation", Capability: CorporateProfile, Need: View, Unqualified: true}
 )
 
 // The ACRA reconciliation (FR-EQ-26; p1-equity-register slice 8, design D11): an extract typed in and recorded by the
@@ -2012,7 +2013,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetCorporateOfficerEvidence, RemoveCorporateOfficerEvidence, CreateNomineeEntry, GetNomineeEntry, ReplaceNomineeEntry,
 	RequestNomineeEntryApproval, AddNomineeEntryEvidence, ListNomineeEntryEvidence, GetNomineeEntryEvidence, RemoveNomineeEntryEvidence,
 	CreateStatementsApproval, GetStatementsApproval, ReplaceStatementsApproval, RequestStatementsApprovalApproval,
-	AddStatementsApprovalEvidence, ListStatementsApprovalEvidence, GetStatementsApprovalEvidence, RemoveStatementsApprovalEvidence)
+	AddStatementsApprovalEvidence, ListStatementsApprovalEvidence, GetStatementsApprovalEvidence, RemoveStatementsApprovalEvidence,
+	GetCorporateReconciliation)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

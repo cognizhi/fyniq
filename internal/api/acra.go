@@ -36,11 +36,20 @@ type AcraHoldingDraft struct {
 	Shares         string `json:"shares" pattern:"^[1-9][0-9]{0,13}$" doc:"The shares the business profile lists, a whole number." example:"700000"`
 }
 
+// AcraOfficerDraft is one officer as the business profile lists them (FR-CS-01, design D3).
+type AcraOfficerDraft struct {
+	Name        string `json:"name" maxLength:"200" doc:"Their name as the business profile lists it." example:"Tan Mei Lin"`
+	Role        string `json:"role" enum:"director,secretary,ceo,auditor" doc:"Their office." example:"director"`
+	AppointedOn string `json:"appointed_on" format:"date" doc:"The day the business profile says they were appointed." example:"2026-03-02"`
+}
+
 // AcraExtractDraft is an ACRA extract as drafted.
 type AcraExtractDraft struct {
-	ProfileOn string             `json:"profile_on" format:"date" doc:"The day the business profile was generated, as printed on it." example:"2026-10-01"`
-	Holdings  []AcraHoldingDraft `json:"holdings" nullable:"false" maxItems:"500" doc:"Each holder's shares of each class, typed in from the business profile."`
-	Note      string             `json:"note,omitempty" maxLength:"1000" doc:"A note." example:"Business profile bought on 1 Oct 2026"`
+	ProfileOn        string             `json:"profile_on" format:"date" doc:"The day the business profile was generated, as printed on it." example:"2026-10-01"`
+	Holdings         []AcraHoldingDraft `json:"holdings" nullable:"false" maxItems:"500" doc:"Each holder's shares of each class, typed in from the business profile."`
+	Officers         []AcraOfficerDraft `json:"officers,omitempty" maxItems:"50" doc:"The officers it lists, to reconcile the corporate profile with (FR-CS-01, C.2 #34): an extract without them leaves the profile not assessed."`
+	RegisteredOffice string             `json:"registered_office,omitempty" maxLength:"500" doc:"The registered office it gives." example:"1 North Bridge Road, #08-08, Singapore 179094"`
+	Note             string             `json:"note,omitempty" maxLength:"1000" doc:"A note." example:"Business profile bought on 1 Oct 2026"`
 }
 
 // AcraHoldingView is a holding as typed in, by name.
@@ -52,16 +61,18 @@ type AcraHoldingView struct {
 
 // AcraExtractView is an extract, drafted or recorded.
 type AcraExtractView struct {
-	ID         string            `json:"id" format:"uuid" doc:"The extract's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c7d01"`
-	Status     string            `json:"status" enum:"draft,recorded,superseded" doc:"draft: waiting for its PDF and to be recorded; recorded: in force; superseded: a later business profile is recorded." example:"recorded"`
-	Version    int               `json:"version" doc:"The version of its content; with its status it makes the ETag." example:"1"`
-	ProfileOn  string            `json:"profile_on" format:"date" doc:"The business profile's day." example:"2026-10-01"`
-	Holdings   []AcraHoldingView `json:"holdings" nullable:"false" doc:"The holdings typed in, by name."`
-	Note       string            `json:"note,omitempty" doc:"A note." example:"Business profile bought on 1 Oct 2026"`
-	Evidence   int               `json:"evidence" doc:"How many files are attached and not removed: recording needs one, the business profile's PDF." example:"1"`
-	RecordedBy *Person           `json:"recorded_by,omitempty" doc:"Who recorded it."`
-	RecordedAt *time.Time        `json:"recorded_at,omitempty" doc:"When it was recorded." example:"2026-10-02T09:30:00Z"`
-	Checks     []BillCheck       `json:"checks" nullable:"false" doc:"A draft's status: ✖ while no PDF is attached."`
+	ID         string             `json:"id" format:"uuid" doc:"The extract's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c7d01"`
+	Status     string             `json:"status" enum:"draft,recorded,superseded" doc:"draft: waiting for its PDF and to be recorded; recorded: in force; superseded: a later business profile is recorded." example:"recorded"`
+	Version    int                `json:"version" doc:"The version of its content; with its status it makes the ETag." example:"1"`
+	ProfileOn  string             `json:"profile_on" format:"date" doc:"The business profile's day." example:"2026-10-01"`
+	Holdings   []AcraHoldingView  `json:"holdings" nullable:"false" doc:"The holdings typed in, by name."`
+	Officers   []AcraOfficerDraft `json:"officers" nullable:"false" doc:"The officers typed in; none on an extract typed before they were (design D3)."`
+	Office     string             `json:"registered_office,omitempty" doc:"The registered office typed in." example:"1 North Bridge Road, #08-08, Singapore 179094"`
+	Note       string             `json:"note,omitempty" doc:"A note." example:"Business profile bought on 1 Oct 2026"`
+	Evidence   int                `json:"evidence" doc:"How many files are attached and not removed: recording needs one, the business profile's PDF." example:"1"`
+	RecordedBy *Person            `json:"recorded_by,omitempty" doc:"Who recorded it."`
+	RecordedAt *time.Time         `json:"recorded_at,omitempty" doc:"When it was recorded." example:"2026-10-02T09:30:00Z"`
+	Checks     []BillCheck        `json:"checks" nullable:"false" doc:"A draft's status: ✖ while no PDF is attached."`
 }
 
 // AcraExtractPage is a page of extracts, the latest business profile first.
@@ -145,6 +156,14 @@ func acraIn(d AcraExtractDraft) (equity.AcraExtract, error) {
 		}
 		x.Holdings = append(x.Holdings, y)
 	}
+	x.Office = strings.TrimSpace(d.RegisteredOffice)
+	for k, o := range d.Officers {
+		y := equity.AcraOfficer{Name: strings.TrimSpace(o.Name), Role: o.Role}
+		if day := dayIn(fmt.Sprintf("body.officers[%d].appointed_on", k), o.AppointedOn, &fields); day != nil {
+			y.Appointed = *day
+		}
+		x.Officers = append(x.Officers, y)
+	}
 	if len(fields) > 0 {
 		return x, invalid(fields)
 	}
@@ -183,7 +202,10 @@ func (v acraView) nameOf(ctx context.Context, u storage.UnitOfWork, id uuid.UUID
 
 func (a *API) acraExtractOf(ctx context.Context, u storage.UnitOfWork, v acraView, x equity.Recorded[equity.AcraExtract], latest *equity.Recorded[equity.AcraExtract]) (AcraExtractView, error) {
 	out := AcraExtractView{ID: x.Doc.ID.String(), Status: "draft", Version: x.Doc.Version, ProfileOn: x.Value.ProfileOn.Format(time.DateOnly),
-		Holdings: []AcraHoldingView{}, Note: x.Value.Note}
+		Holdings: []AcraHoldingView{}, Officers: []AcraOfficerDraft{}, Office: x.Value.Office, Note: x.Value.Note}
+	for _, o := range x.Value.Officers {
+		out.Officers = append(out.Officers, AcraOfficerDraft{Name: o.Name, Role: o.Role, AppointedOn: o.Appointed.Format(time.DateOnly)})
+	}
 	switch {
 	case x.Doc.Status == storage.DocumentPosted && latest != nil && latest.Doc.ID == x.Doc.ID:
 		out.Status = "recorded"

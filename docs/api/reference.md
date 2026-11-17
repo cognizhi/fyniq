@@ -12764,6 +12764,24 @@ Asks another person to approve a drafted officer's version at the version read (
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CORP-01`, `CORP-02`, `EQUITY-05`, `EQUITY-06`, `STORAGE-CORP-01`, `STORAGE-CORP-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/corporate-profile/reconciliation`
+
+**Reconcile the corporate profile with ACRA's business profile** (`getCorporateReconciliation`)
+
+The corporate profile on the day of the ACRA extract in force, against the officers and registered office it lists (FR-CS-01, design D3, C.2 #34): an officer missing on either side, a day appointed that differs, an office that differs. Not assessed, naming the input, while no extract is recorded, the extract has no officers typed in, or it is older than the profile's last recorded change. Read-only; no side effects.
+
+- **Permission:** View on Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)
+- **Responses:**
+  - `200` OK [`CorporateReconciliation`](../../contracts/schemas/CorporateReconciliation.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `POST /v1/corporate-profile/statements-approvals`
 
 **Draft the directors' approval of a year's financial statements** (`createStatementsApproval`)

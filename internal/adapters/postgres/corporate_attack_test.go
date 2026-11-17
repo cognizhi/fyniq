@@ -178,3 +178,45 @@ func TestAttackCorporateRegistersKeepTheirRules(t *testing.T) {
 		t.Errorf("a statements approval as the rules allow: %v", err)
 	}
 }
+
+// An ACRA extract's officers and registered office keep their rules whoever writes them (FR-CS-01, design D3; FY297):
+// a list of officers of their own keys, each a name, a known role and a day appointed on or before the profile's day; an
+// office of at most 500 characters; no NRIC or FIN in full. An extract typed before, with neither, stays valid.
+// req: FR-CS-01
+// asvs: V8.2.1
+func TestAttackAcraExtractOfficersKeepTheirRules(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack ACRA officers Pte Ltd")
+	class := shareCapital(t, d)
+	api := store(t, "fyniq_api")
+	create := func(payload string) error {
+		return api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentAcraExtract, Payload: []byte(payload)})
+			return err
+		})
+	}
+	extract := func(extra string) string {
+		return fmt.Sprintf(`{"date":"2026-11-16","profile_on":"2026-10-01","holdings":[{"holder_id":%q,"class_account_id":%q,"shares":"700000"}]%s}`,
+			d.director.ID, class, extra)
+	}
+	officer := `{"name":"Tan Mei Lin","role":"director","appointed_on":"2026-03-02"}`
+	for name, payload := range map[string]string{
+		"officers that are no list":   extract(`,"officers":{}`),
+		"an officer's key of its own": extract(`,"officers":[` + strings.Replace(officer, `}`, `,"nric":"567A"}`, 1) + `]`),
+		"an unknown role":             extract(`,"officers":[` + strings.Replace(officer, `"director"`, `"chairman"`, 1) + `]`),
+		"no name":                     extract(`,"officers":[` + strings.Replace(officer, `"Tan Mei Lin"`, `" "`, 1) + `]`),
+		"appointed after its day":     extract(`,"officers":[` + strings.Replace(officer, `"2026-03-02"`, `"2026-10-02"`, 1) + `]`),
+		"an NRIC in full":             extract(`,"officers":[` + strings.Replace(officer, `"Tan Mei Lin"`, `"Tan Mei Lin S1234567D"`, 1) + `]`),
+		"an office of 501 characters": extract(`,"registered_office":"` + strings.Repeat("x", 501) + `"`),
+	} {
+		if err := create(payload); storage.CodeOf(err) != storage.CodeAcraExtract {
+			t.Errorf("an extract with %s: %v", name, err)
+		}
+	}
+	for name, payload := range map[string]string{"neither": extract(``),
+		"officers and an office": extract(`,"officers":[` + officer + `],"registered_office":"1 North Bridge Road"`)} {
+		if err := create(payload); err != nil {
+			t.Errorf("an extract with %s, as its rules allow: %v", name, err)
+		}
+	}
+}
