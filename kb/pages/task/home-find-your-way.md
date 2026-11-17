@@ -4,7 +4,7 @@ type: task
 title: The Home page, search and commands, long work, Settings, the version, and signing out
 summary: Home (pulse, tiles, plans, your work, deadlines, set-up), Search and commands (Ctrl+K), Operations, Settings, the version (Help › About), signing out
 sources:
-  - docs/user-guide/home.md sha256:634258e148b2a614c818aa9bfe783fd9ad19488e93725d2d86190124ee0fd709
+  - docs/user-guide/home.md sha256:f9d429385c8d965080e1ce59fea9b1786d1aa3589152b6d88dff81f6228bc881
 data_class: general
 taint: trusted
 status: draft
@@ -147,6 +147,7 @@ aliases:
 - It shows the version, the commit (the git SHA the services were built from), when they were built and, for a published release, its tag.
 - Quote the version and the commit when reporting a problem.
 - Every exported report names the same version and commit in its footer: the last line of a CSV or a spreadsheet, and the footer of a PDF.
+- The same **Help** menu opens the **User guide**, in Fyniq: [[help.guide]].
 
 (src: docs/user-guide/home.md#see-which-version-you-are-on)
 
