@@ -518,6 +518,8 @@ fyniq_api       SELECT    tick_drill
 fyniq_api       EXECUTE   unlink_identity()
 fyniq_api       EXECUTE   user_cooling_off_until()
 fyniq_api       EXECUTE   user_for_identity()
+fyniq_api       INSERT    user_help_state (set_at, step, tour, user_id)
+fyniq_api       SELECT    user_help_state
 fyniq_api       EXECUTE   user_identities()
 fyniq_api       INSERT    user_membership (user_id)
 fyniq_api       SELECT    user_membership
@@ -830,6 +832,7 @@ fyniq_readonly  SELECT    statutory_pack_rows
 fyniq_readonly  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    team_mode
 fyniq_readonly  SELECT    tick_drill
+fyniq_readonly  SELECT    user_help_state
 fyniq_readonly  SELECT    user_membership
 fyniq_readonly  SELECT    withholding_decision
 fyniq_worker    SELECT    access_review_attestation
@@ -1149,5 +1152,6 @@ fyniq_worker    EXECUTE   tenant_rows()
 fyniq_worker    EXECUTE   tenant_tables()
 fyniq_worker    SELECT    tenants
 fyniq_worker    SELECT    tick_drill
+fyniq_worker    SELECT    user_help_state
 fyniq_worker    SELECT    user_membership
 fyniq_worker    SELECT    withholding_decision

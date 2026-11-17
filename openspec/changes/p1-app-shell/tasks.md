@@ -144,6 +144,12 @@
   (20 Oct 2026, in part: the FR-UX-41 banner, `components/ReviewBanner.tsx`, reads the review register at build time
   and shows on each Settings page whose screen it lists while the area is pending. Test `ReviewBanner.test.tsx`.
   **Left:** the banner on the other screens as they are built, `/help`, context-aware help, the tour and practice.)
+  (17 Nov 2026, the tour's server half, for the launch gate: `user_help_state` (migration 000441), append-only and
+  audited, under row-level security and with the members' foreign key; `GET /v1/help-state` (offered until answered,
+  offered again to resume where it stopped) and `PUT /v1/help-state/tour` (started at a step, finished or skipped;
+  If-Match, Idempotency-Key, preview), each person's own (`HLP-01` for a caller that is not a person). Test
+  `TestTheTourSavesOnlyItsOwnState`: every save writes the state and its audit event and nothing else (G4-104).
+  **Left:** the tour itself in the web app and its end-to-end test per role (QA-UI-06).)
   (17 Nov 2026, the user guide, for the launch gate: `/help` builds every page of `docs/user-guide/` into the web app
   (`help/guide.ts`, at build time; the web image copies the guide and the release notes), lists those the person's
   roles call for, Basic ones in Basic mode with how many Expert adds, and searches them as they type; `/help/$key`

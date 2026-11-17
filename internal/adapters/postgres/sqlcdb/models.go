@@ -2991,6 +2991,15 @@ type FyniqTickDrill struct {
 	RecordedAt        time.Time
 }
 
+type FyniqUserHelpState struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Tour           string
+	Step           int16
+	SetAt          time.Time
+}
+
 type FyniqUserIdentity struct {
 	Issuer          string
 	Subject         string
