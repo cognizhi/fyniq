@@ -111,6 +111,13 @@
   Teaching empty states on the chart, contacts, items and review log. Test `Home.test.tsx`. **Left:** the sample
   company to explore, the checklist's later steps (opening balances, bank feeds, employees, the workbook import), the
   Plain and Accountant views.)
+  (17 Nov 2026, for the launch gate: the Plain and Accountant views (FR-UX-08). `src/view.ts` keeps each person's
+  choice (in this browser until task 4.1 stores preferences on the server) and gives Basic mode Plain view always;
+  `components/LedgerViewToggle.tsx` offers it in Expert mode on the bank categorise grid, whose money shows as Money in
+  / Money out / Suggested category or, as the money account's ledger has it, Debit / Credit / Suggested account, the
+  same figures, and under Settings › Profile and security. Guide `banking.md`, compiled. Tests
+  `LedgerViewToggle.test.tsx`, `categorise.test.tsx`. **Left:** the view on the grids still to come (journal lines,
+  budgets, opening balances) as each is built.)
 - [ ] 3.3 Favourites, recents and saved views shareable by link, comments with mentions, and no hard delete. Tests `// req: FR-UX-12`, `// req: FR-UX-13` and `// req: FR-UX-14`
   (17 Nov 2026, in part, for the launch gate: no hard delete (FR-UX-14). `TestEachRoleHoldsExactlyItsGrants` refuses a
   DELETE grant to any application role but on five tables named with why (housekeeping swept on its schedule, and an

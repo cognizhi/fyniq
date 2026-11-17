@@ -48,6 +48,10 @@
       "label": "Take the tour again",
       "tooltip": "A short tour of the pages you use, step by step. It changes nothing; Esc ends it."
     },
+    "ledger.view": {
+      "label": "Plain or Accountant view",
+      "tooltip": "Plain view: Money in, Money out and Category. Accountant view: Debit, Credit and Account. The figures are the same."
+    },
     "shell.help": {
       "label": "Help",
       "tooltip": "About Fyniq, and the version you are on."

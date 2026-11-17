@@ -4,7 +4,7 @@ type: task
 title: Reconcile a money account for a month, and sign it off
 summary: Prepare a month's bank reconciliation from the statement, explain any difference, and have another person sign it off
 sources:
-  - docs/user-guide/banking.md sha256:784157b65337f7cce8b87902c4409661e4e29f476e0b77dfadf9e9a59d9062c9
+  - docs/user-guide/banking.md sha256:019de19b09be6ac3fa40b7d3251ca8fa62beba74f7364724e67a934f577efdd8
 data_class: general
 taint: trusted
 status: draft

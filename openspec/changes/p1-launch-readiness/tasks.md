@@ -248,6 +248,9 @@ and names the requirement IDs it proves.
   changed picture builds no image (archtest `TestTheReleaseWaitsForEveryRoutesPictures`). **Left:** the first
   baselines, from CI's first runs; a picture of a route that still changes run to run (a time of day) is masked once a
   nightly shows it; the run uploads the changed picture, not a drawn diff, as the baseline image is not kept.)
+  (17 Nov 2026, later: the first baselines are those of the pull request that took them in: its first CI run drew the
+  key pages on linux/amd64, `scripts/visual.py approve` took that run's hashes into `baselines.json`, and the label
+  `visual-baseline`, created for it, let the change through; its next run compared every picture against them.)
 - [x] 5.5 QA-UI-06: the first-run tour per role by keyboard alone, reduced and animated, axe at 0. Nothing is written
   but `user_help_state`, and G4-104 resumes it. Waits for `p1-app-shell` task 4.2. Test `// req: QA-UI-06`,
   `// req: G4-104`.

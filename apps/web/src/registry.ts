@@ -238,6 +238,8 @@ export const actions = [
   { kind: "action", id: "shell.help", mode: "basic", help: "shell.help", guide: "home.overview#see-which-version-you-are-on" },
   // The first-run tour (FR-UX-34): offered at first, and from Help and the command palette any time.
   { kind: "action", id: "shell.tour", mode: "basic", help: "shell.tour", guide: "help.guide#take-the-tour" },
+  // Plain view or Accountant view of money in and out (FR-UX-08): Expert's; Basic always uses Plain view.
+  { kind: "action", id: "ledger-view", mode: "expert", help: "ledger.view", guide: "banking.accounts#categorise-the-waiting-lines" },
   { kind: "action", id: "shell.assistant", mode: "basic", help: "shell.assistant", guide: "ai.assistant" },
   { kind: "action", id: "assistant.ask-about-this", mode: "basic", help: "assistant.ask-about-this", guide: "ai.assistant#ask-about-a-record-a-report-or-a-figure" },
   { kind: "action", id: "assistant.feedback", mode: "basic", help: "assistant.feedback", guide: "ai.assistant#rate-an-answer" },
