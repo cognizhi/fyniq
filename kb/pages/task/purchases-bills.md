@@ -4,7 +4,7 @@ type: task
 title: Bills
 summary: Entering, posting and approving a supplier's bill; claiming its GST; recurring bills; spreading a prepaid cost; payments; voiding or editing a bill
 sources:
-  - docs/user-guide/bills.md sha256:02d5d2e48697849072dbb496e56285fd118ca4d4bed2e6a292dadfed18d8e10b
+  - docs/user-guide/bills.md sha256:373f4916fc39ce6e2d5e88dceb1e4c097ad377c934e4802eab195e1dabaca43d
 data_class: general
 taint: trusted
 status: draft
@@ -151,6 +151,7 @@ aliases:
 - When the organisation uses dimensions, such as Department or Project, each line can take one value of each, such as OPS Operations, so its cost shows by team or by project ([[accounting.chart]]).
 - The choices are in Expert mode; a line on an account that requires a dimension shows its choice in Basic mode too, with "needs one" under it, and the bill does not post until the line has one (DIM-05).
 - A spread line's cost keeps its values each month it is released; a credit note's lines take values in the same way, and a recurring bill's lines pass theirs to each draft it makes.
+- In Basic mode, a bill whose lines have values in Expert's fields (a spread, a dimension value the account does not require) shows **Has advanced details** with how many: open it to read them, **Open in Expert mode** to change them.
 
 (src: docs/user-guide/bills.md#tag-a-line-with-dimensions)
 

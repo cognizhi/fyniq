@@ -147,6 +147,13 @@
   preferences operation exists. **Left:** storing it on the server, the Administrator's default per role, the
   disclosure of hidden fields and the mode-parity test.)
 
+  (17 Nov 2026, for the launch gate: nothing silently hidden on records (FR-UX-25). `components/AdvancedDetails.tsx`:
+  in Basic mode, "Has advanced details (N)" lists read-only the values a record has in fields only Expert shows, with
+  "Open in Expert mode"; nothing in Expert mode. The invoice, credit note and recurring invoice lines (discount, spread,
+  dimension values), the bill lines (spread, dimension values) and the claim's receipts (dimension values) use it: such
+  a field is Expert's in Basic now even with a value, unless its account or category requires it or it carries an
+  error to fix. Guides `invoices.md`, `bills.md`, `claims-my-claims.md`, compiled. Tests `AdvancedDetails.test.tsx`,
+  `invoices.test.tsx`.)
 - [ ] 4.2 Tooltips, `/help` built from `docs/user-guide/`, context-aware help, the first-run tour, practice in the sample company, and the FR-UX-41 banner from the review register. Tests `// req: FR-UX-30`, `// req: FR-UX-32`, `// req: FR-UX-33` (guide half), `// req: FR-UX-34`, `// req: FR-UX-36` and `// req: FR-UX-41`
   (20 Oct 2026, in part: the FR-UX-41 banner, `components/ReviewBanner.tsx`, reads the review register at build time
   and shows on each Settings page whose screen it lists while the area is pending. Test `ReviewBanner.test.tsx`.
