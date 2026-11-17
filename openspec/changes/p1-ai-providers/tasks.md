@@ -114,6 +114,10 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 - [ ] 8.2 `ai-providers` and `ai-provider-connection` (add from an adapter or preset, credential, models from the list,
   probe, billing, data handling, enable with a second approver); help keys; guide `docs/user-guide/ai-providers.md`.
   Tests `// req: AI-72`, `// req: AI-80`.
+  Built so far (slice 28): AI providers (`/settings/ai/providers`): the connections, which data may go where, and
+  adding one from a provider or preset (the catalogue gains each model provider's sign-ins, features and presets).
+  Left: the connection's own page (configuration, key, models from the list, probe, qualify, prices, data handling,
+  enable).
 - [ ] 8.3 `ai-model-routes` and `ai-route-editor`; help keys; the guide's routes section. Tests `// req: AI-74`.
 - [ ] 8.4 `ai-activity-log`, and `my-ai-plan` showing P2's own-plan option as not offered; help keys; guides compiled.
   Tests `// req: AI-12`.

@@ -696,6 +696,18 @@
       "label": "AI usage and budgets",
       "tooltip": "What the assistant and the agents used and cost each month, by agent, connection and model, and person, against the budgets."
     },
+    "settings.ai-providers": {
+      "label": "AI providers",
+      "tooltip": "Where the assistant and the agents send their model calls: each connection's sign-in, billing and data rules. Every one starts off."
+    },
+    "ai.connection-add": {
+      "label": "Ask to add it",
+      "tooltip": "The connection is added once a second approver approves it, and starts off; it is turned on separately, also with a second approver."
+    },
+    "ai.data-policy": {
+      "label": "Which data may go where",
+      "tooltip": "The classes of data each connection may receive: know-how and business figures widely, personal data and payroll only where Singapore processing is evidenced."
+    },
     "ai.switch-off": {
       "label": "Turn all AI off now",
       "tooltip": "New requests stop at once, and a reply being written within seconds. Turning it back on needs a second approver."

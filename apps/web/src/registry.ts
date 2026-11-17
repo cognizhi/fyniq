@@ -184,6 +184,7 @@ export const routes = [
   { kind: "route", id: "settings-data", path: "/settings/data", mode: "expert", signedIn: true, help: "settings.data", guide: "settings.data" },
   { kind: "route", id: "settings-ai", path: "/settings/ai", mode: "expert", signedIn: true, help: "settings.ai", guide: "settings.ai" },
   { kind: "route", id: "settings-ai-usage", path: "/settings/ai/usage", mode: "expert", signedIn: true, help: "settings.ai-usage", guide: "settings.ai#usage-and-budgets" },
+  { kind: "route", id: "settings-ai-providers", path: "/settings/ai/providers", mode: "expert", signedIn: true, help: "settings.ai-providers", guide: "settings.ai-providers" },
   // Settings › Import (FR-MIG-01…03; p1-workbook-migration task 9.1): the move from the workbook, M1 to M6, and the generic import.
   { kind: "route", id: "settings-import", path: "/settings/import", mode: "expert", signedIn: true, help: "settings.import", guide: "settings.import" },
   { kind: "route", id: "settings-team-mode", path: "/settings/team-mode", mode: "expert", signedIn: true, help: "settings.team-mode", guide: "settings.team-mode" },
@@ -281,6 +282,8 @@ export const actions = [
   { kind: "action", id: "ai.switch-on", mode: "expert", help: "ai.switch-on", guide: "settings.ai#the-ai-switch" },
   { kind: "action", id: "ai.budgets", mode: "expert", help: "ai.budgets", guide: "settings.ai#budgets" },
   { kind: "action", id: "ai.budget-set", mode: "expert", help: "ai.budget-set", guide: "settings.ai#budgets" },
+  { kind: "action", id: "ai.connection-add", mode: "expert", help: "ai.connection-add", guide: "settings.ai-providers#add-a-connection" },
+  { kind: "action", id: "ai.data-policy", mode: "expert", help: "ai.data-policy", guide: "settings.ai-providers#which-data-may-go-where" },
   { kind: "action", id: "workbook-import.start", mode: "expert", help: "workbook-import.start", guide: "settings.import#start-the-import" },
   { kind: "action", id: "workbook-import.upload", mode: "expert", help: "workbook-import.upload", guide: "settings.import#upload-and-check-the-workbook" },
   { kind: "action", id: "workbook-import.sign-mapping", mode: "expert", help: "workbook-import.sign-mapping", guide: "settings.import#map-and-sign" },

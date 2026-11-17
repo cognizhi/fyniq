@@ -11,13 +11,13 @@ import { Dialog } from "../../components/ui/dialog";
 import { date, dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { guarded, useConfirm } from "../../stepup";
+import { collect, initialValues, ManifestFields, propertiesOf } from "../../components/ManifestFields";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import type { Approval } from "../approvals/words";
 import { dataClassesLabel, healthChip, kindLabel, regionsLabel, stateChip, upgradeOf, type CatalogueEntry, type Connector, type InstallationChange, type Scope } from "./connectorWords";
 import { AskedBanner, ChangeDecision, type Answer, type Asked } from "./Integrations";
 
 type Step = components["schemas"]["ConnectorStepRequest"]["step"];
-type Property = { type?: string; title?: string; description?: string; enum?: string[]; default?: unknown; pattern?: string };
 
 async function catalogueEntry(id: string): Promise<CatalogueEntry | undefined> {
   const r = await api.GET("/v1/connector-catalogue", { params: { query: { page_size: 200 } } });
@@ -125,117 +125,22 @@ function TestResult({ c }: { c: Connector }) {
 // ConfigurationForm is the form the manifest's configuration schema describes: a text field for a string, a choice
 // for an enum, a number, a switch, and JSON for a nested value. Secrets are never part of it (FR-INT-20).
 function ConfigurationForm({ c, entry, busy, onSave }: { c: Connector; entry: CatalogueEntry; busy: boolean; onSave: (configuration: Record<string, unknown>) => void }) {
-  const id = useId();
-  const schema = entry.configuration as { properties?: Record<string, Property>; required?: string[] };
-  const props = Object.entries(schema.properties ?? {});
-  const required = schema.required ?? [];
-  const initial = Object.fromEntries(
-    props.map(([k, p]) => {
-      const v = c.configuration[k];
-      if (p.type === "boolean") return [k, v === true];
-      if (v === undefined || v === null) return [k, ""];
-      return [k, typeof v === "object" ? JSON.stringify(v, null, 2) : String(v)];
-    }),
-  ) as Record<string, string | boolean>;
-  const [values, setValues] = useState(initial);
+  const [values, setValues] = useState(() => initialValues(entry.configuration, c.configuration));
   const [bad, setBad] = useState<Record<string, string>>({});
   const save = helpText("connector.configure");
+  const empty = propertiesOf(entry.configuration).length === 0;
   const submit = () => {
-    const out: Record<string, unknown> = {};
-    const errs: Record<string, string> = {};
-    for (const [k, p] of props) {
-      const v = values[k] ?? "";
-      if (typeof v === "boolean") out[k] = v;
-      else if (v.trim() === "") continue;
-      else if (p.type === "object" || p.type === "array") {
-        try {
-          out[k] = JSON.parse(v);
-        } catch {
-          errs[k] = `${p.title ?? k} is not valid JSON. Check the brackets, quotes and commas, then save again.`;
-        }
-      } else if (p.type === "integer") out[k] = Number.parseInt(v, 10);
-      else out[k] = v.trim();
-    }
+    const { out, errs } = collect(entry.configuration, values);
     setBad(errs);
     if (Object.keys(errs).length === 0) onSave(out);
   };
   return (
     <>
-      {props.length === 0 && <p className="fy-secondary">This connector has nothing to configure.</p>}
-      {props.map(([k, p]) => {
-        const v = values[k] ?? "";
-        const fid = `${id}-${k}`;
-        const label = (
-          <>
-            {p.title ?? k}
-            {required.includes(k) && (
-              <span className="fy-req" aria-hidden="true">
-                {" "}
-                *
-              </span>
-            )}
-          </>
-        );
-        const help = (
-          <span className="fy-help" id={`${fid}-help`}>
-            {p.description}
-            {p.default !== undefined && typeof p.default !== "object" ? ` Leave it empty for ${String(p.default)}.` : ""}
-          </span>
-        );
-        const err = bad[k] && (
-          <span className="fy-error" id={`${fid}-err`}>
-            {bad[k]}
-          </span>
-        );
-        const describedBy = bad[k] ? `${fid}-help ${fid}-err` : `${fid}-help`;
-        if (typeof v === "boolean")
-          return (
-            <div key={k} className="fy-row fy-row--top gap-3">
-              <button className="fy-switch" type="button" role="switch" id={fid} aria-checked={v} aria-labelledby={`${fid}-l`} aria-describedby={`${fid}-help`} onClick={() => setValues({ ...values, [k]: !v })} />
-              <span className="fy-stack gap-0.5">
-                <span className="fy-strong" id={`${fid}-l`}>
-                  {label}
-                </span>
-                {help}
-              </span>
-            </div>
-          );
-        return (
-          <div key={k} className="fy-field">
-            <label className="fy-label" htmlFor={fid}>
-              {label}
-            </label>
-            {p.enum ? (
-              <select className="fy-select" id={fid} value={v} aria-describedby={describedBy} onChange={(e) => setValues({ ...values, [k]: e.target.value })}>
-                <option value="">Choose…</option>
-                {p.enum.map((o) => (
-                  <option key={o} value={o}>
-                    {o}
-                  </option>
-                ))}
-              </select>
-            ) : p.type === "object" || p.type === "array" ? (
-              <textarea className="fy-textarea fy-mono" id={fid} value={v} aria-invalid={Boolean(bad[k])} aria-describedby={describedBy} onChange={(e) => setValues({ ...values, [k]: e.target.value })} />
-            ) : (
-              <input
-                className={p.type === "string" ? "fy-input fy-mono" : "fy-input"}
-                id={fid}
-                type={p.type === "integer" || p.type === "number" ? "number" : "text"}
-                value={v}
-                placeholder={typeof p.default === "string" ? p.default : undefined}
-                required={required.includes(k)}
-                aria-describedby={describedBy}
-                onChange={(e) => setValues({ ...values, [k]: e.target.value })}
-              />
-            )}
-            {help}
-            {err}
-          </div>
-        );
-      })}
+      {empty && <p className="fy-secondary">This connector has nothing to configure.</p>}
+      <ManifestFields schema={entry.configuration} values={values} onChange={setValues} bad={bad} />
       <div className="fy-row fy-row--wrap gap-2">
         <span className="fy-small fy-secondary fy-grow">Saving asks a second person to approve the change; a changed configuration is tested again before it is enabled.</span>
-        <Button variant="primary" onClick={submit} disabled={busy || props.length === 0} title={save.tooltip}>
+        <Button variant="primary" onClick={submit} disabled={busy || empty} title={save.tooltip}>
           {save.label}
         </Button>
       </div>

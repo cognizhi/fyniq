@@ -22239,6 +22239,8 @@ export interface components {
             id: string;
             /** @example Mailpit in the local stack. */
             local_substitute: string;
+            /** @description A model provider's: what its adapter carries, how a connection to it signs in, and the presets a connection may start from; absent for other connectors. */
+            model?: components["schemas"]["CatalogueModel"];
             /** @example Zoho ZeptoMail */
             name: string;
             /** @example Fyniq */
@@ -22263,6 +22265,11 @@ export interface components {
             version: string;
             webhooks: components["schemas"]["ConnectorWebhookInfo"][] | null;
         };
+        CatalogueModel: {
+            auth: ("api-key" | "workload-identity" | "oauth-grant" | "none")[];
+            features: string[];
+            presets: components["schemas"]["CataloguePreset"][];
+        };
         CataloguePage: {
             items: components["schemas"]["CatalogueEntry"][] | null;
             /**
@@ -22270,6 +22277,23 @@ export interface components {
              * @example eyJhZnRlciI6InNtdHAifQ
              */
             next_cursor?: string;
+        };
+        CataloguePreset: {
+            auth: ("api-key" | "workload-identity" | "oauth-grant" | "none")[];
+            /**
+             * @description The endpoint it starts from; absent for a server whose address the connection names.
+             * @example https://api.moonshot.ai/v1
+             */
+            base_url?: string;
+            /** @example kimi */
+            id: string;
+            /** @example Moonshot Kimi */
+            name: string;
+            /**
+             * @description A server the organisation runs, reached only as a registered private endpoint (SEC-37).
+             * @example false
+             */
+            self_hosted: boolean;
         };
         ChartLoaded: {
             /**

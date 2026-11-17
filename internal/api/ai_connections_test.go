@@ -723,3 +723,45 @@ func TestModelsJoinTheAllowListProbedAndApproved(t *testing.T) {
 	}
 	e.problemIs(e.call(http.MethodPost, base+"allow", admin, map[string]any{"model": "m3"}), "allowAIConnectionModel", 409, aimodel.CodeNotProbed)
 }
+
+// The catalogue offers each model provider with what a connection to it needs (AI-71, AI-72): how it may sign in, what
+// its adapter carries, and its presets, each with its endpoint or as a server the organisation hosts; other connectors
+// have no model section.
+// req: AI-71
+// req: AI-72
+func TestTheCatalogueOffersModelProviders(t *testing.T) {
+	e := newEnv(t)
+	r := e.call(http.MethodGet, "/v1/connector-catalogue?page_size=200", e.as(authz.Owner, authz.Administrator), nil)
+	if r.Status != http.StatusOK {
+		t.Fatalf("listConnectorCatalogue: %d %s", r.Status, r.Raw)
+	}
+	var compatible, mail map[string]any
+	for _, x := range r.Body["items"].([]any) {
+		switch x.(map[string]any)["id"] {
+		case "openai-compatible":
+			compatible = x.(map[string]any)
+		case "zeptomail":
+			mail = x.(map[string]any)
+		}
+	}
+	if compatible == nil || mail == nil {
+		t.Fatalf("the catalogue: %s", r.Raw)
+	}
+	if mail["model"] != nil {
+		t.Errorf("a mail connector with a model section: %v", mail["model"])
+	}
+	model, _ := compatible["model"].(map[string]any)
+	var kimi, ollama map[string]any
+	for _, p := range model["presets"].([]any) {
+		switch p.(map[string]any)["id"] {
+		case "kimi":
+			kimi = p.(map[string]any)
+		case "ollama":
+			ollama = p.(map[string]any)
+		}
+	}
+	if len(model["auth"].([]any)) == 0 || len(model["features"].([]any)) == 0 || kimi == nil || kimi["base_url"] != "https://api.moonshot.ai/v1" ||
+		kimi["auth"].([]any)[0] != "api-key" || kimi["self_hosted"] != false || ollama == nil || ollama["self_hosted"] != true {
+		t.Errorf("the compatible adapter's model section: %v", model)
+	}
+}

@@ -236,6 +236,12 @@ See proposal.md for why. What exists today:
   (the switch, budgets): admin operations, on the never-list for the AI and MCP (§9.6).
 - Settings › AI: `ai-settings`, `ai-providers`, `ai-provider-connection`, `ai-model-routes`, `ai-route-editor`,
   `ai-usage`, `ai-activity-log`; `my-ai-plan` under Profile, showing P2's option as not offered.
+- As built (task 8.2, first slice): AI providers (`/settings/ai/providers`) lists the connections (status, billing, whether
+  the key is set, this month's cost), the data-class rules with the policy's own additions and exclusions, the requests
+  waiting for a second approver, and the providers and presets to add a connection from: name, sign-in, key, billing
+  (usage, or a subscription's quota), the manifest's configuration (the form the Integrations page uses, now shared) and
+  automatic qualification. `listConnectorCatalogue` gains each model provider's `model` section (its sign-ins,
+  features and presets), additively, which `createAIConnection` already named as its source.
 - As built (task 8.1): Settings › AI (`/settings/ai`) shows the switch (the Owner's "Turn all AI off now", after a
   second look; "Ask to turn it on" for anyone who may change settings, answered with the approval request), the
   budgets in money and tokens with what the month used (only the Owner adds, changes or removes one), and the providers

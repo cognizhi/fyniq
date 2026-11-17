@@ -28,7 +28,7 @@ aliases:
 ## What it is
 
 - **Settings → AI** (Expert mode) holds the AI switch and the monthly budgets, and shows the providers and model routes at a glance; **AI usage and budgets** shows what the assistant and the agents used and cost each month.
-- The Owner, the Administrator, the Controller, the Auditor and the Compliance officer can see them. Where the AI's settings sit among the company's: [[settings.organisation]].
+- The Owner, the Administrator, the Controller, the Auditor and the Compliance officer can see them. Where the AI's settings sit among the company's: [[settings.organisation]]; the connections the AI uses: [[settings.ai-providers]].
 
 (src: docs/user-guide/ai-settings.md#what-it-is)
 
