@@ -79,7 +79,7 @@ var platformChecks = []Definition{
 		Explain: "Fyniq makes the recurring documents, posts depreciation, the spreads and the month-end revaluation, and sends " +
 			"the bills-due reminders by itself. A job that has not run within its time, or whose last run failed, leaves the " +
 			"books short of those entries.",
-		Rules: "FR-AUT-01, ADR-T7", Owner: "controller", View: viewClose, Run: jobsOnTime},
+		Rules: "FR-AUT-01, ADR-T7", Owner: "controller", View: viewClose, Triggers: []string{"outbox"}, Run: jobsOnTime},
 	{Key: "parameters.packs-current", Ref: "C.2 #16", Area: "Parameters", Worst: Warning, Title: "The statutory parameters in force are current",
 		Explain: "GST, CPF and the other statutory values come from versioned packs, each with a date by which it is checked " +
 			"against its official source. A pack in force past that date, or one with a later version loaded and not yet " +
@@ -296,11 +296,28 @@ func packsCurrent(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, er
 
 // C.2 #12: the watched jobs whose heartbeat is missing or older than they may go without one. A failed run beats no
 // heartbeat, so it shows here once its time has passed.
-func jobsOnTime(_ context.Context, _ storage.UnitOfWork, e *Env) (Result, error) {
-	if e.beats == nil {
-		return Missing("the scheduler's heartbeats", "the platform's schedule"), nil
+func jobsOnTime(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	// Background work whose attempts ran out (§12.11, G4-073): each until a person replays it.
+	dead, err := u.Outbox().Dead(ctx, deadListed)
+	if err != nil {
+		return Result{}, err
 	}
 	var items []Item
+	for _, d := range dead {
+		why := ""
+		if d.LastError != "" {
+			why = ": " + d.LastError
+		}
+		items = append(items, Item{Kind: "outbox", ID: d.ID.String(), Label: "Background work " + d.Kind,
+			Detail:  fmt.Sprintf("It stopped after %d attempts on %s%s. Replay it once what stopped it is fixed", d.Attempts, d.DiedAt.UTC().Format("2 Jan 2006 15:04 UTC"), why),
+			Version: d.DiedAt.UTC().Format(time.RFC3339Nano)})
+	}
+	if e.beats == nil {
+		if len(items) > 0 {
+			return Found(Error, items, fmt.Sprintf("%d background task(s) stopped", len(items)), replayFix), nil
+		}
+		return Missing("the scheduler's heartbeats", "the platform's schedule"), nil
+	}
 	for _, j := range e.jobs {
 		label := cmp.Or(ScheduledJobs[j.Name], j.Name)
 		last, ok := e.beats[j.Name]
@@ -316,9 +333,15 @@ func jobsOnTime(_ context.Context, _ storage.UnitOfWork, e *Env) (Result, error)
 	if len(items) == 0 {
 		return Fine(fmt.Sprintf("Each of the %d scheduled jobs ran on time", len(e.jobs))), nil
 	}
-	return Found(Error, items, fmt.Sprintf("%d scheduled job(s) late or failing", len(items)),
-		"Tell whoever runs the installation: the scheduler's runbook says how to find why a job stopped"), nil
+	return Found(Error, items, fmt.Sprintf("%d scheduled job(s) or background task(s) late, failing or stopped", len(items)),
+		"Tell whoever runs the installation: the scheduler's runbook says how to find why a job stopped. "+replayFix), nil
 }
+
+// deadListed is how many stopped background tasks C.2 #12 lists, the latest first.
+const deadListed = 100
+
+// replayFix is what to do about a background task that stopped (G4-073).
+const replayFix = "A stopped background task is replayed from its item, by an Owner or an Administrator, once what stopped it is fixed"
 
 // C.2 #11: vendors whose bank details were approved in the last 30 days, with posted bills still open.
 func bankDetailsChanged(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {

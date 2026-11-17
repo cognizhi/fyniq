@@ -12,6 +12,69 @@ import (
 	"github.com/google/uuid"
 )
 
+const deadOutbox = `-- name: DeadOutbox :many
+SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
+       lease_holder, lease_expires_at, deadline_at, last_error, updated_at
+FROM fyniq.outbox WHERE state = 'dead'
+ORDER BY updated_at DESC, id
+LIMIT $1
+`
+
+type DeadOutboxRow struct {
+	ID             uuid.UUID
+	WorkerClass    string
+	Kind           string
+	Payload        []byte
+	BusinessKey    *string
+	State          string
+	Attempts       int32
+	MaxAttempts    int32
+	Dispatches     int32
+	TaskName       *string
+	LeaseHolder    *string
+	LeaseExpiresAt *time.Time
+	DeadlineAt     *time.Time
+	LastError      *string
+	UpdatedAt      time.Time
+}
+
+// The rows whose attempts ran out, the latest first (C.2 #12).
+func (q *Queries) DeadOutbox(ctx context.Context, maxRows int32) ([]DeadOutboxRow, error) {
+	rows, err := q.db.Query(ctx, deadOutbox, maxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DeadOutboxRow
+	for rows.Next() {
+		var i DeadOutboxRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkerClass,
+			&i.Kind,
+			&i.Payload,
+			&i.BusinessKey,
+			&i.State,
+			&i.Attempts,
+			&i.MaxAttempts,
+			&i.Dispatches,
+			&i.TaskName,
+			&i.LeaseHolder,
+			&i.LeaseExpiresAt,
+			&i.DeadlineAt,
+			&i.LastError,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const dueOutbox = `-- name: DueOutbox :many
 SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
        lease_holder, lease_expires_at, deadline_at, last_error
@@ -428,4 +491,52 @@ func (q *Queries) OutboxByKey(ctx context.Context, arg OutboxByKeyParams) ([]Out
 		return nil, err
 	}
 	return items, nil
+}
+
+const replayOutbox = `-- name: ReplayOutbox :one
+UPDATE fyniq.outbox
+SET state = 'pending', attempts = 0, task_name = NULL, lease_holder = NULL, lease_expires_at = NULL, deadline_at = NULL
+WHERE id = $1 AND state = 'dead'
+RETURNING id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
+          lease_holder, lease_expires_at, deadline_at, last_error
+`
+
+type ReplayOutboxRow struct {
+	ID             uuid.UUID
+	WorkerClass    string
+	Kind           string
+	Payload        []byte
+	BusinessKey    *string
+	State          string
+	Attempts       int32
+	MaxAttempts    int32
+	Dispatches     int32
+	TaskName       *string
+	LeaseHolder    *string
+	LeaseExpiresAt *time.Time
+	DeadlineAt     *time.Time
+	LastError      *string
+}
+
+// A person replays a dead row: pending again, its attempts counted afresh, its last error kept (G4-073).
+func (q *Queries) ReplayOutbox(ctx context.Context, id uuid.UUID) (ReplayOutboxRow, error) {
+	row := q.db.QueryRow(ctx, replayOutbox, id)
+	var i ReplayOutboxRow
+	err := row.Scan(
+		&i.ID,
+		&i.WorkerClass,
+		&i.Kind,
+		&i.Payload,
+		&i.BusinessKey,
+		&i.State,
+		&i.Attempts,
+		&i.MaxAttempts,
+		&i.Dispatches,
+		&i.TaskName,
+		&i.LeaseHolder,
+		&i.LeaseExpiresAt,
+		&i.DeadlineAt,
+		&i.LastError,
+	)
+	return i, err
 }

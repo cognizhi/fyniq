@@ -65,6 +65,20 @@ func (d Dispatcher) EnqueueAt(ctx context.Context, u storage.UnitOfWork, org uui
 	return row, nil
 }
 
+// Replay sends a dead row back to pending in u, with its attempts counted afresh, and dispatches it once u commits
+// (C.2 #12, G4-073); ports.ErrNotFound when no dead row has that ID. The caller records who replayed it.
+func (d Dispatcher) Replay(ctx context.Context, u storage.UnitOfWork, org, id uuid.UUID) (storage.OutboxRow, error) {
+	row, err := u.Outbox().Replay(ctx, id)
+	if err != nil {
+		return storage.OutboxRow{}, err
+	}
+	u.AfterCommit(func(ctx context.Context) {
+		// Best effort, as Enqueue's: a row not dispatched now stays pending, and the tick sends it.
+		_ = d.Dispatch(context.WithoutCancel(ctx), org, row)
+	})
+	return row, nil
+}
+
 // Dispatch sends a row as a task under a new name. The row is marked dispatched first, so a task
 // never finds its row still pending; if the enqueue then fails, the row is overdue at its deadline
 // and the sweep sends it again.
