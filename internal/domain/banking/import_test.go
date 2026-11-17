@@ -185,6 +185,7 @@ func TestABreakInTheBalanceChainIsAGap(t *testing.T) {
 // bank's reference or a running balance is kept and marked possible duplicate, never dropped silently.
 // req: FR-BNK-04
 // req: FR-BNK-16
+// req: G4-042
 func TestDuplicatesAreDroppedOnlyOnProof(t *testing.T) {
 	w := start(t)
 	file := mt940("0721234567", "SGD", "C251001SGD0,00", "C251031SGD1000,00", "251003 C 500,00 INV7;251003 C 500,00 INV7")

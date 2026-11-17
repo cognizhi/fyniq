@@ -226,7 +226,7 @@ function Overview({ c, entry, onAsked }: { c: Connection; entry?: CatalogueEntry
   const [changing, setChanging] = useState(false);
   const config = propertiesOf(entry?.configuration);
   const agents = useQuery({ queryKey: ["ai-routes"], queryFn: aiAgents });
-  const using = (agents.data ?? []).filter((x) => x.route?.steps.some((st) => st.connection_id === c.id));
+  const routed = (agents.data ?? []).filter((x) => x.route?.steps.some((st) => st.connection_id === c.id));
   return (
     <>
       <Card title="Sign-in and key"
@@ -284,9 +284,9 @@ function Overview({ c, entry, onAsked }: { c: Connection; entry?: CatalogueEntry
         </dl>
       </Card>
       <Card title="Agents that use it">
-        {agents.data && using.length === 0 && <p className="fy-secondary">No agent's route names this connection yet.</p>}
+        {agents.data && routed.length === 0 && <p className="fy-secondary">No agent's route names this connection yet.</p>}
         <ul className="fy-list">
-          {using.map((x) => (
+          {routed.map((x) => (
             <li key={x.agent} className="fy-list__item">
               <span className="fy-list__main">
                 <span className="fy-list__title">{x.name}</span>

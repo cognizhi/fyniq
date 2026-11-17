@@ -11,6 +11,11 @@ library only.
     python3 scripts/roadmap.py check   # exit 1 on an unplaced requirement or screen, or a stale region (make roadmap-check)
     python3 scripts/roadmap.py write   # rewrite the marked regions (make roadmap)
 
+It also writes the launch subset, `docs/prd/plans/launch-subset.json` (p1-launch-readiness design D1): every change whose
+launch column launches it, with its requirements and Appendix G's acceptance scenarios. The exceptions to it are kept by
+hand in `docs/prd/plans/launch-exceptions.json`, each with the decision or evidence it rests on; `check` refuses one that
+names nothing of the subset or rests on nothing.
+
 A requirement added to the PRD lands in its capability's default change; a P2 or P3 row, or a row
 that belongs elsewhere, needs its ID in LATER or BY_ID, and the check names it until it has one.
 """
@@ -26,6 +31,12 @@ INVENTORY = ROOT / "docs/design/screens/inventory.json"
 PLAN = ROOT / "docs/prd/plans/p1-p3-build-plan-2026-10-16.md"
 REGION = re.compile(r"<!-- roadmap:([A-Za-z0-9 _-]+?) -->(.*?)<!-- /roadmap -->", re.S)
 EMPTY_OK = {"cloud-first-deployment"}  # holds P0's cloud tasks, not requirements of its own
+LAUNCH_SUBSET = ROOT / "docs/prd/plans/launch-subset.json"
+LAUNCH_EXCEPTIONS = ROOT / "docs/prd/plans/launch-exceptions.json"
+PRDS = {"PRD-001": ROOT / "docs/prd/prd-001-fyniq-platform.md", "PRD-002": ROOT / "docs/prd/prd-002-nemura-people.md"}
+# The kinds of exception (design D1): moved after go-live by a decision, proved in the dev cloud by its evidence, or
+# proved by another gate than a tagged test.
+EXCEPTION_KINDS = ("after-go-live", "live-verify", "covered-elsewhere")
 
 # ---------------------------------------------------------------- changes
 # (id, track, wave, title, depends on, local-first note, outside dependency, reviewer, launch proposal)
@@ -326,8 +337,77 @@ def requirements():
             src = re.search(r"^Source: (.*)$", b, re.M)
             ph = re.search(r"Phase (.+)$", src.group(1)) if src else None
             phase = ph.group(1).strip() if ph else None
-            reqs.append(dict(cap=cap, rid=rid, head=head, phase=phase, target=assign(cap, rid, head, phase)))
+            scenarios = re.findall(r"^#### Scenario: (G4-\d{3})\b", b, re.M)
+            reqs.append(dict(cap=cap, rid=rid, head=head, phase=phase, target=assign(cap, rid, head, phase), scenarios=scenarios))
     return reqs
+
+
+def launches(c):
+    """Whether a change's launch column puts it, or a part of it, in the launch subset."""
+    return c["launch"].startswith("Launch") or " at launch" in c["launch"]
+
+
+def label(r):
+    """A requirement as the subset and the tests' tags name it: its ID, else its capability and title."""
+    return r["rid"] or f"{r['cap']}: {r['head']}"
+
+
+def launch_subset(reqs):
+    """The launch subset: each launching change, in the plan's order, with its requirements and acceptance scenarios."""
+    out = []
+    for c in C:
+        if not launches(c):
+            continue
+        mine = [r for r in reqs if r["target"] == c["id"]]
+        scenarios = sorted({s for r in mine for s in r["scenarios"]})
+        out.append(dict(id=c["id"], wave=c["wave"], launch=c["launch"], requirements=[label(r) for r in mine], scenarios=scenarios))
+    return {"doc": "The launch subset (PRD-001 §16.2; the build plan's launch column), written by scripts/roadmap.py: each "
+                   "change that launches, with the requirements and Appendix G acceptance scenarios a launch proves. "
+                   "Exceptions are in launch-exceptions.json. Do not edit by hand: run make roadmap.",
+            "changes": out}
+
+
+def revisions(prd):
+    """The revisions a PRD's history records, such as 0.284."""
+    return set(re.findall(r"^\| (0\.\d+) \|", PRDS[prd].read_text(encoding="utf-8"), re.M))
+
+
+def check_exceptions(subset, raw=None):
+    """What is wrong with the launch exceptions against the subset: an ID the subset does not hold, twice; a kind not
+    known; no why; an after-go-live exception whose decision names no revision of its PRD's history; a live-verify one
+    whose evidence is no file of the repository; a covered-elsewhere one that names no other gate."""
+    if raw is None:
+        if not LAUNCH_EXCEPTIONS.exists():
+            return [f"{LAUNCH_EXCEPTIONS.relative_to(ROOT)} is missing"]
+        raw = LAUNCH_EXCEPTIONS.read_text(encoding="utf-8")
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as e:
+        return [f"launch-exceptions.json is not JSON: {e}"]
+    held = {i for c in subset["changes"] for i in c["requirements"] + c["scenarios"]}
+    known = {prd: revisions(prd) for prd in PRDS}
+    errors, seen = [], set()
+    for x in data.get("exceptions", []):
+        i, kind = x.get("id", ""), x.get("kind", "")
+        where = f"exception {i or '(no id)'}"
+        if i not in held:
+            errors.append(f"{where}: not a requirement or scenario of the launch subset")
+        if i in seen:
+            errors.append(f"{where}: listed twice")
+        seen.add(i)
+        if kind not in EXCEPTION_KINDS:
+            errors.append(f"{where}: kind {kind!r} is not one of {', '.join(EXCEPTION_KINDS)}")
+        if not str(x.get("why", "")).strip():
+            errors.append(f"{where}: says no why")
+        if kind == "after-go-live":
+            m = re.search(r"\b(PRD-00[12] )?rev (0\.\d+)\b", x.get("decision", ""))
+            if not m or m.group(2) not in known[(m.group(1) or "PRD-001 ").strip()]:
+                errors.append(f"{where}: its decision names no revision of the PRD's history (such as rev 0.25)")
+        if kind == "live-verify" and not (x.get("evidence") and (ROOT / x["evidence"]).is_file()):
+            errors.append(f"{where}: its evidence names no file of the repository (a runbook or an evidence record)")
+        if kind == "covered-elsewhere" and not str(x.get("by", "")).strip():
+            errors.append(f"{where}: names no gate that covers it")
+    return errors
 
 
 def ids_text(items):
@@ -413,6 +493,9 @@ def main():
     if cmd not in ("check", "write"):
         raise SystemExit(__doc__)
     regions, errors, (reqs, placed) = build()
+    subset = launch_subset(requirements())
+    errors += check_exceptions(subset)
+    subset_text = json.dumps(subset, indent=1, ensure_ascii=False) + "\n"
     if errors:
         print("✖ the P1–P3 plan does not place everything:")
         for e in errors:
@@ -420,15 +503,21 @@ def main():
         sys.exit(1)
     text = PLAN.read_text(encoding="utf-8")
     new = render(text, regions)
+    old_subset = LAUNCH_SUBSET.read_text(encoding="utf-8") if LAUNCH_SUBSET.exists() else ""
     if cmd == "write":
         if new != text:
             PLAN.write_text(new, encoding="utf-8")
-        print(f"✔ {PLAN.relative_to(ROOT)} regenerated")
-    elif new != text:
-        print(f"✖ {PLAN.relative_to(ROOT)} is stale: the specs, the screens or scripts/roadmap.py changed. Run `make roadmap`")
+        if subset_text != old_subset:
+            LAUNCH_SUBSET.write_text(subset_text, encoding="utf-8")
+        print(f"✔ {PLAN.relative_to(ROOT)} and {LAUNCH_SUBSET.relative_to(ROOT)} regenerated")
+    elif new != text or subset_text != old_subset:
+        stale = PLAN if new != text else LAUNCH_SUBSET
+        print(f"✖ {stale.relative_to(ROOT)} is stale: the specs, the screens or scripts/roadmap.py changed. Run `make roadmap`")
         sys.exit(1)
     else:
-        print(f"✔ P1–P3 plan: {reqs:,} requirements and {placed} screens after P0, each placed once, across {len(C)} changes")
+        n = sum(len(c["requirements"]) for c in subset["changes"])
+        print(f"✔ P1–P3 plan: {reqs:,} requirements and {placed} screens after P0, each placed once, across {len(C)} changes; "
+              f"the launch subset: {len(subset['changes'])} changes, {n:,} requirements")
 
 
 if __name__ == "__main__":

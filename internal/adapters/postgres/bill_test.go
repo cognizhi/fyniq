@@ -108,6 +108,8 @@ func legsOf(t *testing.T, s storage.Store, org uuid.UUID, e storage.Entry) strin
 // req: ledger/posting-rules Amounts of a posted bill
 // req: ENG-42
 // req: FR-GL-12
+// req: G4-023
+// req: G4-024
 func TestBillsPostThroughThePostingService(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ap-specialist"}})
 	s := store(t, "fyniq_api")
@@ -175,6 +177,10 @@ func TestBillsPostThroughThePostingService(t *testing.T) {
 	if c, err = bills.Check(ctx, b.Org, g4024.ID, nil); err != nil || len(c.Prepared.Warnings) != 1 || c.Prepared.Warnings[0].Code != bill.WarnGSTDiffers ||
 		!strings.Contains(c.Prepared.Warnings[0].Message, "differs by 0.01 SGD") {
 		t.Errorf("G4-024: %+v %v", c.Prepared.Warnings, err)
+	}
+	// The warning does not block: the input tax is the GST as the supplier stated it, 2.73, not the 2.72 recomputed.
+	if e, err = bills.Post(ctx, b.Org, g4024.ID); err != nil || legsOf(t, s, b.Org, e) != "6100 10.06 SGD = 10.06; 6100 10.06 SGD = 10.06; 6100 10.06 SGD = 10.06; 2200 2.73 SGD = 2.73; 2010 -32.91 SGD = -32.91" {
+		t.Errorf("G4-024 posted: %s %v", legsOf(t, s, b.Org, e), err)
 	}
 
 	// G4-023: USD 1,000.00 + 90.00 at the cascade's rate for the day, 1.34, the tax invoice stating S$121.50.

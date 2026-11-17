@@ -21,6 +21,7 @@ import (
 // req: FR-DOC-07
 // req: FR-DOC-11
 // req: FR-DOC-13
+// req: G4-069
 // asvs: V5.2.1
 func TestEvidenceOnABill(t *testing.T) {
 	e := newEnv(t)

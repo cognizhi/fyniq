@@ -28,6 +28,8 @@ import (
 // req: FR-EQ-25
 // req: FR-EQ-11
 // req: G4-101
+// req: C.2 #27
+// req: C.2 #28
 // asvs: V8.2.1
 func TestHolderRightsAndControllers(t *testing.T) {
 	c := newClaimants(t)

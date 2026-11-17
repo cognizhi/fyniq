@@ -6,13 +6,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"math/big"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/pdftext"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/sheet"
 )
 
 // capLines are a cap table's lines as "holder class shares ownership voting", in order.
@@ -45,6 +48,7 @@ func capText(v any) string {
 // req: FR-EQ-20
 // req: RND-DISPLAY
 // req: equity/cap-table-and-investors Cap table at any date
+// req: QA-RPT-03
 // asvs: V8.2.1
 func TestCapTable(t *testing.T) {
 	c := newClaimants(t)
@@ -130,6 +134,54 @@ func TestCapTable(t *testing.T) {
 	}
 	if trail := auditTrail(t, e); strings.Count(trail, `"report":"cap_table"`) != 3 || !strings.Contains(trail, csv.str("sha256")) {
 		t.Error("the exports were not audited")
+	}
+
+	// QA-RPT-03: each holding of 12 Jun, as the API gives it, reads back from the workbook figure by figure (its shares a
+	// number cell, beside its holder) and is in the PDF's text as printed; the CSV's holdings add up to its total.
+	book, _ := base64.StdEncoding.DecodeString(e.call(http.MethodGet, "/v1/cap-table/export?at=2025-06-12", weiling, nil).str("content_base64"))
+	g, err := sheet.ReadXLSX(book, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text, err := pdftext.Text(printed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, x := range compared["lines"].([]any) {
+		l := x.(map[string]any)
+		name, shares, ownership := l["holder_name"].(string), l["issued"].(string), capText(l["ownership"])
+		found := false
+		for i, row := range g.Rows {
+			if len(row) > 3 && row[0] == name && row[3] == shares && g.Numeric[i][3] && strings.Contains(strings.Join(row, " "), ownership) {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("the workbook has no row of %s with %s shares (%s%%): %v", name, shares, ownership, g.Rows)
+		}
+		if !strings.Contains(text, name) || !strings.Contains(text, asPrinted(shares)) || !strings.Contains(text, ownership) {
+			t.Errorf("the PDF lacks %s, %s shares or %s%%:\n%s", name, asPrinted(shares), ownership, text)
+		}
+	}
+	held := new(big.Rat)
+	var total *big.Rat
+	for _, line := range strings.Split(strings.TrimSpace(string(rows)), "\r\n")[1:] {
+		f := strings.Split(line, ",")
+		if len(f) < 4 {
+			continue
+		}
+		v, ok := rat(f[3])
+		if !ok {
+			t.Fatalf("a CSV row's shares are not a number: %q", line)
+		}
+		if f[0] == `"Total"` {
+			total = v
+		} else {
+			held.Add(held, v)
+		}
+	}
+	if total == nil || held.Cmp(total) != 0 || total.RatString() != compared["issued"] {
+		t.Errorf("the CSV's holdings add up to %s; its total says %v and the API %v", held.RatString(), total, compared["issued"])
 	}
 
 	// The Board reads its own holding, never the table; a Board member who is no holder holds nothing; an Employee neither.
