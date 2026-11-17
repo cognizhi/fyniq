@@ -166,6 +166,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0   # the pull request's base, to see whether it changes the visual baselines (design D5)
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       - run: make images        # both flavours, linux/amd64: budgets, non-root, no shell, no local adapter in release (§12.9)
       - run: make image-scan    # SBOM and grype per release image (SEC-21)
@@ -181,6 +182,18 @@ jobs:
       - run: make test-journeys   # QA-E2E-01: the browser journeys on the same stack, in the runner's Chrome (p1-launch-readiness D6)
         env:
           FYNIQ_PG_PORT: "25432"   # cmd/seed makes each journey's organisation in the stack's database
+      - run: make down   # the journeys' stack: the visual snapshots start their own
+      - name: A changed visual baseline is approved by its label (p1-launch-readiness design D5)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'visual-baseline') }}
+        run: |
+          if ! git diff --quiet "$BASE" HEAD -- apps/web/visual/baselines.json && [ "$LABELLED" != true ]; then
+            echo "✖ apps/web/visual/baselines.json changed: a new baseline is approved by labelling the pull request visual-baseline (design D5)"
+            exit 1
+          fi
+      - run: make test-visual   # QA-UI-07, QA-RPT-04: the key pages at the five frames in light and dark, in the pinned Playwright container (design D5)
       - if: always()
         run: make down
       - if: always()
@@ -195,6 +208,13 @@ jobs:
           name: dast-report   # ZAP's reports, dast.md and the ASVS coverage: the evidence (CTL-CHG-07)
           path: .data/dast/
           retention-days: 90
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: visual-diffs   # the pictures that differ and every hash the run saw: python3 scripts/visual.py approve <folder>
+          path: apps/web/test-results/visual/
+          if-no-files-found: ignore
+          retention-days: 14
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:

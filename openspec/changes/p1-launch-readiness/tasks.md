@@ -228,6 +228,17 @@ and names the requirement IDs it proves.
   - diffs uploaded as artefacts.
   Then a journey per device class with a fold that keeps a draft, and the motion tests (computed durations 0 with
   motion Off, Reduce motion and `prefers-reduced-motion`). Tests `// req: QA-UI-07`, `// req: QA-RPT-04`.
+  (17 Nov 2026, in part: `make test-visual` (`scripts/visual.sh`, `apps/web/visual/`) starts a stack of its own with the
+  business date fixed at 31 Dec 2026, makes an organisation with the sample company, a customer and a draft invoice,
+  and runs Playwright in its pinned container (Makefile `PLAYWRIGHT_IMAGE`, both platforms): the key pages at the five
+  frames in light and dark, the browser's clock and locale fixed, motion reduced, each picture's SHA-256 against
+  `baselines.json`. A page the per-minute read limit refused is opened again after its Retry-After, and the viewport
+  grows to the page's height so the frame is drawn where it stands. Two runs, each in an organisation of its own, drew
+  the same 50 hashes. CI runs it in the images job on every pull request, uploads `visual-diffs`, and refuses a change
+  to the baselines without the label `visual-baseline`; `scripts/visual.py approve` takes a run's hashes in. Until the
+  first baselines are approved, from CI's linux/amd64 run, a run only records. The device-class journeys with a fold
+  that keeps a draft are p1-app-shell 5.1's `e2e/devices.spec.ts`, and the motion tests `e2e/motion.spec.ts` (#772).
+  **Left:** every route nightly and in the release workflow; the first baselines.)
 - [ ] 5.5 QA-UI-06: the first-run tour per role by keyboard alone, reduced and animated, axe at 0. Nothing is written
   but `user_help_state`, and G4-104 resumes it. Waits for `p1-app-shell` task 4.2. Test `// req: QA-UI-06`,
   `// req: G4-104`.

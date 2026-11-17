@@ -87,6 +87,11 @@ class TheTraceGate(unittest.TestCase):
     def test_tags_in_go_typescript_python_and_sql_and_in_test_files_only(self):
         self.assertEqual(self.anchors, {"FR-GL-01", "sec.create_task", "FR-PAY-01", "FR-GL-05"})
 
+    def test_the_browser_suites_count(self):
+        for f in ("apps/web/e2e/devices.spec.ts", "apps/web/journeys/sell.spec.ts", "apps/web/visual/visual.spec.ts"):
+            self.assertTrue(tr.TEST_FILE.search(f), f)
+        self.assertFalse(tr.TEST_FILE.search("apps/web/visual/visual.config.ts"))
+
     def test_an_untested_m_row_blocks_and_s_and_c_rows_are_reported(self):
         blocking, reported = self.gate("P1")
         self.assertIn("FR-GL-02", blocking)
