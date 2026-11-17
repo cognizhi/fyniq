@@ -229,6 +229,17 @@ type FyniqAiDataPolicy struct {
 	MadeAt         time.Time
 }
 
+type FyniqAiGrant struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	TokenHash      []byte
+	UserID         uuid.UUID
+	TurnID         uuid.UUID
+	IssuedAt       time.Time
+	ExpiresAt      time.Time
+	EndedAt        *time.Time
+}
+
 type FyniqAiModel struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID

@@ -696,6 +696,10 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 			"Sign in again with your authenticator app, or confirm it's you with a passkey.")
 	case p.Organisation == uuid.Nil && !policy.NoOrganisation:
 		refusal = problem(CodeNoOrganisation, "Your session is not in an organisation.", "Choose an organisation and sign in to it.")
+	case p.Turn != uuid.Nil && !aiReadable(op):
+		// The assistant's delegated token only reads, whatever the AI column grants (PRD-001 §9.3 rev 0.277, AI-19).
+		refusal = problem(CodeForbidden, "The assistant only reads: this operation changes data.",
+			"Do it yourself in Fyniq; the assistant can only answer and explain.")
 	case p.CoolingOffUntil.After(a.deps.Clock.Now()) && slices.Contains(authz.HeldInCoolingOff, op.OperationID):
 		// SEC-35: after a recovery, the account cannot approve, release, change bank details, roles or sign-in methods,
 		// or use break-glass until the cooling-off ends.
