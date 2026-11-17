@@ -16,6 +16,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/adapters/smtp"
+	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/assistant"
 	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/egress"
@@ -70,6 +71,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	}
 	renderURL := cmp.Or(os.Getenv("FYNIQ_RENDER_URL"), "http://localhost:8086")
 	aiURL := cmp.Or(os.Getenv("FYNIQ_AI_URL"), "http://localhost:8082")
+	apiInternalURL := cmp.Or(os.Getenv("FYNIQ_API_INTERNAL_URL"), "http://localhost:8081/internal/v1")
 	kit := &Kit{
 		// The connectors' keys in files under .data/secrets; their traffic through the guard, which lets the local
 		// substitutes (Mailpit, Prism) through on loopback and the Docker network, never the metadata service.
@@ -110,8 +112,13 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		AssistantURL:   aiURL,
 		AssistantToken: func(context.Context) (string, error) { return tokens.Token(assistant.Class) },
 		AssistantHTTP:  PlatformEgress().Bounded(16<<20, 5*time.Minute).For(egress.HostOf(aiURL)),
-		Scheduling:     local.Scheduling{},
-		Logs:           local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},
+		// The API's internal operations (`make dev`: :8081; the stack: api:8080), which the worker asks for a run's model
+		// step with a task token; the step waits while the model works, within the run's caps.
+		AgentModelURL:   apiInternalURL,
+		AgentModelToken: func(context.Context) (string, error) { return tokens.Token(agents.ModelClass) },
+		AgentModelHTTP:  PlatformEgress().Bounded(1<<20, 31*time.Minute).For(egress.HostOf(apiInternalURL)),
+		Scheduling:      local.Scheduling{},
+		Logs:            local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},
 	}
 	kit.watchChanges(clock)
 	return kit, nil

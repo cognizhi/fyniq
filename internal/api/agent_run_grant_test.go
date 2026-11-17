@@ -60,7 +60,7 @@ func TestARunReadsAndProposesWithinItsSkill(t *testing.T) {
 	run := runningRun(e, f.ahkow)
 	var token string
 	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
-		token, err = e.api.issueRunGrant(ctx, u, e.books.Org, run, skill)
+		token, _, err = e.api.issueRunGrant(ctx, u, e.books.Org, run, skill)
 		return err
 	})
 	var grant storage.AIGrantHolder
@@ -146,7 +146,7 @@ func TestARunReadsAndProposesWithinItsSkill(t *testing.T) {
 	queued := run
 	queued.Status = storage.AgentRunQueued
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
-		if _, err := e.api.issueRunGrant(ctx, u, e.books.Org, queued, skill); err == nil {
+		if _, _, err := e.api.issueRunGrant(ctx, u, e.books.Org, queued, skill); err == nil {
 			t.Error("a grant for a run that is not running")
 		}
 		return nil

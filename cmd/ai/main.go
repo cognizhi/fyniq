@@ -1,7 +1,8 @@
 // Command ai is the AI service (PRD-001 §9.3, golden rule 5; p1-ai-assistant design D3): POST /turns answers an
-// assistant's turn for the API alone, streaming its steps. It holds no database role, no provider key and no write
-// credential: every read and every model call goes through the API's internal operations with the turn's delegated
-// token, as the person the turn is for.
+// assistant's turn for the API alone, streaming its steps, and POST /runs a scheduled agent's run's model step
+// (p1-scheduled-agents design D5). It holds no database role, no provider key and no write credential: every read and
+// every model call goes through the API's internal operations with the turn's or the run's delegated token, as the
+// person it is for.
 package main
 
 import (
@@ -26,8 +27,10 @@ func main() {
 			fmt.Fprintln(os.Stderr, "ai: answering no turns:", err)
 			return nil
 		}
-		s.Handle("POST /turns", assistant.Handler{Assistant: &assistant.Assistant{Backend: backend, Prompt: prompt, Clock: deps.Clock}, Callers: callers,
-			Log: logging.New(os.Stderr, slog.LevelInfo)})
+		log := logging.New(os.Stderr, slog.LevelInfo)
+		orchestrator := &assistant.Assistant{Backend: backend, Prompt: prompt, Clock: deps.Clock}
+		s.Handle("POST /turns", assistant.Handler{Assistant: orchestrator, Callers: callers, Log: log})
+		s.Handle("POST /runs", assistant.RunHandler{Assistant: orchestrator, Callers: callers, Log: log})
 		return nil
 	}))
 }

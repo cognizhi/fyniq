@@ -27,6 +27,7 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/clientip"
@@ -104,6 +105,8 @@ type Deps struct {
 	// Commands are the domain commands of the catalogue's task types (p1-ai-proposals-core design D3); nil: none, as each
 	// task type arrives with its own.
 	Commands proposal.Commands
+	// Skills are the scheduled agents' skills (AI-61; p1-scheduled-agents design D1); nil: the release's, agents.Default().
+	Skills *agents.Skills
 	// APIBase is where the browser reaches the API on the web app's origin: "/api" (the default) behind the load balancer
 	// and Caddy. The API's own download links start with it.
 	APIBase string

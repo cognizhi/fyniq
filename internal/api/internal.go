@@ -17,8 +17,9 @@ import (
 
 // The internal API (PRD-001 §9.3 rev 0.277; p1-ai-assistant design D4): the operations only the AI service calls, under
 // /internal/v1 on the API's own port. The edge never routes them (Caddy and Cloud Armor refuse /api/internal/), and
-// each call needs both the AI service's identity, its service token for ServiceAI, and the delegated read token of the
-// turn it works on, which names the person it acts for. Its contract is contracts/openapi/fyniq-internal.v1.yaml.
+// each call needs both the AI service's identity, its service token for ServiceAI, and the delegated token of the turn
+// or the run it works on, which names the person it acts for. The worker calls one, a scheduled agent's model step, with
+// its own service token for ServiceAgentRuns alone (rev 0.281). Its contract is contracts/openapi/fyniq-internal.v1.yaml.
 const (
 	// ServiceAI is the class of the AI service's service tokens.
 	ServiceAI = "ai"
@@ -32,10 +33,11 @@ func InternalConfig(version string) huma.Config {
 	cfg := huma.DefaultConfig("Fyniq internal API", version)
 	cfg.CreateHooks = nil
 	cfg.DocsPath, cfg.SchemasPath, cfg.OpenAPIPath = "", "", ""
-	cfg.Info.Description = "The operations only the AI service calls (PRD-001 §9.3 rev 0.277): the model calls of the assistant's turns, " +
-		"run by the API's model router so the provider keys, the budgets and the metering stay in the API. Never routed by the edge. " +
-		"Each call carries the AI service's service token (" + ServiceTokenHeader + ") and the turn's delegated read token " +
-		"(Authorization: Bearer fyai_…), which names the person the turn is for."
+	cfg.Info.Description = "The operations only the AI service calls (PRD-001 §9.3 rev 0.277): the model calls, reads and proposals of the " +
+		"assistant's turns and the scheduled agents' runs, run by the API so the provider keys, the budgets and the metering stay in the " +
+		"API. Never routed by the edge. Each call carries the AI service's service token (" + ServiceTokenHeader + ") and the turn's or " +
+		"the run's delegated token (Authorization: Bearer fyai_…), which names the person it is for. The one exception is runAgentModel, " +
+		"which the worker calls with its own service token alone (rev 0.281)."
 	cfg.Info.License = &huma.License{Name: "MIT", Identifier: "MIT"}
 	cfg.Servers = []*huma.Server{{URL: "http://api:8080", Description: "The api service, from the AI service only: the Compose network, or Cloud Run's internal ingress."}}
 	cfg.Tags = []*huma.Tag{{Name: "Assistant", Description: "What the AI service asks the API for while it answers a turn."}}
@@ -49,15 +51,28 @@ func (a *API) registerInternal(mux humago.Mux) {
 	registerModelCalls(a)
 	registerToolCalls(a)
 	registerProposals(a)
+	registerAgentRunModel(a)
 }
 
-// internalAuthenticate accepts a call only from the AI service, for a live turn: its service token, then the turn's
-// delegated read token, whose person the call acts for, audited as the AI on their behalf.
+// internalAuthenticate accepts a call only from the AI service, for a live turn or run: its service token, then the
+// delegated token, whose person the call acts for, audited as the AI on their behalf. The one exception is the worker's
+// call for a run's model step (runAgentModel), with the worker's service token alone, audited as the worker.
 func (a *API) internalAuthenticate(ctx huma.Context, next func(huma.Context)) {
 	refuse := func(status int, p *Problem) {
 		a.deps.Log.WarnContext(ctx.Context(), "api.internal.refused", "operation", ctx.Operation().OperationID, "code", p.Code,
 			"request_id", requestID(ctx.Context()))
 		_ = huma.WriteErr(a.internal, ctx, status, "", p)
+	}
+	if ctx.Operation().OperationID == "runAgentModel" { // the worker's one call, with its own service token alone (rev 0.281)
+		if a.deps.Services == nil || a.deps.Services.Verify(ctx.Header(ServiceTokenHeader), ServiceAgentRuns) != nil {
+			refuse(http.StatusUnauthorized, problem(CodeUnauthenticated, "The call is not from the worker.",
+				"Only the worker asks for a scheduled agent's model step, with its service token."))
+			return
+		}
+		audit := storage.AuditFrom(ctx.Context())
+		audit.Actor = &storage.Actor{Type: "service", ID: "worker"}
+		next(huma.WithContext(ctx, storage.WithAudit(ctx.Context(), audit)))
+		return
 	}
 	if a.deps.Services == nil || a.deps.Services.Verify(ctx.Header(ServiceTokenHeader), ServiceAI) != nil {
 		refuse(http.StatusUnauthorized, problem(CodeUnauthenticated, "The call is not from the AI service.",

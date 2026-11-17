@@ -119,10 +119,23 @@
     method is `ai_run`; the new trigger `approval_request_ai_requester` ties `ai_run` and `ai_turn` each to its own
     origin.
   - The audit names the agent (`ai`, `company_secretary`) on behalf of the Owner.
-- [ ] 5.3 The model step: `POST /internal/v1/agent-runs/{id}/model` for the worker's identity alone. The API issues the
+- [x] 5.3 The model step: `POST /internal/v1/agent-runs/{id}/model` for the worker's identity alone. The API issues the
   run's token and asks the AI service's `/runs` with the skill, its tools and the findings. The model's structured
   summary and proposals come back to the report. The rejection reasons of the run's earlier proposals reach its next
   run (design D5 step 5, D6). Tests `// req: AI-64`, `// req: AI-65`, `// req: AI-14`.
+  As built:
+  - `runAgentModel` takes the worker's service token of the class `agent_runs` alone; no other token opens it, and that
+    token opens nothing else. It checks the run is running and its skill unchanged, then asks `agents.Skipped` again.
+    It issues the run's grant (task 5.2), asks the AI service's `/runs`, screens the model's words and ends the grant.
+  - The AI service's `Run` shares the turn's tool loop: the skill's instructions and a "How you report" section are
+    the system prompt, and the findings arrive as data. The run's tools alone are offered, its model calls are routed
+    for the agent (`company_secretary`), and its words are grounded as an answer's are. It stops at the run's tool calls
+    or tokens (`agents.company_secretary.tool_calls`, `run_tokens`). Its proposals record `company_secretary@1` as their
+    prompt.
+  - The newest five rejected proposals of the agent's, for the Owner, reach its next run as `untrusted_text`.
+  - The worker's `agents.APIModel` is the run job's model step when the kit names the API's internal URL: in the stack,
+    `FYNIQ_API_INTERNAL_URL`. In the cloud, `FYNIQ_GCP`'s `api` entry and `invokers.agent_runs` (the worker's account,
+    infra) [live-verify].
 
 ## 6. Task types
 
