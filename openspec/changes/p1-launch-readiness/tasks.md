@@ -205,6 +205,11 @@ and names the requirement IDs it proves.
 - [ ] 5.2 QA-E2E-01's journeys: set-up, record, sell, buy, pay, reconcile, close, the GST monitor and calendar, AI ask,
   and AI propose → approve → execute. Payroll's journey and the GST F5's are recorded `after-go-live`. Test
   `// req: QA-E2E-01`, each journey naming the scenarios it asserts.
+  Built in part: set-up, record, sell, buy, pay, reconcile, close and the GST monitor and calendar pass on the local
+  stack (`apps/web/journeys/README.md`). Left: AI ask and AI propose → approve → execute, when the assistant and the
+  proposals of the AI chain reach main. Building them found the sample company's chart without the 2330 and 2410
+  system accounts, so no sample month could close; the loader now adds the standard chart's accounts for the roles it
+  lacks (FR-COA-03).
 - [ ] 5.3 QA-UI-08: a walkthrough per role of §7.1, covering the landing page, the navigation, the Home blocks, the
   Inbox items, the not-available page, and the API's refusal of the same reads. Test `// req: QA-UI-08`.
 - [ ] 5.4 QA-UI-07 and QA-RPT-04's visual snapshots (design D5; rev 0.284):

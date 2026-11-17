@@ -8,8 +8,14 @@ import { signIn } from "./harness";
 
 export default async function setup(config: FullConfig): Promise<void> {
   const base = String(config.projects[0]!.use.baseURL);
-  const done = (await (await fetch(`${base}/api/v1/setup`)).json()) as { done: boolean };
-  if (done.done) return;
+  // The setup's status is counted per client address (SEC-23): a 429 is asked again after its Retry-After.
+  let status = await fetch(`${base}/api/v1/setup`);
+  for (let i = 0; status.status === 429 && i < 3; i++) {
+    await new Promise((r) => setTimeout(r, Number(status.headers.get("retry-after") ?? 60) * 1000 + 1000));
+    status = await fetch(`${base}/api/v1/setup`);
+  }
+  if (!status.ok) throw new Error(`the setup's status: ${status.status} ${await status.text()}`);
+  if (((await status.json()) as { done: boolean }).done) return;
   const browser = await chromium.launch({ channel: "chrome" });
   try {
     const page = await (await browser.newContext({ baseURL: base })).newPage();

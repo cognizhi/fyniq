@@ -76,7 +76,9 @@ if [ "$(curl -fsS "$origin/api/v1/setup")" = '{"done":false}' ]; then
   org=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["organisation_id"])' "$out")
   make --no-print-directory seed-load ORG="$org" || fail "the sample company did not load, or its trial balance differs from the seed"
   accounts=$(curl -fsS -b "$jar" "$origin/api/v1/accounts?page_size=500") || fail "the chart of accounts does not answer"
-  python3 -c 'import json,sys; a=json.loads(sys.argv[1])["items"]; c=json.load(open(".data/seed/company.json"))["accounts"]; assert len(a)==len(c), (len(a), len(c))' "$accounts" \
+  # Every account of the seed, and besides them only the standard chart's accounts for the system roles the
+  # seed's chart lacks, which the loader adds (FR-COA-03).
+  python3 -c 'import json,sys; a=json.loads(sys.argv[1])["items"]; c={x["code"] for x in json.load(open(".data/seed/company.json"))["accounts"]}; got={x["code"] for x in a}; extra=[x["code"] for x in a if x["code"] not in c and not x.get("role")]; assert c <= got and not extra, (sorted(c - got), extra)' "$accounts" \
     || fail "the API does not serve the sample company's chart"
 else
   echo "  (the database was set up in an earlier run: setup not repeated)"
