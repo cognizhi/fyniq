@@ -116,7 +116,22 @@ classes:
     protection: "Scanned for malware and hashed when uploaded (FR-DOC-08), marked payroll, and read only by the import's validation; the AI has no right on it"
     transfers: "None"
     columns: [migration_file.data_class]
+  - key: ai-conversations
+    what: "Members' questions to the assistant and its answers, the reads each made, and their ratings with the reasons given"
+    why: "To answer each person in their own conversation, to keep the AI activity log (AI-12), and to review answers for the evals (QA-AI-05)"
+    where: "The database, in Singapore (Cloud SQL, asia-southeast1; locally the developer's database)"
+    who: "Each member their own conversations; the AI activity log's readers the turns, the Owner and the DPO everyone's; the Owner and an Administrator the feedback they review"
+    retention: "Until its person deletes it, or retention.ai_conversations_days after its last question, then purged daily (AI-P8)"
+    protection: "NRIC and FIN numbers, bank account numbers, secrets and home addresses never reach a model, nor payroll unless the organisation allows it (AI-02, AI-20); a turn that read payroll is masked to a reader who may not see payroll"
+    transfers: "Model calls only: the flow ai-models"
+    columns: [ai_turn.question, ai_turn.answer, ai_feedback.reason]
 flows:
+  - key: ai-models
+    what: "The assistant's model calls to the organisation's AI connections: under preset A, the default at go-live, Claude on Google Cloud's Agent Platform in Singapore (asia-southeast1), under Google Cloud's terms (AI-05, ADR-T2)"
+    data: "What a question reads of the books, as its person may read it, without NRIC and FIN numbers, bank account numbers, secrets and home addresses, and payroll only when the organisation allows it. The AI path covers model calls only"
+    classes: [ai-conversations, contacts, members]
+    cross_border: false
+    note: "A route outside Singapore (preset B, or another provider's connection) needs a transfer assessment first (CMP-PD-06); the pre-go-live check (G4-087, docs/runbooks/ai-go-live.md) confirms the endpoint and the models [live-verify]"
   - key: sign-in
     what: "Sign-in through the deployment's sign-in providers: Google, Zoho or another OpenID Connect provider"
     data: "Members' names and sign-in email addresses, and each sign-in"
