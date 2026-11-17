@@ -247,6 +247,9 @@ export const actions = [
   { kind: "action", id: "corporate-profile.record-minute-book", mode: "expert", help: "corporate-profile.record-minute-book", guide: "compliance.corporate-profile#draft-a-resolution-notice-or-minutes" },
   { kind: "action", id: "shell.about", mode: "basic", help: "shell.about", guide: "home.overview#see-which-version-you-are-on" },
   // Home's tiles from the plans (FR-KPI-01, FR-PLN-03): against the budget in Expert; the forecast's cash-out month in both.
+  // Home's per-role work and its deadlines (§7.1, FR-UX-40; docs/design/screens Home's upcoming deadlines).
+  { kind: "action", id: "home.your-work", mode: "basic", help: "home.your-work", guide: "home.overview#your-work" },
+  { kind: "action", id: "home.deadlines", mode: "basic", help: "home.deadlines", guide: "home.overview#upcoming-deadlines" },
   { kind: "action", id: "home.revenue-vs-budget", mode: "expert", help: "home.revenue-vs-budget", guide: "home.overview#read-the-plans-on-home" },
   { kind: "action", id: "home.costs-vs-budget", mode: "expert", help: "home.costs-vs-budget", guide: "home.overview#read-the-plans-on-home" },
   { kind: "action", id: "home.forecast-cash-out", mode: "basic", help: "home.forecast-cash-out", guide: "home.overview#read-the-plans-on-home" },

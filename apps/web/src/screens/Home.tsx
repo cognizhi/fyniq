@@ -7,6 +7,7 @@ import { landingOf } from "../shell/navigation";
 import { Icon } from "../ui";
 import { PoliciesToAcknowledge } from "./compliance/Policies";
 import { Dashboard } from "./Dashboard";
+import { Deadlines, YourWork } from "./HomeWork";
 
 // Each read answers null when the person's roles may not read it: the step it feeds is left out
 // rather than shown as not done (the API decides who sees what).
@@ -170,8 +171,8 @@ function SetUp({ steps }: { steps: Step[] }) {
 }
 
 // Home is the first signed-in page (docs/design/screens Home): the money's pulse, tiles and charts
-// (FR-KPI-01), what waits for the person, and while the company is new, the set-up checklist.
-// Deadlines arrive with their modules.
+// (FR-KPI-01), what waits for the person, their roles' work (§7.1), the upcoming statutory deadlines, and while the
+// company is new, the set-up checklist.
 // Home is where a person lands unless their roles land elsewhere (§7.1): My claims with personal rights only
 // (FR-UX-39), Settings for an Administrator, Compliance for the Company secretary or the DPO, Reports for a Board viewer
 // or an Auditor.
@@ -222,6 +223,8 @@ function Workspace() {
         <>
           <Dashboard />
           <Waiting toApprove={c.toApprove.data ?? null} review={c.review.data ?? null} reversals={c.reversals.data ?? null} />
+          <YourWork />
+          <Deadlines />
           <PoliciesToAcknowledge />
           {!allDone && <SetUp steps={steps} />}
         </>

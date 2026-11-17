@@ -221,7 +221,11 @@ and names the requirement IDs it proves.
   and the not-available page were built for it (p1-app-shell 2.1). **Left:** the Home blocks §7.1 names per role
   beyond the pulse (the Approver's "My department", the Bookkeeper's cash today and bank lines, the releaser's
   batches and balances, the Administrator's users and roles waiting, the DPO's data requests), the Auditor's
-  workspace, and each role's Inbox items, which need records waiting for that role.)
+  workspace, and each role's Inbox items, which need records waiting for that role.
+  17 Nov 2026, later: Home's **Your work** gives the Bookkeeper, the AR and AP specialists and the payment releaser
+  their rows of §7.1 (p1-app-shell 2.1), and the walkthroughs check each role's rows, and none for the full-Home
+  roles. **Left:** the Approver's "My department", the Administrator's, Company secretary's and DPO's blocks on the
+  pages they land on, the Auditor's workspace, and each role's Inbox items.)
 - [ ] 5.4 QA-UI-07 and QA-RPT-04's visual snapshots (design D5; rev 0.284):
   - hash baselines in `apps/web/visual/baselines.json`;
   - the key pages on every pull request, every route nightly and in the release workflow, at the five frames, in light
