@@ -231,6 +231,23 @@ func (r aiConversations) Give(ctx context.Context, f storage.AIFeedback) (storag
 		"turn_id": f.Turn.String(), "rating": f.Rating}}})
 }
 
+func (r aiConversations) Monitor(ctx context.Context, from, to time.Time) (storage.AITurnMonitor, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AITurnMonitor{}, err
+	}
+	t, err := r.u.q.AITurnMonitor(ctx, sqlcdb.AITurnMonitorParams{Since: from, Until: to})
+	if err != nil {
+		return storage.AITurnMonitor{}, mapError(err)
+	}
+	x, err := r.u.q.AIToolCallMonitor(ctx, sqlcdb.AIToolCallMonitorParams{Since: from, Until: to})
+	if err != nil {
+		return storage.AITurnMonitor{}, mapError(err)
+	}
+	return storage.AITurnMonitor{Turns: int(t.Turns), Answered: int(t.Answered), Refused: int(t.Refused), Failed: int(t.Failed),
+		Regenerated: int(t.Regenerated), Withheld: int(t.Withheld), Reads: int(x.Reads), ReadsRefused: int(x.Refused),
+		Screened: int(t.Screened + x.Withheld), Conversations: int(t.Conversations)}, nil
+}
+
 func (r aiConversations) Ratings(ctx context.Context, conversation, user uuid.UUID) (map[uuid.UUID]storage.AIFeedback, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

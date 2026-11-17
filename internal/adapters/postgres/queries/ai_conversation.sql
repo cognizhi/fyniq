@@ -92,3 +92,22 @@ WHERE id = sqlc.arg(id) AND decision IS NULL;
 
 -- name: PurgeAIConversations :one
 SELECT conversations::int AS conversations, turns::int AS turns FROM fyniq.ai_purge_conversations(sqlc.arg(before)::timestamptz);
+
+-- name: AITurnMonitor :one
+SELECT count(*)::int AS turns,
+  count(*) FILTER (WHERE t.status = 'answered')::int AS answered,
+  count(*) FILTER (WHERE t.status = 'refused')::int AS refused,
+  count(*) FILTER (WHERE t.status = 'failed')::int AS failed,
+  count(*) FILTER (WHERE t.regenerated)::int AS regenerated,
+  coalesce(sum(t.withheld), 0)::int AS withheld,
+  count(*) FILTER (WHERE t.code LIKE 'AI-SCREEN-%')::int AS screened,
+  count(DISTINCT t.conversation_id)::int AS conversations
+FROM fyniq.ai_turn t
+WHERE t.asked_at >= sqlc.arg(since) AND t.asked_at < sqlc.arg(until);
+
+-- name: AIToolCallMonitor :one
+SELECT count(*)::int AS reads,
+  count(*) FILTER (WHERE x.outcome = 'refused')::int AS refused,
+  count(*) FILTER (WHERE x.withheld)::int AS withheld
+FROM fyniq.ai_tool_call x JOIN fyniq.ai_turn t ON t.organisation_id = x.organisation_id AND t.id = x.turn_id
+WHERE t.asked_at >= sqlc.arg(since) AND t.asked_at < sqlc.arg(until);

@@ -385,6 +385,17 @@ AI-28).**
 - The harness reads each turn's reads from the store however it ended. A wrong red-team model must fail, unless the
   pipeline stopped its turn first: screening refuses a request carrying an identity number, so that leak never
   reaches the provider. The judge must also fail a synthetic leak of every forbidden word and read.
+- As built (task 8.4):
+  - AI usage gains `assistant`: the month's turns answered, refused and failed; grounding retries and figures
+    withheld; reads and those refused; screening flags (turns it stopped and reads it withheld); conversations; the
+    chat agent's cost; and the cost per conversation, rounded once to four places by RND-DISPLAY. It is counted in
+    SQL (`AIConversations().Monitor`).
+  - Each turn in the activity log shows its tool errors, screening flags and exact cost (its runs' `cost_base`,
+    `AICalls().CostOfRuns`).
+  - OpenTelemetry: the repository exports traces only, through its own OTLP exporter, with no metrics pipeline. So
+    each turn adds a `fyniq.ai.turn` event with those counts to its request span (`telemetry.Counts`), counts and
+    codes only. Counting them in Cloud Monitoring is [live-verify].
+  - Approval and edit-before-approve rates arrive with p1-ai-proposals.
 
 **D14. Local mode (DEV-09, ADR-T4).**
 - The AI service runs in the Compose stack; replay answers from `evals/cassettes/`; live runs only with

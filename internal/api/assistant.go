@@ -25,6 +25,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/telemetry"
 )
 
 // The assistant's conversations (PRD-001 AI-P1, AI-P8, AI-12, FR-UX-17; p1-ai-assistant task 6.1, design D1, D11): a
@@ -524,6 +525,7 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 		}
 		return nil
 	})
+	monitor(ctx, turn, calls)
 	switch {
 	case err != nil:
 		fail(err)
@@ -583,6 +585,27 @@ func (a *API) admit(ctx context.Context, u storage.UnitOfWork, user uuid.UUID, t
 			"Start a new conversation")
 	}
 	return aiLimits{reads: reads}, nil
+}
+
+// monitor adds the turn's figures to its request's trace (QA-AI-04, design D13): how it ended, its reads and those
+// refused, what grounding and screening did; counts and codes only, never the question or the answer.
+func monitor(ctx context.Context, turn storage.AITurn, calls []storage.AIToolCall) {
+	counts := map[string]int64{"fyniq.ai.reads": int64(len(calls)), "fyniq.ai.withheld": int64(turn.Withheld), "fyniq.ai.runs": int64(len(turn.Runs))}
+	if turn.Regenerated {
+		counts["fyniq.ai.regenerated"] = 1
+	}
+	for _, c := range calls {
+		if c.Outcome != assistant.OutcomeRead {
+			counts["fyniq.ai.reads_refused"]++
+		}
+		if c.Withheld {
+			counts["fyniq.ai.screening_flags"]++
+		}
+	}
+	if strings.HasPrefix(turn.Code, "AI-SCREEN-") {
+		counts["fyniq.ai.screening_flags"]++
+	}
+	telemetry.Counts(ctx, "fyniq.ai.turn", counts, map[string]string{"fyniq.ai.status": turn.Status, "fyniq.ai.code": turn.Code})
 }
 
 // historyOf is a conversation's earlier answered turns as the model reads them, and the facts they cited, which the

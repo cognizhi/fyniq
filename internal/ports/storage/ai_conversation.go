@@ -116,6 +116,16 @@ type AIFeedbackEntry struct {
 	Classes      []string
 }
 
+// AITurnMonitor is the assistant's turns asked in a window, counted for its monitoring (QA-AI-04): how they ended, what
+// grounding did, the reads and what went wrong with them, what screening stopped or withheld, and the conversations.
+type AITurnMonitor struct {
+	Turns, Answered, Refused, Failed int
+	Regenerated, Withheld            int // turns whose answer failed the figures' check once; figures and words withheld
+	Reads, ReadsRefused              int
+	Screened                         int // turns screening stopped, and reads whose text it withheld
+	Conversations                    int
+}
+
 // AIFeedbackQuery selects feedback for its review, newest first, before a cursor's, at most Limit: in one state (""
 // for all) and of one rating ("" for both).
 type AIFeedbackQuery struct {
@@ -151,6 +161,8 @@ type AIConversations interface {
 	Asked(ctx context.Context, user uuid.UUID, since time.Time) (int, error)
 	// Give keeps a person's feedback on a turn, once, audited.
 	Give(ctx context.Context, f AIFeedback) (AIFeedback, error)
+	// Monitor counts the turns asked in [from, to) and their reads (QA-AI-04).
+	Monitor(ctx context.Context, from, to time.Time) (AITurnMonitor, error)
 	// Ratings are a person's feedback on the turns of a conversation, by turn.
 	Ratings(ctx context.Context, conversation, user uuid.UUID) (map[uuid.UUID]AIFeedback, error)
 	// Feedback is the feedback the query selects, with the turns it rates.

@@ -14826,6 +14826,77 @@ export interface components {
             /** @description Its versions, newest first, at most 20. */
             versions: components["schemas"]["AIRoute"][];
         };
+        AIAssistantUsage: {
+            /**
+             * Format: int64
+             * @example 229
+             */
+            answered: number;
+            /**
+             * Format: int64
+             * @description Conversations with a question in the month.
+             * @example 58
+             */
+            conversations: number;
+            /**
+             * @description The chat agent's model calls, in the base currency, exact.
+             * @example 12.4836
+             */
+            cost: string;
+            /**
+             * @description Cost over conversations, rounded once to four places by RND-DISPLAY; absent with no conversation.
+             * @example 0.2152
+             */
+            cost_per_conversation?: string;
+            /**
+             * Format: int64
+             * @description The AI service did not finish.
+             * @example 2
+             */
+            failed: number;
+            /**
+             * Format: int64
+             * @description The read tools' calls.
+             * @example 610
+             */
+            reads: number;
+            /**
+             * Format: int64
+             * @description Reads refused or failed: tool errors.
+             * @example 12
+             */
+            reads_refused: number;
+            /**
+             * Format: int64
+             * @description Stopped with a code: a limit, the switch, a budget, screening.
+             * @example 9
+             */
+            refused: number;
+            /**
+             * Format: int64
+             * @description Answers that failed the figures' check once and were asked for again (AI-08): grounding failures.
+             * @example 6
+             */
+            regenerated: number;
+            /**
+             * Format: int64
+             * @description Turns screening stopped, and reads whose text it withheld (AI-P7).
+             * @example 3
+             */
+            screening_flags: number;
+            /**
+             * Format: int64
+             * @description Questions asked in the month.
+             * @example 240
+             */
+            turns: number;
+            /**
+             * Format: int64
+             * @description Figures or words withheld because they still failed the check.
+             * @example 1
+             */
+            withheld: number;
+        };
         AIBudget: {
             /**
              * @description Its 80% alert was raised this month.
@@ -16425,6 +16496,11 @@ export interface components {
              */
             conversation_id: string;
             /**
+             * @description Its model calls' cost in the base currency, exact; 0 when none was priced (QA-AI-04).
+             * @example 0.0213
+             */
+            cost: string;
+            /**
              * Format: uuid
              * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c
              */
@@ -16469,11 +16545,23 @@ export interface components {
             /** @description Its model calls' runs, whose attempts listAIActivity shows. */
             runs: string[];
             /**
+             * Format: int64
+             * @description Screening stopped it, or withheld the text of so many of its reads (AI-P7, QA-AI-04).
+             * @example 0
+             */
+            screening_flags: number;
+            /**
              * @example answered
              * @enum {string}
              */
             status: "answering" | "answered" | "refused" | "failed";
             tool_calls: components["schemas"]["AITurnToolCall"][];
+            /**
+             * Format: int64
+             * @description Its reads refused or failed (QA-AI-04).
+             * @example 0
+             */
+            tool_errors: number;
             /**
              * Format: int64
              * @description Figures or words withheld after the check.
@@ -16598,6 +16686,8 @@ export interface components {
             withheld: boolean;
         };
         AIUsage: {
+            /** @description The assistant's month, as its monitoring counts it (QA-AI-04). */
+            assistant: components["schemas"]["AIAssistantUsage"];
             by_agent: components["schemas"]["AIUsageByAgent"][];
             by_connection: components["schemas"]["AIUsageByConnection"][];
             by_model: components["schemas"]["AIUsageByModel"][];

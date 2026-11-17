@@ -228,6 +228,8 @@ export function AIActivity() {
                           </span>
                           {tu.code && <span className="fy-small fy-mono">{tu.code}</span>}
                           {tu.regenerated && <span className="fy-small fy-secondary">Asked again: a figure failed the check</span>}
+                          {tu.tool_errors > 0 && <span className="fy-small fy-secondary">{tu.tool_errors === 1 ? "1 read refused" : `${count(tu.tool_errors)} reads refused`}</span>}
+                          {tu.screening_flags > 0 && <span className="fy-small fy-secondary">Screening stopped or withheld {count(tu.screening_flags)}</span>}
                           {tu.runs.length > 0 && (
                             <Button size="sm" variant="ghost" className="self-start" onClick={() => set({ run: tu.runs[0] })} aria-label={`Show the model calls of the question of ${dateTime(tu.asked_at)}`}>
                               <Icon of={Repeat} />
@@ -252,6 +254,7 @@ export function AIActivity() {
                       </td>
                       <td className="fy-num">
                         {count(tu.input_tokens)} / {count(tu.output_tokens)}
+                        <span className="fy-small fy-secondary block">{formatAmount(tu.cost)} {base}</span>
                       </td>
                     </tr>
                   );

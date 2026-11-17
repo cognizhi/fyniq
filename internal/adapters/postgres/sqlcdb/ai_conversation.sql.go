@@ -191,6 +191,32 @@ func (q *Queries) AIFeedbackPage(ctx context.Context, arg AIFeedbackPageParams) 
 	return items, nil
 }
 
+const aIToolCallMonitor = `-- name: AIToolCallMonitor :one
+SELECT count(*)::int AS reads,
+  count(*) FILTER (WHERE x.outcome = 'refused')::int AS refused,
+  count(*) FILTER (WHERE x.withheld)::int AS withheld
+FROM fyniq.ai_tool_call x JOIN fyniq.ai_turn t ON t.organisation_id = x.organisation_id AND t.id = x.turn_id
+WHERE t.asked_at >= $1 AND t.asked_at < $2
+`
+
+type AIToolCallMonitorParams struct {
+	Since time.Time
+	Until time.Time
+}
+
+type AIToolCallMonitorRow struct {
+	Reads    int32
+	Refused  int32
+	Withheld int32
+}
+
+func (q *Queries) AIToolCallMonitor(ctx context.Context, arg AIToolCallMonitorParams) (AIToolCallMonitorRow, error) {
+	row := q.db.QueryRow(ctx, aIToolCallMonitor, arg.Since, arg.Until)
+	var i AIToolCallMonitorRow
+	err := row.Scan(&i.Reads, &i.Refused, &i.Withheld)
+	return i, err
+}
+
 const aIToolCallsOfTurn = `-- name: AIToolCallsOfTurn :many
 SELECT id, turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms
 FROM fyniq.ai_tool_call WHERE turn_id = $1 ORDER BY n
@@ -299,6 +325,51 @@ func (q *Queries) AIToolCallsOfTurns(ctx context.Context, turns []uuid.UUID) ([]
 		return nil, err
 	}
 	return items, nil
+}
+
+const aITurnMonitor = `-- name: AITurnMonitor :one
+SELECT count(*)::int AS turns,
+  count(*) FILTER (WHERE t.status = 'answered')::int AS answered,
+  count(*) FILTER (WHERE t.status = 'refused')::int AS refused,
+  count(*) FILTER (WHERE t.status = 'failed')::int AS failed,
+  count(*) FILTER (WHERE t.regenerated)::int AS regenerated,
+  coalesce(sum(t.withheld), 0)::int AS withheld,
+  count(*) FILTER (WHERE t.code LIKE 'AI-SCREEN-%')::int AS screened,
+  count(DISTINCT t.conversation_id)::int AS conversations
+FROM fyniq.ai_turn t
+WHERE t.asked_at >= $1 AND t.asked_at < $2
+`
+
+type AITurnMonitorParams struct {
+	Since time.Time
+	Until time.Time
+}
+
+type AITurnMonitorRow struct {
+	Turns         int32
+	Answered      int32
+	Refused       int32
+	Failed        int32
+	Regenerated   int32
+	Withheld      int32
+	Screened      int32
+	Conversations int32
+}
+
+func (q *Queries) AITurnMonitor(ctx context.Context, arg AITurnMonitorParams) (AITurnMonitorRow, error) {
+	row := q.db.QueryRow(ctx, aITurnMonitor, arg.Since, arg.Until)
+	var i AITurnMonitorRow
+	err := row.Scan(
+		&i.Turns,
+		&i.Answered,
+		&i.Refused,
+		&i.Failed,
+		&i.Regenerated,
+		&i.Withheld,
+		&i.Screened,
+		&i.Conversations,
+	)
+	return i, err
 }
 
 const aITurnsAskedSince = `-- name: AITurnsAskedSince :one
