@@ -1,13 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, CircleCheck, FileSearch, TriangleAlert } from "lucide-react";
+import { ChevronRight, CircleCheck, Download, Eye, FileSearch, TriangleAlert } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
+import { Button } from "../../components/ui/button";
 import { date, dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
-import { Icon, problemOf } from "../../ui";
+import { useSignedIn } from "../../session";
+import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { openEvidence, pictures, type Shown } from "./JournalEvidence";
 
 type Found = components["schemas"]["EvidenceFound"];
 type Activity = NonNullable<Found["record"]["activity"]>;
@@ -23,41 +26,82 @@ const activities: Record<Activity, string> = {
   person_bank_change: "Changes of people's bank accounts",
   founders: "Founders' money",
   owner_succession: "Owner successions",
+  equity: "The equity register",
+  filing: "Statutory filings and payments",
+  gst_forecast: "GST forecasts",
 };
 
-// recordLink is where a record's page is, for the kinds that have one.
-function recordLink(r: Found["record"]): string | undefined {
-  switch (r.type) {
+// recordLink is where a record's page is, for the kinds that have one: the record itself, or the page that lists it.
+export function recordLink(type: string, id: string): string | undefined {
+  switch (type) {
     case "bill":
     case "vendor_credit":
-      return `/purchases/bills/${r.id}`;
+      return `/purchases/bills/${id}`;
     case "invoice":
     case "credit_note":
-      return `/sales/invoices/${r.id}`;
+      return `/sales/invoices/${id}`;
     case "journal":
-      return `/accounting/journals/${r.id}`;
+      return `/accounting/journals/${id}`;
+    case "expense_claim":
+      return `/purchases/claims/${id}`;
+    case "equity_transaction":
+      return `/equity/transactions/${id}`;
+    case "instrument":
+      return `/equity/instruments/${id}`;
+    case "option_grant":
+      return `/equity/options/grants/${id}`;
+    case "option_pool":
+      return `/equity/options/resolutions/${id}`;
+    case "share_class":
+      return "/equity/classes";
+    case "acra_extract":
+      return "/equity/reconciliation";
+    case "pre_incorporation_cost":
+      return "/accounting/pre-incorporation";
+    case "director_pay_choice":
+    case "director_fee":
+    case "exempt_status":
+    case "director_settlement":
+      return "/accounting/directors";
+    case "statutory_filing":
+      return "/compliance/calendar";
+    case "gst_forecast":
+      return "/compliance/gst";
     default:
       return undefined;
   }
 }
+
+// missingKinds name the records C.2 #30 lists, with the type their page takes.
+const missingKinds: Record<string, { label: string; type: string }> = {
+  bill: { label: "Bill", type: "bill" },
+  journal: { label: "Journal", type: "journal" },
+  statutory_filing: { label: "Filing", type: "statutory_filing" },
+};
 
 interface Filters {
   activity: string;
   evidenceType: string;
   from: string;
   to: string;
+  mine: boolean;
 }
 
 // EvidenceSearch is Compliance › Evidence (docs/design/screens EvidenceSearch; FR-DOC-10, PRD-001 rev 0.184,
-// Expert): every file across the records the person views, found by activity, evidence type and the record's date,
-// and the records still missing their evidence (C.2 #30).
+// Expert): every file across the records the person views, found by activity, evidence type, the record's date and
+// who attached it, each opened from its row (FR-DOC-01), and the records still missing their evidence (C.2 #30).
 export function EvidenceSearch() {
   const id = useId();
-  const [filters, setFilters] = useState<Filters>({ activity: "", evidenceType: "", from: "", to: "" });
+  const { session } = useSignedIn();
+  const [filters, setFilters] = useState<Filters>({ activity: "", evidenceType: "", from: "", to: "", mine: false });
   const [applied, setApplied] = useState<Filters>(filters);
-  const found = useQuery({
+  const [shown, setShown] = useState<Shown | null>(null);
+  const [opening, setOpening] = useState("");
+  const [failed, setFailed] = useState<ApiProblem | null>(null);
+  const found = useInfiniteQuery({
     queryKey: ["evidence-search", applied],
-    queryFn: async () => {
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
       const { data, error } = await api.GET("/v1/evidence", {
         params: {
           query: {
@@ -65,13 +109,16 @@ export function EvidenceSearch() {
             evidence_type: applied.evidenceType.trim() || undefined,
             from: applied.from || undefined,
             to: applied.to || undefined,
-            page_size: 100,
+            uploaded_by: applied.mine && session.user_id ? `user:${session.user_id}` : undefined,
+            page_size: 50,
+            cursor: pageParam,
           },
         },
       });
       if (error) throw error;
       return data;
     },
+    getNextPageParam: (last) => last.next_cursor,
   });
   const missing = useQuery({
     queryKey: ["check", "evidence.missing"],
@@ -82,9 +129,19 @@ export function EvidenceSearch() {
     },
   });
   const h = helpText("compliance.evidence");
-  const may = found.data?.activities ?? [];
-  const items = found.data?.items ?? [];
+  const may = found.data?.pages[0]?.activities ?? [];
+  const items = found.data?.pages.flatMap((p) => p.items) ?? [];
   const missed = missing.data?.items ?? [];
+
+  // open shows a picture below the list, or saves any other file, from a link that works for 5 minutes.
+  const open = async (f: Found) => {
+    setOpening(f.id);
+    setFailed(null);
+    const out = await openEvidence(f.id, f.file_name);
+    setOpening("");
+    if (out.problem) return setFailed(out.problem);
+    if (out.shown) setShown(out.shown);
+  };
 
   return (
     <div className="fy-page fy-enter">
@@ -117,20 +174,22 @@ export function EvidenceSearch() {
           )}
           {missed.length > 0 && (
             <ul className="fy-list" aria-labelledby={`${id}-missing`}>
-              {missed.map((m) => (
-                <li key={m.id} className="fy-list__item">
-                  <span className="fy-chip fy-chip--warning">
-                    <Icon of={TriangleAlert} />
-                    {m.kind === "journal" ? "Journal" : "Bill"}
-                  </span>
-                  <span className="fy-list__main">
-                    <span className="fy-list__title whitespace-normal">
-                      {m.kind === "journal" ? <Link to="/accounting/journals/$journalId" params={{ journalId: m.id ?? "" }}>{m.label}</Link> : <Link to="/purchases/bills/$billId" params={{ billId: m.id ?? "" }}>{m.label}</Link>}
+              {missed.map((m) => {
+                const kind = missingKinds[m.kind ?? ""] ?? { label: "Record", type: m.kind ?? "" };
+                const to = recordLink(kind.type, m.id ?? "");
+                return (
+                  <li key={m.id} className="fy-list__item">
+                    <span className="fy-chip fy-chip--warning">
+                      <Icon of={TriangleAlert} />
+                      {kind.label}
                     </span>
-                    <span className="fy-list__meta">{m.detail}</span>
-                  </span>
-                </li>
-              ))}
+                    <span className="fy-list__main">
+                      <span className="fy-list__title whitespace-normal">{to ? <Link to={to}>{m.label}</Link> : m.label}</span>
+                      <span className="fy-list__meta">{m.detail}</span>
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -146,6 +205,7 @@ export function EvidenceSearch() {
           className="fy-card__body fy-row fy-row--wrap gap-3"
           onSubmit={(e) => {
             e.preventDefault();
+            setShown(null);
             setApplied(filters);
           }}
         >
@@ -180,12 +240,17 @@ export function EvidenceSearch() {
             </label>
             <input className="fy-input" id={`${id}-to`} type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} />
           </div>
+          <label className="fy-row gap-2 fy-small self-end">
+            <input type="checkbox" checked={filters.mine} onChange={(e) => setFilters({ ...filters, mine: e.target.checked })} />
+            Only files I attached
+          </label>
           <button type="submit" className="fy-btn fy-btn--secondary self-end">
             <Icon of={FileSearch} />
             Find
           </button>
         </form>
         {found.isError && <Refusal problem={problemOf(found.error)} title="The evidence could not be searched" />}
+        {failed && <Refusal problem={failed} title="The file could not be opened" />}
         {found.data && items.length === 0 && <p className="fy-card__body fy-small fy-secondary">No file matches.</p>}
         {items.length > 0 && (
           <div className="overflow-x-auto">
@@ -197,15 +262,19 @@ export function EvidenceSearch() {
                   <th scope="col">File</th>
                   <th scope="col">Evidence type</th>
                   <th scope="col">Attached</th>
+                  <th scope="col">
+                    <span className="fy-sr">Open</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((f) => {
-                  const to = recordLink(f.record);
+                  const to = recordLink(f.record.type, f.record.id);
                   const name = f.record.number || activities[f.record.activity as Activity] || f.record.type;
+                  const picture = pictures.includes(f.media_type);
                   return (
                     <tr key={f.id}>
-                      <td>{to ? <a href={to}>{name}</a> : name}</td>
+                      <td>{to ? <Link to={to}>{name}</Link> : name}</td>
                       <td>{f.record.date ? date(f.record.date) : ""}</td>
                       <td className="fy-mono">
                         {f.file_name}
@@ -218,12 +287,42 @@ export function EvidenceSearch() {
                       </td>
                       <td>{f.evidence_type}</td>
                       <td>{dateTime(f.uploaded_at)}</td>
+                      <td>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void open(f)}
+                          disabled={opening !== ""}
+                          aria-label={`${picture ? "Show" : "Save"} ${f.file_name}`}
+                          title={picture ? "Show the picture below" : "Save a copy of the file"}
+                        >
+                          <Icon of={picture ? Eye : Download} />
+                        </Button>
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
+        )}
+        {found.hasNextPage && (
+          <div className="fy-card__body">
+            <button type="button" className="fy-btn fy-btn--secondary" onClick={() => void found.fetchNextPage()} disabled={found.isFetchingNextPage}>
+              Show more
+            </button>
+          </div>
+        )}
+        {shown && (
+          <figure className="fy-card__body fy-stack fy-stack--2">
+            <img src={shown.url} alt={`${shown.name}, as attached`} className="max-w-full rounded-md border border-border" />
+            <figcaption className="fy-row gap-2 fy-small fy-muted">
+              {shown.name}
+              <Button variant="ghost" size="sm" onClick={() => setShown(null)}>
+                Hide
+              </Button>
+            </figcaption>
+          </figure>
         )}
       </section>
     </div>
