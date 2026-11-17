@@ -1810,20 +1810,25 @@ var (
 
 // The statutory calendar (FR-TAX-07, CMP-02; p1-gst slice 3a, design D8): read by whoever views it; an item recorded as
 // filed or not required, and a record withdrawn, by the Owner, the Controller, the Accountant and the Tax agent (the
-// owner's decision of 7 Nov 2026, Appendix D's Statutory calendar row).
+// owner's decision of 7 Nov 2026, Appendix D's Statutory calendar row), and its corporate items by the Company secretary
+// too (rev 0.285). A right qualified to corporate passes the writes here; the handler refuses it on any other item.
 var (
 	GetStatutoryCalendar          = Policy{Operation: "getStatutoryCalendar", Capability: StatutoryCalendar, Need: View}
 	ListStatutoryFilings          = Policy{Operation: "listStatutoryFilings", Capability: StatutoryCalendar, Need: View}
-	CreateStatutoryFiling         = Policy{Operation: "createStatutoryFiling", Capability: StatutoryCalendar, Need: Create}
+	CreateStatutoryFiling         = Policy{Operation: "createStatutoryFiling", Capability: StatutoryCalendar, Need: Create, Unqualified: true, Qualified: calendarItems, Note: calendarNote}
 	GetStatutoryFiling            = Policy{Operation: "getStatutoryFiling", Capability: StatutoryCalendar, Need: View}
-	ReplaceStatutoryFiling        = Policy{Operation: "replaceStatutoryFiling", Capability: StatutoryCalendar, Need: Create}
-	RecordStatutoryFiling         = Policy{Operation: "recordStatutoryFiling", Capability: StatutoryCalendar, Need: Create, Note: "What was filed outside Fyniq, with its acknowledgement: it posts nothing."}
-	WithdrawStatutoryFiling       = Policy{Operation: "withdrawStatutoryFiling", Capability: StatutoryCalendar, Need: Create}
-	AddStatutoryFilingEvidence    = Policy{Operation: "addStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: Create}
+	ReplaceStatutoryFiling        = Policy{Operation: "replaceStatutoryFiling", Capability: StatutoryCalendar, Need: Create, Unqualified: true, Qualified: calendarItems, Note: calendarNote}
+	RecordStatutoryFiling         = Policy{Operation: "recordStatutoryFiling", Capability: StatutoryCalendar, Need: Create, Unqualified: true, Qualified: calendarItems, Note: "What was filed outside Fyniq, with its acknowledgement: it posts nothing. " + calendarNote}
+	WithdrawStatutoryFiling       = Policy{Operation: "withdrawStatutoryFiling", Capability: StatutoryCalendar, Need: Create, Unqualified: true, Qualified: calendarItems, Note: calendarNote}
+	AddStatutoryFilingEvidence    = Policy{Operation: "addStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: Create, Unqualified: true, Qualified: calendarItems, Note: calendarNote}
 	ListStatutoryFilingEvidence   = Policy{Operation: "listStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: View}
 	GetStatutoryFilingEvidence    = Policy{Operation: "getStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: View}
-	RemoveStatutoryFilingEvidence = Policy{Operation: "removeStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: Create}
+	RemoveStatutoryFilingEvidence = Policy{Operation: "removeStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: Create, Unqualified: true, Qualified: calendarItems, Note: calendarNote}
 )
+
+var calendarItems = []string{CalendarCorporate}
+
+const calendarNote = "The Company secretary's right reaches the corporate items alone."
 
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
 // only the operations they asked for, so an operation is decided past this policy by its own record.
@@ -2130,16 +2135,22 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 	return d
 }
 
-// SecretaryCells are the Company secretary's own cells (Appendix D's note, rev 0.6, 0.280, 0.282; FR-CS-08,
+// SecretaryCells are the Company secretary's own cells (Appendix D's note, rev 0.6, 0.280, 0.282, 0.285; FR-CS-08,
 // p1-company-secretary design D7): C on the corporate profile and registers and on evidence, V on the whole equity
-// register and on the AI company secretary's runs. Elsewhere they take the Board viewer's column; no transaction,
-// payroll or bank detail. Their A on sec.* proposals is Decide's (SignsRequests).
+// register and on the AI company secretary's runs, and the statutory calendar in view with C on its corporate items
+// (the owner's decision of 17 Nov 2026). Elsewhere they take the Board viewer's column; no transaction, payroll or bank
+// detail. Their A on sec.* proposals is Decide's (SignsRequests).
 var SecretaryCells = map[Capability]Cell{
 	CorporateProfile:   {Rights: "C"},
 	Evidence:           {Rights: "C"},
 	CapTable:           {Rights: "V"},
 	AICompanySecretary: {Rights: "V"},
+	StatutoryCalendar:  {Rights: "C", Qualifier: CalendarCorporate},
 }
+
+// CalendarCorporate qualifies a right on the statutory calendar to its corporate items: the sg-deadlines pack's area of
+// the annual return, the AGM and the financial statements to members.
+const CalendarCorporate = "corporate"
 
 // SignsRequests are the operations that sign an approval request: approving, rejecting, and the passkey challenge for
 // either.

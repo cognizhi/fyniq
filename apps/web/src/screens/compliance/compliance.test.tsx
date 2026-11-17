@@ -11,6 +11,7 @@ import { addDays, StatutoryCalendar } from "./StatutoryCalendar";
 
 const accountant = { ...ownerSession, roles: ["accountant"] } as Session;
 const auditor = { ...ownerSession, roles: ["auditor"] } as Session;
+const secretary = { ...ownerSession, roles: ["company_secretary"] } as Session;
 const soon = addDays(today(), 10);
 const later = addDays(today(), 120);
 const item = (key: string, title: string, due: string, status: string, extra: Record<string, unknown> = {}) => ({
@@ -107,6 +108,21 @@ describe("the statutory calendar", () => {
     renderPage(StatutoryCalendar, { path: "/compliance/calendar", route: "/compliance/calendar", session: auditor });
     await screen.findByText("Estimated chargeable income for the year ended 31 Dec 2026");
     expect(screen.queryByRole("button", { name: /Record as filed/ })).toBeNull();
+  });
+
+  // req: FR-CS-08
+  it("lets the Company secretary record the corporate items alone (rev 0.285)", async () => {
+    answer({
+      "GET /v1/compliance/calendar": { status: 200, body: cal([
+        item("eci:2026-12-31", "Estimated chargeable income for the year ended 31 Dec 2026", soon, "due_soon"),
+        item("annual_return:2026-12-31", "Annual return for the year ended 31 Dec 2026", later, "open", { area: "corporate", source: "acra-annual-return" }),
+      ]) },
+    });
+    renderPage(StatutoryCalendar, { path: "/compliance/calendar", route: "/compliance/calendar", session: secretary });
+    const tax = (await screen.findByText("Estimated chargeable income for the year ended 31 Dec 2026")).closest("li")!;
+    const corporate = screen.getByText("Annual return for the year ended 31 Dec 2026").closest("li")!;
+    expect(within(tax).queryByRole("button", { name: /Record as filed/ })).toBeNull();
+    expect(within(corporate).getByRole("button", { name: /Record as filed/ })).toBeTruthy();
   });
 });
 

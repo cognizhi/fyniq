@@ -2598,8 +2598,10 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 
 // secretaryNote is Appendix D's note on the Company secretary, as cells (rev 0.6, 0.280, 0.282; FR-CS-08): C on the
 // corporate profile and registers and on evidence, V on the equity register and the AI company secretary's runs, the
-// Board viewer's column elsewhere. Written here from the note, apart from the code's SecretaryCells.
-var secretaryNote = map[authz.Capability]string{authz.CorporateProfile: "C", authz.Evidence: "C", authz.CapTable: "V", authz.AICompanySecretary: "V"}
+// statutory calendar with its corporate items, the Board viewer's column elsewhere. Written here from the note, apart
+// from the code's SecretaryCells.
+var secretaryNote = map[authz.Capability]string{authz.CorporateProfile: "C", authz.Evidence: "C", authz.CapTable: "V", authz.AICompanySecretary: "V",
+	authz.StatutoryCalendar: "C (corporate)"} // rev 0.285: the whole calendar in view, and its corporate items to record
 
 // The authorisation matrix: every role of §7.1, the AI and the Super admin × every operation,
 // allowed or refused as Appendix D says, and a refusal changes nothing (§17.3 exit item 2, API half). The Company

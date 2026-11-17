@@ -88920,6 +88920,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
+        note: The Company secretary's right reaches the corporate items alone.
         right: C
   /v1/compliance/filings/{filing_id}:
     get:
@@ -89258,6 +89259,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
+        note: The Company secretary's right reaches the corporate items alone.
         right: C
   /v1/compliance/filings/{filing_id}/evidence:
     get:
@@ -89687,6 +89689,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
+        note: The Company secretary's right reaches the corporate items alone.
         right: C
   /v1/compliance/filings/{filing_id}/evidence/{evidence_id}:
     delete:
@@ -89869,6 +89872,7 @@ paths:
         - STORAGE-VERSION-01
       x-fyniq-permission:
         capability: "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
+        note: The Company secretary's right reaches the corporate items alone.
         right: C
     get:
       description: Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.
@@ -90197,7 +90201,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
-        note: "What was filed outside Fyniq, with its acknowledgement: it posts nothing."
+        note: "What was filed outside Fyniq, with its acknowledgement: it posts nothing. The Company secretary's right reaches the corporate items alone."
         right: C
   /v1/compliance/filings/{filing_id}/withdraw:
     post:
@@ -90413,6 +90417,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
+        note: The Company secretary's right reaches the corporate items alone.
         right: C
   /v1/compliance/gst-monitor:
     get:
