@@ -153,6 +153,13 @@
   - The executor gains SELECT on `holding_movement` (migration 000403), to name a members' resolution's signers;
     `grants.golden` shows the one line.
   - The eval suite `sec-draft-document` has two AGM minutes cases (the sample company records no officers).
+  - The screen: the corporate profile gains "Papers and minute book", which:
+    - drafts from each template's fields;
+    - reads a paper's text, downloads its PDF and attaches the signed copy;
+    - records it in the minute book with the day it was signed;
+    - labels a draft the AI proposed "AI".
+    The Inbox's proposal review shows a `sec.draft_document` dry run as its paper reads. The fragment is updated
+    locally, not published.
   - Left for `sg-acra@2026.2`, by the owner's decision of 16 Nov 2026 (rev 0.283): the one-month minute book finding
     (s188), with the notice period (s177) and the written resolutions' majorities (s184A–G).
 

@@ -8,6 +8,7 @@ import { Refusal } from "../../components/Refusal";
 import { dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { Icon, problemOf } from "../../ui";
+import { PaperView, type PaperShape } from "../compliance/CorporatePaper";
 
 type Proposal = components["schemas"]["AIProposalDetail"];
 
@@ -47,6 +48,14 @@ function Value({ v }: { v: unknown }) {
       </dl>
     );
   return <span>{String(v)}</span>;
+}
+
+// papersOf are the corporate documents a sec.draft_document dry run would draft, each with its text, when it reports
+// them: shown as their papers read, not as fields.
+function papersOf(impact: unknown): { paper: PaperShape }[] | null {
+  const docs = (impact as { corporate_documents?: { paper?: PaperShape }[] } | null)?.corporate_documents;
+  if (!Array.isArray(docs) || !docs.every((d) => d && typeof d.paper?.title === "string")) return null;
+  return docs as { paper: PaperShape }[];
 }
 
 // ProposalReview is an AI proposal as its approver reviews it (AI-07; design D5, D10; docs/design/screens ProposalReview):
@@ -145,7 +154,17 @@ export function ProposalReview({ proposalId, onSelect }: { proposalId: string; o
             What changes
           </h2>
         </div>
-        <div className="fy-card__body">{p.impact ? <Value v={p.impact} /> : <p className="fy-secondary">Its dry run reported no detail.</p>}</div>
+        <div className="fy-card__body">
+          {papersOf(p.impact) ? (
+            <div className="fy-stack fy-stack--3">
+              {papersOf(p.impact)?.map((d, i) => <PaperView key={i} paper={d.paper} />)}
+            </div>
+          ) : p.impact ? (
+            <Value v={p.impact} />
+          ) : (
+            <p className="fy-secondary">Its dry run reported no detail.</p>
+          )}
+        </div>
       </section>
 
       <section className="fy-card" aria-labelledby="proposal-evidence">

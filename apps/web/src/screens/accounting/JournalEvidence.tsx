@@ -41,7 +41,7 @@ export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeepe
 // books start, a director's pay choice or fee, or the exempt-private-company status (FR-DOC-05, FR-AP-14, FR-AP-18,
 // FR-CT-03, FR-AP-22, FR-EQ-03, FR-EQ-04, FR-EQ-11), at its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession" | "holder-record" | "share-class" | "equity-transaction" | "instrument" | "instrument-enablement" | "pool-resolution" | "option-grant" | "option-event" | "investor-rights" | "controller-entry" | "corporate-detail" | "corporate-officer" | "nominee-entry" | "statements-approval" | "acra-extract" | "gst-forecast" | "statutory-filing";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession" | "holder-record" | "share-class" | "equity-transaction" | "instrument" | "instrument-enablement" | "pool-resolution" | "option-grant" | "option-event" | "investor-rights" | "controller-entry" | "corporate-detail" | "corporate-officer" | "nominee-entry" | "statements-approval" | "corporate-document" | "acra-extract" | "gst-forecast" | "statutory-filing";
   id: string;
   etag: string;
 }
@@ -76,6 +76,7 @@ const kindsOf = {
   "corporate-officer": ["Consent to act", "Directors' resolution", "BizFile+ acknowledgement", "ACRA business profile"],
   "nominee-entry": ["Nominee's notice", "Register extract", "ACRA acknowledgement"],
   "statements-approval": ["Directors' resolution", "Statement by directors", "Signed financial statements"],
+  "corporate-document": ["Signed copy"],
   "acra-extract": ["ACRA business profile"],
   "gst-forecast": ["Signed contract", "Confirmed order", "Letter of award"],
   "statutory-filing": ["IRAS acknowledgement", "CPF Board acknowledgement", "ACRA acknowledgement", "AGM minutes"],
@@ -111,6 +112,7 @@ const nouns = {
   "corporate-officer": "officer's record",
   "nominee-entry": "nominee entry",
   "statements-approval": "statements approval",
+  "corporate-document": "corporate document",
   "acra-extract": "ACRA extract",
   "gst-forecast": "GST forecast",
   "statutory-filing": "filing record",
@@ -174,6 +176,8 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
                           ? await api.GET("/v1/corporate-profile/nominees/{nominee_id}/evidence", { params: { path: { nominee_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "statements-approval"
                           ? await api.GET("/v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence", { params: { path: { statements_approval_id: r.id }, query: { page_size: 100 } } })
+                        : r.kind === "corporate-document"
+                          ? await api.GET("/v1/corporate-profile/documents/{document_id}/evidence", { params: { path: { document_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "acra-extract"
                           ? await api.GET("/v1/acra-extracts/{extract_id}/evidence", { params: { path: { extract_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "gst-forecast"
@@ -235,7 +239,13 @@ export function JournalEvidence({ journalId, journalEtag, draft, mayAttach, onCh
 // EvidencePanel is a record's evidence (FR-DOC-05, FR-DOC-07, FR-DOC-08, FR-DOC-11): the files attached to it, oldest
 // first. Those who attach evidence add a file with what it is; on a draft a file comes off again, and once the record
 // is posted its files are kept, append-only, until the retention ends.
-export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record: EvidenceRecord; draft: boolean; mayAttach: boolean; onChanged: (message: string) => void }) {
+export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
+  record: EvidenceRecord;
+  draft: boolean;
+  mayAttach: boolean;
+  onChanged: (message: string) => void;
+  label?: string; // the region's name, where a page shows several records' files
+}) {
   const noun = nouns[record.kind];
   const kinds = kindsOf[record.kind];
   const queries = useQueryClient();
@@ -352,6 +362,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                           ? api.POST("/v1/corporate-profile/nominees/{nominee_id}/evidence", { params: { path: { nominee_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "statements-approval"
                           ? api.POST("/v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence", { params: { path: { statements_approval_id: record.id }, header }, body, bodySerializer })
+                        : record.kind === "corporate-document"
+                          ? api.POST("/v1/corporate-profile/documents/{document_id}/evidence", { params: { path: { document_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "acra-extract"
                           ? api.POST("/v1/acra-extracts/{extract_id}/evidence", { params: { path: { extract_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "gst-forecast"
@@ -427,6 +439,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                         ? await api.GET("/v1/corporate-profile/nominees/{nominee_id}/evidence/{evidence_id}", { params: { path: { nominee_id: record.id, evidence_id: e.id } } })
                       : record.kind === "statements-approval"
                         ? await api.GET("/v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}", { params: { path: { statements_approval_id: record.id, evidence_id: e.id } } })
+                      : record.kind === "corporate-document"
+                        ? await api.GET("/v1/corporate-profile/documents/{document_id}/evidence/{evidence_id}", { params: { path: { document_id: record.id, evidence_id: e.id } } })
                       : record.kind === "acra-extract"
                         ? await api.GET("/v1/acra-extracts/{extract_id}/evidence/{evidence_id}", { params: { path: { extract_id: record.id, evidence_id: e.id } } })
                       : record.kind === "gst-forecast"
@@ -484,6 +498,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                         ? api.DELETE("/v1/corporate-profile/nominees/{nominee_id}/evidence/{evidence_id}", { params: { path: { nominee_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "statements-approval"
                         ? api.DELETE("/v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}", { params: { path: { statements_approval_id: record.id, evidence_id: e.id }, header } })
+                      : record.kind === "corporate-document"
+                        ? api.DELETE("/v1/corporate-profile/documents/{document_id}/evidence/{evidence_id}", { params: { path: { document_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "acra-extract"
                         ? api.DELETE("/v1/acra-extracts/{extract_id}/evidence/{evidence_id}", { params: { path: { extract_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "gst-forecast"
@@ -502,7 +518,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
   };
 
   return (
-    <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby={`${id}-evidence`}>
+    <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby={label ? undefined : `${id}-evidence`} aria-label={label}>
       <h2 className="fy-h3" id={`${id}-evidence`}>
         Evidence
       </h2>

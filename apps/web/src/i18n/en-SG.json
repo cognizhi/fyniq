@@ -616,6 +616,10 @@
       "label": "Attach",
       "tooltip": "Attach the directors' resolution or signed statement approving the financial statements."
     },
+    "corporate-document.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the copy as signed outside Fyniq. Once it is attached, the paper's text stays as it was signed."
+    },
     "controller-entry.attach-evidence": {
       "label": "Attach",
       "tooltip": "Attach the company secretary's confirmation, with the register's extract, ACRA's acknowledgement or a notice and its reply."
@@ -2407,6 +2411,22 @@
     "corporate-profile.ask": {
       "label": "Ask for approval",
       "tooltip": "Sends the draft, with its evidence, to the Owner or the Controller to record. Nobody records their own change."
+    },
+    "corporate-profile.documents": {
+      "label": "Papers and minute book",
+      "tooltip": "Resolutions, notices and minutes drafted from Fyniq's templates and the company's records, and the signed ones recorded in the minute book."
+    },
+    "corporate-profile.draft-paper": {
+      "label": "Draft a paper",
+      "tooltip": "Fills one of Fyniq's templates from the records on today: a draft to read, download and have signed outside Fyniq."
+    },
+    "corporate-profile.paper-pdf": {
+      "label": "PDF",
+      "tooltip": "Downloads the paper to print and sign, with a line to sign for each signer."
+    },
+    "corporate-profile.record-minute-book": {
+      "label": "Record in the minute book",
+      "tooltip": "Sends the signed copy and the day it was signed to another person to record. Recorded, it never changes."
     },
     "compliance.secretary": {
       "label": "Company secretary assistant",

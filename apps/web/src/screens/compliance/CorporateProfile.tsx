@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BadgeCheck, CalendarClock, CircleCheck, Hourglass, PencilLine, Plus, Send, TriangleAlert } from "lucide-react";
+import { BadgeCheck, BookCheck, CalendarClock, CircleCheck, Download, FileText, Hourglass, PencilLine, Plus, Send, Sparkles, TriangleAlert } from "lucide-react";
 import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -14,6 +14,8 @@ import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { EvidencePanel } from "../accounting/JournalEvidence";
 import { statuses } from "../checks/data";
+import { save } from "../reports/AccountantExports";
+import { PaperView } from "./CorporatePaper";
 import { calendar, ItemChip } from "./StatutoryCalendar";
 
 type Profile = components["schemas"]["CorporateProfile"];
@@ -28,6 +30,10 @@ type ApprovalDraft = components["schemas"]["StatementsApprovalDraft"];
 type Reconciliation = components["schemas"]["CorporateReconciliation"];
 type Check = components["schemas"]["CheckOut"];
 type Holder = components["schemas"]["Holder"];
+type Doc = components["schemas"]["CorporateDocumentView"];
+type DocFields = components["schemas"]["CorporateDocumentFields"];
+type DocDraft = components["schemas"]["CorporateDocumentDraft"];
+type Template = components["schemas"]["CorporateTemplate"];
 
 // Who drafts the profile's records: C on "Corporate profile and registers", the Accountant and the Company secretary
 // (Appendix D, rev 0.282, and its note).
@@ -52,6 +58,18 @@ async function reconciliation(): Promise<Reconciliation> {
 
 async function checkOf(key: string): Promise<Check> {
   const { data, error } = await api.GET("/v1/checks/{key}", { params: { path: { key } } });
+  if (error) throw error;
+  return data;
+}
+
+async function templates(): Promise<Template[]> {
+  const { data, error } = await api.GET("/v1/corporate-profile/templates", {});
+  if (error) throw error;
+  return data.templates;
+}
+
+async function documentOf(id: string): Promise<Doc> {
+  const { data, error } = await api.GET("/v1/corporate-profile/documents/{document_id}", { params: { path: { document_id: id } } });
   if (error) throw error;
   return data;
 }
@@ -484,6 +502,285 @@ function ApprovalForm({ draft, start, onClose, onDone }: { draft: Approval | nul
   );
 }
 
+// The values of a paper's form, each field as typed: lines one a line.
+type FormValues = Record<string, string>;
+
+function valuesOf(fields: DocFields | undefined): FormValues {
+  const out: FormValues = {};
+  for (const [k, v] of Object.entries(fields ?? {})) out[k] = Array.isArray(v) ? v.join("\n") : String(v ?? "");
+  return out;
+}
+
+// fieldsOf are a form's values as the fields its template asks for: lines split, empty ones left out.
+function fieldsOf(t: Template, values: FormValues): DocFields {
+  const out: Record<string, string | string[]> = {};
+  for (const f of t.fields) {
+    const v = (values[f.name] ?? "").trim();
+    if (!v) continue;
+    out[f.name] = f.type === "lines" ? v.split("\n").map((x) => x.trim()).filter(Boolean) : v;
+  }
+  return out as DocFields;
+}
+
+// DocumentForm drafts a paper from one of Fyniq's templates, or drafts one again from today's records (FR-CS-05): the
+// kind, then the fields its template asks for.
+function DocumentForm({ draft, list, officers, onClose, onDone }: {
+  draft: Doc | null;
+  list: Template[];
+  officers: Officer[];
+  onClose: () => void;
+  onDone: (text: string) => void;
+}) {
+  const id = useId();
+  const [key] = useState(newKey);
+  const [kind, setKind] = useState(draft?.kind ?? list[0]?.kind ?? "");
+  const [values, setValues] = useState<FormValues>(() => valuesOf(draft?.fields));
+  const [note, setNote] = useState(draft?.note ?? "");
+  const { busy, problem, save: send } = useSave(onClose, onDone);
+  const t = list.find((x) => x.kind === kind);
+  const draftH = helpText("corporate-profile.draft-paper");
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!t) return;
+    const fields = fieldsOf(t, values);
+    void send(
+      () =>
+        draft
+          ? api.PUT("/v1/corporate-profile/documents/{document_id}", {
+              params: { path: { document_id: draft.id }, header: { "If-Match": `"${draft.version}-draft"`, "Idempotency-Key": key } },
+              body: { fields, ...(note.trim() ? { note: note.trim() } : {}) },
+            })
+          : api.POST("/v1/corporate-profile/documents", {
+              params: { header: { "Idempotency-Key": key } },
+              body: { kind: kind as DocDraft["kind"], fields, ...(note.trim() ? { note: note.trim() } : {}) },
+            }),
+      draft ? "The paper is drafted again from today's records." : "The paper is drafted. Read it, download it and have it signed.",
+    );
+  };
+  const set = (name: string, v: string) => setValues({ ...values, [name]: v });
+  return (
+    <Dialog open onOpenChange={(o) => !o && !busy && onClose()} dismissible={!busy} eyebrow="Papers" title={draft ? "Draft the paper again" : draftH.label}
+      description="Filled from the company's records on today, from Fyniq's template, which a lawyer has yet to confirm. Fyniq never signs or files it.">
+      {problem && <Refusal problem={problem} title="The paper was not drafted" />}
+      <form className="fy-stack fy-stack--3" onSubmit={submit} noValidate>
+        <Field id={`${id}-kind`} label="Kind of paper">
+          <select className="fy-select" id={`${id}-kind`} value={kind} disabled={!!draft} onChange={(e) => setKind(e.target.value)}>
+            {list.map((x) => (
+              <option key={x.kind} value={x.kind}>
+                {x.summary}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {t?.fields.map((f) => {
+          const fid = `${id}-${f.name}`;
+          const label = f.optional ? `${f.label} (optional)` : f.label;
+          const v = values[f.name] ?? "";
+          switch (f.type) {
+            case "date":
+            case "time":
+              return (
+                <Field key={f.name} id={fid} label={label}>
+                  <input className="fy-input" id={fid} type={f.type} value={v} onChange={(e) => set(f.name, e.target.value)} />
+                </Field>
+              );
+            case "lines":
+              return (
+                <Field key={f.name} id={fid} label={label} help="One a line">
+                  <textarea className="fy-input" id={fid} rows={3} value={v} onChange={(e) => set(f.name, e.target.value)} aria-describedby={`${fid}-help`} />
+                </Field>
+              );
+            case "choice":
+              return (
+                <Field key={f.name} id={fid} label={label}>
+                  <select className="fy-select" id={fid} value={v} onChange={(e) => set(f.name, e.target.value)}>
+                    <option value="">Choose…</option>
+                    {Object.entries(f.choices ?? {}).map(([value, words]) => (
+                      <option key={value} value={value}>
+                        {words}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              );
+            case "officer":
+              return (
+                <Field key={f.name} id={fid} label={label}>
+                  <select className="fy-select" id={fid} value={v} onChange={(e) => set(f.name, e.target.value)}>
+                    <option value="">Choose…</option>
+                    {officers
+                      .filter((o) => (f.roles ?? []).includes(o.officer.role))
+                      .map((o) => (
+                        <option key={o.officer_id} value={o.officer_id}>
+                          {o.officer.name}, {roleWords[o.officer.role].toLowerCase()}
+                        </option>
+                      ))}
+                  </select>
+                </Field>
+              );
+            default:
+              return (
+                <Field key={f.name} id={fid} label={label}>
+                  <input className="fy-input" id={fid} inputMode={f.type === "count" || f.type === "amount" ? "decimal" : undefined} value={v}
+                    onChange={(e) => set(f.name, e.target.value)} />
+                </Field>
+              );
+          }
+        })}
+        <Field id={`${id}-note`} label="Note (optional)" help="For the record, not on the paper">
+          <input className="fy-input" id={`${id}-note`} value={note} onChange={(e) => setNote(e.target.value)} aria-describedby={`${id}-note-help`} />
+        </Field>
+        <FormButtons busy={busy} onClose={onClose} label={draft ? "Draft it again" : "Draft the paper"} />
+      </form>
+    </Dialog>
+  );
+}
+
+// RecordForm asks another person to record a signed paper in the minute book, with the day it was signed.
+function RecordForm({ d, onClose, onDone }: { d: Doc; onClose: () => void; onDone: (text: string) => void }) {
+  const id = useId();
+  const [key] = useState(newKey);
+  const confirm = useConfirm();
+  const queries = useQueryClient();
+  const [signed, setSigned] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const recordH = helpText("corporate-profile.record-minute-book");
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setProblem(null);
+    const out = await guarded(confirm, () =>
+      api.POST("/v1/corporate-profile/documents/{document_id}/approval", {
+        params: { path: { document_id: d.id }, header: { "If-Match": `"${d.version}-draft"`, "Idempotency-Key": key } },
+        body: { signed_on: signed },
+      }),
+    );
+    setBusy(false);
+    if (!out.data) return setProblem(problemOf(out.error));
+    onDone("Asked to record it in the minute book. Another person approves it, never the one who asked.");
+    await queries.invalidateQueries({ queryKey: ["corporate-profile"] });
+    onClose();
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && !busy && onClose()} dismissible={!busy} eyebrow="Minute book" title={recordH.label}
+      description="With its signed copy attached and the day it was signed, another person records it. Recorded, it never changes.">
+      {problem && <Refusal problem={problem} title="It was not sent for recording" />}
+      <form className="fy-stack fy-stack--3" onSubmit={(e) => void submit(e)} noValidate>
+        <Field id={`${id}-signed`} label="Signed on">
+          <input className="fy-input" id={`${id}-signed`} type="date" value={signed} onChange={(e) => setSigned(e.target.value)} />
+        </Field>
+        <FormButtons busy={busy} onClose={onClose} label="Ask to record it" />
+      </form>
+    </Dialog>
+  );
+}
+
+// PaperBlock is a paper drafted or in the minute book: what it is, its text on request, its PDF, and for a draft its
+// signed copy and asking to record it.
+function PaperBlock({ d, mayDraft, onStatus, onChange, onRecord }: {
+  d: Doc;
+  mayDraft: boolean;
+  onStatus: (text: string) => void;
+  onChange: () => void;
+  onRecord: () => void;
+}) {
+  const queries = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const text = useQuery({ queryKey: ["corporate-document", d.id, d.version], queryFn: () => documentOf(d.id), enabled: open });
+  const draft = d.status === "draft";
+  const recordH = helpText("corporate-profile.record-minute-book");
+  const pdfH = helpText("corporate-profile.paper-pdf");
+  const download = async () => {
+    setProblem(null);
+    const out = await api.GET("/v1/corporate-profile/documents/{document_id}/pdf", { params: { path: { document_id: d.id } } });
+    if (!out.data) return setProblem(problemOf(out.error));
+    save(out.data.file_name, out.data.media_type, out.data.content_base64);
+  };
+  return (
+    <li className="fy-stack fy-stack--2">
+      <div className="fy-row fy-row--between fy-row--wrap gap-2">
+        <span>
+          <span className="fy-strong">{d.title}</span>
+          <span className="fy-small fy-muted">
+            {" "}
+            · drafted {date(d.drafted_on)}
+            {d.signed_on && ` · signed ${date(d.signed_on)}`}
+          </span>
+          {d.proposal_id && (
+            <span className="fy-ai-badge" style={{ marginInlineStart: "0.5rem" }} title="The AI proposed it, and a person approved the proposal">
+              <Icon of={Sparkles} />
+              AI
+            </span>
+          )}
+        </span>
+        <span className="fy-row fy-row--wrap gap-2">
+          {draft ? (
+            <span className="fy-chip fy-chip--neutral">
+              <Icon of={PencilLine} />
+              Draft
+            </span>
+          ) : (
+            <span className="fy-chip fy-chip--good">
+              <Icon of={BookCheck} />
+              In the minute book
+            </span>
+          )}
+          {!d.masked && (
+            <>
+              <Button size="sm" variant="ghost" aria-expanded={open} onClick={() => setOpen(!open)}>
+                <Icon of={FileText} />
+                {open ? "Hide the text" : "Read"}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => void download()} title={pdfH.tooltip}>
+                <Icon of={Download} />
+                {pdfH.label}
+              </Button>
+            </>
+          )}
+          {draft && mayDraft && !d.approval_id && d.evidence === 0 && (
+            <Button size="sm" variant="ghost" onClick={onChange}>
+              <Icon of={PencilLine} />
+              Draft again
+            </Button>
+          )}
+          {draft && mayDraft && !d.approval_id && (
+            <Button size="sm" onClick={onRecord} disabled={d.evidence === 0} title={recordH.tooltip}>
+              <Icon of={Send} />
+              {recordH.label}
+            </Button>
+          )}
+          {d.approval_id && (
+            <span className="fy-chip fy-chip--neutral">
+              <Icon of={Hourglass} />
+              <Link to="/approvals/$approvalId" params={{ approvalId: d.approval_id }}>
+                Waiting for approval
+              </Link>
+            </span>
+          )}
+        </span>
+      </div>
+      {problem && <Refusal problem={problem} title="The PDF could not be made" />}
+      {open && text.data?.paper && <PaperView paper={text.data.paper} />}
+      {draft &&
+        d.checks.map((c) => (
+          <p key={c.code} className="fy-small fy-secondary">
+            {c.message}.{c.fix ? ` ${c.fix}.` : ""}
+          </p>
+        ))}
+      {draft && (
+        <EvidencePanel record={{ kind: "corporate-document", id: d.id, etag: `"${d.version}-draft"` }} draft mayAttach={mayDraft && !d.approval_id}
+          label={`Signed copy of the ${d.title.charAt(0).toLowerCase()}${d.title.slice(1)}, drafted ${date(d.drafted_on)}`}
+          onChanged={(m) => {
+            onStatus(m);
+            void queries.invalidateQueries({ queryKey: ["corporate-profile"] });
+          }} />
+      )}
+    </li>
+  );
+}
+
 function Card({ id, help, title, action, children }: { id: string; help: string; title: string; action?: ReactNode; children: ReactNode }) {
   return (
     <section className="fy-card" aria-labelledby={id}>
@@ -519,11 +816,13 @@ function recorded(r: { status: string }): boolean {
 export function CorporateProfile() {
   const { session } = useSignedIn();
   const mayDraft = (session.roles ?? []).some((r) => drafters.includes(r));
+  const mayDraftPapers = mayDraft || (session.roles ?? []).includes("owner"); // the Owner drafts one too (sec.draft_document's approver)
   const h = helpText("compliance.corporate-profile");
   const p = useQuery({ queryKey: ["corporate-profile"], queryFn: profile });
   const rec = useQuery({ queryKey: ["corporate-profile", "reconciliation"], queryFn: reconciliation });
   const lodgements = useQuery({ queryKey: ["calendar"], queryFn: () => calendar() });
   const checks = useQuery({ queryKey: ["checks", "corporate"], queryFn: () => Promise.all(checkKeys.map((k) => checkOf(k))), retry: false });
+  const papers = useQuery({ queryKey: ["corporate-profile", "templates"], queryFn: templates });
   const [status, setStatus] = useState("");
   const [editing, setEditing] = useState<ReactNode>(null);
   if (p.isError) return <Refusal problem={problemOf(p.error)} title="The corporate profile could not be shown" />;
@@ -799,6 +1098,41 @@ export function CorporateProfile() {
             </p>
           </DraftBlock>
         ))}
+      </Card>
+      <Card id="corporate-documents" help="corporate-profile.documents" title="Papers and minute book"
+        action={mayDraftPapers && papers.data && <AddButton label={helpText("corporate-profile.draft-paper").label} onClick={() => setEditing(
+          <DocumentForm draft={null} list={papers.data ?? []} officers={pr.officers} onClose={close} onDone={setStatus} />,
+        )} />}>
+        <p className="fy-small fy-secondary">
+          Resolutions, notices and minutes drafted from Fyniq's templates, which a lawyer has yet to confirm. Fyniq never signs or files them: have each signed, attach the signed copy, and record it in the minute book.
+        </p>
+        {pr.documents.length === 0 ? (
+          <p className="fy-small fy-muted">No paper is drafted.</p>
+        ) : (
+          <>
+            {pr.documents.some((d) => d.status === "draft") && (
+              <ul className="fy-stack fy-stack--3" aria-label="Drafts">
+                {pr.documents
+                  .filter((d) => d.status === "draft")
+                  .map((d) => (
+                    <PaperBlock key={d.id} d={d} mayDraft={mayDraft} onStatus={setStatus}
+                      onChange={() => setEditing(<DocumentForm draft={d} list={papers.data ?? []} officers={pr.officers} onClose={close} onDone={setStatus} />)}
+                      onRecord={() => setEditing(<RecordForm d={d} onClose={close} onDone={setStatus} />)} />
+                  ))}
+              </ul>
+            )}
+            <h3 className="fy-strong">Minute book</h3>
+            {pr.documents.some(recorded) ? (
+              <ul className="fy-stack fy-stack--3" aria-label="Minute book">
+                {pr.documents.filter(recorded).map((d) => (
+                  <PaperBlock key={d.id} d={d} mayDraft={false} onStatus={setStatus} onChange={() => undefined} onRecord={() => undefined} />
+                ))}
+              </ul>
+            ) : (
+              <p className="fy-small fy-muted">No signed paper is recorded yet.</p>
+            )}
+          </>
+        )}
       </Card>
       {editing}
     </div>
