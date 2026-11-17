@@ -10,6 +10,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/canary"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/backup"
 	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
@@ -71,6 +72,9 @@ type Kit struct {
 	// and the files of a directory locally. Nil: those verifications do not run.
 	Posture ports.Posture
 	Logs    ports.LogReader
+	// Canary posts and verifies the night's synthetic transactions in the canary organisation through the public API
+	// (QA-PROD-01): nil until its client is configured, which waits for the integration clients (p1-public-api task 3.1).
+	Canary *canary.Canary
 	// Backup exports the database each week, into Exports' buckets (DR-02, DR-04; p1-operations-dr design D1): Cloud SQL's
 	// export in the cloud, pg_dump locally. Nil: the export job fails, so its heartbeat's absence alerts.
 	Backup        ports.DatabaseBackup

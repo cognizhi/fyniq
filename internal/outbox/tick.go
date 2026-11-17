@@ -139,6 +139,9 @@ var PlatformSchedules = []Schedule{
 	// Hourly, the draft invoices of the recurring invoices due by each organisation's own today (FR-AR-07, FR-AUT-01;
 	// rev 0.135).
 	{Job: "invoices.recurring", Every: time.Hour, Offset: 20 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Nightly at 01:55 Singapore time, the canary's synthetic transactions through the public API (QA-PROD-01), before the
+	// audit-chain and ledger verifications, which then cover what it posted.
+	{Job: "canary.run", Every: 24 * time.Hour, Offset: 17*time.Hour + 55*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 }
 
 // TickInterval is how often Cloud Scheduler (locally the API's own loop) calls the tick; a setting.
