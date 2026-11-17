@@ -59,7 +59,10 @@ func TestTheCompanySecretaryWorkspace(t *testing.T) {
 	// A finished run: its findings, Not assessed first, and the open ones in the workspace.
 	e.clock.Set(time.Date(2026, 11, 16, 7, 0, 30, 0, clock.Singapore))
 	dispatcher := outbox.Dispatcher{Store: workerStore(t), Queue: e.queue, Clock: e.clock}
-	runner := agents.Runner{Store: workerStore(t), Dispatcher: dispatcher, Clock: e.clock, Skills: agents.Default()}
+	runner := agents.Runner{Store: workerStore(t), Dispatcher: dispatcher, Clock: e.clock, Skills: agents.Default(),
+		Model: func(context.Context, uuid.UUID, storage.AgentRun, []agents.Finding) (agents.ModelOutcome, error) {
+			return agents.ModelOutcome{Model: "test-model", Text: "The corporate profile is not recorded yet.", Tokens: 900, ToolCalls: 1}, nil
+		}}
 	work := func(r storage.AgentRun) storage.AgentRun {
 		t.Helper()
 		payload, _ := json.Marshal(agents.RunWork{RunID: r.ID})
@@ -96,6 +99,9 @@ func TestTheCompanySecretaryWorkspace(t *testing.T) {
 		ws.Body["last_done"] == nil || len(findings) == 0 || findings[0].(map[string]any)["status"] != agents.FindingNotAssessed {
 		t.Fatalf("the workspace: %s", ws.Raw)
 	}
+	if ai, _ := ws.Body["ai_summary"].(map[string]any); ai["text"] != "The corporate profile is not recorded yet." || ai["origin"] != "ai" {
+		t.Errorf("the AI's words in the workspace: %v", ws.Body["ai_summary"])
+	}
 	schedule := ws.Body["schedule"].(map[string]any)
 	if schedule["monitor"] != "0 7 * * *" || schedule["run_tokens"] != float64(200000) {
 		t.Errorf("the schedule: %v", schedule)
@@ -116,7 +122,7 @@ func TestTheCompanySecretaryWorkspace(t *testing.T) {
 		t.Fatalf("the history: %s", runs.Raw)
 	}
 	report := e.call(http.MethodGet, "/v1/compliance/secretary/runs/"+done.ID.String(), ahkow, nil)
-	if report.Status != http.StatusOK || len(report.Body["findings"].([]any)) == 0 || report.Body["packs"] == nil || report.Body["model"] != nil {
+	if report.Status != http.StatusOK || len(report.Body["findings"].([]any)) == 0 || report.Body["packs"] == nil || report.Body["model"] == nil {
 		t.Fatalf("the report: %d %s", report.Status, report.Raw)
 	}
 	e.problemIs(e.call(http.MethodGet, "/v1/compliance/secretary/runs/"+uuid.NewString(), ahkow, nil), "getAgentRun", 404, CodeNotFound)

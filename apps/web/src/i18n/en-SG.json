@@ -2356,6 +2356,34 @@
       "label": "Statutory calendar",
       "tooltip": "Every filing and payment deadline, worked out from your financial years, GST return periods and settings."
     },
+    "compliance.secretary": {
+      "label": "Company secretary assistant",
+      "tooltip": "The AI agent that checks the company's obligations on a schedule, explains what it finds, raises tasks and drafts reminders for a person to approve."
+    },
+    "compliance.secretary-findings": {
+      "label": "What needs you",
+      "tooltip": "The open findings of its latest run: those it could not check first, then what cannot go on, what is due and what to review."
+    },
+    "compliance.secretary-drafts": {
+      "label": "Drafts awaiting approval",
+      "tooltip": "The tasks and reminders it proposed that wait for the Owner or the Company secretary to approve them."
+    },
+    "compliance.secretary-history": {
+      "label": "Its runs",
+      "tooltip": "Each run, newest first, with what started it, what it found and whether that is new since the last run."
+    },
+    "compliance.secretary-schedule": {
+      "label": "Its schedule",
+      "tooltip": "When it runs, the events that start a run, its quiet hours, who it tells and the most one run may read and use."
+    },
+    "compliance.secretary-run": {
+      "label": "A run's report",
+      "tooltip": "One run: what it read, every finding with its rule and source, their tasks, what it proposed and what the AI wrote."
+    },
+    "compliance.secretary-run-now": {
+      "label": "Run now",
+      "tooltip": "Queues a run at once, while the assistant is on. It checks first, and asks the model only if something changed."
+    },
     "compliance.gst": {
       "label": "GST",
       "tooltip": "Whether the company must register for GST, tested against IRAS's threshold, with the forecasts it rests on."

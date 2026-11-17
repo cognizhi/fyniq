@@ -173,10 +173,20 @@
 
 ## 7. The screens
 
-- [ ] 7.1 Compliance → Company secretary (`company-secretary`): the latest summary (Basic and Expert), open findings with
+- [x] 7.1 Compliance → Company secretary (`company-secretary`): the latest summary (Basic and Expert), open findings with
   Not assessed first, the obligations, the drafts awaiting approval, the history with "new since last run", the
   schedule's settings, Run now, Pause, and who the agent acts for. Help keys, its guide page compiled into `kb/`, and
   the fragment updated locally (design D9). Tests `// req: FR-CS-04`, `// req: AI-62`, Vitest with axe.
+  As built:
+  - The API: `getCompanySecretary`, `listAgentRuns`, `getAgentRun` and `runCompanySecretary` (Run now). They are read
+    under V on the AI company secretary's row; Run now needs its C (the Owner too) and is refused while off or paused.
+    `listAIProposals` filters by `agent`.
+  - The page: Fyniq's summary and the open findings in both modes (Expert adds each finding's rule, pack and source),
+    and the latest run's model words apart in an AI card. Also the drafts awaiting approval (AI-labelled), the next
+    calendar items, its runs with "New since the last run", and its schedule. Run now and Pause/Resume, and who it acts
+    for.
+  - The guide page is `company-secretary.md` (`compliance.secretary`), compiled into the knowledge base; the fragments
+    are renamed to the built headings.
 - [ ] 7.2 A run's report (`agent-run-report`) and the Inbox's tasks. Tests `// req: AI-65`, Vitest with axe.
 
 ## 8. Evals and controls
