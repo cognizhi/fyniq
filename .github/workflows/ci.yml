@@ -189,8 +189,8 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha }}
           LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'visual-baseline') }}
         run: |
-          if ! git diff --quiet "$BASE" HEAD -- apps/web/visual/baselines.json && [ "$LABELLED" != true ]; then
-            echo "✖ apps/web/visual/baselines.json changed: a new baseline is approved by labelling the pull request visual-baseline (design D5)"
+          if ! python3 scripts/visual.py changed "$BASE" && [ "$LABELLED" != true ]; then
+            echo "✖ a picture's baseline is added, changed or removed: approve it by labelling the pull request visual-baseline (design D5)"
             exit 1
           fi
       - run: make test-visual   # QA-UI-07, QA-RPT-04: the key pages at the five frames in light and dark, in the pinned Playwright container (design D5)

@@ -25,6 +25,12 @@ class Baselines(unittest.TestCase):
         self.assertEqual(list(merged), ["home/desktop/light", "home/phone/light", "inbox/tablet/dark", "settings/desktop/dark"])
         self.assertEqual(merged["home/desktop/light"], A)  # the changed picture replaces its baseline
 
+    def test_a_change_is_a_picture_added_altered_or_removed(self):
+        self.assertEqual(visual.changed({}, {}), [])  # the file added empty changes no picture
+        self.assertEqual(visual.changed({"home/phone/light": A}, {"home/phone/light": A}), [])
+        self.assertEqual(visual.changed({"home/phone/light": A, "inbox/phone/dark": A}, {"home/phone/light": B, "home/tablet/light": A}),
+                         ["home/phone/light", "home/tablet/light", "inbox/phone/dark"])
+
     def test_a_malformed_key_or_hash_is_refused(self):
         self.assertEqual(len(visual.problems({"home/watch/light": A, "home/phone/sepia": A, "home/phone/dark": "xyz"})), 3)
         self.assertEqual(visual.problems([]), ["the baselines are not a JSON object of picture → SHA-256"])

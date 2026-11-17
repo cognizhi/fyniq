@@ -4,13 +4,13 @@
 // are kept for the run, so a failed picture never signs in again with a used invitation.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { chromium, expect, type FullConfig } from "@playwright/test";
+import { chromium, expect, type BrowserContext, type FullConfig } from "@playwright/test";
 import { api, contact, signIn } from "../journeys/harness";
 
 export const statePath = resolve(import.meta.dirname, "../test-results/visual-setup.json");
 
 export interface Setup {
-  storageState: Awaited<ReturnType<import("@playwright/test").BrowserContext["storageState"]>>;
+  storageState: Awaited<ReturnType<BrowserContext["storageState"]>>;
   invoice: string; // the draft invoice's page
 }
 

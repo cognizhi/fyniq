@@ -5,10 +5,12 @@ request labelled visual-baseline. Standard library only.
 
     python3 scripts/visual.py approve [DIR]   # take DIR's hashes (default: apps/web/test-results/visual) into the baselines
     python3 scripts/visual.py check           # the baselines are well formed (part of make check)
+    python3 scripts/visual.py changed BASE    # the pictures added, changed or removed since git revision BASE; fails on any
 """
 import json
 import pathlib
 import re
+import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -39,11 +41,30 @@ def approve(run: pathlib.Path, baselines: dict) -> dict:
     return dict(sorted(merged.items()))
 
 
+def changed(before: dict, after: dict) -> list[str]:
+    """The pictures whose baseline a change adds, alters or removes: what a person approves with the label."""
+    return sorted(k for k in before.keys() | after.keys() if before.get(k) != after.get(k))
+
+
+def at(revision: str) -> dict:
+    """The baselines at a git revision: none before the file existed."""
+    shown = subprocess.run(["git", "show", f"{revision}:{BASELINES.relative_to(ROOT)}"], cwd=ROOT, capture_output=True, text=True)
+    return json.loads(shown.stdout) if shown.returncode == 0 else {}
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) < 2 or argv[1] not in ("approve", "check"):
+    if len(argv) < 2 or argv[1] not in ("approve", "check", "changed"):
         print(__doc__)
         return 2
     current = json.loads(BASELINES.read_text())
+    if argv[1] == "changed":
+        if len(argv) < 3:
+            print(__doc__)
+            return 2
+        moved = changed(at(argv[2]), current)
+        for k in moved:
+            print(f"changed: {k}")
+        return 1 if moved else 0
     if argv[1] == "check":
         bad = problems(current)
         for p in bad:
