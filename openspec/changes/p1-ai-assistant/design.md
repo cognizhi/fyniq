@@ -96,6 +96,22 @@ AI-28).**
   definitions).
 - `calc` (AI-P6) runs in the AI service itself, exact decimals (apd), on facts by ID and constants, returning its result
   as a fact with its input facts' IDs; every other tool reads through the API.
+- As built (task 3.1): one `contracts/ai/tools/<name>.json` per tool, in the shape MCP lists a tool (name, title,
+  description, `inputSchema`, `annotations`), with its version, where it runs (`api`, or `ai` for `calc`), its scope
+  (`ai.read`, the only one) and its limits (at most 50 rows, 5 s and 4,000 tokens a result). JSON rather than YAML: the
+  read-only test on main already read JSON, MCP's `tools/list` is JSON, and the release binary needs no YAML parser.
+  `contracts/ai` embeds the files; `internal/aitool` loads them and refuses, so the build fails, a tool that is not
+  annotated read-only, idempotent and closed to the world, holds another scope, is named for a write, or takes an
+  input that is not strict and bounded (every object closed, every string with an enum, a pattern or a length, every
+  array with a length, only the JSON Schema words every provider takes, no `$ref`). The model is offered a tool as
+  `metrics_query` (providers' tool names take no dots) and the registry finds it again by that name.
+  `contracts/ai/tools.lock.json` pins each version's hash, so a changed definition without a new version fails `make
+  test`. The internal model call names its tools and the API offers the registry's own definitions; one the AI service
+  writes is refused unsent. A contract test keeps `metrics.query`'s input equal to `POST /v1/metrics:query`'s and the
+  semantic layer's measures, `records.search`'s kinds equal to the search's, `checks.list`'s statuses equal to a
+  check's, and `packs.get`'s packs equal to those in `packs/`. `lineage.explain` takes a fact's ID with the measure,
+  months, dimension, member and revision it came with, so the API can rebuild the fact and refuse an ID that does not
+  match, with nothing kept between calls.
 
 **D6. The semantic layer and typed facts (AI-03, AI-68, AI-04).**
 - `internal/semantic` defines named measures (revenue, cost of sales, gross profit, operating expenses, net profit,

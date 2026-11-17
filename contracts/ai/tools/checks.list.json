@@ -1,0 +1,26 @@
+{
+  "name": "checks.list",
+  "title": "List the checks",
+  "version": 1,
+  "description": "Lists the checks of the books the person asking may see, with books health: each check's key, area, what it checks, its latest status (ok, warning, error, due, not_assessed or failed) and how many items it found. Use checks.explain for one check's items.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "area": {
+        "type": "string",
+        "description": "Only this area's checks, as a check's area reads, such as Books or Bank.",
+        "maxLength": 40
+      },
+      "status": {
+        "type": "string",
+        "description": "Only the checks whose latest run found this.",
+        "enum": ["ok", "warning", "error", "due", "not_assessed", "failed"]
+      }
+    }
+  },
+  "annotations": {"readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false},
+  "runs": "api",
+  "scope": "ai.read",
+  "limits": {"rows": 50, "timeout_ms": 5000, "result_tokens": 4000}
+}
