@@ -64,7 +64,7 @@ func TestAStoppedTaskShowsOnChecksAndReplays(t *testing.T) {
 		!strings.Contains(listed["detail"].(string), "the provider refused the connection") {
 		t.Fatalf("C.2 #12 with a stopped task: %s", c.Raw)
 	}
-	wantStatus(t, c, "error")
+	wantStatus(t, c, "warning") // to look at and run again: it does not hold the close
 
 	path := "/v1/background-work/" + id.String() + "/replay"
 	for _, r := range []authz.Role{authz.Accountant, authz.Controller, authz.Bookkeeper} {

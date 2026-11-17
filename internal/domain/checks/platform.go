@@ -308,13 +308,14 @@ func jobsOnTime(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, erro
 		if d.LastError != "" {
 			why = ": " + d.LastError
 		}
-		items = append(items, Item{Kind: "outbox", ID: d.ID.String(), Label: "Background work " + d.Kind,
+		items = append(items, Item{Kind: "outbox", ID: d.ID.String(), Label: "Background work " + d.Kind, Severity: string(Warning),
 			Detail:  fmt.Sprintf("It stopped after %d attempts on %s%s. Replay it once what stopped it is fixed", d.Attempts, d.DiedAt.UTC().Format("2 Jan 2006 15:04 UTC"), why),
 			Version: d.DiedAt.UTC().Format(time.RFC3339Nano)})
 	}
+	stopped := len(items)
 	if e.beats == nil {
-		if len(items) > 0 {
-			return Found(Error, items, fmt.Sprintf("%d background task(s) stopped", len(items)), replayFix), nil
+		if stopped > 0 {
+			return Found(Warning, items, fmt.Sprintf("%d background task(s) stopped", stopped), replayFix), nil
 		}
 		return Missing("the scheduler's heartbeats", "the platform's schedule"), nil
 	}
@@ -332,6 +333,10 @@ func jobsOnTime(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, erro
 	}
 	if len(items) == 0 {
 		return Fine(fmt.Sprintf("Each of the %d scheduled jobs ran on time", len(e.jobs))), nil
+	}
+	if len(items) == stopped {
+		// A stopped task is for a person to look at and run again: it does not hold the close (G4-073).
+		return Found(Warning, items, fmt.Sprintf("%d background task(s) stopped", stopped), replayFix), nil
 	}
 	return Found(Error, items, fmt.Sprintf("%d scheduled job(s) or background task(s) late, failing or stopped", len(items)),
 		"Tell whoever runs the installation: the scheduler's runbook says how to find why a job stopped. "+replayFix), nil

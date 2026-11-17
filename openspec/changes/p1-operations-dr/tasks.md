@@ -164,7 +164,8 @@ module tests on mock providers and tagged `[live-verify]`.
   reads 11 ms, reports 106 ms, posting 25 ms, the import 12 s, the export 16 s.
 
 - [x] 13.14 G4-073's last part, for the launch gate: a task whose attempts ran out shows on C.2 #12, "Every scheduled
-  job ran on time", with when it stopped and why, until an Owner or an Administrator runs it again
+  job ran on time", with when it stopped and why, as ⚠ to look at (it does not hold the close; a late or failing job
+  stays ✖), until an Owner or an Administrator runs it again
   (`POST /v1/background-work/{work_id}/replay`): back to pending, its attempts counted afresh, its last error kept,
   dispatched after commit and audited (`outbox.row.replayed`); the check lists it no more once it runs again. The
   outbox's guard already let a dead row go only back to pending (000007). Screen: **Run it again** beside the item on
