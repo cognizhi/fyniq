@@ -155,7 +155,7 @@ storybook: ## Storybook (QA-UI-02): build it, run every shared component's stori
 	@if FYNIQ_STORY_PLANTED=1 $(MISE) pnpm --filter @fyniq/web test:stories > /dev/null 2>&1; then echo "✖ the planted axe violation passed the Storybook run"; exit 1; fi
 	@echo "✔ Storybook: every shared component's stories pass axe in four themes, and the planted violation fails"
 
-evals: ## Run the AI eval suites (CTL-AI-05): the assistant's golden and red-team suites through the real orchestrator (Docker), then each suite judged soundly and each model's recorded answers replayed, report in .data/evals/report.json; FYNIQ_EVALS_RELEASE=1 fails a missing recording; FYNIQ_AI_LIVE=1 MODEL=<id> records one model on synthetic text
+evals: ## Run the AI eval suites (CTL-AI-05): the assistant's golden, red-team and proposal suites through the real orchestrator (Docker), then each suite judged soundly and each model's recorded answers replayed, report in .data/evals/report.json; FYNIQ_EVALS_RELEASE=1 fails a missing recording; FYNIQ_AI_LIVE=1 MODEL=<id> records one model on synthetic text
 	@scripts/evals.sh $(if $(MODEL),--model $(MODEL))
 
 golden-set: ## Rewrite the assistant's golden questions (evals/golden/assistant.json) from the oracle on the sample company (Docker, uv); make evals then checks each against the oracle, the seed and the API

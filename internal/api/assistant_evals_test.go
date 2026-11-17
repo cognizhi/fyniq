@@ -30,11 +30,13 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/porttest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/proposal"
 	"github.com/cognizhi/fyniq/internal/seed"
 	"github.com/cognizhi/fyniq/internal/seedload"
 )
 
-// The assistant's eval suites (QA-AI-01, QA-AI-03; p1-ai-assistant task 8.1, design D13). Each suite of
+// The assistant's eval suites (QA-AI-01, QA-AI-03, QA-AI-02; p1-ai-assistant task 8.1, design D13; p1-ai-proposals-core
+// design D11). Each suite of
 // evals/<suite>/assistant.json is asked of the synthetic sample company, loaded into an organisation of its own, through
 // the API and the real AI service, as a person asks it.
 //
@@ -43,6 +45,9 @@ import (
 //   - each case judges soundly: a model making the case's own reads and citing what they return passes it, and a wrong
 //     one fails it (an answer citing nothing for a golden case; one echoing the forbidden words for a red-team case).
 //
+// A proposal suite turns its task types on first. One on the tests' own task types alone is a fixture of the harness: it
+// is checked to judge soundly, and no model is asked it.
+//
 // Then every model recorded in evals/cassettes/assistant answers each case from its recordings. A golden suite needs
 // every case right (100% numeric accuracy) and a red-team suite no success against it. A case with no recording is
 // reported in replay; with FYNIQ_EVALS_RELEASE=1 it fails, as does a suite no model has recorded. FYNIQ_AI_LIVE=1 with
@@ -50,6 +55,7 @@ import (
 // report is written there as assistant.json, which `make evals` folds into its report (CTL-AI-05's evidence).
 // req: QA-AI-01
 // req: QA-AI-03
+// req: QA-AI-02
 // req: CTL-AI-05
 func TestTheAssistantSuites(t *testing.T) {
 	suites, err := evalsuite.Load(os.DirFS("../../evals"))
@@ -100,7 +106,7 @@ func TestTheAssistantSuites(t *testing.T) {
 				}
 				// A wrong model fails the case, unless the pipeline stopped its turn (screening refuses a request that
 				// carries an identity number, so a leak never reaches the provider); and the judge fails a leak shown it.
-				if v, o := h.run(c, &solver{c: c, wrong: true}); v.Pass && (s.Kind == evalsuite.Golden || o.Status == "answered") {
+				if v, o := h.run(c, &solver{c: c, wrong: true}); v.Pass && (s.Kind != evalsuite.RedTeam || o.Status == "answered") {
 					weak = append(weak, c.ID+": a wrong answer passes")
 				}
 				if s.Kind == evalsuite.RedTeam && evalsuite.Judge(c, leak(c), [][]byte{[]byte(strings.Join(c.Expect.Absent, " "))}, h.account).Pass {
@@ -110,6 +116,10 @@ func TestTheAssistantSuites(t *testing.T) {
 			if len(weak) > 0 {
 				sr.Harness = "not sound: " + strings.Join(weak, "; ")
 				t.Errorf("%s does not judge soundly:\n%s", s.ID, strings.Join(weak, "\n"))
+			}
+			if s.Kind == evalsuite.Proposal && strings.HasPrefix(s.TaskTypes[0], evalsuite.TestOnly) {
+				sr.Note = "a fixture of the harness on the tests' own task types: it checks proposals are judged soundly, and no model is asked it"
+				return
 			}
 			for _, m := range models {
 				var inner ports.ModelProvider = local.Replay{Dir: cassettes}
@@ -219,6 +229,13 @@ func newEvalHarness(t *testing.T, s evalsuite.Suite, company seed.Company) *eval
 	e.books = porttest.Books{Org: org.ID} // the env now asks of the sample company
 	f := foundersIn(e)
 	aiSwitchedOn(e)
+	if s.Kind == evalsuite.Proposal {
+		if strings.HasPrefix(s.TaskTypes[0], evalsuite.TestOnly) { // a fixture: the tests' own catalogue and command
+			e.api.deps.Catalogue = fixtureCatalogue(t, s.TaskTypes...)
+			e.api.deps.Commands = proposal.Commands{"AnnotateNote": noteCommand{}}
+		}
+		enableTaskTypes(e, strings.Join(s.TaskTypes, ","), 1)
+	}
 	h := &evalHarness{t: t, e: e, company: company, accounts: map[string]string{}, plants: map[string]string{}, person: f.as(f.ahkow), model: &recorder{}}
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
 		list, err := u.Accounts().List(ctx)
@@ -320,7 +337,7 @@ func (h *evalHarness) run(c evalsuite.Case, p ports.ModelProvider) (evalsuite.Ve
 		code, _ := data[n-1]["code"].(string)
 		o.Status = "refused: " + code
 	}
-	// The reads the turn made, however it ended, as the API kept them.
+	// The reads and the proposals the turn made, however it ended, as the API kept them.
 	h.e.do(func(ctx context.Context, u storage.UnitOfWork) error {
 		turns, err := u.AIConversations().Turns(ctx, uuid.MustParse(conversation))
 		for _, tu := range turns {
@@ -329,7 +346,16 @@ func (h *evalHarness) run(c evalsuite.Case, p ports.ModelProvider) (evalsuite.Ve
 				return err
 			}
 			for _, x := range calls {
-				o.Reads = append(o.Reads, evalsuite.Read{Tool: x.Tool, Input: x.Input})
+				if !strings.HasPrefix(x.Tool, "propose_") {
+					o.Reads = append(o.Reads, evalsuite.Read{Tool: x.Tool, Input: x.Input})
+				}
+			}
+			made, err := u.AIProposals().List(ctx, storage.AIProposalQuery{Turn: &tu.ID, Limit: 50})
+			if err != nil {
+				return err
+			}
+			for _, p := range made {
+				o.Proposals = append(o.Proposals, evalsuite.Made{TaskType: p.TaskType, Status: p.Status, Reason: p.Reason, Payload: json.RawMessage(p.Payload)})
 			}
 		}
 		return err
@@ -408,8 +434,9 @@ func (u *unrecorded) ListModels(context.Context, string) (ports.ModelPage, error
 }
 
 // solver answers a case as a right model would: it makes the case's reads, then cites what they returned for each
-// expected fact, or says it cannot do what a red-team case asks. A wrong solver cites nothing for a golden case, and
-// for a red-team case reads with its forbidden words and repeats them.
+// expected fact, makes a proposal case's proposal, or says it cannot do what a red-team case asks. A wrong solver cites
+// nothing for a golden case, proposes nothing for a proposal case, and for a red-team case reads with its forbidden
+// words and repeats them.
 type solver struct {
 	c     evalsuite.Case
 	wrong bool
@@ -425,7 +452,13 @@ func (s *solver) ListModels(context.Context, string) (ports.ModelPage, error) {
 func (s *solver) Call(_ context.Context, req ports.ModelRequest) (ports.ModelResponse, error) {
 	last := req.Messages[len(req.Messages)-1]
 	forbidden := slices.Concat(s.c.Expect.Absent, s.c.Expect.Unsaid)
-	if len(last.Parts) == 0 || last.Parts[0].Kind != ports.PartToolResult {
+	read := len(last.Parts) > 0 && last.Parts[0].Kind == ports.PartToolResult
+	if w := s.c.Expect.Proposal; w != nil && !s.wrong && (read || len(s.c.Solution) == 0) && !proposed(req) {
+		in, _ := json.Marshal(map[string]any{"payload": w.Payload, "rationale": "The person asked for it."})
+		return ports.ModelResponse{Parts: []ports.ModelPart{{Kind: ports.PartToolCall, CallID: proposeCall,
+			Tool: "propose_" + strings.ReplaceAll(w.TaskType, ".", "_"), Input: in}}, StopReason: ports.StopToolCall}, nil
+	}
+	if !read && (len(s.c.Solution) > 0 || s.wrong && len(forbidden)+len(s.c.Expect.Unread) > 0) {
 		var parts []ports.ModelPart
 		for i, r := range s.c.Solution {
 			parts = append(parts, ports.ModelPart{Kind: ports.PartToolCall, CallID: "c" + string(rune('a'+i)), Tool: strings.ReplaceAll(r.Tool, ".", "_"),
@@ -456,6 +489,8 @@ func (s *solver) Call(_ context.Context, req ports.ModelRequest) (ports.ModelRes
 	}
 	segments := []assistant.Segment{{Text: "I cannot do that, and I can only read the books."}}
 	switch {
+	case s.c.Expect.Proposal != nil && !s.wrong:
+		segments = []assistant.Segment{{Text: "I proposed it. It waits for your approval in Fyniq."}}
 	case s.wrong && len(forbidden) > 0:
 		segments = []assistant.Segment{{Text: strings.Join(forbidden, ". ") + "."}}
 	case s.wrong:
@@ -475,6 +510,21 @@ func (s *solver) Call(_ context.Context, req ports.ModelRequest) (ports.ModelRes
 	}
 	b, _ := json.Marshal(assistant.Structured{Segments: segments})
 	return ports.ModelResponse{Parts: []ports.ModelPart{{Kind: ports.PartText, Text: string(b)}}, StopReason: ports.StopEnd, Model: req.Model}, nil
+}
+
+// proposeCall is the solver's proposal's call.
+const proposeCall = "cp"
+
+// proposed reports whether the turn's messages hold the result of the solver's proposal.
+func proposed(req ports.ModelRequest) bool {
+	for _, m := range req.Messages {
+		for _, p := range m.Parts {
+			if p.Kind == ports.PartToolResult && p.CallID == proposeCall {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // assistantModels are the models whose answers are recorded under dir.

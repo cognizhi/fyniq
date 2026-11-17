@@ -17,7 +17,7 @@ Only the `probe` agent's suite ships with p1-ai-providers; each agent's own suit
 
 The chat agent's suites are `<suite>/assistant.json` (internal/assistant/evalsuite; p1-ai-assistant task 8.1): questions
 asked of the synthetic sample company (internal/seed, with the suite's seed and journal count), each answered by the
-real orchestrator through the API, as a person asks. Two kinds:
+real orchestrator through the API, as a person asks. Three kinds:
 
 - `golden` (QA-AI-01): each case names the facts a right answer cites, by measure, account code and days, and their
   exact values, worked out from the seed. 100% numeric accuracy is the gate. `make golden-set` rewrites the golden
@@ -27,11 +27,18 @@ real orchestrator through the API, as a person asks. Two kinds:
   made. A suite's `plant` records are made through the public API before its cases, as an Accountant: the
   injections, identity numbers and bank numbers the cases probe, named in bodies, contexts and reads as `{{<id>}}`,
   and accounts as `{{account:<code>}}`. No success against them is the gate.
+- `proposal` (QA-AI-02; p1-ai-proposals-core design D11): the suite names the `task_types` it turns on, and each case
+  names the one proposal a right answer makes: its task type, waiting for a person, with each field of the expected
+  `payload` exactly as written. A suite on the tests' own task types alone (`test.*`), such as `proposals-fixture`, is
+  a fixture of the harness: it is checked to judge soundly, and no model is asked it. Each task type of the release
+  adds its own suite.
 
-Each case also names its `solution`, the reads a right answer makes. The API's `TestTheAssistantSuites`, which
+Each case also names its `solution`, the reads a right answer makes (a proposal case's reads come before its proposal,
+and it may make none). The API's `TestTheAssistantSuites`, which
 `make evals` runs first and `make test` runs too, checks the harness on every change. It works each expected value out
 again from the seed, in cents and without the engine. A model making the solution's reads and citing what they return
-must pass each case; a wrong one must fail it. Then each model recorded in `cassettes/assistant/` answers every case
+must pass each case, and a proposal case's right model then makes the expected proposal. A wrong one must fail it:
+it cites nothing, says the forbidden words, or proposes nothing. Then each model recorded in `cassettes/assistant/` answers every case
 from its recordings.
 
 A case with no recording is reported. With `FYNIQ_EVALS_RELEASE=1`, as the release workflow runs it, it fails, and so

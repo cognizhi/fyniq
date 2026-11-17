@@ -133,8 +133,14 @@
 
 ## 7. Evals and controls
 
-- [ ] 7.1 The `proposal` suite kind in `evalsuite` and `TestTheAssistantSuites`, with fixture cases on the test-only
+- [x] 7.1 The `proposal` suite kind in `evalsuite` and `TestTheAssistantSuites`, with fixture cases on the test-only
   type and the soundness check (design D11). Test `// req: QA-AI-02`.
+  As built: a `proposal` suite names the `task_types` it turns on. Each case names the one proposal a right answer
+  makes: its task type, Pending, and each field of its payload exactly (numbers as written). The suite's reads, if any,
+  come first. `evals/proposals-fixture` has two cases on `test.annotate_note`. A suite of `test.*` types alone is a
+  fixture: it is checked to judge soundly (the right model's proposal passes, a model that proposes nothing fails),
+  and no model is asked it. A suite may not mix the tests' types with the release's. Each task type adds its own suite
+  with its command.
 - [ ] 7.2 `verify ai.proposals-approved` nightly; `compliance/controls/CTL-AI-02.yaml`, `CTL-AI-03.yaml` and
   `CTL-AI-04.yaml` running (design D12). Tests `// req: CTL-AI-02`, `// req: CTL-AI-03`, `// req: CTL-AI-04`.
 
