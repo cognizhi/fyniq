@@ -85,7 +85,7 @@
 
 ## 5. The run
 
-- [ ] 5.1 The worker's job `agents.run` (design D5 steps 1–4, 6–7):
+- [x] 5.1 The worker's job `agents.run` (design D5 steps 1–4, 6–7):
   - it skips a run with why when the agent is off or paused, or the AI is off;
   - it runs the deterministic findings from the statutory calendar and the checks engine, and lists the Not assessed
     items;
@@ -93,6 +93,17 @@
   - it takes the fingerprint and writes the report, never "all clear" with anything open;
   - it tells the recipients on their channels, honouring quiet hours.
   Tests `// req: AI-64`, `// req: AI-65`, `// req: AI-66`, `// req: G4-076`.
+  As built: `agents.Runner` is the worker's `agents.run`.
+  - A run before its slot holds until it is due (`outbox.Held`). A skill changed since the run was queued, the agent off
+    or paused, the AI switched off, or the person it acts for no longer an Owner each skip the run with why.
+  - The findings: the statutory calendar's items in the next 30 days or overdue (⏰ with their window), the six checks
+    the checklist reads, and the corporate profile's checks Not assessed until it can be recorded.
+  - The fingerprint is the findings' keys, statuses and windows and the packs read, so a window crossed changes it
+    with no data change.
+  - The model is asked only when the fingerprint changed, for the monitor and events (task 5.3 wires the step). Tasks
+    are raised, updated and cleared in the unit of work that finishes the run.
+  - When something is new, the recipients hear (`agent.report`, in the Inbox and the daily email, which waits past
+    quiet hours), the Owner too when a deadline is 7 days away or less. A scheduled run queues its entry's next slot.
 - [ ] 5.2 The run's grant (`ai_grant` with a run): the Owner's reads within the agent's profile and its tools only,
   proposing only with an output's task type on. The requester method `ai_run` is allowed in the database for
   `ai_proposal` requests from a run alone, with its attack test; the Owner may sign tier 1 (design D6). Tests
