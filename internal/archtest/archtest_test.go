@@ -548,9 +548,9 @@ jobs:
       - run: gcloud container binauthz attestations sign-and-create
 `)
 	// main as well as releases, publishing as the attester, no scan before publishing, the generator by branch, no admit
-	// as the attester, attesting before the provenance exists, a key-signed image, and no launch gate
-	if got := ReleaseWorkflowViolations(planted); len(got) != 8 {
-		t.Fatalf("want 8 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
+	// as the attester, attesting before the provenance exists, a key-signed image, no launch gate and no visual snapshots
+	if got := ReleaseWorkflowViolations(planted); len(got) != 9 {
+		t.Fatalf("want 9 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
 	}
 	// Only the SLSA generator may be named by a tag, and only at a release.
 	tagged := []byte(`
@@ -586,7 +586,7 @@ func TestTheReleaseWaitsForTheLaunchGate(t *testing.T) {
 	}
 	text := string(src)
 	for what, planted := range map[string]string{
-		"the images job does not wait":  strings.Replace(text, "    needs: launch-gate\n", "", 1),
+		"the images job does not wait":  strings.Replace(text, "    needs: [launch-gate, visual]\n", "    needs: visual\n", 1),
 		"another phase":                 strings.Replace(text, "- run: make trace-gate PHASE=launch\n", "- run: make trace-gate PHASE=P1\n", 1),
 		"a step that cannot fail":       strings.Replace(text, "- run: make trace-gate PHASE=launch\n", "- run: make trace-gate PHASE=launch || true\n", 1),
 		"the gate may fail and pass on": strings.Replace(text, "    timeout-minutes: 15\n", "    timeout-minutes: 15\n    continue-on-error: true\n", 1),
@@ -598,6 +598,33 @@ func TestTheReleaseWaitsForTheLaunchGate(t *testing.T) {
 		got := ReleaseWorkflowViolations([]byte(planted))
 		if len(got) != 1 || !strings.Contains(got[0], "launch-gate") {
 			t.Errorf("%s: want the launch gate's violation alone, got:\n%s", what, strings.Join(got, "\n"))
+		}
+	}
+}
+
+// A release builds no image while a picture differs from its baseline (QA-UI-07, rev 0.284; p1-launch-readiness task
+// 5.4): release.yml's images job waits for the visual job, whose step is exactly `VISUAL_ALL=1 make test-visual`. Each
+// planted way round it is refused.
+// req: QA-UI-07
+func TestTheReleaseWaitsForEveryRoutesPictures(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join(repoRoot(t), ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(src)
+	for what, planted := range map[string]string{
+		"the images job does not wait":  strings.Replace(text, "    needs: [launch-gate, visual]\n", "    needs: launch-gate\n", 1),
+		"the key pages only":            strings.Replace(text, "- run: VISUAL_ALL=1 make test-visual\n", "- run: make test-visual\n", 1),
+		"a step that cannot fail":       strings.Replace(text, "- run: VISUAL_ALL=1 make test-visual\n", "- run: VISUAL_ALL=1 make test-visual || true\n", 1),
+		"the job may fail and pass on":  strings.Replace(text, "    timeout-minutes: 150\n", "    timeout-minutes: 150\n    continue-on-error: true\n", 1),
+		"the step may fail and pass on": strings.Replace(text, "      - run: VISUAL_ALL=1 make test-visual\n", "      - run: VISUAL_ALL=1 make test-visual\n        continue-on-error: true\n", 1),
+	} {
+		if planted == text {
+			t.Fatalf("%s: the plant changed nothing; release.yml's visual job moved", what)
+		}
+		got := ReleaseWorkflowViolations([]byte(planted))
+		if len(got) != 1 || !strings.Contains(got[0], "QA-UI-07") {
+			t.Errorf("%s: want the visual job's violation alone, got:\n%s", what, strings.Join(got, "\n"))
 		}
 	}
 }

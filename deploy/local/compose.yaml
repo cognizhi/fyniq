@@ -33,6 +33,8 @@ x-fyniq-env: &fyniq-env
   FYNIQ_RENDER_URL: http://render:8080       # the private render service (PRD-001 §12.3, rev 0.96)
   FYNIQ_AI_URL: http://ai:8080               # the AI service, which answers the assistant's turns (p1-ai-assistant D3)
   FYNIQ_DATA_DIR: /tmp/fyniq
+  # The business date (DEV-05): empty is today; the visual snapshots fix it so every run draws the same days.
+  FYNIQ_BUSINESS_DATE: ${FYNIQ_BUSINESS_DATE:-}
 
 # The data the API, the worker and the executor share, as the cloud's buckets and keys are shared: blobs (uploads,
 # evidence, exports) and the local keys. A named volume at the image user's home, so it is theirs (65532) and outlives the
