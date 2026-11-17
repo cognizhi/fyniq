@@ -611,3 +611,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-17] compile | docs/user-guide/statutory-calendar.md → compliance.record-filing, compliance.calendar (the Company secretary records the corporate items, PRD-001 rev 0.285)
 
 ## [2026-11-17] compile | docs/user-guide/home.md → home.overview (Your work by role and Upcoming deadlines on Home, §7.1)
+
+## [2026-11-17] compile | docs/user-guide/checks.md → checks.overview (run a stopped background task again, C.2 #12, G4-073)
