@@ -46,6 +46,7 @@ func (a *API) registerInternal(mux humago.Mux) {
 	a.internal = humago.New(mux, InternalConfig(a.deps.Version))
 	a.internal.UseMiddleware(a.requestContext, a.internalAuthenticate)
 	registerModelCalls(a)
+	registerToolCalls(a)
 }
 
 // internalAuthenticate accepts a call only from the AI service, for a live turn: its service token, then the turn's
@@ -72,7 +73,7 @@ func (a *API) internalAuthenticate(ctx huma.Context, next func(huma.Context)) {
 			"Send the delegated read token the API gave the turn; it ends with the turn and after 5 minutes."))
 		return
 	}
-	c := authn.WithPrincipal(ctx.Context(), p)
+	c := context.WithValue(authn.WithPrincipal(ctx.Context(), p), turnTokenKey{}, ctx.Header("Authorization"))
 	audit := storage.AuditFrom(c)
 	audit.Actor, audit.OnBehalfOf = &storage.Actor{Type: "ai", ID: p.Client}, &storage.Actor{Type: "user", ID: p.UserID.String()}
 	audit.Request.Session = p.Client

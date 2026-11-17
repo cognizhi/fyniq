@@ -467,7 +467,7 @@ Source: PRD-001 §6.3
 - **THEN** it is blocked
 
 ### Requirement: Permission matrix legend
-The permission matrix SHALL describe Standard mode with the rights C (create/prepare), A (approve), P (post/execute), R (release, money movement), V (view), M (view masked) and — (none), and the AI SHALL act on behalf of a user and never exceed that user's rights.
+The permission matrix SHALL describe Standard mode with the rights C (create/prepare), A (approve), P (post/execute), R (release, money movement), V (view), M (view masked) and — (none), and the AI SHALL act on behalf of a user and never exceed that user's rights; an AI cell of Proposal or Proposal (draft) SHALL be a view of the rows and no other right, and one naming a kind of proposal that proposal only (rev 0.278).
 
 Source: PRD-001 §D
 
@@ -480,6 +480,13 @@ Source: PRD-001 §D
 #### Scenario: AI never exceeds the user
 - **WHEN** the AI acts on behalf of a user
 - **THEN** it never has more rights than that user, whatever the matrix lists for the AI
+
+#### Scenario: The AI views the rows it proposes for
+- **GIVEN** a user who views invoices
+- **WHEN** the AI acting for them reads an invoice, whose AI cell is Proposal
+- **THEN** it reads it
+- **AND** it cannot create, approve, post or release one
+- **AND** it opens no evidence file, whose AI cell names the doc.attach proposal only
 
 #### Scenario: Masked view
 - **WHEN** a role with M views a capability

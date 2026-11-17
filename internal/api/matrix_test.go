@@ -2556,10 +2556,19 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 	if !ok {
 		t.Fatalf("Appendix D has no row %q", p.Capability)
 	}
-	allowed, masked = authztest.Allows(authztest.ParseCell(row[col]), p.Need)
+	// (rev 0.278) Proposal or Proposal (draft) in the AI column is a view of the rows, and no other right; a proposal of a
+	// named kind is none: the legend of Appendix D.
+	cellOf := func(text string) authz.Cell {
+		c := authztest.ParseCell(text)
+		if col == "AI" && c.Rights == "" && (c.Qualifier == "Proposal" || c.Qualifier == "Proposal (draft)") {
+			return authz.Cell{Rights: "V"}
+		}
+		return c
+	}
+	allowed, masked = authztest.Allows(cellOf(row[col]), p.Need)
 	// A qualified cell, such as Reports' "V sales" (rev 0.52), grants an Unqualified operation only when the operation reads
 	// that part of the books alone: the sales reports for "sales" (p1-reports design D9).
-	if q := authztest.ParseCell(row[col]).Qualifier; allowed && p.Unqualified && q != "" && !slices.Contains(p.Qualified, q) {
+	if q := cellOf(row[col]).Qualifier; allowed && p.Unqualified && q != "" && !slices.Contains(p.Qualified, q) {
 		return false, false
 	}
 	if allowed && p.Parent != "" { // and the record it is under must be visible, unmasked
@@ -2567,7 +2576,7 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 		if !ok {
 			t.Fatalf("Appendix D has no row %q", p.Parent)
 		}
-		if sees, partly := authztest.Allows(authztest.ParseCell(parent[col]), authz.View); !sees || partly {
+		if sees, partly := authztest.Allows(cellOf(parent[col]), authz.View); !sees || partly {
 			return false, false
 		}
 	}
@@ -2633,7 +2642,8 @@ func TestAuthorisationMatrix(t *testing.T) {
 		p := authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: e.books.Org, Roles: []authz.Role{role}}
 		switch role {
 		case authz.AI:
-			p.Class, p.Roles = authn.ClassAgent, every
+			// The AI acts for a person (AI-01), as a turn's token names one.
+			p.Class, p.Roles, p.UserID = authn.ClassAgent, every, uuid.MustParse(matrixApprover(e))
 		case authz.SuperAdmin:
 			p.Organisation = [16]byte{} // outside every organisation (FR-ADM-07)
 		}
