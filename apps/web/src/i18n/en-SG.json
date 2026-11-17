@@ -2172,6 +2172,10 @@
       "label": "Impact assessments",
       "tooltip": "The data protection impact assessments: payroll's and the AI assistant's before they are switched on, and one for each new processing."
     },
+    "data-protection.ai-inventory": {
+      "label": "AI inventory",
+      "tooltip": "What the AI uses: each connection, where prompts are processed, its models, each agent's route and the data it carries, and whether the AI assistant's assessment was approved after the last change."
+    },
     "data-protection.dpia-approve": {
       "label": "Approve the assessment",
       "tooltip": "The Compliance officer approves the latest version, stepped up; a later change needs approving again."

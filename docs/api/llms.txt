@@ -202,6 +202,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/claimant-bank-changes/{change_id}/reveal` (revealClaimantBankAccount): Reveal a person's account's full number
 - `GET /v1/close-checklist-template` (getCloseChecklistTemplate): Get the close checklist template
 - `PUT /v1/close-checklist-template` (replaceCloseChecklistTemplate): Change the close checklist template
+- `GET /v1/compliance/ai-inventory` (getAIInventory): Get the AI inventory
 - `GET /v1/compliance/anonymisations` (listAnonymisations): List the anonymised contacts
 - `POST /v1/compliance/anonymisations` (anonymiseContact): Anonymise a contact
 - `GET /v1/compliance/breach-exercises` (listBreachExercises): List the tabletop exercises
