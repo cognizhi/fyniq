@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, type Session, type SignInProvider } from "../../api/client";
+import { LedgerViewToggle } from "../../components/LedgerViewToggle";
 import { Refusal } from "../../components/Refusal";
 import { Button, buttonVariants } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
@@ -76,7 +77,8 @@ export const linkErrors: Record<string, string> = {
   "AUTH-SIGNIN-08": "That provider accepts only accounts on some email domains, and this account's email is on none of them, so it was not linked. Link your work account.",
 };
 
-// ModeChoice is the experience mode, also in the header (FR-UX-23; experience/modes).
+// ModeChoice is the experience mode, also in the header (FR-UX-23; experience/modes), and in Expert mode the Plain or
+// Accountant view of money in and out (FR-UX-08's toggle, also on the grids that show it).
 function ModeChoice({ mode }: { mode: Mode }) {
   const h = helpText("shell.mode");
   const choices: [Mode, string, string][] = [
@@ -103,6 +105,12 @@ function ModeChoice({ mode }: { mode: Mode }) {
           </label>
         ))}
       </fieldset>
+      {mode === "expert" && (
+        <div className="fy-card__body fy-stack fy-stack--2">
+          <span className="fy-small fy-secondary">Money in and out: Plain view shows Money in, Money out and Category; Accountant view shows Debit, Credit and Account. The figures are the same.</span>
+          <LedgerViewToggle mode={mode} />
+        </div>
+      )}
     </section>
   );
 }

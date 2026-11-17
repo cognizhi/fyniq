@@ -241,6 +241,8 @@ export const actions = [
   { kind: "action", id: "shell.shortcuts", mode: "basic", help: "shell.shortcuts", guide: "shell.shortcuts" },
   { kind: "action", id: "shortcuts.settings", mode: "basic", help: "shortcuts.settings", guide: "shell.shortcuts#turn-them-off-or-change-the-keys" },
   { kind: "action", id: "shortcuts.bulk", mode: "basic", help: "shortcuts.bulk", guide: "shell.shortcuts#act-on-selected-rows" },
+  // Plain view or Accountant view of money in and out (FR-UX-08): Expert's; Basic always uses Plain view.
+  { kind: "action", id: "ledger-view", mode: "expert", help: "ledger.view", guide: "banking.accounts#categorise-the-waiting-lines" },
   { kind: "action", id: "shell.assistant", mode: "basic", help: "shell.assistant", guide: "ai.assistant" },
   { kind: "action", id: "assistant.ask-about-this", mode: "basic", help: "assistant.ask-about-this", guide: "ai.assistant#ask-about-a-record-a-report-or-a-figure" },
   { kind: "action", id: "assistant.feedback", mode: "basic", help: "assistant.feedback", guide: "ai.assistant#rate-an-answer" },

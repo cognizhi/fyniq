@@ -56,6 +56,10 @@
       "label": "Selected rows",
       "tooltip": "What you can do to the rows you selected on this page, the same as its buttons."
     },
+    "ledger.view": {
+      "label": "Plain or Accountant view",
+      "tooltip": "Plain view: Money in, Money out and Category. Accountant view: Debit, Credit and Account. The figures are the same."
+    },
     "shell.help": {
       "label": "Help",
       "tooltip": "About Fyniq, and the version you are on."
