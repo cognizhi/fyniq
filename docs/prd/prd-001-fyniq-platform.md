@@ -10,7 +10,7 @@ Built for a lean founding team, with the controls a growing company needs.**
 | Document | PRD-001 (initial PRD, greenfield) |
 | Product | **Fyniq**, "Intelligence behind every number" (rev 0.9: the founders' chosen name; formerly the working name "Cognizhi Finance Hub Cloud", short "FH Cloud") |
 | Status | Draft for founder review |
-| Revision | 0.284 (16 Nov 2026): the launch's test gates: Storybook stories as written, and every route's visual snapshots nightly and before each release |
+| Revision | 0.285 (17 Nov 2026): the Company secretary views the statutory calendar and records its corporate items |
 | Date | 15 Oct 2026 (rev 0.24) |
 | Owner | Cognizhi founders |
 | Reviewers | Founders; external accountant / tax agent; security reviewer (later: auditor). (rev 0.19) Second review of rev 0.16–0.19 split by area, one pull request each, before P0 work on that area ([plan](reviews/second-review-plan-2026-10-14.md)). (rev 0.22) The reviews no longer gate building: work proceeds on the best current recommendation, and pages awaiting review show a banner until the area's pull request merges (FR-UX-41) |
