@@ -6,6 +6,7 @@ import { answer, ownerSession } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { daysOf, Statements, stepWords } from "./Statements";
+import { invalid } from "../../test/invalid";
 
 type Statement = components["schemas"]["Statement"];
 
@@ -64,6 +65,19 @@ describe("Sales › Statements and reminders", () => {
     expect(daysOf("7, 0").error).toBe("List each day once, earliest first, such as -3, 0, 7, 30.");
     expect(daysOf("400").error).toBe("Use -30 (before the due date) to 365 (after it).");
     expect(daysOf("1,2,3,4,5,6,7").error).toBe("Keep at most 6 reminders.");
+  });
+
+  // QA-UI-01: a group's name and reminder days are marked, with what each needs beside them, before anything is sent.
+  it("marks a group's fields it cannot read, before anything is sent", async () => {
+    const sent = answer(reads);
+    renderPage(Statements, { path: "/sales/statements", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "New group" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Reminder days"), { target: { value: "a week" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add the group" }));
+    await invalid(dialog, "Name", "Name the group, such as Key accounts.");
+    await invalid(dialog, "Reminder days", "Enter whole days from the due date, such as -3, 0, 7, 30.");
+    expect(sent.filter((s) => s.method === "POST")).toEqual([]);
   });
 
   it("lists the reminders due and the schedules; axe finds nothing", async () => {

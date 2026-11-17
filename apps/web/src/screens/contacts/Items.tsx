@@ -115,11 +115,15 @@ function ItemForm({ editing, accounts, onClose, onSaved }: { editing: Item | "ne
     const errs: Record<string, string> = {};
     if (isNew && !d.code.trim()) errs.code = "Give the item a code; it never changes.";
     if (!d.name.trim()) errs.name = "Give the item a name.";
-    const prices = d.prices.filter((p) => p.currency.trim() || p.unit_price.trim()).map((p) => ({ currency: p.currency.trim().toUpperCase(), unit_price: p.unit_price.trim() }));
-    prices.forEach((p, i) => {
-      if (!/^[A-Z]{3}$/.test(p.currency)) errs[`price-${i}`] = "A currency is three letters, such as SGD.";
-      else if (!pricePattern.test(p.unit_price)) errs[`price-${i}`] = "A price is a plain decimal with up to 6 decimals, such as 180.00, without commas or a currency sign.";
-      else if (prices.findIndex((q) => q.currency === p.currency) !== i) errs[`price-${i}`] = `${p.currency} has a price already.`;
+    // Each row's error sits on the field it is about, by the row's place in the form (a blank row is left out).
+    const prices: { currency: string; unit_price: string }[] = [];
+    d.prices.forEach((row, i) => {
+      const p = { currency: row.currency.trim().toUpperCase(), unit_price: row.unit_price.trim() };
+      if (!p.currency && !p.unit_price) return;
+      if (!/^[A-Z]{3}$/.test(p.currency)) errs[`currency-${i}`] = "A currency is three letters, such as SGD.";
+      else if (prices.some((q) => q.currency === p.currency)) errs[`currency-${i}`] = `${p.currency} has a price already.`;
+      if (!pricePattern.test(p.unit_price)) errs[`price-${i}`] = "A price is a plain decimal with up to 6 decimals, such as 180.00, without commas or a currency sign.";
+      prices.push(p);
     });
     setErrors(errs);
     if (Object.keys(errs).length) return;
@@ -238,7 +242,15 @@ function ItemForm({ editing, accounts, onClose, onSaved }: { editing: Item | "ne
                 <label className="fy-sr" htmlFor={`${id}-cur-${i}`}>
                   Currency {i + 1}
                 </label>
-                <input className="fy-input w-24" id={`${id}-cur-${i}`} value={p.currency} maxLength={3} onChange={(e) => setPrice(i, { currency: e.target.value })} aria-describedby={errors[`price-${i}`] ? `${id}-price-${i}-error` : undefined} />
+                <input
+                  className="fy-input w-24"
+                  id={`${id}-cur-${i}`}
+                  value={p.currency}
+                  maxLength={3}
+                  onChange={(e) => setPrice(i, { currency: e.target.value })}
+                  aria-invalid={errors[`currency-${i}`] ? true : undefined}
+                  aria-describedby={errors[`currency-${i}`] ? `${id}-currency-${i}-error` : undefined}
+                />
                 <label className="fy-sr" htmlFor={`${id}-price-${i}`}>
                   Unit price {i + 1}
                 </label>
@@ -255,6 +267,7 @@ function ItemForm({ editing, accounts, onClose, onSaved }: { editing: Item | "ne
                 <Button variant="ghost" size="sm" type="button" onClick={() => set("prices", d.prices.filter((_, j) => j !== i))} aria-label={`Remove the ${p.currency || "new"} price`}>
                   <Icon of={Trash2} />
                 </Button>
+                {err(`currency-${i}`)}
                 {err(`price-${i}`)}
               </div>
             ))}

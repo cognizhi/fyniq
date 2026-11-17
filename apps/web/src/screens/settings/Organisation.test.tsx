@@ -5,6 +5,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { Organisation, valueText } from "./Organisation";
 import { StatutoryPacks } from "./StatutoryPacks";
+import { invalid } from "../../test/invalid";
 
 const terms = {
   key: "sales.payment_terms_days", group: "Defaults", label: "Payment terms for invoices", kind: "days", value: "30", recommended_value: "30", status: "recommended",
@@ -100,7 +101,7 @@ describe("Organisation settings", () => {
     const input = await within(dialog).findByLabelText("New value");
     fireEvent.change(input, { target: { value: "S$1,500" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Ask for approval" }));
-    expect(await within(dialog).findByText(/without the S\$ or commas/)).toBeTruthy();
+    await invalid(dialog, "New value", "Enter an amount in Singapore dollars, such as 1000.00, without the S$ or commas.");
     expect(calls()).not.toContain("PATCH /v1/organisation/settings/assets.capitalisation_threshold");
   });
 
