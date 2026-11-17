@@ -12,8 +12,8 @@
     "sha256": "0002f1cfac7f5e7797d56a7c33dd65dc806c6ebdfb77da4dc08f1b8d3b260414"
   },
   "lineage.explain": {
-    "version": 1,
-    "sha256": "ede507efbe6e64e59fa0912b407a3793beebccef2ea8a94f3bf59fde7ed620e0"
+    "version": 2,
+    "sha256": "d750bc9596f99fae0c00b87eb2b8c0279456c4844d3793b4862032272962d40e"
   },
   "metrics.query": {
     "version": 1,

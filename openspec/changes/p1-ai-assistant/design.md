@@ -122,6 +122,17 @@ AI-28).**
   is a view of those rows within the person's rights and nothing more; a proposal of a named kind (evidence's
   `doc.attach`, a budget's scenario, a timesheet's draft invoice) is that proposal only, so the AI still opens no
   evidence file, a person's own bank account's included (§9.6).
+- As built (task 3.2, second part): `packs.get` reads `GET /v1/statutory-values` (`getStatutoryValues`, a new public read
+  on "Statutory parameters", API-first): a pack's version in force on a day for the organisation (its active one, else
+  the release's, ENG-31) and each table's rows whose dates cover the day, with the sources they cite. Each value is a
+  fact naming the pack, the version, the table and the row (`sg-gst.limits.registration_threshold.amount`), its dates
+  and its sources' titles (AI-53); a row's first column, a date, a box number and the source are not figures.
+  `lineage.explain` (version 2) asks `metrics.query` again with what the fact came with, refuses an ID that is not among
+  the answers, and reads the report the fact links to, as the person, within the limits, the fact first: the general
+  ledger's lines for an account's fact, the sub-ledger for a customer's or vendor's, the statement or the KPIs otherwise.
+  Building it found that a fact's link named the general ledger's account `account=` and the revision `revision=`,
+  which the reports do not take (task 2.1's slip); the links now use `account_id` and `as_at_revision`, and a test opens
+  every kind of fact's link.
 
 **D6. The semantic layer and typed facts (AI-03, AI-68, AI-04).**
 - `internal/semantic` defines named measures (revenue, cost of sales, gross profit, operating expenses, net profit,

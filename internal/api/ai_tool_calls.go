@@ -3,10 +3,13 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -168,9 +171,7 @@ func (a *API) runTool(ctx context.Context, tool aitool.Tool, in map[string]any) 
 		}
 		facts := make([]aitool.Fact, 0, len(out.Facts))
 		for _, f := range out.Facts {
-			facts = append(facts, aitool.Fact{ID: f.ID, Measure: f.Measure, Name: f.Name, Value: f.Value, Words: f.Words, Undefined: f.Undefined,
-				Unit: f.Unit, Currency: f.Currency, From: f.From, To: f.To, Dimension: f.Dimension, Member: f.Member, MemberName: f.MemberName,
-				Sign: f.Sign, Revision: f.Revision, Source: f.Source, Lineage: f.Lineage})
+			facts = append(facts, factOf(f))
 		}
 		res := AIToolResult{Facts: facts, Omitted: []aitool.Omission{}, Revision: out.Revision}
 		if len(facts) > tool.Limits.Rows {
@@ -231,10 +232,51 @@ func (a *API) runTool(ctx context.Context, tool aitool.Tool, in map[string]any) 
 		if err := a.read(ctx, http.MethodGet, subject.Lineage, nil, &body); err != nil {
 			return AIToolResult{}, err
 		}
+	case "packs.get":
+		q := url.Values{"pack": {str("pack")}}
+		if on := str("on"); on != "" {
+			q.Set("on", on)
+		}
+		if n := str("name"); n != "" {
+			q.Set("name", n)
+		}
+		path := "/v1/statutory-values?" + q.Encode()
+		var out StatutoryValues
+		if err := a.read(ctx, http.MethodGet, path, nil, &out); err != nil {
+			return AIToolResult{}, err
+		}
+		content, facts, omitted := statutoryFit(out, tool.Limits, path, revision)
+		return AIToolResult{Facts: facts, Content: content, Omitted: omitted, Revision: revision}, nil
+	case "lineage.explain":
+		// The fact is rebuilt from what it came with, so an ID the model altered or invented is refused, and nothing is kept
+		// between calls.
+		q := map[string]any{"measure": str("measure"), "from": str("from"), "to": str("to"), "grain": "total", "revision": in["revision"]}
+		if by := str("by"); by != "" {
+			q["by"] = by
+		}
+		if m := str("member"); m != "" {
+			q["member"] = m
+		}
+		var out MetricsResult
+		if err := a.read(ctx, http.MethodPost, "/v1/metrics:query", q, &out); err != nil {
+			return AIToolResult{}, err
+		}
+		i := slices.IndexFunc(out.Facts, func(f MetricFact) bool { return f.ID == str("fact") })
+		if i < 0 {
+			return AIToolResult{}, problem(CodeToolRefused, "No fact "+str("fact")+" comes from that measure, those months, that dimension and member at "+
+				"that revision.", "Copy the fact's measure, months, dimension, member and ledger revision unchanged")
+		}
+		f := out.Facts[i]
+		subject = aitool.Subject{Measure: "lineage", Source: "the report " + f.Name + " comes from", Lineage: f.Lineage, Revision: f.Revision, AsAt: today}
+		if err := a.read(ctx, http.MethodGet, f.Lineage, nil, &body); err != nil {
+			return AIToolResult{}, err
+		}
+		content, facts, omitted := aitool.Fit(body, tool.Limits, subject)
+		return AIToolResult{Facts: append([]aitool.Fact{factOf(f)}, facts...), Content: content, Omitted: orNone(omitted), Revision: f.Revision}, nil
 	case "calc":
 		return AIToolResult{}, problem(CodeToolElse, "calc runs in the AI service, not the API.", "Run calc in the AI service (AI-P6)")
 	default:
-		return AIToolResult{}, problem(CodeToolElse, tool.Name+" is not built yet (p1-ai-assistant task 3.2).", "Use another read tool")
+		return AIToolResult{}, problem(CodeToolElse, tool.Name+" is not a tool the API runs.", "Use another read tool")
 	}
 	content, facts, omitted := aitool.Fit(body, tool.Limits, subject)
 	if facts == nil {
@@ -244,6 +286,87 @@ func (a *API) runTool(ctx context.Context, tool aitool.Tool, in map[string]any) 
 		omitted = []aitool.Omission{}
 	}
 	return AIToolResult{Facts: facts, Content: content, Omitted: omitted, Revision: revision}, nil
+}
+
+// factOf is a semantic layer's fact as a tool returns it.
+func factOf(f MetricFact) aitool.Fact {
+	return aitool.Fact{ID: f.ID, Measure: f.Measure, Name: f.Name, Value: f.Value, Words: f.Words, Undefined: f.Undefined, Unit: f.Unit,
+		Currency: f.Currency, From: f.From, To: f.To, Dimension: f.Dimension, Member: f.Member, MemberName: f.MemberName, Sign: f.Sign,
+		Revision: f.Revision, Source: f.Source, Lineage: f.Lineage}
+}
+
+func orNone(o []aitool.Omission) []aitool.Omission {
+	if o == nil {
+		return []aitool.Omission{}
+	}
+	return o
+}
+
+// statutoryFigure is a statutory value's text: a number, as a pack writes one.
+var statutoryFigure = regexp.MustCompile(`^-?[0-9]{1,20}(\.[0-9]{1,10})?$`)
+
+// statutoryFit are a pack's values as a tool returns them (AI-68, AI-53): each figure of a row a fact with the pack's key
+// and version, its dates and its sources, and the rows within the tool's limits. A row's first column names it, and a
+// box number, a code or a date is not a figure.
+func statutoryFit(v StatutoryValues, l aitool.Limits, path string, revision int64) (any, []aitool.Fact, []aitool.Omission) {
+	titles := map[string]string{}
+	for _, s := range v.Sources {
+		titles[s.ID] = s.Title
+	}
+	for rows := l.Rows; rows >= 1; rows /= 2 {
+		var facts []aitool.Fact
+		var omitted []aitool.Omission
+		tables := []any{}
+		for _, t := range v.Tables {
+			kept := []any{}
+			for i, r := range t.Rows {
+				if i == rows {
+					omitted = append(omitted, aitool.Omission{Path: "tables." + t.Name, Shown: rows, Of: len(t.Rows)})
+					break
+				}
+				key := ""
+				if len(t.Columns) > 0 && !strings.HasPrefix(string(t.Columns[0]), "effective_") {
+					key = r.Values[string(t.Columns[0])]
+				}
+				var cited []string
+				for _, id := range strings.Fields(r.Values["source"]) {
+					if title := titles[id]; title != "" {
+						cited = append(cited, title)
+					}
+				}
+				row := map[string]any{}
+				for j, column := range t.Columns {
+					c := string(column)
+					value := r.Values[c]
+					if j == 0 || strings.HasPrefix(c, "effective_") || strings.HasSuffix(c, "_box") || c == "source" || !statutoryFigure.MatchString(value) {
+						row[c] = value
+						continue
+					}
+					measure := strings.Join(slices.DeleteFunc([]string{v.Pack, t.Name, key, c}, func(s string) bool { return s == "" }), ".")
+					f := aitool.Fact{Measure: measure, Value: value, Unit: aitool.UnitNumber, From: r.Values["effective_from"], To: r.Values["effective_to"],
+						Sign: "as the pack writes it", Revision: revision, Source: strings.Join(cited, "; "), Lineage: path, Pack: v.Pack, PackVersion: v.Version,
+						AsAt: v.On}
+					if currency := r.Values["currency"]; c == "amount" && currency != "" {
+						f.Unit, f.Currency = aitool.UnitAmount, currency
+					}
+					sum := sha256.Sum256([]byte(strings.Join([]string{v.Version, t.Name, key, c, value}, "\x00")))
+					f.ID = "F" + hex.EncodeToString(sum[:8])
+					facts = append(facts, f)
+					row[c] = map[string]any{"fact": f.ID}
+				}
+				kept = append(kept, row)
+			}
+			tables = append(tables, map[string]any{"name": t.Name, "description": t.Description, "rows": kept})
+		}
+		content := map[string]any{"pack": v.Pack, "version": v.Version, "on": v.On, "tables": tables}
+		if aitool.Tokens(content)+aitool.Tokens(facts) <= l.ResultTokens || rows == 1 {
+			if facts == nil {
+				facts = []aitool.Fact{}
+			}
+			return content, facts, orNone(omitted)
+		}
+	}
+	return nil, []aitool.Fact{}, []aitool.Omission{}
 }
 
 // fieldsOf is the kind whose fields a kind of record keeps: a credit note's are an invoice's, a vendor credit's a bill's,

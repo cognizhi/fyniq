@@ -920,6 +920,9 @@ var matrixCalls = map[string]matrixCall{
 	"getStatutoryPack": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/statutory-packs/sg-gst@2026.1", tok, nil), nil
 	},
+	"getStatutoryValues": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/statutory-values?pack=sg-gst&on=2026-10-15", tok, nil), nil
+	},
 	// Asking to activate always waits for approval; an allowed role's request is withdrawn again, so the next role
 	// can ask too.
 	"activateStatutoryPack": func(e *env, tok string) (response, func() bool) {

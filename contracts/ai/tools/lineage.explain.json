@@ -1,8 +1,8 @@
 {
   "name": "lineage.explain",
   "title": "Explain where a fact comes from",
-  "version": 1,
-  "description": "Explains a fact from metrics.query in this conversation: the accounts, journal lines and source documents behind it, as the person asking may see them, largest first. Give the fact's ID with the measure, months, dimension, member and revision it came with; a fact whose ID does not match them is refused, so copy them from the fact unchanged.",
+  "version": 2,
+  "description": "Explains a fact from metrics.query in this conversation: the report it comes from, read at its ledger revision, as the person asking may see it. For an account's fact, that is the general ledger's lines with their source documents; for a customer's or vendor's, the open items; otherwise the statement or the KPIs, with the accounts behind each line. Give the fact's ID with the measure, months (YYYY-MM), dimension, member and revision it came with; a fact whose ID does not match them is refused, so copy them from the fact unchanged.",
   "inputSchema": {
     "type": "object",
     "additionalProperties": false,

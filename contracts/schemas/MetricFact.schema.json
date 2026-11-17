@@ -41,7 +41,7 @@
     "lineage": {
       "description": "The API path of the report it comes from.",
       "examples": [
-        "/v1/reports/statements/pl?from=2026-07\u0026to=2026-09\u0026revision=1204"
+        "/v1/reports/statements/pl?from=2026-07\u0026to=2026-09\u0026as_at_revision=1204"
       ],
       "type": "string"
     },

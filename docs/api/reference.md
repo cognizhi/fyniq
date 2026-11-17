@@ -18136,6 +18136,27 @@ Asks for the organisation to adopt a loaded version (ENG-32). Its pinned statuto
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `APR-06`, `PACK-07`, `PACK-09`, `PACK-10`, `PACK-13`, `STORAGE-APPROVAL-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/statutory-values`
+
+**Get the statutory values in force on a day** (`getStatutoryValues`)
+
+A pack's values in force on a day (ENG-31): from the organisation's active version in force then, else the version this release carries; each table's rows whose effective dates cover the day (a table without them, such as the GST codes, whole), with the official sources they cite (ENG-30). name keeps one table, or the rows whose first column is it. A pack with no version in force on the day is not found. Read-only; no side effects.
+
+- **Permission:** View on Statutory parameters
+- **Parameters:**
+  - `pack` (query, required): The pack.
+  - `on` (query): The day; left out, the organisation's today.
+  - `name` (query): Only this table, or the rows whose first column is this, such as a limit's or a GST code's name.
+- **Responses:**
+  - `200` OK [`StatutoryValues`](../../contracts/schemas/StatutoryValues.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
 ## Evidence
 
 Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07).

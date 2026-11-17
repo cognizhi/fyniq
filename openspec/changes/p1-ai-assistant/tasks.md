@@ -24,7 +24,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 - [x] 3.1 `contracts/ai/tools/` (design D5): one JSON file per tool (as built), generating the model's tool definitions; versioned and
   contract-tested; `TestTheAIToolsAreReadOnly` checks the real registry. Tests `// req: AI-19`, `// req: AI-P2`.
-- [ ] 3.2 The tools through the internal `tool` operation as the person: `metrics.query`, `records.get`,
+- [x] 3.2 The tools through the internal `tool` operation as the person: `metrics.query`, `records.get`,
   `records.search`, `lineage.explain`, `checks.list`, `checks.explain`, `packs.get`, each returning typed facts. Tests
   `// req: AI-P1`, `// req: AI-01`, `// req: AI-68`.
 - [ ] 3.3 `calc` in the AI service: exact decimals on facts and constants, its result a fact naming its inputs. Tests
