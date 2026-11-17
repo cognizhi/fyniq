@@ -19,7 +19,7 @@ func TestCompletion(t *testing.T) {
 	}{
 		{`{"date":"2026-12-20","lines":[{"net":"100.00"}]}`, day("2026-12-20")},
 		{`{"date":"2027-03-01","lines":[{"spread_months":36,"spread_from":"2027-01"},{"spread_months":12}]}`, day("2029-12-31")},
-		{`{"date":"2027-03-10","lines":[{"spread_months":12}]}`, day("2028-02-29")}, // from the record's own month
+		{`{"date":"2027-03-10","lines":[{"spread_months":12}]}`, day("2028-02-29")},                           // from the record's own month
 		{`{"date":"2026-10-14","lines":[{"spread_months":3,"spread_from":"2026-09-20"}]}`, day("2026-11-30")}, // a day in its first month
 		{`{"date":"2027-03-10","lines":[{"spread_months":3,"spread_from":"bad"}]}`, day("2027-03-10")},
 		{`not json`, time.Time{}},
