@@ -31,6 +31,7 @@ import (
 // req: INV-13
 // req: FM-9
 // req: equity/cap-table-and-investors Equity transactions
+// req: G4-043
 // asvs: V8.2.1, V8.2.2
 func TestEquityTransactions(t *testing.T) {
 	c := newClaimants(t)

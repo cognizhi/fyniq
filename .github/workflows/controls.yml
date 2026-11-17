@@ -1,5 +1,6 @@
 # Scheduled control checks (PRD-001 Appendix F, compliance/controls/): the ones that read the
-# repository's settings rather than its code. Each leaves its report as an artefact (the evidence).
+# repository's settings rather than its code, and the daily requirement trace (QA-TRACE-01). Each
+# leaves its report as an artefact (the evidence).
 name: controls
 
 on:
@@ -32,3 +33,21 @@ jobs:
           name: control-ctl-chg-01
           path: .data/controls/
           retention-days: 90   # the most GitHub keeps for a public repository; the evidence bucket arrives with p0-infra-opentofu
+
+  trace:
+    name: Requirement traceability (QA-TRACE-01)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      # Reports the untested requirements of the launch subset and of P1; the release workflow gates on them (task 7.2).
+      - run: python3 scripts/trace_requirements.py report
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: trace-report
+          path: .data/trace/
+          retention-days: 90

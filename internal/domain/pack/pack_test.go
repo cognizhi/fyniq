@@ -314,6 +314,8 @@ func TestTheSimplifiedInvoiceLimitIsInTheGSTPackFromItsVersion(t *testing.T) {
 func ptr(t time.Time) *time.Time { return &t }
 
 // req: ENG-45
+// req: G4-018
+// req: G4-019
 // The tax point is the earlier of the invoice and the payment received; a security deposit counts only
 // once applied to the price. G4-018 and G4-019 are the review's pinned cases (Appendix G.4).
 func TestTheTaxPointIsTheEarlierOfTheInvoiceAndThePayment(t *testing.T) {

@@ -19,8 +19,8 @@ GO_IMAGES := api ai mcp worker executor render migrate jobs scanner clamd
 # Mutation testing scope (QA-ENG-04): money, the rounding policies and the posting engine
 # Each Go test binary's limit: the API's authorisation matrix (20 roles × every operation) takes 20 to 25 minutes on a CI
 # runner beside the other database suites, and one run on a slow runner passed 30 (3 Nov 2026), past go test's default of
-# ten.
-GO_TEST_TIMEOUT := 45m
+# ten. With 630 operations it took 36 minutes on main and passed 45 on a slow runner (7 Nov 2026), so the limit is 90.
+GO_TEST_TIMEOUT := 90m
 MUTATION_PKGS := internal/domain/money internal/domain/rounding internal/domain/ledger
 # The P1 sources `make differential` draws beside manual journals, and the statements and KPIs over them: what
 # cmd/scenario-run reads and states (test/differential/README.md, "P1 sources", "Statements", "KPIs"), and the forecasts
@@ -47,7 +47,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: script-tests trace trace-gate release-policy help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -191,7 +191,7 @@ ci: ## Run what CI runs, in the same order: test, mutation, differential, scan, 
 	@$(MAKE) --no-print-directory test-e2e
 	@$(MAKE) --no-print-directory evals
 
-check: check-tokens check-config kb-lint spec-check roadmap-check design-check review-check scan-waivers controls ## Run every check available today (CI runs this)
+check: check-tokens check-config kb-lint spec-check roadmap-check design-check review-check scan-waivers controls script-tests trace ## Run every check available today (CI runs this)
 
 controls: ## The control registry (compliance/controls/) has a file for every Appendix F control, with the PRD's text; the release's evidence manifest is built from a fixture run
 	@python3 scripts/controls.py check
@@ -239,11 +239,20 @@ review-check: ## The review register names real requirements and screens, and no
 review-status: ## Areas awaiting second review and the pages that show the "Needs additional verification" banner
 	@python3 scripts/review_status.py list
 
-roadmap: ## Regenerate the P1–P3 plan's change tables, coverage and counts from the specs and the screen inventory
+roadmap: ## Regenerate the P1–P3 plan's change tables, coverage and counts, and the launch subset, from the specs and the screen inventory
 	@python3 scripts/roadmap.py write
 
 roadmap-check: ## Every requirement and screen after P0 is placed in exactly one planned change, and the plan's tables are current
 	@python3 scripts/roadmap.py check
+
+script-tests: ## The repository scripts' own tests (scripts/test_*.py, standard library unittest)
+	@python3 -m unittest discover -s scripts -p 'test_*.py' -q
+
+trace: ## The requirements no test references (QA-TRACE-01), for the launch subset and P1, in .data/trace/report.json; fails only on a PRD row it cannot parse
+	@python3 scripts/trace_requirements.py report
+
+trace-gate: ## Fail while a requirement of PHASE (launch, the default, or P1) is untested and not excepted (QA-TRACE-01; the release runs it)
+	@python3 scripts/trace_requirements.py gate --phase $(or $(PHASE),launch)
 
 spec-map: ## Show how each PRD's anchors map to OpenSpec capabilities
 	@python3 scripts/prdspec.py map
@@ -268,6 +277,9 @@ hooks: ## Install the git hooks (Conventional Commit check on every commit)
 
 lint-commits: ## Check commit messages in RANGE (default: origin/main..HEAD)
 	@scripts/check-commits.sh "$${RANGE:-origin/main..HEAD}"
+
+release-policy: ## A fix that changes calculation code carries its regression test (QA-REL-01), for the commits in RANGE (default: origin/main..HEAD)
+	@python3 scripts/release_policy.py "$${RANGE:-origin/main..HEAD}"
 
 deps-up: ## Start local dependencies: PostgreSQL 18, Mailpit, fake GCS
 	@$(COMPOSE) up -d --wait

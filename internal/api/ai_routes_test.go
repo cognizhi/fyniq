@@ -118,6 +118,7 @@ func qualifiedIn(ctx context.Context, u storage.UnitOfWork, connection uuid.UUID
 // req: AI-74
 // req: AI-26
 // req: AI-82
+// req: G4-088
 func TestEveryAgentRunsOnItsRoute(t *testing.T) {
 	e := newEnv(t)
 	f := foundersIn(e)
