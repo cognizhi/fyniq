@@ -56,11 +56,21 @@
   - Migration 000394 adds both, their operations and `corporate_register_guard` (FY354, FY355); 000395 validates. The
     API (part of 2.3): create, get, replace, ask and evidence for each, and the profile lists the entries in force on
     its day, every version, and every approval. A nominee never approves their own entry (FM-1).
-- [ ] 2.3 The API: the profile, its officers, nominees and approvals, each recorded forward with Idempotency-Key and
+- [x] 2.3 The API: the profile, its officers, nominees and approvals, each recorded forward with Idempotency-Key and
   If-Match, with evidence; the permission matrix's rows; the data inventory and the tenant export (design D2). Tests
   `// req: FR-CS-01`, `// req: FR-CS-06`.
-- [ ] 2.4 Each change's lodgement deadline in the statutory calendar from the ACRA pack, done once its evidence is
+  As built: with 2.1 and 2.2, each record's operations as it was built; `getCorporateProfile` shows the profile on a
+  day. The tenant export already carries every document, so it needed nothing.
+- [x] 2.4 Each change's lodgement deadline in the statutory calendar from the ACRA pack, done once its evidence is
   attached (design D2). Tests `// req: governance/company-secretary FR-CS-01 A change opens its lodgement checklist`.
+  As built:
+  - The calendar gains the profile's own items, done on their records as the registers' are: an officer's appointment
+    after incorporation and a cessation (14 days, s173A), a change of the details after the first (14 days, s143),
+    and each nominee entry's steps (told within 30 days, entered within 7, filed centrally 2 business days after).
+  - Done once a version with the day lodged is recorded, with the acknowledgement as its evidence.
+  - Incorporation is the first detail's day; with no detail recorded, an appointment is Not assessed and names the
+    details. With no sg-acra version in force, one item is Not assessed and names the pack.
+  - An event before the pack's first day (16 Nov 2026) has no rule, so no item, as the calendar's own rules start.
 - [ ] 2.5 The ACRA extract's officers and registered office, and their reconciliation (design D3). Tests
   `// req: governance/company-secretary FR-CS-01 Reconciled to the ACRA business profile`.
 

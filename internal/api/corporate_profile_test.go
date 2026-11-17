@@ -4,8 +4,10 @@ package api
 
 import (
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
@@ -499,5 +501,88 @@ func TestTheNomineeRegistersAndTheStatementsApproval(t *testing.T) {
 	req := e.call(http.MethodPost, mpath+"/approval", prep, nil, "If-Match", cur.Header.Get("ETag"))
 	if r := approve(req, kow); r.Status != http.StatusForbidden || !strings.Contains(r.Raw, "your own entry as a nominee") {
 		t.Errorf("Ah Kow approving his own entry: %d %s", r.Status, r.Raw)
+	}
+}
+
+// The corporate profile's lodgements in the statutory calendar (FR-CS-01, FR-CS-02; p1-company-secretary task 2.4). On
+// 20 Nov 2026, with sg-acra in force from 16 Nov: Tan Mei Lin, appointed on Tuesday 17 Nov, is lodged by 1 Dec (14
+// days); the office moved on 18 Nov by 2 Dec; Ah Kow, a director since incorporation, ceased on 18 Nov, by 2 Dec; the
+// nominee entered in the register on Thursday 19 Nov is filed centrally by Monday 23 Nov (2 business days); each is due
+// soon. An officer
+// appointed on 1 Oct, before the pack's first day, gives no item. With no detail recorded, an appointment is not
+// assessed and names the details. A version with the day lodged clears its item.
+// req: FR-CS-01
+// req: FR-CS-02
+// req: governance/company-secretary FR-CS-01 A change opens its lodgement checklist
+func TestTheCorporateLodgementsInTheCalendar(t *testing.T) {
+	c := newClaimants(t)
+	e := c.e
+	e.clock.Set(time.Date(2026, 11, 20, 9, 0, 0, 0, time.UTC)) // before the sessions, so their step-up is fresh
+	prep := c.as(c.weiling, authz.Accountant)
+	kow := c.as(c.ahkow, authz.Owner)
+	owner := c.as(c.weiling, authz.Owner, authz.Controller)
+	record := func(path string, body map[string]any) response {
+		t.Helper()
+		d := e.call(http.MethodPost, path, prep, body)
+		if d.Status != http.StatusCreated {
+			t.Fatalf("drafting at %s: %d %s", path, d.Status, d.Raw)
+		}
+		at := path + "/" + d.str("id")
+		e.upload(at+"/evidence", prep, map[string]string{"evidence_type": "BizFile+"}, "ack.pdf", []byte("%PDF-1.7 ack"), "If-Match", d.Header.Get("ETag"))
+		cur := e.call(http.MethodGet, at, prep, nil)
+		req := e.call(http.MethodPost, at+"/approval", prep, nil, "If-Match", cur.Header.Get("ETag"))
+		if r := e.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/approve", kow, hashOf(req), "If-Match", `"1"`); r.Status != http.StatusOK {
+			t.Fatalf("approving %s: %d %s", at, r.Status, r.Raw)
+		}
+		return d
+	}
+	lodgements := func() []string {
+		t.Helper()
+		var out []string
+		for _, x := range calendarItems(t, e.call(http.MethodGet, "/v1/compliance/calendar?from=2026-10-01&to=2027-01-31", owner, nil)) {
+			if strings.HasPrefix(x, "register_officer") || strings.HasPrefix(x, "register_detail") || strings.HasPrefix(x, "register_nominee") ||
+				strings.HasPrefix(x, "sg-acra") {
+				out = append(out, x)
+			}
+		}
+		return out
+	}
+	officers := "/v1/corporate-profile/officers"
+	tan := record(officers, map[string]any{"role": "director", "name": "Tan Mei Lin", "kind": "individual", "appointed_on": "2026-11-17", "nominee": false})
+	if got := lodgements(); len(got) != 1 || !strings.HasPrefix(got[0], "register_officer_appointment:"+tan.str("id")) || !strings.HasSuffix(got[0], "not_assessed") {
+		t.Errorf("with no detail recorded: %v", got)
+	}
+
+	details := "/v1/corporate-profile/details"
+	record(details, map[string]any{"from": "2026-03-02", "name": "Cognizhi Pte. Ltd.", "registered_office": "1 North Bridge Road", "ssic": "62011"})
+	moved := record(details, map[string]any{"from": "2026-11-18", "name": "Cognizhi Pte. Ltd.", "registered_office": "2 Science Park Drive", "ssic": "62011"})
+	kowd := record(officers, map[string]any{"role": "director", "name": "Ah Kow", "kind": "individual", "appointed_on": "2026-03-02",
+		"appointment_lodged_on": "2026-03-02", "nominee": false})
+	record(officers, map[string]any{"officer_id": kowd.str("id"), "role": "director", "name": "Ah Kow", "kind": "individual", "appointed_on": "2026-03-02",
+		"appointment_lodged_on": "2026-03-02", "ceased_on": "2026-11-18", "nominee": false})
+	record(officers, map[string]any{"role": "secretary", "name": "Lim Hui", "kind": "individual", "appointed_on": "2026-10-01", "nominee": false})
+	holder := e.call(http.MethodPost, "/v1/contacts", owner, map[string]any{"legal_name": "Seedling Nominees Pte. Ltd.", "shareholder": true}).str("id")
+	entry := record("/v1/corporate-profile/nominees", map[string]any{"kind": "shareholder", "holder_id": holder, "nominator": "Fund I",
+		"since": "2026-11-17", "informed_on": "2026-11-17", "register_on": "2026-11-19"})
+
+	want := []string{
+		"register_nominee_central:" + entry.str("id") + ":2026-11-19 2026-11-23 due_soon",
+		"register_officer_appointment:" + tan.str("id") + ":2026-11-17 2026-12-01 due_soon",
+		"register_detail_change:" + moved.str("id") + ":2026-11-18 2026-12-02 due_soon",
+		"register_officer_cessation:" + kowd.str("id") + ":2026-11-18 2026-12-02 due_soon",
+	}
+	got := lodgements()
+	slices.Sort(got)
+	slices.Sort(want)
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Errorf("the lodgements:\n got %v\nwant %v", got, want)
+	}
+
+	record(officers, map[string]any{"officer_id": tan.str("id"), "role": "director", "name": "Tan Mei Lin", "kind": "individual", "appointed_on": "2026-11-17",
+		"appointment_lodged_on": "2026-11-19", "nominee": false})
+	for _, x := range lodgements() {
+		if strings.HasPrefix(x, "register_officer_appointment") {
+			t.Errorf("Tan Mei Lin's appointment, lodged, still open: %s", x)
+		}
 	}
 }
