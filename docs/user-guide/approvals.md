@@ -28,7 +28,10 @@ Only one request waits for each setting or person at a time.
 ## Approve or reject
 
 1. Open **Inbox → To approve** and choose the request.
-2. Check what it changes: each value before and after.
+2. Check what it changes: each value before and after. For a change that posts to the books, **What
+   approving it would post** shows the entry, as debits and credits, and each account's balance
+   before and after; it is worked out when you open the request, and nothing is kept. If approving it
+   now would be refused, for example because its month has closed since, it says so instead.
 3. Select **Approve…** or **Reject…**. The confirmation shows exactly what you sign, your step, and
    the request's fingerprint. To reject, say why.
 4. Select **Approve with passkey** (or **Reject with passkey**) and confirm on your device. Without

@@ -317,6 +317,7 @@ func TestFailuresRetryThenDieAndUnknownOutcomesWait(t *testing.T) {
 // deadline and one more attempt in its budget, as many times as it is held, and runs when the work can start.
 // req: FR-INT-26
 // req: FR-INT-20
+// req: G4-096
 func TestHeldWorkSpendsNoAttempt(t *testing.T) {
 	b := books(t, "Held work Pte Ltd")
 	var runs atomic.Int32

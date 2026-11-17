@@ -20,6 +20,7 @@ import (
 // Rock's ordinary shares, 300,000 against 299,000. Typed in again from the profile of 2 Oct, it agrees, the first
 // superseded. An Owner, who may not post, records none; an Employee reads none.
 // req: FR-EQ-26
+// req: C.2 #26
 // asvs: V8.2.1
 func TestTheRegisterReconcilesToACRA(t *testing.T) {
 	c := newClaimants(t)

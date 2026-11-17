@@ -102,7 +102,7 @@ export function RiskPolicies() {
               {all.map((r) => {
                 const level = rating(r);
                 return (
-                  <li key={r.id} className="fy-list__item">
+                  <li key={r.id} className="fy-list__item fy-list__item--wrap">
                     <span className="fy-list__main">
                       <span className="fy-list__title whitespace-normal">
                         <span className="fy-mono fy-muted">{r.ref}</span> {r.title}
@@ -111,7 +111,7 @@ export function RiskPolicies() {
                       <span className="fy-list__meta whitespace-normal">
                         {owners[r.owner]} · likelihood {words[r.likelihood].toLowerCase()}, impact {words[r.impact].toLowerCase()} · {r.mitigation}
                       </span>
-                      <span className="fy-list__meta">
+                      <span className="fy-list__meta whitespace-normal">
                         {r.review_overdue ? (
                           <span className="fy-chip fy-chip--serious">
                             <Icon of={ClockAlert} />

@@ -33,6 +33,7 @@ func (f feedOf) Fetch(_ context.Context, day time.Time) ([]ports.RateQuote, erro
 // req: FR-GL-05
 // req: ENG-40
 // req: RND-RATE
+// req: G4-025
 func TestExchangeRatesAndTheCascade(t *testing.T) {
 	e := newEnv(t)
 	accountant, auditor := e.as(authz.Accountant), e.as(authz.Auditor)

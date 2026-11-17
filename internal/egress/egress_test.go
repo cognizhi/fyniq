@@ -49,6 +49,7 @@ func addrs(s ...string) []netip.Addr {
 // substitutes through on loopback and the Docker network, never the metadata service.
 // req: SEC-36
 // req: QA-SEC-04
+// req: G4-097
 // asvs: V1.3.6
 func TestEgressRefusals(t *testing.T) {
 	release, local := &egress.Guard{}, &egress.Guard{Local: true}
@@ -95,6 +96,7 @@ func TestEgressRefusals(t *testing.T) {
 // looked up once, and the connection goes where the check allowed.
 // req: SEC-36
 // req: QA-SEC-04
+// req: G4-097
 // asvs: V1.3.6
 func TestEgressDialsTheAddressItChecked(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok")) }))
@@ -120,6 +122,7 @@ func TestEgressDialsTheAddressItChecked(t *testing.T) {
 // connection; an answer larger than the limit is refused, whether it says so or not.
 // req: SEC-36
 // req: QA-SEC-04
+// req: G4-097
 // asvs: V15.3.2, V13.2.4
 func TestEgressFollowsNoRedirectAndBoundsTheAnswer(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

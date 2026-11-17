@@ -459,6 +459,7 @@ type FyniqApprovalPolicy struct {
 	RequestID      uuid.UUID
 	CreatedBy      uuid.UUID
 	CreatedAt      time.Time
+	Rules          []byte
 }
 
 type FyniqApprovalRequest struct {
@@ -1579,6 +1580,11 @@ type FyniqInstallationConnectorSecret struct {
 	SetAt       time.Time
 	ValidUntil  *time.Time
 	DestroyedAt *time.Time
+}
+
+type FyniqInvitationCode struct {
+	CodeHash []byte
+	Owner    uuid.UUID
 }
 
 type FyniqIpRateWindow struct {
