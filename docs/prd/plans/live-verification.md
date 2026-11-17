@@ -46,3 +46,4 @@ and in its change.
 | `p1-users-roles`, `p1-mcp-first-party` | Sign-in through the local page and Identity Platform's fake; the delegation key locally | Identity Platform live; the MCP delegation key in Cloud KMS |
 | `p1-operations-dr` | (not built yet) | Observability, backups, restore drills, cloud posture |
 | `p1-ai-providers` | (not built yet) | Prompt caching on for every AI route whose model supports it (AI-27) |
+| `p1-ai-assistant` 1.2, 4.2 | The internal API with HMAC service tokens; the edge's refusal of `/api/internal/` in Caddy and in the Cloud Armor module's test; screening through local mode's Model Armor stub | The `ai` invoker's OIDC tokens accepted by the internal API, and Cloud Armor refusing `/api/internal/`; Model Armor's template in Singapore, set as `FYNIQ_MODEL_ARMOR_TEMPLATE` with the api account allowed to use it, screening the red-team corpus as the stub does |

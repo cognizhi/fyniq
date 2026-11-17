@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -33,7 +34,8 @@ type AIToolCall struct {
 }
 
 // AIToolResult is what a tool read, within its limits (AI-04): its figures as facts (AI-68), and the rest of what the
-// operation answered, each figure in it replaced by {"fact": its ID}.
+// operation answered, each figure in it replaced by {"fact": its ID} and each free text quoted as {"untrusted_text": …},
+// data the model never follows (AI-18), screened on its way to the model.
 type AIToolResult struct {
 	Tool     string            `json:"tool" example:"records.search"`
 	Version  int               `json:"version" doc:"The tool's version in the registry, which the turn records." example:"1"`
@@ -41,6 +43,7 @@ type AIToolResult struct {
 	Content  any               `json:"content,omitempty" doc:"What the operation answered, cut to the tool's limits, its figures replaced by their facts; absent when the facts are all."`
 	Omitted  []aitool.Omission `json:"omitted" nullable:"false" doc:"What the limits left out: of each list, how many it shows of how many there are."`
 	Revision int64             `json:"ledger_revision" doc:"The ledger revision it was read at (ENG-46)." example:"1204"`
+	Withheld string            `json:"withheld,omitempty" doc:"What screening found in the result's free text, which is withheld, every quoted text with it (AI-18)." example:"an instruction to ignore earlier instructions"`
 }
 
 type (
@@ -103,7 +106,7 @@ func registerToolCalls(a *API) {
 			"operation with the turn's delegated token, so the person's roles and the masking apply and nothing is written. The result " +
 			"is cut to the tool's limits (rows, time and a token budget; AI-04), what was left out counted, and every figure in it is a " +
 			"typed fact (AI-68). calc runs in the AI service itself.",
-	}, []string{CodeToolInput, CodeToolElse, CodeToolRefused, CodeToolTimeout}, func(ctx context.Context, in *aiToolCallInput) (*aiToolCallOutput, error) {
+	}, []string{CodeToolInput, CodeToolElse, CodeToolRefused, CodeToolTimeout, CodeScreenIncomplete}, func(ctx context.Context, in *aiToolCallInput) (*aiToolCallOutput, error) {
 		tool, ok := aitool.Default().Get(string(in.Body.Tool))
 		if !ok {
 			return nil, problem(CodeToolInput, string(in.Body.Tool)+" is not a tool of the registry.", "Name one of the registry's read tools")
@@ -121,9 +124,40 @@ func registerToolCalls(a *API) {
 		if err != nil {
 			return nil, err
 		}
+		if err := a.screenResult(ctx, &out); err != nil {
+			return nil, err
+		}
 		out.Tool, out.Version = tool.Name, tool.Version
 		return &aiToolCallOutput{Body: out}, nil
 	})
+}
+
+// screenResult quotes a result's free text as untrusted_text and screens it, with the names its facts carry, on its way
+// to the model (AI-18, AI-P7): a finding withholds every quoted text and name, saying what was found, and keeps the
+// figures; a screening that did not finish refuses the result (fail closed).
+func (a *API) screenResult(ctx context.Context, out *AIToolResult) error {
+	var texts []string
+	out.Content = quoteText(out.Content, &texts)
+	for _, f := range out.Facts {
+		texts = append(texts, f.MemberName)
+	}
+	err := a.screen(ctx, false, texts...)
+	var p *Problem
+	if err == nil || !errors.As(err, &p) || p.Code != CodeScreened {
+		return err
+	}
+	out.Withheld = findingsOf(p)
+	out.Content = withhold(out.Content, "screening found "+out.Withheld+" in this result's text")
+	for i := range out.Facts {
+		out.Facts[i].MemberName = ""
+	}
+	return nil
+}
+
+// findingsOf is what a screening's refusal found, as its detail says it.
+func findingsOf(p *Problem) string {
+	found, _, _ := strings.Cut(strings.TrimPrefix(p.Detail, "Screening found "), " in ")
+	return found
 }
 
 // checkToolInput refuses an input the tool's schema does not take, naming the field.

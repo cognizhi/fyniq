@@ -110,6 +110,9 @@ func (a *API) prepareModelCall(ctx context.Context, in AIModelCall) (ai.Call, er
 	if err != nil {
 		return ai.Call{}, err
 	}
+	if err := a.screen(ctx, false, promptTexts(request)...); err != nil {
+		return ai.Call{}, err
+	}
 	declared := make([]string, 0, len(in.Classes))
 	for _, c := range in.Classes {
 		declared = append(declared, string(c))
@@ -155,7 +158,7 @@ func (a *API) modelCallResult(res ai.Result, classes []string) AIModelCallResult
 
 // modelCallCodes are the codes a model call is refused with.
 var modelCallCodes = []string{airoute.CodeNoRoute, airoute.CodeUnhandled, airoute.CodeNoStep, airoute.CodeRefused, airoute.CodeSwitchOff,
-	aibudget.CodeSpent, storage.CodeRetry, storage.CodeLockTimeout}
+	aibudget.CodeSpent, storage.CodeRetry, storage.CodeLockTimeout, CodeScreened, CodeScreenIncomplete}
 
 func registerModelCalls(a *API) {
 	internalOp(a, huma.Operation{
@@ -172,6 +175,9 @@ func registerModelCalls(a *API) {
 		res, err := a.router().Run(ctx, authnOrg(ctx), call)
 		if err != nil {
 			return nil, modelCallProblem(err)
+		}
+		if err := a.screen(ctx, true, answerTexts(res.Response)...); err != nil {
+			return nil, err
 		}
 		return &aiModelCallOutput{Body: a.modelCallResult(res, call.Classes)}, nil
 	})
@@ -194,6 +200,11 @@ func registerModelCalls(a *API) {
 			res, err := a.router().Run(ctx, authnOrg(ctx), call)
 			if err != nil {
 				_ = send.Data(*internalProblem(ctx, modelCallProblem(err)))
+				return
+			}
+			// The whole answer is screened before it is done: on a finding the AI service discards the text it streamed.
+			if err := a.screen(ctx, true, answerTexts(res.Response)...); err != nil {
+				_ = send.Data(*internalProblem(ctx, err))
 				return
 			}
 			_ = send.Data(a.modelCallResult(res, call.Classes))

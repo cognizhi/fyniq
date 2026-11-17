@@ -274,6 +274,8 @@ var codeFacts = map[string]struct {
 	airoute.CodeAgent:             {404, "Not an agent of this release"},
 	semantic.CodeMeasure:          {422, "Not a measure of the semantic layer"},
 	CodeToolInput:                 {422, "Not the tool's input"},
+	CodeScreened:                  {422, "Screening stopped it"},
+	CodeScreenIncomplete:          {503, "Screening did not finish"},
 	CodeToolElse:                  {422, "Not a tool the API runs"},
 	CodeToolRefused:               {422, "The tool's read was refused"},
 	CodeToolTimeout:               {504, "The tool took too long"},

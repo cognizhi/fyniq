@@ -36,7 +36,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   only with the new setting `ai.payroll_access` (off, dual controlled) and the person's payroll right, an Owner's added
   exclusions (dual controlled, never removing the never-send list); the output filter for NRIC and bank-number shapes.
   Tests `// req: AI-02`, `// req: AI-20`.
-- [ ] 4.2 Untrusted text quoted as `untrusted_text` in tool results and screened through the `Screening` port with
+- [x] 4.2 Untrusted text quoted as `untrusted_text` in tool results and screened through the `Screening` port with
   prompts and answers, failing closed. Tests `// req: AI-18`, `// req: AI-P7`, `// req: AI-25` (organisation text
   labelled untrusted).
 - [ ] 4.3 CTL-AI-06 (design D8): planted NRIC, bank numbers and payroll in the sample company reach no recorded model
