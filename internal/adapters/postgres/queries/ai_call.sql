@@ -40,3 +40,9 @@ WHERE (sqlc.narg(actor)::text IS NULL OR actor = sqlc.narg(actor)::text)
   AND (sqlc.narg(before_at)::timestamptz IS NULL OR (started_at, id) < (sqlc.narg(before_at)::timestamptz, sqlc.narg(before_id)::uuid))
 ORDER BY started_at DESC, id DESC
 LIMIT sqlc.arg(page_size)::integer;
+
+-- name: AICallCostOfRuns :many
+SELECT run_id, sum(cost_base)::text AS cost_base
+FROM fyniq.ai_call
+WHERE run_id = ANY(sqlc.arg(runs)::uuid[]) AND cost_base IS NOT NULL
+GROUP BY run_id;

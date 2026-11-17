@@ -228,6 +228,12 @@
    "kind": "covered-elsewhere",
    "why": "The workbook's fast-mode staleness check has no Fyniq equivalent: Appendix C replaced it by C.2 #12.",
    "by": "C.2 #12, the scheduled jobs on time, in TestThePlatformChecks (internal/api/checks_platform_test.go)"
+  },
+  {
+   "id": "quality/calculation-correctness: Pinned hourly cost",
+   "kind": "after-go-live",
+   "why": "The hourly cost is a person's cost rate for projects (FR-PRJ-06: salary and employer CPF over the standard hours), which comes with p1-projects after go-live.",
+   "decision": "rev 0.146 (the owner's decisions of 26 Oct 2026 on open question 25: p1-projects follows go-live, displaced by expense claims and payment files)"
   }
  ]
 }

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acra": {
+      "description": "What ACRA's extract lists.",
+      "examples": [
+        "2026-03-03"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "missing_in_fyniq: ACRA lists an officer the profile does not have in office; missing_at_acra: the profile has one ACRA does not list; appointed_differs: the day appointed differs; office_differs: the registered office differs.",
+      "enum": [
+        "missing_in_fyniq",
+        "missing_at_acra",
+        "appointed_differs",
+        "office_differs"
+      ],
+      "examples": [
+        "appointed_differs"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "The officer's name.",
+      "examples": [
+        "Tan Mei Lin"
+      ],
+      "type": "string"
+    },
+    "profile": {
+      "description": "What the profile holds: the day appointed, or the office.",
+      "examples": [
+        "2026-03-02"
+      ],
+      "type": "string"
+    },
+    "role": {
+      "description": "The officer's role.",
+      "enum": [
+        "director",
+        "secretary",
+        "ceo",
+        "auditor"
+      ],
+      "examples": [
+        "director"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind"
+  ],
+  "title": "CorporateDifference",
+  "type": "object"
+}

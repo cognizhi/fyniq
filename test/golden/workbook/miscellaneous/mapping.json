@@ -1,0 +1,125 @@
+[
+ {
+  "sheet": "Transactions",
+  "row": 1,
+  "status": "",
+  "workbook": "Jan sale",
+  "document": "BT-01"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 2,
+  "status": "",
+  "workbook": "Feb sale",
+  "document": "BT-02"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 3,
+  "status": "",
+  "workbook": "Jan rent",
+  "document": "BT-03"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 4,
+  "status": "",
+  "workbook": "Feb rent",
+  "document": "BT-04"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 5,
+  "status": "",
+  "workbook": "Savings to operating",
+  "document": "TR-05"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 6,
+  "status": "",
+  "workbook": "Deposit, invoice to follow",
+  "document": "RC-ACCT-06",
+  "read": "recorded on account for its contact (FR-AR-18): a payment with no invoice yet"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 7,
+  "status": "",
+  "workbook": "Petty cash spend",
+  "document": "BT-07"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 1,
+  "status": "",
+  "workbook": "INV-M1",
+  "document": "INV-M1"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 2,
+  "status": "",
+  "workbook": "CN-M2",
+  "document": "CN-M2"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 3,
+  "status": "",
+  "workbook": "INV-M3",
+  "document": "INV-M3"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 4,
+  "status": "",
+  "workbook": "CN-M4",
+  "document": "CN-M4"
+ },
+ {
+  "sheet": "Timesheets",
+  "row": 1,
+  "status": "",
+  "not_ported": "projects and timesheets are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Timesheets",
+  "row": 2,
+  "status": "",
+  "not_ported": "projects and timesheets are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Bank Import",
+  "row": 1,
+  "status": "",
+  "workbook": "TRANSFER FROM SAVINGS",
+  "not_ported": "a statement import, not a posting: Fyniq's import tests see a line already recorded (FR-BNK-04)"
+ },
+ {
+  "sheet": "Bank Import",
+  "row": 2,
+  "status": "",
+  "workbook": "CARD FEE",
+  "not_ported": "a statement import, not a posting: Fyniq's import tests see a line already recorded (FR-BNK-04)"
+ },
+ {
+  "sheet": "Budget",
+  "row": 1,
+  "status": "",
+  "not_ported": "a budget, not a posting: the planning tests hold budgets (FR-PLN-01)"
+ },
+ {
+  "sheet": "Budget",
+  "row": 2,
+  "status": "",
+  "not_ported": "a budget, not a posting: the planning tests hold budgets (FR-PLN-01)"
+ },
+ {
+  "sheet": "Quotes & Orders",
+  "row": 1,
+  "status": "",
+  "workbook": "Q-M1",
+  "not_ported": "a quote or an order posts nothing; its statuses are the non-posting set's"
+ }
+]

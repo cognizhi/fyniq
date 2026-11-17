@@ -21,6 +21,8 @@ const usage = {
   by_model: [{ connection_id: "c-1", model: "claude-opus-4-6", ...totals("4.3125", 812000, 96000) }],
   by_agent: [{ agent: "chat", ...totals("4.3125", 812000, 96000) }],
   by_person: [{ person: `user:${person}`, ...totals("4.3125", 812000, 96000) }],
+  assistant: { turns: 240, answered: 229, refused: 9, failed: 2, regenerated: 6, withheld: 1, reads: 610, reads_refused: 12, screening_flags: 3,
+    conversations: 58, cost: "4.3125", cost_per_conversation: "0.0744" },
 };
 const budgets = {
   month: "2026-11",
@@ -58,6 +60,25 @@ describe("Settings › AI › Usage and budgets", () => {
     await noViolations();
     fireEvent.click(screen.getByRole("button", { name: "The month before" }));
     await waitFor(() => expect(seen.some((x) => x.path === "/v1/ai/usage" && x.query === "?month=2026-10")).toBe(true));
+  });
+
+  // req: QA-AI-04
+  it("shows the assistant's month as its monitoring counts it: answers, grounding, reads, screening and cost per conversation", async () => {
+    answer({
+      "GET /v1/ai/usage": { status: 200, body: usage },
+      "GET /v1/ai/budgets": { status: 200, body: budgets },
+      "GET /v1/ai/routes": { status: 200, body: { agents: [] } },
+      "GET /v1/ai/connections": { status: 200, body: { items: [] } },
+      "GET /v1/members": { status: 200, body: { items: [] } },
+    });
+    renderPage(AIUsage, { path: "/settings/ai/usage", session: auditor });
+    const group = await screen.findByRole("group", { name: "The assistant this month" });
+    expect(within(group).getByText("240")).toBeTruthy();
+    expect(within(group).getByText("229 answered · 9 refused · 2 failed")).toBeTruthy();
+    expect(within(group).getByText("asked for again; 1 withheld")).toBeTruthy();
+    expect(within(group).getByText("of 610 reads; 3 stopped or withheld by screening")).toBeTruthy();
+    expect(within(group).getByText("0.0744")).toBeTruthy();
+    expect(within(group).getByText("58 conversations, 4.3125 in all")).toBeTruthy();
   });
 
   it("moves by calendar months", () => {

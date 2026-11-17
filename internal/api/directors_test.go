@@ -312,9 +312,13 @@ func TestLinkingAMemberNeedsAnotherFounder(t *testing.T) {
 // matrixDirector returns the ID of a director and shareholder of e's organisation, adding one first if needed: also a
 // customer and a vendor, so a row that takes the first contact still finds one it can use.
 func matrixDirector(e *env) string {
+	// role=director lists shareholders too (a nominee shareholder of the corporate profile's fixture, say): take a director.
 	l := e.call(http.MethodGet, "/v1/contacts?role=director", e.as(authz.Accountant), nil)
-	if items, _ := l.Body["items"].([]any); len(items) > 0 {
-		return items[0].(map[string]any)["id"].(string)
+	items, _ := l.Body["items"].([]any)
+	for _, it := range items {
+		if c := it.(map[string]any); c["director"] == true {
+			return c["id"].(string)
+		}
 	}
 	return e.call(http.MethodPost, "/v1/contacts", e.as(authz.Accountant), map[string]any{"legal_name": "Matrix director", "director": true,
 		"shareholder": true, "customer": true, "vendor": true}).str("id")

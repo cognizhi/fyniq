@@ -20,8 +20,15 @@ type Filing = components["schemas"]["StatutoryFilingView"];
 type FilingDraft = components["schemas"]["StatutoryFilingDraft"];
 
 // Who records an item and withdraws a record: C on the Statutory calendar row (Appendix D; the owner's decision of 7 Nov
-// 2026).
+// 2026), and the Company secretary its corporate items alone (Appendix D's note, rev 0.285). The API decides.
 export const recorders = ["owner", "controller", "accountant", "tax_agent"];
+export const corporateRecorders = ["company_secretary"];
+
+// recordsItem says whether a person's roles record an item: every item for the recorders, the corporate ones for the
+// Company secretary.
+export function recordsItem(roles: readonly string[], it: { area?: string }): boolean {
+  return roles.some((r) => recorders.includes(r)) || (it.area === "corporate" && roles.some((r) => corporateRecorders.includes(r)));
+}
 
 export async function calendar(from?: string, to?: string): Promise<Calendar> {
   const query: { from?: string; to?: string } = {};
@@ -339,7 +346,7 @@ function Month({ items, month, onMove }: { items: Item[]; month: string; onMove:
 // with its acknowledgement, or that it is not required, and withdrawing a record. Expert adds each rule's words.
 export function StatutoryCalendar() {
   const { session, mode } = useSignedIn();
-  const mayRecord = (session.roles ?? []).some((r) => recorders.includes(r));
+  const roles = session.roles ?? [];
   const expert = mode === "expert";
   const c = useQuery({ queryKey: ["calendar"], queryFn: () => calendar() });
   const [view, setView] = useState<"list" | "month">("list");
@@ -451,7 +458,7 @@ export function StatutoryCalendar() {
                   {dated
                     .filter((it) => it.due_on!.startsWith(m))
                     .map((it) => (
-                      <Row key={it.key} it={it} mayRecord={mayRecord} expert={expert} onRecord={(outcome) => setRecording({ it, outcome })} onWithdraw={() => setWithdrawing(it)} />
+                      <Row key={it.key} it={it} mayRecord={recordsItem(roles, it)} expert={expert} onRecord={(outcome) => setRecording({ it, outcome })} onWithdraw={() => setWithdrawing(it)} />
                     ))}
                 </ul>
               </section>

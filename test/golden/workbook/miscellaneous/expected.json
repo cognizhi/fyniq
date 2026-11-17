@@ -1,0 +1,75 @@
+{
+ "schema": "fyniq-workbook-golden@1",
+ "set": "miscellaneous",
+ "scenario": "scenario.json",
+ "rejected": [],
+ "checks": [
+  {
+   "test": "test_foreign_currency_reminder_carry_forward_and_fx",
+   "what": "unrealised FX on 30 Sep at the latest monthly rate 1.36: 240.00 on INV-M1 less 30.00 on CN-M2 (AGE_FXExp), posted as a revaluation (FR-GL-04)",
+   "documents": [
+    "revaluation-2026-09"
+   ],
+   "kind": "revaluation",
+   "account": "1100",
+   "base": "210.00"
+  },
+  {
+   "test": "test_foreign_currency_reminder_carry_forward_and_fx",
+   "what": "the gain of 210 on the unrealised FX account",
+   "documents": [
+    "revaluation-2026-09"
+   ],
+   "kind": "revaluation",
+   "account": "7045",
+   "base": "-210.00"
+  },
+  {
+   "test": "test_foreign_currency_reminder_carry_forward_and_fx",
+   "what": "reversed on day 1 (1 Oct)",
+   "documents": [
+    "revaluation-2026-09"
+   ],
+   "kind": "revaluation_reversal",
+   "account": "7045",
+   "base": "210.00",
+   "on_or_before": "2026-10-01"
+  },
+  {
+   "test": "test_statement_ageing_reconciles_to_balance",
+   "what": "Misc Customer's balance: invoices 872 (1,090 less the 218 credit) less the 500 not matched to an invoice (ST_Balance)",
+   "documents": [
+    "INV-M3",
+    "CN-M4",
+    "RC-ACCT-06"
+   ],
+   "account": "1100",
+   "base": "372.00"
+  },
+  {
+   "test": "test_statement_ageing_reconciles_to_balance",
+   "what": "the credit note not yet used",
+   "documents": [
+    "CN-M4"
+   ],
+   "account": "1100",
+   "base": "-218.00"
+  },
+  {
+   "test": "test_statement_ageing_reconciles_to_balance",
+   "what": "the payment not matched to an invoice",
+   "documents": [
+    "RC-ACCT-06"
+   ],
+   "account": "1100",
+   "base": "-500.00"
+  },
+  {
+   "test": "test_bank_import_sees_transfer_recorded_from_other_account",
+   "what": "the transfer from savings, recorded once, from the savings account: 1030 in September",
+   "month": "2026-09",
+   "account": "1030",
+   "base": "-5000.00"
+  }
+ ]
+}

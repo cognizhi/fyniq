@@ -2,16 +2,16 @@
 key: settings.ai-activity
 type: task
 title: See what the AI did, and use your own AI plan
-summary: Settings › AI activity: every model call, whose entries you see, outcomes, tokens and cost, masked payroll entries, filters; your own AI plan, not offered yet
+summary: Settings › AI activity: model calls, outcomes, tokens and cost, the assistant's questions, reviewing feedback on answers, masked payroll; your own AI plan
 sources:
-  - docs/user-guide/ai-activity.md sha256:1d52021deeb5f201e092e7058e6a2514a982023942792dd7ff6a0bccdb8e9ea8
+  - docs/user-guide/ai-activity.md sha256:604c2214e35d2bb68249c2a62eed071441c57958037fde7101aa8dc862729ef2
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-14
+compiled_at: 2026-11-15
 aliases:
   - AI activity log
   - what did the AI do
@@ -19,6 +19,9 @@ aliases:
   - AI cost per call
   - my own ChatGPT plan
   - use my own Claude subscription
+  - thumbs down on an answer
+  - review AI feedback
+  - golden set
 ---
 
 # See what the AI did, and use your own AI plan
@@ -43,6 +46,22 @@ aliases:
 - **Tokens in / out** and **Cost**, exact, in the base currency at the day's rate, the provider's currency beneath when it differs; no price, no cost. Tiles count served, fell back, failed or stopped, and masked in the entries shown.
 
 (src: docs/user-guide/ai-activity.md#what-each-entry-shows)
+
+## Questions to the assistant
+
+- Each question asked of the assistant ([[ai.assistant]]), above the model calls: when, who asked (for the Owner and the data protection officer), the question and the classes of data it read, how it ended (**Answered**, **Refused** with its code, or **Failed**), whether the answer was asked for again after a figure failed the check, each read of the books with how many figures it read, and its tokens.
+- Beside each, its reads refused, what screening stopped or withheld, and its cost in the base currency. What a read returned is never shown, only how it went; **Its model calls** shows the calls the question made. Someone else's question that read payroll is masked for a reader who may not see payroll unmasked.
+
+(src: docs/user-guide/ai-activity.md#questions-to-the-assistant)
+
+## Feedback on answers
+
+- Members rate the assistant's answers with a thumbs up or down and a reason, once per answer; their conversation shows the rating and where its review is.
+- The Owner and an Administrator see **Feedback on answers** here: each rating, its reason, who gave it, the question and the answer; **Show** picks waiting, golden set, dismissed or all.
+- **Add to the golden set** puts it in the set the assistant's evals are built from; **Dismiss** leaves it out. Reviewed once; unreviewed feedback never feeds the evals.
+- Feedback on someone else's question that read payroll is masked for a reviewer who may not see payroll unmasked and can only be dismissed; someone who sees payroll can add it. Showing it unmasked is recorded in the audit trail.
+
+(src: docs/user-guide/ai-activity.md#feedback-on-answers)
 
 ## Masked entries
 

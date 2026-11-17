@@ -22,6 +22,8 @@ fyniq_api       UPDATE    accounting_framework (confirmed_at, confirmed_by)
 fyniq_api       INSERT    accounting_policy (area, from_on, version, wording, written_by)
 fyniq_api       SELECT    accounting_policy
 fyniq_api       UPDATE    accounting_policy (approved_at, approved_by)
+fyniq_api       INSERT    agent_run (acts_for, agent, queued_at, requested_by, skill_sha256, skill_version, slot_at, trigger)
+fyniq_api       SELECT    agent_run
 fyniq_api       SELECT    ai_agents
 fyniq_api       INSERT    ai_budget (amount, scope, set_at, set_by, subject)
 fyniq_api       SELECT    ai_budget
@@ -32,8 +34,18 @@ fyniq_api       SELECT    ai_connection
 fyniq_api       UPDATE    ai_connection (auth, auto_qualify, billing_mode, changed_at, changed_by, configuration, credential_ref, credential_set_at, data_handling, host, name, preset, quota, self_hosted, state, version)
 fyniq_api       INSERT    ai_connection_version (approval_id, connection_id, made_at, made_by, snapshot, step, version)
 fyniq_api       SELECT    ai_connection_version
+fyniq_api       INSERT    ai_conversation (created_at, title, user_id)
+fyniq_api       SELECT    ai_conversation
+fyniq_api       UPDATE    ai_conversation (deleted_at)
 fyniq_api       INSERT    ai_data_policy (approval_id, made_at, made_by, policy, version)
 fyniq_api       SELECT    ai_data_policy
+fyniq_api       INSERT    ai_feedback (given_at, rating, reason, turn_id, user_id)
+fyniq_api       SELECT    ai_feedback
+fyniq_api       UPDATE    ai_feedback (decision, reviewed_at, reviewed_by)
+fyniq_api       INSERT    ai_grant (expires_at, issued_at, propose, run_id, task_types, token_hash, tools, turn_id, user_id)
+fyniq_api       SELECT    ai_grant
+fyniq_api       UPDATE    ai_grant (classes, ended_at)
+fyniq_api       EXECUTE   ai_grant_for()
 fyniq_api       INSERT    ai_model (alias_of, allowed, connection_id, context_window, first_listed_at, last_listed_at, listed, listed_price, max_output, model, name, not_callable_at, provider_created, reports, shutdown_at)
 fyniq_api       SELECT    ai_model
 fyniq_api       UPDATE    ai_model (alias_of, allowed, context_window, last_listed_at, listed, listed_price, max_output, name, not_callable_at, probe_detail, probe_ok, probed_at, provider_created, reports, shutdown_at)
@@ -45,6 +57,9 @@ fyniq_api       UPDATE    ai_price (decided_at, decided_by, status)
 fyniq_api       SELECT    ai_price_catalogues
 fyniq_api       INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_api       SELECT    ai_price_rate
+fyniq_api       INSERT    ai_proposal (agent, evidence, expires_at, item_count, model, payload, payload_sha256, prompt, proposed_at, rationale, requested_by, required_approvals, risk_tier, run_id, task_sha256, task_type, task_version, tools_sha256, turn_id)
+fyniq_api       SELECT    ai_proposal
+fyniq_api       UPDATE    ai_proposal (approval_request_id, approved_items, approved_payload, approved_sha256, base_versions, decided_at, decided_by, impact, reason, status, superseded_by, version)
 fyniq_api       INSERT    ai_qualification (agent, cases, connection_id, model, passed, ran_at, ran_by, result, run_id, suite, suite_version, threshold, version)
 fyniq_api       SELECT    ai_qualification
 fyniq_api       UPDATE    ai_qualification (out_of_date_at, out_of_date_why)
@@ -55,6 +70,11 @@ fyniq_api       SELECT    ai_route
 fyniq_api       INSERT    ai_route_step (cache, connection_id, effort, model, position, route_id)
 fyniq_api       SELECT    ai_route_step
 fyniq_api       EXECUTE   ai_settle()
+fyniq_api       INSERT    ai_tool_call (code, duration_ms, facts, input, n, omitted, outcome, output_sha256, tool, turn_id, version, withheld)
+fyniq_api       SELECT    ai_tool_call
+fyniq_api       INSERT    ai_turn (asked_at, context, conversation_id, question, user_id)
+fyniq_api       SELECT    ai_turn
+fyniq_api       UPDATE    ai_turn (answer, answered_at, cited, classes, code, facts, input_tokens, output_tokens, prompt, prompt_sha256, regenerated, runs, segments, status, withheld)
 fyniq_api       INSERT    allocation (amount, base_amount, base_currency, base_minor_units, currency, document_id, minor_units, on_date, realised_fx, reverses_id, source_id, source_version, tax, tolerance, written_at, written_by)
 fyniq_api       SELECT    allocation
 fyniq_api       INSERT    announcement (dismissible, ends_at, link, message, published_at, published_by, roles, severity, starts_at)
@@ -69,7 +89,7 @@ fyniq_api       INSERT    approval_request (change, envelope, envelope_hash, exp
 fyniq_api       SELECT    approval_request
 fyniq_api       UPDATE    approval_request (decided_at, status, status_reason, version)
 fyniq_api       EXECUTE   approval_rules_valid()
-fyniq_api       INSERT    approval_signature (assertion_signature, authenticator_data, client_data, decision, envelope_hash, mfa_at, mfa_method, passkey_challenge_id, passkey_id, reason, request_id, signed_at, signer, step)
+fyniq_api       INSERT    approval_signature (assertion_signature, authenticator_data, client_data, decision, envelope_hash, mfa_at, mfa_method, passkey_challenge_id, passkey_id, reason, request_id, selection_sha256, signed_at, signer, step)
 fyniq_api       SELECT    approval_signature
 fyniq_api       EXECUTE   approval_steps_met()
 fyniq_api       EXECUTE   approval_steps_valid()
@@ -155,6 +175,8 @@ fyniq_api       INSERT    close_checklist_entry (note, period_id, state, task_ke
 fyniq_api       SELECT    close_checklist_entry
 fyniq_api       INSERT    close_checklist_template (tasks, version, written_at, written_by)
 fyniq_api       SELECT    close_checklist_template
+fyniq_api       SELECT    compliance_task
+fyniq_api       UPDATE    compliance_task (closed_at, closed_by, reason, status, version)
 fyniq_api       EXECUTE   confirm_account_recovery()
 fyniq_api       EXECUTE   confirm_super_admin_recovery()
 fyniq_api       INSERT    consent_purpose (audience, created_at, created_by, description, name, needs_consent)
@@ -512,6 +534,8 @@ fyniq_executor  SELECT    account
 fyniq_executor  SELECT    accountant_review
 fyniq_executor  SELECT    accountant_review_journal
 fyniq_executor  SELECT    accountant_review_query
+fyniq_executor  SELECT    ai_proposal
+fyniq_executor  UPDATE    ai_proposal (execution, finished_at, reason, started_at, status, version)
 fyniq_executor  SELECT    allocation
 fyniq_executor  SELECT    approval_policy
 fyniq_executor  SELECT    approval_request
@@ -528,6 +552,8 @@ fyniq_executor  SELECT    break_glass
 fyniq_executor  SELECT    break_glass_use
 fyniq_executor  SELECT    close_checklist_entry
 fyniq_executor  SELECT    close_checklist_template
+fyniq_executor  INSERT    compliance_task (created_at, detail, due_on, finding_key, owner_role, owner_user, proposal_id, source, title)
+fyniq_executor  SELECT    compliance_task
 fyniq_executor  SELECT    contact
 fyniq_executor  SELECT    contact_document_template
 fyniq_executor  SELECT    currencies
@@ -553,11 +579,14 @@ fyniq_executor  SELECT    document_template_default
 fyniq_executor  SELECT    document_template_version
 fyniq_executor  INSERT    document_version (created_by, document_id, payload, version)
 fyniq_executor  SELECT    document_version
+fyniq_executor  INSERT    email_message (purpose, recipient, subject)
+fyniq_executor  SELECT    email_message
 fyniq_executor  SELECT    evidence
 fyniq_executor  SELECT    fx_feed_rates
 fyniq_executor  SELECT    fx_rate
 fyniq_executor  SELECT    gst_registration
 fyniq_executor  EXECUTE   hold_outbox()
+fyniq_executor  SELECT    holding_movement
 fyniq_executor  SELECT    item
 fyniq_executor  SELECT    item_price
 fyniq_executor  INSERT    journal_entry (memo, posting_date, posting_identity, reverses_entry_id, rule_version, source_id, source_type, source_version)
@@ -567,6 +596,7 @@ fyniq_executor  SELECT    journal_line
 fyniq_executor  SELECT    ledger_boundary
 fyniq_executor  SELECT    ledger_purged_entry
 fyniq_executor  SELECT    ledger_revision
+fyniq_executor  EXECUTE   member_emails()
 fyniq_executor  SELECT    opening_balance
 fyniq_executor  SELECT    operation
 fyniq_executor  SELECT    organisation
@@ -590,6 +620,7 @@ fyniq_executor  SELECT    recurring_journal
 fyniq_executor  SELECT    recurring_journal_version
 fyniq_executor  SELECT    review_log_entry
 fyniq_executor  SELECT    review_log_review
+fyniq_executor  SELECT    role_assignment
 fyniq_executor  SELECT    sales_reminder
 fyniq_executor  USAGE     schema fyniq
 fyniq_executor  SELECT    sod_override
@@ -597,6 +628,7 @@ fyniq_executor  SELECT    statutory_pack_activation
 fyniq_executor  SELECT    statutory_pack_rows
 fyniq_executor  SELECT    statutory_pack_versions
 fyniq_executor  SELECT    team_mode
+fyniq_executor  SELECT    user_membership
 fyniq_executor  SELECT    withholding_decision
 fyniq_readonly  SELECT    access_review_attestation
 fyniq_readonly  SELECT    account
@@ -605,21 +637,27 @@ fyniq_readonly  SELECT    accountant_review_journal
 fyniq_readonly  SELECT    accountant_review_query
 fyniq_readonly  SELECT    accounting_framework
 fyniq_readonly  SELECT    accounting_policy
+fyniq_readonly  SELECT    agent_run
 fyniq_readonly  SELECT    ai_agents
 fyniq_readonly  SELECT    ai_budget
 fyniq_readonly  SELECT    ai_call
 fyniq_readonly  SELECT    ai_connection
 fyniq_readonly  SELECT    ai_connection_version
+fyniq_readonly  SELECT    ai_conversation
 fyniq_readonly  SELECT    ai_data_policy
+fyniq_readonly  SELECT    ai_feedback
 fyniq_readonly  SELECT    ai_model
 fyniq_readonly  SELECT    ai_model_list_read
 fyniq_readonly  SELECT    ai_price
 fyniq_readonly  SELECT    ai_price_catalogues
 fyniq_readonly  SELECT    ai_price_rate
+fyniq_readonly  SELECT    ai_proposal
 fyniq_readonly  SELECT    ai_qualification
 fyniq_readonly  SELECT    ai_reservation
 fyniq_readonly  SELECT    ai_route
 fyniq_readonly  SELECT    ai_route_step
+fyniq_readonly  SELECT    ai_tool_call
+fyniq_readonly  SELECT    ai_turn
 fyniq_readonly  SELECT    allocation
 fyniq_readonly  SELECT    announcement
 fyniq_readonly  SELECT    announcement_dismissal
@@ -662,6 +700,7 @@ fyniq_readonly  SELECT    claim_category
 fyniq_readonly  SELECT    claim_place
 fyniq_readonly  SELECT    close_checklist_entry
 fyniq_readonly  SELECT    close_checklist_template
+fyniq_readonly  SELECT    compliance_task
 fyniq_readonly  SELECT    consent_purpose
 fyniq_readonly  SELECT    consent_record
 fyniq_readonly  SELECT    contact
@@ -794,12 +833,17 @@ fyniq_worker    SELECT    accountant_review_journal
 fyniq_worker    SELECT    accountant_review_query
 fyniq_worker    SELECT    accounting_framework
 fyniq_worker    SELECT    accounting_policy
+fyniq_worker    INSERT    agent_run (acts_for, agent, queued_at, requested_by, skill_sha256, skill_version, slot_at, trigger)
+fyniq_worker    SELECT    agent_run
+fyniq_worker    UPDATE    agent_run (findings, fingerprint, finished_at, kb_snapshot, ledger_revision, model, model_missed, model_text, model_used, pack_versions, reason, started_at, status, summary, tokens, tool_calls, tools, version)
 fyniq_worker    SELECT    ai_agents
 fyniq_worker    SELECT    ai_budget
 fyniq_worker    SELECT    ai_call
 fyniq_worker    SELECT    ai_connection
 fyniq_worker    SELECT    ai_connection_version
+fyniq_worker    SELECT    ai_conversation
 fyniq_worker    SELECT    ai_data_policy
+fyniq_worker    SELECT    ai_feedback
 fyniq_worker    INSERT    ai_model (alias_of, allowed, connection_id, context_window, first_listed_at, last_listed_at, listed, listed_price, max_output, model, name, not_callable_at, provider_created, reports, shutdown_at)
 fyniq_worker    SELECT    ai_model
 fyniq_worker    UPDATE    ai_model (alias_of, allowed, context_window, last_listed_at, listed, listed_price, max_output, name, not_callable_at, price_checked_at, provider_created, reports, shutdown_at, unpriced)
@@ -811,6 +855,9 @@ fyniq_worker    UPDATE    ai_price (status)
 fyniq_worker    SELECT    ai_price_catalogues
 fyniq_worker    INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_worker    SELECT    ai_price_rate
+fyniq_worker    SELECT    ai_proposal
+fyniq_worker    UPDATE    ai_proposal (decided_at, status, version)
+fyniq_worker    EXECUTE   ai_purge_conversations()
 fyniq_worker    INSERT    ai_qualification (agent, cases, connection_id, model, passed, ran_at, ran_by, result, run_id, suite, suite_version, threshold, version)
 fyniq_worker    SELECT    ai_qualification
 fyniq_worker    UPDATE    ai_qualification (out_of_date_at, out_of_date_why)
@@ -819,6 +866,8 @@ fyniq_worker    EXECUTE   ai_reserve()
 fyniq_worker    SELECT    ai_route
 fyniq_worker    SELECT    ai_route_step
 fyniq_worker    EXECUTE   ai_settle()
+fyniq_worker    SELECT    ai_tool_call
+fyniq_worker    SELECT    ai_turn
 fyniq_worker    SELECT    allocation
 fyniq_worker    SELECT    announcement
 fyniq_worker    SELECT    announcement_dismissal
@@ -886,6 +935,9 @@ fyniq_worker    SELECT    claim_category
 fyniq_worker    SELECT    claim_place
 fyniq_worker    SELECT    close_checklist_entry
 fyniq_worker    SELECT    close_checklist_template
+fyniq_worker    INSERT    compliance_task (created_at, detail, due_on, escalated, finding_key, owner_role, owner_user, run_id, source, title)
+fyniq_worker    SELECT    compliance_task
+fyniq_worker    UPDATE    compliance_task (closed_at, detail, due_on, escalated, owner_role, owner_user, status, title, version)
 fyniq_worker    SELECT    consent_purpose
 fyniq_worker    SELECT    consent_record
 fyniq_worker    SELECT    contact

@@ -5,6 +5,7 @@ import { answer, ownerSession, problem, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { checkDisposal, checkRegister, emptyRegister, FixedAssets, lifeText, type Disposal, type FixedAsset, type Unregistered } from "./FixedAssets";
+import { invalid } from "../../test/invalid";
 
 const accountant = { ...ownerSession, roles: ["accountant"] } as Session;
 const organisation = { base_currency: "SGD", team_mode: "founder" } as never;
@@ -97,18 +98,31 @@ describe("the fixed asset register", () => {
     expect(lifeText(36)).toBe("3 years");
     expect(lifeText(12)).toBe("1 year");
     expect(lifeText(18)).toBe("18 months");
-    expect(Object.keys(checkRegister({ ...emptyRegister, life_months: "0", residual: "-1", start: "March" }, "SGD", { document_id: "b1", line: 1 }).errors).sort()).toEqual([
-      "life_months",
-      "residual",
-      "start",
-    ]);
+    expect(checkRegister({ ...emptyRegister, life_months: "0", residual: "-1", start: "March" }, "SGD", { document_id: "b1", line: 1 }).errors).toEqual({
+      life_months: "Enter the useful life in whole months, from 1 to 600, such as 36.",
+      residual: "Enter an amount, such as 0.00, or leave it empty.",
+      start: "Choose the month depreciation starts.",
+    });
     expect(checkRegister({ ...emptyRegister, life_months: "36" }, "SGD", { document_id: "b1", line: 1 }).draft).toMatchObject({ source: { document_id: "b1", line: 1 }, life_months: 36 });
-    expect(Object.keys(checkRegister({ ...emptyRegister, life_months: "36" }, "SGD", null).errors).sort()).toEqual(["account_id", "cost", "name", "purchased_on"]);
+    expect(checkRegister({ ...emptyRegister, life_months: "36" }, "SGD", null).errors).toEqual({
+      account_id: "Choose the asset account it sits on.",
+      cost: "Enter an amount, such as 3600.00.",
+      name: "Name it as you would find it in the office.",
+      purchased_on: "Enter the day it was bought, before the books start.",
+    });
     const opening = checkRegister({ ...emptyRegister, name: "Dell monitor", life_months: "36", account_id: "a1510", purchased_on: "2025-10-03", cost: "3600", accumulated: "1200" }, "SGD", null);
     expect(opening.draft?.opening).toEqual({ account_id: "a1510", purchased_on: "2025-10-03", cost: sgd("3600"), accumulated_depreciation: sgd("1200") });
     const form = { date: "", part: true, cost: "0", proceeds: "money" as const, money_account_id: "", amount: "", gst_code: "", invoice_id: "", invoice_line: "1", notes: "" };
-    expect(Object.keys(checkDisposal(form, "SGD").errors).sort()).toEqual(["amount", "cost", "date", "money_account_id"]);
-    expect(Object.keys(checkDisposal({ ...form, date: "2026-11-15", part: false, proceeds: "invoice", invoice_line: "x" }, "SGD").errors).sort()).toEqual(["invoice_id", "invoice_line"]);
+    expect(checkDisposal(form, "SGD").errors).toEqual({
+      amount: "Enter an amount above zero, such as 1500.00.",
+      cost: "Enter an amount above zero, such as 1500.00.",
+      date: "Enter the day it was sold or written off.",
+      money_account_id: "Choose the account the money came into.",
+    });
+    expect(checkDisposal({ ...form, date: "2026-11-15", part: false, proceeds: "invoice", invoice_line: "x" }, "SGD").errors).toEqual({
+      invoice_id: "Choose the invoice to the buyer.",
+      invoice_line: "Enter the invoice's line for the asset, such as 1.",
+    });
     expect(checkDisposal({ ...form, date: "2026-11-15", part: false, proceeds: "none" }, "SGD").draft).toEqual({ date: "2026-11-15", proceeds: "none" });
   });
 
@@ -163,6 +177,44 @@ describe("the fixed asset register", () => {
     fireEvent.change(within(dialog).getByLabelText("Useful life (months)"), { target: { value: "48" } });
     fireEvent.change(within(dialog).getByLabelText("Asset account (its category)"), { target: { value: "a1510" } });
     expect(life()).toBe("48");
+  });
+
+  // QA-UI-01: an asset bought earlier, a change and a sale each mark the fields they cannot read, beside them.
+  it("marks each field it cannot read and says what it needs, before anything is sent", async () => {
+    answer(register());
+    renderPage(FixedAssets, { path: "/accounting/assets", session: accountant, organisation, mode: "expert" });
+    fireEvent.click(await screen.findByRole("button", { name: "Register one bought earlier" }));
+    let dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Asset account (its category)"), { target: { value: "" } }); // the only one is chosen first
+    fireEvent.change(within(dialog).getByLabelText("Useful life (months)"), { target: { value: "0" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Register" }));
+    await invalid(dialog, "Name", "Name it as you would find it in the office.");
+    await invalid(dialog, "Asset account (its category)", "Choose the asset account it sits on.");
+    await invalid(dialog, "Bought on", "Enter the day it was bought, before the books start.");
+    await invalid(dialog, "Cost (SGD)", "Enter an amount, such as 3600.00.");
+    await invalid(dialog, "Useful life (months)", "Enter the useful life in whole months, from 1 to 600, such as 36.");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    fireEvent.click(within(await screen.findByRole("table", { name: "Assets" })).getByRole("button", { name: "MacBook Pro 14" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Change" }));
+    dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: " " } });
+    fireEvent.change(within(dialog).getByLabelText("Useful life from its start (months)"), { target: { value: "601" } });
+    fireEvent.change(within(dialog).getByLabelText("Residual value (SGD)"), { target: { value: "-1" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    await invalid(dialog, "Name", "Name it.");
+    await invalid(dialog, "Useful life from its start (months)", "Enter the useful life in whole months, from 1 to 600.");
+    await invalid(dialog, "Residual value (SGD)", "Enter an amount, such as 0.00.");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    fireEvent.click(await screen.findByRole("button", { name: "Sell or write off" }));
+    dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Sold or written off on"), { target: { value: "" } }); // today, at first
+    fireEvent.click(within(dialog).getByRole("button", { name: "Check" }));
+    await invalid(dialog, "Sold or written off on", "Enter the day it was sold or written off.");
+    await invalid(dialog, "Money account", "Choose the account the money came into.");
+    await invalid(dialog, "Amount received (SGD, GST included)", "Enter an amount above zero, such as 1500.00.");
+    expect(seen.filter((s) => s.method === "POST")).toEqual([]);
   });
 
   it("checks a sale before recording it, then records it", async () => {

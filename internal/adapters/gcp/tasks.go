@@ -60,7 +60,7 @@ func (q *Tasks) Enqueue(ctx context.Context, t ports.Task) error {
 	if deadline < 15*time.Second || deadline > 30*time.Minute {
 		return fmt.Errorf("task %s: a deadline of %s is outside Cloud Tasks' 15 s to 30 min", t.Name, deadline)
 	}
-	body, err := jsonBody(map[string]any{"task": map[string]any{
+	task := map[string]any{
 		"name":             c.Queue + "/tasks/" + t.Name,
 		"dispatchDeadline": fmt.Sprintf("%ds", int(deadline/time.Second)),
 		"httpRequest": map[string]any{
@@ -68,7 +68,11 @@ func (q *Tasks) Enqueue(ctx context.Context, t ports.Task) error {
 			"headers": map[string]string{"Content-Type": "application/json"}, "body": base64.StdEncoding.EncodeToString(t.Payload),
 			"oidcToken": map[string]string{"serviceAccountEmail": c.ServiceAccount, "audience": c.Audience},
 		},
-	}})
+	}
+	if !t.At.IsZero() { // a scheduled agent's slot, delivered at its exact time (AI-62)
+		task["scheduleTime"] = t.At.UTC().Format(time.RFC3339Nano)
+	}
+	body, err := jsonBody(map[string]any{"task": task})
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,27 @@
+{
+  "id": "sec-draft-document",
+  "agent": "chat",
+  "version": 1,
+  "kind": "proposal",
+  "description": "sec.draft_document's proposal cases (QA-AI-02; p1-company-secretary task 4.2): a person asks for a corporate document, and the right proposal names its kind and the fields its template asks for, waiting for a person before anything is drafted. The sample company records no officers, so the cases draft the AGM's minutes, which the meeting's chair signs.",
+  "company": {"seed": 1, "journals": 24},
+  "task_types": ["sec.draft_document"],
+  "cases": [
+    {
+      "id": "agm-minutes",
+      "question": "Draft the minutes of the annual general meeting held on 15 June 2027 at 10:30 at 1 North Bridge Road, chaired by Tan Mei Lin, with Tan Mei Lin and Ah Kow present, receiving the financial statements for the year ended 31 December 2026, and passing the resolution \"That the financial statements be adopted.\"",
+      "expect": {"proposal": {"task_type": "sec.draft_document", "payload": {"kind": "agm.minutes", "fields": {"meeting_on": "2027-06-15", "time": "10:30",
+        "place": "1 North Bridge Road", "chair": "Tan Mei Lin", "present": ["Tan Mei Lin", "Ah Kow"], "fy_end": "2026-12-31",
+        "resolutions": ["That the financial statements be adopted."]}}}},
+      "solution": []
+    },
+    {
+      "id": "agm-minutes-two-resolutions",
+      "question": "Draft the minutes of the annual general meeting held on 20 June 2028 at 09:00 at 71 Ayer Rajah Crescent, chaired by Ah Kow, with Ah Kow present, receiving the financial statements for the year ended 31 December 2027, and passing the resolutions \"That the financial statements be adopted.\" and \"That Ah Kow be re-elected as a director.\"",
+      "expect": {"proposal": {"task_type": "sec.draft_document", "payload": {"kind": "agm.minutes", "fields": {"meeting_on": "2028-06-20", "time": "09:00",
+        "place": "71 Ayer Rajah Crescent", "chair": "Ah Kow", "present": ["Ah Kow"], "fy_end": "2027-12-31",
+        "resolutions": ["That the financial statements be adopted.", "That Ah Kow be re-elected as a director."]}}}},
+      "solution": []
+    }
+  ]
+}

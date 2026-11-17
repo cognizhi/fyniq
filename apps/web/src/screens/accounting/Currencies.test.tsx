@@ -2,7 +2,8 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Session } from "../../api/client";
 import type { components } from "../../api/schema";
-import { answer, ownerSession, seen } from "../../test/api";
+import { answer, calls, ownerSession, seen } from "../../test/api";
+import { invalid } from "../../test/invalid";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { Currencies, parseRates } from "./Currencies";
@@ -105,6 +106,34 @@ describe("Accounting › Currencies", () => {
     const withdraw = seen.find((x) => x.path === "/v1/fx/rates/r1/withdraw")!;
     expect(withdraw.body).toEqual({ reason: "Typed the wrong day" });
     expect(withdraw.headers.get("If-Match")).toBe('"1"');
+  });
+
+  // QA-UI-01: each field of a rate says what it needs beside it, before anything is sent: the currency, the day or the
+  // month, the rate; and a withdrawal its reason.
+  it("says what each field of a rate needs beside it, before anything is sent", async () => {
+    answer({ "GET /v1/fx/rates": list, "GET /v1/fx/feed": feed, "GET /v1/fx/money-accounts": money });
+    renderPage(Currencies, { ...at, session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "Add a rate" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Currency"), { target: { value: "U1" } });
+    fireEvent.change(within(dialog).getByLabelText("Day"), { target: { value: "" } });
+    fireEvent.change(within(dialog).getByLabelText("Rate"), { target: { value: "1,29" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add a rate" }));
+    await invalid(dialog, "Currency", "Enter a currency code, such as USD.");
+    await invalid(dialog, "Day", "Enter the day the rate is for.");
+    await invalid(dialog, "Rate", "Enter the rate as a number with up to 10 decimal places, such as 1.2953.");
+    fireEvent.click(within(dialog).getByLabelText("A month: the monthly table"));
+    fireEvent.change(within(dialog).getByLabelText("Month"), { target: { value: "" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add a rate" }));
+    await invalid(dialog, "Month", "Enter the month the rate is for.");
+    expect(calls()).not.toContain("POST /v1/fx/rates");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw the USD rate for 18 Oct 2026" }));
+    const w = await screen.findByRole("dialog");
+    fireEvent.click(within(w).getByRole("button", { name: "Withdraw" }));
+    await invalid(w, "Why", "Say why the rate is wrong or no longer used.");
   });
 
   it("refuses a rate of the base currency before sending it", async () => {

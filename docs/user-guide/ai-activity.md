@@ -3,7 +3,7 @@ key: settings.ai-activity
 title: See what the AI did, and use your own AI plan
 mode: expert
 roles: [all]
-requirements: [AI-12, AI-73, AI-74, AI-76]
+requirements: [AI-12, AI-73, AI-74, AI-76, QA-AI-05]
 ---
 
 # See what the AI did, and use your own AI plan
@@ -32,6 +32,28 @@ Every attempt is kept, whether it was served or not.
   beneath when it differs. A call with no price shows no cost.
 - The tiles above the list count, in the entries shown, how many were served, fell back, failed or stopped, and were
   masked.
+
+## Questions to the assistant
+
+- Above the model calls, each question asked of the assistant: when, who asked (for the Owner and the data protection
+  officer), the question and the classes of data it read, how it ended (**Answered**, **Refused** with the code of what
+  stopped it, or **Failed**), whether a figure failed the check and the answer was asked for again, each read of the
+  books it made and how many figures it read, and its tokens.
+- Beside each, its reads refused, what screening stopped or withheld, and its cost in the base currency.
+- What a read returned is never shown here, only how it went. **Its model calls** shows the calls the question made.
+- Someone else's question that read payroll is masked for a reader who may not see payroll unmasked.
+
+## Feedback on answers
+
+- Members rate the assistant's answers with a thumbs up or down and a reason, once per answer. Their own conversation
+  shows the rating and where its review is.
+- The Owner and an Administrator see **Feedback on answers** on this page: each rating with its reason, who gave it,
+  the question and the answer. **Show** picks feedback waiting for review, in the golden set, dismissed, or all.
+- **Add to the golden set** puts it in the set the assistant's evals are built from; **Dismiss** leaves it out.
+  Feedback is reviewed once, and feedback nobody reviewed never feeds the evals.
+- Feedback on someone else's question that read payroll is masked for a reviewer who may not see payroll unmasked, and
+  can only be dismissed; someone who sees payroll can add it to the golden set. When it is shown unmasked, the audit
+  trail records it.
 
 ## Masked entries
 

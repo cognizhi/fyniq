@@ -208,7 +208,7 @@ func matrixFiling(e *env) filingFixture {
 	}
 	acc := e.as(authz.Accountant)
 	d := e.call(http.MethodPost, "/v1/compliance/filings", acc, matrixFilingBody)
-	up := e.upload("/v1/compliance/filings/"+d.str("id")+"/evidence", acc, map[string]string{"evidence_type": "IRAS acknowledgement"}, "ack.pdf",
+	up := e.upload("/v1/compliance/filings/"+d.str("id")+"/evidence", acc, map[string]string{"evidence_type": "ACRA acknowledgement"}, "ack.pdf",
 		[]byte("%PDF-1.7 matrix acknowledgement"), "If-Match", d.Header.Get("ETag"))
 	if d.Status != http.StatusCreated || up.Status != http.StatusCreated {
 		e.t.Fatalf("the matrix's filing record: %d %d %s", d.Status, up.Status, d.Raw)
@@ -220,14 +220,14 @@ func matrixFiling(e *env) filingFixture {
 
 var matrixRecordedFilingOf = map[*env]string{}
 
-// matrixRecordedFiling is the matrix's live record, to withdraw: form C-S not required, which needs no file.
+// matrixRecordedFiling is the matrix's live record, to withdraw: the AGM not required, which needs no file.
 func matrixRecordedFiling(e *env) string {
 	e.t.Helper()
 	if id, ok := matrixRecordedFilingOf[e]; ok {
 		return id
 	}
 	acc := e.as(authz.Accountant)
-	d := e.call(http.MethodPost, "/v1/compliance/filings", acc, map[string]any{"key": "form_cs:2026-12-31", "outcome": "not_required", "reason": "Matrix"})
+	d := e.call(http.MethodPost, "/v1/compliance/filings", acc, map[string]any{"key": "agm:2026-12-31", "outcome": "not_required", "reason": "Matrix"})
 	r := e.call(http.MethodPost, "/v1/compliance/filings/"+d.str("id")+"/record", acc, nil, "If-Match", d.Header.Get("ETag"))
 	if d.Status != http.StatusCreated || r.Status != http.StatusOK {
 		e.t.Fatalf("the matrix's live record: %d %d %s", d.Status, r.Status, r.Raw)
@@ -236,7 +236,9 @@ func matrixRecordedFiling(e *env) string {
 	return d.str("id")
 }
 
-var matrixFilingBody = map[string]any{"key": "eci:2026-12-31", "outcome": "filed", "filed_on": "2026-10-15", "reference": "ECI-MATRIX"}
+// matrixFilingBody is a corporate item, which every role with C on the calendar records, the Company secretary too
+// (rev 0.285); TestTheCompanySecretaryRecordsTheCorporateItems has their refusal of the rest.
+var matrixFilingBody = map[string]any{"key": "annual_return:2026-12-31", "outcome": "filed", "filed_on": "2026-10-15", "reference": "ACRA-MATRIX"}
 
 // matrixFilingState is what a refused call must leave as it was: the draft, its files and the list.
 func matrixFilingState(e *env, f filingFixture) string {
@@ -305,4 +307,79 @@ var matrixCalendar = map[string]func(e *env, tok string) (response, func() bool)
 		r := e.call(http.MethodDelete, "/v1/compliance/filings/"+f.filing+"/evidence/"+f.file, tok, nil, "If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixFilingState(e, f) == was }
 	},
+}
+
+// The Company secretary and the statutory calendar (Appendix D's note, rev 0.285; FR-CS-08's "records filings"): they
+// read the whole calendar, and record its corporate items, an annual return filed with ACRA's acknowledgement and the
+// AGM not required, withdrawn again. A tax or payroll item they may not draft, change, attach to, record or withdraw,
+// nor turn a draft of theirs into one, and a refusal leaves the record as it was.
+// req: FR-CS-08
+// req: FR-TAX-07
+// asvs: V8.2.2
+func TestTheCompanySecretaryRecordsTheCorporateItems(t *testing.T) {
+	e := newEnv(t)
+	sec, acc := e.as(authz.CompanySecretary), e.as(authz.Accountant)
+	const filings = "/v1/compliance/filings"
+	if r := e.call(http.MethodGet, "/v1/compliance/calendar", sec, nil); r.Status != http.StatusOK {
+		t.Fatalf("the calendar, as the Company secretary: %d %s", r.Status, r.Raw)
+	}
+	etag := func(id string) string { return e.call(http.MethodGet, filings+"/"+id, acc, nil).Header.Get("ETag") }
+
+	// The annual return, filed with ACRA's acknowledgement, and recorded.
+	ar := e.call(http.MethodPost, filings, sec, map[string]any{"key": "annual_return:2026-12-31", "outcome": "filed", "filed_on": "2026-10-15", "reference": "ACRA-2026-0001"})
+	if ar.Status != http.StatusCreated {
+		t.Fatalf("the annual return's draft: %d %s", ar.Status, ar.Raw)
+	}
+	if up := e.upload(filings+"/"+ar.str("id")+"/evidence", sec, map[string]string{"evidence_type": "ACRA acknowledgement"}, "ack.pdf",
+		[]byte("%PDF-1.7 ACRA acknowledgement"), "If-Match", ar.Header.Get("ETag")); up.Status != http.StatusCreated {
+		t.Fatalf("ACRA's acknowledgement: %d %s", up.Status, up.Raw)
+	}
+	if r := e.call(http.MethodPost, filings+"/"+ar.str("id")+"/record", sec, nil, "If-Match", etag(ar.str("id"))); r.Status != http.StatusOK || r.str("status") != "recorded" {
+		t.Fatalf("the annual return recorded: %d %s", r.Status, r.Raw)
+	}
+
+	// The AGM, not required, recorded and withdrawn.
+	agm := e.call(http.MethodPost, filings, sec, map[string]any{"key": "agm:2026-12-31", "outcome": "not_required", "reason": "The statements were sent to members instead"})
+	if r := e.call(http.MethodPost, filings+"/"+agm.str("id")+"/record", sec, nil, "If-Match", etag(agm.str("id"))); r.Status != http.StatusOK {
+		t.Fatalf("the AGM recorded: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, filings+"/"+agm.str("id")+"/withdraw", sec, map[string]any{"reason": "Entered in error"}, "If-Match", etag(agm.str("id"))); r.Status != http.StatusOK {
+		t.Fatalf("the AGM's record withdrawn: %d %s", r.Status, r.Raw)
+	}
+
+	// A tax item: not drafted.
+	eci := map[string]any{"key": "eci:2026-12-31", "outcome": "filed", "filed_on": "2026-10-15", "reference": "ECI-2027-000123"}
+	e.problemIs(e.call(http.MethodPost, filings, sec, eci), "createStatutoryFiling", http.StatusForbidden, CodeForbidden)
+
+	// The Accountant's ECI draft, with its file, and their live CPF record: the secretary changes none of them.
+	x := e.call(http.MethodPost, filings, acc, eci)
+	file := e.upload(filings+"/"+x.str("id")+"/evidence", acc, map[string]string{"evidence_type": "IRAS acknowledgement"}, "eci.pdf",
+		[]byte("%PDF-1.7 IRAS acknowledgement"), "If-Match", x.Header.Get("ETag"))
+	cpf := e.call(http.MethodPost, filings, acc, map[string]any{"key": "cpf:2026-09-30", "outcome": "not_required", "reason": "No staff paid in September"})
+	if r := e.call(http.MethodPost, filings+"/"+cpf.str("id")+"/record", acc, nil, "If-Match", etag(cpf.str("id"))); x.Status != http.StatusCreated || file.Status != http.StatusCreated || r.Status != http.StatusOK {
+		t.Fatalf("the Accountant's records: %d %d %d %s", x.Status, file.Status, r.Status, r.Raw)
+	}
+	before := etag(x.str("id")) + etag(cpf.str("id"))
+	e.problemIs(e.call(http.MethodPut, filings+"/"+x.str("id"), sec, eci, "If-Match", etag(x.str("id"))), "replaceStatutoryFiling", http.StatusForbidden, CodeForbidden)
+	e.problemIs(e.upload(filings+"/"+x.str("id")+"/evidence", sec, map[string]string{"evidence_type": "IRAS acknowledgement"}, "again.pdf",
+		[]byte("%PDF-1.7 again"), "If-Match", etag(x.str("id"))), "addStatutoryFilingEvidence", http.StatusForbidden, CodeForbidden)
+	e.problemIs(e.call(http.MethodDelete, filings+"/"+x.str("id")+"/evidence/"+file.str("id"), sec, nil, "If-Match", file.Header.Get("ETag")),
+		"removeStatutoryFilingEvidence", http.StatusForbidden, CodeForbidden)
+	e.problemIs(e.call(http.MethodPost, filings+"/"+x.str("id")+"/record", sec, nil, "If-Match", etag(x.str("id"))), "recordStatutoryFiling", http.StatusForbidden, CodeForbidden)
+	e.problemIs(e.call(http.MethodPost, filings+"/"+cpf.str("id")+"/withdraw", sec, map[string]any{"reason": "No"}, "If-Match", etag(cpf.str("id"))),
+		"withdrawStatutoryFiling", http.StatusForbidden, CodeForbidden)
+	if after := etag(x.str("id")) + etag(cpf.str("id")); after != before {
+		t.Errorf("a refused write changed a record: %s → %s", before, after)
+	}
+
+	// Their own draft of the statements to members cannot become a payroll item.
+	st := e.call(http.MethodPost, filings, sec, map[string]any{"key": "statements_to_members:2026-12-31", "outcome": "not_required", "reason": "An AGM is held"})
+	if st.Status != http.StatusCreated {
+		t.Fatalf("the statements' draft: %d %s", st.Status, st.Raw)
+	}
+	r := e.call(http.MethodPut, filings+"/"+st.str("id"), sec, map[string]any{"key": "cpf:2026-08-31", "outcome": "not_required", "reason": "No staff"}, "If-Match", st.Header.Get("ETag"))
+	e.problemIs(r, "replaceStatutoryFiling", http.StatusForbidden, CodeForbidden)
+	if !strings.Contains(r.Raw, "cpf:2026-08-31 is a payroll item") {
+		t.Errorf("the refusal does not name the item and its area: %s", r.Raw)
+	}
 }

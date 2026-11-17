@@ -193,6 +193,7 @@ func TestTheRoutersRules(t *testing.T) {
 		"unqualified":  {func(s StepState) StepState { s.Standing = aiqual.Unqualified; return s }, "has not passed this agent's evals"},
 		"no standing":  {func(s StepState) StepState { s.Standing = ""; return s }, "has not passed this agent's evals"},
 		"out of date":  {func(s StepState) StepState { s.Standing = aiqual.OutOfDate; return s }, "qualification is out of date"},
+		"a stale list": {func(s StepState) StepState { s.ListStale = true; return s }, "has not been read whole for 14 days"},
 		"unpriced":     {func(s StepState) StepState { s.Priced = false; return s }, "no price"},
 		"unreachable":  {func(s StepState) StepState { s.Built = errors.New("no key"); return s }, "could not be reached"},
 		"no PDF":       {func(s StepState) StepState { s.Caps.PDF = false; return s }, "PDF input"},
@@ -210,6 +211,10 @@ func TestTheRoutersRules(t *testing.T) {
 	stale.Standing = aiqual.OutOfDate
 	if why := Why([]string{"business-figures"}, n, stale, "m"); why != "" {
 		t.Errorf("an out-of-date qualification for business figures: %q", why)
+	}
+	stale.Standing, stale.ListStale = aiqual.Qualified, true
+	if why := Why([]string{"know-how", "business-figures"}, n, stale, "m"); why != "" {
+		t.Errorf("a stale list for business figures: %q", why)
 	}
 	for _, tc := range []struct {
 		err       error

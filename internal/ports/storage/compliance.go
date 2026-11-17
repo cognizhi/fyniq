@@ -47,6 +47,24 @@ type DualControlRelease struct {
 	BreakGlassUsed bool
 }
 
+// ExecutedProposal is an AI proposal the executor ran (CTL-AI-02, AI-P5): what was approved, its approval request and
+// the people whose approvals of the request signed its envelope, and how many approvals of it the audit trail records
+// for an actor that is not a person.
+type ExecutedProposal struct {
+	ID              uuid.UUID
+	FinishedAt      time.Time
+	PayloadSHA256   string
+	ApprovedPayload string
+	ApprovedSHA256  string
+	DecidedBy       *uuid.UUID
+	RequestID       *uuid.UUID
+	RequestObject   string // the request's object, as type:key
+	RequestStatus   string
+	Envelope        string
+	Signers         []uuid.UUID
+	NotByAPerson    int
+}
+
 // MemberSecondFactor is an active member's second factors (CTL-IAM-01, SEC-01): their passkeys, their sign-ins that
 // passed a second factor, and their sessions seen in the window that passed none.
 type MemberSecondFactor struct {
@@ -529,6 +547,8 @@ type Compliance interface {
 	LatestRuns(ctx context.Context) ([]ControlRun, error)
 	// DualControl are the approvals decided and the batches released since.
 	DualControl(ctx context.Context, since time.Time) ([]DualControlApproval, []DualControlRelease, error)
+	// ExecutedProposals are the AI proposals executed since, each with its approval request and who signed it.
+	ExecutedProposals(ctx context.Context, since time.Time) ([]ExecutedProposal, error)
 	// SecondFactors are the active members' second factors, with their sessions seen since without one.
 	SecondFactors(ctx context.Context, since time.Time) ([]MemberSecondFactor, error)
 	// UnreconciledReads are the report exports asked for since without their audit event, and the latest sample events

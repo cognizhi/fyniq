@@ -71,6 +71,7 @@ describe("Settings › AI › AI providers › a connection", () => {
     expect(await screen.findByText("Assistant")).toBeTruthy();
     expect(screen.getByText("primary: claude-sonnet")).toBeTruthy();
     expect(await screen.findByText("sg")).toBeTruthy();
+    expect(screen.queryByText("Models that draw at another rate")).toBeNull();
     await noViolations();
     fireEvent.click(screen.getByRole("button", { name: "Turn it off" }));
     await waitFor(() => expect(seen.some((x) => x.method === "POST" && x.path === "/v1/ai/connections/c-1/disable")).toBe(true));
@@ -117,9 +118,19 @@ describe("Settings › AI › AI providers › a connection", () => {
     await waitFor(() => expect(seen.find((x) => x.path === "/v1/ai/prices/p-2/review")?.body).toEqual({ decision: "confirm" }));
     fireEvent.click(screen.getByRole("button", { name: "Enter a price for claude-sonnet" }));
     const dialog = await screen.findByRole("dialog");
+    const currency = within(dialog).getByLabelText("Currency") as HTMLInputElement;
+    const was = currency.value;
+    fireEvent.change(currency, { target: { value: "us" } });
     fireEvent.change(within(dialog).getByLabelText("A million input tokens"), { target: { value: "0" } });
+    fireEvent.change(within(dialog).getByLabelText("A million output tokens"), { target: { value: "0" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Ask to use this price" }));
     expect(await within(dialog).findByText("Give the price of a million input tokens, above zero.")).toBeTruthy();
+    expect(within(dialog).getByText("Give the price of a million output tokens, above zero.")).toBeTruthy();
+    expect(within(dialog).getByText("Give the provider's currency as three letters, such as USD.")).toBeTruthy();
+    for (const label of ["Currency", "A million input tokens", "A million output tokens"]) {
+      expect(within(dialog).getByLabelText(label).getAttribute("aria-invalid")).toBe("true");
+    }
+    fireEvent.change(currency, { target: { value: was } });
     fireEvent.change(within(dialog).getByLabelText("A million input tokens"), { target: { value: "2.50" } });
     fireEvent.change(within(dialog).getByLabelText("A million output tokens"), { target: { value: "10" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Ask to use this price" }));
@@ -144,6 +155,20 @@ describe("Settings › AI › AI providers › a connection", () => {
     expect(await screen.findByText("Waiting for a second approver")).toBeTruthy();
   });
 
+  it("refuses a change that leaves the connection without a name, marking the field", async () => {
+    const seen = page({});
+    open();
+    const settings = (await screen.findByRole("heading", { name: "Settings" })).closest("section")!;
+    fireEvent.click(within(settings as HTMLElement).getByRole("button", { name: "Change" }));
+    const dialog = await screen.findByRole("dialog", { name: /Change the connection/ });
+    const name = within(dialog).getByLabelText("Name");
+    fireEvent.change(name, { target: { value: " " } });
+    fireEvent.click(within(dialog).getByRole("button", { name: /^Ask/ }));
+    expect(await within(dialog).findByText("Give the connection a name.")).toBeTruthy();
+    expect(name.getAttribute("aria-invalid")).toBe("true");
+    expect(seen.some((x) => x.method === "PUT")).toBe(false);
+  });
+
   it("shows where its prompts go and asks to change it with the whole definition", async () => {
     const seen = page({ "PUT /v1/ai/connections/c-1": { status: 202, body: { id: "a-10", status: "pending" } } });
     open();
@@ -165,5 +190,18 @@ describe("Settings › AI › AI providers › a connection", () => {
       configuration: { region: "sg" },
       data_handling: { handling: [{ model: "*", processed_in: ["SG"], retention_days: 30, training: "no", evidence }], inventory_id: "inv-1", transfer_id: "tr-1" },
     });
+  });
+
+  // req: AI-73
+  it("shows a plan's per-model rates with the terms they come from", async () => {
+    page({
+      "GET /v1/ai/connections/c-1": { status: 200, body: { ...connection, billing: { mode: "subscription", quota: { amount: 300, unit: "requests", window: "month",
+        fee: "19.00", currency: "USD", rates: [{ model: "kimi-big", rate: "10" }], terms: { url: "https://example.com/plan-terms", title: "Plan terms",
+        checked_on: "2026-11-01" } } } } },
+    });
+    open();
+    expect(await screen.findByText("Models that draw at another rate")).toBeTruthy();
+    expect(screen.getByText(/kimi-big 10; others 1/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Plan terms" })).toBeTruthy();
   });
 });

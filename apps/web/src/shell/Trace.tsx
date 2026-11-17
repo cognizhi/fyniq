@@ -12,6 +12,7 @@ import { formatAmount } from "../format/amount";
 import { date, dateTime } from "../format/date";
 import { helpText } from "../i18n";
 import { Icon, problemOf } from "../ui";
+import { AskAboutThis } from "../components/ai/AskAboutThis";
 
 type AccountLedger = components["schemas"]["AccountLedger"];
 type LedgerLine = components["schemas"]["LedgerLine"];
@@ -340,6 +341,9 @@ export function TracePanel({ figure, onClose }: { figure: TraceFigure; onClose: 
                 <span className="fy-small fy-muted">
                   {figure.currency} · {date(figure.from)} to {date(figure.to)}
                 </span>
+              </span>
+              <span className="self-start">
+                <AskAboutThis context={{ kind: "figure", label: `${figure.title}, ${figure.context}`.slice(0, 200) }} onAsk={onClose} />
               </span>
             </div>
             {account && (
