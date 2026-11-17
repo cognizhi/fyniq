@@ -43,6 +43,7 @@ RETURNING *;
 UPDATE fyniq.agent_run SET status = 'done', finished_at = sqlc.arg(finished_at), fingerprint = sqlc.arg(fingerprint),
   ledger_revision = sqlc.arg(ledger_revision), pack_versions = sqlc.arg(pack_versions), kb_snapshot = sqlc.arg(kb_snapshot),
   findings = sqlc.arg(findings), summary = sqlc.arg(summary), model_used = sqlc.arg(model_used), model = sqlc.narg(model),
-  model_text = sqlc.narg(model_text), tokens = sqlc.arg(tokens), tool_calls = sqlc.arg(tool_calls), tools = sqlc.narg(tools), version = version + 1
+  model_text = sqlc.narg(model_text), tokens = sqlc.arg(tokens), tool_calls = sqlc.arg(tool_calls), tools = sqlc.narg(tools),
+  model_missed = sqlc.narg(model_missed), version = version + 1
 WHERE id = sqlc.arg(id) AND version = sqlc.arg(version)
 RETURNING *;

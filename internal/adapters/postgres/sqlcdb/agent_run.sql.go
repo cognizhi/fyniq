@@ -13,7 +13,7 @@ import (
 )
 
 const agentRunBySlot = `-- name: AgentRunBySlot :one
-SELECT organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools FROM fyniq.agent_run WHERE agent = $1 AND trigger = $2 AND slot_at = $3
+SELECT organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools, model_missed FROM fyniq.agent_run WHERE agent = $1 AND trigger = $2 AND slot_at = $3
 `
 
 type AgentRunBySlotParams struct {
@@ -53,12 +53,13 @@ func (q *Queries) AgentRunBySlot(ctx context.Context, arg AgentRunBySlotParams) 
 		&i.ToolCalls,
 		&i.Version,
 		&i.Tools,
+		&i.ModelMissed,
 	)
 	return i, err
 }
 
 const agentRunsPage = `-- name: AgentRunsPage :many
-SELECT organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools FROM fyniq.agent_run
+SELECT organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools, model_missed FROM fyniq.agent_run
 WHERE ($1::text = '' OR agent = $1::text)
   AND (cardinality($2::text[]) = 0 OR status = ANY ($2::text[]))
   AND ($3::timestamptz IS NULL OR finished_at >= $3::timestamptz)
@@ -118,6 +119,7 @@ func (q *Queries) AgentRunsPage(ctx context.Context, arg AgentRunsPageParams) ([
 			&i.ToolCalls,
 			&i.Version,
 			&i.Tools,
+			&i.ModelMissed,
 		); err != nil {
 			return nil, err
 		}
@@ -132,7 +134,7 @@ func (q *Queries) AgentRunsPage(ctx context.Context, arg AgentRunsPageParams) ([
 const failAgentRun = `-- name: FailAgentRun :one
 UPDATE fyniq.agent_run SET status = 'failed', reason = $1, finished_at = $2, version = version + 1
 WHERE id = $3 AND version = $4
-RETURNING organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools
+RETURNING organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools, model_missed
 `
 
 type FailAgentRunParams struct {
@@ -178,6 +180,7 @@ func (q *Queries) FailAgentRun(ctx context.Context, arg FailAgentRunParams) (Fyn
 		&i.ToolCalls,
 		&i.Version,
 		&i.Tools,
+		&i.ModelMissed,
 	)
 	return i, err
 }
@@ -186,9 +189,10 @@ const finishAgentRun = `-- name: FinishAgentRun :one
 UPDATE fyniq.agent_run SET status = 'done', finished_at = $1, fingerprint = $2,
   ledger_revision = $3, pack_versions = $4, kb_snapshot = $5,
   findings = $6, summary = $7, model_used = $8, model = $9,
-  model_text = $10, tokens = $11, tool_calls = $12, tools = $13, version = version + 1
-WHERE id = $14 AND version = $15
-RETURNING organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools
+  model_text = $10, tokens = $11, tool_calls = $12, tools = $13,
+  model_missed = $14, version = version + 1
+WHERE id = $15 AND version = $16
+RETURNING organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools, model_missed
 `
 
 type FinishAgentRunParams struct {
@@ -205,6 +209,7 @@ type FinishAgentRunParams struct {
 	Tokens         *int32
 	ToolCalls      *int32
 	Tools          []string
+	ModelMissed    *string
 	ID             uuid.UUID
 	Version        int32
 }
@@ -224,6 +229,7 @@ func (q *Queries) FinishAgentRun(ctx context.Context, arg FinishAgentRunParams) 
 		arg.Tokens,
 		arg.ToolCalls,
 		arg.Tools,
+		arg.ModelMissed,
 		arg.ID,
 		arg.Version,
 	)
@@ -256,12 +262,13 @@ func (q *Queries) FinishAgentRun(ctx context.Context, arg FinishAgentRunParams) 
 		&i.ToolCalls,
 		&i.Version,
 		&i.Tools,
+		&i.ModelMissed,
 	)
 	return i, err
 }
 
 const getAgentRun = `-- name: GetAgentRun :one
-SELECT organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools FROM fyniq.agent_run WHERE id = $1
+SELECT organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools, model_missed FROM fyniq.agent_run WHERE id = $1
 `
 
 func (q *Queries) GetAgentRun(ctx context.Context, id uuid.UUID) (FyniqAgentRun, error) {
@@ -295,12 +302,13 @@ func (q *Queries) GetAgentRun(ctx context.Context, id uuid.UUID) (FyniqAgentRun,
 		&i.ToolCalls,
 		&i.Version,
 		&i.Tools,
+		&i.ModelMissed,
 	)
 	return i, err
 }
 
 const lastDoneAgentRun = `-- name: LastDoneAgentRun :one
-SELECT organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools FROM fyniq.agent_run WHERE agent = $1 AND status = 'done' ORDER BY finished_at DESC, id DESC LIMIT 1
+SELECT organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools, model_missed FROM fyniq.agent_run WHERE agent = $1 AND status = 'done' ORDER BY finished_at DESC, id DESC LIMIT 1
 `
 
 func (q *Queries) LastDoneAgentRun(ctx context.Context, agent string) (FyniqAgentRun, error) {
@@ -334,6 +342,7 @@ func (q *Queries) LastDoneAgentRun(ctx context.Context, agent string) (FyniqAgen
 		&i.ToolCalls,
 		&i.Version,
 		&i.Tools,
+		&i.ModelMissed,
 	)
 	return i, err
 }
@@ -343,7 +352,7 @@ INSERT INTO fyniq.agent_run (agent, skill_version, skill_sha256, trigger, slot_a
 VALUES ($1, $2, $3, $4, $5, $6,
   $7, $8)
 ON CONFLICT (organisation_id, agent, trigger, slot_at) DO NOTHING
-RETURNING organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools
+RETURNING organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools, model_missed
 `
 
 type QueueAgentRunParams struct {
@@ -398,6 +407,7 @@ func (q *Queries) QueueAgentRun(ctx context.Context, arg QueueAgentRunParams) (F
 		&i.ToolCalls,
 		&i.Version,
 		&i.Tools,
+		&i.ModelMissed,
 	)
 	return i, err
 }
@@ -405,7 +415,7 @@ func (q *Queries) QueueAgentRun(ctx context.Context, arg QueueAgentRunParams) (F
 const skipAgentRun = `-- name: SkipAgentRun :one
 UPDATE fyniq.agent_run SET status = 'skipped', reason = $1, finished_at = $2, version = version + 1
 WHERE id = $3 AND version = $4
-RETURNING organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools
+RETURNING organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools, model_missed
 `
 
 type SkipAgentRunParams struct {
@@ -451,6 +461,7 @@ func (q *Queries) SkipAgentRun(ctx context.Context, arg SkipAgentRunParams) (Fyn
 		&i.ToolCalls,
 		&i.Version,
 		&i.Tools,
+		&i.ModelMissed,
 	)
 	return i, err
 }
@@ -458,7 +469,7 @@ func (q *Queries) SkipAgentRun(ctx context.Context, arg SkipAgentRunParams) (Fyn
 const startAgentRun = `-- name: StartAgentRun :one
 UPDATE fyniq.agent_run SET status = 'running', started_at = $1, version = version + 1
 WHERE id = $2 AND version = $3
-RETURNING organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools
+RETURNING organisation_id, id, agent, skill_version, skill_sha256, trigger, slot_at, acts_for, requested_by, status, reason, queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model, model_text, tokens, tool_calls, version, tools, model_missed
 `
 
 type StartAgentRunParams struct {
@@ -498,6 +509,7 @@ func (q *Queries) StartAgentRun(ctx context.Context, arg StartAgentRunParams) (F
 		&i.ToolCalls,
 		&i.Version,
 		&i.Tools,
+		&i.ModelMissed,
 	)
 	return i, err
 }

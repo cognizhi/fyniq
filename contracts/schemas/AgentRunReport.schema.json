@@ -46,6 +46,13 @@
       "$ref": "AgentRunModel.schema.json",
       "description": "The model step, when it asked the model."
     },
+    "model_missed": {
+      "description": "Why its AI step did not run when it was due to: the model unavailable, the AI off, no route or the budget spent. Its findings and tasks stand; C.2 #36 shows it.",
+      "examples": [
+        "the AI is switched off"
+      ],
+      "type": "string"
+    },
     "model_used": {
       "description": "Whether it asked the model: only when an input changed, for the monitor and events.",
       "examples": [

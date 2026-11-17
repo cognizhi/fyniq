@@ -19309,6 +19309,11 @@ export interface components {
             /** @description The model step, when it asked the model. */
             model?: components["schemas"]["AgentRunModel"];
             /**
+             * @description Why its AI step did not run when it was due to: the model unavailable, the AI off, no route or the budget spent. Its findings and tasks stand; C.2 #36 shows it.
+             * @example the AI is switched off
+             */
+            model_missed?: string;
+            /**
              * @description Whether it asked the model: only when an input changed, for the monitor and events.
              * @example true
              */
@@ -19374,6 +19379,11 @@ export interface components {
              * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c12
              */
             id: string;
+            /**
+             * @description Why its AI step did not run when it was due to: the model unavailable, the AI off, no route or the budget spent. Its findings and tasks stand; C.2 #36 shows it.
+             * @example the AI is switched off
+             */
+            model_missed?: string;
             /**
              * @description Whether it asked the model: only when an input changed, for the monitor and events.
              * @example true

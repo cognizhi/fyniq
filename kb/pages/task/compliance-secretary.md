@@ -4,14 +4,14 @@ type: task
 title: Use the company secretary assistant
 summary: What the AI company secretary assistant checks, what needs you, its drafts and runs, a run's report, Run now and pause, and its schedule
 sources:
-  - docs/user-guide/company-secretary.md sha256:b82c7556355eaec462cbcd3d3099144bd41643cc7d53b69792fc27e7559faea9
+  - docs/user-guide/company-secretary.md sha256:02dc0a84e20bfaaa3d49333043d1967177059abef8052c8b437aea8bd7cf4a53
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-15
+compiled_at: 2026-11-16
 aliases:
   - company secretary assistant
   - AI company secretary
@@ -60,6 +60,7 @@ aliases:
 ## Its runs and a run's report
 
 - **Its runs** lists each run, newest first, with what started it, what it found and whether that is **new since the last run**; a failed or skipped run says why.
+- When the AI cannot run (the model unavailable, the AI switched off, its budget spent), the run still lists its findings and raises their tasks; its summary says the AI could not add its explanation this time, and Checks shows the run for a look.
 - A run's report shows the books' revision and statutory packs it read, every finding with its rule and source, their tasks and what it proposed; the model's words, when it asked the model, are shown apart and labelled **AI**.
 
 (src: docs/user-guide/company-secretary.md#its-runs)

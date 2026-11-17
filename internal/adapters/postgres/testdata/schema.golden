@@ -115,6 +115,7 @@ agent_run | tokens | integer | null |
 agent_run | tool_calls | integer | null | 
 agent_run | version | integer | not null | 1
 agent_run | tools | text[] | null | 
+agent_run | model_missed | text | null | 
 ai_agent | id | text | not null | 
 ai_agent | name | text | not null | 
 ai_agent | description | text | not null | 
@@ -2516,6 +2517,7 @@ agent_run | agent_run_agent | CHECK (((agent ~ '^[a-z][a-z-]{1,40}$'::text) AND 
 agent_run | agent_run_agent_not_null | NOT NULL agent
 agent_run | agent_run_counts | CHECK (((ledger_revision >= 0) AND (tokens >= 0) AND (tool_calls >= 0)))
 agent_run | agent_run_id_not_null | NOT NULL id
+agent_run | agent_run_model_missed | CHECK (((model_missed IS NULL) OR ((status = 'done'::text) AND (model_used IS FALSE) AND ((length(model_missed) >= 1) AND (length(model_missed) <= 1000)))))
 agent_run | agent_run_organisation_id_not_null | NOT NULL organisation_id
 agent_run | agent_run_pkey | PRIMARY KEY (organisation_id, id)
 agent_run | agent_run_queued_at_not_null | NOT NULL queued_at
@@ -7657,7 +7659,7 @@ accountant_review_query_guard() → trigger | security invoker | v | search_path
 accountant_review_reopened() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 491d4ed52fee22eca39aaef26dfcb647
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
 acra_extract_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | adc99242292d20e7a934d8f70e75a14c
-agent_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0118eb467235c701b88d5fd9d379481c
+agent_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bc211e3823c86ad40c5756aed596097
 ai_budget_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 59adc0b6ced792e22b069f66bc8ccb23
 ai_call_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b4e1754c041a743ac2f43d2baf8bb4b4
 ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 051ffeb8214e6453575d1964f565ecfd

@@ -46,6 +46,9 @@ status: draft
 
 - **Its runs** lists each run, newest first: what started it, when, what it found and whether it is **new since the
   last run**. A run that failed or was skipped says why.
+- When the AI cannot run (the model is unavailable, the AI is switched off or its budget is spent), the run still lists
+  its findings and raises their tasks. Its summary says the AI could not add its explanation this time, and Checks
+  shows the run for a look.
 
 ## A run's report
 

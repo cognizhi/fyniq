@@ -27,9 +27,9 @@ const agentWindow = 25 * time.Hour
 var agentChecks = []Definition{
 	{Key: "agents.runs", Ref: "C.2 #36", Area: "AI", Worst: Warning, Title: "Every scheduled agent ran on time",
 		Explain: "An agent that is on runs at each slot of its schedule. This flags a run of the last day that failed or was skipped, " +
-			"one more than 30 minutes past its slot and not started, and a slot no run came for. The statutory calendar's own " +
-			"reminders keep coming whatever the agent does.",
-		Rules: "AI-67", Owner: "owner", View: viewAgents, Run: agentRuns},
+			"one more than 30 minutes past its slot and not started, one that ran without its AI step, and a slot no run came for. " +
+			"The statutory calendar's own reminders keep coming whatever the agent does.",
+		Rules: "AI-67, AI-64", Owner: "owner", View: viewAgents, Run: agentRuns},
 }
 
 // C.2 #36: the runs of the last day that failed, were skipped or are late, and the slots that never ran (AI-67).
@@ -66,6 +66,8 @@ func agentRuns(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error
 				why = "skipped: " + r.Reason
 			case r.Status == storage.AgentRunQueued && e.Now.Sub(r.SlotAt) > agentLate:
 				why = "late: not started " + strconv.Itoa(int(e.Now.Sub(r.SlotAt).Minutes())) + " minutes after its slot"
+			case r.Status == storage.AgentRunDone && r.Report != nil && r.Report.ModelMissed != "":
+				why = "ran without its AI step (" + r.Report.ModelMissed + "): its findings and tasks stand, with no AI explanation"
 			}
 			if why != "" {
 				items = append(items, Item{Kind: "agent_run", ID: r.ID.String(), Label: runLabel(r.Trigger),

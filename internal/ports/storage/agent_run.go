@@ -56,6 +56,9 @@ type AgentReport struct {
 	Tokens         int
 	ToolCalls      int
 	Tools          []string // the read tools its model step called, by name (CTL-AI-09)
+	// ModelMissed is why its AI step did not run, when it was due to (AI-64, rev 0.283): the model unavailable, the AI
+	// off, no route or the budget spent; "" when it ran or was not due.
+	ModelMissed string
 }
 
 // NewAgentRun is a run to queue for its slot.

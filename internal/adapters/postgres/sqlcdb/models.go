@@ -151,6 +151,7 @@ type FyniqAgentRun struct {
 	ToolCalls      *int32
 	Version        int32
 	Tools          []string
+	ModelMissed    *string
 }
 
 type FyniqAiAgent struct {

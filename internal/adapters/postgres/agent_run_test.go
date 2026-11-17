@@ -138,6 +138,7 @@ func TestAgentRunsRunForwardOnce(t *testing.T) {
 // written once as it ends; what it is never changes, it is never removed, and the AI's role cannot read it.
 // req: AI-65
 // req: AI-67
+// req: AI-64
 // asvs: V8.2.2, V16.3.3
 func TestAttackAgentRunsKeepTheirCourse(t *testing.T) {
 	ctx := context.Background()
@@ -167,6 +168,9 @@ func TestAttackAgentRunsKeepTheirCourse(t *testing.T) {
 		{"its tools written as it starts", "fyniq_worker", `UPDATE fyniq.agent_run SET status = 'running', started_at = now(), tools = '{checks.list}',
 			version = version + 1 WHERE id = $1`, []any{run.ID}, []string{"FY350", "23514"}},
 		{"the API writing its tools", "fyniq_api", `UPDATE fyniq.agent_run SET tools = '{records.get}' WHERE id = $1`, []any{run.ID}, []string{"42501"}},
+		{"why its AI step missed, written as it starts", "fyniq_worker", `UPDATE fyniq.agent_run SET status = 'running', started_at = now(),
+			model_missed = 'the AI is switched off', version = version + 1 WHERE id = $1`, []any{run.ID}, []string{"FY350", "23514"}},
+		{"the API writing why its AI step missed", "fyniq_api", `UPDATE fyniq.agent_run SET model_missed = 'x' WHERE id = $1`, []any{run.ID}, []string{"42501"}},
 		{"a queued run made done", "fyniq_worker", `UPDATE fyniq.agent_run SET status = 'done', finished_at = now(), version = version + 1 WHERE id = $1`,
 			[]any{run.ID}, []string{"FY350", "23514"}},
 		{"its trigger changed", "fyniq_migrator", `UPDATE fyniq.agent_run SET trigger = 'run_now', requested_by = acts_for, version = version + 1
@@ -192,6 +196,7 @@ func TestAttackAgentRunsKeepTheirCourse(t *testing.T) {
 		{"a skipped run started", `UPDATE fyniq.agent_run SET status = 'running', reason = '', finished_at = NULL, started_at = now(), version = version + 1 WHERE id = $1`},
 		{"its reason rewritten", `UPDATE fyniq.agent_run SET reason = 'nothing to see', version = version + 1 WHERE id = $1`},
 		{"its tools rewritten", `UPDATE fyniq.agent_run SET tools = '{checks.list}', version = version + 1 WHERE id = $1`},
+		{"why its AI step missed, written after", `UPDATE fyniq.agent_run SET model_missed = 'the AI is switched off', version = version + 1 WHERE id = $1`},
 	} {
 		err := asOrg(ctx, conn(t, "fyniq_worker"), b.org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt, ended.ID); return err })
 		wantState(t, c.what, err, "FY350")
