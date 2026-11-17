@@ -189,6 +189,7 @@
     "access/roles-and-segregation: Permission matrix: Workbook import sign-offs",
     "access/roles-and-segregation: Permission matrix: People and HR link",
     "access/roles-and-segregation: Permission matrix: AI providers and model routes",
+    "access/roles-and-segregation: Permission matrix: AI activity log",
     "access/roles-and-segregation: Permission matrix: Connected apps: enable MCP, allowlist clients, grant integration scopes",
     "access/roles-and-segregation: Permission matrix: Own MCP connection (opt in, consent, revoke)",
     "access/roles-and-segregation: Super admin outside the permission matrix",

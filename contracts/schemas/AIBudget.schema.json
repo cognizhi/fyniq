@@ -10,14 +10,14 @@
       "type": "boolean"
     },
     "amount": {
-      "description": "Per calendar month in Singapore, in the base currency, as an exact decimal; absent when removed.",
+      "description": "Per calendar month in Singapore: in the base currency as an exact decimal, or a whole number of tokens; absent when removed.",
       "examples": [
         "50"
       ],
       "type": "string"
     },
     "key": {
-      "description": "The budget: organisation, agent:\u003cagent\u003e, connection:\u003cid\u003e or person:\u003cuser id\u003e.",
+      "description": "The budget: organisation, agent:\u003cagent\u003e, connection:\u003cid\u003e or person:\u003cuser id\u003e in the base currency; tokens:organisation or tokens:person:\u003cuser id\u003e in tokens (AI-13).",
       "examples": [
         "agent:chat"
       ],
@@ -28,7 +28,9 @@
         "organisation",
         "agent",
         "connection",
-        "person"
+        "person",
+        "tokens_organisation",
+        "tokens_person"
       ],
       "examples": [
         "agent"
@@ -55,8 +57,19 @@
       ],
       "type": "string"
     },
+    "unit": {
+      "description": "base: the base currency; tokens: a month's tokens, whatever the connections cost, so it bounds a subscription too (AI-13).",
+      "enum": [
+        "base",
+        "tokens"
+      ],
+      "examples": [
+        "base"
+      ],
+      "type": "string"
+    },
     "used": {
-      "description": "What this month's reservations hold or settled against it, in the base currency: a reservation whose outcome is unknown counts whole until it is reconciled.",
+      "description": "What this month's reservations hold or settled against it, in its unit: a reservation whose outcome is unknown counts whole until it is reconciled.",
       "examples": [
         "12.5"
       ],
@@ -73,6 +86,7 @@
   "required": [
     "key",
     "scope",
+    "unit",
     "used",
     "version",
     "alerted",
