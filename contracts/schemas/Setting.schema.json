@@ -56,7 +56,7 @@
       "type": "string"
     },
     "kind": {
-      "description": "What it holds: switch is \"true\" or \"false\"; minutes, hours, days, months and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices.",
+      "description": "What it holds: switch is \"true\" or \"false\"; minutes, hours, days, months, years and count whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices.",
       "enum": [
         "switch",
         "minutes",
@@ -64,6 +64,7 @@
         "days",
         "months",
         "years",
+        "count",
         "amount_sgd",
         "percent",
         "text",
@@ -105,6 +106,13 @@
     },
     "needs_second_approver": {
       "description": "Under dual control (FM-1): a change waits for another member who holds the approval right to approve it (rev 0.36).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "off_at_once": {
+      "description": "A kill switch (AI-13): turning it off needs no second approver and takes effect at once; turning it on still needs one.",
       "examples": [
         false
       ],
@@ -187,6 +195,7 @@
     "guide",
     "requirement",
     "needs_second_approver",
+    "off_at_once",
     "set_by_platform",
     "lengthen_only",
     "scheduled",

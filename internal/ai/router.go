@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
 	"github.com/cognizhi/fyniq/internal/domain/fx"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -40,8 +41,58 @@ type Router struct {
 	Clock    ports.Clock
 	// Outbox queues a read of a connection's model list after a not-found answer (AI-81); nil: the tick sends it.
 	Outbox *outbox.Dispatcher
-	// Admit admits each attempt before it is sent: the switch and the budgets (tasks 5.3 and 6.2); nil admits it.
+	// Admit admits each attempt before it is sent, after the switch and before the budgets; nil admits it.
 	Admit func(ctx context.Context, org uuid.UUID, a storage.AICall) error
+	// SwitchEvery is how often a stream checks the AI switch again, so it stops within a minute of the switch going off
+	// (AI-13); 10 seconds when zero.
+	SwitchEvery time.Duration
+}
+
+// Switch is the organisation's AI switch (AI-13, FR-ORG-06): off by default, on only with a second approver, off at
+// once. A run starts only while it is on, and a stream stops when it goes off.
+const Switch = "features.ai_assistant"
+
+// switchEvery is how often a stream checks the switch again by default: well inside AI-13's minute.
+const switchEvery = 10 * time.Second
+
+// errSwitchedOff is a stream the switch stopped.
+var errSwitchedOff = errors.New("the AI was switched off")
+
+// SwitchedOn is whether the organisation's AI switch is on today, in its own time zone (AI-13).
+func SwitchedOn(ctx context.Context, u storage.UnitOfWork, now time.Time) (bool, error) {
+	d, ok := settings.Lookup(Switch)
+	if !ok {
+		return false, fmt.Errorf("no setting %s", Switch)
+	}
+	o, err := u.Organisation(ctx)
+	if err != nil {
+		return false, err
+	}
+	loc, err := time.LoadLocation(o.Profile.TimeZone)
+	if err != nil || o.Profile.TimeZone == "" {
+		loc = time.UTC
+	}
+	changes, err := u.Settings().Changes(ctx, Switch)
+	if err != nil {
+		return false, err
+	}
+	y, m, day := now.In(loc).Date()
+	return settings.On(d, changes, time.Date(y, m, day, 0, 0, 0, 0, time.UTC)).Value == "true", nil
+}
+
+func (r Router) switchedOn(ctx context.Context, org uuid.UUID) (bool, error) {
+	var on bool
+	err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		on, err = SwitchedOn(ctx, u, r.Clock.Now())
+		return err
+	})
+	return on, err
+}
+
+// switchedOff is the run the switch stopped, in Fyniq's words; it is a cancellation, so no other step takes the call.
+func switchedOff() error {
+	return errors.Join(airoute.Stop(airoute.CodeSwitchOff, "the AI is switched off for the organisation, so nothing is sent",
+		"An Owner switches it on under Settings › Features, with a second approver"), context.Canceled)
 }
 
 // Call is one model call an agent makes: its request without a model, the union of the data classes of everything it
@@ -180,6 +231,13 @@ func (r Router) Run(ctx context.Context, org uuid.UUID, call Call) (Result, erro
 		return Result{}, err
 	}
 	res := Result{Run: run}
+	on, err := r.switchedOn(ctx, org)
+	if err != nil {
+		return res, err
+	}
+	if !on {
+		return res, switchedOff()
+	}
 	route, steps, err := r.load(ctx, org, call)
 	if err != nil {
 		return res, err
@@ -222,7 +280,7 @@ func (r Router) Run(ctx context.Context, org uuid.UUID, call Call) (Result, erro
 			}
 			return res, err
 		}
-		resp, err := r.attempt(ctx, s, call)
+		resp, err := r.attempt(ctx, org, s, call)
 		attempt.LatencyMS = int(r.Clock.Now().Sub(attempt.StartedAt).Milliseconds())
 		if err == nil {
 			attempt.Outcome, attempt.ModelReported, attempt.VersionReported = airoute.Served, resp.Model, resp.Version
@@ -278,7 +336,8 @@ func (r Router) Run(ctx context.Context, org uuid.UUID, call Call) (Result, erro
 var errDelivered = errors.New("the answer had begun")
 
 // attempt sends the call to one step, with the step's model, effort and caching where the provider proved them (AI-27).
-func (r Router) attempt(ctx context.Context, s step, call Call) (ports.ModelResponse, error) {
+// A stream checks the AI switch again every SwitchEvery and stops when it is off (AI-13).
+func (r Router) attempt(ctx context.Context, org uuid.UUID, s step, call Call) (ports.ModelResponse, error) {
 	req := call.Request
 	req.Model = s.model
 	if req.Effort == "" {
@@ -293,6 +352,9 @@ func (r Router) attempt(ctx context.Context, s step, call Call) (ports.ModelResp
 	if call.Stream == nil {
 		return s.provider.Call(ctx, req)
 	}
+	ctx, stop := context.WithCancelCause(ctx)
+	defer stop(nil)
+	r.watch(ctx, org, stop)
 	delivered := false
 	resp, err := s.provider.Stream(ctx, req, func(e ports.ModelEvent) error {
 		delivered = true
@@ -301,7 +363,30 @@ func (r Router) attempt(ctx context.Context, s step, call Call) (ports.ModelResp
 	if err != nil && delivered {
 		err = errors.Join(errDelivered, err)
 	}
+	if err != nil && errors.Is(context.Cause(ctx), errSwitchedOff) {
+		err = switchedOff()
+	}
 	return resp, err
+}
+
+// watch checks the switch every SwitchEvery while ctx lives, and stops it with errSwitchedOff once the switch is off.
+func (r Router) watch(ctx context.Context, org uuid.UUID, stop context.CancelCauseFunc) {
+	every := cmp.Or(r.SwitchEvery, switchEvery)
+	go func() {
+		t := time.NewTicker(every)
+		defer t.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+				if on, err := r.switchedOn(ctx, org); err == nil && !on {
+					stop(errSwitchedOff)
+					return
+				}
+			}
+		}
+	}()
 }
 
 func usage(a *storage.AICall, u ports.ModelUsage) {
@@ -351,7 +436,7 @@ func (r Router) reserve(ctx context.Context, org uuid.UUID, s step, call Call, a
 		var alerts []storage.AIBudgetAlert
 		var err error
 		id, alerts, err = u.AIBudgets().Reserve(ctx, storage.AIReservation{Run: a.Run, Step: a.Step, Agent: a.Agent, Connection: a.ConnectionID,
-			Person: a.Actor, Month: aibudget.Month(a.StartedAt), Amount: most})
+			Person: a.Actor, Month: aibudget.Month(a.StartedAt), Amount: most, Tokens: aibudget.MostTokens(call.Request)})
 		if err != nil {
 			return err
 		}
@@ -362,6 +447,10 @@ func (r Router) reserve(ctx context.Context, org uuid.UUID, s step, call Call, a
 		for _, al := range alerts {
 			key := uuid.NewSHA1(uuid.NameSpaceOID, []byte(org.String()+" ai-budget "+al.Scope+" "+al.Subject+" "+aibudget.Month(a.StartedAt)))
 			title := fmt.Sprintf("The AI budget of the %s reached %d%%: %s of %s used this month", budgetName(al), aibudget.AlertAt, al.Used, al.Amount)
+			if aibudget.Tokens(al.Scope) {
+				title = fmt.Sprintf("The AI token budget of the %s reached %d%%: %s of %s tokens used this month", budgetName(al), aibudget.AlertAt,
+					al.Used, al.Amount)
+			}
 			if _, err := notify.Emit(ctx, d, u, org, notify.Event{Type: notify.AIBudgetType, RecordType: "ai_budget", RecordID: &key, Title: title,
 				Link: "/settings/ai/usage", At: a.StartedAt, Audience: notify.Audience{Capability: string(authz.AIProviders), Need: "A"}}); err != nil {
 				return err
@@ -373,16 +462,20 @@ func (r Router) reserve(ctx context.Context, org uuid.UUID, s step, call Call, a
 }
 
 func budgetName(a storage.AIBudgetAlert) string {
+	scope := strings.TrimPrefix(a.Scope, "tokens_")
 	if a.Subject == "" {
-		return a.Scope
+		return scope
 	}
-	return a.Scope + " " + a.Subject
+	return scope + " " + a.Subject
 }
 
-// settle settles an attempt's reservation to what it cost in the base currency, or keeps it whole when the outcome or
-// the cost is not known (AI-86), and puts the cost in the base currency on the attempt.
+// settle settles an attempt's reservation to what it cost in the base currency and the tokens it used, or keeps it whole
+// when the outcome or the cost is not known (AI-86, AI-13), and puts the cost in the base currency on the attempt.
 func (r Router) settle(ctx context.Context, org, reservation uuid.UUID, s step, a *storage.AICall, known bool) error {
-	actual := "0"
+	actual, tokens := "0", int64(0)
+	if a.Outcome == airoute.Served {
+		tokens = aibudget.UsedTokens(ports.ModelUsage{Input: a.Input, Output: a.Output, CacheRead: a.CacheRead, CacheWrite: a.CacheWrite})
+	}
 	if a.Outcome == airoute.Served {
 		switch {
 		case s.price == nil:
@@ -397,7 +490,7 @@ func (r Router) settle(ctx context.Context, org, reservation uuid.UUID, s step, 
 		}
 	}
 	return r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		return u.AIBudgets().Settle(ctx, reservation, actual, known)
+		return u.AIBudgets().Settle(ctx, reservation, actual, tokens, known)
 	})
 }
 
@@ -470,7 +563,7 @@ func (r Router) Direct(ctx context.Context, org, run uuid.UUID, agent string, c 
 		}
 		return ports.ModelResponse{}, err
 	}
-	resp, callErr := r.attempt(ctx, s, call)
+	resp, callErr := r.attempt(ctx, org, s, call)
 	attempt.LatencyMS = int(r.Clock.Now().Sub(attempt.StartedAt).Milliseconds())
 	known := true
 	if callErr == nil {
