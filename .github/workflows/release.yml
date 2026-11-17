@@ -1,5 +1,8 @@
 # The release images (PRD-001 §12.9, §12.10; SEC-22, NFR-IMG-05, CTL-CHG-04; p1-security-hardening design D1). When
 # release-please publishes vX.Y.Z (with the release App's token, which starts workflows: REL-06), on that tag:
+#   0. launch-gate: `make trace-gate PHASE=launch` (QA-TRACE-01; p1-launch-readiness task 7.2): every requirement and
+#      acceptance scenario of the launch subset is tested, or recorded as an exception with its decision. While one is
+#      not, the release builds, signs and attests no image, so nothing of it can deploy; its report is an artefact;
 #   1. images: check and scan the release images, then build them for linux/amd64 and linux/arm64, push them to
 #      Artifact Registry by digest (Workload Identity Federation, no key), scan each pushed image's SBOM, sign it
 #      keyless with this job's GitHub OIDC identity and attest the SBOM (cosign);
@@ -8,8 +11,10 @@
 #      signature and SBOM against this workflow's identity and its provenance against the generator's for this
 #      repository and tag; only then create its Binary Authorization attestation with the Cloud KMS key;
 #   4. publish: the digests go to the GitHub release, beside release-evidence.yml's evidence.
-# Deploying by digest is cloud-first-deployment's. Inert until the founder's organisation exists: every job waits for
-# the repository variable GCP_WORKLOAD_IDENTITY_PROVIDER (infra/README.md lists the others) [live-verify].
+# Deploying by digest is cloud-first-deployment's. Inert until the founder's organisation exists: every job but the
+# launch gate waits for the repository variable GCP_WORKLOAD_IDENTITY_PROVIDER (infra/README.md lists the others)
+# [live-verify]. The launch gate runs on every release, so each release's run says what still stands before the launch.
+# Removing the images job's `needs: launch-gate` is its rollback (design's migration plan); the nightly report goes on.
 name: release
 
 on:
@@ -23,8 +28,33 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  launch-gate:
+    name: The launch gate (QA-TRACE-01)
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      # actions/checkout v7.0.1, pinned by commit (SEC-28)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      # Fails, naming each by its change, while a launch requirement or scenario has neither a test's `req:` tag nor an
+      # exception in docs/prd/plans/launch-exceptions.json. scripts/test_trace_requirements.py runs this step on a
+      # planted repository, the release's dry run: it fails on an untested row and passes once a test tags it.
+      - run: make trace-gate PHASE=launch
+      # actions/upload-artifact v7.0.1, pinned by commit (SEC-28)
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: release-trace-report
+          path: .data/trace/
+          if-no-files-found: ignore
+
   images:
     name: Build, push and sign the release images
+    needs: launch-gate
     if: vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 120

@@ -91,6 +91,11 @@ seed-load: ## Load the sample company (DEV-04) into an organisation of the local
 	@test -n "$(ORG)" || { echo 'usage: make seed-load ORG=<organisation id> (organisation_id in GET /api/v1/session)'; exit 2; }
 	@$(MISE) go run -tags local ./cmd/seed --load "$(ORG)"
 
+uat-organisation: ## A UAT script's organisation in the local database (docs/uat/): NAME="<name>" PEOPLE="<name>:<role>,<role>;…", the sample company loaded; prints its ID and a one-time invitation code per person
+	@test -n "$(NAME)" -a -n "$(PEOPLE)" || { echo 'usage: make uat-organisation NAME="UAT Sell Pte Ltd" PEOPLE="Bea Bookkeeper:bookkeeper;Ann Owner:owner,controller"'; exit 2; }
+	@people='$(PEOPLE)'; set --; IFS=';'; for p in $$people; do set -- "$$@" --invite "$$p"; done; unset IFS; \
+	$(MISE) go run -tags local ./cmd/seed --new-organisation "$(NAME)" "$$@"
+
 perf: ## The performance harness against the running stack (QA-PERF-01): grows the installation's organisation by LINES ledger lines (default 1 M) through the engine, times NFR-PERF's budgets through the API, writes .data/perf/report.md; fails on a missed budget
 	@$(MISE) go run -tags local ./cmd/perf --lines $(or $(LINES),1000000) --api http://localhost:$${FYNIQ_HTTP_PORT:-8080}/api $(if $(ORG),--org $(ORG))
 

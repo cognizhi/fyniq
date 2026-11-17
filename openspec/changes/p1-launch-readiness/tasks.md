@@ -279,13 +279,33 @@ and names the requirement IDs it proves.
 
 ## 7. UAT and the launch gate
 
-- [ ] 7.1 `docs/uat/`: one script per launch journey and role. Each has its steps, what to see and the evidence to keep,
+- [x] 7.1 `docs/uat/`: one script per launch journey and role. Each has its steps, what to see and the evidence to keep,
   run on a staging copy of the sample company, with a sign-off line for the founders and the accountant. Verified by
   `scripts/test_uat.py`: every journey of 5.2 and every role of 5.3 has its script, and each step names a screen of the
   inventory.
-- [ ] 7.2 `make trace-gate PHASE=launch` joins the release workflow. `docs/quality/launch-gaps.md` lists what still
+  As built (17 Nov 2026):
+  - Ten journey scripts (set-up, record, sell, buy, pay, reconcile, close, the GST monitor and calendar, AI ask, AI
+    propose → approve → execute) and eighteen role scripts, in the words of the screens and of the browser journeys.
+    Payroll's journey and the GST F5's are after go-live (rev 0.25), as the README says.
+  - `make uat-organisation` makes a script's organisation on the local stack, with the sample company and an invitation
+    per person, as the journeys' harness does; each person signs in on the local sign-in page and joins. The dev cloud's
+    run is `[live-verify]`.
+  - `scripts/test_uat.py` reads QA-E2E-01's journeys and §7.1's roles from the PRD, so a change to either fails it until
+    its script follows; it fails on planted gaps (an unknown screen, no evidence, no sign-off, a missing role).
+  - The AI scripts' local set-up follows task 5.2's AI journeys once the chain's assistant merges `[verify]`. Writing the
+    Company secretary's script found §7.1 and Appendix D disagreeing on the statutory calendar
+    (`docs/quality/launch-gaps.md`).
+- [x] 7.2 `make trace-gate PHASE=launch` joins the release workflow. `docs/quality/launch-gaps.md` lists what still
   blocks, by change; each blocker is built in its own change or recorded as an exception with the owner. Verified by the
   release workflow's dry run failing on a planted untested row.
+  As built (17 Nov 2026):
+  - `release.yml`'s first job, `launch-gate`, runs it on every release; the images job waits for it, so a release with
+    an untested launch row builds, signs and attests no image. Its report is the artefact `release-trace-report`.
+  - The dry run: `scripts/test_trace_requirements.py` runs the gate's step from `release.yml`, through the Makefile, on a
+    planted repository: it fails on an untested row and passes once a test tags it.
+    `TestTheReleaseWaitsForTheLaunchGate` (archtest) refuses a release whose images do not wait for the gate, or whose
+    gate runs another phase, cannot fail, or may fail without failing the release.
+  - `docs/quality/launch-gaps.md`: the 77 blockers by change, each with how it closes (44 with the chain).
 - [ ] 7.3 The build plan's paragraph says what was built and what waits. `make check`, `make test`, `make test-e2e` and
   `make test-journeys` pass.
 
