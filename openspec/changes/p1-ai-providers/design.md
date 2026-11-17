@@ -145,10 +145,33 @@ See proposal.md for why. What exists today:
   it fell back from. The activity log reads calls and, as later changes add them, turns, tool calls and proposals;
   each person sees their own, the Owner and compliance all; restricted classes are masked without the right, and
   reading them is audited (AUD-05). Retained as audit data.
+- As built (task 6.1): `GET /v1/ai/activity` lists the attempts newest first, by agent, person, run and days. Who reads
+  what is a new row of Appendix D, "AI activity log" (PRD-001 rev 0.276, derived from AI-12's "own" and "Owner/
+  Compliance"): each member reads their own (V (own)), the Owner and the DPO everyone's (V), the AI none. Someone
+  else's entry that carried payroll is masked (its detail withheld) to a reader who may not see payroll unmasked: the
+  DPO, whose payroll cell is M; showing one unmasked writes `ai_activity.read`. A call entry holds no prompt or answer,
+  so the detail is all there is to mask; the turns and tool calls that `p1-ai-assistant` adds carry their own masks.
+  Indexes by time and by person (000363) serve both readings.
 - The switch is the organisation setting `ai.enabled` (and, with `p1-ai-proposals`, the propose tool's and each task
   type's). Turning it off is immediate and needs no second person; turning it on is dual-controlled (golden rule 6).
   The router reads it at admission (cached at most 30 s) and every 10 s during a stream, so new calls are refused at
   once and running ones stop within 60 s.
+- As built (task 6.2, the switch): **superseded in part.** The switch is the setting `features.ai_assistant`, which
+  P0's feature switches already held (FR-ORG-06: off by default, dual-controlled), not a new `ai.enabled`. A setting
+  gains `OffAtOnce`: turning such a switch off is recorded at once with no second approver, by anyone who may change
+  settings; turning it on is a request a second approver approves, as before. The Owner, who holds A but not C on the
+  settings' row, has `POST /v1/ai/settings/switch-off` (no step-up, so it stays quick), which also cancels a change
+  already approved to turn it on later; `GET /v1/ai/settings` shows the switch and the budgets. The router reads the
+  switch at each run, uncached (stricter than the 30 s cache), refusing with AI-ROUTER-05 before anything is sent, and
+  every 10 s during a stream, stopping it as a cancelled attempt whose reservation stays whole. Probes and eval runs,
+  which send synthetic text only, are not stopped by it: a person can still set connections up while the AI is off.
+- As built (task 6.2, token budgets): AI-13's "organisation and per-user token budgets with alerts" are two more
+  scopes of `ai_budget`, `tokens_organisation` and `tokens_person` (whole numbers of tokens a month; `tokens:organisation`
+  and `tokens:person:<id>` in the API), beside the budgets in the base currency. Each reservation also holds the most
+  tokens its attempt could use (the input estimate and all its output, as for the cost) and, settled, the tokens it
+  used (input, output and the cache's reads and writes); `ai_reserve` and `ai_settle` take them under the same locks
+  (000364). A token budget refuses what it cannot cover (FY338) and alerts at 80%, as the others do, so it bounds a
+  subscription or a self-hosted server too, whose calls cost nothing per token.
 
 **D10. Qualification gates every model (AI-78, AI-87, CMP-AI-03, CTL-AI-05).**
 - `ai_qualification` (agent, connection, model version, eval suite and version, thresholds, result, run, time). A step
@@ -213,6 +236,14 @@ See proposal.md for why. What exists today:
   (the switch, budgets): admin operations, on the never-list for the AI and MCP (§9.6).
 - Settings › AI: `ai-settings`, `ai-providers`, `ai-provider-connection`, `ai-model-routes`, `ai-route-editor`,
   `ai-usage`, `ai-activity-log`; `my-ai-plan` under Profile, showing P2's option as not offered.
+- As built (task 8.1): Settings › AI (`/settings/ai`) shows the switch (the Owner's "Turn all AI off now", after a
+  second look; "Ask to turn it on" for anyone who may change settings, answered with the approval request), the
+  budgets in money and tokens with what the month used (only the Owner adds, changes or removes one), and the providers
+  and routes at a glance; AI usage and budgets (`/settings/ai/usage`) shows a month at a time, by agent, connection and
+  model, and person, beside their budgets, and each subscription's quota. Two departures from the fragments: a budget
+  change is the Owner's alone, not "needs a second Owner", since FM-1 does not name AI budgets and AI-77 and AI-86 ask
+  for none (the PRD wins; the owner may decide otherwise); and the usage page has no cost-per-day chart, which needs a
+  daily series the usage operation does not give yet. Percentages are exact (BigInt), rounded down for display.
 
 **D14. Audit events and checks.**
 - Audit events (AUD-01): `ai_connection.requested`, `.enabled`, `.disabled`, `.changed`, `.credential_stored` (never
@@ -222,6 +253,22 @@ See proposal.md for why. What exists today:
 - C.2 #55 flags a route that falls back past its daily threshold, an alias not re-qualified this week, a budget or
   quota within 20%, a model retiring within 30 days, retired or unlisted, and a connection whose list was not read for
   3 days.
+- As built (task 7.2): the AI inventory (CMP-AI-02) is `GET /v1/compliance/ai-inventory`, read under the Compliance
+  Center's row, and a card on Data protection's Impact assessments tab beside the AI assistant's assessment, as the
+  `data-protection` screen designs it. It is read from the configuration, so it never drifts: each connection (in use or
+  waiting) with its endpoint, where prompts are processed and whether the provider trains on them, its allowed models,
+  the classes the routes send it and who asked for it; each route in force; the data categories; the prompts and the
+  tool registry, empty until `p1-ai-assistant`; and its owner, the DPO the profile names. "Kept current" for the DPIA
+  is shown, not enforced: the assessment is current when approved after the last change of a connection or route, and
+  "to review" otherwise.
+- As built (task 7.1): C.2 #55 is the check `ai.model-routes` (area AI, ⚠, owned by the Owner, its items opened under
+  "AI providers and model routes"). AI-76's "daily threshold" is not defined in the PRD, so it is the organisation
+  setting `ai.fallbacks_per_day`: a whole number (a new setting kind, `count`), recommended 5, from 1 to 1,000, under
+  dual control as the AI's thresholds are; a route flags when its served fallbacks in the last 24 hours exceed it. A
+  budget is near when 80% of it is used or held this month, a subscription when its window used 80% of its quota; a
+  model retiring within 30 days, or no longer listed or refused, flags its step; a moving alias whose pass for the
+  route's agent is out of date or older than a week flags its step; and a connection with a stored key whose last
+  read that was not a failure is over 3 days old, or that has none 3 days after it was made, flags the connection.
 - The AI inventory in the Compliance Center lists connections, models, routes and, later, prompts and tool versions,
   with owners and data categories, beside the AI DPIA in the DPIA register (CMP-AI-02).
 

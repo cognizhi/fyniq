@@ -369,6 +369,8 @@ type FyniqAiReservation struct {
 	State          string
 	ReservedAt     time.Time
 	SettledAt      *time.Time
+	Tokens         *int64
+	ActualTokens   *int64
 }
 
 type FyniqAiRoute struct {
