@@ -13,8 +13,10 @@ import (
 
 	"github.com/google/uuid"
 
+	registry "github.com/cognizhi/fyniq/compliance"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/proposal"
 )
@@ -40,6 +42,7 @@ func executorStore(t *testing.T) *postgres.Store {
 // req: AI-P5
 // req: AI-30
 // req: ai/proposals The executor runs approved proposals as the approving human
+// req: CTL-AI-02
 // asvs: V8.2.2, V8.3.1
 func TestTheExecutorRunsWhatWasApproved(t *testing.T) {
 	e := newEnv(t)
@@ -103,6 +106,16 @@ func TestTheExecutorRunsWhatWasApproved(t *testing.T) {
 	}
 	if again := run(pr); again.Version != done.Version || again.Status != storage.ProposalExecuted {
 		t.Fatalf("run twice: %+v", again)
+	}
+	// The nightly reconciliation, as the worker, finds nothing in it: a person approved what ran (CTL-AI-02).
+	controls, err := registry.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rep, err := compliance.Runner{Store: workerStore(t), Clock: e.clock, Controls: controls}.Verify(context.Background(), e.books.Org)
+	i := slices.IndexFunc(rep.Runs, func(r storage.ControlRun) bool { return r.Check == "verify ai.proposals-approved" })
+	if err != nil || i < 0 || !rep.Runs[i].OK || rep.Runs[i].Detail != "Nothing found in 1 proposal(s) of the AI executed of the last day" {
+		t.Errorf("the reconciliation of what was approved: %v %+v", err, rep.Runs)
 	}
 	trail := auditTrail(t, e)
 	executed := ""
