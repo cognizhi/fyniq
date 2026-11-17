@@ -1686,7 +1686,7 @@ Source: PRD-001 §D
 - **THEN** it is refused
 
 ### Requirement: Company secretary in the permission matrix
-The Company secretary role (FR-CS-08) SHALL have the Board viewer's rights, plus C on the corporate profile, registers and evidence, V on the equity register and the AI company secretary runs, and A on the `sec.*` drafts.
+The Company secretary role (FR-CS-08) SHALL have the Board viewer's rights, plus C on the corporate profile, registers and evidence, V on the equity register and the AI company secretary runs, and A on every `sec.*` proposal, drafts and tasks alike (rev 0.280).
 
 Source: PRD-001 §D
 
@@ -1694,6 +1694,11 @@ Source: PRD-001 §D
 - **WHEN** the Company secretary acts
 - **THEN** they have the Board viewer's rights
 - **AND** they can create or prepare the corporate profile, registers and evidence (C), view the equity register and the AI company secretary runs (V) and approve the `sec.*` drafts (A)
+
+#### Scenario: Every sec.* proposal, tasks included (rev 0.280)
+- **GIVEN** a `sec.*` proposal of the company secretary's agent, such as a task it suggests (`sec.create_task`) or a draft
+- **WHEN** the Company secretary approves it
+- **THEN** the approval is allowed, as Appendix E names the Owner and the Company secretary
 
 #### Scenario: No transactions, payroll or bank detail unless granted
 - **GIVEN** no grant of transactions, payroll or bank detail

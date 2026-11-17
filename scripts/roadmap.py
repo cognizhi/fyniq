@@ -237,7 +237,7 @@ BY_ID.update({
     "AI-P8": "p1-ai-assistant", "AI-08": "p1-ai-assistant",
     # The owner's decision of 15 Nov 2026 (PRD-001 rev 0.279): the proposals AI-65 needs at launch, with their evals and
     # controls, come with p1-ai-proposals-core.
-    "AI-P3": "p1-ai-proposals-core", "AI-P4": "p1-ai-proposals-core", "AI-P5": "p1-ai-proposals-core",
+    "AI-P3": "p1-ai-proposals-core", "AI-P4": "p1-ai-proposals-core", "AI-P5": "p1-ai-proposals-core", "AI-89": "p1-ai-proposals-core",
     "AI-06": "p1-ai-proposals-core", "AI-07": "p1-ai-proposals-core", "AI-10": "p1-ai-proposals-core",
     "AI-11": "p1-ai-proposals-core", "AI-14": "p1-ai-proposals-core", "AI-30": "p1-ai-proposals-core", "AI-32": "p1-ai-proposals-core",
     "QA-AI-02": "p1-ai-proposals-core", "CTL-AI-02": "p1-ai-proposals-core", "CTL-AI-03": "p1-ai-proposals-core",

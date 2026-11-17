@@ -57,8 +57,10 @@
 
 - [ ] 4.1 The approval engine's object type `ai_proposal` and operation `ai_proposal.execute`: the envelope signing the
   payload hash, the built-in policy, the requester as preparer, step-up for tiers 2 and 3, no policy without a step or
-  with an automatic rule in any team mode, and the final approval enqueuing the executor (design D4). Tests
-  `// req: AI-P4`, `// req: AI-P5`, `// req: AI-06`, `// req: AI-10`, `// req: CTL-AI-03`.
+  with an automatic rule in any team mode, and the final approval enqueuing the executor (design D4). (rev 0.280) The
+  request made as the proposal becomes Pending, its requester authenticated by the turn, the requester signing their
+  own tier-1 proposal, the signers per task type. Tests `// req: AI-P4`, `// req: AI-P5`, `// req: AI-06`,
+  `// req: AI-10`, `// req: AI-89`, `// req: CTL-AI-03`, an attack test on both exceptions.
 - [ ] 4.2 Partial and bulk approval of a tier-1 proposal's items (the subset re-hashed and signed); a rejection's reason
   returned to the conversation or the run (design D8). Tests `// req: AI-32`, `// req: AI-14`.
 - [ ] 4.3 The public operations: list and read proposals (each member their own and those they may approve; the Owner
