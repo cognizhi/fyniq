@@ -42,6 +42,34 @@ func (r aiGrants) End(ctx context.Context, turn uuid.UUID, now time.Time) error 
 	return nil
 }
 
+func (r aiGrants) Classes(ctx context.Context, turn uuid.UUID, now time.Time) ([]string, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	classes, err := r.u.q.AIGrantClasses(ctx, sqlcdb.AIGrantClassesParams{TurnID: turn, Now: now})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return classes, nil
+}
+
+func (r aiGrants) Widen(ctx context.Context, turn uuid.UUID, classes []string, now time.Time) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	if classes == nil {
+		classes = []string{}
+	}
+	n, err := r.u.q.WidenAIGrant(ctx, sqlcdb.WidenAIGrantParams{TurnID: turn, Classes: classes, Now: now})
+	if err != nil {
+		return mapError(err)
+	}
+	if n == 0 {
+		return ports.ErrNotFound
+	}
+	return nil
+}
+
 // AIGrant implements storage.AIGrantLookup.
 func (s *Store) AIGrant(ctx context.Context, org uuid.UUID, tokenHash []byte, now time.Time) (storage.AIGrantHolder, error) {
 	row, err := s.q().AIGrantFor(ctx, sqlcdb.AIGrantForParams{Org: org, TokenHash: tokenHash, Now: now})

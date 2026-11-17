@@ -87,6 +87,8 @@ type env struct {
 	anchors *local.Dir
 	signer  *local.Ed25519
 	queue   *local.Memory // the outbox's tasks
+	// services sign the AI service's tokens for the internal API (internal.go).
+	services *local.HMACTokens
 	// standard is a second organisation of the same database and server in Standard mode, once inStandardMode made it.
 	standard *env
 	// emailing says readyToEmail ran; links are the online links tests share, by name.
@@ -127,9 +129,10 @@ func newEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	e.queue = local.NewMemory()
+	e.services = local.NewHMACTokens([]byte("the test services' key"), e.clock, time.Minute)
 	mux := http.NewServeMux()
 	e.api = New(mux, Deps{Store: store, Installation: store, Outbox: &outbox.Dispatcher{Store: store, Queue: e.queue, Clock: e.clock},
-		Clock: e.clock, Auth: e.tokens, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test",
+		Clock: e.clock, Auth: e.tokens, Services: e.services, Log: slog.New(slog.NewJSONHandler(e.log, nil)), Version: "0.0.0-test",
 		Build:   PlatformBuild{Commit: "3f2c1a9d", BuildTime: "2026-10-15T08:00:00Z", Flavour: "local"},
 		Staging: e.blobs, Evidence: e.blobs, Scanner: local.EICARScanner{}, Fields: testFields(t), Origin: testOrigin, Renderer: testRenderer(t), Connectors: testConnectors(t, e.clock),
 		Anchors: e.anchors, Signer: e.signer, Keyed: testFields(t).Fingerprint,

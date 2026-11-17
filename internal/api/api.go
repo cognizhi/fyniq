@@ -95,6 +95,9 @@ type Deps struct {
 	APIBase string
 	// AlertThresholds are SEC-31's alert settings (FYNIQ_ALERT_THRESHOLDS); zero: security.Defaults.
 	AlertThresholds security.Thresholds
+	// Services verifies the service tokens the internal API takes: the AI service's, class ServiceAI (p1-ai-assistant
+	// design D4); nil: the internal API refuses every call.
+	Services ports.TaskTokens
 	// DownloadKey signs the API's own download links (SEC-24), shared by every instance; empty: each instance makes one.
 	// The cloud's evidence stores give signed URLs instead.
 	DownloadKey []byte
@@ -106,6 +109,8 @@ type Deps struct {
 // API is the registered API.
 type API struct {
 	huma.API
+	// internal is the internal API, the AI service's alone (internal.go).
+	internal     huma.API
 	deps         Deps
 	policies     map[string]authz.Policy
 	downloadKey  []byte // signs the API's own download links (SEC-24): Deps.DownloadKey, else one of its own
@@ -495,6 +500,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerClaimCategories(a)
 	registerClaimEvidence(a)
 	registerSession(a)
+	a.registerInternal(mux)
 	return a
 }
 

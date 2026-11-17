@@ -29,6 +29,10 @@ type AIGrants interface {
 	Issue(ctx context.Context, g AIGrant) (AIGrant, error)
 	// End ends a turn's grant at now, once; ports.ErrNotFound when the turn has none live.
 	End(ctx context.Context, turn uuid.UUID, now time.Time) error
+	// Classes are the data classes a turn's live grant has read (AI-83); ports.ErrNotFound when the turn has none live.
+	Classes(ctx context.Context, turn uuid.UUID, now time.Time) ([]string, error)
+	// Widen adds classes to what a turn's live grant has read; ports.ErrNotFound when the turn has none live.
+	Widen(ctx context.Context, turn uuid.UUID, classes []string, now time.Time) error
 }
 
 // AIGrantHolder is who a live grant reads as: the person, the turn, their roles in the grant's organisation now, and
