@@ -207,7 +207,8 @@ and names the requirement IDs it proves.
   `// req: QA-E2E-01`, each journey naming the scenarios it asserts.
   Built in part: set-up, record, sell, buy, pay, reconcile, close and the GST monitor and calendar pass on the local
   stack (`apps/web/journeys/README.md`). Left: AI ask and AI propose → approve → execute, when the assistant and the
-  proposals of the AI chain reach main. Building them found the sample company's chart without the 2330 and 2410
+  proposals of the AI chain reach main. (17 Nov 2026: the AI chain reached main in #771; the owner decided the two AI
+  journeys run on a scripted local model, design D6.) Building them found the sample company's chart without the 2330 and 2410
   system accounts, so no sample month could close; the loader now adds the standard chart's accounts for the roles it
   lacks (FR-COA-03).
 - [ ] 5.3 QA-UI-08: a walkthrough per role of §7.1, covering the landing page, the navigation, the Home blocks, the

@@ -57,11 +57,12 @@ recorded as an exception with the owner's decision; none is waived here.
 
 ## Found while writing the UAT scripts (task 7.1)
 
-- The Company secretary takes the Board column's rights in Appendix D (rev 0.6), and the Board column holds no right
-  on the statutory calendar (its row of rev 0.211). §7.1 gives the Company secretary Compliance, with the statutory
-  calendar first. Today the API refuses the Company secretary `GET /v1/compliance/calendar`, so
-  `docs/uat/roles/company-secretary.md` fails at its first step. The PRD's two tables disagree: a decision for the
-  owner, before task 5.3's walkthrough asserts either.
+- ~~The Company secretary takes the Board column's rights in Appendix D (rev 0.6), and the Board column holds no right
+  on the statutory calendar (its row of rev 0.211), so the API refused them the calendar §7.1 gives them.~~ Decided
+  by the owner on 17 Nov 2026 (PRD-001 rev 0.285) and built in #766: the Company secretary views the whole statutory
+  calendar and records its corporate items (the annual return, the AGM and the financial statements to members); the
+  tax and payroll items stay with the Owner, the Controller, the Accountant and the Tax agent.
+  `docs/uat/roles/company-secretary.md` steps 6 and 7 walk it.
 
 ## How the first report's gaps close (16 Nov 2026)
 
