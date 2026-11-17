@@ -136,6 +136,11 @@
   sources and fails on a query-cache write that does not name the server's answer it stores ("the server's answer
   (FR-UX-22)" on its line) and on an `onMutate` that writes the cache. **Left:** the live-update feed (FR-UX-19) and one
   polite status region for the shell's counts (FR-UX-21).)
+  (18 Nov 2026, G4-077 for the launch gate: `src/freshness.ts`, started with the app: a page back after being hidden,
+  offline or asleep (its timers stopped) for longer than the feed window, 5 minutes [proposed], reloads its state
+  once: every query re-reads through the API, which lists only what the person may still see, and each list is
+  replaced, so nothing shows twice. Test `freshness.test.tsx`. **Left:** FR-UX-19's change feed itself (S), with
+  its resume cursor, which this reload stands in for until it is built.)
 
 ## 4. Modes and help
 
