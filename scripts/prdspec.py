@@ -34,7 +34,7 @@ SOURCES = OPENSPEC / "sources"
 SPECS = OPENSPEC / "specs"
 CHANGES = OPENSPEC / "changes"
 
-ID = r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+[a-z]?"     # FR-GL-08, NFR-PERF-01, INV-01, G4-001
+ID = r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-(?:P)?\d+[a-z]?"     # FR-GL-08, NFR-PERF-01, INV-01, G4-001
 POLICY = r"(?:RND|ALLOC)(?:-[A-Z]+)+"                # RND-FX, ALLOC-EVEN
 TASK = r"[a-z]+\.[a-z_]+"                            # bank.categorise_lines
 CHECK = r"[A-Z]\.\d+ #\d+"                           # C.2 #44
