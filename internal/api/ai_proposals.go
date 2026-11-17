@@ -69,8 +69,13 @@ type (
 	aiProposeOutput struct{ Body AIProposed }
 )
 
-// commands are the release's task types' commands: Deps.Commands, else none, since each arrives with its task type.
-func (a *API) commands() proposal.Commands { return a.deps.Commands }
+// commands are the release's task types' commands: Deps.Commands, else the release's (proposal.Release).
+func (a *API) commands() proposal.Commands {
+	if a.deps.Commands != nil {
+		return a.deps.Commands
+	}
+	return proposal.Release
+}
 
 func registerProposals(a *API) {
 	internalOp(a, huma.Operation{

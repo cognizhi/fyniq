@@ -49,6 +49,22 @@ func (noteCommand) DryRun(ctx context.Context, u storage.UnitOfWork, payload jso
 	return proposal.Impact{Summary: "Creates the customer " + c.LegalName, Changes: changes, Base: map[string]int64{"contacts": 0}}, nil
 }
 
+// Execute runs the note as the approving person: "stale" finds a record moved, "refuse" is refused as a validation is,
+// anything else records who it ran as. The executor's role writes no contact, so the fixture writes nothing more.
+func (noteCommand) Execute(_ context.Context, _ storage.UnitOfWork, payload json.RawMessage, _ map[string]int64, as proposal.Actor) (proposal.Execution, error) {
+	var v struct{ Note string }
+	if err := json.Unmarshal(payload, &v); err != nil {
+		return proposal.Execution{}, err
+	}
+	switch v.Note {
+	case "stale":
+		return proposal.Execution{}, proposal.ErrStale
+	case "refuse":
+		return proposal.Execution{}, &storage.Error{Code: storage.CodeInvalid, Message: "the note is refused"}
+	}
+	return proposal.Execution{Records: []string{"note:" + v.Note, "as:" + as.User.String()}}, nil
+}
+
 // proposeTurn is a live turn of user's, its token as the API issues it.
 func proposeTurn(e *env, user string) string {
 	e.t.Helper()

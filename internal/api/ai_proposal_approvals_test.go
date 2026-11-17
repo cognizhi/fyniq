@@ -109,7 +109,7 @@ func TestAProposalWaitsForAPersonsApproval(t *testing.T) {
 		if done, err = u.AIProposals().Get(ctx, pr.ID); err != nil {
 			return err
 		}
-		queued, err = u.Outbox().ByKey(ctx, ExecutorKind, pr.ID.String())
+		queued, err = u.Outbox().ByKey(ctx, proposal.ExecutorKind, pr.ID.String())
 		return err
 	})
 	if done.Status != storage.ProposalApproved || done.ApprovedPayload != pr.Payload || done.ApprovedSHA256 != pr.PayloadSHA256 ||

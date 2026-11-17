@@ -90,10 +90,17 @@
 
 ## 5. The executor
 
-- [ ] 5.1 `cmd/executor`'s kind `ai_proposal.execute`: the hash re-checked, the base versions compared (Stale), the
+- [x] 5.1 `cmd/executor`'s kind `ai_proposal.execute`: the hash re-checked, the base versions compared (Stale), the
   command run as the approving human with the AI as originator, one transaction, idempotent by proposal ID, Failed on a
   validation or lock error; a test-only fixture task type exercises it (design D6). Tests `// req: AI-11`,
   `// req: ai/proposals The executor runs approved proposals as the approving human`, `// req: AI-30`.
+  As built (`proposal.Executor`, migration 000381): it runs a proposal only when Approved, with its approved payload
+  hashing as approved, its request approved and signing the payload's hash, the task type at the version and hash it
+  was proposed under, and the approver still holding the command's right (the executor's role reads memberships and
+  roles for it, nothing more). The command's `Execute` compares the base versions itself (`ErrStale`). Start, the
+  command and Executed are one unit of work, audited as the approver on behalf of the requester with the proposal as
+  originator; a refusal rolls it back and records Stale or Failed with why in another. A transient error is retried by
+  the outbox. Each task type's command and the executor's grants arrive with it (`proposal.Release`).
 - [ ] 5.2 The worker's job `ai.proposals.expire` and the check C.2 #19 (design D9). Tests
   `// req: ai/proposals Proposal lifecycle`, `// req: C.2 #19`.
 
