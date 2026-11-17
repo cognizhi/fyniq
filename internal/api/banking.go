@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/bankfile"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
+	"github.com/cognizhi/fyniq/internal/domain/paymentfile"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -32,24 +33,34 @@ import (
 
 // MoneyAccount is a bank, card, wallet, payment-gateway or cash account of the chart, as Banking keeps it.
 type MoneyAccount struct {
-	ID          string         `json:"id" format:"uuid" doc:"The money account's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
-	AccountID   string         `json:"account_id" format:"uuid" doc:"The chart account it posts to: one marked a money account, in its currency." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
-	AccountCode string         `json:"account_code" doc:"The chart account's code." example:"1010"`
-	Kind        string         `json:"kind" enum:"bank,card,wallet,payment_gateway,cash" doc:"What kind of money account it is." example:"bank"`
-	Name        string         `json:"name" doc:"Its name." example:"DBS current"`
-	Institution string         `json:"institution,omitempty" doc:"The bank or provider." example:"DBS"`
-	Identifier  string         `json:"identifier,omitempty" doc:"The last four characters of what statements name it by (an account number, an IBAN or a provider's balance ID); the rest is never shown (SEC-15)." example:"…4567"`
-	Currency    string         `json:"currency" pattern:"^[A-Z]{3}$" doc:"Its currency, the chart account's." example:"SGD"`
-	OpenedOn    string         `json:"opened_on,omitempty" format:"date" doc:"The day it opened." example:"2026-01-05"`
-	ClosedOn    string         `json:"closed_on,omitempty" format:"date" doc:"The day it closed: a closed account takes no import." example:"2027-03-31"`
-	Cardholder  *Person        `json:"cardholder,omitempty" doc:"A card: its holder, whose My claims shows its lines to complete with a receipt and a category (FR-AP-18)."`
-	Source      *MoneySource   `json:"source,omitempty" doc:"Where its data comes from now; absent while its statements are uploaded as files."`
-	Freshness   MoneyFreshness `json:"freshness" doc:"How up to date its data is (FR-BNK-16)."`
-	Waiting     int            `json:"waiting" doc:"Its lines waiting in the queue: unreconciled, possible duplicates and in suspense." example:"12"`
-	Gaps        []BankGap      `json:"gaps" nullable:"false" doc:"getMoneyAccount only: the breaks in its balance chain not yet resolved."`
-	Sources     []MoneySource  `json:"sources" nullable:"false" doc:"getMoneyAccount only: every source it has had, earliest first (UC-BNK-03)."`
-	Version     int            `json:"version" doc:"Its version, for If-Match." example:"1"`
-	Changed     *time.Time     `json:"changed_at,omitempty" doc:"When it last changed." example:"2026-10-20T09:30:00Z"`
+	ID           string              `json:"id" format:"uuid" doc:"The money account's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
+	AccountID    string              `json:"account_id" format:"uuid" doc:"The chart account it posts to: one marked a money account, in its currency." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d10"`
+	AccountCode  string              `json:"account_code" doc:"The chart account's code." example:"1010"`
+	Kind         string              `json:"kind" enum:"bank,card,wallet,payment_gateway,cash" doc:"What kind of money account it is." example:"bank"`
+	Name         string              `json:"name" doc:"Its name." example:"DBS current"`
+	Institution  string              `json:"institution,omitempty" doc:"The bank or provider." example:"DBS"`
+	Identifier   string              `json:"identifier,omitempty" doc:"The last four characters of what statements name it by (an account number, an IBAN or a provider's balance ID); the rest is never shown (SEC-15)." example:"…4567"`
+	Currency     string              `json:"currency" pattern:"^[A-Z]{3}$" doc:"Its currency, the chart account's." example:"SGD"`
+	OpenedOn     string              `json:"opened_on,omitempty" format:"date" doc:"The day it opened." example:"2026-01-05"`
+	ClosedOn     string              `json:"closed_on,omitempty" format:"date" doc:"The day it closed: a closed account takes no import." example:"2027-03-31"`
+	Cardholder   *Person             `json:"cardholder,omitempty" doc:"A card: its holder, whose My claims shows its lines to complete with a receipt and a category (FR-AP-18)."`
+	Provider     string              `json:"provider,omitempty" doc:"The bank or provider Fyniq recognises it as: its statement connector's when it syncs through one (wise, airwallex), else its institution matched by name against Fyniq's list (dbs, ocbc, uob, standard-chartered, hsbc, citibank, maybank, cimb, bank-of-china, icbc, rhb, gxs, trust, maribank, anext, aspire, airwallex, wise). Absent: another bank. It decides which payment files it may give (FR-BNK-12)." example:"dbs"`
+	PaymentFile  string              `json:"payment_file" enum:"payment-list,wise-batch,dbs-uff" doc:"The file a payment batch paying from it gives when released (FR-BNK-12, rev 0.157): payment-list, the payment list keyed into any bank (the default); wise-batch, Wise's batch payment file; dbs-uff, DBS IDEAL's UFF. A batch released before a change keeps its file." example:"payment-list"`
+	PaymentFiles []PaymentFileChoice `json:"payment_files" nullable:"false" doc:"Every payment file, whether it may be set to it now and, when not, why: a bank's own file only for an account at that bank, and only once Fyniq writes it."`
+	Source       *MoneySource        `json:"source,omitempty" doc:"Where its data comes from now; absent while its statements are uploaded as files."`
+	Freshness    MoneyFreshness      `json:"freshness" doc:"How up to date its data is (FR-BNK-16)."`
+	Waiting      int                 `json:"waiting" doc:"Its lines waiting in the queue: unreconciled, possible duplicates and in suspense." example:"12"`
+	Gaps         []BankGap           `json:"gaps" nullable:"false" doc:"getMoneyAccount only: the breaks in its balance chain not yet resolved."`
+	Sources      []MoneySource       `json:"sources" nullable:"false" doc:"getMoneyAccount only: every source it has had, earliest first (UC-BNK-03)."`
+	Version      int                 `json:"version" doc:"Its version, for If-Match." example:"1"`
+	Changed      *time.Time          `json:"changed_at,omitempty" doc:"When it last changed." example:"2026-10-20T09:30:00Z"`
+}
+
+// PaymentFileChoice is a payment file a money account may or may not be set to (FR-BNK-12, rev 0.157).
+type PaymentFileChoice struct {
+	Format  string `json:"format" enum:"payment-list,wise-batch,dbs-uff" doc:"The file." example:"wise-batch"`
+	Offered bool   `json:"offered" doc:"Whether the account may be set to it now." example:"false"`
+	Reason  string `json:"reason,omitempty" doc:"When it is not offered, why, in plain words." example:"Payment file: Wise's batch payment file is only for a Wise account, and this account is not at Wise."`
 }
 
 // MoneySource is where a money account's data comes from, from a day.
@@ -150,6 +161,7 @@ type MoneyAccountDraft struct {
 	OpenedOn     string `json:"opened_on,omitempty" format:"date" doc:"The day it opened." example:"2026-01-05"`
 	ClosedOn     string `json:"closed_on,omitempty" format:"date" doc:"replaceMoneyAccount only: the day it closed." example:"2027-03-31"`
 	CardholderID string `json:"cardholder_id,omitempty" format:"uuid" doc:"A card only: its holder, an active member's user ID, who completes its lines from My claims (FR-AP-18). Left out, it has none." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
+	PaymentFile  string `json:"payment_file,omitempty" enum:"payment-list,wise-batch,dbs-uff" doc:"The file its payment batches give when released (FR-BNK-12, rev 0.157): payment-list for any bank; wise-batch for a Wise account; dbs-uff for a DBS account, each once Fyniq writes it (payment_files says which it may be set to). Left out: the payment list when it is set up, unchanged when it is changed." example:"payment-list"`
 }
 
 // MoneySourceDraft is a source to set from a day after the current one's.
@@ -327,7 +339,18 @@ func page[T any](items []T, id func(T) string, q PageQuery) ([]T, string, error)
 // moneyAccountOf is a money account as the API shows it; full adds its gaps and every source.
 func moneyAccountOf(ctx context.Context, u storage.UnitOfWork, a storage.MoneyAccount, full bool) (MoneyAccount, error) {
 	out := MoneyAccount{ID: a.ID.String(), AccountID: a.AccountID.String(), Kind: a.Kind, Name: a.Name, Institution: a.Institution, Currency: a.Currency,
-		Version: a.Version, Gaps: []BankGap{}, Sources: []MoneySource{}}
+		PaymentFile: a.PaymentFile, Version: a.Version, Gaps: []BankGap{}, Sources: []MoneySource{}}
+	if out.PaymentFile == "" {
+		out.PaymentFile = storage.PaymentFileList
+	}
+	provider, err := banking.ProviderOfAccount(ctx, u, a)
+	if err != nil {
+		return MoneyAccount{}, err
+	}
+	out.Provider = provider
+	for _, c := range payFiles.Choices(provider) {
+		out.PaymentFiles = append(out.PaymentFiles, PaymentFileChoice{Format: c.Key, Offered: c.Offered, Reason: c.Reason})
+	}
 	if a.CardholderID != nil {
 		out.Cardholder = &Person{Kind: "user", ID: a.CardholderID.String()}
 		ms, err := u.Members().List(ctx, a.ChangedAt) // the members' names; the day decides only their roles
@@ -704,10 +727,11 @@ func registerBanking(a *API) {
 		OperationID: "createMoneyAccount", Method: http.MethodPost, Path: "/v1/money-accounts", Tags: []string{"Banking"},
 		Summary: "Set up a money account", DefaultStatus: http.StatusCreated,
 		Description: "Sets up a chart account marked a money account in Banking (FR-BNK-01): its kind, name, bank and what statements name it " +
-			"by, in the chart account's currency; a card's holder, an active member who completes its lines from My claims (FR-AP-18). One per chart account; an identifier is unique per currency. Its statements are uploaded " +
+			"by, in the chart account's currency; a card's holder, an active member who completes its lines from My claims (FR-AP-18); the file " +
+			"its payment batches give, the payment list unless a file its bank takes is chosen (FR-BNK-12, rev 0.157). One per chart account; an identifier is unique per currency. Its statements are uploaded " +
 			"as files until a source says otherwise. Side effects: the money account and its audit event, which keeps the identifier's " +
 			"last four characters only (SEC-15). Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.",
-	}, append([]string{banking.CodeCardholder}, creates...), func(ctx context.Context, in *createMoneyAccountInput) (*moneyAccountOutput, error) {
+	}, append([]string{banking.CodeCardholder, paymentfile.CodeProvider, paymentfile.CodeNotBuilt}, creates...), func(ctx context.Context, in *createMoneyAccountInput) (*moneyAccountOutput, error) {
 		account, err := parseID("body.account_id", in.Body.AccountID)
 		if err != nil {
 			return nil, err
@@ -725,6 +749,12 @@ func registerBanking(a *API) {
 			if err := banking.CheckCardholder(ctx, u, in.Body.Kind, holder); err != nil {
 				return MoneyAccount{}, err
 			}
+			// Its payment file: one its bank takes, and built (FR-BNK-12, rev 0.157; design D2).
+			if file := in.Body.PaymentFile; file != "" {
+				if err := payFiles.Check(file, banking.ProviderOf(in.Body.Institution)); err != nil {
+					return MoneyAccount{}, err
+				}
+			}
 			// A chart account with no currency of its own is in the base currency, as the database reads it.
 			currency := acc.Currency
 			if currency == "" {
@@ -736,7 +766,7 @@ func registerBanking(a *API) {
 			}
 			m, err := u.Banking().CreateMoneyAccount(ctx, storage.NewMoneyAccount{AccountID: account, Kind: in.Body.Kind, Name: strings.TrimSpace(in.Body.Name),
 				Institution: strings.TrimSpace(in.Body.Institution), Identifier: strings.TrimSpace(in.Body.Identifier), Currency: currency, OpenedOn: opened,
-				CardholderID: holder, At: a.deps.Clock.Now()})
+				CardholderID: holder, PaymentFile: in.Body.PaymentFile, At: a.deps.Clock.Now()})
 			if err != nil {
 				return MoneyAccount{}, err
 			}
@@ -781,10 +811,13 @@ func registerBanking(a *API) {
 	register(a, authz.ReplaceMoneyAccount, huma.Operation{
 		OperationID: "replaceMoneyAccount", Method: http.MethodPut, Path: "/v1/money-accounts/{money_account_id}", Tags: []string{"Banking"},
 		Summary: "Change a money account",
-		Description: "Changes a money account's kind, name, bank, identifier, the days it opened and closed, and a card's holder: never its chart account or " +
-			"currency. A closed account takes no more imports. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: " +
+		Description: "Changes a money account's kind, name, bank, identifier, the days it opened and closed, a card's holder, and the file its " +
+			"payment batches give (FR-BNK-12, rev 0.157): never its chart account or currency. The file, changed or kept, must be one the " +
+			"account's bank takes and Fyniq writes; a batch released before keeps its file. A closed account takes no more imports. Side " +
+			"effects: the change and its audit event, with the old and new values. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: " +
 			"return=preview saves nothing.",
-	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, storage.CodeVersion, banking.CodeCardholder}, writes...), func(ctx context.Context, in *replaceMoneyAccountInput) (*moneyAccountOutput, error) {
+	}, append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, storage.CodeVersion, banking.CodeCardholder, paymentfile.CodeProvider,
+		paymentfile.CodeNotBuilt}, writes...), func(ctx context.Context, in *replaceMoneyAccountInput) (*moneyAccountOutput, error) {
 		id, err := parseID("money_account_id", in.MoneyAccountID)
 		if err != nil {
 			return nil, err
@@ -813,9 +846,23 @@ func registerBanking(a *API) {
 			if err := banking.CheckCardholder(ctx, u, in.Body.Kind, holder); err != nil {
 				return MoneyAccount{}, err
 			}
+			// Its payment file, changed or kept, is one its bank takes, as the change leaves it (FR-BNK-12, rev 0.157; design
+			// D2): a change of bank never leaves a file the bank cannot read. A batch released before keeps its file.
+			file := in.Body.PaymentFile
+			if file == "" {
+				file = m.PaymentFile
+			}
+			institution := strings.TrimSpace(in.Body.Institution)
+			provider, err := banking.ProviderOfAccount(ctx, u, storage.MoneyAccount{ID: id, Institution: institution})
+			if err != nil {
+				return MoneyAccount{}, err
+			}
+			if err := payFiles.Check(file, provider); err != nil {
+				return MoneyAccount{}, err
+			}
 			if m, err = u.Banking().ChangeMoneyAccount(ctx, id, m.Version, storage.MoneyAccountChange{Kind: in.Body.Kind, Name: strings.TrimSpace(in.Body.Name),
-				Institution: strings.TrimSpace(in.Body.Institution), Identifier: identifier, OpenedOn: opened, ClosedOn: closed, CardholderID: holder,
-				At: a.deps.Clock.Now()}); err != nil {
+				Institution: institution, Identifier: identifier, OpenedOn: opened, ClosedOn: closed, CardholderID: holder,
+				PaymentFile: file, At: a.deps.Clock.Now()}); err != nil {
 				return MoneyAccount{}, err
 			}
 			return moneyAccountOf(ctx, u, m, true)

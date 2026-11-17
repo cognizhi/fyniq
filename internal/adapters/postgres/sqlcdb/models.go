@@ -1896,6 +1896,7 @@ type FyniqMoneyAccount struct {
 	ChangedAt      time.Time
 	Version        int32
 	CardholderID   *uuid.UUID
+	PaymentFile    string
 }
 
 type FyniqMoneyAccountSource struct {
