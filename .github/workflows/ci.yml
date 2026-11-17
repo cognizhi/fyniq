@@ -83,7 +83,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0   # the release tags: oasdiff compares the API contract with the last release (QA-API-02)
       # jdx/mise-action v5.1.2, pinned by commit (SEC-28): installs the toolchain of mise.toml
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
       - run: pnpm install --frozen-lockfile
       # shell: bash runs it with -o pipefail, so the job fails when make test does: GitHub's default, bash -e, took tee's
       # status and passed a failing make test (archtest's workflow rules now refuse a pipe without it).
@@ -94,7 +94,7 @@ jobs:
           # nothing here; waiting for it timed out in about one run in three on 17 Nov 2026 ("wait for reaper").
           TESTCONTAINERS_RYUK_DISABLED: "true"
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: test-report   # the evidence of the controls checked in make test (compliance/controls/)
           path: make-test.log
@@ -109,7 +109,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
       - run: make mutation   # QA-ENG-04: efficacy of at least 90% on money, rounding and the engine
 
   differential:
@@ -121,10 +121,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
       - run: make differential   # QA-ENG-02: 1,000 generated scenarios; a disagreement is shrunk and saved
       - if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: shrunk-scenario
           path: test/differential/golden/shrunk-*.json
@@ -139,11 +139,11 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0   # gitleaks scans the whole history
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
       - run: pnpm install --frozen-lockfile   # the npm licences
       - run: make scan   # SEC-21, CTL-CHG-03, CTL-CHG-11: a blocking finding without a waiver fails the merge
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: security-scan-reports   # the evidence (compliance-as-code)
           path: .data/scan/
@@ -158,7 +158,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
       - run: make infra-check   # OpenTofu: fmt, validate, tests on mock providers, the rules; no cloud credentials (NFR-PORT-05)
 
   images:
@@ -171,7 +171,7 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0   # the pull request's base, to see whether it changes the visual baselines (design D5)
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
       - run: make images        # both flavours, linux/amd64: budgets, non-root, no shell, no local adapter in release (§12.9)
       - run: make image-scan    # SBOM and grype per release image (SEC-21)
       - run: make image-sign    # push by digest to a throwaway registry, sign, attest the SBOM, verify (NFR-IMG-05, SEC-22)
@@ -201,26 +201,26 @@ jobs:
       - if: always()
         run: make down
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: image-reports   # SBOMs, scans and signatures: the evidence (CTL-CHG-08, CTL-CHG-04)
           path: .data/images/
           retention-days: 90
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: dast-report   # ZAP's reports, dast.md and the ASVS coverage: the evidence (CTL-CHG-07)
           path: .data/dast/
           retention-days: 90
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: visual-diffs   # the pictures that differ and every hash the run saw: python3 scripts/visual.py approve <folder>
           path: apps/web/test-results/visual/
           if-no-files-found: ignore
           retention-days: 14
       - if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: journey-traces   # a failed journey's Playwright trace: pnpm exec playwright show-trace <trace.zip>
           path: apps/web/test-results/journeys/
@@ -237,7 +237,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
       - run: make images        # both flavours, linux/arm64: the check refuses an image or binary for another platform
       - run: scripts/local-smoke.sh   # QA-LOCAL-01 on arm64
         env:
@@ -253,10 +253,10 @@ jobs:
         with:
           persist-credentials: false
       # jdx/mise-action v5.1.2, pinned by commit (SEC-28): installs the toolchain of mise.toml
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
       - run: make evals   # CTL-AI-05: replay mode, offline; a recorded run below its threshold or an unsound suite fails
       - if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: eval-report   # CTL-AI-05's evidence
           path: .data/evals/report.json
@@ -271,7 +271,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
       - run: pnpm install --frozen-lockfile
       # NFR-BROWSER-01: Firefox and WebKit, the builds of the pinned Playwright (its CDN); Chrome is the runner's own.
       - run: pnpm --filter @fyniq/web exec playwright install --with-deps firefox webkit
@@ -288,7 +288,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
       - run: pnpm install --frozen-lockfile
       - run: make storybook   # QA-UI-02: in the runner's own Chrome, each story with axe in four themes
 
@@ -302,7 +302,7 @@ jobs:
         with:
           persist-credentials: false
       # Only mise itself: `make setup` installs the toolchain inside the timed first run (DEV-01).
-      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c
         with:
           install: false
           cache: false
