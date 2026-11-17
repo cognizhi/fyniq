@@ -40,7 +40,11 @@ func init() {
 		}
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
 			// Hydra's access tokens for the API's audience, introspected and cached for at most 30 s (ADR-T3).
-			l.OAuth = &authn.Introspector{OAuth: wiring.Hydra(admin), Audience: apiAudience(), Clock: clock, TTL: authn.MaxCache}
+			in := &authn.Introspector{OAuth: wiring.Hydra(admin), Audience: apiAudience(), Clock: clock, TTL: authn.MaxCache}
+			if routes, ok := sessions.(storage.APIClientRoutes); ok { // FR-INT-02: the API clients Fyniq registered
+				in.Clients = routes
+			}
+			l.OAuth = in
 		}
 		return l
 	}
@@ -73,6 +77,7 @@ func init() {
 			Log:         logging.New(os.Stderr, slog.LevelInfo), SignInPage: "/", Base: base}.Register(s)
 	}
 	webOrigin = origin
+	oauthAudience = apiAudience
 	startLocalTick = func(t outbox.Ticker) {
 		setting := os.Getenv("FYNIQ_TICK_INTERVAL")
 		if setting == "off" {

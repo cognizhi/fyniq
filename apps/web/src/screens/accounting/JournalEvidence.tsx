@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Eye, FileText, Lock, Paperclip, Trash2, TriangleAlert } from "lucide-react";
+import { CircleCheck, Download, Eye, FileText, Lock, Paperclip, Trash2, TriangleAlert } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -248,7 +248,12 @@ function State({ e }: { e: Evidence }) {
     );
   }
   if (e.state === "removed") return <span className="fy-chip fy-chip--neutral">Removed</span>;
-  return <span className="fy-chip fy-chip--good">Attached</span>;
+  return (
+    <span className="fy-chip fy-chip--good">
+      <Icon of={CircleCheck} />
+      Attached
+    </span>
+  );
 }
 
 // JournalEvidence is a journal's evidence panel (docs/design/screens JournalEditor "Evidence").

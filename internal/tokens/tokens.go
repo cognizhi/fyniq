@@ -57,3 +57,35 @@ func Work(o ports.OAuthServer) outbox.Work {
 		return o.RevokeSubject(ctx, p.Subject)
 	}
 }
+
+// RemoveClientKind is the outbox kind that deletes an API client and its tokens from the OAuth server after Fyniq revoked
+// it (FR-INT-02), run by the worker class. The API refuses the client's tokens from the revocation on; this tidies the
+// OAuth server.
+const RemoveClientKind = "oauth.client.remove"
+
+type removal struct {
+	ClientID string `json:"client_id"`
+}
+
+// RemoveClientItem is the outbox item that deletes clientID from the OAuth server.
+func RemoveClientItem(clientID string) (storage.NewOutboxItem, error) {
+	if clientID == "" {
+		return storage.NewOutboxItem{}, errors.New("tokens: a removal needs a client ID")
+	}
+	b, err := json.Marshal(removal{ClientID: clientID})
+	if err != nil {
+		return storage.NewOutboxItem{}, err
+	}
+	return storage.NewOutboxItem{Class: storage.ClassWorker, Kind: RemoveClientKind, Payload: b, BusinessKey: "oauth.client.remove:" + clientID}, nil
+}
+
+// RemoveClientWork is the worker's handler of RemoveClientKind.
+func RemoveClientWork(o ports.OAuthClients) outbox.Work {
+	return func(ctx context.Context, _ uuid.UUID, row storage.OutboxRow) error {
+		var r removal
+		if err := json.Unmarshal(row.Payload, &r); err != nil || r.ClientID == "" {
+			return fmt.Errorf("tokens: outbox row %s is not a client removal", row.ID)
+		}
+		return o.RemoveClient(ctx, r.ClientID)
+	}
+}

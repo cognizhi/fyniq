@@ -4,14 +4,14 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, AI, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:039346e596f4ea6b69ee772cabaabd19269f575e67e20de554c6252966907f3e
+  - docs/user-guide/organisation-settings.md sha256:a31445d3c111689fb367f92bd788f988517bc4431584471854c661b80f71b77c
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-15
+compiled_at: 2026-11-17
 aliases:
   - company secretary assistant
   - scheduled agent
@@ -25,6 +25,8 @@ aliases:
   - too many questions
   - fields the AI never reads
   - what the AI never sees
+  - turn off animations
+  - motion
   - data protection officer
   - DPO contact
   - GST registration
@@ -156,6 +158,14 @@ The calendar itself: [[compliance.calendar]].
 - The **AI assistant** is off until an Owner turns it on with a second approver; switching it off takes effect at once ([[settings.ai]]).
 
 (src: docs/user-guide/organisation-settings.md#features)
+
+## Motion
+
+- Short transitions help people follow what changed: a page or panel fading in, rows entering, a count changing.
+- An Administrator can turn **Motion** off for the whole organisation: every screen then shows its final state at once, for everyone. It is on by default.
+- Each person can still choose **Reduce motion** in the Appearance menu, and a device set to reduce motion always wins.
+
+(src: docs/user-guide/organisation-settings.md#motion)
 
 ## AI routes
 

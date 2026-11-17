@@ -139,7 +139,8 @@
         "corporate_officer",
         "nominee_entry",
         "statements_approval",
-        "corporate_document"
+        "corporate_document",
+        "api_client"
       ],
       "examples": [
         "organisation_setting"
@@ -224,7 +225,9 @@
         "corporate_officer.record",
         "nominee_entry.record",
         "statements_approval.record",
-        "corporate_document.record"
+        "corporate_document.record",
+        "api_client.create",
+        "api_client.reclass"
       ],
       "examples": [
         "organisation_setting.change"

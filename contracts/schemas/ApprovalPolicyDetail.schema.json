@@ -97,7 +97,8 @@
         "corporate_officer",
         "nominee_entry",
         "statements_approval",
-        "corporate_document"
+        "corporate_document",
+        "api_client"
       ],
       "examples": [
         "organisation_setting"
