@@ -7,7 +7,7 @@
   summary written by Fyniq from the proposal and its dry run), AI-13 (a task type turned off), AI-61 to AI-66 (the
   company secretary's runs, findings and drafts, and what it never does), FR-APR-02 (the approver sees exactly what
   executes), AUD-01 (the audit trail names the proposal as the originator)
-- **Organisation:** `make uat-organisation NAME="UAT AI Propose Pte Ltd" PEOPLE="Ann Owner:owner;Ben Founder:owner,controller"`
+- **Organisation:** `make uat-organisation NAME="UAT AI Propose Pte Ltd" PEOPLE="Ann Owner:owner;Ben Founder:owner,controller" AI=routed`
 
 At launch the AI proposes through the company secretary: its task types (`sec.create_task`, `sec.draft_reminder` and
 `sec.draft_document`) each start off, and a proposal changes nothing until a person approves it.
@@ -15,8 +15,12 @@ At launch the AI proposes through the company secretary: its task types (`sec.cr
 ## Before you start
 
 - Turn the AI on as in the AI ask script, steps 2 and 3.
-- On the local stack the model answers in replay; copy the set-up of task 5.2's AI propose journey `[verify]`. In the
-  dev cloud the live model answers `[live-verify]`.
+- On the local stack, `AI=routed` routes the organisation's assistant to local mode's scripted model, which makes only
+  the browser journey's proposal. The company secretary's runs (steps 4, 5 and 8) need a live model `[live-verify]`;
+  locally, turn on "Create a compliance task" (`sec.create_task`) in steps 2 and 3, and in place of steps 4 and 5 ask
+  the assistant: "Create a compliance task titled "Book the room for the AGM" for the company secretary, due by 30 June
+  2027, with the finding key agent:agm-room-2027." Its proposal is the one steps 6 and 7 approve and the executor
+  carries out, at the stack's next tick (every 5 minutes by default). In the dev cloud the live model answers.
 
 ## Steps
 
