@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -351,4 +352,71 @@ func TestAttackAIProposalsKeepTheirCourse(t *testing.T) {
 		err := asOrg(ctx, conn(t, c.role), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, c.stmt, p.ID); return err })
 		wantState(t, c.what, err, c.state...)
 	}
+}
+
+// The two exceptions an AI proposal's request holds are its own (migration 000377; AI-89, AI-10): a request
+// authenticated by the requester's live turn is an ai_proposal's alone, and the person who asked signs their own
+// request only for a tier-1 proposal of theirs; every other request keeps FM-1's rules, whatever SQL is sent.
+// req: AI-89
+// req: AI-10
+// req: FM-1
+// asvs: V8.2.2, V8.3.1
+func TestAttackTheProposalsExceptionsAreTheirsAlone(t *testing.T) {
+	ctx := context.Background()
+	b := newProposalBooks(t, "Attack proposal approvals Pte Ltd")
+	api := store(t, "fyniq_api")
+	request := func(pr storage.AIProposal) storage.ApprovalRequest {
+		t.Helper()
+		envelope := `{"object":{"id":"` + pr.ID.String() + `","type":"ai_proposal"}}`
+		sum := sha256.Sum256([]byte(envelope))
+		var req storage.ApprovalRequest
+		if err := api.Do(signedIn(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			req, err = u.Approvals().Request(ctx, storage.NewApprovalRequest{ObjectType: "ai_proposal", ObjectKey: pr.ID.String(),
+				Operation: "ai_proposal.execute", Summary: "A proposal", Change: []byte(`{"execute":{}}`), Envelope: envelope, EnvelopeHash: sum[:],
+				PolicyVersion: "founder/ai_proposal@2026-11-15.1", PolicySteps: []storage.ApprovalStep{{Quorum: 1}}, RequestedBy: b.user,
+				RequestedAt: b.now, RequesterMFAMethod: "ai_turn", RequesterMFAAt: b.now, ExpiresAt: pr.ExpiresAt})
+			if err != nil {
+				return err
+			}
+			_, err = u.AIProposals().Pending(ctx, pr.ID, pr.Version, json.RawMessage(`{}`), nil, &req.ID)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return req
+	}
+	sign := func(req storage.ApprovalRequest) error {
+		return api.Do(signedIn(), b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.Approvals().Sign(ctx, storage.NewApprovalSignature{RequestID: req.ID, Step: 1, Signer: b.user, Decision: "approve",
+				EnvelopeHash: req.EnvelopeHash, MFAMethod: "session_step_up", MFAAt: b.now, SignedAt: b.now})
+			return err
+		})
+	}
+
+	// Tier 1: the person who asked signs their own; tier 2: they never do.
+	one := b.must(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) {
+		return r.Create(ctx, b.draft(`{"note":"One"}`, 0))
+	})
+	if err := sign(request(one)); err != nil {
+		t.Errorf("the person who asked signing their tier-1 proposal: %v", err)
+	}
+	two := b.draft(`{"note":"Two"}`, 0)
+	two.RiskTier = 2
+	two = b.must(t, "fyniq_api", func(r storage.AIProposals) (storage.AIProposal, error) { return r.Create(ctx, two) })
+	if err := sign(request(two)); sqlstate(err) != "FY101" && !strings.Contains(fmt.Sprint(err), "requester never signs") {
+		t.Errorf("the person who asked signing their tier-2 proposal: %v", err)
+	}
+
+	// Any other request: never authenticated by a turn, never signed by its requester.
+	envelope := `{"object":{"id":"bank.tolerance_base","type":"organisation_setting"}}`
+	sum := sha256.Sum256([]byte(envelope))
+	turnAuth := `INSERT INTO fyniq.approval_request (object_type, object_key, operation, summary, change, envelope, envelope_hash, policy_version,
+	  requested_by, requested_at, requester_mfa_method, requester_mfa_at, expires_at)
+	  VALUES ('organisation_setting', 'bank.tolerance_base', 'organisation_setting.change', 'x', '{}', $1, $2, 'p', $3, $4, 'ai_turn', $4, $5)`
+	err := asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, turnAuth, envelope, sum[:], b.user, b.now, b.now.Add(time.Hour))
+		return err
+	})
+	wantState(t, "a setting's request authenticated by a turn", err, "23514")
 }

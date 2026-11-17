@@ -114,10 +114,10 @@ func registerProposals(a *API) {
 			}
 			reason, impact, err := a.checkProposal(ctx, p, tt, cmd, in.Body, payload)
 			if err != nil {
-				_ = a.endProposal(ctx, p, made, "it could not be checked: "+plainError(err), proposal.Impact{})
+				_ = a.endProposal(ctx, p, made, "it could not be checked: "+plainError(err), proposal.Impact{}, tt, cmd)
 				return nil, err
 			}
-			if err := a.endProposal(ctx, p, made, reason, impact); err != nil {
+			if err := a.endProposal(ctx, p, made, reason, impact, tt, cmd); err != nil {
 				return nil, err
 			}
 			out := AIProposed{ID: made.ID.String(), TaskType: tt.ID, TaskVersion: tt.Version, Status: storage.ProposalPending, Summary: impact.Summary,
@@ -213,8 +213,10 @@ func (a *API) checkProposal(ctx context.Context, p authn.Principal, tt proposal.
 	return "", proposal.Impact{}, err
 }
 
-// endProposal moves a Draft on: to Invalid with reason, or to Pending with the dry run's impact.
-func (a *API) endProposal(ctx context.Context, p authn.Principal, made storage.AIProposal, reason string, impact proposal.Impact) error {
+// endProposal moves a Draft on: to Invalid with reason, or to Pending with the dry run's impact and its approval request,
+// in one unit of work (AI-89).
+func (a *API) endProposal(ctx context.Context, p authn.Principal, made storage.AIProposal, reason string, impact proposal.Impact,
+	tt proposal.TaskType, cmd proposal.Command) error {
 	return a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		if reason != "" {
 			_, err := u.AIProposals().Invalid(ctx, made.ID, made.Version, cut(reason, 1000))
@@ -224,7 +226,11 @@ func (a *API) endProposal(ctx context.Context, p authn.Principal, made storage.A
 		if err != nil {
 			return err
 		}
-		_, err = u.AIProposals().Pending(ctx, made.ID, made.Version, body, impact.Base, nil)
+		r, err := a.requestProposal(ctx, u, p, made, tt, cmd, impact)
+		if err != nil {
+			return err
+		}
+		_, err = u.AIProposals().Pending(ctx, made.ID, made.Version, body, impact.Base, &r.ID)
 		return err
 	})
 }
