@@ -2,6 +2,21 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "approval_id": {
+      "description": "The approval request waiting, if one is.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c7c21"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "checks": {
+      "description": "A draft's status: ✖ while no signed copy is attached.",
+      "items": {
+        "$ref": "BillCheck.schema.json"
+      },
+      "type": "array"
+    },
     "drafted_on": {
       "description": "The day it was drafted: the records it was filled from are that day's.",
       "examples": [
@@ -9,6 +24,14 @@
       ],
       "format": "date",
       "type": "string"
+    },
+    "evidence": {
+      "description": "How many files are attached and not removed: the signed copy. Asking to record it needs one.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
     },
     "fields": {
       "$ref": "CorporateDocumentFields.schema.json",
@@ -55,8 +78,28 @@
       "format": "uuid",
       "type": "string"
     },
+    "recorded_at": {
+      "description": "When it was recorded in the minute book.",
+      "examples": [
+        "2027-01-11T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "recorded_by": {
+      "$ref": "Person.schema.json",
+      "description": "Who approved it, as it was recorded in the minute book."
+    },
+    "signed_on": {
+      "description": "The day it was signed outside Fyniq, as asked to record it in the minute book.",
+      "examples": [
+        "2027-01-10"
+      ],
+      "format": "date",
+      "type": "string"
+    },
     "status": {
-      "description": "draft: a paper to review and have signed; recorded: in the minute book with its signed copy.",
+      "description": "draft: a paper to review and have signed; recorded: in the minute book with its signed copy, never to change.",
       "enum": [
         "draft",
         "recorded"
@@ -98,7 +141,9 @@
     "version",
     "drafted_on",
     "masked",
-    "fields"
+    "fields",
+    "evidence",
+    "checks"
   ],
   "title": "CorporateDocumentView",
   "type": "object"

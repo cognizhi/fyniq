@@ -96,7 +96,8 @@
         "corporate_detail",
         "corporate_officer",
         "nominee_entry",
-        "statements_approval"
+        "statements_approval",
+        "corporate_document"
       ],
       "examples": [
         "organisation_setting"

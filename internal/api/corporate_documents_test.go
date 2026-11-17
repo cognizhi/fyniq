@@ -13,6 +13,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/corporate"
+	"github.com/cognizhi/fyniq/internal/domain/equity"
 )
 
 // The corporate documents (FR-CS-05; p1-company-secretary task 4.1, design D6). With the company, two directors and a
@@ -28,28 +29,8 @@ import (
 // req: governance/company-secretary FR-CS-05 Documents drafted
 // req: access/roles-and-segregation Permission matrix: Corporate profile and registers
 func TestTheCorporateDocuments(t *testing.T) {
-	c := newClaimants(t)
+	c, prep, kow := documentCompany(t)
 	e := c.e
-	e.clock.Set(time.Date(2027, 1, 5, 9, 0, 0, 0, time.UTC)) // before the sessions, so their step-up is fresh
-	prep := c.as(c.weiling, authz.Accountant)
-	kow := c.as(c.ahkow, authz.Owner)
-	record := func(path string, body map[string]any) {
-		t.Helper()
-		d := e.call(http.MethodPost, path, prep, body)
-		at := path + "/" + d.str("id")
-		e.upload(at+"/evidence", prep, map[string]string{"evidence_type": "BizFile+"}, "ack.pdf", []byte("%PDF-1.7 ack"), "If-Match", d.Header.Get("ETag"))
-		cur := e.call(http.MethodGet, at, prep, nil)
-		req := e.call(http.MethodPost, at+"/approval", prep, nil, "If-Match", cur.Header.Get("ETag"))
-		if r := e.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/approve", kow, hashOf(req), "If-Match", `"1"`); r.Status != http.StatusOK {
-			t.Fatalf("recording %s: %d %s", path, r.Status, r.Raw)
-		}
-	}
-	record("/v1/corporate-profile/details", map[string]any{"from": "2026-03-02", "name": "Cognizhi Pte. Ltd.", "registered_office": "1 North Bridge Road",
-		"ssic": "62011"})
-	for _, o := range []map[string]any{{"role": "director", "name": "Tan Mei Lin"}, {"role": "director", "name": "Lim Hui"}, {"role": "secretary", "name": "Rachel Teo"}} {
-		o["kind"], o["appointed_on"], o["nominee"] = "individual", "2026-03-02", false
-		record("/v1/corporate-profile/officers", o)
-	}
 
 	templates := e.call(http.MethodGet, "/v1/corporate-profile/templates", prep, nil)
 	list, _ := templates.Body["templates"].([]any)
@@ -132,6 +113,94 @@ func TestTheCorporateDocuments(t *testing.T) {
 	}
 }
 
+// The minute book (FR-CS-05; p1-company-secretary task 4.2, design D6). Wei Ling drafts the directors' resolution
+// approving the 2026 statements; asking to record it with no signed copy is refused (EQUITY-06). With the signed copy
+// attached, drafting it again is refused, as the text it was signed on stays; a day signed before it was drafted is
+// refused, naming the field. Asked with the day it was signed, Ah Kow approves it, and it is in the minute book: recorded
+// with its signed copy and the day, never to change (EQUITY-05).
+// req: FR-CS-05
+// req: governance/company-secretary FR-CS-05 Signed drafts become evidence
+// req: governance/company-secretary FR-CS-05 Minute book
+func TestTheMinuteBook(t *testing.T) {
+	c, prep, kow := documentCompany(t)
+	e := c.e
+	draft := e.call(http.MethodPost, "/v1/corporate-profile/documents", prep, map[string]any{"kind": "directors.approve_statements",
+		"fields": map[string]any{"fy_end": "2026-12-31"}})
+	path := "/v1/corporate-profile/documents/" + draft.str("id")
+	if draft.Status != http.StatusCreated || !strings.Contains(draft.Raw, "It has no signed copy attached") {
+		t.Fatalf("the resolution drafted: %d %s", draft.Status, draft.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, path+"/approval", prep, map[string]any{"signed_on": "2027-01-05"}, "If-Match", draft.Header.Get("ETag")),
+		"requestCorporateDocumentApproval", http.StatusUnprocessableEntity, equity.CodeNoEvidence)
+
+	signed := e.upload(path+"/evidence", prep, map[string]string{"evidence_type": "Signed resolution"}, "signed.pdf", []byte("%PDF-1.7 signed"),
+		"If-Match", draft.Header.Get("ETag"))
+	if signed.Status != http.StatusCreated {
+		t.Fatalf("the signed copy: %d %s", signed.Status, signed.Raw)
+	}
+	cur := e.call(http.MethodGet, path, prep, nil)
+	if cur.Body["evidence"] != float64(1) || len(cur.Body["checks"].([]any)) != 0 {
+		t.Errorf("with its signed copy: %s", cur.Raw)
+	}
+	if r := e.call(http.MethodPut, path, prep, map[string]any{"fields": map[string]any{"fy_end": "2026-12-31"}}, "If-Match", cur.Header.Get("ETag")); r.Status != http.StatusUnprocessableEntity ||
+		!strings.Contains(r.Raw, "a signed copy is attached, so the text it was signed on stays") {
+		t.Errorf("drafting it again with its signed copy: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, path+"/approval", prep, map[string]any{"signed_on": "2027-01-04"}, "If-Match", cur.Header.Get("ETag")); r.Status != http.StatusUnprocessableEntity ||
+		!strings.Contains(r.Raw, `"field":"body.signed_on"`) || !strings.Contains(r.Raw, "it was signed before it was drafted on 5 January 2027") {
+		t.Errorf("signed before it was drafted: %d %s", r.Status, r.Raw)
+	}
+	req := e.call(http.MethodPost, path+"/approval", prep, map[string]any{"signed_on": "2027-01-05"}, "If-Match", cur.Header.Get("ETag"))
+	if req.Status != http.StatusAccepted || !strings.Contains(req.Raw, "Record the directors' resolution in writing drafted on 5 Jan 2027 and signed on 5 Jan 2027 in the minute book") {
+		t.Fatalf("asking to record it: %d %s", req.Status, req.Raw)
+	}
+	if r := e.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/approve", prep, hashOf(req), "If-Match", `"1"`); r.Status == http.StatusOK {
+		t.Errorf("Wei Ling approving her own request: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/approve", kow, hashOf(req), "If-Match", `"1"`); r.Status != http.StatusOK || r.Body["status"] != "approved" {
+		t.Fatalf("Ah Kow approving: %d %s", r.Status, r.Raw)
+	}
+	got := e.call(http.MethodGet, path, prep, nil)
+	if got.Body["status"] != "recorded" || got.Body["signed_on"] != "2027-01-05" || got.Body["recorded_by"] == nil || got.Header.Get("ETag") != `"2-posted"` {
+		t.Errorf("in the minute book: %s %s", got.Header.Get("ETag"), got.Raw)
+	}
+	e.problemIs(e.call(http.MethodPut, path, prep, map[string]any{"fields": map[string]any{"fy_end": "2026-12-31"}}, "If-Match", `"2-posted"`),
+		"replaceCorporateDocument", http.StatusConflict, equity.CodeRecorded)
+	profile := e.call(http.MethodGet, "/v1/corporate-profile", prep, nil)
+	if docs, _ := profile.Body["documents"].([]any); len(docs) != 1 || docs[0].(map[string]any)["status"] != "recorded" {
+		t.Errorf("the profile's minute book: %s", profile.Raw)
+	}
+}
+
+// documentCompany is a company recorded on 5 Jan 2027 with its details from incorporation, two directors and a secretary:
+// the claimants' organisation, Wei Ling as the Accountant and Ah Kow as the Owner, their step-up fresh.
+func documentCompany(t *testing.T) (claimants, string, string) {
+	t.Helper()
+	c := newClaimants(t)
+	e := c.e
+	e.clock.Set(time.Date(2027, 1, 5, 9, 0, 0, 0, time.UTC)) // before the sessions, so their step-up is fresh
+	prep := c.as(c.weiling, authz.Accountant)
+	kow := c.as(c.ahkow, authz.Owner)
+	record := func(path string, body map[string]any) {
+		t.Helper()
+		d := e.call(http.MethodPost, path, prep, body)
+		at := path + "/" + d.str("id")
+		e.upload(at+"/evidence", prep, map[string]string{"evidence_type": "BizFile+"}, "ack.pdf", []byte("%PDF-1.7 ack"), "If-Match", d.Header.Get("ETag"))
+		cur := e.call(http.MethodGet, at, prep, nil)
+		req := e.call(http.MethodPost, at+"/approval", prep, nil, "If-Match", cur.Header.Get("ETag"))
+		if r := e.call(http.MethodPost, "/v1/approvals/"+req.str("id")+"/approve", kow, hashOf(req), "If-Match", `"1"`); r.Status != http.StatusOK {
+			t.Fatalf("recording %s: %d %s", path, r.Status, r.Raw)
+		}
+	}
+	record("/v1/corporate-profile/details", map[string]any{"from": "2026-03-02", "name": "Cognizhi Pte. Ltd.", "registered_office": "1 North Bridge Road",
+		"ssic": "62011"})
+	for _, o := range []map[string]any{{"role": "director", "name": "Tan Mei Lin"}, {"role": "director", "name": "Lim Hui"}, {"role": "secretary", "name": "Rachel Teo"}} {
+		o["kind"], o["appointed_on"], o["nominee"] = "individual", "2026-03-02", false
+		record("/v1/corporate-profile/officers", o)
+	}
+	return c, prep, kow
+}
+
 // Every field a template asks for is a field of CorporateDocumentFields, with the type it takes, and the draft's kinds
 // are the templates'; so the API and the templates stay in step.
 // req: FR-CS-05
@@ -191,6 +260,28 @@ func matrixDocumentState(e *env, id string) string {
 	return d.Header.Get("ETag") + d.Raw + "|" + strings.Repeat("d", len(docs))
 }
 
+type matrixSignedDocument struct{ id, file, drafted string }
+
+var matrixSignedOf = map[*env]matrixSignedDocument{}
+
+// matrixSigned is a drafted AGM's minutes with its signed copy attached, the Accountant's.
+func matrixSigned(e *env) matrixSignedDocument {
+	e.t.Helper()
+	if d, ok := matrixSignedOf[e]; ok {
+		return d
+	}
+	acc := e.as(authz.Accountant)
+	r := e.call(http.MethodPost, "/v1/corporate-profile/documents", acc, matrixMinutes)
+	f := e.upload("/v1/corporate-profile/documents/"+r.str("id")+"/evidence", acc, map[string]string{"evidence_type": "Signed minutes"}, "minutes.pdf",
+		[]byte("%PDF-1.7 matrix minutes"), "If-Match", r.Header.Get("ETag"))
+	if r.Status != http.StatusCreated || f.Status != http.StatusCreated {
+		e.t.Fatalf("the matrix's signed document: %d %s, then %d %s", r.Status, r.Raw, f.Status, f.Raw)
+	}
+	d := matrixSignedDocument{id: r.str("id"), file: f.str("id"), drafted: r.str("drafted_on")}
+	matrixSignedOf[e] = d
+	return d
+}
+
 // matrixCorporateDocuments are the authorisation matrix's rows for the corporate documents (FR-CS-05).
 var matrixCorporateDocuments = map[string]func(e *env, tok string) (response, func() bool){
 	"getCorporateTemplates": func(e *env, tok string) (response, func() bool) {
@@ -211,6 +302,33 @@ var matrixCorporateDocuments = map[string]func(e *env, tok string) (response, fu
 		r := e.call(http.MethodPut, "/v1/corporate-profile/documents/"+id, tok, map[string]any{"fields": matrixMinutes["fields"]}, "If-Match", "*",
 			"Prefer", "return=preview")
 		return r, func() bool { return matrixDocumentState(e, id) == was }
+	},
+	"requestCorporateDocumentApproval": func(e *env, tok string) (response, func() bool) {
+		d := matrixSigned(e)
+		was := matrixDocumentState(e, d.id)
+		r := e.call(http.MethodPost, "/v1/corporate-profile/documents/"+d.id+"/approval", steppedUp(e, tok), map[string]any{"signed_on": d.drafted},
+			"If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixDocumentState(e, d.id) == was }
+	},
+	"addCorporateDocumentEvidence": func(e *env, tok string) (response, func() bool) {
+		d := matrixSigned(e)
+		was := matrixDocumentState(e, d.id)
+		r := e.upload("/v1/corporate-profile/documents/"+d.id+"/evidence", tok, map[string]string{"evidence_type": "Signed minutes"}, "m.pdf",
+			[]byte("%PDF-1.7 minutes"), "If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixDocumentState(e, d.id) == was }
+	},
+	"listCorporateDocumentEvidence": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/corporate-profile/documents/"+matrixSigned(e).id+"/evidence", tok, nil), nil
+	},
+	"getCorporateDocumentEvidence": func(e *env, tok string) (response, func() bool) {
+		d := matrixSigned(e)
+		return e.call(http.MethodGet, "/v1/corporate-profile/documents/"+d.id+"/evidence/"+d.file, tok, nil), nil
+	},
+	"removeCorporateDocumentEvidence": func(e *env, tok string) (response, func() bool) {
+		d := matrixSigned(e)
+		was := matrixDocumentState(e, d.id)
+		r := e.call(http.MethodDelete, "/v1/corporate-profile/documents/"+d.id+"/evidence/"+d.file, tok, nil, "If-Match", "*", "Prefer", "return=preview")
+		return r, func() bool { return matrixDocumentState(e, d.id) == was }
 	},
 	"getCorporateDocumentPDF": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/corporate-profile/documents/"+matrixDocument(e)+"/pdf", tok, nil), nil

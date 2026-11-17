@@ -138,7 +138,8 @@
         "corporate_detail",
         "corporate_officer",
         "nominee_entry",
-        "statements_approval"
+        "statements_approval",
+        "corporate_document"
       ],
       "examples": [
         "organisation_setting"
@@ -222,7 +223,8 @@
         "corporate_detail.record",
         "corporate_officer.record",
         "nominee_entry.record",
-        "statements_approval.record"
+        "statements_approval.record",
+        "corporate_document.record"
       ],
       "examples": [
         "organisation_setting.change"

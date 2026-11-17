@@ -1604,6 +1604,12 @@ var (
 	ReplaceCorporateDocument = Policy{Operation: "replaceCorporateDocument", Capability: CorporateProfile, Need: Create}
 	GetCorporateDocumentPDF  = Policy{Operation: "getCorporateDocumentPDF", Capability: CorporateProfile, Need: View, Unqualified: true,
 		MaskedFields: []string{"sha256", "content_base64"}}
+	// The minute book (task 4.2): the signed copy attached, and recorded on another person's approval.
+	RequestCorporateDocumentApproval = Policy{Operation: "requestCorporateDocumentApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up."}
+	AddCorporateDocumentEvidence     = Policy{Operation: "addCorporateDocumentEvidence", Capability: CorporateProfile, Need: Create}
+	ListCorporateDocumentEvidence    = Policy{Operation: "listCorporateDocumentEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	GetCorporateDocumentEvidence     = Policy{Operation: "getCorporateDocumentEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	RemoveCorporateDocumentEvidence  = Policy{Operation: "removeCorporateDocumentEvidence", Capability: CorporateProfile, Need: Create}
 )
 
 // The ACRA reconciliation (FR-EQ-26; p1-equity-register slice 8, design D11): an extract typed in and recorded by the
@@ -2024,7 +2030,8 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	CreateStatementsApproval, GetStatementsApproval, ReplaceStatementsApproval, RequestStatementsApprovalApproval,
 	AddStatementsApprovalEvidence, ListStatementsApprovalEvidence, GetStatementsApprovalEvidence, RemoveStatementsApprovalEvidence,
 	GetCorporateReconciliation, GetCorporateTemplates, CreateCorporateDocument, GetCorporateDocument, ReplaceCorporateDocument,
-	GetCorporateDocumentPDF)
+	GetCorporateDocumentPDF, RequestCorporateDocumentApproval, AddCorporateDocumentEvidence, ListCorporateDocumentEvidence, GetCorporateDocumentEvidence,
+	RemoveCorporateDocumentEvidence)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

@@ -460,7 +460,7 @@ func (a *API) corporateProfileOn(ctx context.Context, u storage.UnitOfWork, on *
 	if err := a.registersOn(ctx, u, v, day, &out); err != nil {
 		return out, err
 	}
-	out.Documents, err = documentsOf(ctx, u)
+	out.Documents, err = a.documentsOf(ctx, u)
 	return out, err
 }
 

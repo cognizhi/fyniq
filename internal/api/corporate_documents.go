@@ -7,7 +7,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/corporate"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -121,7 +124,7 @@ type CorporateDocumentView struct {
 	Kind       string                  `json:"kind" doc:"Its kind." example:"directors.approve_statements"`
 	Template   string                  `json:"template" doc:"The template it was drafted from, with its version." example:"directors.approve_statements@1"`
 	Title      string                  `json:"title" doc:"Its title." example:"Directors' resolution in writing"`
-	Status     string                  `json:"status" enum:"draft,recorded" doc:"draft: a paper to review and have signed; recorded: in the minute book with its signed copy." example:"draft"`
+	Status     string                  `json:"status" enum:"draft,recorded" doc:"draft: a paper to review and have signed; recorded: in the minute book with its signed copy, never to change." example:"draft"`
 	Version    int                     `json:"version" doc:"The version of its content; with its status it makes the ETag." example:"1"`
 	DraftedOn  string                  `json:"drafted_on" format:"date" doc:"The day it was drafted: the records it was filled from are that day's." example:"2027-01-05"`
 	ProposalID string                  `json:"proposal_id,omitempty" format:"uuid" doc:"The AI's sec.draft_document proposal it came from, a person having approved it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c7c11"`
@@ -129,6 +132,18 @@ type CorporateDocumentView struct {
 	Fields     CorporateDocumentFields `json:"fields" doc:"The fields it was drafted with."`
 	Paper      *CorporatePaper         `json:"paper,omitempty" doc:"Its text as filled from the records, as its PDF shows it; hidden when masked."`
 	Note       string                  `json:"note,omitempty" doc:"A note for the record." example:"For the AGM on 15 June"`
+	// (task 4.2)
+	SignedOn   string      `json:"signed_on,omitempty" format:"date" doc:"The day it was signed outside Fyniq, as asked to record it in the minute book." example:"2027-01-10"`
+	Evidence   int         `json:"evidence" doc:"How many files are attached and not removed: the signed copy. Asking to record it needs one." example:"1"`
+	ApprovalID string      `json:"approval_id,omitempty" format:"uuid" doc:"The approval request waiting, if one is." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c7c21"`
+	RecordedBy *Person     `json:"recorded_by,omitempty" doc:"Who approved it, as it was recorded in the minute book."`
+	RecordedAt *time.Time  `json:"recorded_at,omitempty" doc:"When it was recorded in the minute book." example:"2027-01-11T09:30:00Z"`
+	Checks     []BillCheck `json:"checks" nullable:"false" doc:"A draft's status: ✖ while no signed copy is attached."`
+}
+
+// CorporateDocumentSigned is the day a document was signed, as it is asked to be recorded.
+type CorporateDocumentSigned struct {
+	SignedOn string `json:"signed_on" format:"date" doc:"The day it was signed outside Fyniq: on or after the day it was drafted, and not after today." example:"2027-01-10"`
 }
 
 // CorporateTemplateField is a field a template asks for.
@@ -178,6 +193,33 @@ type (
 		IfMatchHeader
 		PreferHeader
 		Body CorporateDocumentChange
+	}
+	documentAskInput struct {
+		CorporateDocumentPath
+		KeyHeader
+		IfMatchHeader
+		PreferHeader
+		Body CorporateDocumentSigned
+	}
+	CorporateDocumentEvidencePath struct {
+		CorporateDocumentPath
+		EvidenceID string `path:"evidence_id" format:"uuid" doc:"The file's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"`
+	}
+	addDocumentEvidenceInput struct {
+		CorporateDocumentPath
+		KeyHeader
+		IfMatchHeader
+		PreferHeader
+		RawBody huma.MultipartFormFiles[EvidenceUpload]
+	}
+	listDocumentEvidenceInput struct {
+		CorporateDocumentPath
+		PageQuery
+	}
+	removeDocumentEvidenceInput struct {
+		CorporateDocumentEvidencePath
+		IfMatchHeader
+		PreferHeader
 	}
 	documentReadOutput struct {
 		ETag string `header:"ETag" doc:"Its version and status, for If-Match."`
@@ -232,25 +274,32 @@ func paperOf(p render.Paper) *CorporatePaper {
 	return out
 }
 
-func documentViewOf(ctx context.Context, x equity.Recorded[corporate.Document]) CorporateDocumentView {
+func (a *API) documentViewOf(ctx context.Context, u storage.UnitOfWork, x equity.Recorded[corporate.Document], asked map[string]string) (CorporateDocumentView, error) {
 	status := "draft"
 	if x.Doc.Status == storage.DocumentPosted {
 		status = "recorded"
 	}
 	out := CorporateDocumentView{ID: x.Doc.ID.String(), Kind: x.Value.Kind, Template: x.Value.Template, Title: x.Value.Paper.Title, Status: status,
 		Version: x.Doc.Version, DraftedOn: x.Value.Date.Format(time.DateOnly), Fields: documentFieldsOf(x.Value.Values), Paper: paperOf(x.Value.Paper),
-		Note: x.Value.Note}
+		Note: x.Value.Note, SignedOn: dayOut(x.Value.SignedOn)}
 	if x.Value.Proposal != nil {
 		out.ProposalID = x.Value.Proposal.String()
 	}
 	if masked(ctx) { // the DPO: the papers name people, so only what each is
 		out.Masked, out.Fields, out.Paper, out.Note = true, CorporateDocumentFields{}, nil, ""
 	}
-	return out
+	var err error
+	out.Evidence, out.ApprovalID, out.RecordedBy, out.RecordedAt, out.Checks, err = a.recordCommon(ctx, u, x.Doc, asked)
+	for k := range out.Checks {
+		if out.Checks[k].Code == equity.CodeNoEvidence {
+			out.Checks[k].Message, out.Checks[k].Fix = "It has no signed copy attached", "Have it signed, then attach the signed copy"
+		}
+	}
+	return out, err
 }
 
 // shownDocument is a corporate document by ID: not found for anything else.
-func shownDocument(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) (CorporateDocumentView, storage.Document, error) {
+func (a *API) shownDocument(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) (CorporateDocumentView, storage.Document, error) {
 	doc, err := equityRecordOfType(ctx, u, storage.DocumentCorporateDocument, id)
 	if err != nil {
 		return CorporateDocumentView{}, doc, err
@@ -263,22 +312,55 @@ func shownDocument(ctx context.Context, u storage.UnitOfWork, id uuid.UUID) (Cor
 	if doc.PostedAt != nil {
 		x.RecordedAt = *doc.PostedAt
 	}
-	return documentViewOf(ctx, x), doc, nil
+	asked, err := a.waiting(ctx, u, approval.ObjectCorporateDocument)
+	if err != nil {
+		return CorporateDocumentView{}, doc, err
+	}
+	v, err := a.documentViewOf(ctx, u, x, asked)
+	return v, doc, err
 }
 
-// documentsOf are every corporate document, the latest drafted first, as the profile lists them.
-func documentsOf(ctx context.Context, u storage.UnitOfWork) ([]CorporateDocumentView, error) {
+// documentsOf are every corporate document, the latest drafted first, as the profile lists them: the recorded ones are
+// the minute book.
+func (a *API) documentsOf(ctx context.Context, u storage.UnitOfWork) ([]CorporateDocumentView, error) {
 	docs, err := corporate.Documents(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	asked, err := a.waiting(ctx, u, approval.ObjectCorporateDocument)
 	if err != nil {
 		return nil, err
 	}
 	out := []CorporateDocumentView{}
 	for _, x := range docs {
-		v := documentViewOf(ctx, x)
+		v, err := a.documentViewOf(ctx, u, x, asked)
+		if err != nil {
+			return nil, err
+		}
 		v.Paper = nil // the profile lists them; getCorporateDocument has the text
 		out = append(out, v)
 	}
 	return out, nil
+}
+
+// documentRecordDependencies are a corporate document's envelope values: its status and the day it was signed.
+func documentRecordDependencies(ctx context.Context, u storage.UnitOfWork, key string) (int, map[string]string, error) {
+	id, err := uuid.Parse(key)
+	if err != nil {
+		return 0, nil, err
+	}
+	doc, err := u.Documents().Get(ctx, id)
+	if err != nil {
+		return 0, nil, err
+	}
+	if doc.Type != storage.DocumentCorporateDocument {
+		return 0, nil, fmt.Errorf("document %s is a %s, not a corporate document", doc.ID, doc.Type)
+	}
+	d, err := corporate.ReadDocument(doc)
+	if err != nil {
+		return 0, nil, err
+	}
+	return doc.Version, map[string]string{"status": string(doc.Status), "signed_on": dayOut(d.SignedOn)}, nil
 }
 
 func documentAnswer(w written[CorporateDocumentView]) *documentWriteOutput {
@@ -314,6 +396,11 @@ func registerCorporateDocuments(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
 	writes := append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid}, locks...)
 	tags := []string{"Corporate profile"}
+	ask := append(append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeSessionRequired, CodeStepUpRequired, equity.CodeNoEvidence}, writes...),
+		DocumentCodes...)
+	addCodes := append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, CodeMalformed, CodeTooLarge, CodeMediaType, CodeIdempotencyReused,
+		CodeIdempotencyBusy, CodeIdempotencyOld, CodeUnavailable, equity.CodeRecorded}, append(locks, EvidenceCodes...)...)
+	removeCodes := append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired, storage.CodeEvidence, storage.CodeVersion, equity.CodeRecorded}, locks...)
 
 	register(a, authz.GetCorporateTemplates, huma.Operation{
 		OperationID: "getCorporateTemplates", Method: http.MethodGet, Path: "/v1/corporate-profile/templates", Tags: tags,
@@ -355,7 +442,7 @@ func registerCorporateDocuments(a *API) {
 			if err != nil {
 				return CorporateDocumentView{}, equityProblems(err)
 			}
-			v, _, err := shownDocument(ctx, u, doc.ID)
+			v, _, err := a.shownDocument(ctx, u, doc.ID)
 			return v, err
 		})
 		if err != nil {
@@ -377,7 +464,7 @@ func registerCorporateDocuments(a *API) {
 		var out documentReadOutput
 		err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			var doc storage.Document
-			out.Body, doc, err = shownDocument(ctx, u, id)
+			out.Body, doc, err = a.shownDocument(ctx, u, id)
 			out.ETag = recordETag(doc)
 			return err
 		})
@@ -388,7 +475,7 @@ func registerCorporateDocuments(a *API) {
 		OperationID: "replaceCorporateDocument", Method: http.MethodPut, Path: "/v1/corporate-profile/documents/{document_id}", Tags: tags,
 		Summary: "Draft a corporate document again",
 		Description: "Saves a new version of a drafted corporate document: its fields filled again from the records on today (FR-CS-05); " +
-			"its kind stays. A recorded one changes no more (EQUITY-05). Side effects: the new version, audit events. Needs If-Match with " +
+			"its kind stays. Once a signed copy is attached, its text stays; a recorded one changes no more (EQUITY-05). Side effects: the new version, audit events. Needs If-Match with " +
 			"its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.",
 	}, append(append([]string{CodeNotFound, CodeStale, CodeIfMatchRequired}, writes...), DocumentCodes...), func(ctx context.Context, in *documentReviseInput) (*documentWriteOutput, error) {
 		id, err := parseID("document_id", in.DocumentID)
@@ -406,6 +493,12 @@ func registerCorporateDocuments(a *API) {
 			if err := checkIfMatch(in.IfMatch, recordETag(doc)); err != nil {
 				return CorporateDocumentView{}, err
 			}
+			if n, err := attachedFiles(ctx, u, id); err != nil {
+				return CorporateDocumentView{}, err
+			} else if n > 0 { // the text it was signed on stays
+				return CorporateDocumentView{}, invalid([]FieldProblem{{Code: corporate.CodeDocument, Field: "body.fields",
+					Message: "a signed copy is attached, so the text it was signed on stays", Fix: "Remove the signed copy to draft it again"}})
+			}
 			today, err := orgToday(ctx, a, u)
 			if err != nil {
 				return CorporateDocumentView{}, err
@@ -413,7 +506,7 @@ func registerCorporateDocuments(a *API) {
 			if _, err := corporate.ReviseDocumentIn(ctx, u, id, documentValues(in.Body.Fields), strings.TrimSpace(in.Body.Note), today); err != nil {
 				return CorporateDocumentView{}, equityProblems(err)
 			}
-			v, _, err := shownDocument(ctx, u, id)
+			v, _, err := a.shownDocument(ctx, u, id)
 			return v, err
 		})
 		if err != nil {
@@ -470,4 +563,102 @@ func registerCorporateDocuments(a *API) {
 		return &documentFileOutput{Body: DocumentFile{FileName: name, MediaType: mediaPDF,
 			SHA256: hex.EncodeToString(h[:]), Size: len(pdf), Content: base64.StdEncoding.EncodeToString(pdf)}}, nil
 	})
+	register(a, authz.RequestCorporateDocumentApproval, huma.Operation{
+		OperationID: "requestCorporateDocumentApproval", Method: http.MethodPost, Path: "/v1/corporate-profile/documents/{document_id}/approval", Tags: tags,
+		DefaultStatus: http.StatusAccepted, Summary: "Ask to record a signed corporate document in the minute book",
+		Description: "Saves the day the document was signed outside Fyniq, then asks another person to approve recording it in the minute " +
+			"book with its signed copy (FR-CS-05). It needs the signed copy attached (EQUITY-06), and the day signed on or after it was " +
+			"drafted and not after today. The answer is 202 with an approval request, which a person who holds A on \"Corporate profile " +
+			"and registers\" approves, stepped up, never the one who asked; recorded, it never changes. Needs a person signed in who " +
+			"passed step-up, and If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing.",
+	}, ask, func(ctx context.Context, in *documentAskInput) (*equityAskOutput, error) {
+		id, err := parseID("document_id", in.DocumentID)
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(in.IfMatch) == "" {
+			return nil, checkIfMatch(in.IfMatch, "")
+		}
+		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
+			doc, err := equity.Drafted(ctx, u, storage.DocumentCorporateDocument, id)
+			if err != nil {
+				return Approval{}, err
+			}
+			if err := checkIfMatch(in.IfMatch, recordETag(doc)); err != nil {
+				return Approval{}, err
+			}
+			if n, err := attachedFiles(ctx, u, id); err != nil {
+				return Approval{}, err
+			} else if n == 0 {
+				return Approval{}, &equity.Error{Code: equity.CodeNoEvidence, Message: "the document has no signed copy attached",
+					Fix: "Have it signed, attach the signed copy, then ask again"}
+			}
+			var fields []FieldProblem
+			signed := dayIn("body.signed_on", in.Body.SignedOn, &fields)
+			if len(fields) > 0 {
+				return Approval{}, invalid(fields)
+			}
+			today, err := orgToday(ctx, a, u)
+			if err != nil {
+				return Approval{}, err
+			}
+			if doc, err = corporate.SignedDocumentIn(ctx, u, id, *signed, today); err != nil {
+				return Approval{}, equityProblems(err)
+			}
+			d, err := corporate.ReadDocument(doc)
+			if err != nil {
+				return Approval{}, err
+			}
+			diff := []ApprovalDiff{{Field: "status", Before: "draft", After: "recorded"}, {Field: "kind", After: d.Kind}, {Field: "template", After: d.Template},
+				{Field: "drafted_on", After: d.Date.Format(time.DateOnly)}, {Field: "signed_on", After: dayOut(d.SignedOn)}}
+			return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectCorporateDocument, ObjectKey: doc.ID.String(),
+				Operation: approval.OpCorporateDocumentRecord,
+				Summary: "Record the " + strings.ToLower(d.Paper.Title[:1]) + d.Paper.Title[1:] + " drafted on " + d.Date.Format("2 Jan 2006") + " and signed on " +
+					d.SignedOn.Format("2 Jan 2006") + " in the minute book",
+				Execute: map[string]any{"document_id": doc.ID.String(), "version": strconv.Itoa(doc.Version)}, Diff: diff})
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &equityAskOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+	})
+
+	// The signed copy, as the profile's records' files are.
+	documents := "/v1/corporate-profile/documents"
+	addNote := " The file's type is decided from its content; it is scanned for malware and its image metadata is stripped before it " +
+		"is stored (FR-DOC-08). Side effects: the file in the staging store, its evidence row and its audit event; once recorded its " +
+		"files are committed to the retention-locked store (FR-DOC-13). Needs If-Match with the record's ETag. Idempotent with " +
+		"Idempotency-Key; Prefer: return=preview saves nothing."
+	removeNote := " Once recorded its evidence is append-only, and the database refuses. The row stays, marked removed, for the audit " +
+		"trail. Side effects: the removal and its audit event. Needs If-Match with the file's ETag; Prefer: return=preview saves nothing."
+	register(a, authz.AddCorporateDocumentEvidence, huma.Operation{OperationID: "addCorporateDocumentEvidence", Method: http.MethodPost,
+		Path: documents + "/{document_id}/evidence", Tags: []string{"Evidence"}, DefaultStatus: http.StatusCreated, Summary: "Attach a corporate document's signed copy",
+		Description: "Attaches a file to a drafted corporate document (FR-CS-05, FR-DOC-05), as multipart/form-data: its copy as signed " +
+			"outside Fyniq. Asking to record it in the minute book needs one; once one is attached, its text stays." + addNote,
+	}, addCodes, func(ctx context.Context, in *addDocumentEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.attachEquityEvidence(ctx, storage.DocumentCorporateDocument, documents, in.DocumentID, in.IdempotencyKey, in.IfMatch, in.Prefer, in.RawBody.Data())
+	})
+	register(a, authz.ListCorporateDocumentEvidence, huma.Operation{OperationID: "listCorporateDocumentEvidence", Method: http.MethodGet,
+		Path: documents + "/{document_id}/evidence", Tags: []string{"Evidence"}, Summary: "List a corporate document's files",
+		Description: "The files attached to a corporate document, oldest first, removed ones included, a page at a time (FR-DOC-05). Read-only; no side effects.",
+	}, []string{CodeNotFound, CodeCursor}, func(ctx context.Context, in *listDocumentEvidenceInput) (*equityEvidenceListOutput, error) {
+		return a.listEquityEvidence(ctx, storage.DocumentCorporateDocument, "document_id", in.DocumentID, in.PageQuery)
+	})
+	register(a, authz.GetCorporateDocumentEvidence, huma.Operation{OperationID: "getCorporateDocumentEvidence", Method: http.MethodGet,
+		Path: documents + "/{document_id}/evidence/{evidence_id}", Tags: []string{"Evidence"}, Summary: "Get a corporate document's file",
+		Description: "Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-05, FR-DOC-07). Read-only; no side effects.",
+	}, []string{CodeNotFound}, func(ctx context.Context, in *CorporateDocumentEvidencePath) (*equityEvidenceReadOutput, error) {
+		return a.getEquityEvidence(ctx, storage.DocumentCorporateDocument, "document_id", in.DocumentID, in.EvidenceID)
+	})
+	register(a, authz.RemoveCorporateDocumentEvidence, huma.Operation{OperationID: "removeCorporateDocumentEvidence", Method: http.MethodDelete,
+		Path: documents + "/{document_id}/evidence/{evidence_id}", Tags: []string{"Evidence"}, Summary: "Remove a file from a drafted corporate document",
+		Description: "Takes a file off a corporate document not recorded yet (FR-DOC-07)." + removeNote,
+	}, removeCodes, func(ctx context.Context, in *removeDocumentEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		return a.removeEquityEvidence(ctx, storage.DocumentCorporateDocument, "document_id", in.DocumentID, in.EvidenceID, in.IfMatch, in.Prefer, in)
+	})
+	if op := a.OpenAPI().Paths[documents+"/{document_id}/evidence"].Post; op != nil && op.RequestBody != nil {
+		if mt := op.RequestBody.Content["multipart/form-data"]; mt != nil && mt.Schema != nil && mt.Schema.Properties["file"] != nil {
+			mt.Schema.Properties["file"].Examples = []any{"%PDF-1.7 … (the file's bytes)"}
+		}
+	}
 }

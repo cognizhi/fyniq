@@ -58,8 +58,12 @@ status: draft
   directors' resolutions approving the financial statements, allotting shares, appointing an officer, ending the
   secretary's or CEO's appointment or changing the registered office; a members' written resolution; the AGM's notice
   and its minutes; and the notice that the financial statements were sent without an AGM.
-- Choose the kind of paper, fill in what it asks for, and read the draft. Download it as PDF, have it signed outside
-  Fyniq, and keep the signed copy.
+- Choose the kind of paper, fill in what it asks for, and read the draft. Download it as PDF and have it signed outside
+  Fyniq.
+- Attach the signed copy, then choose **Record in the minute book** with the day it was signed. Another person approves
+  it, and it goes in the minute book with its signed copy, never to change.
+- Once the signed copy is attached, the draft's text stays as it was signed. To draft it again, remove the signed copy
+  first.
 - Fyniq never signs or files a draft, and each draft says so at its top.
 - The templates are Fyniq's, and a lawyer has yet to confirm them. Read the wording with the company secretary before
   anyone signs.
