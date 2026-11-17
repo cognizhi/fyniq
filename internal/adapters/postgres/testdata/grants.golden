@@ -55,6 +55,9 @@ fyniq_api       UPDATE    ai_price (decided_at, decided_by, status)
 fyniq_api       SELECT    ai_price_catalogues
 fyniq_api       INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_api       SELECT    ai_price_rate
+fyniq_api       INSERT    ai_proposal (agent, evidence, expires_at, item_count, model, payload, payload_sha256, prompt, proposed_at, rationale, requested_by, required_approvals, risk_tier, run_id, task_sha256, task_type, task_version, tools_sha256, turn_id)
+fyniq_api       SELECT    ai_proposal
+fyniq_api       UPDATE    ai_proposal (approval_request_id, approved_items, approved_payload, approved_sha256, base_versions, decided_at, decided_by, impact, reason, status, superseded_by, version)
 fyniq_api       INSERT    ai_qualification (agent, cases, connection_id, model, passed, ran_at, ran_by, result, run_id, suite, suite_version, threshold, version)
 fyniq_api       SELECT    ai_qualification
 fyniq_api       UPDATE    ai_qualification (out_of_date_at, out_of_date_why)
@@ -527,6 +530,8 @@ fyniq_executor  SELECT    account
 fyniq_executor  SELECT    accountant_review
 fyniq_executor  SELECT    accountant_review_journal
 fyniq_executor  SELECT    accountant_review_query
+fyniq_executor  SELECT    ai_proposal
+fyniq_executor  UPDATE    ai_proposal (execution, finished_at, reason, started_at, status, version)
 fyniq_executor  SELECT    allocation
 fyniq_executor  SELECT    approval_policy
 fyniq_executor  SELECT    approval_request
@@ -633,6 +638,7 @@ fyniq_readonly  SELECT    ai_model_list_read
 fyniq_readonly  SELECT    ai_price
 fyniq_readonly  SELECT    ai_price_catalogues
 fyniq_readonly  SELECT    ai_price_rate
+fyniq_readonly  SELECT    ai_proposal
 fyniq_readonly  SELECT    ai_qualification
 fyniq_readonly  SELECT    ai_reservation
 fyniq_readonly  SELECT    ai_route
@@ -832,6 +838,8 @@ fyniq_worker    UPDATE    ai_price (status)
 fyniq_worker    SELECT    ai_price_catalogues
 fyniq_worker    INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_worker    SELECT    ai_price_rate
+fyniq_worker    SELECT    ai_proposal
+fyniq_worker    UPDATE    ai_proposal (decided_at, status, version)
 fyniq_worker    EXECUTE   ai_purge_conversations()
 fyniq_worker    INSERT    ai_qualification (agent, cases, connection_id, model, passed, ran_at, ran_by, result, run_id, suite, suite_version, threshold, version)
 fyniq_worker    SELECT    ai_qualification
