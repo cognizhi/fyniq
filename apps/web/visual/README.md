@@ -14,4 +14,6 @@ Settings) at the five reference frames of §7.10, in light and dark, and compare
   `test-results/visual/` (CI's artefact `visual-diffs`). Look at them; if the change is meant, take the hashes in with
   `python3 scripts/visual.py approve <the artefact's folder>` and open the pull request with the label
   `visual-baseline`. CI refuses a change to `baselines.json` without it.
+- **Every route** (`VISUAL_ALL=1`): each signed-in route of the registry whose path names no record, drawn nightly
+  (`.github/workflows/visual.yml`) and before each release, where a changed picture builds no image (`release.yml`).
 - **Until the first baselines are approved**, a run only records its hashes.

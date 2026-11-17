@@ -6,6 +6,7 @@
 # into the baselines (a pull request labelled visual-baseline).
 #
 # Usage: make test-visual                  # the key pages (every pull request)
+#        VISUAL_ALL=1 make test-visual     # every route of the registry (nightly and before a release)
 #        KEEP=1 make test-visual           # leave the stack running
 # The baselines are linux/amd64's, as CI draws them; elsewhere VISUAL_PLATFORM=linux/amd64 draws them under emulation.
 set -euo pipefail
@@ -33,5 +34,5 @@ go run -tags local ./cmd/seed --new-organisation "Visual Pte Ltd" --invite "Ann 
 platform=()
 [ -z "${VISUAL_PLATFORM:-}" ] || platform=(--platform "$VISUAL_PLATFORM")
 docker run --rm "${platform[@]}" --network host --ipc host --user "$(id -u):$(id -g)" -e HOME=/tmp -e CI \
-  -e FYNIQ_HTTP_PORT -e VISUAL_ORGANISATION=/work/.data/visual/organisation.json \
+  -e FYNIQ_HTTP_PORT -e VISUAL_ALL -e VISUAL_ORGANISATION=/work/.data/visual/organisation.json \
   -v "$PWD:/work" -w /work/apps/web "$image" npx --no-install playwright test -c visual/visual.config.ts

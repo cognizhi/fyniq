@@ -162,7 +162,7 @@ test-journeys: ## The browser journeys (QA-E2E-01; p1-launch-readiness design D6
 	$(MISE) pnpm --filter @fyniq/web test:journeys; s=$$?; \
 	if [ $$started = 1 ] && [ "$${KEEP:-0}" != 1 ]; then $(MAKE) --no-print-directory down; fi; exit $$s
 
-test-visual: ## The visual snapshots (QA-UI-07, QA-RPT-04; design D5): a stack of their own on a fixed business date, Playwright in its pinned container, each key page at the five frames in light and dark against apps/web/visual/baselines.json; KEEP=1 leaves the stack
+test-visual: ## The visual snapshots (QA-UI-07, QA-RPT-04; design D5): a stack of their own on a fixed business date, Playwright in its pinned container, each key page at the five frames in light and dark against apps/web/visual/baselines.json; VISUAL_ALL=1 every route (nightly, before a release), KEEP=1 leaves the stack
 	@PLAYWRIGHT_IMAGE=$(PLAYWRIGHT_IMAGE) scripts/visual.sh
 
 storybook: ## Storybook (QA-UI-02): build it, run every shared component's stories in Chrome with axe in the four themes, and check a planted axe violation fails the run

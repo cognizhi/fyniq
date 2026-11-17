@@ -2,10 +2,12 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { routes } from "../src/registry";
 import { statePath, type Setup } from "./setup";
 
 // The visual snapshots (QA-UI-07, QA-RPT-04; p1-launch-readiness design D5): the key pages (Home, the Inbox, a financial
-// statement, an invoice and Settings) of the sample company at the five reference frames of §7.10, in light and dark,
+// statement, an invoice and Settings) of the sample company, and with VISUAL_ALL=1 every route, at the five reference
+// frames of §7.10, in light and dark,
 // each picture's SHA-256 against visual/baselines.json. The business date is fixed on the stack and the clock in the
 // browser, motion is reduced and the caret hidden, so a run draws what the last did; a picture that differs, or has no
 // baseline, fails the run, and is left with every hash the run saw in test-results/visual/. While no baseline is
@@ -38,6 +40,19 @@ const keyPages: { name: string; path: (s: Setup) => string }[] = [
   { name: "settings", path: () => "/settings" },
 ];
 
+// Every route (rev 0.284: nightly and before each release, VISUAL_ALL=1): the key pages, then each signed-in route of the
+// registry whose path names no record, under its registry ID.
+const keyPaths = ["/", "/inbox", "/reports/statements/pl", "/settings"];
+const pages =
+  process.env.VISUAL_ALL === "1"
+    ? [
+        ...keyPages,
+        ...routes
+          .filter((r) => "signedIn" in r && r.signedIn && !r.path.includes("$") && !keyPaths.includes(r.path))
+          .map((r) => ({ name: r.id.replace(/[^a-z0-9-]/g, "-"), path: () => r.path })),
+      ]
+    : keyPages;
+
 // draw opens path at the frame and returns the whole page's picture, once it has settled: the signed-in frame and its
 // heading, no request in flight, its fonts loaded and no skeleton left. The run reads faster than a person, so a page
 // the API's per-minute limit refused (429, FR-INT-16) is opened again after its Retry-After. The viewport then grows to
@@ -68,7 +83,7 @@ async function draw(page: Page, path: string, frame: (typeof frames)[number]): P
   return page.screenshot({ animations: "disabled", caret: "hide", scale: "css" });
 }
 
-for (const key of keyPages) {
+for (const key of pages) {
   for (const theme of ["light", "dark"] as const) {
     test(`${key.name} in ${theme}, at the five frames`, async ({ browser }) => {
       const state = setup();

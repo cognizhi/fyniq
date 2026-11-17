@@ -52,9 +52,35 @@ jobs:
           path: .data/trace/
           if-no-files-found: ignore
 
+  visual:
+    name: Every route's visual snapshots (QA-UI-07)
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      contents: read
+    steps:
+      # actions/checkout v7.0.1, pinned by commit (SEC-28)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      # jdx/mise-action v5.1.2, pinned by commit (SEC-28)
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: pnpm install --frozen-lockfile
+      # Every route of the registry at the five frames in light and dark against apps/web/visual/baselines.json (design
+      # D5, rev 0.284): a changed picture builds no image.
+      - run: VISUAL_ALL=1 make test-visual
+      # actions/upload-artifact v7.0.1, pinned by commit (SEC-28)
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: release-visual-diffs
+          path: apps/web/test-results/visual/
+          if-no-files-found: ignore
+
   images:
     name: Build, push and sign the release images
-    needs: launch-gate
+    needs: [launch-gate, visual]
     if: vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 120

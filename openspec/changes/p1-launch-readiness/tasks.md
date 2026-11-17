@@ -238,7 +238,11 @@ and names the requirement IDs it proves.
   to the baselines without the label `visual-baseline`; `scripts/visual.py approve` takes a run's hashes in. Until the
   first baselines are approved, from CI's linux/amd64 run, a run only records. The device-class journeys with a fold
   that keeps a draft are p1-app-shell 5.1's `e2e/devices.spec.ts`, and the motion tests `e2e/motion.spec.ts` (#772).
-  **Left:** every route nightly and in the release workflow; the first baselines.)
+  `VISUAL_ALL=1` adds every signed-in route of the registry whose path names no record (102 pages, 1,020 pictures),
+  drawn nightly (`.github/workflows/visual.yml`) and by release.yml's visual job, which the images job waits for, so a
+  changed picture builds no image (archtest `TestTheReleaseWaitsForEveryRoutesPictures`). **Left:** the first
+  baselines, from CI's first runs; a picture of a route that still changes run to run (a time of day) is masked once a
+  nightly shows it; the run uploads the changed picture, not a drawn diff, as the baseline image is not kept.)
 - [ ] 5.5 QA-UI-06: the first-run tour per role by keyboard alone, reduced and animated, axe at 0. Nothing is written
   but `user_help_state`, and G4-104 resumes it. Waits for `p1-app-shell` task 4.2. Test `// req: QA-UI-06`,
   `// req: G4-104`.
