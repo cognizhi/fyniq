@@ -48,13 +48,19 @@ func (d Dispatcher) deadline() time.Duration {
 // Enqueue writes work in u (Transactional outbox) and dispatches it once u commits; if u rolls back
 // there is neither a row nor a task.
 func (d Dispatcher) Enqueue(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, item storage.NewOutboxItem) (storage.OutboxRow, error) {
+	return d.EnqueueAt(ctx, u, org, item, time.Time{})
+}
+
+// EnqueueAt is Enqueue of work due at at, such as a scheduled agent's slot (AI-62): its task is delivered no earlier
+// than at. A row the sweep sends again is delivered at once; work that finds itself early holds until its time.
+func (d Dispatcher) EnqueueAt(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, item storage.NewOutboxItem, at time.Time) (storage.OutboxRow, error) {
 	row, err := u.Outbox().Enqueue(ctx, item)
 	if err != nil {
 		return storage.OutboxRow{}, err
 	}
 	u.AfterCommit(func(ctx context.Context) {
 		// Best effort: a row that is not dispatched now stays pending, and the tick sends it.
-		_ = d.Dispatch(context.WithoutCancel(ctx), org, row)
+		_ = d.DispatchAt(context.WithoutCancel(ctx), org, row, at)
 	})
 	return row, nil
 }
@@ -63,9 +69,18 @@ func (d Dispatcher) Enqueue(ctx context.Context, u storage.UnitOfWork, org uuid.
 // never finds its row still pending; if the enqueue then fails, the row is overdue at its deadline
 // and the sweep sends it again.
 func (d Dispatcher) Dispatch(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
+	return d.DispatchAt(ctx, org, row, time.Time{})
+}
+
+// DispatchAt is Dispatch of a task delivered no earlier than at; its deadline runs from at.
+func (d Dispatcher) DispatchAt(ctx context.Context, org uuid.UUID, row storage.OutboxRow, at time.Time) error {
 	name := TaskName(row.ID, row.Dispatches+1)
+	from := d.Clock.Now()
+	if at.After(from) {
+		from = at
+	}
 	if err := d.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		return u.Outbox().MarkDispatched(ctx, row.ID, name, d.Clock.Now().Add(d.deadline()))
+		return u.Outbox().MarkDispatched(ctx, row.ID, name, from.Add(d.deadline()))
 	}); err != nil {
 		return err
 	}
@@ -73,7 +88,7 @@ func (d Dispatcher) Dispatch(ctx context.Context, org uuid.UUID, row storage.Out
 	if err != nil {
 		return err
 	}
-	return d.Queue.Enqueue(ctx, ports.Task{Queue: string(row.Class), Name: name, Payload: payload})
+	return d.Queue.Enqueue(ctx, ports.Task{Queue: string(row.Class), Name: name, Payload: payload, At: at})
 }
 
 // ErrUnknownOutcome is what work returns when it cannot know whether an outside call took effect (a

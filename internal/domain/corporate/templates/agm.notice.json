@@ -1,0 +1,27 @@
+{
+  "kind": "agm.notice",
+  "version": 1,
+  "title": "Notice of annual general meeting",
+  "summary": "Gives the members notice of the annual general meeting and its business.",
+  "signers": "secretary",
+  "fields": [
+    {"name": "meeting_on", "type": "date", "label": "The meeting's day"},
+    {"name": "time", "type": "time", "label": "Its time"},
+    {"name": "place", "type": "text", "label": "Its place"},
+    {"name": "fy_end", "type": "date", "label": "The financial year whose statements it receives"},
+    {"name": "notice_on", "type": "date", "label": "The day the notice is given"},
+    {"name": "other_business", "type": "lines", "label": "Other business, one a line", "optional": true}
+  ],
+  "sections": [
+    {"paragraphs": ["Notice is given that the annual general meeting of {{.Company.Name}} will be held at {{.F.place}} on {{.F.meeting_on}} at {{.F.time}}, for the following business."]},
+    {"heading": "Ordinary business", "items": [
+      "To receive and adopt the financial statements for the financial year ended {{.F.fy_end}}, with the statement by the directors and any auditors' report.",
+      "To re-elect the directors who retire under the company's constitution."
+    ]},
+    {"heading": "Other business", "items_from": "other_business"},
+    {"paragraphs": [
+      "A member entitled to attend and vote may appoint a proxy to attend and vote instead. A proxy need not be a member.",
+      "By order of the board, on {{.F.notice_on}}."
+    ]}
+  ]
+}

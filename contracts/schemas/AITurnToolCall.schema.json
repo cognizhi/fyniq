@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "Why it was refused.",
+      "examples": [
+        "AI-TOOL-03"
+      ],
+      "type": "string"
+    },
+    "duration_ms": {
+      "examples": [
+        120
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "facts": {
+      "description": "How many facts it read.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "omitted": {
+      "description": "How many lists its limits cut.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "outcome": {
+      "enum": [
+        "read",
+        "refused"
+      ],
+      "examples": [
+        "read"
+      ],
+      "type": "string"
+    },
+    "output_sha256": {
+      "description": "The hash of what the model read of it.",
+      "examples": [
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      ],
+      "type": "string"
+    },
+    "tool": {
+      "examples": [
+        "metrics.query"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "withheld": {
+      "description": "Screening withheld its free text (AI-18).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "tool",
+    "version",
+    "outcome",
+    "facts",
+    "omitted",
+    "withheld",
+    "duration_ms"
+  ],
+  "title": "AITurnToolCall",
+  "type": "object"
+}

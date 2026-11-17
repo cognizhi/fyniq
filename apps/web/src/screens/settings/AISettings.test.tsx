@@ -111,6 +111,9 @@ describe("Settings › AI", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Add a budget" }));
     dialog = await screen.findByRole("dialog");
     fireEvent.change(within(dialog).getByLabelText("Budget for"), { target: { value: `tokens:person:${person}` } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save the budget" }));
+    expect(await within(dialog).findByText("Enter the monthly amount.")).toBeTruthy();
+    expect(within(dialog).getByLabelText("Tokens a month").getAttribute("aria-invalid")).toBe("true");
     fireEvent.change(within(dialog).getByLabelText("Tokens a month"), { target: { value: "1.5" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Save the budget" }));
     expect(await within(dialog).findByText("Enter a whole number of tokens, such as 5000000.")).toBeTruthy();

@@ -2,6 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "assistant": {
+      "$ref": "AIAssistantUsage.schema.json",
+      "description": "The assistant's month, as its monitoring counts it (QA-AI-04)."
+    },
     "by_agent": {
       "items": {
         "$ref": "AIUsageByAgent.schema.json"
@@ -50,7 +54,8 @@
     "by_connection",
     "by_model",
     "by_agent",
-    "by_person"
+    "by_person",
+    "assistant"
   ],
   "title": "AIUsage",
   "type": "object"

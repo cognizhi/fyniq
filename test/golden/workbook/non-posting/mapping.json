@@ -1,0 +1,539 @@
+[
+ {
+  "block": "check_status",
+  "statuses": [
+   "✔ OK",
+   "⚠ Check",
+   "✖ Fix now"
+  ],
+  "fyniq": "Each check of the catalogue reports ✔, ⚠ or ✖ (FR-CTL-01), and the books' health is the worst status found",
+  "tests": [
+   "TestBooksHealthIsTheWorstStatusFound",
+   "TestEveryCheckOfTheCatalogueIsWhole"
+  ]
+ },
+ {
+  "block": "verdict",
+  "statuses": [
+   "⚠ MARGINAL – positive NPV but payback is longer than",
+   "✖ NOT FEASIBLE – the idea destroys value at a",
+   "⚠ MARGINAL – positive NPV but no payback within the period",
+   "✔ FEASIBLE – positive NPV"
+  ],
+  "fyniq": "The feasibility calculator is the workbook's model: on its data sets the verdict agrees, and each figure within its rounding (FR-PLN-06)",
+  "tests": [
+   "TestTheWorkbooksFeasibility",
+   "TestTheFeasibilityCalculatorAgreesWithTheOracle"
+  ]
+ },
+ {
+  "block": "gst_status",
+  "statuses": [
+   "✔ Below the threshold (",
+   "✔ GST-registered",
+   "⚠ Above the threshold this calendar year – apply for GST registration by 30 Jan",
+   "⚠ Expected to exceed the threshold in the next 12 months – register within 30 days"
+  ],
+  "fyniq": "The GST registration monitor reads the past calendar year and the next 12 months against the pack's threshold: registered, below, above this year, or expected to exceed (FR-TAX-05, C.1 #37)",
+  "tests": [
+   "TestTheGSTRegistrationMonitorThroughTheAPI",
+   "TestTheRegistrationThresholdIsInTheGSTPackFromItsVersion"
+  ]
+ },
+ {
+  "block": "funding_cells",
+  "statuses": [
+   "✔ matches cap table",
+   "⚠ differs from amount paid"
+  ],
+  "fyniq": "The cap table is the share register, which posts share capital itself, and the register reconciles to ACRA's (C.2 #26); there is no second figure of what was paid to differ",
+  "tests": [
+   "TestTheRegisterReconcilesToACRA"
+  ]
+ },
+ {
+  "block": "collection_cells",
+  "statuses": [
+   "✔ OK",
+   "⚠ Must total 100%"
+  ],
+  "fyniq": "A forecast's collection pattern is three shares of a month's sales; one that is not is refused (FR-PLN-05)",
+  "tests": [
+   "TestAttackForecastsKeepTheirRules",
+   "TestForecastsThroughTheAPI"
+  ]
+ },
+ {
+  "block": "print_msg",
+  "statuses": [
+   "✔ Found – File → Print (or Download as PDF), print area",
+   "✖ Not found on Invoices or Quotes & Orders"
+  ],
+  "not_applicable": "Fyniq renders each document's PDF from the document itself (FR-TPL-01): there is no print sheet looking a number up"
+ },
+ {
+  "block": "ACC_ROWS",
+  "statuses": [
+   "⚠ Code must be a 4-digit number",
+   "⚠ Code must be 4 digits",
+   "✖ Duplicate code – this row is not used",
+   "⚠ Enter a name",
+   "⚠ Choose a type",
+   "⚠ Choose a report group",
+   "⚠ Unknown report group",
+   "⚠ Report group belongs to another type",
+   "⚠ Choose a cash-flow line",
+   "⚠ Money accounts must be balance-sheet",
+   "✔ OK",
+   "⚠ Inactive but in use – reactivate it or move its entries"
+  ],
+  "fyniq": "An account is checked whole before it is saved (FR-COA-02): its code, name and type (COA-01 to COA-03), a code taken refused by the database, a system account kept active (COA-09)",
+  "tests": [
+   "TestANewAccountsRules",
+   "TestAChangesRules",
+   "TestAttackAFailedWriteMidCommandLeavesNoPartialRows",
+   "TestTheStandardChart"
+  ],
+  "read": {
+   "⚠ Code must be a 4-digit number": "A code is letters and digits up to 20 (COA-01): ABCD is a code in Fyniq, a code that is not one is refused",
+   "⚠ Code must be 4 digits": "As above: 999 and 10000 are codes in Fyniq",
+   "⚠ Choose a report group": "A report group and a cash-flow line are the account's own text up to 60 characters (COA-02), not one of a list",
+   "⚠ Unknown report group": "As above: there is no list for a group to be unknown to",
+   "⚠ Report group belongs to another type": "As above",
+   "⚠ Choose a cash-flow line": "As above",
+   "⚠ Money accounts must be balance-sheet": "A money account is a bank, card, wallet or cash account registered with its currency (FR-BNK-01), not a flag an expense account can carry",
+   "⚠ Inactive but in use – reactivate it or move its entries": "Nothing posts to an inactive account (the posting rules' rule 3), so it cannot be in use after it is deactivated"
+  }
+ },
+ {
+  "block": "_accounts_statuses",
+  "statuses": [
+   "⚠ Duplicate code"
+  ],
+  "fyniq": "A code taken is refused by the database, so no second account has it",
+  "tests": [
+   "TestAttackAFailedWriteMidCommandLeavesNoPartialRows"
+  ]
+ },
+ {
+  "block": "_accounts_numbers",
+  "statuses": [
+   "✔ OK"
+  ],
+  "fyniq": "The standard chart's accounts and their attributes",
+  "tests": [
+   "TestTheStandardChart"
+  ]
+ },
+ {
+  "block": "ACC_IMPORT",
+  "statuses": [
+   "✖ Date not recognised",
+   "✖ No amount",
+   "✖ Choose the account at the top"
+  ],
+  "fyniq": "A statement import names the money account it is for, and a line whose date or amount does not read is refused, naming the line and field (FR-BNK-04; BANKFILE-03, BANKFILE-04)",
+  "tests": [
+   "TestRefusalsNameTheLineAndField",
+   "TestBankingThroughTheAPI"
+  ]
+ },
+ {
+  "block": "CT_ROWS",
+  "statuses": [
+   "✔ OK",
+   "⚠ Duplicate name",
+   "⚠ Choose customer / supplier",
+   "⚠ Enter a name"
+  ],
+  "fyniq": "A contact is checked whole (FR-CT-01): its legal name (CT-01) and at least one role (CT-02); a contact that may duplicate another is flagged when added (FR-CT-04)",
+  "tests": [
+   "TestAContactsRules",
+   "TestContacts"
+  ]
+ },
+ {
+  "block": "EMP_ROWS",
+  "statuses": [
+   "✔ OK",
+   "⚠ Duplicate name",
+   "⚠ Choose department",
+   "⚠ Department has no salary account",
+   "⚠ Choose residency",
+   "⚠ Choose CPF age band",
+   "⚠ Department's salary account is not on Accounts",
+   "⚠ Enter a name"
+  ],
+  "after_go_live": "employees and pay runs (FR-PAY-01 to FR-PAY-03; PRD-002's people records) are not in the launch: these cases come with them"
+ },
+ {
+  "block": "PEOPLE_LINES",
+  "statuses": [
+   "✔ OK"
+  ],
+  "fyniq": "A document's lines are checked with it before it posts",
+  "tests": [
+   "TestTheInvoiceRuleRefusesWhatCannotPost"
+  ]
+ },
+ {
+  "block": "_people_numbers",
+  "statuses": [
+   "✔ OK"
+  ],
+  "after_go_live": "employees and pay runs (FR-PAY-01 to FR-PAY-03; PRD-002's people records) are not in the launch: these cases come with them"
+ },
+ {
+  "block": "FX_ROWS",
+  "statuses": [
+   "⚠ Duplicate month",
+   "⚠ Enter a rate",
+   "✔ OK",
+   "⚠ Choose the currency",
+   "⚠ Enter the month (any date in it)"
+  ],
+  "fyniq": "Exchange rates by day and the monthly table (FR-GL-05, ENG-40): two rates in one month's table are averaged, with ⚠, until one is withdrawn (G4-025); a rate is entered with its currency, its day or month and its quote, and one that cannot be entered that way is refused (FX-02)",
+  "tests": [
+   "TestExchangeRatesAndTheCascade",
+   "TestAttackExchangeRatesAreWithdrawnNeverChanged"
+  ]
+ },
+ {
+  "block": "ITEM_ROWS",
+  "statuses": [
+   "✔ OK",
+   "⚠ Duplicate code",
+   "⚠ Enter a name",
+   "⚠ Code must not contain ' - '"
+  ],
+  "fyniq": "An item is checked whole (FR-ITM-01): its code of letters, digits and . _ / - up to 30, with no space, so ' - ' is refused (ITM-01), and its name (ITM-02); items are listed by their unique code",
+  "tests": [
+   "TestAnItemIsCheckedWholeAndEveryRuleReportedAtOnce",
+   "TestItems"
+  ]
+ },
+ {
+  "block": "DL_ROWS",
+  "statuses": [
+   "✔ OK",
+   "⚠ No price",
+   "✖ Choose an item or type a description",
+   "✖ Enter the document #",
+   "⚠ Document # not on Invoices / Quotes"
+  ],
+  "fyniq": "A line belongs to its document and is checked with it: a line of nothing, or with no account, refuses the document before it posts (FR-AR-01)",
+  "tests": [
+   "TestTheInvoiceRuleRefusesWhatCannotPost"
+  ],
+  "read": {
+   "✖ Enter the document #": "A line is entered on its document, never apart from it",
+   "⚠ Document # not on Invoices / Quotes": "As above"
+  }
+ },
+ {
+  "block": "QUO_ROWS",
+  "statuses": [
+   "⏰ Expired / late – follow up",
+   "⚠ Enter the invoice / bill #",
+   "✔ Closed",
+   "⚠ No amount (enter it or add Doc Lines)",
+   "✖ Duplicate number",
+   "✖ Number already used on Invoices",
+   "✖ Choose the type",
+   "✖ Enter the number",
+   "⏰ Accepted – create the invoice",
+   "⚠ Amount differs from Doc Lines total"
+  ],
+  "fyniq": "Quotes and orders (FR-AR-01): numbered from their sequence when sent, answered once, expiring after their validity date, invoiced from an accepted one; a quote's total is its lines'",
+  "tests": [
+   "TestQuotesThroughTheAPI",
+   "TestQuotesAreAnsweredAndExpire",
+   "TestQuotesAreInvoiced"
+  ],
+  "read": {
+   "✖ Duplicate number": "Numbered from the sequence when sent (FR-ORG-04), so no two share a number",
+   "✖ Number already used on Invoices": "As above: quotes and invoices have their own sequences",
+   "✖ Enter the number": "As above",
+   "⚠ No amount (enter it or add Doc Lines)": "A quote's total is its lines' (FR-AR-01): there is no amount typed apart from them",
+   "⚠ Amount differs from Doc Lines total": "As above: there is no amount typed apart from the lines"
+  }
+ },
+ {
+  "block": "PRJ_ROWS",
+  "statuses": [
+   "⚠ Over cost budget",
+   "⚠ Loss-making",
+   "✔ OK",
+   "⚠ Duplicate name",
+   "⚠ Enter a name"
+  ],
+  "after_go_live": "projects and timesheets are not in the launch: these cases come with them"
+ },
+ {
+  "block": "TS_ROWS",
+  "statuses": [
+   "✔ OK",
+   "✖ Enter the date",
+   "✖ Choose the project",
+   "✖ Enter the hours",
+   "⚠ No bill rate",
+   "⚠ Invoice # not on Invoices"
+  ],
+  "after_go_live": "projects and timesheets are not in the launch: these cases come with them"
+ },
+ {
+  "block": "REC_ROWS",
+  "statuses": [
+   "✔ Reconciled",
+   "⚠ Difference – tick matched rows / find missing",
+   "✖ Enter the statement balance",
+   "✖ Enter the statement date",
+   "⚠ Choose the account"
+  ],
+  "fyniq": "A bank reconciliation names its money account and month, takes the statement's balance, shows the difference the unreconciled lines explain, and is prepared, then signed by another (FR-BNK-10)",
+  "tests": [
+   "TestReconciliationIsPreparedThenSignedByAnother",
+   "TestBankRulesAndReconciliationThroughTheAPI"
+  ]
+ },
+ {
+  "block": "rec_status",
+  "statuses": [
+   "⚠ Choose the account",
+   "✖ Enter the statement date",
+   "✖ Enter the statement balance",
+   "✔ Reconciled",
+   "⚠ Difference – tick matched rows / find missing"
+  ],
+  "fyniq": "As REC_ROWS",
+  "tests": [
+   "TestReconciliationIsPreparedThenSignedByAnother",
+   "TestBankRulesAndReconciliationThroughTheAPI"
+  ]
+ },
+ {
+  "block": "IMP_ROWS",
+  "statuses": [
+   "⚠ Already in Transactions – will skip",
+   "✖ No amount",
+   "✖ Date not recognised"
+  ],
+  "fyniq": "A statement import drops a line only on proof that it is held already, keeps a look-alike as a possible duplicate, sees a transfer recorded from the other account, and refuses a line whose date or amount does not read (FR-BNK-04, G4-042)",
+  "tests": [
+   "TestDuplicatesAreDroppedOnlyOnProof",
+   "TestATransfersOtherSideIsRecognised",
+   "TestRefusalsNameTheLineAndField"
+  ]
+ },
+ {
+  "block": "CLOSE_STATUS",
+  "statuses": [
+   "✔ Unchanged",
+   "✖ Changed after closing"
+  ],
+  "fyniq": "A closed period refuses every posting in the database (INV-03); a change after closing needs the period reopened, with approval",
+  "tests": [
+   "TestAttackPostingIntoAClosedPeriodFails",
+   "TestReopeningAClosedPeriod"
+  ]
+ },
+ {
+  "block": "bva_line",
+  "statuses": [
+   "✔ Ahead of budget",
+   "⚠ Behind budget",
+   "✔ Within budget",
+   "⚠ Over budget"
+  ],
+  "fyniq": "Budget against actual by line, with each variance and its percentage (FR-RPT-03); a year with postings and no budget is warned of (C.1 #35)",
+  "tests": [
+   "TestBudgetVsActualAndHome",
+   "TestBudgetsThroughTheAPI"
+  ],
+  "read": {
+   "✔ Ahead of budget": "Fyniq shows the variance and its percentage, not the workbook's words",
+   "⚠ Behind budget": "Fyniq shows the variance and its percentage, not the workbook's words",
+   "✔ Within budget": "Fyniq shows the variance and its percentage, not the workbook's words",
+   "⚠ Over budget": "Fyniq shows the variance and its percentage, not the workbook's words"
+  }
+ },
+ {
+  "block": "REC",
+  "statuses": [
+   "✖ Choose type, frequency and first date",
+   "✖ Enter category and amount",
+   "✖ Choose the bank account",
+   "✖ Choose the credit account",
+   "✔ Finished",
+   "⏰ Due – run CFH_GenerateRecurring",
+   "✔ Up to date"
+  ],
+  "fyniq": "Recurring journals, bills and invoices: checked before they are saved, drafted by the scheduler on each occurrence, the 29th to the 31st falling on a shorter month's last day, and none after their end (FR-GL-02, FR-AUT-01)",
+  "tests": [
+   "TestRecurringOccurrences",
+   "TestRecurringJournalsMakeDraftsTheSchedulerCannotPost",
+   "TestRecurringBillsThroughTheAPI"
+  ],
+  "read": {
+   "⏰ Due – run CFH_GenerateRecurring": "The scheduler drafts what is due within the hour; nothing is run by hand"
+  }
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_duplicate_account_code_does_not_double_postings"
+  ],
+  "fyniq": "A code taken is refused, so no account's postings are counted twice",
+  "tests": [
+   "TestAttackAFailedWriteMidCommandLeavesNoPartialRows"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_duplicate_fx_month_uses_one_rate"
+  ],
+  "fyniq": "Two rates in one month's table are averaged, never added (G4-025)",
+  "tests": [
+   "TestExchangeRatesAndTheCascade"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_hourly_cost_caps_employer_cpf_at_the_ow_ceiling"
+  ],
+  "after_go_live": "the hourly cost comes with projects and pay runs (rev 0.146: the pinned hourly cost is recorded after go-live)"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_feasibility_without_inputs_gives_no_verdict"
+  ],
+  "fyniq": "A study with nothing entered has no figures to judge, and no verdict",
+  "tests": [
+   "TestTheFeasibilityCalculator"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_budget_check_counts_lines_with_amounts"
+  ],
+  "fyniq": "A budget holds amounts by account and month, with no pre-filled empty rows; C.1 #35 warns of a year with postings and no budget",
+  "tests": [
+   "TestBudgetsThroughTheAPI"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_duplicate_contact_does_not_distort_ageing"
+  ],
+  "fyniq": "The ageing and the receivables are by the contact's ID, never its name, and the sub-ledger reconciles with 1100",
+  "tests": [
+   "TestTheARSubLedgerReconcilesWith1100",
+   "TestContacts"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_doc_line_in_error_is_left_out_of_the_invoice"
+  ],
+  "fyniq": "A line in error refuses its document, never left out silently",
+  "tests": [
+   "TestTheInvoiceRuleRefusesWhatCannotPost"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_pipeline_leaves_out_quotes_in_error"
+  ],
+  "fyniq": "The pipeline adds up the sent quotes and orders while valid; a cancelled one leaves it",
+  "tests": [
+   "TestQuotesThroughTheAPI"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_timesheet_rows_in_error_count_nowhere"
+  ],
+  "after_go_live": "projects and timesheets are not in the launch: these cases come with them"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_duplicate_item_code_does_not_double_item_sales"
+  ],
+  "fyniq": "An item's code is unique, so its sales are counted once",
+  "tests": [
+   "TestItems"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_import_sees_a_transfer_recorded_from_the_other_account"
+  ],
+  "fyniq": "The import sees the other side of a transfer already recorded",
+  "tests": [
+   "TestATransfersOtherSideIsRecognised"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_import_skips_only_as_many_lines_as_are_recorded"
+  ],
+  "fyniq": "Only a line proved held is dropped; a look-alike is kept, marked",
+  "tests": [
+   "TestDuplicatesAreDroppedOnlyOnProof"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_feasibility_without_investment"
+  ],
+  "fyniq": "The workbook's study without an investment: an NPV of 8,346.88, no IRR, an immediate payback, feasible",
+  "tests": [
+   "TestTheWorkbooksStudyWithoutAnInvestment"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_contact_names_with_wildcards"
+  ],
+  "fyniq": "A contact is found by its ID, and its name is text, compared as text: a payer's text names its customer literally",
+  "tests": [
+   "TestAPayerNamesItsCustomer",
+   "TestAWorkbookNumberNamesOnlyItself"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_unbudgeted_spending_is_over_budget"
+  ],
+  "fyniq": "Budget against actual counts every account with postings, and C.1 #35 warns of a year with postings and no budget",
+  "tests": [
+   "TestBudgetVsActualAndHome",
+   "TestBudgetsThroughTheAPI"
+  ]
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "statuses": [
+   "test_bug_opening_balance_without_code_is_flagged"
+  ],
+  "fyniq": "The opening balances name each account; one that names no account, or does not net to zero, is refused or found (C.1 #6)",
+  "tests": [
+   "TestOpeningBalances",
+   "TestUnbalancedOpeningBalancesAreFound"
+  ]
+ }
+]

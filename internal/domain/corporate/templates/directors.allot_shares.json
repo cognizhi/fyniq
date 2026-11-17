@@ -1,0 +1,24 @@
+{
+  "kind": "directors.allot_shares",
+  "version": 1,
+  "title": "Directors' resolution in writing",
+  "summary": "The directors allot shares under the members' approval, and authorise the lodgement with ACRA.",
+  "signers": "directors",
+  "fields": [
+    {"name": "members_approved_on", "type": "date", "label": "The day the members approved the issue"},
+    {"name": "allottee", "type": "text", "label": "Whom the shares are allotted to"},
+    {"name": "shares", "type": "count", "label": "How many shares"},
+    {"name": "share_class", "type": "text", "label": "Their class, such as ordinary"},
+    {"name": "price", "type": "amount", "label": "The price of each share"}
+  ],
+  "sections": [
+    {"paragraphs": [
+      "We, being all the directors of {{.Company.Name}}, pass the following resolutions in writing, as the company's constitution allows.",
+      "The members approved the issue of shares on {{.F.members_approved_on}}, under section 161 of the Companies Act 1967."
+    ]},
+    {"heading": "Resolved", "items": [
+      "That {{.F.shares}} {{.F.share_class}} shares in the company be allotted and issued to {{.F.allottee}} at {{.F.price}} each, fully paid.",
+      "That any one director or the secretary be authorised to lodge the allotment with ACRA and to update the company's records."
+    ]}
+  ]
+}

@@ -16,7 +16,8 @@
           "person_bank_change",
           "founders",
           "owner_succession",
-          "equity"
+          "equity",
+          "corporate"
         ],
         "examples": [
           "bill"

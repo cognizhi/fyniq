@@ -213,6 +213,12 @@ func Read(ctx context.Context, u storage.UnitOfWork, from, to, today time.Time) 
 	if err != nil {
 		return out, err
 	}
+	// The corporate profile's lodgements (p1-company-secretary task 2.4), from the sg-acra pack.
+	lodgements, err := corporateItems(ctx, u, today, v)
+	if err != nil {
+		return out, err
+	}
+	registers = append(registers, lodgements...)
 	for _, it := range items {
 		if it.Status != NotAssessed {
 			if f, ok := filings[it.Key]; ok {
@@ -229,7 +235,7 @@ func Read(ctx context.Context, u storage.UnitOfWork, from, to, today time.Time) 
 		out.Items = append(out.Items, it)
 	}
 	for _, it := range registers {
-		if it.Due.After(to) || (it.Due.Before(from) && it.Status != Overdue) {
+		if it.Status != NotAssessed && (it.Due.After(to) || (it.Due.Before(from) && it.Status != Overdue)) {
 			continue
 		}
 		out.Items = append(out.Items, it)

@@ -24,6 +24,7 @@ import (
 type Push struct {
 	targets  map[string]string // class → base URL
 	tokens   ports.TaskTokens
+	clock    ports.Clock
 	client   *http.Client
 	attempts int
 	backoff  time.Duration
@@ -36,16 +37,17 @@ type Push struct {
 var _ ports.Queue = (*Push)(nil)
 
 // NewPush delivers to targets (worker class → base URL such as http://localhost:8084), retrying a
-// delivery up to attempts times with backoff doubling from base.
+// delivery up to attempts times with backoff doubling from base. A task's run-at time is read on clock, the clock that
+// set it.
 // It reaches only the targets' hosts, through the local flavour's egress guard; a handler may work for up to 30 minutes,
 // as Cloud Tasks waits.
-func NewPush(targets map[string]string, tokens ports.TaskTokens, attempts int, base time.Duration) *Push {
+func NewPush(targets map[string]string, tokens ports.TaskTokens, clock ports.Clock, attempts int, base time.Duration) *Push {
 	hosts := make([]string, 0, len(targets))
 	for _, u := range targets {
 		hosts = append(hosts, egress.HostOf(u))
 	}
 	client := (&egress.Guard{Local: true}).Bounded(0, 31*time.Minute).For(hosts...)
-	return &Push{targets: targets, tokens: tokens, client: client, attempts: max(attempts, 1), backoff: base, seen: map[string]bool{}}
+	return &Push{targets: targets, tokens: tokens, clock: clock, client: client, attempts: max(attempts, 1), backoff: base, seen: map[string]bool{}}
 }
 
 // Enqueue implements ports.Queue: it accepts the task and delivers it in the background.
@@ -68,6 +70,9 @@ func (p *Push) Enqueue(_ context.Context, t ports.Task) error {
 	p.wg.Add(1)
 	go func() {
 		defer p.wg.Done()
+		if wait := t.At.Sub(p.clock.Now()); !t.At.IsZero() && wait > 0 { // held until its time, as Cloud Tasks holds a scheduled task
+			time.Sleep(wait)
+		}
 		p.deliver(url+"/tasks", token, t)
 	}()
 	return nil

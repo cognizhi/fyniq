@@ -72,6 +72,9 @@ type AICalls interface {
 	OfRun(ctx context.Context, run uuid.UUID) ([]AICall, error)
 	// Page are the attempts q names, newest first, at most q.Limit (AI-12).
 	Page(ctx context.Context, q AICallQuery) ([]AICall, error)
+	// CostOfRuns are the runs' costs in the base currency, each its attempts' summed (exact decimal text); a run with no
+	// priced attempt is not there.
+	CostOfRuns(ctx context.Context, runs []uuid.UUID) (map[uuid.UUID]string, error)
 }
 
 // AICallQuery narrows the AI activity log: a person, an agent or a run, the attempts started in [From, To), and those

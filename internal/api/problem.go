@@ -41,6 +41,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/closing"
 	"github.com/cognizhi/fyniq/internal/domain/contact"
+	"github.com/cognizhi/fyniq/internal/domain/corporate"
 	"github.com/cognizhi/fyniq/internal/domain/credits"
 	"github.com/cognizhi/fyniq/internal/domain/customercredit"
 	"github.com/cognizhi/fyniq/internal/domain/deadlines"
@@ -81,6 +82,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/semantic"
 )
 
 // Problem is an RFC 9457 problem details object (FR-INT-07): a stable code (the same codes as
@@ -235,6 +237,7 @@ var codeFacts = map[string]struct {
 	CodeUnknownPolicy:             {404, "No such policy or version"},
 	storage.CodePolicy:            {409, "The policy library's drafts, versions and acknowledgements are kept as they were"},
 	storage.CodeRisk:              {409, "A risk's versions and reviews are kept as they were"},
+	storage.CodeComplianceTask:    {409, "A compliance task is closed once, as it was"},
 	storage.CodeConsent:           {409, "A consent follows the person's last for its purpose"},
 	storage.CodeInventory:         {409, "The inventory's entries and reviews are kept as they were"},
 	storage.CodeDPIA:              {409, "An impact assessment's versions and approvals are kept as they were"},
@@ -271,6 +274,36 @@ var codeFacts = map[string]struct {
 	airoute.CodeRoute:             {422, "The route is not valid"},
 	airoute.CodeStep:              {422, "A step of the route cannot serve it"},
 	airoute.CodeAgent:             {404, "Not an agent of this release"},
+	semantic.CodeMeasure:          {422, "Not a measure of the semantic layer"},
+	CodeToolInput:                 {422, "Not the tool's input"},
+	CodeScreened:                  {422, "Screening stopped it"},
+	CodeAIPersonOnly:              {403, "Only a person asks the assistant"},
+	CodeAIPerMinute:               {429, "Too many questions a minute"},
+	CodeAIPerDay:                  {429, "Too many questions today"},
+	CodeAIConversationLimit:       {409, "The conversation is full"},
+	CodeAIFeedbackTurn:            {409, "The turn has no answer to rate"},
+	CodeAIFeedbackMasked:          {409, "Masked feedback cannot join the golden set"},
+	CodeAIFeedbackDone:            {409, "The feedback was reviewed already"},
+	CodeAIService:                 {503, "The AI service did not answer"},
+	CodeAgentRunStep:              {409, "The run may not ask the model"},
+	CodeAgentOff:                  {409, "The assistant is off or paused"},
+	CodeScreenIncomplete:          {503, "Screening did not finish"},
+	CodeToolElse:                  {422, "Not a tool the API runs"},
+	CodeToolRefused:               {422, "The tool's read was refused"},
+	CodeToolTimeout:               {504, "The tool took too long"},
+	CodeToolGrant:                 {403, "Not one of the agent's tools"},
+	CodeProposeNotAllowed:         {403, "The AI may not propose this"},
+	CodeProposalType:              {422, "Not a task type the AI may propose"},
+	CodeTaskReason:                {422, "A dismissal needs a reason"},
+	CodeProposalRevises:           {422, "Not a proposal this one may revise"},
+	semantic.CodeDimension:        {422, "The measure is not split so"},
+	semantic.CodeGrain:            {422, "The measure is not given at that grain"},
+	semantic.CodeMember:           {422, "Not a member of the dimension"},
+	airoute.CodeNoRoute:           {409, "The agent has no route"},
+	airoute.CodeUnhandled:         {422, "The route does not handle the call's data"},
+	airoute.CodeNoStep:            {409, "No step of the route can take the call"},
+	airoute.CodeRefused:           {502, "The provider refused the call"},
+	airoute.CodeSwitchOff:         {409, "The AI is switched off"},
 	storage.CodeAIRoute:           {409, "A route keeps each version as it was made, and names only allowed models"},
 	storage.CodeAIPrice:           {409, "A price is kept as recorded, and an Owner's price is never overwritten by a read"},
 	migration.CodePosted:          {409, "The organisation holds posted entries"},
@@ -897,6 +930,11 @@ var codeFacts = map[string]struct {
 	storage.CodeRoundScenario:        {422, "The round scenario does not keep that"},
 	storage.CodeInvestorRights:       {422, "The investor rights do not keep that"},
 	storage.CodeControllerEntry:      {422, "The controller entry does not keep that"},
+	storage.CodeCorporateDetail:      {422, "The corporate detail does not keep that"},
+	storage.CodeCorporateOfficer:     {422, "The officer's record does not keep that"},
+	storage.CodeNomineeEntry:         {422, "The nominee entry does not keep that"},
+	storage.CodeStatementsApproval:   {422, "The statements approval does not keep that"},
+	storage.CodeCorporateDocument:    {422, "The corporate document does not keep that"},
 	storage.CodeAcraExtract:          {422, "The ACRA extract does not keep that"},
 	storage.CodeGSTForecast:          {422, "The GST forecast does not keep that"},
 	storage.CodeStatutoryFiling:      {409, "The filing record does not keep that"},
@@ -984,6 +1022,11 @@ var codeFacts = map[string]struct {
 	equity.CodeRound:                 {422, "The round does not fit"},
 	equity.CodeRights:                {422, "The investor rights do not fit"},
 	equity.CodeController:            {422, "The registrable controller entry does not fit"},
+	corporate.CodeDetail:             {422, "The corporate detail does not fit"},
+	corporate.CodeOfficer:            {422, "The officer does not fit"},
+	corporate.CodeNominee:            {422, "The nominee entry does not fit"},
+	corporate.CodeApproval:           {422, "The statements approval does not fit"},
+	corporate.CodeDocument:           {422, "The corporate document does not fit"},
 	equity.CodeAcra:                  {422, "The ACRA extract does not fit"},
 	CodeOwnCost:                      {403, "The person who paid it does not decide it"},
 	claim.CodeSettleTo:               {422, "The claim cannot be kept as a loan"},
@@ -1034,6 +1077,11 @@ var storageFixes = map[string]string{
 	storage.CodeRoundScenario:        "Give a round scenario a price per share or a pre-money valuation, its investors and instruments, and an active share-capital class",
 	storage.CodeInvestorRights:       "Record the rights of a contact marked shareholder or investor, with 0 to 20 board seats and a list of consent matters",
 	storage.CodeControllerEntry:      "Give a controller its grounds and its days in order, or a holder who is not one the reason, for a contact marked shareholder or investor",
+	storage.CodeCorporateDetail:      "Give the day, the name, the registered office and a five-digit SSIC code, lodged on or after the day it takes effect",
+	storage.CodeCorporateOfficer:     "Give a known role, a natural person unless an auditor, the last 4 characters of an identifier, the days in order and a nominee only as a director",
+	storage.CodeNomineeEntry:         "Name a director among the officers or a contact marked shareholder or investor, whom they act for, and the days in order",
+	storage.CodeStatementsApproval:   "Give the year's end and the day approved after it, and the day sent on or after approval",
+	storage.CodeCorporateDocument:    "Draft it from one of Fyniq's templates, with no NRIC or FIN in full",
 	storage.CodePolicy:               "Save a new draft and publish it as the policy's next version; acknowledge each version once",
 	storage.CodeRisk:                 "Save the risk again for its next version, review its latest version, and set a later review date",
 	storage.CodeConsent:              "Give a consent only when none stands for that person and purpose, and withdraw one only when it does",

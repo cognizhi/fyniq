@@ -268,3 +268,86 @@ func TestAReportRendersArchivalAndAccessible(t *testing.T) {
 		}
 	}
 }
+
+// samplePaper is a paper of n resolutions signed by signers directors, with text that looks like Typst in it.
+func samplePaper(title string, n, signers int) render.Paper {
+	p := render.Paper{Title: title, Author: "Cognizhi Pte. Ltd.", Lines: []string{"UEN 202612345K", "1 North Bridge Road, #08-08, Singapore 179094"},
+		Banner: "Draft by Fyniq from the company's records, for the company secretary to review. Fyniq's template, counsel to confirm.",
+		Footer: "directors.approve_statements@1"}
+	p.Sections = []render.PaperSection{{Paragraphs: []string{"The directors of the company resolve in writing as follows.",
+		`A name that looks like Typst stays text: #panic("ran") *bold* $x$ <label> @ref`}}}
+	resolved := render.PaperSection{Heading: "Resolved"}
+	for i := range n {
+		resolved.Items = append(resolved.Items, "That the financial statements for the year ended 31 December 2026 be approved, number "+strconv.Itoa(i+1)+".")
+	}
+	p.Sections = append(p.Sections, resolved)
+	for i := range signers {
+		p.Signatures = append(p.Signatures, render.PaperSignature{Name: "Director " + strconv.Itoa(i+1), Role: "Director"})
+	}
+	return p
+}
+
+// A paper, such as a resolution or minutes, renders to PDF/A-2a and PDF/UA-1, the same bytes every time (snapshot hashes
+// in testdata), over as many pages as it needs, with a line to sign for each director, or with no lines under the
+// company, banner or signatures at all; text that looks like Typst stays text.
+// req: FR-CS-05
+func TestAPaperRendersArchivalAndAccessible(t *testing.T) {
+	c := compiler(t)
+	golden := map[string]string{}
+	if b, err := os.ReadFile("testdata/paper-sha256.golden"); err == nil {
+		for _, l := range strings.Split(strings.TrimSpace(string(b)), "\n") {
+			if name, sum, ok := strings.Cut(l, " "); ok {
+				golden[name] = sum
+			}
+		}
+	}
+	var lines []string
+	for _, x := range []struct {
+		name  string
+		p     render.Paper
+		pages int
+	}{{"resolution", samplePaper("Directors' resolution in writing", 2, 2), 1}, {"minutes", samplePaper("Minutes of the annual general meeting", 40, 12), 2},
+		{"bare", render.Paper{Title: "Notice to members", Sections: []render.PaperSection{{Paragraphs: []string{"No lines, banner or signatures."}}}}, 1}} {
+		if err := x.p.Check(); err != nil {
+			t.Fatalf("%s: %v", x.name, err)
+		}
+		in := Input{Paper: &x.p, Created: issued}
+		pdf, err := c.PDF(context.Background(), in)
+		if err != nil {
+			t.Fatalf("%s: %v", x.name, err)
+		}
+		again, err := c.PDF(context.Background(), in)
+		if err != nil || !bytes.Equal(pdf, again) {
+			t.Errorf("%s: two renders differ (%v)", x.name, err)
+		}
+		for _, want := range []string{"%PDF-", "<pdfaid:part>2</pdfaid:part>", "<pdfaid:conformance>A</pdfaid:conformance>", "<pdfuaid:part>1</pdfuaid:part>"} {
+			if !bytes.Contains(pdf, []byte(want)) {
+				t.Errorf("%s: the PDF lacks %s", x.name, want)
+			}
+		}
+		h := sha256.Sum256(pdf)
+		sum := hex.EncodeToString(h[:])
+		lines = append(lines, x.name+" "+sum)
+		if !*update && golden[x.name] != sum {
+			t.Errorf("%s: the PDF's SHA-256 is %s, not the snapshot's %s; check the PDF and run go test ./internal/render/typst -update", x.name, sum, golden[x.name])
+		}
+		pages, err := c.Pages(context.Background(), in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(pages) != x.pages {
+			t.Errorf("%s: %d pages, not %d", x.name, len(pages), x.pages)
+		}
+		if *update { // to look at
+			_ = os.WriteFile(filepath.Join(os.TempDir(), "fyniq-paper-"+x.name+".pdf"), pdf, 0o600)
+			for i, p := range pages {
+				_ = os.WriteFile(filepath.Join(os.TempDir(), "fyniq-paper-"+x.name+"-"+strconv.Itoa(i+1)+".png"), p, 0o600)
+			}
+		}
+	}
+	if *update {
+		if err := os.WriteFile("testdata/paper-sha256.golden", []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}

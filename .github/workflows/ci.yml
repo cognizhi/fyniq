@@ -181,6 +181,10 @@ jobs:
           FYNIQ_PG_PORT: "25432"
           KEEP: "1"   # left running for the DAST scan
       - run: make dast   # CTL-CHG-07: ZAP's baseline of the stack, signed in; a High alert or a FAIL rule's fails unless waived
+      - run: pnpm install --frozen-lockfile
+      - run: make test-journeys   # QA-E2E-01: the browser journeys on the same stack, in the runner's Chrome (p1-launch-readiness D6)
+        env:
+          FYNIQ_PG_PORT: "25432"   # cmd/seed makes each journey's organisation in the stack's database
       - if: always()
         run: make down
       - if: always()
@@ -195,6 +199,12 @@ jobs:
           name: dast-report   # ZAP's reports, dast.md and the ASVS coverage: the evidence (CTL-CHG-07)
           path: .data/dast/
           retention-days: 90
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: journey-traces   # a failed journey's Playwright trace: pnpm exec playwright show-trace <trace.zip>
+          path: apps/web/test-results/journeys/
+          retention-days: 14
 
   images-arm64:
     name: Images and local mode on arm64 (make images, QA-LOCAL-01)

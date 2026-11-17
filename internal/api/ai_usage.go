@@ -12,11 +12,13 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/assistant"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/aibudget"
 	"github.com/cognizhi/fyniq/internal/domain/aiconnection"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -82,7 +84,7 @@ type AIQuotaUse struct {
 	Amount int64     `json:"amount" example:"5000000"`
 	Unit   string    `json:"unit" enum:"tokens,requests" example:"tokens"`
 	Window string    `json:"window" enum:"day,month" example:"month"`
-	Used   int64     `json:"used" example:"908000"`
+	Used   int64     `json:"used" doc:"What the window drew from the quota: each model's use at its rate from the plan's terms (1 where they name none), rounded down." example:"908000"`
 	Resets time.Time `json:"resets" doc:"When the window starts again, in Singapore." example:"2026-11-30T16:00:00Z"`
 }
 
@@ -122,6 +124,25 @@ type AIUsage struct {
 	ByModel      []AIUsageByModel      `json:"by_model" nullable:"false"`
 	ByAgent      []AIUsageByAgent      `json:"by_agent" nullable:"false"`
 	ByPerson     []AIUsageByPerson     `json:"by_person" nullable:"false"`
+	Assistant    AIAssistantUsage      `json:"assistant" doc:"The assistant's month, as its monitoring counts it (QA-AI-04)."`
+}
+
+// AIAssistantUsage is the assistant's month, as its monitoring counts it (QA-AI-04; p1-ai-assistant task 8.4): its turns
+// and how they ended, what grounding did, its reads and what went wrong with them, what screening stopped or withheld,
+// and its cost per conversation.
+type AIAssistantUsage struct {
+	Turns               int    `json:"turns" doc:"Questions asked in the month." example:"240"`
+	Answered            int    `json:"answered" example:"229"`
+	Refused             int    `json:"refused" doc:"Stopped with a code: a limit, the switch, a budget, screening." example:"9"`
+	Failed              int    `json:"failed" doc:"The AI service did not finish." example:"2"`
+	Regenerated         int    `json:"regenerated" doc:"Answers that failed the figures' check once and were asked for again (AI-08): grounding failures." example:"6"`
+	Withheld            int    `json:"withheld" doc:"Figures or words withheld because they still failed the check." example:"1"`
+	Reads               int    `json:"reads" doc:"The read tools' calls." example:"610"`
+	ReadsRefused        int    `json:"reads_refused" doc:"Reads refused or failed: tool errors." example:"12"`
+	ScreeningFlags      int    `json:"screening_flags" doc:"Turns screening stopped, and reads whose text it withheld (AI-P7)." example:"3"`
+	Conversations       int    `json:"conversations" doc:"Conversations with a question in the month." example:"58"`
+	Cost                string `json:"cost" doc:"The chat agent's model calls, in the base currency, exact." example:"12.4836"`
+	CostPerConversation string `json:"cost_per_conversation,omitempty" doc:"Cost over conversations, rounded once to four places by RND-DISPLAY; absent with no conversation." example:"0.2152"`
 }
 
 type (
@@ -156,18 +177,13 @@ func quotaUse(ctx context.Context, u storage.UnitOfWork, c storage.AIConnection,
 	if err != nil {
 		return nil, err
 	}
-	out := &AIQuotaUse{Amount: q.Amount, Unit: q.Unit, Window: q.Window, Resets: resets.UTC()}
+	units := map[string]int64{}
 	for _, r := range rows {
-		if r.ConnectionID != c.ID {
-			continue
-		}
-		if q.Unit == "requests" {
-			out.Used += r.Requests
-		} else {
-			out.Used += r.Input + r.Output + r.CacheRead + r.CacheWrite
+		if r.ConnectionID == c.ID {
+			units[r.Model] += q.Units(r.Requests, r.Input+r.Output+r.CacheRead+r.CacheWrite)
 		}
 	}
-	return out, nil
+	return &AIQuotaUse{Amount: q.Amount, Unit: q.Unit, Window: q.Window, Used: q.Drawn(units), Resets: resets.UTC()}, nil
 }
 
 func registerAIUsage(a *API) {
@@ -261,6 +277,26 @@ func registerAIUsage(a *API) {
 			})
 			sort.Slice(out.ByAgent, func(i, j int) bool { return out.ByAgent[i].Agent < out.ByAgent[j].Agent })
 			sort.Slice(out.ByPerson, func(i, j int) bool { return out.ByPerson[i].Person < out.ByPerson[j].Person })
+			m, err := u.AIConversations().Monitor(ctx, from, to)
+			if err != nil {
+				return err
+			}
+			out.Assistant = AIAssistantUsage{Turns: m.Turns, Answered: m.Answered, Refused: m.Refused, Failed: m.Failed, Regenerated: m.Regenerated,
+				Withheld: m.Withheld, Reads: m.Reads, ReadsRefused: m.ReadsRefused, ScreeningFlags: m.Screened, Conversations: m.Conversations, Cost: "0"}
+			if chat := agents[assistant.Agent]; chat != nil {
+				out.Assistant.Cost = chat.Cost
+			}
+			if m.Conversations > 0 {
+				cost, _, err := apd.NewFromString(out.Assistant.Cost)
+				if err != nil {
+					return err
+				}
+				var per apd.Decimal
+				if _, err := apd.BaseContext.WithPrecision(34).Quo(&per, cost, apd.New(int64(m.Conversations), 0)); err != nil {
+					return err
+				}
+				out.Assistant.CostPerConversation = rounding.Display(&per, 4)
+			}
 			return nil
 		})
 		return &aiUsageOutput{Body: out}, err

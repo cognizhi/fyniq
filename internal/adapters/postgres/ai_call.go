@@ -52,6 +52,24 @@ func (r aiCalls) OfRun(ctx context.Context, run uuid.UUID) ([]storage.AICall, er
 	return toAICalls(rows), nil
 }
 
+func (r aiCalls) CostOfRuns(ctx context.Context, runs []uuid.UUID) (map[uuid.UUID]string, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	out := map[uuid.UUID]string{}
+	if len(runs) == 0 {
+		return out, nil
+	}
+	rows, err := r.u.q.AICallCostOfRuns(ctx, runs)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	for _, row := range rows {
+		out[row.RunID] = row.CostBase
+	}
+	return out, nil
+}
+
 func (r aiCalls) Page(ctx context.Context, q storage.AICallQuery) ([]storage.AICall, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

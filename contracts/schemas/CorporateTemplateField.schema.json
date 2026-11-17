@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "choices": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "A choice's values and the words the paper writes for each.",
+      "examples": [
+        {
+          "ordinary": "ordinary",
+          "special": "special"
+        }
+      ],
+      "type": "object"
+    },
+    "label": {
+      "description": "What to ask for.",
+      "examples": [
+        "The financial year's last day"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "The field, as CorporateDocumentFields names it.",
+      "examples": [
+        "fy_end"
+      ],
+      "type": "string"
+    },
+    "optional": {
+      "description": "true: it may be left out.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "roles": {
+      "description": "An officer field: the offices it accepts.",
+      "examples": [
+        [
+          "secretary",
+          "ceo"
+        ]
+      ],
+      "items": {
+        "examples": [
+          "secretary"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "type": {
+      "description": "What it takes: a date, a time of day, a text, lines, one of its choices, a whole number, an amount, or an officer in office.",
+      "enum": [
+        "date",
+        "time",
+        "text",
+        "lines",
+        "choice",
+        "count",
+        "amount",
+        "officer"
+      ],
+      "examples": [
+        "date"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "label",
+    "optional"
+  ],
+  "title": "CorporateTemplateField",
+  "type": "object"
+}

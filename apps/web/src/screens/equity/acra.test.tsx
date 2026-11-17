@@ -18,6 +18,7 @@ const paid = { key: "founders.share-capital-registered", ref: "C.2 #25", status:
 
 // req: FR-EQ-26
 // req: FR-EQ-27
+// req: FR-CS-01
 describe("the ACRA reconciliation", () => {
   it("shows each difference from the business profile and paid-up capital against the ledger; axe finds nothing", async () => {
     answer({
@@ -60,12 +61,18 @@ describe("the ACRA reconciliation", () => {
     fireEvent.change(within(dialog).getByLabelText("Business profile of"), { target: { value: "2026-10-02" } });
     fireEvent.change(within(dialog).getByLabelText("Holding 1: shares"), { target: { value: "700,000" } });
     fireEvent.change(within(dialog).getByLabelText("Holding 2: shares"), { target: { value: "300000" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add an officer" }));
+    fireEvent.change(within(dialog).getByLabelText("Officer 1: name"), { target: { value: "Tan Mei Lin " } });
+    fireEvent.change(within(dialog).getByLabelText("Officer 1: appointed on"), { target: { value: "2026-03-02" } });
+    fireEvent.change(within(dialog).getByLabelText("Registered office (optional)"), { target: { value: "1 North Bridge Road" } });
     await noViolations(document.body);
     fireEvent.click(within(dialog).getByRole("button", { name: "Save the extract" }));
     expect(await screen.findByText("The extract is typed in. Attach the business profile's PDF, then record it.")).toBeTruthy();
     expect(seen.find((s) => s.method === "POST" && s.path === "/v1/acra-extracts")?.body).toEqual({
       profile_on: "2026-10-02",
       holdings: [{ holder_id: "c-kow", class_account_id: "acc-3010", shares: "700000" }, { holder_id: "c-lion", class_account_id: "acc-3010", shares: "300000" }],
+      officers: [{ name: "Tan Mei Lin", role: "director", appointed_on: "2026-03-02" }],
+      registered_office: "1 North Bridge Road",
     });
   });
 

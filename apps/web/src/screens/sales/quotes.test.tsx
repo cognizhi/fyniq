@@ -7,6 +7,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { QuotePage, check } from "./QuotePage";
 import { Quotes } from "./Quotes";
+import { invalid } from "../../test/invalid";
 
 type Quote = components["schemas"]["Quote"];
 
@@ -82,6 +83,26 @@ describe("A quote", () => {
     expect(check({ ...form, lines: [line] }, "SGD").errors.valid_until).toBe("Enter the last day the quote is valid.");
     expect(check({ ...form, valid_until: "2026-10-01", lines: [line] }, "SGD").errors.valid_until).toBe("Enter a day on or after the quote's date.");
     expect(check({ ...form, lines: [line] }, "SGD", true).draft).toMatchObject({ customer_id: "c1", lines: [{ quantity: "1", unit_price: "100" }] });
+    const bad = { ...line, quantity: "two", unit_price: "", discount: "120", account_id: "", gst_code: "" };
+    expect(check({ ...form, valid_until: "2026-11-14", currency: "USD", fx_rate: "1,35", lines: [bad] }, "SGD").errors).toEqual({
+      fx_rate: "Enter the rate as SGD for 1 USD, or leave it blank to take the day's rate.",
+      "l1.account": "Choose the revenue account the line earns.",
+      "l1.gst_code": "Choose the line's GST code, such as SR for a standard-rated supply.",
+      "l1.quantity": "Enter how many, such as 1 or 2.5, with up to 6 decimals.",
+      "l1.unit_price": "Enter the price of one before GST, such as 1,500.00.",
+      "l1.discount": "Enter a percentage from 0 to 100, such as 10, or leave it blank.",
+    });
+    expect(check({ ...form, valid_until: "2026-11-14", currency: "S$", lines: [] }, "SGD").errors).toEqual({ currency: "Enter a currency code, such as SGD.", lines: "Add a line for what is offered." });
+  });
+
+  // QA-UI-01: the quote's own fields are marked, with what each needs beside them, before anything is sent.
+  it("marks each field it cannot read, before anything is sent", async () => {
+    const calls = answer(reads);
+    renderPage(QuotePage, { path: "/sales/quotes/new", session: accountant, organisation: standard });
+    fireEvent.change(await screen.findByLabelText("Valid until"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save as a draft" }));
+    await invalid(document.body, "Valid until", "Enter the last day the quote is valid.");
+    expect(calls.filter((s) => s.method === "POST")).toEqual([]);
   });
 
   it("is sent from its draft", async () => {
@@ -121,7 +142,7 @@ describe("A quote", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Cancel…" }));
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
-    expect(await within(dialog).findByText("Say why: the audit trail keeps the reason.")).toBeTruthy();
+    await invalid(dialog, "Why it is cancelled", "Say why: the audit trail keeps the reason.");
     fireEvent.change(within(dialog).getByLabelText("Why it is cancelled"), { target: { value: "The customer chose another supplier" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(calls.some((s) => s.method === "POST" && s.path === "/v1/quotes/q1/cancel")).toBe(true));

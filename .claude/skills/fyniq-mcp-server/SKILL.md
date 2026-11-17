@@ -39,7 +39,7 @@ Owner allows it).
 | Piece | Path / service | Identity and rights |
 |---|---|---|
 | MCP server | `cmd/mcp` → Cloud Run `mcp`, routed at `/mcp` | Own service account; **no database access**; reaches data only through the API |
-| Tool registry | `contracts/ai/tools/*.yaml` (shared with the in-app assistant; see **fyniq-ai-proposals**) | Generated into Go types and the MCP `tools/list` output |
+| Tool registry | `contracts/ai/tools/*.json`, loaded by `internal/aitool` (shared with the in-app assistant; see **fyniq-ai-proposals**) | Generated into Go types and the MCP `tools/list` output |
 | OAuth server | Ory Hydra (`oauth` service, ADR-T3), at `/oauth2` | Issues tokens; the Fyniq API is its login and consent app |
 | Consent and Connected apps | `apps/web` Settings → Connected apps (AI-44) | Users revoke their own; the Owner revokes any |
 | Audit | AI activity log (AI-12) through the API | — |

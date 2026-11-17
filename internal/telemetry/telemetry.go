@@ -213,3 +213,21 @@ func Transport(base http.RoundTripper, propagate bool) http.RoundTripper {
 	}
 	return otelhttp.NewTransport(base, opts...)
 }
+
+// Counts adds an event to the request's span with counts only, never a value of the request: such as a turn of the
+// assistant with its reads, refusals and what grounding and screening did (QA-AI-04). Kept with its request's trace,
+// so Cloud Monitoring can count them [live-verify].
+func Counts(ctx context.Context, event string, counts map[string]int64, labels map[string]string) {
+	span := trace.SpanFromContext(ctx)
+	if !span.IsRecording() {
+		return
+	}
+	attrs := make([]attribute.KeyValue, 0, len(counts)+len(labels))
+	for k, v := range counts {
+		attrs = append(attrs, attribute.Int64(k, v))
+	}
+	for k, v := range labels {
+		attrs = append(attrs, attribute.String(k, v))
+	}
+	span.AddEvent(event, trace.WithAttributes(attrs...))
+}

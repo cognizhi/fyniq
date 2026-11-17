@@ -1,0 +1,24 @@
+{
+  "kind": "agm.minutes",
+  "version": 1,
+  "title": "Minutes of the annual general meeting",
+  "summary": "Records the annual general meeting: who was present, the statements received and the resolutions passed.",
+  "signers": "chair",
+  "fields": [
+    {"name": "meeting_on", "type": "date", "label": "The meeting's day"},
+    {"name": "time", "type": "time", "label": "Its time"},
+    {"name": "place", "type": "text", "label": "Its place"},
+    {"name": "chair", "type": "text", "label": "Who chaired it"},
+    {"name": "present", "type": "lines", "label": "Who was present, one a line"},
+    {"name": "fy_end", "type": "date", "label": "The financial year whose statements it received"},
+    {"name": "resolutions", "type": "lines", "label": "The resolutions passed, one a line"}
+  ],
+  "sections": [
+    {"paragraphs": ["The annual general meeting of {{.Company.Name}} was held at {{.F.place}} on {{.F.meeting_on}} at {{.F.time}}."]},
+    {"heading": "Present", "items_from": "present"},
+    {"heading": "Chair", "paragraphs": ["{{.F.chair}} chaired the meeting. A quorum being present, the chair declared the meeting open."]},
+    {"heading": "Financial statements", "paragraphs": ["The financial statements for the financial year ended {{.F.fy_end}}, with the statement by the directors, were received and adopted."]},
+    {"heading": "Resolutions", "items_from": "resolutions"},
+    {"paragraphs": ["There being no other business, the chair declared the meeting closed."]}
+  ]
+}
