@@ -28,6 +28,9 @@ func (noSessions) StartSession(context.Context, storage.NewSession) error { retu
 func (noSessions) RecordIdentityEmail(context.Context, string, string, string, time.Time) error {
 	return nil
 }
+func (noSessions) EmailMatches(context.Context, string, string, string) ([]storage.MemberOf, error) {
+	return nil, nil
+}
 func (noSessions) Session(context.Context, []byte, time.Time, time.Duration) (storage.Session, error) {
 	return storage.Session{}, ports.ErrNotFound
 }

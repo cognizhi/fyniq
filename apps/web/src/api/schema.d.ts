@@ -31720,7 +31720,7 @@ export interface components {
              * @example bill
              * @enum {string}
              */
-            activity: "bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession";
+            activity: "bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession" | "equity" | "filing" | "gst_forecast" | "corporate";
             /**
              * Format: date
              * @description Its date.
@@ -47026,7 +47026,7 @@ export interface components {
         };
         SearchEvidenceOutputBody: {
             /** @description The kinds of record you may search. */
-            activities: ("bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession" | "equity" | "corporate")[];
+            activities: ("bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession" | "equity" | "filing" | "gst_forecast" | "corporate")[];
             /** @description The files on this page, newest record date first. */
             items: components["schemas"]["EvidenceFound"][];
             /**
@@ -106707,7 +106707,7 @@ export interface operations {
                 /** @description The next_cursor of the previous page; leave it out for the first page. */
                 cursor?: string;
                 /** @description Only files on this kind of record; every kind you may see when left out. */
-                activity?: "bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession";
+                activity?: "bill" | "invoice" | "journal" | "bank" | "claim" | "vendor_bank_change" | "person_bank_change" | "founders" | "owner_succession" | "equity" | "filing" | "gst_forecast" | "corporate";
                 /** @description Only files whose evidence type contains this, case aside. */
                 evidence_type?: string;
                 /** @description Only files on records dated on or after this day. */

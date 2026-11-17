@@ -4,14 +4,14 @@ type: task
 title: Prepare, post and reverse journals
 summary: Prepare, check and post journals, ask for approval, edit or reverse a posted one, attach evidence, recurring journals, reversals that wait
 sources:
-  - docs/user-guide/journals.md sha256:77ed7eb6bf72ceef982657c271c38e76b21e6682e22b11a01974f8fcb3baa65a
+  - docs/user-guide/journals.md sha256:4ec04ec178d9523868a94eb6c96db178b7ce5dfd45306143875438380bba8405
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-06
+compiled_at: 2026-11-17
 aliases:
   - journal
   - manual journal
@@ -151,6 +151,7 @@ aliases:
 - Under **Evidence** on a journal's page, attach the files it rests on, such as an accrual's calculation, an invoice or a board resolution: a PDF, an image, a CSV or text file, an XLSX or DOCX file, or an email, up to 25 MB.
 - Say what the file is, add a note if it helps, and whether it holds personal data or bank details, then select **Attach**.
 - Fyniq decides the file's type from its content, scans it for malware and strips image metadata such as location before keeping it.
+- A HEIC photo, as an iPhone takes by default, is not accepted yet: export it as JPEG first.
 - On a draft a file can come off again; once the journal is posted its files are kept, and never deleted, for as long as the records are, as is a file added later.
 - A journal whose debits are above S$1,000 posts only with a supporting calculation or document attached, unless the organisation's **Evidence for manual journals** settings say otherwise ([[settings.organisation]]).
 - A file whose text shows an NRIC or FIN in full is marked **Shows an NRIC**: mask the number before sharing it.

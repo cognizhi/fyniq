@@ -160,6 +160,7 @@ services:
       FYNIQ_MCP_AUDIENCE: http://localhost:${FYNIQ_HTTP_PORT:-8080}/mcp
       FYNIQ_PUBLIC_ORIGIN: http://localhost:${FYNIQ_HTTP_PORT:-8080}   # where the browser is: sign-in sends it back here
       FYNIQ_CLAMD_ADDR: ${FYNIQ_CLAMD_ADDR:-}                # clamav:3310 with the scanner profile; else the EICAR fake
+      FYNIQ_TICK_INTERVAL: ${FYNIQ_TICK_INTERVAL:-5m}       # the API's own tick, as Cloud Scheduler's; the journeys' stack ticks faster
       # Caddy names the client in X-Fyniq-Client-IP, as the load balancer does (SEC-23): believed from the stack's own
       # network only.
       FYNIQ_TRUSTED_PROXIES: 172.16.0.0/12,192.168.0.0/16

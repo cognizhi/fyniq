@@ -360,6 +360,7 @@ func TestThePromptIsTheLatestVersionHashed(t *testing.T) {
 // that hold a figure fail the same way; a figure is rendered from its fact, never from the model's words.
 // req: AI-08
 // req: AI-21
+// req: G4-089
 func TestFiguresAreBoundToTheirFacts(t *testing.T) {
 	a := aitool.Fact{ID: "F000000000000000a", Measure: "receivables", Value: "1250.5", Unit: aitool.UnitAmount, Currency: "SGD", From: "2026-08-31",
 		To: "2026-08-31", Dimension: "customer", Member: "cust-a", MemberName: "Acme Pte Ltd", Revision: 3}
@@ -414,6 +415,49 @@ func TestFiguresAreBoundToTheirFacts(t *testing.T) {
 		if !out.Grounding.Regenerated || out.Grounding.Withheld == 0 && name != "not its shape" || strings.Contains(out.Text, "1,250") {
 			t.Errorf("%s: %q %+v", name, out.Text, out.Grounding)
 		}
+	}
+}
+
+// A part that could not be read says so (AI-08; G4-090): asked three things, with one of its three reads refused, the
+// answer says which part it could not establish and gives no figure for it, the parts read keep their facts, and a
+// figure from an earlier turn keeps its fact ID; a figure given for the failed part, on a fact no read returned, is
+// withheld and said to be unknown.
+// req: AI-08
+// req: G4-090
+func TestAPartThatCouldNotBeReadSaysSo(t *testing.T) {
+	revenue := aitool.Fact{ID: "F0000000000000a01", Measure: "revenue", Value: "5000", Unit: aitool.UnitAmount, Currency: "SGD", From: "2026-08-01",
+		To: "2026-08-31", Revision: 3}
+	cash := revenue
+	cash.ID, cash.Measure, cash.From = "F0000000000000c01", "cash", "2026-08-31"
+	costs := revenue // read in an earlier turn of the conversation
+	costs.ID, costs.Measure, costs.Value = "F0000000000000e01", "costs", "1200"
+	reads := ports.ModelResponse{Parts: []ports.ModelPart{toolCall("c1", "metrics_query", `{"measure":"revenue"}`),
+		toolCall("c2", "metrics_query", `{"measure":"cash"}`), toolCall("c3", "records_get", `{"kind":"invoice","id":"0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"}`)}}
+	refused := &assistant.Problem{Status: 503, Code: "AI-TOOL-05", Detail: "The records could not be read just now."}
+	ask := func(answers ...ports.ModelResponse) assistant.Answer {
+		t.Helper()
+		b := &api{answers: append([]ports.ModelResponse{reads}, answers...), refuse: map[string]*assistant.Problem{"records.get": refused},
+			results: map[string]assistant.ToolResult{"metrics.query": {Tool: "metrics.query", Version: 1, Facts: []aitool.Fact{revenue, cash}}}}
+		out, err := (&assistant.Assistant{Backend: b, Prompt: prompt(t)}).Answer(context.Background(), assistant.Question{Token: "fyai_t",
+			Text: "August's revenue, the cash at its end, July's costs again, and what INV-0012 is for?", Earlier: []aitool.Fact{costs}},
+			func(assistant.Event) error { return nil })
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+
+	out := ask(answer(words("Revenue was "), cite(revenue), words("; cash was "), cite(cash), words("; costs were "), cite(costs),
+		words(". "), assistant.Segment{Missing: "what INV-0012 is for, as the records could not be read"}))
+	if out.Grounding.Regenerated || out.Grounding.Withheld != 0 || !strings.Contains(out.Text, "SGD 5,000.00") || !strings.Contains(out.Text, "SGD 1,200.00") ||
+		!strings.Contains(out.Text, "(I could not establish what INV-0012 is for, as the records could not be read)") || !slices.Contains(out.Cited, costs.ID) {
+		t.Errorf("a part that could not be read: %q %+v %v", out.Text, out.Grounding, out.Cited)
+	}
+
+	invented := assistant.Segment{Fact: "F0000000000000f01", Measure: "invoice.total"}
+	out = ask(answer(words("The invoice is for "), invented), answer(words("The invoice is for "), invented))
+	if out.Grounding.Withheld != 1 || !strings.Contains(out.Text, "could not establish") || slices.Contains(out.Cited, "F0000000000000f01") {
+		t.Errorf("a figure for the part that failed: %q %+v", out.Text, out.Grounding)
 	}
 }
 

@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/smtp"
 	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/assistant"
+	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -61,7 +62,11 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	if err != nil {
 		return nil, err
 	}
-	catalogue, err := connectors.Catalogue()
+	scripted, err := scriptedModel()
+	if err != nil {
+		return nil, err
+	}
+	catalogue, err := connectors.Catalogue(scripted)
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +127,22 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	}
 	kit.watchChanges(clock)
 	return kit, nil
+}
+
+// scriptedModel is local mode's scripted model as a connector (p1-launch-readiness design D6): the AI journeys' connection
+// answers from its scripts inside the API. Only the local build adds it to the catalogue.
+func scriptedModel() (connector.Binding, error) {
+	m, err := connector.Parse(local.ScriptedManifest)
+	if err != nil {
+		return connector.Binding{}, err
+	}
+	scripts, err := local.JourneyScripts()
+	if err != nil {
+		return connector.Binding{}, err
+	}
+	return connector.Binding{Manifest: m, Model: func(connector.Config) (ports.ModelProvider, error) {
+		return local.Scripted{Scripts: scripts}, nil
+	}}, nil
 }
 
 // scanner is clamd at FYNIQ_CLAMD_ADDR when it is set, else fallback.

@@ -52,6 +52,10 @@ type fakeSessions struct {
 	sessionEmails []string
 }
 
+func (f *fakeSessions) EmailMatches(context.Context, string, string, string) ([]storage.MemberOf, error) {
+	return nil, nil
+}
+
 func (f *fakeSessions) RecordIdentityEmail(_ context.Context, issuer, subject, email string, _ time.Time) error {
 	f.emails = append(f.emails, issuer+" "+subject+" "+email)
 	return nil

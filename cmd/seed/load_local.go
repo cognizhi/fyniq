@@ -12,7 +12,10 @@ import (
 
 	"github.com/google/uuid"
 
+	localadapter "github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/ai"
+	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/seed"
 	"github.com/cognizhi/fyniq/internal/seedload"
@@ -27,7 +30,7 @@ func local(ctx context.Context) (*postgres.Store, error) {
 }
 
 func init() {
-	newOrganisation = func(ctx context.Context, now time.Time, name string, invites []string, c seed.Company) (Made, error) {
+	newOrganisation = func(ctx context.Context, now time.Time, name string, invites []string, c seed.Company, scriptedAI string) (Made, error) {
 		type invite struct {
 			name  string
 			roles []string
@@ -67,6 +70,13 @@ func init() {
 		if _, err := seedload.Load(ctx, store, org.ID, c); err != nil {
 			return Made{}, err
 		}
+		if scriptedAI != "" {
+			if err := store.Do(ctx, org.ID, func(ctx context.Context, u storage.UnitOfWork) error {
+				return scripted(ctx, u, now, scriptedAI == "on")
+			}); err != nil {
+				return Made{}, fmt.Errorf("the scripted AI: %w", err)
+			}
+		}
 		return made, nil
 	}
 	loadInto = func(ctx context.Context, org string, c seed.Company) error {
@@ -87,4 +97,63 @@ func init() {
 			c.Seed, id, r.Accounts, r.Periods, r.Journals)
 		return nil
 	}
+}
+
+// scripted sets an organisation up for the AI journeys (p1-launch-readiness design D6): a connection to local mode's
+// scripted model, which runs inside the API under its own identity at no fee, its one model listed, probed, allowed and qualified
+// for the chat agent, and the chat agent's route to it; with on, also the AI switch on from today and the task type
+// sec.create_task on, which a UAT script instead asks for and a second person approves. The approvals stand in, as the
+// API tests' do: these journeys test the assistant and a proposal's approval, and the set-up's own dual control is
+// tested where it is built (p1-ai-providers). Its qualification is the scripted model's own scripts, never an eval suite.
+func scripted(ctx context.Context, u storage.UnitOfWork, now time.Time, on bool) error {
+	const by = "system:seed"
+	approval := uuid.Must(uuid.NewV7())
+	entry, err := u.Compliance().SaveInventoryEntry(ctx, storage.InventoryEntry{What: "The journeys' questions to the scripted model",
+		Why: "The AI journeys", Where: "Inside the local API", Who: "The journeys' people", Retention: "None", Transfers: "None", State: "open",
+		SavedBy: by, SavedAt: now, Version: 1})
+	if err != nil {
+		return err
+	}
+	handling := `{"inventory_id":"` + entry.EntryID.String() + `","handling":[{"model":"*","endpoint":"scripted.localhost","feature":"*",` +
+		`"processed_in":["SG"],"training":"no","evidence":{"kind":"source","url":"https://github.com/cognizhi/fyniq/blob/main/internal/adapters/local/scripted.go",` +
+		`"title":"The scripted model answers inside the local API","checked_on":"` + now.Format(time.DateOnly) + `"}}]}`
+	c, err := u.AIConnections().Create(ctx, storage.AIConnection{Name: "Scripted (journeys)", Connector: "scripted", Auth: "workload-identity", Configuration: []byte(`{}`),
+		Host: "scripted.localhost", Billing: "subscription", Quota: []byte(`{"amount":100000,"unit":"requests","window":"day","fee":"0.00","currency":"SGD"}`),
+		DataHandling: []byte(handling), CreatedBy: by, CreatedAt: now}, approval)
+	if err != nil {
+		return err
+	}
+	model := localadapter.ScriptedModel
+	if _, err := u.AIModels().Record(ctx, storage.AIModelListRead{ConnectionID: c.ID, Trigger: "refresh", Outcome: "complete", Pages: 1, Added: 1,
+		ReadBy: by, ReadAt: now}, []storage.AIModel{{ConnectionID: c.ID, Model: model, FirstListed: now, LastListed: now, Listed: true}}); err != nil {
+		return err
+	}
+	if _, err := u.AIModels().Probe(ctx, c.ID, model, true, false, "answered", now); err != nil {
+		return err
+	}
+	if _, err := u.AIModels().Allow(ctx, c.ID, model, true, &approval); err != nil {
+		return err
+	}
+	if _, err := u.AIQualifications().Record(ctx, storage.AIQualification{Agent: "chat", ConnectionID: c.ID, Model: model, Version: model,
+		Suite: "scripted-journeys", SuiteVersion: 1, Threshold: "1", Cases: 2, Passed: 2, Result: "pass", Run: uuid.Must(uuid.NewV7()), RanBy: by, RanAt: now}); err != nil {
+		return err
+	}
+	c.State, c.ChangedBy, c.ChangedAt = "enabled", by, now
+	if _, err := u.AIConnections().Step(ctx, c, storage.AIConnectionEnabled, &approval); err != nil {
+		return err
+	}
+	if _, err := u.AIRoutes().Save(ctx, storage.AIRoute{Agent: "chat", Version: 1, Classes: []string{"business-figures", "personal-data"}, MadeBy: by,
+		MadeAt: now, Steps: []storage.AIRouteStep{{ConnectionID: c.ID, Model: model}}}); err != nil {
+		return err
+	}
+	if !on {
+		return nil
+	}
+	y, m, d := now.In(appclock.Singapore).Date()
+	from := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	if _, err := u.Settings().Record(ctx, ai.Switch, "false", "true", from, 1); err != nil {
+		return err
+	}
+	_, err = u.Settings().Record(ctx, "ai.task_types", "", "sec.create_task", from, 1)
+	return err
 }
