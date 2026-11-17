@@ -6,6 +6,7 @@ import type { Session } from "../api/client";
 import { startAppearance } from "../appearance";
 import { noViolations } from "../test/axe";
 import type { Mode } from "../registry";
+import { AskAboutThis } from "../components/ai/AskAboutThis";
 import { AppFrame } from "./AppFrame";
 
 const owner: Pick<Session, "roles" | "features"> = {
@@ -13,7 +14,7 @@ const owner: Pick<Session, "roles" | "features"> = {
   features: { multi_currency: true, payroll: false, projects: false, portals: false, ai_assistant: false },
 };
 
-function renderFrame(session = owner, mode: Mode = "basic") {
+function renderFrame(session = owner, mode: Mode = "basic", page: React.ReactNode = <h1>Home</h1>) {
   const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const root = createRootRoute();
   const home = createRoute({
@@ -22,7 +23,7 @@ function renderFrame(session = owner, mode: Mode = "basic") {
     component: () => (
       <QueryClientProvider client={queries}>
         <AppFrame session={session} title="Home" mode={mode}>
-          <h1>Home</h1>
+          {page}
         </AppFrame>
       </QueryClientProvider>
     ),
@@ -99,6 +100,24 @@ describe("the app frame", () => {
     await waitFor(() => expect(screen.queryByRole("complementary", { name: "Assistant" })).toBeNull());
     expect(document.activeElement).toBe(button);
     expect(document.querySelector(".fy-app")?.getAttribute("data-ai")).toBeNull();
+  });
+
+  // req: FR-UX-17
+  it("opens the assistant from Ask about this with the record as its context, and hides it while the AI is off", async () => {
+    const ask = <AskAboutThis context={{ kind: "invoice", id: "i-1", label: "INV-0136 · Kopi Labs" }} />;
+    renderFrame({ ...owner, features: { ...owner.features!, ai_assistant: true } }, "basic", ask);
+    fireEvent.click(await screen.findByRole("button", { name: "Ask about this" }));
+    const panel = await screen.findByRole("complementary", { name: "Assistant" });
+    expect(within(panel).getByText("INV-0136 · Kopi Labs")).toBeTruthy();
+    expect((within(panel).getByLabelText("Ask the assistant") as HTMLTextAreaElement).placeholder).toBe("Ask about INV-0136 · Kopi Labs…");
+    fireEvent.click(within(panel).getByRole("button", { name: "Remove the context" }));
+    expect(within(panel).queryByText("INV-0136 · Kopi Labs")).toBeNull();
+  });
+
+  it("shows no Ask about this while the AI is switched off", async () => {
+    renderFrame(owner, "basic", <AskAboutThis context={{ kind: "invoice", id: "i-1", label: "INV-0136" }} />);
+    await screen.findByRole("banner");
+    expect(screen.queryByRole("button", { name: "Ask about this" })).toBeNull();
   });
 
   it("opens the command palette with Ctrl+K and switches the theme from it", async () => {

@@ -40,6 +40,18 @@
       "label": "Help",
       "tooltip": "About Fyniq, and the version you are on."
     },
+    "assistant.ask-about-this": {
+      "label": "Ask about this",
+      "tooltip": "Open the assistant with this record, report or figure as what you are asking about."
+    },
+    "assistant.feedback": {
+      "label": "Rate this answer",
+      "tooltip": "Thumbs up or down with a reason. An Owner or Administrator reviews it, with your question and the answer, before it helps test the assistant."
+    },
+    "assistant.simulate": {
+      "label": "Simulate",
+      "tooltip": "See the lowest cash balance if this invoice or bill is paid on another day, or not at all. Nothing is saved."
+    },
     "shell.assistant": {
       "label": "Assistant",
       "tooltip": "Ask about your books in your own words; every figure comes from Fyniq with its source. Shortcut: Ctrl+J, or ⌘J on a Mac."

@@ -12,8 +12,8 @@ const turn = (t: Record<string, unknown>) => ({ id: "t-1", question: "What was o
   regenerated: false, withheld: 0, asked_at: "2026-11-15T01:00:00Z", ...t });
 const stream = (...events: [string, unknown][]) => ({ status: 200, events: events.map(([e, d]) => `event: ${e}\ndata: ${JSON.stringify(d)}\n\n`).join("") });
 
-function panel(props: { enabled?: boolean; mode?: "basic" | "expert" } = {}) {
-  return () => <AssistantPanel enabled={props.enabled ?? true} mode={props.mode ?? "basic"} onClearContext={() => {}} onClose={() => {}} />;
+function panel(props: { enabled?: boolean; mode?: "basic" | "expert"; context?: { kind: "invoice" | "bill" | "figure"; id?: string; label: string } } = {}) {
+  return () => <AssistantPanel enabled={props.enabled ?? true} mode={props.mode ?? "basic"} context={props.context} onClearContext={() => {}} onClose={() => {}} />;
 }
 
 // req: AI-22
@@ -132,3 +132,74 @@ describe("The assistant panel", () => {
     expect(routeOf("/v1/statutory-values?pack=sg-gst")).toBeUndefined();
   });
 });
+
+const bill = { kind: "bill" as const, id: "b-1", label: "Supplier Co · S-77" };
+const projection = (lowest: string, on: string, below?: string) => ({ today: "2026-11-15", days: 90, currency: "SGD", opening: { amount: "50000.00", currency: "SGD" },
+  lowest: { amount: lowest, currency: "SGD" }, lowest_on: on, below_buffer_on: below, buffer: {}, daily: [], weekly: [], not_included: [],
+  movements: [{ key: "b-1", kind: "bill", id: "b-1", number: "S-77", expected_on: "2026-11-20", basis: "due", amount: { amount: "-8000.00", currency: "SGD" } }] });
+
+// req: FR-UX-17
+// req: QA-AI-05
+describe("The assistant panel's lanes and ratings", () => {
+  it("rates an answer with a reason, once, saying who reviews it", async () => {
+    const seen = answer({
+      "POST /v1/assistant/conversations": { status: 201, body: { id: "c-1", title: "x", created_at: "2026-11-15T01:00:00Z" } },
+      "POST /v1/assistant/conversations/c-1/turns": stream(["answer", turn({ segments: [{ text: "Revenue fell." }] })]),
+      "POST /v1/assistant/conversations/c-1/turns/t-1/feedback": { status: 201, body: { id: "f-1", turn_id: "t-1", conversation_id: "c-1", person: "user:u", rating: "down",
+        reason: "Wrong month.", classes: [], given_at: "2026-11-15T01:01:00Z", state: "waiting", masked: false } },
+    });
+    renderPage(panel());
+    fireEvent.change(await screen.findByLabelText("Ask the assistant"), { target: { value: "Revenue?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Not helpful" }));
+    fireEvent.change(screen.getByLabelText("What was wrong with it?"), { target: { value: "Wrong month." } });
+    fireEvent.click(screen.getByRole("button", { name: "Send the rating" }));
+    expect(await screen.findByText(/You rated it not helpful: an Owner or Administrator will review it/)).toBeTruthy();
+    expect(seen.find((x) => x.path.endsWith("/feedback"))?.body).toEqual({ rating: "down", reason: "Wrong month." });
+    expect(screen.queryByRole("button", { name: "Helpful" })).toBeNull();
+    await noViolations();
+  });
+
+  it("explains what is asked about, sending its context with the question", async () => {
+    const seen = answer({
+      "POST /v1/assistant/conversations": { status: 201, body: { id: "c-1", title: "x", created_at: "2026-11-15T01:00:00Z" } },
+      "POST /v1/assistant/conversations/c-1/turns": stream(["answer", turn({ segments: [{ text: "It is the bill's total." }] })]),
+    });
+    renderPage(panel({ context: bill }));
+    expect(await screen.findByText("Supplier Co · S-77")).toBeTruthy(); // the context chip
+    fireEvent.click(screen.getByRole("radio", { name: "Explain" }));
+    fireEvent.click(screen.getByRole("button", { name: "Explain Supplier Co · S-77" }));
+    await waitFor(() => expect(seen.find((x) => x.path === "/v1/assistant/conversations/c-1/turns")?.body).toEqual({
+      question: "Explain Supplier Co · S-77: where it comes from and what it is made of.", context: bill }));
+  });
+
+  it("simulates the bill asked about through the cash what-if, saving nothing; moves between lanes with the arrow keys", async () => {
+    const seen = answer({
+      "GET /v1/cash-projection": { status: 200, body: projection("12000.00", "2026-11-20", "2026-11-20") },
+      "POST /v1/cash-projection:what-if": { status: 200, body: projection("20000.00", "2026-12-31") },
+    });
+    renderPage(panel({ context: bill }));
+    const ask = await screen.findByRole("radio", { name: "Ask" });
+    fireEvent.keyDown(ask, { key: "ArrowLeft" });
+    expect(screen.getByRole("radio", { name: "Simulate" }).getAttribute("aria-checked")).toBe("true");
+    expect(await screen.findByText(/Supplier Co · S-77: -8,000.00 SGD|Supplier Co · S-77: −8,000.00 SGD/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText(/it does not move in the next 90 days/));
+    fireEvent.click(screen.getByRole("button", { name: "Simulate" }));
+    const table = await screen.findByRole("table", { name: "The cash projection, now and in the what-if" });
+    expect(within(table).getByText(/12,000.00, 20 Nov 2026/)).toBeTruthy();
+    expect(within(table).getByText(/20,000.00, 31 Dec 2026/)).toBeTruthy();
+    expect(within(table).getByText("None")).toBeTruthy();
+    expect(seen.find((x) => x.path === "/v1/cash-projection:what-if")?.body).toEqual({ days: 90, moves: [{ key: "b-1", leave_out: true }] });
+    expect(screen.getByText(/Nothing was saved or changed/)).toBeTruthy();
+    expect(screen.queryByLabelText("Ask the assistant")).toBeNull();
+    await noViolations();
+  });
+
+  it("asks for an invoice or a bill to simulate when there is none", async () => {
+    answer({});
+    renderPage(panel());
+    fireEvent.click(await screen.findByRole("radio", { name: "Simulate" }));
+    expect(screen.getByRole("link", { name: "Cash ahead" }).getAttribute("href")).toBe("/planning/cash");
+  });
+});
+

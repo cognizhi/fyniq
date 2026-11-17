@@ -74,7 +74,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   screen by device class; streaming; citation chips; violet accent and the AI badge on every AI message; the disabled,
   budget, excluded-data and tool-failure states; Expert details; help keys, `docs/user-guide/ai-assistant.md` compiled
   into `kb/`; the `AiPanel` fragment updated locally. Tests `// req: AI-22`, `// req: AI-69`, Vitest with axe.
-- [ ] 7.2 "Ask about this" on records, report cells and figures with the context chip; Explain (lineage) and Simulate
+- [x] 7.2 "Ask about this" on records, report cells and figures with the context chip; Explain (lineage) and Simulate
   (the cash projection's what-if, read-only); feedback. Tests `// req: FR-UX-17`, `// req: QA-AI-05`.
 
 ## 8. Evals

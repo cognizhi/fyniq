@@ -572,3 +572,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-15] compile | docs/user-guide/ai-assistant.md → ai.assistant (the assistant panel; p1-ai-assistant task 7.1), linked from settings.ai-activity
 
 ## [2026-11-15] compile | docs/user-guide/appearance.md, docs/user-guide/home.md → preferences.appearance, home.find-your-way (on a phone, Appearance, Help and Sign out are under More)
+
+## [2026-11-15] compile | docs/user-guide/ai-assistant.md → ai.assistant (Ask about this, Explain, Simulate, rating an answer; p1-ai-assistant task 7.2)

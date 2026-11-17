@@ -315,6 +315,15 @@ AI-28).**
   full-conversation states are in words; the history lists, opens and deletes (asked once) one's own conversations.
   `AssistantContext` lets a page open it with a context chip, which task 7.2's "Ask about this" uses. The lanes and
   feedback arrive with 7.2.
+- As built (task 7.2): `AskAboutThis` (a secondary button, no violet; hidden while the session's AI switch is off) on
+  the invoice and credit note, bill and vendor credit, journal, contact and statement pages, and in the Trace panel for
+  a figure, which closes it first. The lanes are a radio group (arrow keys move between them). **Explain** sends
+  "Explain <label>: where it comes from and what it is made of." with the context, so the model reads it through
+  `lineage.explain` or the record. **Simulate** reads `getCashProjection` (90 days) and `whatIfCashProjection` for the
+  invoice or bill in context, moved to a day or left out, and compares the lowest balance and the first day below the
+  buffer. Those are Fyniq's figures, not AI content, and nothing is saved. Without such a context it points to Cash
+  ahead. Each answered or refused turn takes a thumbs up or down with a reason (`giveAIFeedback`), once, and then
+  shows where its review is.
 
 **D13. Evals (QA-AI-01, QA-AI-03, QA-AI-04, QA-AI-05; rev 0.277).**
 - `cmd/evals` gains assistant suites: the golden questions (`evals/golden/`, at least 200 on the sample company, each

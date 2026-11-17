@@ -11,6 +11,8 @@ import { Button } from "../ui/button";
 import { AiBadge } from "./AiBadge";
 import { AnswerText } from "./AnswerText";
 import { ask, type Fact, routeOf, startConversation, type Turn, type TurnContext } from "./assistant";
+import { TurnFeedback } from "./Feedback";
+import { CashSimulate } from "./Simulate";
 
 // The codes the panel answers in its own words (the rest are shown as the API words them).
 const switchedOff = "AI-ROUTER-05";
@@ -19,13 +21,22 @@ const conversationFull = "AI-LIMIT-03";
 
 const suggestions = ["What was our revenue last month?", "How much cash do we have?", "Which checks of the books need attention?"];
 
+type Lane = "ask" | "explain" | "simulate";
+const lanes: [Lane, string][] = [
+  ["ask", "Ask"],
+  ["explain", "Explain"],
+  ["simulate", "Simulate"],
+];
+
 // AssistantPanel is the AI assistant panel (screen ai-assistant-panel; PRD-001 FR-UX-17, AI-08, AI-22, AI-68, AI-69;
 // p1-ai-assistant design D12): a person's own conversations with the assistant, asked through the API, each answer
 // streamed while it reads the books and kept. Every AI message is violet with the AI badge; every figure is rendered
 // from its fact, with a citation chip that opens the report, ledger or record it came from, and Expert mode shows each
 // fact's source and query. Full screen in compact, a sheet in medium, docked beside the page in expanded (the kit's
 // .fy-ai). It shows the AI switched off, the budget spent and a full conversation in words, and never stores an answer
-// it did not get from the API (FR-UX-22).
+// it did not get from the API (FR-UX-22). Its lanes: Ask in your words; Explain what is asked about, which the assistant
+// reads through lineage.explain or the record; Simulate the invoice or bill asked about through the cash what-if (task
+// 7.2). Each answer takes a thumbs up or down with a reason (QA-AI-05). Prepare waits for p1-ai-proposals.
 export function AssistantPanel({ enabled, mode, context, onClearContext, onClose }: {
   enabled: boolean;
   mode: Mode;
@@ -43,6 +54,7 @@ export function AssistantPanel({ enabled, mode, context, onClearContext, onClose
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [question, setQuestion] = useState("");
   const [said, setSaid] = useState("");
+  const [lane, setLane] = useState<Lane>("ask");
   const expert = mode === "expert";
 
   useEffect(() => input.current?.focus(), []);
@@ -162,6 +174,26 @@ export function AssistantPanel({ enabled, mode, context, onClearContext, onClose
         </div>
       )}
 
+      {view === "thread" && !off && (
+        <div className="px-4 pt-3">
+          <div className="fy-segmented w-full" role="radiogroup" aria-label="What do you want to do">
+            {lanes.map(([l, label], i) => (
+              <button key={l} type="button" role="radio" className="flex-1" aria-checked={lane === l} tabIndex={lane === l ? 0 : -1} data-lane={l}
+                onClick={() => setLane(l)}
+                onKeyDown={(e) => {
+                  const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+                  if (!step) return;
+                  e.preventDefault();
+                  const next = lanes[(i + step + lanes.length) % lanes.length]?.[0] ?? "ask";
+                  setLane(next);
+                  (e.currentTarget.parentElement?.querySelector(`[data-lane="${next}"]`) as HTMLElement | null)?.focus();
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {view === "history" ? (
         <div className="fy-ai__thread">
           <h3 className="fy-h3">Your conversations</h3>
@@ -204,51 +236,76 @@ export function AssistantPanel({ enabled, mode, context, onClearContext, onClose
               </div>
             </div>
           )}
-          {turns.map((t) => (
-            <TurnView key={t.id} turn={t} expert={expert} />
-          ))}
-          {pending && (
+          {lane === "simulate" && !off ? (
+            <CashSimulate context={context} />
+          ) : (
             <>
-              <div className="fy-msg fy-msg--user">
-                <p>{pending.question}</p>
-              </div>
-              <div className="fy-msg fy-msg--ai">
-                <AiBadge />
-                <p className="fy-ai-text fy-small fy-secondary">{pending.status}…</p>
-              </div>
+              {turns.map((t) => (
+                <TurnView key={t.id} turn={t} expert={expert} conversation={conversation ?? ""}
+                  onRated={(f) => setTurns((all) => all.map((x) => (x.id === t.id ? { ...x, feedback: f } : x)))} />
+              ))}
+              {pending && (
+                <>
+                  <div className="fy-msg fy-msg--user">
+                    <p>{pending.question}</p>
+                  </div>
+                  <div className="fy-msg fy-msg--ai">
+                    <AiBadge />
+                    <p className="fy-ai-text fy-small fy-secondary">{pending.status}…</p>
+                  </div>
             </>
           )}
           {problem && !off && <TurnProblem problem={problem} onNew={fresh} />}
+            </>
+          )}
         </div>
       )}
       <p className="fy-sr" role="status">
         {pending ? pending.status : said}
       </p>
 
-      <form className="fy-ai__composer" onSubmit={submit}>
-        <label className="fy-sr" htmlFor={`${id}-ask`}>
-          Ask the assistant
-        </label>
-        <div className="fy-inputgroup">
-          <textarea id={`${id}-ask`} ref={input} className="fy-input" rows={2} value={question} disabled={off} maxLength={4000}
-            placeholder={context ? `Ask about ${context.label}…` : "Ask about your books…"} onChange={(e) => setQuestion(e.target.value)} onKeyDown={keys} />
-          <button className="fy-iconbtn" type="submit" aria-label="Send" title="Send" disabled={off || !!pending || question.trim() === ""}>
-            <Icon of={Send} size={20} />
-          </button>
+      {lane === "explain" && !off && view === "thread" ? (
+        <div className="fy-ai__composer">
+          {context ? (
+            <Button variant="secondary" className="self-start" disabled={!!pending}
+              onClick={() => void send(`Explain ${context.label}: where it comes from and what it is made of.`)}>
+              Explain {context.label}
+            </Button>
+          ) : (
+            <p className="fy-small fy-secondary">Choose Ask about this on a figure, a report or a record to have the assistant explain where it comes from.</p>
+          )}
         </div>
-        <div className="fy-row fy-row--between fy-small fy-muted gap-2">
-          <span>Uses only what you can see. It never sees identity or bank account numbers, nor payroll unless an Owner allows it.</span>
-          <span className="fy-from-medium whitespace-nowrap">
-            <span className="fy-kbd">Ctrl J</span> to close
-          </span>
-        </div>
-      </form>
+      ) : lane === "simulate" && !off && view === "thread" ? null : (
+        <form className="fy-ai__composer" onSubmit={submit}>
+          <label className="fy-sr" htmlFor={`${id}-ask`}>
+            Ask the assistant
+          </label>
+          <div className="fy-inputgroup">
+            <textarea id={`${id}-ask`} ref={input} className="fy-input" rows={2} value={question} disabled={off} maxLength={4000}
+              placeholder={context ? `Ask about ${context.label}…` : "Ask about your books…"} onChange={(e) => setQuestion(e.target.value)} onKeyDown={keys} />
+            <button className="fy-iconbtn" type="submit" aria-label="Send" title="Send" disabled={off || !!pending || question.trim() === ""}>
+              <Icon of={Send} size={20} />
+            </button>
+          </div>
+          <div className="fy-row fy-row--between fy-small fy-muted gap-2">
+            <span>Uses only what you can see. It never sees identity or bank account numbers, nor payroll unless an Owner allows it.</span>
+            <span className="fy-from-medium whitespace-nowrap">
+              <span className="fy-kbd">Ctrl J</span> to close
+            </span>
+          </div>
+        </form>
+      )}
     </aside>
   );
 }
 
 // TurnView is a question and the assistant's answer, as the API kept it.
-function TurnView({ turn: t, expert }: { turn: Turn; expert: boolean }) {
+function TurnView({ turn: t, expert, conversation, onRated }: {
+  turn: Turn;
+  expert: boolean;
+  conversation: string;
+  onRated: (r: NonNullable<Turn["feedback"]>) => void;
+}) {
   return (
     <>
       <div className="fy-msg fy-msg--user">
@@ -282,6 +339,9 @@ function TurnView({ turn: t, expert }: { turn: Turn; expert: boolean }) {
               {f.member_name ? ` (${f.member_name})` : ""} · {f.value ?? "no value"} · {f.lineage} · ledger revision {f.ledger_revision}
             </p>
           ))}
+        {conversation && (t.status === "answered" || t.status === "refused") && (
+          <TurnFeedback conversation={conversation} turn={t.id} rated={t.feedback} onRated={onRated} />
+        )}
       </div>
     </>
   );

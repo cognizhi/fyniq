@@ -134,14 +134,16 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
     setAssistant(false);
     opener.current?.focus();
   };
+  const enabled = session.features?.ai_assistant ?? false;
   const panel = useMemo(
     () => ({
       openWith: (c?: TurnContext) => {
         setContext(c);
         setAssistant(true);
       },
+      enabled,
     }),
-    [],
+    [enabled],
   );
 
   useEffect(() => {
@@ -266,7 +268,7 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
       <About open={about} onOpenChange={setAbout} />
       {assistant && (
         <Suspense fallback={null}>
-          <AssistantPanel enabled={session.features?.ai_assistant ?? false} mode={mode} context={context} onClearContext={() => setContext(undefined)}
+          <AssistantPanel enabled={enabled} mode={mode} context={context} onClearContext={() => setContext(undefined)}
             onClose={closeAssistant} />
         </Suspense>
       )}
