@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"time"
 )
@@ -135,8 +136,9 @@ type xlsxWriter struct {
 	b       *bufio.Writer // the open worksheet's, nil when none is
 	name    string        // the open sheet's name as given
 	header  []string
-	rows    int // rows in the open worksheet, its header counted
-	part    int // the open sheet's part: 1, then 2 when it went on in another worksheet
+	rows    int  // rows in the open worksheet, its header counted
+	part    int  // the open sheet's part: 1, then 2 when it went on in another worksheet
+	long    bool // the sheet holds a number past 15 significant digits, written as text: its footer says so
 }
 
 func (x *xlsxWriter) entry(name string) (io.Writer, error) {
@@ -144,7 +146,7 @@ func (x *xlsxWriter) entry(name string) (io.Writer, error) {
 }
 
 func (x *xlsxWriter) Begin(name string, header []string) error {
-	x.name, x.header, x.part = name, header, 1
+	x.name, x.header, x.part, x.long = name, header, 1, false
 	return x.open(sheetName(name))
 }
 
@@ -183,6 +185,11 @@ func (x *xlsxWriter) Row(r Row) error {
 			return err
 		}
 	}
+	for _, c := range r.Cells {
+		if c.IsNumber && decimal.MatchString(c.Number) && !exact(c.Number) {
+			x.long = true
+		}
+	}
 	x.rows++
 	return writeRow(x.b, x.rows, r.Cells, r.Strong)
 }
@@ -190,6 +197,9 @@ func (x *xlsxWriter) Row(r Row) error {
 func (x *xlsxWriter) End(footer ...string) error {
 	if x.b == nil {
 		return errClosed
+	}
+	if x.long {
+		footer = append(slices.Clone(footer), LongNumbers)
 	}
 	for i, f := range footer { // after a blank row
 		if err := writeRow(x.b, x.rows+2+i, []Cell{Text(f)}, false); err != nil {
@@ -253,7 +263,7 @@ func writeRow(b *bufio.Writer, n int, cells []Cell, strong bool) error {
 	fmt.Fprintf(b, `<row r="%d">`, n)
 	for i, c := range cells {
 		ref := column(i) + fmt.Sprint(n)
-		if c.IsNumber && decimal.MatchString(c.Number) {
+		if c.IsNumber && decimal.MatchString(c.Number) && exact(c.Number) {
 			style := 2
 			switch c.Decimals {
 			case 0:
@@ -269,7 +279,7 @@ func writeRow(b *bufio.Writer, n int, cells []Cell, strong bool) error {
 		}
 		text := c.Text
 		if c.IsNumber {
-			text = c.Number // not a plain decimal: kept, as text
+			text = c.Number // not a plain decimal, or past 15 significant digits: kept exactly, as text
 		}
 		style := 0
 		if strong {

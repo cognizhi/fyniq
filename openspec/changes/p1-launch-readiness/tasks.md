@@ -93,12 +93,25 @@ and names the requirement IDs it proves.
   unrealised revaluation, a balance converted to shares (RND-SHARE) and a SAFE's conversion and dilution. Each is
   worked by hand from its source, asserted in Go and in the oracle, and tagged with its requirement. The hourly cost is
   recorded `after-go-live` with projects (rev 0.146).
-- [ ] 3.3 Export round-trip (QA-RPT-03) for every export of the launch:
+- [x] 3.3 Export round-trip (QA-RPT-03) for every export of the launch:
   - financial statements, the cap table, a director's statement, the report exports and the tenant export's CSVs;
   - XLSX re-read figure by figure, including a value at 15 significant digits and one above it written as text;
   - PDF text extracted and compared;
   - CSV totals reconciled.
   Test `// req: QA-RPT-03`.
+  As built (16 Nov 2026):
+  - `internal/pdftext` reads back the text of the PDFs Typst writes: Flate streams and Type0 fonts with ToUnicode
+    maps, a line per text block. Its tests print a report of two pages and an invoice through the pinned Typst.
+  - The sheet writer did not keep ENG-10's boundary: a figure past 15 significant digits went out as a number cell,
+    which a spreadsheet rounds. It now writes such a figure as exact text, and the sheet's footer says why; the CSV was
+    already exact. `TestAReportRoundTripsFigureByFigure` re-reads 9,999,999,999,999.99 as a number and
+    99,999,999,999,999.99 as text (G4-014).
+  - `TestExportsRoundTripFigureByFigure` exports the P&L, the balance sheet, the cash flow and the trial balance as
+    CSV, XLSX and PDF. Every amount the API gives is a number cell, a CSV decimal and printed text, and each CSV
+    reconciles. The catalogue's trial balance and general ledger, prepared by the worker, hold the same balances and
+    movements.
+  - Added to existing tests: the cap table's holdings and the director's statement (its PDF signed as owed to the
+    person, as it says) read back, and the tenant export's ledger balances entry by entry.
 - [x] 3.4 QA-REL-01: `scripts/release_policy.py` in CI (design D9), and the bug-fix skill's root-cause record. Tests
   `scripts/test_release_policy.py` (a `fix` touching the engine without a test fails; with one it passes).
   `# req: QA-REL-01`
