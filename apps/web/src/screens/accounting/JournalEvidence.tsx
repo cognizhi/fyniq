@@ -201,7 +201,27 @@ const classes: [DataClass, string][] = [
 
 // sizeOf shows a file's size in KB or MB.
 // pictures are the types shown inline; any other file is saved, a PDF too until previews render (FR-DOC-08).
-const pictures = ["image/png", "image/jpeg", "image/webp"];
+export const pictures = ["image/png", "image/jpeg", "image/webp"];
+
+// Shown is a picture shown inline from its download link.
+export interface Shown {
+  id: string;
+  url: string;
+  name: string;
+}
+
+// openEvidence asks for a link to a file that works for 5 minutes and serves it as an attachment (SEC-24): a picture's
+// link is answered to show it inline, and any other file is saved through it under a safe name.
+export async function openEvidence(id: string, fileName: string): Promise<{ shown?: Shown; problem?: ApiProblem }> {
+  const out = await api.POST("/v1/evidence/{evidence_id}/download", { params: { path: { evidence_id: id } } });
+  if (!out.data) return { problem: problemOf(out.error) };
+  if (pictures.includes(out.data.media_type)) return { shown: { id, url: out.data.url, name: fileName } };
+  const link = document.createElement("a");
+  link.href = out.data.url;
+  link.download = safeName(out.data.file_name, id);
+  link.click();
+  return {};
+}
 
 // safeName is a name a file may be saved under: its own name's letters, digits, spaces, dots, dashes and underscores,
 // never a path, and evidence-<id> when nothing is left (FR-DOC-08: the uploader's name is data).
@@ -270,24 +290,19 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
   const attach = helpText(`${record.kind}.attach-evidence`);
   const q = useQuery({ queryKey: [`${record.kind}-evidence`, record.id], queryFn: () => files(record) });
   const items = q.data ?? [];
-  const [shown, setShown] = useState<{ id: string; url: string; name: string } | null>(null);
+  const [shown, setShown] = useState<Shown | null>(null);
 
-  // open asks for a link to the file that works for 5 minutes and serves it as an attachment (SEC-24): a picture is
-  // shown below the list from it, any other file saved through it.
+  // open shows a picture below the list, and saves any other file (openEvidence).
   const open = async (e: Evidence) => {
     setBusy(true);
     setProblem(null);
-    const out = await api.POST("/v1/evidence/{evidence_id}/download", { params: { path: { evidence_id: e.id } } });
+    const out = await openEvidence(e.id, e.file_name);
     setBusy(false);
-    if (!out.data) {
+    if (out.problem) {
       setFailed("The file could not be opened");
-      return setProblem(problemOf(out.error));
+      return setProblem(out.problem);
     }
-    if (pictures.includes(out.data.media_type)) return setShown({ id: e.id, url: out.data.url, name: e.file_name });
-    const link = document.createElement("a");
-    link.href = out.data.url;
-    link.download = safeName(out.data.file_name, e.id);
-    link.click();
+    if (out.shown) setShown(out.shown);
   };
   const refresh = () => queries.invalidateQueries({ queryKey: [`${record.kind}-evidence`, record.id] });
 
