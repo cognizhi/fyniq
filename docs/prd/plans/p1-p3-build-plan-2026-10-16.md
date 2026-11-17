@@ -423,6 +423,30 @@ The F5 comparison moved to `p1-gst`'s task 7.2, which builds the F5 return it co
 cloud parts' `[live-verify]` (the staging bucket's signed links, and the worker's key to open the sealed values), and
 the founders' own migration on the real workbook, which `p1-launch-readiness` lists.
 
+`p1-ai-providers` was proposed on 13 Nov 2026, in wave 6 and now in the launch subset (PRD-001 rev 0.274), so that the
+company secretary's agent and the assistant run on models the organisation chose, within its data rules and its budget.
+With it, the owner moved the AI activity log (AI-12) and the switch with token budgets (AI-13) here from
+`p1-ai-proposals` (rev 0.275), and set who reads the log as a new row of Appendix D (rev 0.276).
+
+It was built on 14 Nov 2026, in #624 to #647 and #649 to #655, one pull request per slice, stacked on #623. The parts:
+- one provider-neutral model port, replayed offline, with a developer's own command-line agent for local runs only
+  (DEV-09), and the screening adapters for p1-ai-assistant's guardrails;
+- model-provider connectors over plain HTTP for Anthropic (its API and Agent Platform), OpenAI, Gemini and any
+  OpenAI-compatible endpoint, each proved by a conformance suite against its fake;
+- connections, dual controlled and off by default, with keys in the secret store, one https host each through the
+  egress guard, and the data-class policy with each connection's data handling and evidence;
+- model lists from each provider, the allow-list after a probe and a second approver, and prices from the provider's
+  list, Google's billing catalogue or LiteLLM's catalogue, or an Owner with a second approver;
+- routes per agent with presets A to C, the router's failover only to eligible steps, budgets in the base currency and
+  in tokens reserved in the database, the AI switch, and qualification by each agent's evals (`make evals`, CTL-AI-05);
+- the AI activity log, the AI inventory (CMP-AI-02) and the AI routes check (C.2 #55);
+- the screens `ai-settings`, `ai-usage`, `ai-providers`, `ai-provider-connection`, `ai-model-routes`,
+  `ai-route-editor`, `ai-activity-log` and `my-ai-plan`, with their guides compiled into `kb/`;
+- the threat model `docs/security/threat-models/ai-providers.md` for security review #4.
+
+Two things wait beyond it: the live providers, Agent Platform in Singapore and Model Armor, `[live-verify]` in the dev
+cloud with real keys; and ADR-T2's revisit at enablement, which preset the founders' routes start on `[verify]`.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |
