@@ -877,6 +877,24 @@ close_checklist_template | version | integer | not null |
 close_checklist_template | tasks | jsonb | not null | 
 close_checklist_template | written_by | text | not null | 
 close_checklist_template | written_at | timestamp with time zone | not null | 
+compliance_task | organisation_id | uuid | not null | current_org()
+compliance_task | id | uuid | not null | uuidv7()
+compliance_task | finding_key | text | not null | 
+compliance_task | title | text | not null | 
+compliance_task | detail | text | not null | ''::text
+compliance_task | owner_role | text | null | 
+compliance_task | owner_user | uuid | null | 
+compliance_task | due_on | date | null | 
+compliance_task | escalated | boolean | not null | false
+compliance_task | source | text | not null | 
+compliance_task | run_id | uuid | null | 
+compliance_task | proposal_id | uuid | null | 
+compliance_task | status | text | not null | 'open'::text
+compliance_task | reason | text | not null | ''::text
+compliance_task | created_at | timestamp with time zone | not null | 
+compliance_task | closed_at | timestamp with time zone | null | 
+compliance_task | closed_by | uuid | null | 
+compliance_task | version | integer | not null | 1
 connector_route | connector_id | uuid | not null | 
 connector_route | owner | uuid | not null | 
 connector_route | connector | text | not null | 
@@ -3716,6 +3734,30 @@ close_checklist_template | close_checklist_template_version_positive | CHECK ((v
 close_checklist_template | close_checklist_template_written_at_not_null | NOT NULL written_at
 close_checklist_template | close_checklist_template_written_by_not_null | NOT NULL written_by
 close_checklist_template | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+compliance_task | compliance_task_closed_by_fkey | FOREIGN KEY (closed_by) REFERENCES app_user(user_id)
+compliance_task | compliance_task_created_at_not_null | NOT NULL created_at
+compliance_task | compliance_task_detail_not_null | NOT NULL detail
+compliance_task | compliance_task_escalated_not_null | NOT NULL escalated
+compliance_task | compliance_task_finding_key_not_null | NOT NULL finding_key
+compliance_task | compliance_task_id_not_null | NOT NULL id
+compliance_task | compliance_task_key | CHECK ((finding_key ~ '^[a-z][a-z_]{1,40}:[A-Za-z0-9:._#-]{1,160}$'::text))
+compliance_task | compliance_task_organisation_id_not_null | NOT NULL organisation_id
+compliance_task | compliance_task_owner | CHECK (((num_nonnulls(owner_role, owner_user) = 1) AND ((owner_role IS NULL) OR (owner_role ~ '^[a-z][a-z_]{1,40}$'::text))))
+compliance_task | compliance_task_owner_user_fkey | FOREIGN KEY (owner_user) REFERENCES app_user(user_id)
+compliance_task | compliance_task_pkey | PRIMARY KEY (organisation_id, id)
+compliance_task | compliance_task_proposal_fkey | FOREIGN KEY (organisation_id, proposal_id) REFERENCES ai_proposal(organisation_id, id)
+compliance_task | compliance_task_reason_not_null | NOT NULL reason
+compliance_task | compliance_task_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES agent_run(organisation_id, id)
+compliance_task | compliance_task_source | CHECK ((((source = 'agent_run'::text) AND (run_id IS NOT NULL) AND (proposal_id IS NULL)) OR ((source = 'ai_proposal'::text) AND (proposal_id IS NOT NULL))))
+compliance_task | compliance_task_source_not_null | NOT NULL source
+compliance_task | compliance_task_state | CHECK ((((closed_at IS NOT NULL) = (status <> 'open'::text)) AND ((closed_by IS NOT NULL) = (status = ANY (ARRAY['done'::text, 'dismissed'::text]))) AND ((reason <> ''::text) = (status = 'dismissed'::text)) AND ((closed_at IS NULL) OR (closed_at >= created_at))))
+compliance_task | compliance_task_status | CHECK ((status = ANY (ARRAY['open'::text, 'done'::text, 'dismissed'::text, 'cleared'::text])))
+compliance_task | compliance_task_status_not_null | NOT NULL status
+compliance_task | compliance_task_title_not_null | NOT NULL title
+compliance_task | compliance_task_version | CHECK ((version >= 1))
+compliance_task | compliance_task_version_not_null | NOT NULL version
+compliance_task | compliance_task_words | CHECK ((((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)) AND (length(detail) <= 2000) AND (length(reason) <= 500)))
+compliance_task | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 connector_route | connector_route_connector_id_not_null | NOT NULL connector_id
 connector_route | connector_route_connector_not_null | NOT NULL connector
 connector_route | connector_route_owner_not_null | NOT NULL owner
@@ -6162,6 +6204,7 @@ CREATE INDEX capture_sender_latest ON fyniq.capture_sender USING btree (organisa
 CREATE INDEX check_owner_person ON fyniq.check_owner USING btree (organisation_id, person_user_id)
 CREATE INDEX check_run_latest ON fyniq.check_run USING btree (organisation_id, run_trigger, finished_at DESC)
 CREATE INDEX close_checklist_entry_period ON fyniq.close_checklist_entry USING btree (organisation_id, period_id, task_key, written_at)
+CREATE INDEX compliance_task_by_status ON fyniq.compliance_task USING btree (organisation_id, status, due_on)
 CREATE INDEX consent_record_person ON fyniq.consent_record USING btree (organisation_id, purpose_id, person, at)
 CREATE INDEX contact_document_template_latest ON fyniq.contact_document_template USING btree (organisation_id, contact_id, kind, document_type, set_at)
 CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_id, lower(legal_name))
@@ -6377,6 +6420,8 @@ CREATE UNIQUE INDEX claim_place_pkey ON fyniq.claim_place USING btree (organisat
 CREATE UNIQUE INDEX close_checklist_entry_pkey ON fyniq.close_checklist_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_template_pkey ON fyniq.close_checklist_template USING btree (organisation_id, id)
 CREATE UNIQUE INDEX close_checklist_template_version_key ON fyniq.close_checklist_template USING btree (organisation_id, version)
+CREATE UNIQUE INDEX compliance_task_open ON fyniq.compliance_task USING btree (organisation_id, finding_key) WHERE (status = 'open'::text)
+CREATE UNIQUE INDEX compliance_task_pkey ON fyniq.compliance_task USING btree (organisation_id, id)
 CREATE UNIQUE INDEX connector_route_pkey ON fyniq.connector_route USING btree (connector_id)
 CREATE UNIQUE INDEX consent_purpose_name_once ON fyniq.consent_purpose USING btree (organisation_id, name)
 CREATE UNIQUE INDEX consent_purpose_pkey ON fyniq.consent_purpose USING btree (organisation_id, id)
@@ -6756,6 +6801,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.capture_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.check_owner DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_owner', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.claim_category DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('claim_category', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.claim_place DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('claim_place', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.compliance_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('compliance_task', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.contact DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('contact', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.customer_group DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('customer_group', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.dimension DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('dimension', 'id')
@@ -6919,6 +6965,8 @@ CREATE TRIGGER close_checklist_entry_guard BEFORE INSERT OR DELETE OR UPDATE ON 
 CREATE TRIGGER close_checklist_entry_no_truncate BEFORE TRUNCATE ON fyniq.close_checklist_entry FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER close_checklist_template_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.close_checklist_template FOR EACH ROW EXECUTE FUNCTION close_checklist_guard()
 CREATE TRIGGER close_checklist_template_no_truncate BEFORE TRUNCATE ON fyniq.close_checklist_template FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER compliance_task_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.compliance_task FOR EACH ROW EXECUTE FUNCTION compliance_task_guard()
+CREATE TRIGGER compliance_task_no_truncate BEFORE TRUNCATE ON fyniq.compliance_task FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER consent_purpose_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.consent_purpose FOR EACH ROW EXECUTE FUNCTION consent_guard()
 CREATE TRIGGER consent_purpose_no_truncate BEFORE TRUNCATE ON fyniq.consent_purpose FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER consent_record_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.consent_record FOR EACH ROW EXECUTE FUNCTION consent_guard()
@@ -7245,6 +7293,7 @@ claim_category | tenant_isolation | * | (organisation_id = current_org()) | (org
 claim_place | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 close_checklist_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 close_checklist_template | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+compliance_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 consent_purpose | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 consent_record | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 contact | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7433,6 +7482,7 @@ claim_category | enabled | forced
 claim_place | enabled | forced
 close_checklist_entry | enabled | forced
 close_checklist_template | enabled | forced
+compliance_task | enabled | forced
 connector_route | disabled | not forced
 consent_purpose | enabled | forced
 consent_record | enabled | forced
@@ -7674,6 +7724,7 @@ claim_join_domain(p_by uuid, p_org uuid, p_domain text, p_now timestamp with tim
 claim_place_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9d945198410ff448d1bc24902010e4d
 claim_setup(p_hash bytea, p_display_name text, p_issuer text, p_subject text) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 57aedc912c161d7d32a66f3e8840bd12
 close_checklist_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f4af92af3952d349375bb5a90970c137
+compliance_task_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9feae7d2ff9d3da98fac4aed312d145f
 confirm_account_recovery(p_by uuid, p_for uuid, p_org uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 556b86484c4b57d11bbd4103bdd28538
 confirm_super_admin_recovery(p_by uuid, p_for uuid, p_hash bytea, p_now timestamp with time zone, p_expires timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 254723da0ff40bc2dc8dd67758ba97c3
 connector_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 06787f4aad13062e2a82e6f6927156d1

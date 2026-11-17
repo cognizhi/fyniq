@@ -143,6 +143,15 @@ classes:
     protection: "A run reads as the Owner it acts for, within its agent's profile, without NRIC and FIN numbers, bank account numbers, secrets and home addresses, and payroll only when the organisation allows it (AI-02, AI-63); its findings name records, never their values"
     transfers: "Model calls only, when its model step runs: the flow ai-models"
     columns: [agent_run.findings, agent_run.summary, agent_run.model_text]
+  - key: compliance-tasks
+    what: "The tasks the scheduled agents' findings and their approved proposals raise: what to do, by when, who owns it, who closed it and why"
+    why: "So each finding has one task a named person sees through (AI-65)"
+    where: "The database, in Singapore (Cloud SQL, asia-southeast1; locally the developer's database)"
+    who: "Those with a view of the AI company secretary's row; the Owner and the Administrator close them"
+    retention: "Kept with the organisation's records: a closed task is the record of what was done [counsel to confirm]"
+    protection: "A task names its finding and its owner, never an identity number or a bank account number"
+    transfers: "None"
+    columns: [compliance_task.title, compliance_task.detail, compliance_task.reason]
 flows:
   - key: ai-models
     what: "The assistant's model calls to the organisation's AI connections: under preset A, the default at go-live, Claude on Google Cloud's Agent Platform in Singapore (asia-southeast1), under Google Cloud's terms (AI-05, ADR-T2)"

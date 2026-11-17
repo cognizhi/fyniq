@@ -172,7 +172,7 @@ func TestAttackAgentRunsKeepTheirCourse(t *testing.T) {
 			version = version + 2 WHERE id = $1`, []any{run.ID}, []string{"FY350"}},
 		{"the worker deleting a run", "fyniq_worker", `DELETE FROM fyniq.agent_run WHERE id = $1`, []any{run.ID}, []string{"42501"}},
 		{"deleting a run", "fyniq_migrator", `DELETE FROM fyniq.agent_run WHERE id = $1`, []any{run.ID}, []string{"FY350"}},
-		{"truncating the runs", "fyniq_migrator", `TRUNCATE fyniq.agent_run`, nil, []string{"FY060"}},
+		{"truncating the runs", "fyniq_migrator", `TRUNCATE fyniq.agent_run CASCADE`, nil, []string{"FY060"}},
 		{"the AI reading the runs", "fyniq_ai", `SELECT count(*) FROM fyniq.agent_run`, nil, []string{"42501"}},
 		{"the AI queueing a run", "fyniq_ai", insert, []any{hexSHA("s"), "schedule:monitor", b.owner}, []string{"42501"}},
 	} {
