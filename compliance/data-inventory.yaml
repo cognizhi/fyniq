@@ -134,6 +134,15 @@ classes:
     protection: "Only catalogue task types, from what the AI read without NRIC and FIN numbers, bank account numbers, secrets and home addresses (AI-02, AI-20); the audit trail keeps the payload's hash, not the payload"
     transfers: "None"
     columns: [ai_proposal.payload, ai_proposal.rationale, ai_proposal.reason]
+  - key: agent-runs
+    what: "The scheduled agents' runs: what triggered each, the Owner it acted for, what it read, its findings, Fyniq's summary and the model's words"
+    why: "To report on the company's obligations on a schedule and keep each run reproducible (AI-64, AI-65), and to see a run that failed or was late (AI-67)"
+    where: "The database, in Singapore (Cloud SQL, asia-southeast1; locally the developer's database)"
+    who: "The Owner, the Company secretary and those its recipients name; the AI activity log's readers"
+    retention: "Kept with the organisation's records: a run's report is its record (§9.12) [counsel to confirm]"
+    protection: "A run reads as the Owner it acts for, within its agent's profile, without NRIC and FIN numbers, bank account numbers, secrets and home addresses, and payroll only when the organisation allows it (AI-02, AI-63); its findings name records, never their values"
+    transfers: "Model calls only, when its model step runs: the flow ai-models"
+    columns: [agent_run.findings, agent_run.summary, agent_run.model_text]
 flows:
   - key: ai-models
     what: "The assistant's model calls to the organisation's AI connections: under preset A, the default at go-live, Claude on Google Cloud's Agent Platform in Singapore (asia-southeast1), under Google Cloud's terms (AI-05, ADR-T2)"

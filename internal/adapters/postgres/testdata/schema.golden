@@ -88,6 +88,32 @@ accounting_policy | written_by | text | not null |
 accounting_policy | written_at | timestamp with time zone | not null | now()
 accounting_policy | approved_by | text | null | 
 accounting_policy | approved_at | timestamp with time zone | null | 
+agent_run | organisation_id | uuid | not null | current_org()
+agent_run | id | uuid | not null | uuidv7()
+agent_run | agent | text | not null | 
+agent_run | skill_version | integer | not null | 
+agent_run | skill_sha256 | text | not null | 
+agent_run | trigger | text | not null | 
+agent_run | slot_at | timestamp with time zone | not null | 
+agent_run | acts_for | uuid | not null | 
+agent_run | requested_by | uuid | null | 
+agent_run | status | text | not null | 'queued'::text
+agent_run | reason | text | not null | ''::text
+agent_run | queued_at | timestamp with time zone | not null | 
+agent_run | started_at | timestamp with time zone | null | 
+agent_run | finished_at | timestamp with time zone | null | 
+agent_run | fingerprint | text | null | 
+agent_run | ledger_revision | bigint | null | 
+agent_run | pack_versions | jsonb | null | 
+agent_run | kb_snapshot | text | null | 
+agent_run | findings | jsonb | null | 
+agent_run | summary | text | null | 
+agent_run | model_used | boolean | null | 
+agent_run | model | text | null | 
+agent_run | model_text | text | null | 
+agent_run | tokens | integer | null | 
+agent_run | tool_calls | integer | null | 
+agent_run | version | integer | not null | 1
 ai_agent | id | text | not null | 
 ai_agent | name | text | not null | 
 ai_agent | description | text | not null | 
@@ -2462,6 +2488,30 @@ accounting_policy | accounting_policy_written_at_not_null | NOT NULL written_at
 accounting_policy | accounting_policy_written_by_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 accounting_policy | accounting_policy_written_by_not_null | NOT NULL written_by
 accounting_policy | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+agent_run | agent_run_acts_for_fkey | FOREIGN KEY (acts_for) REFERENCES app_user(user_id)
+agent_run | agent_run_acts_for_not_null | NOT NULL acts_for
+agent_run | agent_run_agent | CHECK (((agent ~ '^[a-z][a-z-]{1,40}$'::text) AND (skill_version >= 1) AND (skill_sha256 ~ '^[0-9a-f]{64}$'::text)))
+agent_run | agent_run_agent_not_null | NOT NULL agent
+agent_run | agent_run_counts | CHECK (((ledger_revision >= 0) AND (tokens >= 0) AND (tool_calls >= 0)))
+agent_run | agent_run_id_not_null | NOT NULL id
+agent_run | agent_run_organisation_id_not_null | NOT NULL organisation_id
+agent_run | agent_run_pkey | PRIMARY KEY (organisation_id, id)
+agent_run | agent_run_queued_at_not_null | NOT NULL queued_at
+agent_run | agent_run_reason_not_null | NOT NULL reason
+agent_run | agent_run_requested_by_fkey | FOREIGN KEY (requested_by) REFERENCES app_user(user_id)
+agent_run | agent_run_skill_sha256_not_null | NOT NULL skill_sha256
+agent_run | agent_run_skill_version_not_null | NOT NULL skill_version
+agent_run | agent_run_slot | UNIQUE (organisation_id, agent, trigger, slot_at)
+agent_run | agent_run_slot_at_not_null | NOT NULL slot_at
+agent_run | agent_run_state | CHECK ((((started_at IS NOT NULL) = (status = ANY (ARRAY['running'::text, 'done'::text, 'failed'::text]))) AND ((finished_at IS NOT NULL) = (status = ANY (ARRAY['done'::text, 'failed'::text, 'skipped'::text]))) AND ((reason <> ''::text) = (status = ANY (ARRAY['failed'::text, 'skipped'::text]))) AND ((status <> 'done'::text) OR ((fingerprint ~ '^[0-9a-f]{64}$'::text) AND (ledger_revision IS NOT NULL) AND (pack_versions IS NOT NULL) AND (kb_snapshot IS NOT NULL) AND (jsonb_typeof(findings) = 'array'::text) AND (summary <> ''::text) AND (model_used IS NOT NULL))) AND ((model_used IS TRUE) = (model IS NOT NULL)) AND ((model_text IS NULL) OR (model_used IS TRUE)) AND ((started_at IS NULL) OR (started_at >= queued_at)) AND ((finished_at IS NULL) OR (finished_at >= queued_at)) AND ((finished_at IS NULL) OR (started_at IS NULL) OR (finished_at >= started_at))))
+agent_run | agent_run_status | CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'done'::text, 'failed'::text, 'skipped'::text])))
+agent_run | agent_run_status_not_null | NOT NULL status
+agent_run | agent_run_trigger | CHECK (((trigger ~ '^(schedule:[a-z_]{1,40}|event:[a-z_]{1,40}:[A-Za-z0-9:._-]{1,100}|run_now)$'::text) AND ((requested_by IS NOT NULL) = (trigger = 'run_now'::text))))
+agent_run | agent_run_trigger_not_null | NOT NULL trigger
+agent_run | agent_run_version | CHECK ((version >= 1))
+agent_run | agent_run_version_not_null | NOT NULL version
+agent_run | agent_run_words | CHECK (((length(reason) <= 1000) AND (length(summary) <= 4000) AND (length(model_text) <= 20000) AND (length(model) <= 200) AND (length(kb_snapshot) <= 100) AND (pg_column_size(findings) <= 262144)))
+agent_run | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 ai_agent | ai_agent_classes | CHECK (((cardinality(classes) >= 1) AND (classes <@ ARRAY['know-how'::text, 'business-figures'::text, 'personal-data'::text, 'payroll'::text])))
 ai_agent | ai_agent_classes_not_null | NOT NULL classes
 ai_agent | ai_agent_description_not_null | NOT NULL description
@@ -6061,6 +6111,8 @@ CREATE INDEX account_parent_idx ON fyniq.account USING btree (organisation_id, p
 CREATE INDEX account_recovery_user ON fyniq.account_recovery USING btree (user_id, cooling_off_until)
 CREATE INDEX accountant_review_period ON fyniq.accountant_review USING btree (organisation_id, period_id)
 CREATE INDEX accountant_review_query_review ON fyniq.accountant_review_query USING btree (organisation_id, review_id)
+CREATE INDEX agent_run_latest ON fyniq.agent_run USING btree (organisation_id, agent, queued_at DESC)
+CREATE INDEX agent_run_open ON fyniq.agent_run USING btree (organisation_id, status, slot_at) WHERE (status = ANY (ARRAY['queued'::text, 'running'::text]))
 CREATE INDEX ai_call_by_actor ON fyniq.ai_call USING btree (organisation_id, actor, started_at DESC, id DESC)
 CREATE INDEX ai_call_by_agent ON fyniq.ai_call USING btree (organisation_id, agent, started_at DESC)
 CREATE INDEX ai_call_by_connection ON fyniq.ai_call USING btree (organisation_id, connection_id, started_at DESC)
@@ -6217,6 +6269,8 @@ CREATE UNIQUE INDEX accounting_framework_pkey ON fyniq.accounting_framework USIN
 CREATE UNIQUE INDEX accounting_framework_version_key ON fyniq.accounting_framework USING btree (organisation_id, version)
 CREATE UNIQUE INDEX accounting_policy_pkey ON fyniq.accounting_policy USING btree (organisation_id, id)
 CREATE UNIQUE INDEX accounting_policy_version_key ON fyniq.accounting_policy USING btree (organisation_id, area, version)
+CREATE UNIQUE INDEX agent_run_pkey ON fyniq.agent_run USING btree (organisation_id, id)
+CREATE UNIQUE INDEX agent_run_slot ON fyniq.agent_run USING btree (organisation_id, agent, trigger, slot_at)
 CREATE UNIQUE INDEX ai_agent_pkey ON fyniq.ai_agent USING btree (id)
 CREATE UNIQUE INDEX ai_agent_position ON fyniq.ai_agent USING btree ("position")
 CREATE UNIQUE INDEX ai_budget_one ON fyniq.ai_budget USING btree (organisation_id, scope, subject)
@@ -6682,6 +6736,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounta
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accountant_review_query DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accountant_review', 'review_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_framework DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_framework', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_policy', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.agent_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('agent_run', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_connection DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_connection', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_conversation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_conversation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_feedback DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_feedback', 'id')
@@ -6761,6 +6816,8 @@ CREATE TRIGGER accountant_review_query_no_truncate BEFORE TRUNCATE ON fyniq.acco
 CREATE TRIGGER accounting_framework_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_framework FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('framework', 'confirmed')
 CREATE TRIGGER accounting_policy_guard BEFORE DELETE OR UPDATE ON fyniq.accounting_policy FOR EACH ROW EXECUTE FUNCTION accounting_version_guard('policy', 'approved')
 CREATE TRIGGER acra_extract_guard BEFORE INSERT ON fyniq.document_version FOR EACH ROW EXECUTE FUNCTION acra_extract_guard()
+CREATE TRIGGER agent_run_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.agent_run FOR EACH ROW EXECUTE FUNCTION agent_run_guard()
+CREATE TRIGGER agent_run_no_truncate BEFORE TRUNCATE ON fyniq.agent_run FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_budget_guard BEFORE DELETE OR UPDATE ON fyniq.ai_budget FOR EACH ROW EXECUTE FUNCTION ai_budget_guard()
 CREATE TRIGGER ai_budget_no_truncate BEFORE TRUNCATE ON fyniq.ai_budget FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_call_guard BEFORE DELETE OR UPDATE ON fyniq.ai_call FOR EACH ROW EXECUTE FUNCTION ai_call_guard()
@@ -7131,6 +7188,7 @@ accountant_review_journal | tenant_isolation | * | (organisation_id = current_or
 accountant_review_query | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 accounting_framework | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 accounting_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+agent_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_budget | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_call | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_connection | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7314,6 +7372,7 @@ accountant_review_journal | enabled | forced
 accountant_review_query | enabled | forced
 accounting_framework | enabled | forced
 accounting_policy | enabled | forced
+agent_run | enabled | forced
 ai_agent | disabled | not forced
 ai_budget | enabled | forced
 ai_call | enabled | forced
@@ -7533,6 +7592,7 @@ accountant_review_query_guard() → trigger | security invoker | v | search_path
 accountant_review_reopened() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 491d4ed52fee22eca39aaef26dfcb647
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
 acra_extract_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e61f76b3fe2a4eb691c487471ba73494
+agent_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f0d3d9f96392ba8d5beefd6e7700a58a
 ai_budget_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 59adc0b6ced792e22b069f66bc8ccb23
 ai_call_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b4e1754c041a743ac2f43d2baf8bb4b4
 ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 051ffeb8214e6453575d1964f565ecfd

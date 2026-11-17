@@ -34,8 +34,13 @@
 
 ## 3. Stores
 
-- [ ] 3.1 `agent_run`: migration, guard (forward only, each step by its role, nothing changes once ended), grants, the
+- [x] 3.1 `agent_run`: migration, guard (forward only, each step by its role, nothing changes once ended), grants, the
   storage port and the postgres adapter, with attack tests (design D3). Tests `// req: AI-65`, `// req: AI-67`.
+  As built: migration 000384 under guard FY350. A slot's run is queued once (unique per agent, trigger and slot, so a
+  second queueing finds it); only the worker moves it: queued → running → done, failed or skipped. Its report (the
+  fingerprint, ledger revision, pack versions, knowledge-base snapshot, findings, summary and the model's words) is
+  written once, as it ends. The API may queue Run now and read. The table is in the tenant export and the data
+  inventory (`agent-runs`).
 - [ ] 3.2 `compliance_task`: migration, guard (one open task per finding), grants, port and adapter. Also the API's
   list, get, done and dismiss operations, the permission matrix's row and attack tests (design D7). Tests
   `// req: AI-65`.
