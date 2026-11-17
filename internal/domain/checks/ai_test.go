@@ -4,6 +4,8 @@ package checks_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -153,5 +155,47 @@ func TestTheAIsRoutesAreWatched(t *testing.T) {
 	s = want(t, b.run(t), key, checks.Warning)
 	if items := itemsOf(t, s); len(items) != 5 {
 		t.Errorf("after the fixes: %+v", items)
+	}
+}
+
+// C.2 #19: a proposal pending approval for more than 48 hours is flagged for review; one pending for 48 hours or less is
+// not, nor one decided (§9.5).
+// req: C.2 #19
+// req: controls/platform-checks C.2 #19 AI proposals pending over 48 hours
+func TestAProposalWaitingTooLongIsFlagged(t *testing.T) {
+	b := newBooks(t, false)
+	const key = "ai.proposals-waiting"
+	if s := want(t, b.run(t), key, checks.OK); s.Detail != "No AI proposal has waited more than 48 hours" {
+		t.Errorf("with none: %q", s.Detail)
+	}
+	user := b.owner(t, 19)
+	pending := func(note string, waited time.Duration) {
+		t.Helper()
+		payload := `{"note":"` + note + `"}`
+		sum := sha256.Sum256([]byte(payload))
+		run := uuid.New()
+		at := now.Add(-waited)
+		if err := b.api.Do(ctx, b.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			p, err := u.AIProposals().Create(ctx, storage.AIProposal{TaskType: "sec.create_task", TaskVersion: 1, TaskSHA256: strings.Repeat("a", 64),
+				Payload: payload, PayloadSHA256: hex.EncodeToString(sum[:]), Rationale: "It is due.", RiskTier: 1, RequiredApprovals: 1,
+				Agent: "company_secretary", RequestedBy: user, Run: &run, Model: "m", Prompt: "secretary@1", ToolsSHA256: strings.Repeat("b", 64),
+				ProposedAt: at, ExpiresAt: at.Add(72 * time.Hour)})
+			if err != nil {
+				return err
+			}
+			_, err = u.AIProposals().Pending(ctx, p.ID, p.Version, json.RawMessage(`{"summary":"Creates a task"}`), nil, nil)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pending("Waited long", 49*time.Hour)
+	pending("Waited a day", 47*time.Hour)
+	pending("Exactly two days", 48*time.Hour)
+	s := want(t, b.run(t), key, checks.Warning)
+	var items []checks.Item
+	_ = json.Unmarshal(s.Items, &items)
+	if s.Count != 1 || len(items) != 1 || items[0].Kind != "ai_proposal" || !strings.Contains(items[0].Detail, "waiting 49 hours") {
+		t.Errorf("flagged: %d %+v", s.Count, items)
 	}
 }
