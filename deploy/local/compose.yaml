@@ -168,7 +168,9 @@ services:
     <<: *hardened
     image: fyniq-ai:local
     profiles: [core]
-    environment: { <<: *fyniq-env }   # no database credential at all (§12.3)
+    environment:                      # no database credential and no provider key at all (§12.3)
+      <<: *fyniq-env
+      FYNIQ_API_INTERNAL_URL: http://api:8080/internal/v1   # every read and model call goes through the API
     healthcheck: *health
 
   mcp:

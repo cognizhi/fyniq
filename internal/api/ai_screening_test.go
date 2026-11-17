@@ -35,7 +35,9 @@ func (m *answering) Stream(ctx context.Context, r ports.ModelRequest, each func(
 	return res, err
 }
 
-func (m *answering) ListModels(context.Context, string) (ports.ModelPage, error) { return ports.ModelPage{}, nil }
+func (m *answering) ListModels(context.Context, string) (ports.ModelPage, error) {
+	return ports.ModelPage{}, nil
+}
 
 // unfinished is a screen that never finishes.
 type unfinished struct{}
@@ -65,7 +67,7 @@ func TestUntrustedTextStaysData(t *testing.T) {
 		return model, nil
 	}
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
-		_, err := u.AIRoutes().Save(ctx, storage.AIRoute{Agent: "chat", Version: 1, Classes: []string{"business-figures"}, MadeBy: "user:screening",
+		_, err := u.AIRoutes().Save(ctx, storage.AIRoute{Agent: "chat", Version: 1, Classes: []string{"business-figures", "personal-data"}, MadeBy: "user:screening",
 			MadeAt: e.clock.Now(), Steps: []storage.AIRouteStep{{ConnectionID: sg, Model: "gpt-6"}}})
 		return err
 	})

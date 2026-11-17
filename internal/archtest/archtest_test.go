@@ -749,6 +749,37 @@ func TestTheRenderServiceCarriesNoDatabaseCode(t *testing.T) {
 	}
 }
 
+// The AI service holds no database role, no provider key and no write credential (PRD-001 §9.3, golden rule 5;
+// p1-ai-assistant design D3), so its binary carries no database adapter or driver, none of the services' wiring, not the
+// API, no domain command and no model connector, in either flavour: it reads and calls models only through the API.
+// req: AI-P2
+// req: ai/proposals The orchestrator holds no write credential
+// req: CMP-AI-01
+func TestTheAIServiceCarriesNoDatabaseCode(t *testing.T) {
+	forbidden := []string{"github.com/cognizhi/fyniq/internal/adapters/postgres", "github.com/jackc/pgx", "github.com/cognizhi/fyniq/internal/wiring",
+		"github.com/cognizhi/fyniq/internal/api", "github.com/cognizhi/fyniq/internal/domain/journal", "github.com/cognizhi/fyniq/internal/domain/ledger",
+		"github.com/cognizhi/fyniq/internal/ai", "github.com/cognizhi/fyniq/connectors", "github.com/cognizhi/fyniq/internal/connector"}
+	for _, tags := range []string{"", "local"} {
+		cmd := exec.Command("go", "list", "-deps", "-tags", tags, "./cmd/ai")
+		cmd.Dir = repoRoot(t)
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatalf("go list: %v", err)
+		}
+		deps := strings.Fields(string(out))
+		if !slices.Contains(deps, "github.com/cognizhi/fyniq/internal/assistant") {
+			t.Fatalf("tags %q: cmd/ai does not run the assistant", tags)
+		}
+		for _, dep := range deps {
+			for _, f := range forbidden {
+				if dep == f || strings.HasPrefix(dep, f+"/") {
+					t.Errorf("tags %q: cmd/ai depends on %s", tags, dep)
+				}
+			}
+		}
+	}
+}
+
 // goSources calls fn with each non-test Go file under internal/ and cmd/, by its path from the repository's root.
 func goSources(t *testing.T, fn func(rel string, src []byte)) {
 	t.Helper()

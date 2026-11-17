@@ -40,6 +40,13 @@ path = "internal/scanservice/scanservice.go"
 reason = "The scanner service's URL comes from the deployment's FYNIQ_GCP (written by OpenTofu), never from a request, and the client's HTTP goes through the egress guard, which reaches that one host (SEC-36); only the file to scan comes from the caller, as the body."
 expires = 2027-05-31
 
+[[waiver]]
+tool = "gosec"
+rule = "G704"
+path = "internal/assistant/client.go"
+reason = "The AI service calls the API's internal operations at the deployment's URL (FYNIQ_API_INTERNAL_URL locally, FYNIQ_GCP's api entry in the cloud, written by OpenTofu) and one of two fixed paths, never anything a turn sends; its HTTP goes through the egress guard, which reaches that one host (SEC-36)."
+expires = 2027-05-31
+
 # ---------------------------------------------------------------- gitleaks (secrets)
 
 [[waiver]]

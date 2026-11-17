@@ -45,7 +45,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 5. The orchestrator
 
-- [ ] 5.1 `cmd/ai` and `internal/assistant` (design D3): stateless, no DSN and no provider key; the tool loop with
+- [x] 5.1 `cmd/ai` and `internal/assistant` (design D3): stateless, no DSN and no provider key; the tool loop with
   context assembly, versioned prompts in `contracts/ai/prompts/` (hash recorded per turn), model calls and tools
   through the API; the Compose service, its image and budget. Tests `// req: AI-P2`, `// req: AI-28`,
   `// req: AI-24`, `// req: ai/proposals The orchestrator holds no write credential`.
