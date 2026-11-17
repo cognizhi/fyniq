@@ -243,6 +243,7 @@ fyniq_api       INSERT    dpia_version (body, entry_id, from_draft, key, saved_a
 fyniq_api       SELECT    dpia_version
 fyniq_api       INSERT    email_event (delivery_id, detail, kind, message_id, occurred_at, provider, received_at, recipient)
 fyniq_api       SELECT    email_event
+fyniq_api       EXECUTE   email_matches()
 fyniq_api       INSERT    email_message (purpose, recipient, subject)
 fyniq_api       SELECT    email_message
 fyniq_api       INSERT    email_sender (address, display_name, purpose, set_at, set_by)
