@@ -122,7 +122,13 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   review of a pending price and own price) and Data handling (the declaration with evidence, changed with a second
   approver). The timeout and retries show among the provider's settings; the request rate limit and circuit breaker are
   fixed in the connector's manifest, which the catalogue does not expose, so the page does not show them.
-- [ ] 8.3 `ai-model-routes` and `ai-route-editor`; help keys; the guide's routes section. Tests `// req: AI-74`.
+- [x] 8.3 `ai-model-routes` and `ai-route-editor`; help keys; the guide's routes section. Tests `// req: AI-74`.
+  Built (slice 30): Model routes (`/settings/ai/routes`): each agent's steps with qualification and why a step is not
+  serving, this month's cost, the AI routes check (C.2 #55) when it needs attention, waiting route changes, presets A to
+  C and how failover works. The route editor (`/settings/ai/routes/$agent`): the classes, up to five steps from
+  connections that are on and their allow-lists, moved with buttons, filled from a preset; Check it (a preview), then
+  save, at once when it narrows or with an approval when it widens; the versions. The guide is
+  `docs/user-guide/ai-routes.md`.
 - [ ] 8.4 `ai-activity-log`, and `my-ai-plan` showing P2's own-plan option as not offered; help keys; guides compiled.
   Tests `// req: AI-12`.
 

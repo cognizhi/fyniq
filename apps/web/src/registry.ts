@@ -186,6 +186,8 @@ export const routes = [
   { kind: "route", id: "settings-ai-usage", path: "/settings/ai/usage", mode: "expert", signedIn: true, help: "settings.ai-usage", guide: "settings.ai#usage-and-budgets" },
   { kind: "route", id: "settings-ai-providers", path: "/settings/ai/providers", mode: "expert", signedIn: true, help: "settings.ai-providers", guide: "settings.ai-providers" },
   { kind: "route", id: "settings-ai-connection", path: "/settings/ai/providers/$connection", mode: "expert", signedIn: true, help: "settings.ai-connection", guide: "settings.ai-providers#a-connections-own-page" },
+  { kind: "route", id: "settings-ai-routes", path: "/settings/ai/routes", mode: "expert", signedIn: true, help: "settings.ai-routes", guide: "settings.ai-routes" },
+  { kind: "route", id: "settings-ai-route", path: "/settings/ai/routes/$agent", mode: "expert", signedIn: true, help: "settings.ai-route", guide: "settings.ai-routes#change-an-agents-route" },
   // Settings › Import (FR-MIG-01…03; p1-workbook-migration task 9.1): the move from the workbook, M1 to M6, and the generic import.
   { kind: "route", id: "settings-import", path: "/settings/import", mode: "expert", signedIn: true, help: "settings.import", guide: "settings.import" },
   { kind: "route", id: "settings-team-mode", path: "/settings/team-mode", mode: "expert", signedIn: true, help: "settings.team-mode", guide: "settings.team-mode" },
@@ -291,6 +293,7 @@ export const actions = [
   { kind: "action", id: "ai.model-allow", mode: "expert", help: "ai.model-allow", guide: "settings.ai-providers#its-models" },
   { kind: "action", id: "ai.model-price", mode: "expert", help: "ai.model-price", guide: "settings.ai-providers#its-models" },
   { kind: "action", id: "ai.model-qualify", mode: "expert", help: "ai.model-qualify", guide: "settings.ai-providers#qualify-a-model" },
+  { kind: "action", id: "ai.route-save", mode: "expert", help: "ai.route-save", guide: "settings.ai-routes#change-an-agents-route" },
   { kind: "action", id: "ai.data-handling", mode: "expert", help: "ai.data-handling", guide: "settings.ai-providers#where-its-prompts-go" },
   { kind: "action", id: "workbook-import.start", mode: "expert", help: "workbook-import.start", guide: "settings.import#start-the-import" },
   { kind: "action", id: "workbook-import.upload", mode: "expert", help: "workbook-import.upload", guide: "settings.import#upload-and-check-the-workbook" },

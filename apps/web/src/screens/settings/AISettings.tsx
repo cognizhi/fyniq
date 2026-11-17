@@ -424,9 +424,14 @@ function ProvidersCard({ agents, connections }: { agents?: Agent[]; connections?
           </div>
         </dl>
         <p className="fy-small fy-secondary">A connection or model serves an agent only after it passes that agent's evals and a second approver approves it.</p>
-        <Link className="fy-btn fy-btn--secondary fy-btn--sm self-start" to="/settings/ai/providers">
-          {helpText("settings.ai-providers").label}
-        </Link>
+        <span className="fy-row fy-row--wrap gap-2">
+          <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/settings/ai/providers">
+            {helpText("settings.ai-providers").label}
+          </Link>
+          <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/settings/ai/routes">
+            {helpText("settings.ai-routes").label}
+          </Link>
+        </span>
       </div>
     </section>
   );
