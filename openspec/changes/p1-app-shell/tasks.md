@@ -170,6 +170,15 @@
   label, now a row whose whole label is the target. **Left:** visual snapshots (QA-UI-07's hashes, p1-launch-readiness
   5.4); devices without the Viewport Segments API split by CSS alone.)
 - [ ] 5.2 WCAG 2.2 AA with axe on every shell screen, keyboard and focus tests, focus not obscured, dragging alternatives and accessible authentication. Tests `// req: NFR-A11Y-01` through `// req: NFR-A11Y-05`
+  (17 Nov 2026, in part, for the launch gate: NFR-A11Y-03 to 05. `e2e/focus.spec.ts` tabs through Home, the invoices,
+  a statement and Settings at the desktop and phone frames, and through Home with the AI panel open: no focused control
+  is hidden by the sticky header, the bottom bar or the AI panel (by what is drawn at its centre, so stacking counts)
+  or by a toast (by covering it entirely); a planted toast must be caught. `draggingAlternatives.test.ts`: nothing is
+  done only by dragging (a drop zone offers the file chooser; a drag that moves or resizes names its alternative, none
+  yet). `accessibleAuthentication.test.tsx`: the way in leaves paste and password managers alone and asks no
+  cognitive test, the step-up offers a passkey and a new sign-in, a pasted recovery code is taken, and a refused
+  submit's summary takes focus. **Left:** NFR-A11Y-01 and 02's axe pass on every shell screen and keyboard tests; the
+  sticky first column's scrolling when the grid is built.)
 - [ ] 5.3 Externalised strings with per-user formats and the organisation's time zone, and the page-load, interaction and bundle budgets measured in CI. Tests `// req: NFR-L10N-01`, `// req: NFR-PERF-UI-01` and `// req: NFR-PERF-UI-03`
 
 ## 6. Screens
