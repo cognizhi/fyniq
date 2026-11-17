@@ -174,7 +174,15 @@ func (r aiProposals) step(ctx context.Context, id uuid.UUID, version int, to str
 		return storage.AIProposal{}, err
 	}
 	changes["status"] = [2]any{nil, out.Status}
-	return out, r.audit(ctx, to, out, changes)
+	if err := r.audit(ctx, to, out, changes); err != nil {
+		return storage.AIProposal{}, err
+	}
+	if to == storage.ProposalSuperseded || to == storage.ProposalExpired { // the database voided its pending request (000382)
+		if err := r.u.auditVoids(ctx); err != nil {
+			return storage.AIProposal{}, err
+		}
+	}
+	return out, nil
 }
 
 func (r aiProposals) audit(ctx context.Context, to string, p storage.AIProposal, changes map[string][2]any) error {

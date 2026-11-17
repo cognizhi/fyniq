@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,7 +17,8 @@ import (
 )
 
 // A proposal undecided past its 72 hours expires (§9.5; design D9): the worker's job moves it to Expired, audited, and
-// its approval request, which expires with it, can no longer be signed. One not yet past its expiry waits on.
+// the database voids its approval request in the same transaction (000382), audited too, so it can no longer be
+// signed. One not yet past its expiry waits on.
 // req: ai/proposals Proposal lifecycle
 // req: ai/proposals Proposal tier, originator, approvals and execution record
 func TestAProposalUndecidedExpires(t *testing.T) {
@@ -72,7 +74,16 @@ func TestAProposalUndecidedExpires(t *testing.T) {
 		t.Errorf("not yet past its expiry: %+v", p)
 	}
 	weiling = f.as(f.weiling)
-	e.problemIs(f.decide(weiling, old.ApprovalRequest.String(), "approve", hashOf(shown)), "approveApproval", 409, approval.CodeExpired)
+	if r := e.call(http.MethodGet, "/v1/approvals/"+old.ApprovalRequest.String(), weiling, nil); r.str("status") != "void" {
+		t.Errorf("the expired proposal's request: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodGet, "/v1/approvals/"+young.ApprovalRequest.String(), weiling, nil); r.str("status") != "pending" {
+		t.Errorf("the waiting proposal's request: %d %s", r.Status, r.Raw)
+	}
+	e.problemIs(f.decide(weiling, old.ApprovalRequest.String(), "approve", hashOf(shown)), "approveApproval", 409, approval.CodeChanged)
+	if trail := auditTrail(t, e); !strings.Contains(trail, `"action":"approval.void"`) {
+		t.Errorf("the void is not audited")
+	}
 	if n, err := proposal.ExpireIn(context.Background(), workerStore(t), org, e.clock); err != nil || n != 0 {
 		t.Errorf("expiring again: %d %v", n, err)
 	}

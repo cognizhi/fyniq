@@ -201,6 +201,12 @@ components:
             - The AGM is due by 30 June 2027 and has no task yet.
           maxLength: 4000
           type: string
+        revises:
+          description: "A proposal made by a turn for the same person, of the same task type, still waiting, which this one replaces: once this one is Pending, that one is Superseded and its approval request void (§9.5)."
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0c
+          format: uuid
+          type: string
         task_type:
           description: The catalogue's task type (contracts/ai/tasks).
           examples:
@@ -891,7 +897,7 @@ paths:
         - STORAGE-RETRY-01
   /internal/v1/proposals:
     post:
-      description: Makes a proposal of a catalogue task type for the turn's person (AI-P3), the AI's only write. The turn's token may propose only while the organisation has a task type on (ai.task_types), and does nothing else. The API keeps it as a Draft, checks the AI switch, that the task type is on, its payload against the task type's schema and limits, and that the person may do it themselves; screens what the model wrote; then dry-runs it as the person in a unit of work it rolls back and keeps the impact and the versions it read. It answers Pending, waiting for a person, or Invalid with why. Nothing changes until a person approves it, and the approval and the execution are never the AI's.
+      description: "Makes a proposal of a catalogue task type for the turn's person (AI-P3), the AI's only write. The turn's token may propose only while the organisation has a task type on (ai.task_types), and does nothing else. The API keeps it as a Draft, checks the AI switch, that the task type is on, its payload against the task type's schema and limits, and that the person may do it themselves; screens what the model wrote; then dry-runs it as the person in a unit of work it rolls back and keeps the impact and the versions it read. It answers Pending, waiting for a person, or Invalid with why. A revision names the proposal it replaces: the person's own, of the same task type, still waiting; once the revision is Pending, that one is Superseded and its approval request void, in the same transaction. Nothing changes until a person approves it, and the approval and the execution are never the AI's."
       operationId: proposeAITask
       requestBody:
         content:
@@ -948,6 +954,7 @@ paths:
       x-fyniq-error-codes:
         - AI-PROPOSAL-01
         - AI-PROPOSAL-02
+        - AI-PROPOSAL-04
         - AI-ROUTER-05
         - AI-SCREEN-02
         - API-AUTH-01

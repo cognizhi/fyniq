@@ -105,6 +105,7 @@ type Proposal struct {
 	Evidence  []Evidence      `json:"evidence,omitempty"`
 	Model     string          `json:"model"`
 	Prompt    string          `json:"prompt"`
+	Revises   string          `json:"revises,omitempty"` // a proposal of the person's still waiting, which this one replaces
 }
 
 // Evidence is a record or document a proposal relied on.
@@ -454,12 +455,13 @@ func (a *Assistant) propose(ctx context.Context, token, taskType, model string, 
 		Payload   json.RawMessage `json:"payload"`
 		Rationale string          `json:"rationale"`
 		Evidence  []Evidence      `json:"evidence"`
+		Revises   string          `json:"revises"`
 	}
 	if err := json.Unmarshal(call.Input, &in); err != nil || len(in.Payload) == 0 {
 		return failed("AI-PROPOSAL-03", call.Tool+" takes a payload, your reasons and the records you relied on.")
 	}
 	made, err := a.Backend.Propose(ctx, token, Proposal{TaskType: taskType, Payload: in.Payload, Rationale: in.Rationale, Evidence: in.Evidence,
-		Model: cmpOrString(model, "unknown"), Prompt: a.Prompt.Name()})
+		Model: cmpOrString(model, "unknown"), Prompt: a.Prompt.Name(), Revises: in.Revises})
 	var p *Problem
 	if errors.As(err, &p) {
 		return failed(p.Code, strings.TrimSpace(p.Detail+" "+p.Fix))

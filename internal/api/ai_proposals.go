@@ -13,12 +13,14 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/aitool"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/proposal"
 )
@@ -33,6 +35,7 @@ import (
 const (
 	CodeProposeNotAllowed = "AI-PROPOSAL-01" // the turn may not propose, or the task type is not on for the organisation
 	CodeProposalType      = "AI-PROPOSAL-02" // not a task type of the release, on the never-list, or not built
+	CodeProposalRevises   = "AI-PROPOSAL-04" // revises names no proposal of the person's that waits, of the same task type
 )
 
 // AIEvidenceRef is a record or document the AI relied on.
@@ -50,6 +53,7 @@ type AIPropose struct {
 	Evidence  []AIEvidenceRef `json:"evidence,omitempty" maxItems:"50" doc:"The records and documents it relied on."`
 	Model     string          `json:"model" minLength:"1" maxLength:"200" doc:"The model the turn ran on." example:"claude-opus-5-5"`
 	Prompt    string          `json:"prompt" pattern:"^[a-z][a-z_]{1,30}@[1-9][0-9]{0,3}$" doc:"The system prompt the turn ran with." example:"chat@2"`
+	Revises   string          `json:"revises,omitempty" format:"uuid" doc:"A proposal made by a turn for the same person, of the same task type, still waiting, which this one replaces: once this one is Pending, that one is Superseded and its approval request void (§9.5)." example:"0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0c"`
 }
 
 // AIProposed is what became of a proposal: Pending, waiting for a person, or Invalid, with why.
@@ -85,9 +89,11 @@ func registerProposals(a *API) {
 			"may propose only while the organisation has a task type on (ai.task_types), and does nothing else. The API keeps it as a " +
 			"Draft, checks the AI switch, that the task type is on, its payload against the task type's schema and limits, and that the " +
 			"person may do it themselves; screens what the model wrote; then dry-runs it as the person in a unit of work it rolls back " +
-			"and keeps the impact and the versions it read. It answers Pending, waiting for a person, or Invalid with why. Nothing " +
-			"changes until a person approves it, and the approval and the execution are never the AI's.",
-	}, []string{CodeProposeNotAllowed, CodeProposalType, airoute.CodeSwitchOff, CodeScreenIncomplete},
+			"and keeps the impact and the versions it read. It answers Pending, waiting for a person, or Invalid with why. A revision " +
+			"names the proposal it replaces: the person's own, of the same task type, still waiting; once the revision is Pending, " +
+			"that one is Superseded and its approval request void, in the same transaction. Nothing changes until a person approves " +
+			"it, and the approval and the execution are never the AI's.",
+	}, []string{CodeProposeNotAllowed, CodeProposalType, CodeProposalRevises, airoute.CodeSwitchOff, CodeScreenIncomplete},
 		func(ctx context.Context, in *aiProposeInput) (*aiProposeOutput, error) {
 			p, _ := authn.From(ctx)
 			if !slices.Contains(p.Scopes, authn.AIProposeScope) {
@@ -113,16 +119,20 @@ func registerProposals(a *API) {
 			if err != nil {
 				return nil, problem(CodeInvalid, "The payload is not a JSON object.", "Send the payload as the task type's input schema describes it")
 			}
+			revises, err := a.revisable(ctx, p, tt, in.Body.Revises)
+			if err != nil {
+				return nil, err
+			}
 			made, err := a.draftProposal(ctx, p, tt, in.Body, payload, sum)
 			if err != nil {
 				return nil, err
 			}
 			reason, impact, err := a.checkProposal(ctx, p, tt, cmd, in.Body, payload)
 			if err != nil {
-				_ = a.endProposal(ctx, p, made, "it could not be checked: "+plainError(err), proposal.Impact{}, tt, cmd)
+				_, _ = a.endProposal(ctx, p, made, "it could not be checked: "+plainError(err), proposal.Impact{}, tt, cmd, nil)
 				return nil, err
 			}
-			if err := a.endProposal(ctx, p, made, reason, impact, tt, cmd); err != nil {
+			if reason, err = a.endProposal(ctx, p, made, reason, impact, tt, cmd, revises); err != nil {
 				return nil, err
 			}
 			out := AIProposed{ID: made.ID.String(), TaskType: tt.ID, TaskVersion: tt.Version, Status: storage.ProposalPending, Summary: impact.Summary,
@@ -218,13 +228,27 @@ func (a *API) checkProposal(ctx context.Context, p authn.Principal, tt proposal.
 	return "", proposal.Impact{}, err
 }
 
-// endProposal moves a Draft on: to Invalid with reason, or to Pending with the dry run's impact and its approval request,
-// in one unit of work (AI-89).
+// endProposal moves a Draft on, in one unit of work, and gives why it is Invalid, or "" when it is Pending: to Invalid
+// with reason, or to Pending with the dry run's impact and its approval request (AI-89). A revision's Pending supersedes
+// the proposal it replaces, whose approval request the database voids; one that stopped waiting meanwhile leaves the
+// revision Invalid.
 func (a *API) endProposal(ctx context.Context, p authn.Principal, made storage.AIProposal, reason string, impact proposal.Impact,
-	tt proposal.TaskType, cmd proposal.Command) error {
-	return a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-		if reason != "" {
-			_, err := u.AIProposals().Invalid(ctx, made.ID, made.Version, cut(reason, 1000))
+	tt proposal.TaskType, cmd proposal.Command, revises *uuid.UUID) (string, error) {
+	var why string
+	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		why = reason
+		var earlier storage.AIProposal
+		if why == "" && revises != nil {
+			var err error
+			if earlier, err = u.AIProposals().Get(ctx, *revises); err != nil {
+				return err
+			}
+			if earlier.Status != storage.ProposalPending {
+				why = "the proposal it revises stopped waiting meanwhile: it is " + earlier.Status
+			}
+		}
+		if why != "" {
+			_, err := u.AIProposals().Invalid(ctx, made.ID, made.Version, cut(why, 1000))
 			return err
 		}
 		body, err := json.Marshal(impact)
@@ -235,9 +259,49 @@ func (a *API) endProposal(ctx context.Context, p authn.Principal, made storage.A
 		if err != nil {
 			return err
 		}
-		_, err = u.AIProposals().Pending(ctx, made.ID, made.Version, body, impact.Base, &r.ID)
+		if _, err = u.AIProposals().Pending(ctx, made.ID, made.Version, body, impact.Base, &r.ID); err != nil {
+			return err
+		}
+		if revises != nil {
+			_, err = u.AIProposals().Supersede(ctx, earlier.ID, earlier.Version, made.ID, a.deps.Clock.Now())
+		}
 		return err
 	})
+	return why, err
+}
+
+// revisable is the proposal a revision replaces, or nil when it revises none: one made by a turn for the same person, of
+// the same task type, still waiting (§9.5).
+func (a *API) revisable(ctx context.Context, p authn.Principal, tt proposal.TaskType, revises string) (*uuid.UUID, error) {
+	if revises == "" {
+		return nil, nil
+	}
+	id, err := uuid.Parse(revises)
+	if err != nil {
+		return nil, problem(CodeProposalRevises, "revises is not a proposal's ID.", "Name the ID of a proposal of the person's that still waits")
+	}
+	var why string
+	err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		earlier, err := u.AIProposals().Get(ctx, id)
+		switch {
+		case errors.Is(err, ports.ErrNotFound) || err == nil && (earlier.RequestedBy != p.UserID || earlier.Turn == nil):
+			why = "names no proposal made for this person"
+		case err != nil:
+			return err
+		case earlier.TaskType != tt.ID:
+			why = "names a proposal of " + earlier.TaskType + ", not " + tt.ID
+		case earlier.Status != storage.ProposalPending:
+			why = "names a proposal that no longer waits: it is " + earlier.Status
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if why != "" {
+		return nil, problem(CodeProposalRevises, "revises "+why+".", "Propose it as a new proposal, or revise one of the person's that still waits")
+	}
+	return &id, nil
 }
 
 // schemaErrors are what in breaks of schema, each naming its field under at.

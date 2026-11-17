@@ -88,7 +88,9 @@ func (t TaskType) ModelTool() ports.ModelTool {
 		`"evidence":{"type":"array","maxItems":50,"description":"The records and documents you relied on.","items":{"type":"object",` +
 		`"additionalProperties":false,"required":["kind","id"],"properties":{"kind":{"type":"string","maxLength":40,` +
 		`"description":"The kind of record, such as task or invoice."},"id":{"type":"string","maxLength":100,"description":"Its ID."},` +
-		`"title":{"type":"string","maxLength":200,"description":"What it is, in a few words."}}}}}}`
+		`"title":{"type":"string","maxLength":200,"description":"What it is, in a few words."}}}},` +
+		`"revises":{"type":"string","maxLength":36,"pattern":"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$","description":"To change a proposal of yours that still waits, its ID: this one ` +
+		`replaces it, and the person approves this one instead."}}}`
 	return ports.ModelTool{Name: t.ModelName(), Description: t.Description + " A person approves it in Fyniq before anything changes.",
 		Schema: json.RawMessage(schema)}
 }
