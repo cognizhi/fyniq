@@ -240,6 +240,8 @@ export const actions = [
   { kind: "action", id: "home.what-happened", mode: "basic", help: "home.what-happened", guide: "home.overview#what-happened-where-to-record-it" },
   // Books health on Home's pulse card, explained behind its ⓘ (FR-UX-30).
   { kind: "action", id: "home.books-health", mode: "basic", help: "home.books-health", guide: "checks.overview" },
+  // Plain view or Accountant view of money in and out (FR-UX-08): Expert's; Basic always uses Plain view.
+  { kind: "action", id: "ledger-view", mode: "expert", help: "ledger.view", guide: "banking.accounts#categorise-the-waiting-lines" },
   { kind: "action", id: "shell.assistant", mode: "basic", help: "shell.assistant", guide: "ai.assistant" },
   { kind: "action", id: "assistant.ask-about-this", mode: "basic", help: "assistant.ask-about-this", guide: "ai.assistant#ask-about-a-record-a-report-or-a-figure" },
   { kind: "action", id: "assistant.feedback", mode: "basic", help: "assistant.feedback", guide: "ai.assistant#rate-an-answer" },

@@ -55,6 +55,10 @@
       "label": "What happened? Where to record it",
       "tooltip": "Pick what happened, such as a customer paid you, and Fyniq says where to record it and what to do there."
     },
+    "ledger.view": {
+      "label": "Plain or Accountant view",
+      "tooltip": "Plain view: Money in, Money out and Category. Accountant view: Debit, Credit and Account. The figures are the same."
+    },
     "shell.help": {
       "label": "Help",
       "tooltip": "About Fyniq, and the version you are on."
