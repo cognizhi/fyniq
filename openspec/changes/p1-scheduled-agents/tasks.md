@@ -55,9 +55,20 @@
 
 ## 4. Schedules
 
-- [ ] 4.1 The outbox's optional run-at time (the Cloud Tasks adapter's schedule time; the local queue holds it). The
+- [x] 4.1 The outbox's optional run-at time (the Cloud Tasks adapter's schedule time; the local queue holds it). The
   job `agents.schedule` every 5 minutes queues each due slot and enqueues it at its time; a finished run enqueues its
   next slot (design D4). Tests `// req: AI-62`.
+  As built:
+  - `ports.Task.At` carries the time: Cloud Tasks gets it as `scheduleTime`, and the local push queue waits for it.
+  - `outbox.Dispatcher.EnqueueAt` and `DispatchAt` run a scheduled row's deadline from its time.
+  - `agents.Scheduler` (job `agents.schedule`, every tick) reads each agent's settings on the day. For an agent on and
+    not paused, it queues each entry's slots from the later of an hour ago and when it was turned on, to 7 minutes
+    ahead, each once (the run's unique slot), and enqueues each at its slot.
+  - A run acts for the person who asked for the switch's approved change (`Approvals().LastApproved`).
+  - The settings' own rule (Appendix D's row): turning the agent on needs A (the Owner); turning it off, its schedule
+    and the rest need C, which the Owner may use.
+  - A finished run's own next slot is queued by the run job (task 5.1, `Scheduler.Queue`); the tick queues every due
+    slot anyway.
 - [ ] 4.2 The watchdog: a slot late by more than 30 minutes, or a run failed or skipped, raises C.2 #36 (⚠) on
   Checks (design D4). Tests `// req: AI-67`, `// req: C.2 #36`.
 - [ ] 4.3 Event triggers: a period closed, a share issue or transfer, and a calendar filing recorded queue an event

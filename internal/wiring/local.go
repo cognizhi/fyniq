@@ -76,7 +76,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		Connectors: catalogue, ConnectorSecrets: secrets, ConnectorNames: names, Egress: &egress.Guard{Local: true},
 		Store:  store,
 		Tokens: tokens,
-		Queue:  local.NewPush(map[string]string{"worker": worker, "executor": executor, "jobs": worker}, tokens, 5, time.Second),
+		Queue:  local.NewPush(map[string]string{"worker": worker, "executor": executor, "jobs": worker}, tokens, clock, 5, time.Second),
 		Jobs:   local.HTTPJobs{URL: worker, Tokens: tokens},
 		Blobs:  blobs,
 		Signer: signer,

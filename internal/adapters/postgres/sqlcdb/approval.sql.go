@@ -431,6 +431,26 @@ func (q *Queries) InsertApprovalSignature(ctx context.Context, arg InsertApprova
 	return i, err
 }
 
+const lastApprovedRequest = `-- name: LastApprovedRequest :one
+SELECT id FROM fyniq.approval_request
+WHERE object_type = $1 AND object_key = $2 AND status = 'approved'
+ORDER BY decided_at DESC, id DESC
+LIMIT 1
+`
+
+type LastApprovedRequestParams struct {
+	ObjectType string
+	ObjectKey  string
+}
+
+// The latest approved request to change a record: who asked for a scheduled agent to be turned on (AI-63).
+func (q *Queries) LastApprovedRequest(ctx context.Context, arg LastApprovedRequestParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, lastApprovedRequest, arg.ObjectType, arg.ObjectKey)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const listApprovalPolicies = `-- name: ListApprovalPolicies :many
 SELECT id, object_type, version, steps, rules, request_id, created_by, created_at
   FROM fyniq.approval_policy

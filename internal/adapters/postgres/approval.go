@@ -117,6 +117,20 @@ func (r approvals) Request(ctx context.Context, n storage.NewApprovalRequest) (s
 	return a, nil
 }
 
+func (r approvals) LastApproved(ctx context.Context, objectType, objectKey string) (storage.ApprovalRequest, error) {
+	if err := r.u.check(); err != nil {
+		return storage.ApprovalRequest{}, err
+	}
+	id, err := r.u.q.LastApprovedRequest(ctx, sqlcdb.LastApprovedRequestParams{ObjectType: objectType, ObjectKey: objectKey})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.ApprovalRequest{}, ports.ErrNotFound
+	}
+	if err != nil {
+		return storage.ApprovalRequest{}, mapError(err)
+	}
+	return r.Get(ctx, id)
+}
+
 func (r approvals) Get(ctx context.Context, id uuid.UUID) (storage.ApprovalRequest, error) {
 	if err := r.u.check(); err != nil {
 		return storage.ApprovalRequest{}, err

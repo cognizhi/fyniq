@@ -57,6 +57,7 @@ var ScheduledJobs = map[string]string{
 	"pdpa.shred":             "Personal data's keys shredded after their retention",
 	"ai.conversations.purge": "The assistant's conversations removed after their retention",
 	"ai.proposals.expire":    "The AI's proposals past their expiry ended",
+	"agents.schedule":        "The scheduled agents' runs queued for their slots",
 }
 
 // The checks of the payments out: p1-checks slice 4 (task 4.3).

@@ -309,6 +309,9 @@ func registerSettings(a *API) {
 			if x := settings.Gate(d); x != nil {
 				return nil, problem(x.Code, x.Message+".", x.Fix, FieldProblem{Code: x.Code, Field: "body." + x.Field, Message: x.Message, Fix: x.Fix})
 			}
+			if err := agentSettingRight(ctx, d.Key, in.Body.Value != nil && strings.TrimSpace(*in.Body.Value) == "true"); err != nil {
+				return nil, err
+			}
 			w, err := write(ctx, a, "", in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (any, error) {
 				changes, err := u.Settings().Changes(ctx, d.Key)
 				if err != nil {
@@ -395,4 +398,25 @@ func choicesOf(values []string) []SettingChoice {
 		out[i] = SettingChoice(v)
 	}
 	return out
+}
+
+// agentSettingRight is the right a scheduled agent's settings need besides the settings' own (Appendix D, "AI company
+// secretary: enable, schedule, runs and drafts"; AI-63): turning the agent on is the Owner's, its A, with a second
+// approver as for every AI setting; turning it off, its schedule and the rest are C there, which the Administrator holds
+// and the Owner may use (AI-13: the kill switch is anyone's who looks after it). Any other setting needs nothing more.
+func agentSettingRight(ctx context.Context, key string, turningOn bool) error {
+	if !strings.HasPrefix(key, "agents.company_secretary.") {
+		return nil
+	}
+	p, _ := authn.From(ctx)
+	need := authz.Policy{Operation: "updateSetting", Capability: authz.AICompanySecretary, Need: authz.Create, OwnerMay: true}
+	what := "its schedule and its other settings need C"
+	if key == "agents.company_secretary.enabled" && turningOn {
+		need, what = authz.Policy{Operation: "updateSetting", Capability: authz.AICompanySecretary, Need: authz.Approve}, "turning it on needs A"
+	}
+	if d := authz.Decide(need, p.Roles, p.AI()); !d.Allowed {
+		return problem(CodeForbidden, "The company secretary assistant's settings are its own row's: "+what+" on \"AI company secretary\".",
+			"Ask an Owner to change it")
+	}
+	return nil
 }
