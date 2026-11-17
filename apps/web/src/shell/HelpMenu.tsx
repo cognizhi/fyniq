@@ -8,6 +8,7 @@ import { buttonVariants } from "../components/ui/button";
 import { Dialog } from "../components/ui/dialog";
 import { dateTime } from "../format/date";
 import { helpText } from "../i18n";
+import { cn } from "../lib/utils";
 import { Icon, problemOf } from "../ui";
 
 // The header's Help menu (screen inventory: the app shell's header; REL-05, p1-security-hardening design D11). About
@@ -17,14 +18,14 @@ import { Icon, problemOf } from "../ui";
 const item =
   "flex min-h-8 cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-base text-foreground outline-none select-none data-highlighted:bg-surface-3 pointer-coarse:min-h-(--touch-target)";
 
-export function HelpMenu() {
+export function HelpMenu({ className }: { className?: string }) {
   const [about, setAbout] = useState(false);
   const help = helpText("shell.help");
   const a = helpText("shell.about");
   return (
     <>
       <Menu.Root>
-        <Menu.Trigger className={buttonVariants({ variant: "ghost", size: "icon" })} aria-label={help.label} title={help.tooltip}>
+        <Menu.Trigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), className)} aria-label={help.label} title={help.tooltip}>
           <Icon of={CircleHelp} size={20} />
         </Menu.Trigger>
         <Menu.Portal>
@@ -45,8 +46,9 @@ export function HelpMenu() {
 
 type Version = components["schemas"]["PlatformVersion"];
 
-// About reads the version each time it opens; the shell has no query client of its own.
-function About({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+// About reads the version each time it opens; the shell has no query client of its own. The compact More sheet opens it
+// too.
+export function About({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const a = helpText("shell.about");
   const [v, setV] = useState<Version | null>(null);
   const [failed, setFailed] = useState<unknown>(null);

@@ -322,9 +322,9 @@ fyniq_api       INSERT    migration_signoff (mapping_id, run_id, signed_at, sign
 fyniq_api       SELECT    migration_signoff
 fyniq_api       INSERT    migration_step (run_id, started_at, started_by, state, step, workbook_file_id)
 fyniq_api       SELECT    migration_step
-fyniq_api       INSERT    money_account (account_id, cardholder_id, changed_at, changed_by, created_at, created_by, currency, identifier, institution, kind, name, opened_on)
+fyniq_api       INSERT    money_account (account_id, cardholder_id, changed_at, changed_by, created_at, created_by, currency, identifier, institution, kind, name, opened_on, payment_file)
 fyniq_api       SELECT    money_account
-fyniq_api       UPDATE    money_account (cardholder_id, changed_at, changed_by, closed_on, identifier, institution, kind, name, opened_on, version)
+fyniq_api       UPDATE    money_account (cardholder_id, changed_at, changed_by, closed_on, identifier, institution, kind, name, opened_on, payment_file, version)
 fyniq_api       INSERT    money_account_source (connector_id, from_date, kind, mapping_id, money_account_id, report_format, senders, set_at, set_by)
 fyniq_api       SELECT    money_account_source
 fyniq_api       SELECT    notification

@@ -58,12 +58,10 @@ describe("navigation cut to the person", () => {
     expect(ids(navFor(settingsNav, as(["owner", "administrator"]), "expert"))).not.toContain("settings.sign-in-providers");
   });
 
-  it("puts at most four of the person's items in the compact bottom bar, then More", () => {
+  it("puts at most four of the person's items in the compact bottom bar, before More", () => {
     const owner = navFor(items, as(["owner"], { ...off, payroll: true }), "expert");
-    const bar = bottomBar(owner);
-    expect(ids(bar.items)).toEqual(["home", "inbox", "sales", "banking"]);
-    expect(bar.more).toBe(true);
-    expect(bottomBar(navFor(items, as(["ar_specialist"]), "basic"))).toEqual({ items: [items[1], items[3]], more: false });
+    expect(ids(bottomBar(owner))).toEqual(["home", "inbox", "sales", "banking"]);
+    expect(bottomBar(navFor(items, as(["ar_specialist"]), "basic"))).toEqual([items[1], items[3]]);
   });
 
   it("registers every navigation item on a known route, at most 13 in the sidebar", () => {
