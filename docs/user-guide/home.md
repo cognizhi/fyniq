@@ -163,6 +163,8 @@ SHA the services were built from), when they were built and, for a published rel
 the commit when you report a problem. Every exported report names the same version and commit in its footer: the last
 line of a CSV or a spreadsheet, and the footer of a PDF.
 
+The same **Help** menu opens the **User guide**, this guide, in Fyniq ([Read the user guide](help.md)).
+
 ### Sign out
 
 Select **Sign out** in the header (on a phone, under **More**). Fyniq ends your session in this browser and returns
