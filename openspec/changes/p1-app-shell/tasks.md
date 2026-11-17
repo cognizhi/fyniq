@@ -138,6 +138,17 @@
   (20 Oct 2026, in part: the FR-UX-41 banner, `components/ReviewBanner.tsx`, reads the review register at build time
   and shows on each Settings page whose screen it lists while the area is pending. Test `ReviewBanner.test.tsx`.
   **Left:** the banner on the other screens as they are built, `/help`, context-aware help, the tour and practice.)
+  (17 Nov 2026, the user guide, for the launch gate: `/help` builds every page of `docs/user-guide/` into the web app
+  (`help/guide.ts`, at build time; the web image copies the guide and the release notes), lists those the person's
+  roles call for, Basic ones in Basic mode with how many Expert adds, and searches them as they type; `/help/$key`
+  renders a page's Markdown as elements (`help/markdown.tsx`: headings with their anchors, nested lists, tables,
+  notes, code; a link to another page opens it, one to an outside site a new tab, any other its words), with its
+  sections in a sticky contents column and a print without the shell; `/help/whats-new` is the release notes. Help ›
+  User guide opens the page of the screen the person is on, from the registry's guide keys (FR-UX-33's guide half;
+  `help/links.ts`, kept apart so the shell does not load the pages). Guide `help.md`, compiled into `help.guide`.
+  Tests `help.test.tsx` (`// req: FR-UX-32`, `// req: FR-UX-33`). **Left:** the glossary and the keyboard shortcuts'
+  pages, which wait for their sources; screenshots from the end-to-end tests; "Try it in the sample company"; the
+  tour and practice.)
 
 ## 5. Devices, accessibility and budgets
 
