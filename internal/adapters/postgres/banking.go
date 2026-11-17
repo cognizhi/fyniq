@@ -37,7 +37,8 @@ func toDecPtr(s *string) *storage.Decimal {
 func toMoneyAccount(r sqlcdb.FyniqMoneyAccount) storage.MoneyAccount {
 	return storage.MoneyAccount{ID: r.ID, AccountID: r.AccountID, Kind: r.Kind, Name: r.Name, Institution: str(r.Institution),
 		Identifier: str(r.Identifier), Currency: r.Currency, OpenedOn: nullDate(r.OpenedOn), ClosedOn: nullDate(r.ClosedOn),
-		CardholderID: r.CardholderID, CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt, ChangedAt: r.ChangedAt, Version: int(r.Version)}
+		CardholderID: r.CardholderID, PaymentFile: r.PaymentFile, CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt, ChangedAt: r.ChangedAt,
+		Version: int(r.Version)}
 }
 
 func toSource(r sqlcdb.FyniqMoneyAccountSource) storage.MoneyAccountSource {
@@ -92,6 +93,7 @@ func moneyAccountChanges(a, b storage.MoneyAccount) map[string][2]any {
 		return id.String()
 	}
 	text("cardholder_id", holder(a.CardholderID), holder(b.CardholderID))
+	text("payment_file", a.PaymentFile, b.PaymentFile) // FR-BNK-12 (rev 0.157): the old and new file
 	return out
 }
 
@@ -107,9 +109,13 @@ func (r banking) CreateMoneyAccount(ctx context.Context, n storage.NewMoneyAccou
 	if err := r.u.check(); err != nil {
 		return storage.MoneyAccount{}, err
 	}
+	file := n.PaymentFile
+	if file == "" {
+		file = storage.PaymentFileList
+	}
 	id, err := r.u.q.InsertMoneyAccount(ctx, sqlcdb.InsertMoneyAccountParams{AccountID: n.AccountID, Kind: n.Kind, Name: n.Name,
 		Institution: opt(n.Institution), Identifier: opt(n.Identifier), Currency: n.Currency, OpenedOn: pgDate(n.OpenedOn),
-		CardholderID: n.CardholderID, By: r.u.actor(ctx), At: n.At})
+		CardholderID: n.CardholderID, PaymentFile: file, By: r.u.actor(ctx), At: n.At})
 	if err != nil {
 		return storage.MoneyAccount{}, mapError(err)
 	}
@@ -127,9 +133,13 @@ func (r banking) ChangeMoneyAccount(ctx context.Context, id uuid.UUID, version i
 	if err != nil {
 		return before, err
 	}
+	file := c.PaymentFile
+	if file == "" {
+		file = before.PaymentFile
+	}
 	n, err := r.u.q.UpdateMoneyAccount(ctx, sqlcdb.UpdateMoneyAccountParams{Kind: c.Kind, Name: c.Name, Institution: opt(c.Institution),
 		Identifier: opt(c.Identifier), OpenedOn: pgDate(c.OpenedOn), ClosedOn: pgDate(c.ClosedOn), CardholderID: c.CardholderID,
-		By: r.u.actor(ctx), At: c.At,
+		PaymentFile: file, By: r.u.actor(ctx), At: c.At,
 		ID: id, Version: small(version)})
 	if err != nil {
 		return storage.MoneyAccount{}, mapError(err)
