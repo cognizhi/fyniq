@@ -725,6 +725,13 @@ const (
 	// FR-CS-06, design D2), with its days and lodgements, recorded on another person's approval with its evidence; a
 	// later version names the first, and the last recorded is in force.
 	DocumentCorporateOfficer DocumentType = "corporate_officer"
+	// DocumentNomineeEntry is one entry of the register of nominee directors or nominee shareholders (s386AL; FR-CS-01,
+	// design D2): who acts or holds for whom, since when, and the days the company was told, its register entered it
+	// and ACRA's central register was told; recorded on another person's approval with its evidence.
+	DocumentNomineeEntry DocumentType = "nominee_entry"
+	// DocumentStatementsApproval is the directors' approval of a financial year's statements (FR-CS-03, C.2 #33, design
+	// D4): the year's end, the day approved and the day sent to the members, recorded with its evidence.
+	DocumentStatementsApproval DocumentType = "statements_approval"
 	// DocumentAcraExtract is ACRA's register of members as a business profile gives it (FR-EQ-26, design D11): its day
 	// and its holdings typed in, recorded with the PDF attached by whoever may post on the cap table; a newer one
 	// supersedes it.
@@ -1029,6 +1036,12 @@ const (
 	// identifier as its last 4 characters, the days in order, a nominee only as a director, a member of the organisation,
 	// and no NRIC or FIN in full (FY353).
 	CodeCorporateOfficer = "STORAGE-CORP-02"
+	// CodeNomineeEntry: a nominee entry keeps its own keys, a director among the officers or a contact marked shareholder
+	// or investor, whom they act for, and its days in order (FY354).
+	CodeNomineeEntry = "STORAGE-CORP-03"
+	// CodeStatementsApproval: a statements approval keeps its own keys, a year's end, and the days approved and sent after
+	// it, in order (FY355).
+	CodeStatementsApproval = "STORAGE-CORP-04"
 	// CodeAcraExtract: an ACRA extract keeps its own keys, its day and a list of holdings, each a holder marked
 	// shareholder or investor, an active share-capital class and whole shares above zero (FY297).
 	CodeAcraExtract = "STORAGE-SHARE-11"

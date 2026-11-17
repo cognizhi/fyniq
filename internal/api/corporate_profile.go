@@ -102,6 +102,10 @@ type CorporateProfile struct {
 	Secretary      bool                   `json:"secretary" doc:"true: a secretary is in office on the day (FR-CS-06)." example:"true"`
 	Details        []CorporateDetailView  `json:"details" nullable:"false" doc:"Every detail, drafts and superseded ones included, the latest first."`
 	OfficerHistory []CorporateOfficerView `json:"officer_history" nullable:"false" doc:"Every officer's every version, drafts and superseded ones included, the latest first."`
+	// (task 2.2)
+	Nominees            []NomineeEntryView       `json:"nominees" nullable:"false" doc:"The registers of nominee directors and nominee shareholders on the day: each entry in force, a nominee since then and not ceased."`
+	NomineeHistory      []NomineeEntryView       `json:"nominee_history" nullable:"false" doc:"Every nominee entry's every version, drafts and superseded ones included, the latest first."`
+	StatementsApprovals []StatementsApprovalView `json:"statements_approvals" nullable:"false" doc:"Every directors' approval of a year's financial statements, drafts and superseded ones included, the latest first."`
 }
 
 type (
@@ -289,10 +293,12 @@ func officerDraftOf(o corporate.Officer) CorporateOfficerDraft {
 
 // corporateView is what the profile's reads share: every version of each record, and the requests waiting.
 type corporateView struct {
-	details  []equity.Recorded[corporate.Detail]
-	officers map[uuid.UUID][]equity.Recorded[corporate.Officer]
-	asked    map[string]string
-	today    time.Time
+	details   []equity.Recorded[corporate.Detail]
+	officers  map[uuid.UUID][]equity.Recorded[corporate.Officer]
+	nominees  map[uuid.UUID][]equity.Recorded[corporate.NomineeEntry]
+	approvals []equity.Recorded[corporate.StatementsApproval]
+	asked     map[string]string
+	today     time.Time
 }
 
 func (a *API) corporateViewOf(ctx context.Context, u storage.UnitOfWork) (corporateView, error) {
@@ -307,7 +313,14 @@ func (a *API) corporateViewOf(ctx context.Context, u storage.UnitOfWork) (corpor
 	if v.officers, err = corporate.Officers(ctx, u); err != nil {
 		return v, err
 	}
-	for _, o := range []string{approval.ObjectCorporateDetail, approval.ObjectCorporateOfficer} {
+	if v.nominees, err = corporate.Nominees(ctx, u); err != nil {
+		return v, err
+	}
+	if v.approvals, err = corporate.StatementsApprovals(ctx, u); err != nil {
+		return v, err
+	}
+	for _, o := range []string{approval.ObjectCorporateDetail, approval.ObjectCorporateOfficer, approval.ObjectNomineeEntry,
+		approval.ObjectStatementsApproval} {
 		asked, err := a.waiting(ctx, u, o)
 		if err != nil {
 			return v, err
@@ -442,7 +455,7 @@ func (a *API) corporateProfileOn(ctx context.Context, u storage.UnitOfWork, on *
 		}
 		out.OfficerHistory = append(out.OfficerHistory, o)
 	}
-	return out, nil
+	return out, a.registersOn(ctx, u, v, day, &out)
 }
 
 // corporateRecordDependencies are a detail's or an officer's envelope values: its status, and its day or the officer it
@@ -532,8 +545,9 @@ func registerCorporateProfile(a *API) {
 		OperationID: "getCorporateProfile", Method: http.MethodGet, Path: "/v1/corporate-profile", Tags: []string{"Corporate profile"},
 		Summary: "Get the corporate profile",
 		Description: "The corporate profile on a day (FR-CS-01, FR-CS-06; design D2): the name, registered office and SSIC code in force, " +
-			"and the officers in office (directors, the secretary, the CEO and auditors), with whether a secretary is in office, and every " +
-			"version of each, drafts included. The UEN and the financial years are the organisation profile's. Read masked (Appendix D's " +
+			"and the officers in office (directors, the secretary, the CEO and auditors), with whether a secretary is in office; the " +
+			"nominee registers' entries in force and the directors' approvals of the financial statements; and every version of each, " +
+			"drafts included. The UEN and the financial years are the organisation profile's. Read masked (Appendix D's " +
 			"M), an officer's identifier and note are hidden. Read-only; no side effects.",
 	}, append([]string{CodeInvalid}, locks...), func(ctx context.Context, in *corporateProfileInput) (*corporateProfileOutput, error) {
 		var fields []FieldProblem

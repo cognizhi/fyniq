@@ -102,3 +102,79 @@ func TestAttackCorporateRecordsKeepTheirRules(t *testing.T) {
 		}
 	}
 }
+
+// The nominee registers and the statements approval keep their rules whoever writes them (s386AL, FR-CS-03; FY354,
+// FY355): an entry its own keys, a director among the officers or a contact marked shareholder or investor, whom they
+// act for and its days in order; an approval its own keys, approved after the year ends and sent on or after it.
+// req: FR-CS-01
+// req: FR-CS-03
+// asvs: V8.2.1
+func TestAttackCorporateRegistersKeepTheirRules(t *testing.T) {
+	ctx := context.Background()
+	d := newDirectorBooks(t, "Attack corporate registers Pte Ltd")
+	api := store(t, "fyniq_api")
+	create := func(kind storage.DocumentType, payload string) (uuid.UUID, error) {
+		var id uuid.UUID
+		err := api.Do(ctx, d.org, func(ctx context.Context, u storage.UnitOfWork) error {
+			doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: kind, Payload: []byte(payload)})
+			id = doc.ID
+			return err
+		})
+		return id, err
+	}
+	officer, err := create(storage.DocumentCorporateOfficer, `{"date":"2026-11-16","role":"director","name":"Lee Wei","kind":"individual",`+
+		`"appointed_on":"2026-06-18","nominee":true,"nominator":"Lion Rock"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	holder := func(body string) string {
+		return fmt.Sprintf(`{"date":"2026-11-16","kind":"shareholder","holder_id":%q,"nominator":"Fund I","since":"2026-06-18"%s}`, d.director.ID, body)
+	}
+	for name, payload := range map[string]string{
+		"a key of its own":               holder(`,"shares":"100"`),
+		"an unknown kind":                strings.Replace(holder(``), `"shareholder"`, `"secretary"`, 1),
+		"a customer as its holder":       strings.Replace(holder(``), d.director.ID.String(), d.customer.ID.String(), 1),
+		"a shareholder with an officer":  holder(fmt.Sprintf(`,"officer_id":%q`, officer)),
+		"a director with no officer":     strings.Replace(strings.Replace(holder(``), `"shareholder"`, `"director"`, 1), fmt.Sprintf(`,"holder_id":%q`, d.director.ID), ``, 1),
+		"a director of another document": fmt.Sprintf(`{"date":"2026-11-16","kind":"director","officer_id":%q,"nominator":"X","since":"2026-06-18"}`, uuid.New()),
+		"for no one":                     strings.Replace(holder(``), `"Fund I"`, `" "`, 1),
+		"no day":                         strings.Replace(holder(``), `,"since":"2026-06-18"`, ``, 1),
+		"informed before":                holder(`,"informed_on":"2026-06-17"`),
+		"ACRA told with no register":     holder(`,"central_on":"2026-07-02"`),
+		"ACRA told before the register":  holder(`,"register_on":"2026-06-30","central_on":"2026-06-29"`),
+		"ceased before":                  holder(`,"ceased_on":"2026-06-01"`),
+		"a later version of nothing":     holder(fmt.Sprintf(`,"entry_id":%q`, uuid.New())),
+		"an NRIC in full":                strings.Replace(holder(``), `"Fund I"`, `"S1234567D"`, 1),
+	} {
+		if _, err := create(storage.DocumentNomineeEntry, payload); storage.CodeOf(err) != storage.CodeNomineeEntry {
+			t.Errorf("a nominee entry with %s: %v", name, err)
+		}
+	}
+	first, err := create(storage.DocumentNomineeEntry, holder(`,"register_on":"2026-06-30","central_on":"2026-07-02"`))
+	if err != nil {
+		t.Fatalf("a nominee shareholder as the rules allow: %v", err)
+	}
+	for name, payload := range map[string]string{
+		"a nominee director": fmt.Sprintf(`{"date":"2026-11-16","kind":"director","officer_id":%q,"nominator":"Lion Rock","since":"2026-06-18"}`, officer),
+		"its cessation":      holder(fmt.Sprintf(`,"entry_id":%q,"ceased_on":"2026-10-01"`, first)),
+	} {
+		if _, err := create(storage.DocumentNomineeEntry, payload); err != nil {
+			t.Errorf("%s as the rules allow: %v", name, err)
+		}
+	}
+
+	approval := `{"date":"2026-11-16","fy_end":"2025-12-31","approved_on":"2026-04-15"%s}`
+	for name, payload := range map[string]string{
+		"a key of its own":           fmt.Sprintf(approval, `,"auditor":"x"`),
+		"approved on the year's end": strings.Replace(fmt.Sprintf(approval, ``), `"2026-04-15"`, `"2025-12-31"`, 1),
+		"sent before approval":       fmt.Sprintf(approval, `,"sent_on":"2026-04-14"`),
+		"no year's end":              strings.Replace(fmt.Sprintf(approval, ``), `"fy_end":"2025-12-31",`, ``, 1),
+	} {
+		if _, err := create(storage.DocumentStatementsApproval, payload); storage.CodeOf(err) != storage.CodeStatementsApproval {
+			t.Errorf("a statements approval with %s: %v", name, err)
+		}
+	}
+	if _, err := create(storage.DocumentStatementsApproval, fmt.Sprintf(approval, `,"sent_on":"2026-04-20"`)); err != nil {
+		t.Errorf("a statements approval as the rules allow: %v", err)
+	}
+}

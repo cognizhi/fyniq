@@ -1561,23 +1561,39 @@ var (
 // office and SSIC code, and its officers, drafted by the Accountant and recorded on another person's approval with their
 // evidence; an officer never approves their own record.
 var (
-	GetCorporateProfile             = Policy{Operation: "getCorporateProfile", Capability: CorporateProfile, Need: View, Unqualified: true}
-	CreateCorporateDetail           = Policy{Operation: "createCorporateDetail", Capability: CorporateProfile, Need: Create}
-	GetCorporateDetail              = Policy{Operation: "getCorporateDetail", Capability: CorporateProfile, Need: View, Unqualified: true}
-	ReplaceCorporateDetail          = Policy{Operation: "replaceCorporateDetail", Capability: CorporateProfile, Need: Create}
-	RequestCorporateDetailApproval  = Policy{Operation: "requestCorporateDetailApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up."}
-	AddCorporateDetailEvidence      = Policy{Operation: "addCorporateDetailEvidence", Capability: CorporateProfile, Need: Create}
-	ListCorporateDetailEvidence     = Policy{Operation: "listCorporateDetailEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
-	GetCorporateDetailEvidence      = Policy{Operation: "getCorporateDetailEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
-	RemoveCorporateDetailEvidence   = Policy{Operation: "removeCorporateDetailEvidence", Capability: CorporateProfile, Need: Create}
-	CreateCorporateOfficer          = Policy{Operation: "createCorporateOfficer", Capability: CorporateProfile, Need: Create}
-	GetCorporateOfficer             = Policy{Operation: "getCorporateOfficer", Capability: CorporateProfile, Need: View, Unqualified: true}
-	ReplaceCorporateOfficer         = Policy{Operation: "replaceCorporateOfficer", Capability: CorporateProfile, Need: Create}
-	RequestCorporateOfficerApproval = Policy{Operation: "requestCorporateOfficerApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up, never the officer."}
-	AddCorporateOfficerEvidence     = Policy{Operation: "addCorporateOfficerEvidence", Capability: CorporateProfile, Need: Create}
-	ListCorporateOfficerEvidence    = Policy{Operation: "listCorporateOfficerEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
-	GetCorporateOfficerEvidence     = Policy{Operation: "getCorporateOfficerEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
-	RemoveCorporateOfficerEvidence  = Policy{Operation: "removeCorporateOfficerEvidence", Capability: CorporateProfile, Need: Create}
+	GetCorporateProfile               = Policy{Operation: "getCorporateProfile", Capability: CorporateProfile, Need: View, Unqualified: true}
+	CreateCorporateDetail             = Policy{Operation: "createCorporateDetail", Capability: CorporateProfile, Need: Create}
+	GetCorporateDetail                = Policy{Operation: "getCorporateDetail", Capability: CorporateProfile, Need: View, Unqualified: true}
+	ReplaceCorporateDetail            = Policy{Operation: "replaceCorporateDetail", Capability: CorporateProfile, Need: Create}
+	RequestCorporateDetailApproval    = Policy{Operation: "requestCorporateDetailApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up."}
+	AddCorporateDetailEvidence        = Policy{Operation: "addCorporateDetailEvidence", Capability: CorporateProfile, Need: Create}
+	ListCorporateDetailEvidence       = Policy{Operation: "listCorporateDetailEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	GetCorporateDetailEvidence        = Policy{Operation: "getCorporateDetailEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	RemoveCorporateDetailEvidence     = Policy{Operation: "removeCorporateDetailEvidence", Capability: CorporateProfile, Need: Create}
+	CreateCorporateOfficer            = Policy{Operation: "createCorporateOfficer", Capability: CorporateProfile, Need: Create}
+	GetCorporateOfficer               = Policy{Operation: "getCorporateOfficer", Capability: CorporateProfile, Need: View, Unqualified: true}
+	ReplaceCorporateOfficer           = Policy{Operation: "replaceCorporateOfficer", Capability: CorporateProfile, Need: Create}
+	RequestCorporateOfficerApproval   = Policy{Operation: "requestCorporateOfficerApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up, never the officer."}
+	AddCorporateOfficerEvidence       = Policy{Operation: "addCorporateOfficerEvidence", Capability: CorporateProfile, Need: Create}
+	ListCorporateOfficerEvidence      = Policy{Operation: "listCorporateOfficerEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	GetCorporateOfficerEvidence       = Policy{Operation: "getCorporateOfficerEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	RemoveCorporateOfficerEvidence    = Policy{Operation: "removeCorporateOfficerEvidence", Capability: CorporateProfile, Need: Create}
+	CreateNomineeEntry                = Policy{Operation: "createNomineeEntry", Capability: CorporateProfile, Need: Create}
+	GetNomineeEntry                   = Policy{Operation: "getNomineeEntry", Capability: CorporateProfile, Need: View, Unqualified: true}
+	ReplaceNomineeEntry               = Policy{Operation: "replaceNomineeEntry", Capability: CorporateProfile, Need: Create}
+	RequestNomineeEntryApproval       = Policy{Operation: "requestNomineeEntryApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up, never the nominee."}
+	AddNomineeEntryEvidence           = Policy{Operation: "addNomineeEntryEvidence", Capability: CorporateProfile, Need: Create}
+	ListNomineeEntryEvidence          = Policy{Operation: "listNomineeEntryEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	GetNomineeEntryEvidence           = Policy{Operation: "getNomineeEntryEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	RemoveNomineeEntryEvidence        = Policy{Operation: "removeNomineeEntryEvidence", Capability: CorporateProfile, Need: Create}
+	CreateStatementsApproval          = Policy{Operation: "createStatementsApproval", Capability: CorporateProfile, Need: Create}
+	GetStatementsApproval             = Policy{Operation: "getStatementsApproval", Capability: CorporateProfile, Need: View, Unqualified: true}
+	ReplaceStatementsApproval         = Policy{Operation: "replaceStatementsApproval", Capability: CorporateProfile, Need: Create}
+	RequestStatementsApprovalApproval = Policy{Operation: "requestStatementsApprovalApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up."}
+	AddStatementsApprovalEvidence     = Policy{Operation: "addStatementsApprovalEvidence", Capability: CorporateProfile, Need: Create}
+	ListStatementsApprovalEvidence    = Policy{Operation: "listStatementsApprovalEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	GetStatementsApprovalEvidence     = Policy{Operation: "getStatementsApprovalEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	RemoveStatementsApprovalEvidence  = Policy{Operation: "removeStatementsApprovalEvidence", Capability: CorporateProfile, Need: Create}
 )
 
 // The ACRA reconciliation (FR-EQ-26; p1-equity-register slice 8, design D11): an extract typed in and recorded by the
@@ -1993,7 +2009,10 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	GetFeasibilityResults, GetCorporateProfile, CreateCorporateDetail, GetCorporateDetail, ReplaceCorporateDetail, RequestCorporateDetailApproval,
 	AddCorporateDetailEvidence, ListCorporateDetailEvidence, GetCorporateDetailEvidence, RemoveCorporateDetailEvidence, CreateCorporateOfficer,
 	GetCorporateOfficer, ReplaceCorporateOfficer, RequestCorporateOfficerApproval, AddCorporateOfficerEvidence, ListCorporateOfficerEvidence,
-	GetCorporateOfficerEvidence, RemoveCorporateOfficerEvidence)
+	GetCorporateOfficerEvidence, RemoveCorporateOfficerEvidence, CreateNomineeEntry, GetNomineeEntry, ReplaceNomineeEntry,
+	RequestNomineeEntryApproval, AddNomineeEntryEvidence, ListNomineeEntryEvidence, GetNomineeEntryEvidence, RemoveNomineeEntryEvidence,
+	CreateStatementsApproval, GetStatementsApproval, ReplaceStatementsApproval, RequestStatementsApprovalApproval,
+	AddStatementsApprovalEvidence, ListStatementsApprovalEvidence, GetStatementsApprovalEvidence, RemoveStatementsApprovalEvidence)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))

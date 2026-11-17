@@ -313,6 +313,14 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/corporate-profile/details/{detail_id}/evidence` (addCorporateDetailEvidence): Attach a corporate detail's evidence
 - `GET /v1/corporate-profile/details/{detail_id}/evidence/{evidence_id}` (getCorporateDetailEvidence): Get a corporate detail's file
 - `DELETE /v1/corporate-profile/details/{detail_id}/evidence/{evidence_id}` (removeCorporateDetailEvidence): Remove a file from a drafted corporate detail
+- `POST /v1/corporate-profile/nominees` (createNomineeEntry): Draft a nominee entry, or a later version of one
+- `GET /v1/corporate-profile/nominees/{nominee_id}` (getNomineeEntry): Get a nominee entry's version
+- `PUT /v1/corporate-profile/nominees/{nominee_id}` (replaceNomineeEntry): Change a drafted nominee entry
+- `POST /v1/corporate-profile/nominees/{nominee_id}/approval` (requestNomineeEntryApproval): Ask for approval to record a nominee entry
+- `GET /v1/corporate-profile/nominees/{nominee_id}/evidence` (listNomineeEntryEvidence): List a nominee entry's files
+- `POST /v1/corporate-profile/nominees/{nominee_id}/evidence` (addNomineeEntryEvidence): Attach a nominee entry's evidence
+- `GET /v1/corporate-profile/nominees/{nominee_id}/evidence/{evidence_id}` (getNomineeEntryEvidence): Get a nominee entry's file
+- `DELETE /v1/corporate-profile/nominees/{nominee_id}/evidence/{evidence_id}` (removeNomineeEntryEvidence): Remove a file from a drafted nominee entry
 - `POST /v1/corporate-profile/officers` (createCorporateOfficer): Draft an officer's appointment, or a later version of it
 - `GET /v1/corporate-profile/officers/{version_id}` (getCorporateOfficer): Get an officer's version
 - `PUT /v1/corporate-profile/officers/{version_id}` (replaceCorporateOfficer): Change a drafted officer's version
@@ -321,6 +329,14 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/corporate-profile/officers/{version_id}/evidence` (addCorporateOfficerEvidence): Attach an officer's evidence
 - `GET /v1/corporate-profile/officers/{version_id}/evidence/{evidence_id}` (getCorporateOfficerEvidence): Get an officer's version's file
 - `DELETE /v1/corporate-profile/officers/{version_id}/evidence/{evidence_id}` (removeCorporateOfficerEvidence): Remove a file from a drafted officer's version
+- `POST /v1/corporate-profile/statements-approvals` (createStatementsApproval): Draft the directors' approval of a year's financial statements
+- `GET /v1/corporate-profile/statements-approvals/{statements_approval_id}` (getStatementsApproval): Get a statements approval
+- `PUT /v1/corporate-profile/statements-approvals/{statements_approval_id}` (replaceStatementsApproval): Change a drafted statements approval
+- `POST /v1/corporate-profile/statements-approvals/{statements_approval_id}/approval` (requestStatementsApprovalApproval): Ask for approval to record a statements approval
+- `GET /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence` (listStatementsApprovalEvidence): List a statements approval's files
+- `POST /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence` (addStatementsApprovalEvidence): Attach the directors' resolution or statement
+- `GET /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}` (getStatementsApprovalEvidence): Get a statements approval's file
+- `DELETE /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}` (removeStatementsApprovalEvidence): Remove a file from a drafted statements approval
 - `POST /v1/credit-applications` (applyCredit): Apply a supplier credit to a bill
 - `GET /v1/credit-applications/{application_id}` (getCreditApplication): Get a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void` (voidCreditApplication): Void a credit applied to a bill
