@@ -36,6 +36,7 @@ var matrixProposals = map[string]func(e *env, tok string) (response, func() bool
 // the AI none. The AI tasks page lists the catalogue: each task type's tier, limits, approvers, and whether it is on and
 // built (§9.6).
 // req: AI-07
+// req: G4-095
 // req: ai/task-catalogue AI tasks page
 // req: AI-32
 // asvs: V8.2.1, V8.2.2
