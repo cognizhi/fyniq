@@ -3,7 +3,7 @@ key: ai.proposals
 title: Approve a change the AI proposed
 mode: basic
 roles: [owner, admin, controller, accountant, bookkeeper, company_secretary, dpo]
-requirements: [AI-P3, AI-P4, AI-P5, AI-06, AI-07, AI-10, AI-14, AI-32, AI-89]
+requirements: [AI-P3, AI-P4, AI-P5, AI-06, AI-07, AI-10, AI-14, AI-32, AI-89, AI-65]
 status: draft
 ---
 
@@ -53,6 +53,15 @@ status: draft
   and investor rights, a director's balance, officers and registers, and marking an obligation as met. A person does
   these.
 - If the AI is switched off, the page says so: it proposes nothing until an Owner switches it on again.
+
+## Create a compliance task
+
+- **Create a compliance task** (`sec.create_task`, tier 1) puts a task in the Inbox with an owner and a due date, for
+  something the AI's own cross-check found. The company secretary assistant's checks raise their own tasks themselves;
+  this task type covers only what the AI suggests.
+- A finding has one task: the AI cannot propose a second while one is open or waiting for approval.
+- The Owner or the Company secretary approves it. Once approved, the task appears under the Inbox's tasks; it is a
+  reminder for a person, and never files, approves or marks an obligation as met.
 
 ## Turn a task type on or off
 

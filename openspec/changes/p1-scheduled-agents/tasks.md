@@ -139,8 +139,22 @@
 
 ## 6. Task types
 
-- [ ] 6.1 `sec.create_task`: its catalogue file and its command `CreateComplianceTask`, deduplicated per finding, with
+- [x] 6.1 `sec.create_task`: its catalogue file and its command `CreateComplianceTask`, deduplicated per finding, with
   the executor's grants for it (design D7). Tests `// req: ai/task-catalogue sec.create_task Create a compliance task`.
+  As built:
+  - `contracts/ai/tasks/sec.create_task.json` (tier 1, one item, the Owner and the Company secretary approve, 72 hours)
+    is pinned in `tasks.lock.json`. `proposal.Release` gains its command.
+  - A task the model suggests names a finding of its own (`agent:…`). The dry run refuses a finding with a task open or
+    a proposal for it waiting. The executor raises it from the proposal (`RaiseForProposal`, the grants of task 3.2) as
+    the approving person, and a task opened meanwhile leaves the proposal Stale. The command's `Actor` carries the
+    proposal it runs.
+  - Its policy, `createComplianceTask`, is C on the AI company secretary's row, the Owner too, and no API operation of
+    its own: `proposal.CommandPolicy` finds a command's policy where the approval rule reads it.
+  - Appendix D's note (rev 0.280) gives the Company secretary A on every `sec.*` proposal. They reach the three
+    operations that sign a request (`authz.SignsRequests`), and `proposal.Approves` lets them sign `sec.*` proposals
+    alone; the matrix expects it from the note.
+  - Its proposal suite is `evals/sec-create-task` (QA-AI-02). Its guide section is in `ai-proposals.md`, compiled into
+    `ai.proposals`.
 - [ ] 6.2 `sec.draft_reminder`: its catalogue file and its command `DraftReminder`, which renders the email in the dry
   run and sends it once as the approving person (design D8). Tests
   `// req: ai/task-catalogue sec.draft_reminder Draft a reminder about an obligation`.
