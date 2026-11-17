@@ -10,7 +10,9 @@ import { formatAmount } from "../../format/amount";
 import { date } from "../../format/date";
 import { negate, sign } from "../../format/decimal";
 import { helpText } from "../../i18n";
+import { LedgerViewToggle } from "../../components/LedgerViewToggle";
 import { useSignedIn } from "../../session";
+import { useLedgerView, viewWords } from "../../view";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { BankTabs, makers } from "./BankAccounts";
 import { acceptRequest, found, rule, send, suggestionWords, type Line, type Suggestion } from "./lineActions";
@@ -407,12 +409,16 @@ function ExpertActions({ line, etag, onDialog, onDone, onProblem }: { line: Line
 }
 
 // Grid is Expert's grid view: every waiting line with its best suggestion; accept one, or the selection at once, each
-// line in its own request; open a line's other actions.
+// line in its own request; open a line's other actions. Its money shows in the person's view (FR-UX-08): Money in and
+// Money out with the suggested category, or, as the money account's ledger has them, Debit and Credit with the
+// suggested account.
 function Grid({ lines, names, may, onDialog, onDone }: { lines: Line[]; names: Map<string, Account>; may: boolean; onDialog: (d: Dialogs) => void; onDone: (n: number) => void }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState("");
   const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const { mode } = useSignedIn();
+  const words = viewWords(useLedgerView(mode));
   const details = useQueries({
     queries: lines.map((l) => ({
       queryKey: ["bank-line", l.id],
@@ -462,13 +468,16 @@ function Grid({ lines, names, may, onDialog, onDone }: { lines: Line[]; names: M
           {result}
         </p>
       )}
-      {may && (
-        <div className="fy-row gap-2">
+      <div className="fy-row fy-row--between fy-row--wrap gap-2">
+        {may ? (
           <button type="button" className="fy-btn fy-btn--primary" disabled={busy || selected.length === 0} onClick={() => void run(selected)}>
             Accept the selected suggestions ({selected.length})
           </button>
-        </div>
-      )}
+        ) : (
+          <span />
+        )}
+        <LedgerViewToggle mode={mode} />
+      </div>
       <div className="fy-tablewrap">
         <table className="fy-table" aria-label="Waiting lines">
           <thead>
@@ -480,9 +489,12 @@ function Grid({ lines, names, may, onDialog, onDone }: { lines: Line[]; names: M
               <th scope="col">Account</th>
               <th scope="col">Description</th>
               <th scope="col" className="fy-num">
-                Amount
+                {words.in}
               </th>
-              <th scope="col">Suggestion</th>
+              <th scope="col" className="fy-num">
+                {words.out}
+              </th>
+              <th scope="col">Suggested {words.what.toLowerCase()}</th>
               <th scope="col">Actions</th>
             </tr>
           </thead>
@@ -517,7 +529,8 @@ function Grid({ lines, names, may, onDialog, onDone }: { lines: Line[]; names: M
                       </span>
                     )}
                   </td>
-                  <td className="fy-num">{formatAmount(l.amount.amount)}</td>
+                  <td className="fy-num">{l.amount.amount.startsWith("-") ? "" : formatAmount(l.amount.amount)}</td>
+                  <td className="fy-num">{l.amount.amount.startsWith("-") ? formatAmount(l.amount.amount.slice(1)) : ""}</td>
                   <td>{d ? top ? suggestionWords(l, top) : "None" : "…"}</td>
                   <td>
                     {may && d && (
