@@ -112,6 +112,12 @@
   company to explore, the checklist's later steps (opening balances, bank feeds, employees, the workbook import), the
   Plain and Accountant views.)
 - [ ] 3.3 Favourites, recents and saved views shareable by link, comments with mentions, and no hard delete. Tests `// req: FR-UX-12`, `// req: FR-UX-13` and `// req: FR-UX-14`
+  (17 Nov 2026, in part, for the launch gate: no hard delete (FR-UX-14). `TestEachRoleHoldsExactlyItsGrants` refuses a
+  DELETE grant to any application role but on five tables named with why (housekeeping swept on its schedule, and an
+  item's price list replaced with its audited version); TRUNCATE was refused already. Every DELETE operation of the API
+  withdraws or marks (removed evidence is kept, a deleted conversation is marked until the purge). The screen half:
+  a void is asked in a confirmation that needs its reason (`bills.test.tsx`). Bulk voids, with their typed
+  confirmation, come with a bulk void. **Left:** favourites, recents, saved views and comments.)
 - [ ] 3.4 The live-update feed with `If-Match` conflicts, clipboard fidelity, the polite status region, no optimistic money (lint rule) and no re-rounding. Tests `// req: FR-UX-19`, `// req: FR-UX-20`, `// req: FR-UX-21`, `// req: FR-UX-22` and `// req: RND-DISPLAY`, plus the in-app notification entry `// req: FR-UX-15` (P1 part)
   (6 Nov 2026, PRD-001 rev 0.193, clipboard fidelity: `installClipboard` (started with the app) rewrites a copy of text on
   screen so each displayed amount is a plain decimal with an ASCII minus (`clipboardText`), and reads a paste into any
@@ -138,6 +144,17 @@
   (20 Oct 2026, in part: the FR-UX-41 banner, `components/ReviewBanner.tsx`, reads the review register at build time
   and shows on each Settings page whose screen it lists while the area is pending. Test `ReviewBanner.test.tsx`.
   **Left:** the banner on the other screens as they are built, `/help`, context-aware help, the tour and practice.)
+  (17 Nov 2026, the user guide, for the launch gate: `/help` builds every page of `docs/user-guide/` into the web app
+  (`help/guide.ts`, at build time; the web image copies the guide and the release notes), lists those the person's
+  roles call for, Basic ones in Basic mode with how many Expert adds, and searches them as they type; `/help/$key`
+  renders a page's Markdown as elements (`help/markdown.tsx`: headings with their anchors, nested lists, tables,
+  notes, code; a link to another page opens it, one to an outside site a new tab, any other its words), with its
+  sections in a sticky contents column and a print without the shell; `/help/whats-new` is the release notes. Help ›
+  User guide opens the page of the screen the person is on, from the registry's guide keys (FR-UX-33's guide half;
+  `help/links.ts`, kept apart so the shell does not load the pages). Guide `help.md`, compiled into `help.guide`.
+  Tests `help.test.tsx` (`// req: FR-UX-32`, `// req: FR-UX-33`). **Left:** the glossary and the keyboard shortcuts'
+  pages, which wait for their sources; screenshots from the end-to-end tests; "Try it in the sample company"; the
+  tour and practice.)
 
 ## 5. Devices, accessibility and budgets
 
