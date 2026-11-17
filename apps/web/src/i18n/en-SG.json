@@ -2572,6 +2572,14 @@
       "label": "Attach what it rests on",
       "tooltip": "Attach the signed contracts, confirmed orders or letters of award the forecast rests on, as IRAS asks."
     },
+    "home.your-work": {
+      "label": "Your work",
+      "tooltip": "What waits in your areas, by your roles: bank lines to categorise, drafts to finish, overdue invoices and bills, receipts to apply, quotes waiting, payment batches and claims to pay or release. Each opens its list."
+    },
+    "home.deadlines": {
+      "label": "Upcoming deadlines",
+      "tooltip": "The next statutory deadlines from the calendar, those overdue or due soon first: GST, CPF, the annual return and the rest."
+    },
     "home.revenue-vs-budget": {
       "label": "Revenue against budget",
       "tooltip": "Revenue for the financial year so far beside the approved budget for the same months, and how far apart they are."

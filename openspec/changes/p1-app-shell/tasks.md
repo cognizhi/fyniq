@@ -63,6 +63,14 @@
   read the hidden area's list through the API and expect 403. **Left:** badges, the record page anatomy, the
   organisation switcher, the Finance | People switch; the Approver's "Home: My department" and the Auditor's
   workspace.)
+  17 Nov 2026, later: Home's **Your work** (`screens/HomeWork.tsx`) holds the rest of §7.1's "Home shows" for the
+  Bookkeeper, the AR and AP specialists and the payment releaser: each row counts a list the role works through and
+  opens it (bank lines to categorise, drafts to finish, overdue invoices and bills, receipts to apply, quotes waiting,
+  bills to pay, batches being prepared or waiting for release, claims to pay, bank-detail changes waiting, payments
+  the bank rejected) and the releaser's bank balances; a read the API refuses leaves its row out. **Upcoming
+  deadlines** lists the calendar's next five, overdue and due soon first, for whoever may read it. Tests
+  `HomeWork.test.tsx` and the walkthroughs' rows per role. The payroll administrator's rows (next pay run, salary
+  batches, payroll postings) wait for payroll (after go-live); CPF shows under Upcoming deadlines.
 - [ ] 2.2 The command palette, global search in PostgreSQL under row-level security, and Inbox triage whose approve shortcut opens the confirmation. Tests `// req: FR-UX-01`, `// req: FR-UX-02` and `// req: FR-UX-03`
   (20 Oct 2026, in part: the Inbox lists the approval requests and the weekly review; a request opens on its own page,
   and only its confirmation decides (FR-UX-03). The command palette leaves out pages of one record. **Left:** global

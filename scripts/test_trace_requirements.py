@@ -87,6 +87,11 @@ class TheTraceGate(unittest.TestCase):
     def test_tags_in_go_typescript_python_and_sql_and_in_test_files_only(self):
         self.assertEqual(self.anchors, {"FR-GL-01", "sec.create_task", "FR-PAY-01", "FR-GL-05"})
 
+    def test_the_browser_suites_count(self):
+        for f in ("apps/web/e2e/devices.spec.ts", "apps/web/journeys/sell.spec.ts", "apps/web/visual/visual.spec.ts"):
+            self.assertTrue(tr.TEST_FILE.search(f), f)
+        self.assertFalse(tr.TEST_FILE.search("apps/web/visual/visual.config.ts"))
+
     def test_an_untested_m_row_blocks_and_s_and_c_rows_are_reported(self):
         blocking, reported = self.gate("P1")
         self.assertIn("FR-GL-02", blocking)
@@ -131,6 +136,14 @@ class TheTraceGate(unittest.TestCase):
         self.assertIn("FR-CS-05", anchors)
         self.assertTrue(tr.is_covered("quality/calculation-correctness: Golden data set, sample company", anchors, titled, {}, self.src))
         self.assertFalse(tr.is_covered("quality/calculation-correctness: Golden data set, regressions", anchors, titled, {}, self.src))
+
+    def test_a_principles_id_with_a_letter_before_its_number_is_an_anchor(self):
+        # §9.1's AI principles are AI-P1 to AI-P8: their tags counted for nothing while the ID pattern wanted digits
+        # straight after the last hyphen, so the launch gate listed them untested.
+        anchors, _ = tr.covered({"AI-P3": set(), "AI-P5 What is approved is exactly what is executed": set()}, self.src)
+        self.assertEqual(anchors, {"AI-P3", "AI-P5"})
+        self.assertTrue(tr.is_covered("AI-P3", anchors, set(), {}, self.src))
+        self.assertIsNone(tr.prdspec.anchor_at_start("AI-PX3", self.src))
 
     def test_the_launch_gate_counts_exceptions_and_reports_prose(self):
         subset = {"changes": [{"id": "p1-x", "requirements": ["FR-GL-01", "FR-GL-02", "FR-GL-03", "C.2 #9",

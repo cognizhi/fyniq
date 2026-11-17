@@ -335,13 +335,18 @@ func ReleaseAppTokenViolations(src []byte) []string {
 // LaunchGateJob is release.yml's job that runs the launch gate (QA-TRACE-01) before any image is built.
 const LaunchGateJob = "launch-gate"
 
+// VisualJob is release.yml's job that draws every route's visual snapshots (QA-UI-07, rev 0.284) before any image is
+// built.
+const VisualJob = "visual"
+
 // ReleaseWorkflowViolations checks release.yml against SEC-22 and CTL-CHG-04 (p1-security-hardening design D1): it runs
 // only when a release is published, on its tag; the images job publishes as the publisher; the SLSA generator attests each digest the images
 // job pushed; the attest job, as the attester, verifies before it attests, and only after the provenance exists; and no
 // step signs with a key, so every signature is keyless and tied to the workflow's identity. (QA-TRACE-01;
 // p1-launch-readiness task 7.2) The images job waits for the launch gate, a job whose step is exactly
 // `make trace-gate PHASE=launch` and which no continue-on-error softens, so a release with an untested launch
-// requirement builds no image.
+// requirement builds no image; and (QA-UI-07, p1-launch-readiness task 5.4) for the visual job, whose step is exactly
+// `VISUAL_ALL=1 make test-visual`, so a release with a changed picture builds none either.
 func ReleaseWorkflowViolations(src []byte) []string {
 	type step struct {
 		Uses            string            `yaml:"uses"`
@@ -422,6 +427,15 @@ func ReleaseWorkflowViolations(src []byte) []string {
 	}
 	if !gate || softened || !slices.Contains(needs("images"), LaunchGateJob) {
 		bad("the images job must wait for the %s job, whose step is exactly make trace-gate PHASE=launch, with no continue-on-error (QA-TRACE-01)", LaunchGateJob)
+	}
+	visual, softenedV := false, w.Jobs[VisualJob].ContinueOnError.Kind != 0
+	for _, s := range w.Jobs[VisualJob].Steps {
+		if strings.TrimSpace(s.Run) == "VISUAL_ALL=1 make test-visual" {
+			visual, softenedV = true, softenedV || s.ContinueOnError.Kind != 0
+		}
+	}
+	if !visual || softenedV || !slices.Contains(needs("images"), VisualJob) {
+		bad("the images job must wait for the %s job, whose step is exactly VISUAL_ALL=1 make test-visual, with no continue-on-error (QA-UI-07)", VisualJob)
 	}
 	for id, j := range w.Jobs {
 		for _, s := range j.Steps {

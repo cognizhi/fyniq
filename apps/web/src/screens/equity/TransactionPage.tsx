@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { Check, CircleDashed, FileSymlink, Hourglass, PencilLine, Send, TriangleAlert, Undo2 } from "lucide-react";
+import { Check, CircleDashed, ClockAlert, FileSymlink, Hourglass, PencilLine, Send, TriangleAlert, Undo2 } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
@@ -274,7 +274,10 @@ function Steps({ t, etag, mayRecord, onDone }: { t: EquityTransaction; etag: str
         </ol>
         {(t.acra?.flags ?? []).map((f) => (
           <p key={f.code} className="fy-small" role="note">
-            <span className={`fy-chip ${f.kind === "due" ? "fy-chip--serious" : "fy-chip--warning"}`}>{f.kind === "due" ? "Due" : "Review"}</span> {f.message}. {f.fix}.
+            <span className={`fy-chip ${f.kind === "due" ? "fy-chip--serious" : "fy-chip--warning"}`}>
+              <Icon of={f.kind === "due" ? ClockAlert : TriangleAlert} />
+              {f.kind === "due" ? "Due" : "Review"}
+            </span> {f.message}. {f.fix}.
           </p>
         ))}
         {mayRecord && (
