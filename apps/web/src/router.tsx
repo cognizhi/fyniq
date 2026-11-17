@@ -122,6 +122,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "settings-ai": lazyRouteComponent(() => import("./screens/settings/AISettings"), "AISettings"),
   "settings-ai-usage": lazyRouteComponent(() => import("./screens/settings/AIUsage"), "AIUsage"),
   "settings-ai-providers": lazyRouteComponent(() => import("./screens/settings/AIProviders"), "AIProviders"),
+  "settings-ai-connection": lazyRouteComponent(() => import("./screens/settings/AIConnection"), "AIConnectionPage"),
   "settings-import": lazyRouteComponent(() => import("./screens/settings/WorkbookImport"), "WorkbookImport"),
   "director-accounts": lazyRouteComponent(() => import("./screens/founders/DirectorAccounts"), "DirectorAccounts"),
   "director-settlement": lazyRouteComponent(() => import("./screens/founders/DirectorSettlement"), "DirectorSettlement"),
