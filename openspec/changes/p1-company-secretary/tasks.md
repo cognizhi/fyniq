@@ -83,10 +83,21 @@
 
 ## 3. The cross-checks
 
-- [ ] 3.1 `corporate.secretary` (C.2 #32), `corporate.statements-approved` (C.2 #33), `corporate.acra-profile`
+- [x] 3.1 `corporate.secretary` (C.2 #32), `corporate.statements-approved` (C.2 #33), `corporate.acra-profile`
   (C.2 #34), `corporate.lodgements` (C.2 #35) and `corporate.nominees`, each Not assessed with its missing input
   named (design D4). Tests `// req: FR-CS-03`, `// req: C.2 #32`, `// req: C.2 #33`, `// req: C.2 #34`, `// req: C.2 #35`,
   `// req: G4-102`.
+  As built:
+  - Four checks, not five: the nominee filings (G4-102) are lodgements of `corporate.lodgements` (C.2 #35), each past
+    its deadline ⏰, as the officers' and the office's are; the calendar shows them due before then. A separate check
+    would have needed an Appendix C row of its own.
+  - `corporate.secretary`: ✖ with no secretary six months after incorporation (the first detail's day) or after the
+    last one ceased, ⏰ within those six months, ✖ for a sole director as the secretary. The six months come from
+    sg-acra through `pack.AcraDueSince`, the rule in force on the later of the event and the pack's first day, as a
+    company incorporated before 16 Nov 2026 has no rule on its own day.
+  - `corporate.statements-approved`: ⏰ for a year whose AGM, or statements to members, falls due within 30 days or
+    has passed, with no approval recorded.
+  - `corporate.acra-profile`: ⚠ for each difference of the reconciliation (2.5); Not assessed as it is.
 - [ ] 3.2 The company secretary skill, version 2: its checklist reads the corporate checks in place of the placeholder;
   re-pinned (design D5). Tests `// req: AI-64`, `// req: G4-110`.
 
