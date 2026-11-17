@@ -1712,7 +1712,7 @@ Source: PRD-001 §D
 - **THEN** it is refused
 
 ### Requirement: Company secretary in the permission matrix
-The Company secretary role (FR-CS-08) SHALL have the Board viewer's rights, plus C on the corporate profile, registers and evidence, V on the equity register and the AI company secretary runs, and A on every `sec.*` proposal, drafts and tasks alike (rev 0.280).
+The Company secretary role (FR-CS-08) SHALL have the Board viewer's rights, plus C on the corporate profile, registers and evidence, V on the equity register and the AI company secretary runs, A on every `sec.*` proposal, drafts and tasks alike (rev 0.280), and V on the statutory calendar with C on its corporate items (rev 0.285).
 
 Source: PRD-001 §D
 
@@ -1725,6 +1725,12 @@ Source: PRD-001 §D
 - **GIVEN** a `sec.*` proposal of the company secretary's agent, such as a task it suggests (`sec.create_task`) or a draft
 - **WHEN** the Company secretary approves it
 - **THEN** the approval is allowed, as Appendix E names the Owner and the Company secretary
+
+#### Scenario: The statutory calendar's corporate items (rev 0.285)
+- **GIVEN** the statutory calendar, with its tax, payroll and corporate items
+- **WHEN** the Company secretary opens it, and records the annual return, the AGM or the financial statements to members as filed or not required, with their acknowledgement
+- **THEN** they see the whole calendar and the record is kept
+- **AND** recording a tax or payroll item, such as the GST F5 or CPF, is refused, as those stay with the Owner, the Controller, the Accountant and the Tax agent
 
 #### Scenario: No transactions, payroll or bank detail unless granted
 - **GIVEN** no grant of transactions, payroll or bank detail

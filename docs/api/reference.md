@@ -13663,7 +13663,7 @@ The records of the calendar's items, drafts, recorded, withdrawn and withdrawals
 
 Drafts what was done about an item of the calendar, by its key (FR-TAX-07, design D6): filed on a day with its reference, or not required with the reason, such as the ECI waiver. Fyniq files nothing itself. For filed, attach the acknowledgement with addStatutoryFilingEvidence (the evidence rule evidence.statutory_filing, FR-DOC-06), then record it with recordStatutoryFiling. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
 
-- **Permission:** Create on Statutory calendar: deadlines, and filings recorded as done (rev 0.211)
+- **Permission:** Create on Statutory calendar: deadlines, and filings recorded as done (rev 0.211). The Company secretary's right reaches the corporate items alone.
 - **Parameters:**
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
   - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
@@ -13710,7 +13710,7 @@ A record, drafted, recorded, withdrawn, or a withdrawal, with its files and who 
 
 Saves a new version of a record not recorded yet (FR-TAX-07); a recorded one changes no more: withdraw it instead. Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
 
-- **Permission:** Create on Statutory calendar: deadlines, and filings recorded as done (rev 0.211)
+- **Permission:** Create on Statutory calendar: deadlines, and filings recorded as done (rev 0.211). The Company secretary's right reaches the corporate items alone.
 - **Parameters:**
   - `filing_id` (path, required): The filing record.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
@@ -13740,7 +13740,7 @@ Saves a new version of a record not recorded yet (FR-TAX-07); a recorded one cha
 
 Records a drafted record (FR-TAX-07, design D6): from then on its item is filed or not required, and leaves Checks and the reminders. A filed record needs its acknowledgement attached while the evidence rule requires it (DOC-10). An item has at most one live record (CAL-02; the database refuses a second, FY299). It posts nothing. Side effects: the record, its files committed, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
 
-- **Permission:** Create on Statutory calendar: deadlines, and filings recorded as done (rev 0.211). What was filed outside Fyniq, with its acknowledgement: it posts nothing.
+- **Permission:** Create on Statutory calendar: deadlines, and filings recorded as done (rev 0.211). What was filed outside Fyniq, with its acknowledgement: it posts nothing. The Company secretary's right reaches the corporate items alone.
 - **Parameters:**
   - `filing_id` (path, required): The filing record.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
@@ -13769,7 +13769,7 @@ Records a drafted record (FR-TAX-07, design D6): from then on its item is filed 
 
 Takes back a live record, with the reason (FR-TAX-07, design D6): it is withdrawn and a withdrawal recorded beside it, so its item is open again and both stay in its history. Side effects: the withdrawal, audit events. Needs If-Match with the record's ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
 
-- **Permission:** Create on Statutory calendar: deadlines, and filings recorded as done (rev 0.211)
+- **Permission:** Create on Statutory calendar: deadlines, and filings recorded as done (rev 0.211). The Company secretary's right reaches the corporate items alone.
 - **Parameters:**
   - `filing_id` (path, required): The filing record.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
@@ -19644,7 +19644,7 @@ The files attached to a filing record, oldest first, removed ones included, a pa
 
 Attaches a file to a drafted filing record (FR-TAX-07, FR-DOC-05), as multipart/form-data: IRAS's, CPF Board's or ACRA's acknowledgement, or an AGM's minutes. The file's type is decided from its content; it is scanned for malware and its image metadata is stripped before it is stored (FR-DOC-08). Side effects: the file in the staging store, its evidence row and its audit event; once recorded its files are committed to the retention-locked store (FR-DOC-13). Needs If-Match with the record's ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
 
-- **Permission:** Create on Statutory calendar: deadlines, and filings recorded as done (rev 0.211)
+- **Permission:** Create on Statutory calendar: deadlines, and filings recorded as done (rev 0.211). The Company secretary's right reaches the corporate items alone.
 - **Parameters:**
   - `filing_id` (path, required): The filing record.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
@@ -19694,7 +19694,7 @@ Returns a file's details, hashes, state and retain-until, with its ETag (FR-DOC-
 
 Takes a file off a filing record not recorded yet (FR-DOC-07). Once recorded its evidence is append-only, and the database refuses. The row stays, marked removed, for the audit trail. Side effects: the removal and its audit event. Needs If-Match with the file's ETag; Prefer: return=preview saves nothing.
 
-- **Permission:** Create on Statutory calendar: deadlines, and filings recorded as done (rev 0.211)
+- **Permission:** Create on Statutory calendar: deadlines, and filings recorded as done (rev 0.211). The Company secretary's right reaches the corporate items alone.
 - **Parameters:**
   - `filing_id` (path, required): The filing record.
   - `evidence_id` (path, required): The file's ID.

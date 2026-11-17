@@ -5,7 +5,7 @@
 | Feature and requirement IDs | The GST registration monitor and its forecasts: FR-TAX-05, C.1 #37 (PRD-001 rev 0.208, rev 0.210), `p1-gst` slice 2. The statutory calendar, its filing records and Appendix D's Statutory calendar row: FR-TAX-07, CMP-02, FR-DOC-06 (rev 0.211), slice 3a. The registers' deadlines, C.2 #13, C.2 #15 and the reminders: FR-NTF-01 (rev 0.212), slice 3b. The screens (rev 0.213), slice 4. |
 | Author, reviewer, date | Claude Code for the founders, 7 Nov 2026; reviewer: a founder at sign-off (second human review waived before production, AGENTS.md) |
 | Data and its class | The calendar's items, generated from the sg-deadlines pack and the organisation's years, GST periods and settings (internal); filing records with their references and reasons (internal); acknowledgements as evidence (internal; a CPF Board acknowledgement can name employees: personal); GST forecasts with what they rest on and their contracts as evidence (confidential) |
-| Who acts | On the calendar, the Owner, the Controller, the Accountant and the Tax agent record (C); the Administrator, the Auditor and the DPO read (Appendix D's Statutory calendar row). On the monitor, the Accountant and the Tax agent prepare forecasts (C on GST returns); the Owner and the Controller read. The worker sends the reminders. No AI or MCP tool reads or writes any of it |
+| Who acts | On the calendar, the Owner, the Controller, the Accountant and the Tax agent record (C); the Company secretary reads it and records its corporate items (Appendix D's note, rev 0.285); the Administrator, the Auditor and the DPO read (Appendix D's Statutory calendar row). On the monitor, the Accountant and the Tax agent prepare forecasts (C on GST returns); the Owner and the Controller read. The worker sends the reminders. No AI or MCP tool reads or writes any of it |
 
 ## 1. What we are building
 
@@ -32,6 +32,7 @@ boundaries:
 | C8 | worker → members | Information disclosure: a reminder emailed to someone who may not see the calendar | Statutory affairs known outside the role | Low |
 | C9 | API | Denial of service: a calendar or monitor asked for a long window reads the whole ledger | A slow page for everyone in the organisation | Low |
 | C10 | registers → calendar | Tampering: a register's deadline recorded as done on the calendar, so the register's own check clears without the register changing | A controller or a share lodgement stays wrong while the calendar says done | Low |
+| C11 | Company secretary → API | Elevation: the Company secretary, who records the corporate items (rev 0.285), records, changes or withdraws a tax or payroll item, attaches to or removes a file from one, or turns their own corporate draft into one; or is reminded of items they do not record | A GST, CPF or tax deadline marked done by someone outside the finance roles | Low |
 
 ## 3. What we do about it
 
@@ -47,6 +48,7 @@ boundaries:
 | C8 | Reminders go to holders of C on the row only (`notify.Audience`) | `internal/notify/reminders/deadlines.go` | `TestTheCalendarsChecksAndReminders` |
 | C9 | A calendar window is at most 18 months (CAL-04); the monitor reads two calendar years | `internal/domain/deadlines/deadlines.go` | `TestTheStatutoryCalendarThroughTheAPI` |
 | C10 | A register's deadline has no key a record accepts (CAL-01) and links to its record; C.2 #15 leaves it to C.2 #22 and C.2 #27 | `internal/domain/deadlines/registers.go` | `TestTheCalendarsChecksAndReminders` |
+| C11 | The secretary's right is qualified to corporate (`SecretaryCells`); each of the six writes reads the item's area from the sg-deadlines pack (`deadlines.AreaOf`) and refuses a qualified right outside it (403, API-AUTHZ-01), a replacement checked on both its old and new item; a key no rule names has no area, so only an unqualified right records it; reminders go to a qualified right only for its area (`notify.Audience.Qualified`) | `internal/authz/policy.go`, `internal/api/calendar.go`, `internal/notify/reminders/deadlines.go` | `TestTheCompanySecretaryRecordsTheCorporateItems`, `TestEveryObligationHasItsArea`, `TestAnEventConcernsItsAudience`, the authorisation matrix |
 
 ## 4. What is left
 
