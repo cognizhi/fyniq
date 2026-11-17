@@ -1,18 +1,21 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { useNavigate } from "@tanstack/react-router";
 import { Command } from "cmdk";
-import { Contrast, House, Monitor, Moon, Rows3, Search, Sun } from "lucide-react";
+import { Contrast, House, Keyboard, ListChecks, Monitor, Moon, Rows3, Search, Sun } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { setAppearance, type Appearance } from "../appearance";
 import { helpText } from "../i18n";
 import { routes, type Mode } from "../registry";
+import { openShortcutSheet } from "../shortcuts";
 import { Icon } from "../ui";
+import { useSelectedRowActions } from "./bulk";
 
 // The command palette (cmdk in a Base UI dialog; MASTER.md §7; FR-UX-01 in part): Go to the pages
 // the person can open, and switch the theme, contrast, density and motion (experience/visual-design
 // Themes: "from the header and the command palette"). Loaded on demand, so cmdk is not in the
 // initial bundle (NFR-PERF-UI-03). What is typed can also be searched for across the records (FR-UX-02, rev 0.190); create,
-// reports and Ask AI arrive with p1-app-shell 2.2.
+// reports and Ask AI arrive with p1-app-shell 2.2. When a page has rows selected, their bulk actions come first, and the
+// keyboard shortcuts open from here too (FR-UX-06).
 
 const item =
   "flex min-h-9 cursor-default items-center gap-2 rounded-sm px-2 text-base text-foreground outline-none select-none data-[selected=true]:bg-surface-3 pointer-coarse:min-h-(--touch-target)";
@@ -38,6 +41,7 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
     </Command.Item>
   );
   const palette = helpText("shell.command-palette");
+  const bulk = useSelectedRowActions();
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -58,6 +62,11 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
             />
             <Command.List className="max-h-80 overflow-y-auto p-1">
               <Command.Empty className="px-3 py-6 text-center text-base text-muted-foreground">Nothing matches. Try another word.</Command.Empty>
+              {bulk.length > 0 && (
+                <Command.Group heading={helpText("shortcuts.bulk").label} className={group}>
+                  {bulk.map((b) => action(b.label, <Icon of={ListChecks} />, run(b.run)))}
+                </Command.Group>
+              )}
               <Command.Group heading="Go to" className={group}>
                 {routes
                   .filter((r) => r.signedIn && !r.path.includes("$")) // a page of one record is reached from its list
@@ -73,6 +82,9 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
                 {action("Comfortable density", <Icon of={Rows3} />, look({ density: "comfortable" }), "expert")}
                 {action("Reduce motion", <Icon of={Monitor} />, look({ motion: "reduce" }))}
                 {action("Motion on", <Icon of={Monitor} />, look({ motion: "on" }))}
+              </Command.Group>
+              <Command.Group heading="Help" className={group}>
+                {action(helpText("shell.shortcuts").label, <Icon of={Keyboard} />, run(openShortcutSheet))}
               </Command.Group>
               {typed.trim() !== "" && (
                 <Command.Group heading={helpText("shell.search").label} className={group} forceMount>

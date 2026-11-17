@@ -615,3 +615,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-17] compile | docs/user-guide/statutory-calendar.md → compliance.record-filing, compliance.calendar (the Company secretary records the corporate items, PRD-001 rev 0.285)
 
 ## [2026-11-17] compile | docs/user-guide/home.md → home.overview (Your work by role and Upcoming deadlines on Home, §7.1)
+
+## [2026-11-17] compile | docs/user-guide/keyboard-shortcuts.md → shell.shortcuts (new page: keyboard-first entry, FR-UX-06)
+
+## [2026-11-17] compile | docs/user-guide/profile-and-security.md → preferences.security (its Keyboard section, linking shell.shortcuts)

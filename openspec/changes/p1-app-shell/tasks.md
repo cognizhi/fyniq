@@ -100,6 +100,18 @@
   `TestALedgerEntryTracesToItsSource`, `TestTheGeneralLedgerAsAtARevision`, the matrix's row, `Trace.test.tsx`,
   `statements.test.tsx`. **Left:** the Trace panel from Home's tiles and the other reports; side peeks over lists and
   the split view for matching; keyboard-first entry and the shortcut sheet.)
+  (17 Nov 2026, for the launch gate: keyboard-first entry (FR-UX-06; docs/design/screens Shortcuts). `shortcuts.ts`:
+  "G then" a letter to each sidebar area the person sees and "C then" a letter for every create page their access
+  opens (a test fails a create page without keys), Expert mode only; ? opens the shortcut sheet in both modes, as do the
+  command palette and Settings › Profile and security › Keyboard. None fires while focus is in a field or a dialog is
+  open, or on a key the page handled (the Inbox's own). Each person turns the single-character shortcuts off or changes
+  their keys, in the sheet and on the profile page, with clashes refused field by field (SC 2.1.4); kept in this
+  browser under the person's user ID until task 4.1's preferences operation stores it with the mode. Enter moves to the
+  next field and Ctrl+Enter saves in the invoice, quote, bill, purchase order, journal, recurring and claim editors
+  (`data-enter="next"`). A page's actions on its selected rows join the command palette (`shell/bulk.ts`; Categorise's
+  grid offers "Accept the selected suggestions"). Guide `keyboard-shortcuts.md` compiled into `shell.shortcuts`, and
+  `profile-and-security.md`'s Keyboard section. Tests `shell/keyboard.test.tsx`, `categorise.test.tsx`. **Left:** the
+  shortcut stored server-side with the mode (task 4.1); the mode-toggle shortcut (FR-UX-23).)
 
 ## 3. Grids, records and correctness
 

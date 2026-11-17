@@ -685,7 +685,7 @@ export function BillPage() {
           }}
         />
       )}
-      <form className="fy-stack fy-stack--6" onSubmit={(e) => void save(e)} noValidate>
+      <form className="fy-stack fy-stack--6" data-enter="next" onSubmit={(e) => void save(e)} noValidate>
         <section className="fy-card" aria-labelledby={`${id}-supp`}>
           <div className="fy-card__head">
             <h2 className="fy-h3" id={`${id}-supp`}>

@@ -11,6 +11,7 @@ import { date } from "../../format/date";
 import { negate, sign } from "../../format/decimal";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
+import { useBulkActions } from "../../shell/bulk";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { BankTabs, makers } from "./BankAccounts";
 import { acceptRequest, found, rule, send, suggestionWords, type Line, type Suggestion } from "./lineActions";
@@ -454,6 +455,8 @@ function Grid({ lines, names, may, onDialog, onDone }: { lines: Line[]; names: M
     if (ok > 0) onDone(ok);
   };
   const all = lines.length > 0 && selected.length === lines.length;
+  // The same action from the command palette while lines are selected (FR-UX-06).
+  useBulkActions(may && selected.length > 0 && !busy ? [{ label: `Accept the selected suggestions (${selected.length})`, run: () => void run(selected) }] : []);
   return (
     <div className="fy-stack fy-stack--3">
       {problem && <Refusal problem={problem} title="The line was not reconciled" />}

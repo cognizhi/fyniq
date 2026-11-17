@@ -23,6 +23,8 @@ import { Dialog } from "../../components/ui/dialog";
 import { browserOf, clock, date, dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { setMode } from "../../mode";
+import { ShortcutSettings } from "../../shell/Shortcuts";
+import { openShortcutSheet } from "../../shortcuts";
 import * as passkey from "../../passkey";
 import type { Mode } from "../../registry";
 import { linkURL, visit } from "../../route";
@@ -579,13 +581,26 @@ function SignIns() {
 // Profile is Settings › Profile and security (docs/design/screens ProfilePreferences, MfaEnrolment):
 // the experience mode, your bank account for reimbursements, whether you confirmed it's you, your
 // passkeys, your linked sign-in accounts and your devices (FR-ADM-02, FR-ADM-03, FR-ADM-08, FR-AP-22,
-// SEC-01). Appearance stays in the header's menu; formats, keyboard and recovery codes join this page
-// with their operations.
+// SEC-01), and your keyboard shortcuts (FR-UX-06). Appearance stays in the header's menu; formats and recovery codes
+// join this page with their operations.
 export function Profile() {
   const { session, mode } = useSignedIn();
   return (
     <SettingsPage title="Profile and security" screen="profile-preferences" lead="How Fyniq behaves for you, and how you confirm it's you.">
       <ModeChoice mode={mode} />
+      <section className="fy-card" aria-labelledby="keyboard-title">
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id="keyboard-title">
+            Keyboard
+          </h2>
+          <Button variant="ghost" size="sm" onClick={openShortcutSheet}>
+            {helpText("shell.shortcuts").label}
+          </Button>
+        </div>
+        <div className="fy-card__body">
+          <ShortcutSettings session={session} mode={mode} />
+        </div>
+      </section>
       <MyBankAccount />
       <MyPersonalData />
       <section className="fy-card" aria-labelledby="ai-plan-title">
