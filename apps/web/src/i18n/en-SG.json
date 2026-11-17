@@ -688,6 +688,30 @@
       "label": "Download CSV",
       "tooltip": "The review as a spreadsheet: one row per person, invitation and integration. The download is recorded."
     },
+    "settings.ai": {
+      "label": "AI",
+      "tooltip": "Turn the AI off at once, and set what it may spend each month, in money and in tokens."
+    },
+    "settings.ai-usage": {
+      "label": "AI usage and budgets",
+      "tooltip": "What the assistant and the agents used and cost each month, by agent, connection and model, and person, against the budgets."
+    },
+    "ai.switch-off": {
+      "label": "Turn all AI off now",
+      "tooltip": "New requests stop at once, and a reply being written within seconds. Turning it back on needs a second approver."
+    },
+    "ai.switch-on": {
+      "label": "Ask to turn it on",
+      "tooltip": "Asks another member who approves settings to turn the AI on; nothing is sent to an AI provider until then."
+    },
+    "ai.budgets": {
+      "label": "Budgets",
+      "tooltip": "Monthly limits in money and in tokens, for the organisation, an agent, a connection or a person: an alert at 80%, a stop at 100%."
+    },
+    "ai.budget-set": {
+      "label": "Save the budget",
+      "tooltip": "The amount a month: in the base currency, or a whole number of tokens. It applies from the next call."
+    },
     "settings.data": {
       "label": "Data and export",
       "tooltip": "Where your data lives and how long it is kept, and a full copy of everything, asked for by one person and approved by another."

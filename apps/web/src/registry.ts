@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, CalendarClock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Bot, Building, CalendarClock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -182,6 +182,8 @@ export const routes = [
   { kind: "route", id: "settings-access-review", path: "/settings/access-review", mode: "expert", signedIn: true, help: "settings.access-review", guide: "settings.access-review" },
   // Settings › Data (FR-MIG-04; p1-workbook-migration task 9.2): the data region and retention, and the full export.
   { kind: "route", id: "settings-data", path: "/settings/data", mode: "expert", signedIn: true, help: "settings.data", guide: "settings.data" },
+  { kind: "route", id: "settings-ai", path: "/settings/ai", mode: "expert", signedIn: true, help: "settings.ai", guide: "settings.ai" },
+  { kind: "route", id: "settings-ai-usage", path: "/settings/ai/usage", mode: "expert", signedIn: true, help: "settings.ai-usage", guide: "settings.ai#usage-and-budgets" },
   // Settings › Import (FR-MIG-01…03; p1-workbook-migration task 9.1): the move from the workbook, M1 to M6, and the generic import.
   { kind: "route", id: "settings-import", path: "/settings/import", mode: "expert", signedIn: true, help: "settings.import", guide: "settings.import" },
   { kind: "route", id: "settings-team-mode", path: "/settings/team-mode", mode: "expert", signedIn: true, help: "settings.team-mode", guide: "settings.team-mode" },
@@ -275,6 +277,10 @@ export const actions = [
   { kind: "action", id: "access-review.export", mode: "expert", help: "access-review.export", guide: "settings.access-review#download-it" },
   { kind: "action", id: "tenant-export.request", mode: "expert", help: "tenant-export.request", guide: "settings.data#ask-for-a-full-export" },
   { kind: "action", id: "tenant-export.save", mode: "expert", help: "tenant-export.save", guide: "settings.data#save-it" },
+  { kind: "action", id: "ai.switch-off", mode: "expert", help: "ai.switch-off", guide: "settings.ai#the-ai-switch" },
+  { kind: "action", id: "ai.switch-on", mode: "expert", help: "ai.switch-on", guide: "settings.ai#the-ai-switch" },
+  { kind: "action", id: "ai.budgets", mode: "expert", help: "ai.budgets", guide: "settings.ai#budgets" },
+  { kind: "action", id: "ai.budget-set", mode: "expert", help: "ai.budget-set", guide: "settings.ai#budgets" },
   { kind: "action", id: "workbook-import.start", mode: "expert", help: "workbook-import.start", guide: "settings.import#start-the-import" },
   { kind: "action", id: "workbook-import.upload", mode: "expert", help: "workbook-import.upload", guide: "settings.import#upload-and-check-the-workbook" },
   { kind: "action", id: "workbook-import.sign-mapping", mode: "expert", help: "workbook-import.sign-mapping", guide: "settings.import#map-and-sign" },
@@ -709,6 +715,7 @@ export const settingsNav = [
   { kind: "nav", id: "settings.integrations", route: "/settings/integrations", icon: Plug, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.integrations", guide: "settings.integrations" },
   { kind: "nav", id: "settings.announcements", route: "/settings/announcements", icon: Megaphone, group: "organisation", roles: ["owner", "administrator", "auditor"], mode: "expert", help: "settings.announcements", guide: "settings.announcements" },
   { kind: "nav", id: "settings.data", route: "/settings/data", icon: Database, group: "organisation", roles: ["owner", "administrator", "dpo"], mode: "expert", help: "settings.data", guide: "settings.data" },
+  { kind: "nav", id: "settings.ai", route: "/settings/ai", icon: Bot, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.ai", guide: "settings.ai" },
   { kind: "nav", id: "settings.import", route: "/settings/import", icon: FileSpreadsheet, group: "organisation", roles: ["owner", "controller", "accountant", "auditor"], mode: "expert", help: "settings.import", guide: "settings.import" },
   // The installation's pages show to Super admins only (super_admin, from GET /v1/session).
   { kind: "nav", id: "settings.sign-in-providers", route: "/settings/sign-in-providers", icon: KeyRound, group: "installation", roles: ["super_admin"], mode: "expert", help: "settings.sign-in-providers", guide: "settings.sign-in-providers" },
