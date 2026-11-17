@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Bot, Building, CalendarClock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Bot, Building, CalendarClock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, ScrollText, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -188,6 +188,8 @@ export const routes = [
   { kind: "route", id: "settings-ai-connection", path: "/settings/ai/providers/$connection", mode: "expert", signedIn: true, help: "settings.ai-connection", guide: "settings.ai-providers#a-connections-own-page" },
   { kind: "route", id: "settings-ai-routes", path: "/settings/ai/routes", mode: "expert", signedIn: true, help: "settings.ai-routes", guide: "settings.ai-routes" },
   { kind: "route", id: "settings-ai-route", path: "/settings/ai/routes/$agent", mode: "expert", signedIn: true, help: "settings.ai-route", guide: "settings.ai-routes#change-an-agents-route" },
+  { kind: "route", id: "settings-ai-activity", path: "/settings/ai/activity", mode: "expert", signedIn: true, help: "settings.ai-activity", guide: "settings.ai-activity" },
+  { kind: "route", id: "settings-ai-plan", path: "/settings/profile/ai-plan", mode: "basic", signedIn: true, help: "settings.ai-plan", guide: "settings.ai-activity#your-own-ai-plan" },
   // Settings › Import (FR-MIG-01…03; p1-workbook-migration task 9.1): the move from the workbook, M1 to M6, and the generic import.
   { kind: "route", id: "settings-import", path: "/settings/import", mode: "expert", signedIn: true, help: "settings.import", guide: "settings.import" },
   { kind: "route", id: "settings-team-mode", path: "/settings/team-mode", mode: "expert", signedIn: true, help: "settings.team-mode", guide: "settings.team-mode" },
@@ -715,6 +717,7 @@ export const nav = [
 export const settingsNav = [
   { kind: "nav", id: "settings.profile", route: "/settings/profile", icon: UserRound, group: "you", roles: "all", mode: "basic", help: "settings.profile", guide: "preferences.security" },
   { kind: "nav", id: "settings.notifications", route: "/settings/notifications", icon: Bell, group: "you", roles: "all", mode: "basic", help: "settings.notifications", guide: "settings.notifications" },
+  { kind: "nav", id: "settings.ai-activity", route: "/settings/ai/activity", icon: ScrollText, group: "you", roles: "all", mode: "expert", help: "settings.ai-activity", guide: "settings.ai-activity" },
   // The organisation's pages show to the roles that may view them (Appendix D, V or more); the API decides the rest.
   { kind: "nav", id: "settings.organisation", route: "/settings/organisation", icon: Building, group: "organisation", roles: "all", mode: "expert", help: "settings.organisation", guide: "settings.organisation" },
   { kind: "nav", id: "settings.brand", route: "/settings/brand", icon: Palette, group: "organisation", roles: ["owner", "administrator", "controller"], mode: "basic", help: "settings.brand", guide: "settings.brand" },

@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import {
   CircleCheck,
   Fingerprint,
@@ -587,6 +588,19 @@ export function Profile() {
       <ModeChoice mode={mode} />
       <MyBankAccount />
       <MyPersonalData />
+      <section className="fy-card" aria-labelledby="ai-plan-title">
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id="ai-plan-title">
+            AI
+          </h2>
+        </div>
+        <div className="fy-card__body fy-stack fy-stack--2">
+          <p className="fy-secondary">The assistant uses the organisation's own AI connections.</p>
+          <Link className="self-start" to="/settings/profile/ai-plan">
+            {helpText("settings.ai-plan").label}
+          </Link>
+        </div>
+      </section>
       <section className="fy-card" aria-labelledby="security-title">
         <div className="fy-card__head">
           <h2 className="fy-h3" id="security-title">

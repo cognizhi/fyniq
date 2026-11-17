@@ -748,6 +748,14 @@
       "label": "Save the route",
       "tooltip": "A change that only narrows where data goes is saved at once; a new connection, model or class waits for the Owner or a second approver."
     },
+    "settings.ai-activity": {
+      "label": "AI activity",
+      "tooltip": "Every model call the AI made: for whom, on which connection and model, what happened, the tokens and the cost. Yours, or everyone's for the Owner and the DPO."
+    },
+    "settings.ai-plan": {
+      "label": "Use your own AI plan",
+      "tooltip": "Running your own assistant chats on your own provider plan. Not offered yet: the assistant uses the organisation's own connections."
+    },
     "ai.data-handling": {
       "label": "Where its prompts go",
       "tooltip": "Where the provider processes and keeps what it is sent, whether it trains on it, and the evidence; changing it needs a second approver."

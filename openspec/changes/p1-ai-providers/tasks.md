@@ -129,8 +129,14 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   connections that are on and their allow-lists, moved with buttons, filled from a preset; Check it (a preview), then
   save, at once when it narrows or with an approval when it widens; the versions. The guide is
   `docs/user-guide/ai-routes.md`.
-- [ ] 8.4 `ai-activity-log`, and `my-ai-plan` showing P2's own-plan option as not offered; help keys; guides compiled.
+- [x] 8.4 `ai-activity-log`, and `my-ai-plan` showing P2's own-plan option as not offered; help keys; guides compiled.
   Tests `// req: AI-12`.
+  Built (slice 31): AI activity (`/settings/ai/activity`, under the person's own settings in Expert mode): every model
+  call, the person's own or, for the Owner and the DPO, everyone's, with the step it fell back from, the model and
+  version that answered, the outcome, tokens and exact cost, payroll entries masked; filters by agent, day and member,
+  one call's fallbacks, paging, and counts of what is shown. Use your own AI plan (`/settings/profile/ai-plan`, linked
+  from Profile) says it is not offered. The guide is `docs/user-guide/ai-activity.md`. The assistant's turns, tool
+  calls, proposals and knowledge-base pages join the log with p1-ai-assistant, which records them.
 
 ## 9. The finish
 
