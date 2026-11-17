@@ -1401,3 +1401,103 @@ func TestTheRehearsalRunsM1ToM6(t *testing.T) {
 		t.Errorf("the migration after go-live: %s", m.Raw)
 	}
 }
+
+// G4-016 (p1-launch-readiness task 3): a year with open USD receivables at month ends. The sample's USD invoices are
+// dated each month's last day, so each month ends with one open. After the import, each month from January to the
+// workbook's September is revalued as the scheduler does once a month has ended (FR-GL-04, rev 0.75). Only September
+// changes: INV-0119 of USD 4,000, dated 31 August and carried at 1.33 (S$5,320.00), is still open, and September's
+// monthly rate is 1.32, a loss of 40.00; INV-0121 is dated at 1.32 already, and each earlier month's invoice is at its
+// month's rate or settled. The workbook only kept a memo, so the revaluation appears in the migration difference register
+// by account and month: 7040's 40.00, a deliberate rule change (class b), and 1100's -40.00, the account it revalues;
+// the trial balance otherwise matches to the cent, its only other lines the depreciation's cents.
+// req: G4-016
+// req: FR-MIG-02
+// req: FR-GL-04
+// req: quality/calculation-correctness Pinned unrealised FX revaluation
+func TestRevaluationAfterTheImportIsARuleChangeInTheRegister(t *testing.T) {
+	f, id := importedSample(t)
+	e := f.e
+	accountant := f.as(f.ahkow, authz.Accountant)
+	periods := map[string]string{}
+	for _, p := range e.call(http.MethodGet, "/v1/periods", accountant, nil).Body["items"].([]any) {
+		p := p.(map[string]any)
+		periods[p["starts_on"].(string)[:7]] = p["id"].(string)
+	}
+	revalued := 0
+	for m := 1; m <= 9; m++ {
+		period := periods[fmt.Sprintf("2026-%02d", m)]
+		get := e.call(http.MethodGet, "/v1/periods/"+period+"/fx-revaluation", accountant, nil)
+		if get.Status != http.StatusOK {
+			t.Fatalf("month %d's revaluation: %d %s", m, get.Status, get.Raw)
+		}
+		if lines, _ := get.Body["lines"].([]any); len(lines) > 0 {
+			revalued++
+		}
+		r := e.call(http.MethodPost, "/v1/periods/"+period+"/fx-revaluation", accountant, nil, "If-Match", get.Header.Get("ETag"))
+		if r.Status != http.StatusCreated {
+			t.Fatalf("revaluing month %d: %d %s", m, r.Status, r.Raw)
+		}
+	}
+	var rec MigrationReconciliation
+	if r := e.call(http.MethodGet, "/v1/migrations/"+id+"/reconciliation", accountant, nil); json.Unmarshal([]byte(r.Raw), &rec) != nil || rec.Status != "ready" {
+		t.Fatalf("the reconciliation: %s", r.Raw)
+	}
+	var unrealised, revaluedAccounts, other []string
+	for _, d := range rec.Differences {
+		switch {
+		case d.Proposed == migration.ClassAllocation && (d.Account == "1590" || d.Account == "6610"):
+			// the depreciation's cent, as before the revaluations
+		case d.Proposed == migration.ClassRule && d.Kind != "receivable":
+			unrealised = append(unrealised, d.Key+" "+d.Difference)
+		case d.Proposed == "" && (d.Kind == "movement" || d.Kind == "closing"):
+			revaluedAccounts = append(revaluedAccounts, d.Key+" "+d.Difference)
+		default:
+			other = append(other, d.Key+" "+d.Difference+" "+d.Proposed)
+		}
+	}
+	if revalued != 1 || strings.Join(unrealised, ", ") != "7040.2026-09.movement 40.00, 7040.2026-09.closing 40.00" ||
+		strings.Join(revaluedAccounts, ", ") != "1100.2026-09.movement -40.00, 1100.2026-09.closing -40.00" || len(other) != 0 {
+		t.Errorf("the register after the revaluations: %d revalued, class b %v, revalued accounts %v, other %v", revalued, unrealised, revaluedAccounts, other)
+	}
+}
+
+// G4-038, its migration half (p1-launch-readiness task 3): a foreign bill the workbook settled in full though the
+// Singapore dollars paid differ from its total at its rate keeps the workbook's 7030. The sample's USD hosting bills are
+// paid from the SGD account, each for a little less or more than its total at its rate (CN-2026-01: USD 900.00 billed at
+// S$1,215.00, S$1,213.20 paid); the import settles each in full, as the workbook did, so the difference is realised FX
+// on 7030 in the payment's month, which equals the workbook's month by month. G.3's own June figure, a bill forced paid
+// S$120.00 below its total, is TestTheWorkbookGoldenSets's posting set; the bank half is
+// TestMatchingABankLineSettlesWhatItPays.
+// req: G4-038
+// req: FR-MIG-02
+func TestAMigratedForeignBillPaidInFullKeepsTheWorkbooks7030(t *testing.T) {
+	f, id := importedSample(t)
+	tok := f.as(f.ahkow, authz.Accountant)
+	w, err := migration.Read(sampleWorkbook(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	moved := 0
+	for _, tb := range w.TrialBalance {
+		if tb.Code != "7030" {
+			continue
+		}
+		for i, end := range tb.Months {
+			if !end.After(w.Settings.AsOf) && tb.Movements[i] != nil && !tb.Movements[i].IsZero() {
+				moved++
+			}
+		}
+	}
+	if moved < 6 {
+		t.Fatalf("the workbook's 7030 moves in %d months; the sample's foreign bills settle with a difference in most", moved)
+	}
+	var rec MigrationReconciliation
+	if r := f.e.call(http.MethodGet, "/v1/migrations/"+id+"/reconciliation", tok, nil); json.Unmarshal([]byte(r.Raw), &rec) != nil || rec.Status != "ready" {
+		t.Fatalf("the reconciliation: %s", r.Raw)
+	}
+	for _, d := range rec.Differences {
+		if d.Account == "7030" {
+			t.Errorf("7030 differs from the workbook's: %+v", d)
+		}
+	}
+}

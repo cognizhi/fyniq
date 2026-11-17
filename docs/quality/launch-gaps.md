@@ -10,12 +10,12 @@ On main, the launch subset (`docs/prd/plans/launch-subset.json`) holds 37 change
 
 | | Requirements and scenarios |
 |---|---|
-| Covered by a tagged test | 650 |
-| Excepted (`docs/prd/plans/launch-exceptions.json`) | 38 |
-| Reported, not blocking: S and C rows, and the specs' prose requirements with no ID | 157 |
-| Untested, blocking | 79 |
+| Covered by a tagged test | 655 |
+| Excepted (`docs/prd/plans/launch-exceptions.json`) | 39 |
+| Reported, not blocking: S and C rows, and the specs' prose requirements with no ID | 153 |
+| Untested, blocking | 77 |
 
-Once the stacked chain (#645 to #743) merges, 35 stay untested. The chain's tests cover 44.
+Once the stacked chain (#645 to #743) merges, 33 stay untested. The chain's tests cover 44.
 
 ## How each closes
 
@@ -86,13 +86,13 @@ Built behaviour that no test asserted in full:
   and described by its message (`src/test/invalid.ts`). Building it found fields whose error a screen reader did not
   read with them: first-run setup's, a credit note's date applied, and an item price's currency.
 
-### Built in this change (8)
+### Built in this change (6)
 
-- Tasks 5 to 7 (6): QA-RPT-04, QA-UI-06 with G4-104, QA-UI-07, QA-UI-08 and QA-E2E-01. With task 3.2, four unnumbered
-  sets are reported still: the pinned unrealised revaluation (its parity item is G4-016's), the tags on RND-SHARE's and
-  the SAFE's pinned tests, and the hourly cost (after go-live).
-- Task 3, with the workbook's migration (2): G4-038's migrated forced-paid bill (its bank half is
-  `TestMatchingABankLineSettlesWhatItPays`), and G4-016's revaluation differences in the migration register.
+- Tasks 5 to 7 (6): QA-RPT-04, QA-UI-06 with G4-104, QA-UI-07, QA-UI-08 and QA-E2E-01.
+- Task 3's migration scenarios are in: G4-016, the revaluations in the migration register
+  (`TestRevaluationAfterTheImportIsARuleChangeInTheRegister`), and G4-038, its bank half
+  (`TestMatchingABankLineSettlesWhatItPays`), its migration half (`TestAMigratedForeignBillPaidInFullKeepsTheWorkbooks7030`)
+  and G.3's June figure (`TestTheWorkbookGoldenSets`).
 
 ### In their own change (27)
 

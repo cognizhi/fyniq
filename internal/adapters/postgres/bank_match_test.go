@@ -86,6 +86,7 @@ func openOn(t *testing.T, s storage.Store, org, control, id uuid.UUID, ar bool) 
 // req: FR-AR-18
 // req: FR-BNK-06
 // req: ENG-41
+// req: G4-038
 func TestMatchingABankLineSettlesWhatItPays(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "bookkeeper"}})
 	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
