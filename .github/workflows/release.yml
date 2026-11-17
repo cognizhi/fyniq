@@ -66,6 +66,8 @@ jobs:
           persist-credentials: false
       # jdx/mise-action v5.1.2, pinned by commit (SEC-28)
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+        with:
+          cache: false # a release builds from nothing cached: no cache poisoning (zizmor)
       - run: pnpm install --frozen-lockfile
       # Every route of the registry at the five frames in light and dark against apps/web/visual/baselines.json (design
       # D5, rev 0.284): a changed picture builds no image.
