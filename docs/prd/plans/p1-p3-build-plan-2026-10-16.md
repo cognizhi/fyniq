@@ -506,6 +506,33 @@ The release's own task types wait beyond it, each with its command, its suite an
 secretary's three come first, with `p1-scheduled-agents` and `p1-company-secretary`. Approval quality, tier 3 and undo
 come with `p1-ai-proposals` after go-live.
 
+`p1-scheduled-agents` was proposed on 15 Nov 2026 and built on 15 and 16 Nov 2026, one pull request per slice from #705
+onwards. The owner decided two things that day (rev 0.281, AI-89):
+- a run's model step goes through one internal API operation that the worker calls with its own service token;
+- a run's proposals are requested for the Owner who turned the agent on, as `ai_run`, and that Owner may sign them at
+  tier 1.
+The parts:
+- skills pinned per release (`agents/agents.lock.json`), checked against their profile and the never-list as they load;
+- the agent's settings, off until a second approver turns it on; schedules queued from the database at their time,
+  event triggers, Run now, and the watchdog (C.2 #36);
+- the run job: deterministic findings first, one open task per finding, a report never "all clear" with anything open,
+  the recipients told; the model asked only when an input changed;
+- the run's grant, within its skill's tools and task types, and the model step through the API and the AI service's
+  `/runs`, with the agent's rejected proposals fed back;
+- `sec.create_task` and `sec.draft_reminder`, which the Owner or the Company secretary approves;
+- the screens `company-secretary` and `agent-run-report`, and the Inbox's tasks;
+- the `agent` eval suite kind with the launch's cases, CTL-AI-09 nightly and in CI, and the threat model
+  `docs/security/threat-models/scheduled-agents.md` for security review #4.
+
+Building it found and fixed three things:
+- the push queue held a scheduled task on the wall clock rather than the clock that set it;
+- the C.2 #19 check's test proposed from a run that did not exist, which the run's guard now refuses;
+- the delivery log's purposes lacked the remittance advice's.
+
+Two things wait beyond it: each model's recordings of the agent suites, and the worker's cloud path to the API with
+Model Armor, `[live-verify]` in the dev cloud. The secretary's own checks and documents come with
+`p1-company-secretary`.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |

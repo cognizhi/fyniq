@@ -222,5 +222,8 @@
 
 ## 9. The finish
 
-- [ ] 9.1 `docs/security/threat-models/scheduled-agents.md` for security review #4; the build plan's paragraph;
+- [x] 9.1 `docs/security/threat-models/scheduled-agents.md` for security review #4; the build plan's paragraph;
   `make check`, `make test` and `make evals` pass.
+  As built: the threat model (T1 to T10, each with its control and tests) and the build plan's paragraph. The gates run
+  per slice before each pull request; `make evals` runs the agent suites, with no model's runs recorded yet
+  [live-verify].
