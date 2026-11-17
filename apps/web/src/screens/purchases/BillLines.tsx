@@ -6,7 +6,10 @@ import { Button } from "../../components/ui/button";
 import { helpText } from "../../i18n";
 import { Icon } from "../../ui";
 import type { Account } from "../accounting/data";
-import { DimensionFields } from "../accounting/lines";
+import { AdvancedDetails, type AdvancedDetail } from "../../components/AdvancedDetails";
+import { month } from "../../format/date";
+import { useSignedIn } from "../../session";
+import { DimensionFields, useDimensionDetails } from "../accounting/lines";
 
 type GSTCode = components["schemas"]["PurchaseGSTCodes"]["codes"][number];
 export type LineOrder = components["schemas"]["BillLineOrder"];
@@ -38,7 +41,9 @@ export type Errors = Record<string, string>;
 // BillLines is the card of a bill's lines (FR-AP-02), shared by a bill, a credit note and a recurring bill: each line's
 // account, description, GST code, net and GST as stated; with stated, the GST the tax invoice states in the base
 // currency (ENG-42); with spreads, the spread over months (FR-GL-03); with shares, the share used for the business, of
-// which only that share of the GST is claimed (FR-AP-20). id is the form's, for each error's element.
+// which only that share of the GST is claimed (FR-AP-20). In Basic mode, the values a line has in Expert's fields (its
+// spread, its dimension values) show read-only under "Has advanced details" (FR-UX-25). id is the form's, for each
+// error's element.
 export function BillLines({ id, lines, onChange, editable, errors, currency, base, stated, spreads, shares, codes, choices, byId, subtitle, footer }: {
   id: string;
   lines: Line[];
@@ -64,6 +69,15 @@ export function BillLines({ id, lines, onChange, editable, errors, currency, bas
       </span>
     ) : null;
   const described = (k: string) => (errors[k] ? `${id}-${k}-error` : undefined);
+  const { mode } = useSignedIn();
+  const dimensionDetails = useDimensionDetails();
+  const expertField = (...keys: string[]) => (keys.some((k) => errors[k]) ? "fy-field" : "fy-field fy-expert-only");
+  const advanced: AdvancedDetail[] = lines.flatMap((l, i) => [
+    ...(spreads && (l.spread_months || l.spread_from)
+      ? [{ label: `Line ${i + 1} · Spread`, value: `${l.spread_months ? `${l.spread_months} months` : "Over months"} from ${l.spread_from ? month(l.spread_from) : "the bill's month"}` }]
+      : []),
+    ...dimensionDetails(l.dimension_value_ids, `Line ${i + 1}`, byId.get(l.account_id)),
+  ]);
   return (
     <section className="fy-card" aria-labelledby={`${id}-lines`}>
       <div className="fy-card__head">
@@ -224,9 +238,9 @@ export function BillLines({ id, lines, onChange, editable, errors, currency, bas
                 </div>
               )}
               {spreads && (
-                // A spread is an Expert field (§7.8), shown in Basic too once a line has one, so nothing is hidden.
+                // A spread is an Expert field (§7.8); in Basic, a line's spread shows under "Has advanced details".
                 <>
-                  <div className={`fy-field${l.spread_months || l.spread_from ? "" : " fy-expert-only"}`}>
+                  <div className={expertField(`${l.key}.spread_months`, `${l.key}.spread_from`)}>
                     <label className="fy-label" htmlFor={`${l.key}-spread`}>
                       Spread over (months, optional)
                     </label>
@@ -246,7 +260,7 @@ export function BillLines({ id, lines, onChange, editable, errors, currency, bas
                       </span>
                     )}
                   </div>
-                  <div className={`fy-field${l.spread_months || l.spread_from ? "" : " fy-expert-only"}`}>
+                  <div className={expertField(`${l.key}.spread_months`, `${l.key}.spread_from`)}>
                     <label className="fy-label" htmlFor={`${l.key}-spread-from`}>
                       Spread from
                     </label>
@@ -280,6 +294,7 @@ export function BillLines({ id, lines, onChange, editable, errors, currency, bas
             </div>
           </fieldset>
         ))}
+        <AdvancedDetails mode={mode} details={advanced} />
         {err("lines")}
         {editable && (
           <div>

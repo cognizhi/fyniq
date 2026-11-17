@@ -174,6 +174,10 @@ of each, such as OPS Operations, so its cost shows by team or by project. The ch
 mode; a line on an account that requires a dimension shows its choice in Basic mode too, with "needs
 one" under it, and the bill does not post until the line has one (DIM-05).
 
+In Basic mode, a bill whose lines have values in Expert's fields, such as a spread or a dimension
+value the account does not require, shows **Has advanced details** with how many. Open it to read
+them; **Open in Expert mode** to change them.
+
 A spread line's cost keeps its values each month it is released. A credit note's lines take values
 in the same way, and a recurring bill's lines pass theirs to each draft it makes.
 
