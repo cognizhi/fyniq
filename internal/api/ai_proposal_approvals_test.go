@@ -23,6 +23,7 @@ import (
 // themselves see and sign it; the person who asked may sign their own tier-1 proposal; nobody else sees it, and the AI
 // never does. Approved, the proposal is Approved with exactly the payload approved and queued for the executor;
 // rejected, it is Rejected with the reason. No policy removes or narrows its step, and an envelope not shown is refused.
+// Its approval posts nothing itself, so it shows no impact (FR-APR-02): the proposal shows its own dry run.
 // req: AI-89
 // req: AI-P4
 // req: AI-P5
@@ -77,6 +78,9 @@ func TestAProposalWaitsForAPersonsApproval(t *testing.T) {
 	mine := e.call(http.MethodGet, path, ahkow, nil)
 	if mine.Status != http.StatusOK || mine.Body["you_may_approve"] != true || mine.str("object_type") != "ai_proposal" {
 		t.Fatalf("the requester's view: %d %s", mine.Status, mine.Raw)
+	}
+	if _, shown := mine.Body["impact"]; shown { // its approval posts nothing: never "approving it now would be refused"
+		t.Fatalf("an AI proposal's approval shows an impact: %s", mine.Raw)
 	}
 	if v := e.call(http.MethodGet, path, weiling, nil); v.Status != http.StatusOK || v.Body["you_may_approve"] != true {
 		t.Fatalf("another Owner's view: %d %s", v.Status, v.Raw)

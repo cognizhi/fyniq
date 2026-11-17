@@ -101,10 +101,12 @@ export async function signIn(page: Page, subject: string, name: string): Promise
 // organisation makes a journey's organisation: cmd/seed makes it with an invitation for each person and loads the
 // sample company into it (DEV-04), checking its trial balance against the seed's own totals; then each person signs in,
 // which leaves a new sign-in on the "Joining by invitation" page, and accepts theirs, as a person invited does
-// (FR-ADM-01). Names and subjects carry a run's tag, so runs never share an organisation or a person.
-export async function organisation(browser: Browser, name: string, people: Person[]): Promise<Journey> {
+// (FR-ADM-01). Names and subjects carry a run's tag, so runs never share an organisation or a person. With scriptedAI,
+// the seed also turns the AI on with its chat agent routed to local mode's scripted model, for the AI journeys.
+export async function organisation(browser: Browser, name: string, people: Person[], opts: { scriptedAI?: boolean } = {}): Promise<Journey> {
   const tag = Date.now().toString(36);
   const args = ["run", "-tags", "local", "./cmd/seed", "--new-organisation", `${name} (${tag})`];
+  if (opts.scriptedAI) args.push("--scripted-ai", "on");
   for (const p of people) args.push("--invite", `${p.name}:${p.roles.join(",")}`);
   const made = JSON.parse(execFileSync("go", args, { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] })) as {
     organisation: string;

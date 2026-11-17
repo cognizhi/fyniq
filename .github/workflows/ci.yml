@@ -166,6 +166,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      FYNIQ_TICK_INTERVAL: 20s   # the stack's tick: the AI journey's approved proposal reaches the executor in seconds, not 5 minutes
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

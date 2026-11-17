@@ -25,7 +25,7 @@ var loadInto func(ctx context.Context, org string, c seed.Company) error
 
 // newOrganisation makes an organisation with an invitation for each of invites and loads a company into it: set by the
 // local build (load_local.go).
-var newOrganisation func(ctx context.Context, now time.Time, name string, invites []string, c seed.Company) (Made, error)
+var newOrganisation func(ctx context.Context, now time.Time, name string, invites []string, c seed.Company, scriptedAI string) (Made, error)
 
 // Made is a new organisation and its invitations, as --new-organisation prints them.
 type Made struct {
@@ -56,6 +56,8 @@ func main() {
 		name := fs.String("new-organisation", "", "make an organisation of this name in the local database, with --invite's, and load the company into it")
 		var invites list
 		fs.Var(&invites, "invite", "with --new-organisation: <name>:<role>[,<role>…], an invitation to the new organisation (repeatable)")
+		scriptedAI := fs.String("scripted-ai", "", "with --new-organisation: routed, the chat agent routed to local mode's scripted model; on, "+
+			"also the AI switch and the task type sec.create_task on (p1-launch-readiness design D6)")
 		if err := fs.Parse(args); err != nil {
 			return err
 		}
@@ -63,11 +65,14 @@ func main() {
 		if err != nil {
 			return err
 		}
+		if *scriptedAI != "" && *scriptedAI != "routed" && *scriptedAI != "on" {
+			return fmt.Errorf("--scripted-ai %q is neither routed nor on", *scriptedAI)
+		}
 		if *name != "" {
 			if newOrganisation == nil {
 				return fmt.Errorf("--new-organisation is for the local build only (go run -tags local ./cmd/seed)")
 			}
-			made, err := newOrganisation(ctx, deps.Clock.Now(), *name, invites, seed.Generate(v, *n, *journals))
+			made, err := newOrganisation(ctx, deps.Clock.Now(), *name, invites, seed.Generate(v, *n, *journals), *scriptedAI)
 			if err != nil {
 				return err
 			}
