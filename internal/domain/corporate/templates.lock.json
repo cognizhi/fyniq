@@ -1,0 +1,38 @@
+{
+  "agm.dispensation": {
+    "version": 1,
+    "sha256": "eb1a063c0b7fc0b4319f145e0ea362392491b49554c69c8cf2d8503265683f6c"
+  },
+  "agm.minutes": {
+    "version": 1,
+    "sha256": "9ccf8b6ba686e19a5e44adb9822eed1b510fd70f38e5bba9afc40452455c3362"
+  },
+  "agm.notice": {
+    "version": 1,
+    "sha256": "9d2e774fdc9cf384e84971960a26e3e03ca2e7bff456abbe24fc33ae13e85702"
+  },
+  "directors.allot_shares": {
+    "version": 1,
+    "sha256": "58cf0aa129e2e069c9ad09bca941f55b9e61a00021eb70e11aab7549e333e071"
+  },
+  "directors.appoint_officer": {
+    "version": 1,
+    "sha256": "216dffa4097daf8add3297f3b42b72a459d751aec60574b1aca5e6dcf2b2711e"
+  },
+  "directors.approve_statements": {
+    "version": 1,
+    "sha256": "a834125d733f069c8b93d6cb9b16832d3788bc4f5e7fd3f556341d5b565e20ce"
+  },
+  "directors.change_office": {
+    "version": 1,
+    "sha256": "47ffd17a11e262511e6b968096fb2a04cb82223a266bf1c4112b2c2629c35ca0"
+  },
+  "directors.remove_officer": {
+    "version": 1,
+    "sha256": "126f266ea00d949f086648ee7bf4c768ef575aafa1e18689c0d86c20b46ad3ba"
+  },
+  "members.written_resolution": {
+    "version": 1,
+    "sha256": "b0cd48988ad3e2e7da208564951a28af25f70e3b88e98254af5fa44c1f94b8d6"
+  }
+}

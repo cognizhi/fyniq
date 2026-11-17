@@ -190,7 +190,7 @@ func TestQueueConformance(t *testing.T) {
 			t.Cleanup(srv.Close)
 			targets[class] = srv.URL
 		}
-		p := NewPush(targets, tokens, 3, time.Millisecond)
+		p := NewPush(targets, tokens, clock.System{}, 3, time.Millisecond)
 		porttest.Queue(t, func(t *testing.T) (ports.Queue, func(string, int) []ports.Task) {
 			return p, func(class string, n int) []ports.Task {
 				p.Wait()
@@ -232,13 +232,51 @@ func TestPushRetriesUntilTheHandlerAccepts(t *testing.T) {
 		}
 	}))
 	defer srv.Close()
-	p := NewPush(map[string]string{"worker": srv.URL}, tokens, 5, time.Millisecond)
+	p := NewPush(map[string]string{"worker": srv.URL}, tokens, clock.System{}, 5, time.Millisecond)
 	if err := p.Enqueue(context.Background(), ports.Task{Queue: "worker", Name: "retry-me", Payload: []byte("{}")}); err != nil {
 		t.Fatal(err)
 	}
 	p.Wait()
 	if calls != 3 {
 		t.Fatalf("%d deliveries; want 3 (two failures, then success)", calls)
+	}
+}
+
+// A task due later is held until its time, as Cloud Tasks holds a scheduled one (AI-62): a scheduled agent's slot.
+// req: AI-62
+// req: DEV-07
+func TestThePushQueueHoldsATaskUntilItsTime(t *testing.T) {
+	now := clock.NewFrozen(time.Date(2026, 10, 15, 12, 0, 0, 0, time.UTC))
+	tokens := NewHMACTokens([]byte("local-only-test-key"), now, time.Hour)
+	delivered := make(chan string, 2)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		delivered <- r.Header.Get("X-CloudTasks-TaskName")
+	}))
+	defer srv.Close()
+	p := NewPush(map[string]string{"worker": srv.URL}, tokens, now, 1, time.Millisecond)
+	// A slot whose time has passed goes at once; one 300 ms ahead on the clock that set it waits for it.
+	if err := p.Enqueue(context.Background(), ports.Task{Queue: "worker", Name: "late", Payload: []byte("{}"), At: now.Now().Add(-time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Enqueue(context.Background(), ports.Task{Queue: "worker", Name: "slot", Payload: []byte("{}"), At: now.Now().Add(300 * time.Millisecond)}); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case name := <-delivered:
+		if name != "late" {
+			t.Fatalf("delivered %s first", name)
+		}
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("a slot whose time has passed was held")
+	}
+	select {
+	case name := <-delivered:
+		t.Fatalf("%s delivered before its time", name)
+	case <-time.After(100 * time.Millisecond):
+	}
+	p.Wait()
+	if name := <-delivered; name != "slot" {
+		t.Errorf("delivered %s, want the slot", name)
 	}
 }
 

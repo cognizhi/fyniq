@@ -18,7 +18,8 @@
           "owner_succession",
           "equity",
           "filing",
-          "gst_forecast"
+          "gst_forecast",
+          "corporate"
         ],
         "examples": [
           "bill"

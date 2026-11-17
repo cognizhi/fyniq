@@ -22,6 +22,12 @@
 !packs/
 !connectors/
 !evals/evals.go
+!agents/agents.go
+!agents/*/SKILL.md
+!contracts/ai/ai.go
+!contracts/ai/tools/
+!contracts/ai/prompts/
+!contracts/ai/tasks/
 !evals/*/suite.json
 !package.json
 !pnpm-lock.yaml

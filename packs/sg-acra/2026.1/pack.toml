@@ -1,0 +1,98 @@
+# sg-acra@2026.1: the corporate rules the company secretary's checks and assistant read (PRD-001 FR-CS-02, §10.6;
+# p1-company-secretary design D1). The calendar's own ACRA deadlines (the annual return, the AGM, statements sent instead)
+# stay in sg-deadlines. Never edit this version once it is active anywhere: a correction is sg-acra@2026.2
+# (fyniq-sg-statutory).
+id = "sg-acra@2026.1"
+title = "Singapore corporate rules: officers, registered office, shares, registers of controllers and nominees, the secretary, filing categories and audit exemption"
+effective_from = "2026-11-16"
+review_date = "2027-03-31"
+verifier = "Claude Code against ACRA's pages on 16 Nov 2026 (p1-company-secretary), read through a summarising fetch tool; the Companies Act's sections as the source notes of 12 Oct 2026 read them on SSO; the accountant's and the company secretary's review is pending (FR-UX-41)"
+conditions = "A Singapore private company limited by shares, not listed, incorporated in Singapore; a rule applies to an event whose day falls within the rule's effective dates; a business day is a weekday that is not a public holiday of sg-deadlines"
+
+[[sources]]
+id = "acra-updating"
+title = "ACRA: Updating company information, officers & shareholders"
+url = "https://www.acra.gov.sg/manage/companies/legal-requirements-common-offences/maintaining-local-companys-information-registers/updating-company-information-officers-shareholders/"
+section = "Update the appointment or withdrawal of position holders; position holder details; entity information; shares information"
+kind = "official guidance"
+retrieved = "2026-11-16"
+quote = "Update the appointment or withdrawal of position holders within 14 days. Update position holder details within 14 days. Update your entity information within 14 days: registered office address. Update shares information within 14 days."
+
+[[sources]]
+id = "acra-registers"
+title = "ACRA: Company registers, requirements & deadlines"
+url = "https://www.acra.gov.sg/how-to-guides/setting-up-a-local-company/maintaining-company-registers"
+section = "Register of Registrable Controllers; Register of Nominee Directors and Nominee Shareholders"
+kind = "official guidance"
+retrieved = "2026-11-16"
+quote = "Update within seven days whenever there are changes. At least once a year. After incorporation, you must file any updates within two business days. Whenever there is an update, you must update the register within seven days."
+
+[[sources]]
+id = "acra-rond-rons"
+title = "ACRA: Setting up & maintaining ROND & RONS"
+url = "https://www.acra.gov.sg/manage/companies/legal-requirements-common-offences/maintaining-local-companys-information-registers/rond-rons/setting-up-maintaining/"
+section = "Deadlines: nominee informing the company; updating the private registers; filing with the Central ROND & RONS"
+kind = "official guidance"
+retrieved = "2026-11-16"
+quote = "Within 30 days of becoming a nominee. Within seven days. Within two business days, starting after you update your private registers."
+
+[[sources]]
+id = "acra-officers"
+title = "ACRA: Step 4.3, choosing company directors & other key officers"
+url = "https://www.acra.gov.sg/register/business/registering-different-business-structures/local-company/appointing-company-directors-other-key-officers/"
+section = "Company secretary; auditor"
+kind = "official guidance"
+retrieved = "2026-11-16"
+quote = "A secretary must be appointed within six months of successful registration. The position cannot be empty for more than six months. Not be the same person as the sole director. Unless exempt, you must appoint an auditor within three months of incorporation."
+
+[[sources]]
+id = "acra-xbrl"
+title = "ACRA: Financial statements, filing requirements & exemptions"
+url = "https://www.acra.gov.sg/manage/companies/legal-requirements-common-offences/filing-financial-statements-in-xbrl-format/requirements-exemptions/"
+section = "Solvent exempt private companies; Simplified XBRL: smaller companies"
+kind = "official guidance"
+retrieved = "2026-11-16"
+quote = "You do not need to file financial statements if you meet both of the conditions below. You have fewer than 20 members and no corporation holds beneficial interest in your shares (directly or indirectly). You are solvent where you can meet your debts as and when they are due. You need to make an online declaration of solvency when you file your annual return. A smaller company is one where both conditions are met: Revenue for the current financial year does not exceed $500,000. Total assets for the current financial year do not exceed $500,000. Apply the $500,000 threshold regardless of your financial year length."
+
+[[sources]]
+id = "acra-audit-exemption"
+title = "ACRA: Audit exemptions, small company concept"
+url = "https://www.acra.gov.sg/manage/companies/legal-requirements-common-offences/preparing-financial-statements/audit-exemptions/"
+section = "Small company criteria"
+kind = "official guidance"
+retrieved = "2026-11-16"
+quote = "Total annual revenue of $10 million or less. Total assets of $10 million or less. 50 employees or fewer. At least two of these quantitative criteria, for the immediate past two consecutive financial years. If your company is newly incorporated (less than two years old), you qualify for audit exemption if you meet the criteria in the current financial year."
+
+[[sources]]
+id = "coa-officers"
+title = "Companies Act 1967, ss 143, 171, 173A (Singapore Statutes Online), as the source notes of 12 Oct 2026 read them"
+url = "https://sso.agc.gov.sg/Act/CoA1967"
+section = "s143 (registered office), s171(1), (1E) and (4A) (the secretary), s173A (officers' appointments, cessations and particulars)"
+kind = "law"
+retrieved = "2026-10-12"
+quote = "Appointment or cessation of a director, CEO, secretary or auditor, and changes in a director's particulars: 14 days (s173A). Registered office change: 14 days (s143). The secretary is a natural person whose principal or only place of residence is in Singapore (s171(1)); a sole director cannot also be the secretary (s171(1E)); the office may not be vacant for more than 6 months (s171(4A))."
+
+[[tables]]
+name = "periods"
+file = "periods.csv"
+description = "Each rule's period from its event: days, business days or months forward, after the rule it follows when it names one. The verdict says where the rule stands: act when a cited source is the Act and states it, guidance when only ACRA's guidance is cited, including where the Act states no period (FR-CS-02); the checks name it"
+
+[[tables]]
+name = "thresholds"
+file = "thresholds.csv"
+description = "The filing categories' and the audit exemption's thresholds: an amount in Singapore dollars, or a count"
+
+[[tables]]
+name = "rules"
+file = "rules.csv"
+description = "Rules with no period or amount, such as who may be the secretary, with the same verdicts as periods"
+
+[[pinned]]
+name = "periods"
+file = "pinned/periods.csv"
+description = "Hand-pinned due dates worked from the sources' words, not from periods.csv, on days with no public holiday between the event and the due date"
+
+[[pinned]]
+name = "thresholds"
+file = "pinned/thresholds.csv"
+description = "Hand-pinned thresholds worked from acra-xbrl and acra-audit-exemption, not from thresholds.csv"

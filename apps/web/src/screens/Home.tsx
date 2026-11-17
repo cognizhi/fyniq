@@ -3,6 +3,7 @@ import { Link, Navigate } from "@tanstack/react-router";
 import { ChevronRight, Circle, CircleCheck, ClipboardCheck, ClockAlert, Stamp, TriangleAlert } from "lucide-react";
 import { api } from "../api/client";
 import { useSignedIn } from "../session";
+import { landingOf } from "../shell/navigation";
 import { Icon } from "../ui";
 import { PoliciesToAcknowledge } from "./compliance/Policies";
 import { Dashboard } from "./Dashboard";
@@ -171,17 +172,13 @@ function SetUp({ steps }: { steps: Step[] }) {
 // Home is the first signed-in page (docs/design/screens Home): the money's pulse, tiles and charts
 // (FR-KPI-01), what waits for the person, and while the company is new, the set-up checklist.
 // Deadlines arrive with their modules.
-// personalRoles are the roles whose rights are a person's own items only (FR-UX-39): someone who holds no other lands
-// on My claims, with nothing of the company's finances.
-export const personalRoles = ["employee"];
-
-export function personalOnly(roles: readonly string[] | null | undefined): boolean {
-  return (roles ?? []).length > 0 && (roles ?? []).every((r) => personalRoles.includes(r));
-}
-
+// Home is where a person lands unless their roles land elsewhere (§7.1): My claims with personal rights only
+// (FR-UX-39), Settings for an Administrator, Compliance for the Company secretary or the DPO, Reports for a Board viewer
+// or an Auditor.
 export function Home() {
   const { session } = useSignedIn();
-  return personalOnly(session.roles) ? <Navigate to="/me/claims" replace /> : <Workspace />;
+  const to = landingOf(session.roles);
+  return to ? <Navigate to={to} replace /> : <Workspace />;
 }
 
 function Workspace() {

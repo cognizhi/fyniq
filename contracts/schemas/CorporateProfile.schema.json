@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "$ref": "CorporateDetailView.schema.json",
+      "description": "The name, office and SSIC code in force on the day; none before the first is recorded."
+    },
+    "details": {
+      "description": "Every detail, drafts and superseded ones included, the latest first.",
+      "items": {
+        "$ref": "CorporateDetailView.schema.json"
+      },
+      "type": "array"
+    },
+    "documents": {
+      "description": "Every corporate document, drafts and recorded, the latest drafted first, without their text: getCorporateDocument has it.",
+      "items": {
+        "$ref": "CorporateDocumentView.schema.json"
+      },
+      "type": "array"
+    },
+    "nominee_history": {
+      "description": "Every nominee entry's every version, drafts and superseded ones included, the latest first.",
+      "items": {
+        "$ref": "NomineeEntryView.schema.json"
+      },
+      "type": "array"
+    },
+    "nominees": {
+      "description": "The registers of nominee directors and nominee shareholders on the day: each entry in force, a nominee since then and not ceased.",
+      "items": {
+        "$ref": "NomineeEntryView.schema.json"
+      },
+      "type": "array"
+    },
+    "officer_history": {
+      "description": "Every officer's every version, drafts and superseded ones included, the latest first.",
+      "items": {
+        "$ref": "CorporateOfficerView.schema.json"
+      },
+      "type": "array"
+    },
+    "officers": {
+      "description": "The officers in office on the day: appointed by then and not ceased, directors first, then the secretary, the CEO and auditors.",
+      "items": {
+        "$ref": "CorporateOfficerView.schema.json"
+      },
+      "type": "array"
+    },
+    "on": {
+      "description": "The day it shows.",
+      "examples": [
+        "2026-11-16"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "secretary": {
+      "description": "true: a secretary is in office on the day (FR-CS-06).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "statements_approvals": {
+      "description": "Every directors' approval of a year's financial statements, drafts and superseded ones included, the latest first.",
+      "items": {
+        "$ref": "StatementsApprovalView.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "on",
+    "officers",
+    "secretary",
+    "details",
+    "officer_history",
+    "nominees",
+    "nominee_history",
+    "statements_approvals",
+    "documents"
+  ],
+  "title": "CorporateProfile",
+  "type": "object"
+}

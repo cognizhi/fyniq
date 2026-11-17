@@ -6,6 +6,7 @@ import { answer, ownerSession, problem, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { PeriodClose } from "./PeriodClose";
+import { invalid } from "../../test/invalid";
 
 type Variance = components["schemas"]["Variance"];
 
@@ -82,7 +83,7 @@ describe("the close's variances", () => {
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText(/October 2026: 5,000.00; November 2026: 8,000.00 SGD/)).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: "Explain" }));
-    expect(await within(dialog).findByText(/Say why the account moved/)).toBeTruthy();
+    await invalid(dialog, "Why it moved", "Say why the account moved: the founder who attests the close reads it.");
     expect(seen.filter((x) => x.method === "POST")).toEqual([]);
     fireEvent.change(within(dialog).getByLabelText("Why it moved"), { target: { value: "  The office moved.  " } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Explain" }));

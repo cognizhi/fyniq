@@ -189,3 +189,34 @@ func TestAReportIsCheckedBeforeItIsLaidOut(t *testing.T) {
 		}
 	}
 }
+
+// A paper is checked before the render service lays it out: a title and a section, each section with a paragraph or an
+// item, within its bounds, each signature with a name, and no text longer than 2,000 characters.
+// req: FR-CS-05
+func TestAPaperIsCheckedBeforeItIsLaidOut(t *testing.T) {
+	good := func() Paper {
+		return Paper{Title: "Directors' resolution in writing", Author: "Cognizhi Pte. Ltd.", Lines: []string{"UEN 202612345K"},
+			Sections:   []PaperSection{{Heading: "Resolved", Items: []string{"That the financial statements be approved."}}},
+			Signatures: []PaperSignature{{Name: "Tan Mei Lin", Role: "Director"}}}
+	}
+	if err := good().Check(); err != nil {
+		t.Fatal(err)
+	}
+	for name, change := range map[string]func(p *Paper){
+		"no title":             func(p *Paper) { p.Title = " " },
+		"no section":           func(p *Paper) { p.Sections = nil },
+		"too many sections":    func(p *Paper) { p.Sections = make([]PaperSection, MaxPaperSections+1) },
+		"an empty section":     func(p *Paper) { p.Sections[0].Items = nil },
+		"too many items":       func(p *Paper) { p.Sections[0].Items = make([]string, MaxPaperItems+1) },
+		"too many paragraphs":  func(p *Paper) { p.Sections[0].Paragraphs = make([]string, MaxPaperParagraphs+1) },
+		"too many signatures":  func(p *Paper) { p.Signatures = make([]PaperSignature, MaxPaperSignatures+1) },
+		"an unnamed signature": func(p *Paper) { p.Signatures[0].Name = "" },
+		"a long paragraph":     func(p *Paper) { p.Sections[0].Paragraphs = []string{strings.Repeat("x", 2001)} },
+	} {
+		p := good()
+		change(&p)
+		if err := p.Check(); !errors.Is(err, ErrPaper) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}

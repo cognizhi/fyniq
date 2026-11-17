@@ -156,6 +156,43 @@ export function AIUsage() {
             </div>
           </section>
 
+          <section className="fy-card" aria-labelledby={`${id}-assistant`}>
+            <div className="fy-card__head">
+              <h2 className="fy-h3" id={`${id}-assistant`}>
+                The assistant
+              </h2>
+              <span className="fy-small fy-muted">Its questions this month, as its monitoring counts them</span>
+            </div>
+            <div className="fy-card__body fy-grid fy-grid--4 gap-3" role="group" aria-label="The assistant this month">
+              <div className="fy-tile">
+                <span className="fy-tile__label">Questions</span>
+                <span className="fy-tile__value fy-num">{count(u.assistant.turns)}</span>
+                <span className="fy-tile__meta">
+                  {count(u.assistant.answered)} answered · {count(u.assistant.refused)} refused · {count(u.assistant.failed)} failed
+                </span>
+              </div>
+              <div className="fy-tile">
+                <span className="fy-tile__label">Figures that failed the check</span>
+                <span className="fy-tile__value fy-num">{count(u.assistant.regenerated)}</span>
+                <span className="fy-tile__meta">asked for again; {count(u.assistant.withheld)} withheld</span>
+              </div>
+              <div className="fy-tile">
+                <span className="fy-tile__label">Reads refused</span>
+                <span className="fy-tile__value fy-num">{count(u.assistant.reads_refused)}</span>
+                <span className="fy-tile__meta">
+                  of {count(u.assistant.reads)} reads; {count(u.assistant.screening_flags)} stopped or withheld by screening
+                </span>
+              </div>
+              <div className="fy-tile">
+                <span className="fy-tile__label">Cost per conversation ({u.currency})</span>
+                <span className="fy-tile__value fy-num">{u.assistant.cost_per_conversation ? formatAmount(u.assistant.cost_per_conversation) : "—"}</span>
+                <span className="fy-tile__meta">
+                  {count(u.assistant.conversations)} conversations, {formatAmount(u.assistant.cost)} in all
+                </span>
+              </div>
+            </div>
+          </section>
+
           <section className="fy-card" aria-labelledby={`${id}-models`}>
             <div className="fy-card__head">
               <h2 className="fy-h3" id={`${id}-models`}>

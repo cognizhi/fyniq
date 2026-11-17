@@ -4,14 +4,14 @@ type: concept
 title: The statutory calendar and what it holds
 summary: Every filing and payment deadline from the company's years, GST periods and settings; reminders, Checks and the registers' deadlines
 sources:
-  - docs/user-guide/statutory-calendar.md sha256:972540eb8d4b12a16fa7f7ef0e6164c6063c5de28fdb16c3409234b9da29b006
+  - docs/user-guide/statutory-calendar.md sha256:e0fc949205ca546e3587b42a37919801e1d83fe99857e48997e08d8be0fb2172
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-07
+compiled_at: 2026-11-17
 aliases:
   - deadlines
   - filing deadlines

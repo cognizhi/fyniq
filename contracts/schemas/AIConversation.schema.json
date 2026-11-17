@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "examples": [
+        "2026-11-15T08:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "title": {
+      "examples": [
+        "Cash runway"
+      ],
+      "type": "string"
+    },
+    "turns": {
+      "description": "Its turns, in the order they were asked; on getAIConversation.",
+      "items": {
+        "$ref": "AITurn.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "created_at"
+  ],
+  "title": "AIConversation",
+  "type": "object"
+}

@@ -40,6 +40,42 @@
       "label": "Help",
       "tooltip": "About Fyniq, and the version you are on."
     },
+    "assistant.ask-about-this": {
+      "label": "Ask about this",
+      "tooltip": "Open the assistant with this record, report or figure as what you are asking about."
+    },
+    "assistant.feedback": {
+      "label": "Rate this answer",
+      "tooltip": "Thumbs up or down with a reason. An Owner or Administrator reviews it, with your question and the answer, before it helps test the assistant."
+    },
+    "ai-proposal.review": {
+      "label": "AI proposal",
+      "tooltip": "A change the AI proposed, waiting for a person: Fyniq's summary of what it does, then the AI's reasons apart."
+    },
+    "ai-proposal.items": {
+      "label": "Items to keep",
+      "tooltip": "Clear any item you disagree with: the approval covers only the items you keep, and nothing else changes."
+    },
+    "ai-proposal.rationale": {
+      "label": "The AI's reasons",
+      "tooltip": "Why the AI proposes it, in its own words. Check them against Fyniq's summary, which says what really happens."
+    },
+    "ai-tasks.page": {
+      "label": "AI tasks",
+      "tooltip": "What the AI may propose for the organisation, with each task type's limits and approvers, and every proposal it has made."
+    },
+    "ai-tasks.turn": {
+      "label": "Turn a task type on or off",
+      "tooltip": "Turning one on waits for a second approver; turning it off takes effect at once. Each starts off."
+    },
+    "assistant.simulate": {
+      "label": "Simulate",
+      "tooltip": "See the lowest cash balance if this invoice or bill is paid on another day, or not at all. Nothing is saved."
+    },
+    "shell.assistant": {
+      "label": "Assistant",
+      "tooltip": "Ask about your books in your own words; every figure comes from Fyniq with its source. Shortcut: Ctrl+J, or ⌘J on a Mac."
+    },
     "shell.about": {
       "label": "About Fyniq",
       "tooltip": "Quote the version and the commit when you report a problem. Every exported report names them in its footer."
@@ -564,6 +600,26 @@
       "label": "Ask for approval",
       "tooltip": "Send the drafted entry, with the company secretary's confirmation, to another Owner or the Controller to record."
     },
+    "corporate-detail.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the BizFile+ acknowledgement of the change, or the business profile that shows it."
+    },
+    "corporate-officer.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the officer's consent to act or the resolution, the BizFile+ acknowledgement, or the business profile that shows them."
+    },
+    "nominee-entry.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the nominee's notice to the company, the register's extract or ACRA's acknowledgement."
+    },
+    "statements-approval.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the directors' resolution or signed statement approving the financial statements."
+    },
+    "corporate-document.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the copy as signed outside Fyniq. Once it is attached, the paper's text stays as it was signed."
+    },
     "controller-entry.attach-evidence": {
       "label": "Attach",
       "tooltip": "Attach the company secretary's confirmation, with the register's extract, ACRA's acknowledgement or a notice and its reply."
@@ -747,6 +803,14 @@
     "ai.route-save": {
       "label": "Save the route",
       "tooltip": "A change that only narrows where data goes is saved at once; a new connection, model or class waits for the Owner or a second approver."
+    },
+    "settings.ai-activity": {
+      "label": "AI activity",
+      "tooltip": "Every model call the AI made: for whom, on which connection and model, what happened, the tokens and the cost. Yours, or everyone's for the Owner and the DPO."
+    },
+    "settings.ai-plan": {
+      "label": "Use your own AI plan",
+      "tooltip": "Running your own assistant chats on your own provider plan. Not offered yet: the assistant uses the organisation's own connections."
     },
     "ai.data-handling": {
       "label": "Where its prompts go",
@@ -2312,6 +2376,86 @@
       "label": "Statutory calendar",
       "tooltip": "Every filing and payment deadline, worked out from your financial years, GST return periods and settings."
     },
+    "compliance.corporate-profile": {
+      "label": "Corporate profile and registers",
+      "tooltip": "The company as ACRA's registers hold it: its details, officers, nominees and the directors' approvals, each recorded with its evidence and checked against ACRA."
+    },
+    "corporate-profile.checks": {
+      "label": "Checks",
+      "tooltip": "The company secretary, the statements' approval, the profile against ACRA and the lodgements: each shows its status, or what it needs to be assessed."
+    },
+    "corporate-profile.details": {
+      "label": "The company",
+      "tooltip": "The name, registered office and SSIC code in force, from the day each took effect, with the earlier ones in the history."
+    },
+    "corporate-profile.officers": {
+      "label": "Officers",
+      "tooltip": "The directors, the named company secretary, the CEO and the auditors in office, with the days they were appointed and lodged."
+    },
+    "corporate-profile.nominees": {
+      "label": "Nominee directors and shareholders",
+      "tooltip": "The registers of nominees: whom each acts for, and the days the company's register and ACRA's central register were updated."
+    },
+    "corporate-profile.acra": {
+      "label": "Against ACRA's business profile",
+      "tooltip": "The officers and the registered office compared with the latest business profile typed in, on its day."
+    },
+    "corporate-profile.lodgements": {
+      "label": "Lodgements",
+      "tooltip": "Each change ACRA must be told of, with its deadline: done once the day it was lodged is recorded on its record."
+    },
+    "corporate-profile.approvals": {
+      "label": "Directors' approval of the financial statements",
+      "tooltip": "The day the directors approved each year's statements, and the day they were sent to the members."
+    },
+    "corporate-profile.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Sends the draft, with its evidence, to the Owner or the Controller to record. Nobody records their own change."
+    },
+    "corporate-profile.documents": {
+      "label": "Papers and minute book",
+      "tooltip": "Resolutions, notices and minutes drafted from Fyniq's templates and the company's records, and the signed ones recorded in the minute book."
+    },
+    "corporate-profile.draft-paper": {
+      "label": "Draft a paper",
+      "tooltip": "Fills one of Fyniq's templates from the records on today: a draft to read, download and have signed outside Fyniq."
+    },
+    "corporate-profile.paper-pdf": {
+      "label": "PDF",
+      "tooltip": "Downloads the paper to print and sign, with a line to sign for each signer."
+    },
+    "corporate-profile.record-minute-book": {
+      "label": "Record in the minute book",
+      "tooltip": "Sends the signed copy and the day it was signed to another person to record. Recorded, it never changes."
+    },
+    "compliance.secretary": {
+      "label": "Company secretary assistant",
+      "tooltip": "The AI agent that checks the company's obligations on a schedule, explains what it finds, raises tasks and drafts reminders for a person to approve."
+    },
+    "compliance.secretary-findings": {
+      "label": "What needs you",
+      "tooltip": "The open findings of its latest run: those it could not check first, then what cannot go on, what is due and what to review."
+    },
+    "compliance.secretary-drafts": {
+      "label": "Drafts awaiting approval",
+      "tooltip": "The tasks and reminders it proposed that wait for the Owner or the Company secretary to approve them."
+    },
+    "compliance.secretary-history": {
+      "label": "Its runs",
+      "tooltip": "Each run, newest first, with what started it, what it found and whether that is new since the last run."
+    },
+    "compliance.secretary-schedule": {
+      "label": "Its schedule",
+      "tooltip": "When it runs, the events that start a run, its quiet hours, who it tells and the most one run may read and use."
+    },
+    "compliance.secretary-run": {
+      "label": "A run's report",
+      "tooltip": "One run: what it read, every finding with its rule and source, their tasks, what it proposed and what the AI wrote."
+    },
+    "compliance.secretary-run-now": {
+      "label": "Run now",
+      "tooltip": "Queues a run at once, while the assistant is on. It checks first, and asks the model only if something changed."
+    },
     "compliance.gst": {
       "label": "GST",
       "tooltip": "Whether the company must register for GST, tested against IRAS's threshold, with the forecasts it rests on."
@@ -2371,6 +2515,10 @@
     "inbox.deadlines": {
       "label": "Deadlines",
       "tooltip": "Statutory deadlines overdue or due in the next 30 days, from the statutory calendar."
+    },
+    "inbox.tasks": {
+      "label": "Tasks",
+      "tooltip": "The compliance tasks for you or your role, from the company secretary assistant's checks or its approved proposals."
     },
     "gst.monitor": {
       "label": "Registration monitor",

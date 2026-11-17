@@ -6,6 +6,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { TemplateEditor } from "./TemplateEditor";
 import { Templates } from "./Templates";
+import { invalid } from "../../test/invalid";
 
 const founder = { ...ownerSession, roles: ["owner", "controller", "accountant"] } as Session;
 const accountant = { ...ownerSession, roles: ["accountant"] } as Session;
@@ -172,6 +173,17 @@ describe("The template editor", () => {
     const sent = put?.body as { content: { theme: { accent: string }; blocks: { texts?: { body?: string } }[] } };
     expect(sent.content.theme.accent).toBe("#FFFF00");
     expect(sent.content.blocks[3]?.texts?.body).toBe("Pay by {{document.due_date|long}}") // inserted at the cursor;
+  });
+
+  // QA-UI-01: the API checks a template; the field it refuses is marked, with its message and fix beside it.
+  it("marks the field the API refuses, with its message and fix", async () => {
+    const refused = { code: "TEMPLATE-03", title: "The template cannot be saved", status: 422, errors: [{ field: "body.name", message: "Another template of this type has that name", fix: "Choose another name" }] };
+    editorPage({ "PUT /v1/document-templates/t-1": { status: 422, body: refused } });
+    renderPage(TemplateEditor, { path: "/settings/templates/t-1", route: "/settings/templates/$templateId", session: founder });
+    await screen.findByRole("button", { name: "Edit texts of Notes and terms" }, slow); // the draft is read
+    fireEvent.change(screen.getByLabelText("Template name"), { target: { value: "Standard" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await invalid(document.body, "Template name", "Another template of this type has that name. Choose another name");
   });
 
   it("publishes; in Standard mode it asks another person to approve", async () => {

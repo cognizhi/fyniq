@@ -8,6 +8,6 @@ Machine-readable contracts, the source of truth for every interface (golden rule
 | `schemas/` | A JSON Schema 2020-12 per resource of `/v1`, generated with the contract by `make openapi` (FR-INT-13); the API reference, `llms.txt` and the agent guide are in `docs/api/` | p1-public-api (today) |
 | `audit/` | The audit event format (AUD-01) and how to verify a chain and its anchors outside Fyniq (§11.5) | p0-audit-chain (today) |
 | `asyncapi/` | Events (`fyniq.<object>.<event>.v<N>`) | P1 |
-| `ai-tools/` | AI and MCP tool schemas | P1 |
+| `ai/` | The AI's contracts: the read-tool registry, one `tools/<name>.json` per tool in MCP's tool shape with its version, where it runs, its scope and its limits; `tools.lock.json` pins each version's hash, and `ai.go` embeds the registry for `internal/aitool`. Prompts and the proposal catalogue follow (p1-ai-assistant, p1-ai-proposals) | p1-ai-assistant (today) |
 | `connectors/` | The connector manifest format (`manifest.schema.json`, FR-INT-25); each first-party connector's manifest is in `connectors/<id>/manifest.json` and validates against it in `make test` | p1-connector-framework (today) |
 | `partners/` | Partners' OpenAPI documents (banks, payment providers, the Peppol access point), each mocked by Prism in the local `partners` profile | p1-connector-framework (today) |

@@ -15,7 +15,13 @@ import { objectLabel, operationLabel, stepWho, type Approval } from "./words";
 type Outcome = { data: Approval } | { problem: ApiProblem } | { cancelled: true };
 type Decision = "approve" | "reject";
 
-function send(decision: Decision, a: Approval, etag: string, key: string, body: { envelope_hash: string; reason?: string; passkey?: { challenge_id: string; credential: Record<string, unknown> } }) {
+function send(
+  decision: Decision,
+  a: Approval,
+  etag: string,
+  key: string,
+  body: { envelope_hash: string; reason?: string; items?: number[]; passkey?: { challenge_id: string; credential: Record<string, unknown> } },
+) {
   const params = { path: { approval_id: a.id }, header: { "If-Match": etag, "Idempotency-Key": key } };
   return decision === "approve" ? api.POST("/v1/approvals/{approval_id}/approve", { params, body }) : api.POST("/v1/approvals/{approval_id}/reject", { params, body });
 }
@@ -24,9 +30,10 @@ function send(decision: Decision, a: Approval, etag: string, key: string, body: 
 // passkey, the device signs a challenge that carries the envelope's hash (rev 0.44); without one
 // (none registered, or a browser that cannot), the session's step-up signs, and the person confirms
 // it's you when the API asks. The same Idempotency-Key covers the retry.
-export async function decide(decision: Decision, a: Approval, etag: string, confirm: () => Promise<boolean>, reason?: string): Promise<Outcome> {
+// For an AI proposal of several items, items are those the approval covers (AI-32): signed with the envelope.
+export async function decide(decision: Decision, a: Approval, etag: string, confirm: () => Promise<boolean>, reason?: string, items?: number[] | null): Promise<Outcome> {
   const key = newKey();
-  const body = { envelope_hash: a.envelope_hash, ...(reason ? { reason } : {}) };
+  const body = { envelope_hash: a.envelope_hash, ...(reason ? { reason } : {}), ...(decision === "approve" && items ? { items } : {}) };
   if (passkey.supported()) {
     const ch = await api.POST("/v1/approvals/{approval_id}/challenge", { params: { path: { approval_id: a.id }, header: { "If-Match": etag } } });
     if (ch.data) {
@@ -104,7 +111,21 @@ export function Changes({ diff }: { diff: Approval["diff"] }) {
 // the person signs, the policy step, the envelope's hash, and the decision, signed with a passkey or
 // the session's step-up. Approve is never the default focus, and the Inbox never approves directly
 // (FR-UX-03): this dialog is the only way.
-export function ConfirmDecision({ approval: a, etag, decision, onClose, onDecided }: { approval: Approval; etag: string; decision: Decision | null; onClose: () => void; onDecided: (a: Approval) => void }) {
+export function ConfirmDecision({
+  approval: a,
+  etag,
+  decision,
+  items,
+  onClose,
+  onDecided,
+}: {
+  approval: Approval;
+  etag: string;
+  decision: Decision | null;
+  items?: number[] | null;
+  onClose: () => void;
+  onDecided: (a: Approval) => void;
+}) {
   const queries = useQueryClient();
   const confirm = useConfirm();
   const reasonId = useId();
@@ -131,7 +152,7 @@ export function ConfirmDecision({ approval: a, etag, decision, onClose, onDecide
     }
     setReasonError("");
     setBusy(true);
-    const out = await decide(decision, a, etag, confirm, decision === "reject" ? why : undefined);
+    const out = await decide(decision, a, etag, confirm, decision === "reject" ? why : undefined, items);
     setBusy(false);
     if ("cancelled" in out) {
       setNote("The passkey was cancelled, or took too long. Nothing was signed; try again when you are ready.");
@@ -222,6 +243,11 @@ export function ConfirmDecision({ approval: a, etag, decision, onClose, onDecide
         </h3>
         <p className="fy-small fy-secondary">The fingerprint (SHA-256) of the request's envelope. {withPasskey ? "Your passkey signs it." : "Your confirmation signs it."}</p>
         <HashLine hash={a.envelope_hash} />
+        {!isReject && items && (
+          <p className="fy-small fy-secondary">
+            With it you approve items {items.join(", ")} of the AI's proposal, and nothing else: they are re-hashed and signed with it.
+          </p>
+        )}
       </section>
       {isReject && (
         <form className="fy-field" onSubmit={submit} noValidate>

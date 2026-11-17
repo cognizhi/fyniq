@@ -12,6 +12,38 @@ import (
 	"github.com/google/uuid"
 )
 
+const aICallCostOfRuns = `-- name: AICallCostOfRuns :many
+SELECT run_id, sum(cost_base)::text AS cost_base
+FROM fyniq.ai_call
+WHERE run_id = ANY($1::uuid[]) AND cost_base IS NOT NULL
+GROUP BY run_id
+`
+
+type AICallCostOfRunsRow struct {
+	RunID    uuid.UUID
+	CostBase string
+}
+
+func (q *Queries) AICallCostOfRuns(ctx context.Context, runs []uuid.UUID) ([]AICallCostOfRunsRow, error) {
+	rows, err := q.db.Query(ctx, aICallCostOfRuns, runs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AICallCostOfRunsRow
+	for rows.Next() {
+		var i AICallCostOfRunsRow
+		if err := rows.Scan(&i.RunID, &i.CostBase); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const aICallUsage = `-- name: AICallUsage :many
 SELECT connection_id, model_requested, agent, actor,
   count(*) FILTER (WHERE outcome NOT IN ('skipped', 'stopped')) AS requests,

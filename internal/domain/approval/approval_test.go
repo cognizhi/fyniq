@@ -138,6 +138,13 @@ func TestSignerRules(t *testing.T) {
 	if p := CheckSigner(r, other, now.Add(TTL-time.Nanosecond)); p != nil {
 		t.Errorf("just before its expiry: %v", p)
 	}
+	// Only a tier-1 AI proposal lets the person who asked sign it (AI-10, AI-89).
+	if p := CheckSigner(Request{Status: Pending, RequestedBy: other, ExpiresAt: now.Add(TTL), SelfSign: true}, other, now); p != nil {
+		t.Errorf("the person who asked a tier-1 proposal: %v", p)
+	}
+	if p := CheckSigner(Request{Status: Pending, RequestedBy: other, ExpiresAt: now.Add(TTL)}, other, now); p == nil || p.Code != CodeOwnRequest {
+		t.Errorf("the person who asked any other request: %v", p)
+	}
 	for _, s := range []Status{Approved, Rejected, Void, Expired} {
 		r.Status = s
 		if p := CheckSigner(r, other, now); p == nil || (p.Code != CodeNotPending && p.Code != CodeExpired && !(s == Void && p.Code == CodeChanged)) {
@@ -145,7 +152,7 @@ func TestSignerRules(t *testing.T) {
 		}
 	}
 	for typ, p := range Policies {
-		if p.ObjectType != typ || p.Version == "" || p.Number != 0 || len(p.Steps) != 1 || p.Steps[0].Quorum != 1 || p.Fixed != (typ == ObjectPolicy) {
+		if p.ObjectType != typ || p.Version == "" || p.Number != 0 || len(p.Steps) != 1 || p.Steps[0].Quorum != 1 || p.Fixed != (typ == ObjectPolicy || typ == ObjectAIProposal) {
 			t.Errorf("the built-in policy of %s: %+v", typ, p)
 		}
 		if _, ok := Dependencies[typ]; !ok {

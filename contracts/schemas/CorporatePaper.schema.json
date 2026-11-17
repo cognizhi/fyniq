@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "banner": {
+      "description": "Boxed above it: that it is Fyniq's draft to review, never signed or filed by Fyniq.",
+      "examples": [
+        "Draft by Fyniq from the company's records on 5 January 2027."
+      ],
+      "type": "string"
+    },
+    "company": {
+      "description": "The company's name at its head.",
+      "examples": [
+        "Cognizhi Pte. Ltd."
+      ],
+      "type": "string"
+    },
+    "footer": {
+      "description": "Each page's foot: the template and its version.",
+      "examples": [
+        "directors.approve_statements@1"
+      ],
+      "type": "string"
+    },
+    "lines": {
+      "description": "Under the name: the UEN and the registered office.",
+      "examples": [
+        [
+          "UEN 202612345K"
+        ]
+      ],
+      "items": {
+        "examples": [
+          "UEN 202612345K"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "sections": {
+      "description": "Its parts, in order.",
+      "items": {
+        "$ref": "PaperSection.schema.json"
+      },
+      "type": "array"
+    },
+    "signatures": {
+      "description": "A line to sign for each: the directors, the members, the secretary or the chair.",
+      "items": {
+        "$ref": "PaperSignature.schema.json"
+      },
+      "type": "array"
+    },
+    "title": {
+      "description": "Its title.",
+      "examples": [
+        "Directors' resolution in writing"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "company",
+    "lines",
+    "banner",
+    "sections",
+    "signatures",
+    "footer"
+  ],
+  "title": "CorporatePaper",
+  "type": "object"
+}

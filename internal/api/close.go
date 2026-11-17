@@ -333,6 +333,9 @@ func registerClose(a *API) {
 						return PeriodCloseState{}, err
 					}
 				}
+				if err := a.agentEvent(ctx, u, p.Organisation, EventPeriodClosed, id.String()); err != nil { // AI-62
+					return PeriodCloseState{}, err
+				}
 				return a.closeState(ctx, u, id)
 			})
 			if err != nil {

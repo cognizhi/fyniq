@@ -399,7 +399,7 @@ export function ApplyCredit({ open, credit, onClose, onDone }: { open: boolean; 
           <label className="fy-label" htmlFor={`${id}-date`}>
             Date applied
           </label>
-          <input className="fy-input" id={`${id}-date`} type="date" value={on} min={credit.date} onChange={(e) => setOn(e.target.value)} aria-describedby={errors.date ? `${id}-date-error` : undefined} />
+          <input className="fy-input" id={`${id}-date`} type="date" value={on} min={credit.date} onChange={(e) => setOn(e.target.value)} aria-invalid={errors.date ? true : undefined} aria-describedby={errors.date ? `${id}-date-error` : undefined} />
           {err("date")}
         </div>
         <div className="fy-row justify-end gap-2">

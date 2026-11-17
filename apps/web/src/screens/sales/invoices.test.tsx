@@ -8,6 +8,7 @@ import { renderPage } from "../../test/render";
 import { InvoicePage, check } from "./InvoicePage";
 import { Invoices } from "./Invoices";
 import { receiptOf } from "./Receipts";
+import { invalid } from "../../test/invalid";
 
 type Invoice = components["schemas"]["Invoice"];
 
@@ -205,6 +206,27 @@ describe("An invoice", () => {
     const cn = check({ ...form, due_date: "2026-11-30", invoice_id: "v1", lines: [ok] }, "SGD", true).draft;
     expect(cn).toMatchObject({ invoice_id: "v1" });
     expect(cn?.due_date).toBeUndefined();
+    expect(check({ ...form, currency: "USD", fx_rate: "1,35", lines: [{ ...ok, spread_from: "Sept" }] }, "SGD").errors).toEqual({
+      fx_rate: "Enter the rate as SGD for 1 USD, such as 1.3472, or leave it blank to take the day's rate.",
+      "l1.spread_months": "Enter how many months to spread it over, 1 to 120, or leave both spread fields blank.",
+      "l1.spread_from": "Enter the month the service starts, such as 2026-10, or leave it blank for the invoice's month.",
+    });
+    expect(check({ ...form, currency: "S$", lines: [ok] }, "SGD").errors).toEqual({ currency: "Enter a currency code, such as SGD." });
+  });
+
+  // QA-UI-01: a line's fields are marked, with what each needs beside it, before anything is sent.
+  it("marks each field of a line it cannot read, before anything is sent", async () => {
+    const sent = answer(reads);
+    renderPage(InvoicePage, { path: "/sales/invoices/new", session: bookkeeper, organisation: standard });
+    await screen.findByRole("option", { name: "Acme Analytics Pte Ltd" });
+    fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Platform" } });
+    fireEvent.change(screen.getByLabelText("Quantity"), { target: { value: "two" } });
+    fireEvent.change(screen.getByLabelText("Discount (%, optional)"), { target: { value: "120" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save as a draft" }));
+    await invalid(document.body, "Quantity", "Enter how many, such as 1 or 2.5, with up to 6 decimals.");
+    await invalid(document.body, "Unit price before GST (SGD)", "Enter the price of one before GST, such as 1,500.00.");
+    await invalid(document.body, "Discount (%, optional)", "Enter a percentage from 0 to 100, such as 10, or leave it blank.");
+    expect(sent.filter((s) => s.method === "POST")).toEqual([]);
   });
 
   it("shows a draft's checks, totals and what issuing writes, and issues it; axe finds nothing", async () => {
@@ -282,6 +304,10 @@ describe("An invoice", () => {
     const dialog = await screen.findByRole("dialog");
     await within(dialog).findByRole("option", { name: "1010 DBS current" });
     expect((within(dialog).getByLabelText("Amount received (SGD)") as HTMLInputElement).value).toBe("3270.00");
+    fireEvent.change(within(dialog).getByLabelText("Amount received (SGD)"), { target: { value: "0" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record a payment" }));
+    await invalid(dialog, "Amount received (SGD)", "Enter what the customer paid in SGD, such as 400.00.");
+    fireEvent.change(within(dialog).getByLabelText("Amount received (SGD)"), { target: { value: "3270.00" } });
     fireEvent.change(within(dialog).getByLabelText("Date received"), { target: { value: "2026-10-28" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Record a payment" }));
     await waitFor(() => expect(sent.some((s) => s.method === "POST" && s.path === "/v1/customer-receipts")).toBe(true));
@@ -312,5 +338,10 @@ describe("A payment of an invoice", () => {
     expect(errors.date).toBe("Enter the day the money came into the account.");
     expect(errors.account).toBe("Choose the account the money came into.");
     expect(errors.amount).toBe("Enter what the customer paid in SGD, such as 400.00.");
+    const usd: Invoice = { ...issued, currency: "USD", open: { amount: "100.00", currency: "USD" } };
+    expect(receiptOf(usd, "SGD", { ...f, amount: "100", accountCurrency: "USD", rate: "1,3" }).errors.rate).toBe(
+      "Enter the rate as SGD for 1 USD, such as 1.3472, or leave it blank to take the day's rate.",
+    );
+    expect(receiptOf(usd, "SGD", { ...f, amount: "100" }).errors.received).toBe("Enter what the account received in SGD, as the statement shows it.");
   });
 });

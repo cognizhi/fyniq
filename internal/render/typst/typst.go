@@ -30,6 +30,9 @@ var source []byte
 //go:embed report.typ
 var reportSource []byte
 
+//go:embed paper.typ
+var paperSource []byte
+
 //go:embed raster.typ
 var rasterSource []byte
 
@@ -84,16 +87,17 @@ func (c *Compiler) Version(ctx context.Context) (string, error) {
 	return strings.TrimSpace(string(out)), err
 }
 
-// Input is one document to compile, or one report.
+// Input is one document to compile, one report or one paper.
 type Input struct {
 	Layout  render.Layout
 	Report  *render.Report // a report, laid out with report.typ in place of the layout
+	Paper   *render.Paper  // a paper, such as a resolution, laid out with paper.typ in place of the layout
 	Logo    []byte         // a PNG, when the layout shows the logo
 	Created time.Time      // the PDF's creation date: the document's issue, so a reprint is the same bytes
 }
 
 // sandbox writes the input to a fresh folder and returns it and a function that removes it. The source is always
-// document.typ: the document's, or the report's.
+// document.typ: the document's, the report's or the paper's.
 func sandbox(in Input) (string, func(), error) {
 	dir, err := os.MkdirTemp("", "fyniq-render-")
 	if err != nil {
@@ -101,8 +105,11 @@ func sandbox(in Input) (string, func(), error) {
 	}
 	done := func() { _ = os.RemoveAll(dir) }
 	data, name, src := any(in.Layout), "layout.json", source
-	if in.Report != nil {
+	switch {
+	case in.Report != nil:
 		data, name, src = in.Report, "report.json", reportSource
+	case in.Paper != nil:
+		data, name, src = in.Paper, "paper.json", paperSource
 	}
 	layout, err := json.Marshal(data)
 	if err == nil {

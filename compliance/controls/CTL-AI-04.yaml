@@ -10,5 +10,14 @@ evidence: "Change records"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-ai-proposals"
+    status: running
+    how: "test TestNothingOnTheNeverListCanBeProposed"
+    evidence: "every task type on §9.6's never-list is refused as the catalogue loads and again by name as a proposal is made; every task type of Appendix E passes; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestEveryChangeToATaskTypeIsANewVersion"
+    evidence: "the release's catalogue is pinned in contracts/ai/tasks.lock.json: a changed task type without a new version fails, and so does a version going back (CMP-AI-03); CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestTaskTypesAreOffUntilEnabledUnderDualControl"
+    evidence: "every task type is off until an Owner turns it on with a second approver; a type the catalogue lacks is refused; turning types off takes effect at once (AI-32); CI artefact test-report (90 days)"

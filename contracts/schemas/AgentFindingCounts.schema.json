@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "blocked": {
+      "description": "✖: cannot go on until fixed.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "due": {
+      "description": "⏰: due or overdue.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "not_assessed": {
+      "description": "⚠ Not assessed: an input it needs is missing or out of date.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "ok": {
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "review": {
+      "description": "⚠: please review.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "ok",
+    "review",
+    "blocked",
+    "due",
+    "not_assessed"
+  ],
+  "title": "AgentFindingCounts",
+  "type": "object"
+}

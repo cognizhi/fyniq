@@ -7,27 +7,83 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
 	"time"
 
+	contracts "github.com/cognizhi/fyniq/contracts/ai"
 	"github.com/cognizhi/fyniq/internal/adapters/local"
+	"github.com/cognizhi/fyniq/internal/aitool"
+	"github.com/cognizhi/fyniq/internal/assistant"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/aiqual"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/proposal"
 )
 
 func init() { run = evaluate }
 
-// Report is a run of the suites: CTL-AI-05's evidence.
+// Report is a run of the suites: CTL-AI-05's evidence. Assistant is the run of the assistant's own suites
+// (evals/<suite>/assistant.json), which the API's TestTheAssistantSuites makes through the real orchestrator just
+// before (scripts/evals.sh) and writes beside this report; Agents the scheduled agents' (evals/<suite>/agent.json,
+// QA-AI-07), which TestTheAgentSuites makes through the worker, the API and the AI service.
 type Report struct {
-	Mode   string        `json:"mode"`
-	RanAt  time.Time     `json:"ran_at"`
-	Passed bool          `json:"passed"`
-	Suites []SuiteReport `json:"suites"`
+	Mode      string          `json:"mode"`
+	RanAt     time.Time       `json:"ran_at"`
+	Passed    bool            `json:"passed"`
+	Versions  Versions        `json:"versions"`
+	Suites    []SuiteReport   `json:"suites"`
+	Assistant json.RawMessage `json:"assistant,omitempty"`
+	Agents    json.RawMessage `json:"agents,omitempty"`
+}
+
+// Versions are the AI contracts the run checked (§12.10, "AI catalogue, prompt and tool versions"; CMP-AI-03): each
+// read tool, task type and agent's system prompt in use, with its version and hash as the build embeds them, so a
+// release's evidence names what its evals passed on.
+type Versions struct {
+	Tools   []Pinned `json:"tools"`
+	Tasks   []Pinned `json:"tasks"`
+	Prompts []Pinned `json:"prompts"`
+}
+
+// Pinned is one contract's version and the hash of its definition.
+type Pinned struct {
+	ID      string `json:"id"`
+	Version int    `json:"version"`
+	SHA256  string `json:"sha256"`
+}
+
+// versions are the release's AI contracts, from contracts/ai.
+func versions() (Versions, error) {
+	v := Versions{Tools: []Pinned{}, Tasks: []Pinned{}, Prompts: []Pinned{}}
+	for _, t := range aitool.Default().Tools() {
+		v.Tools = append(v.Tools, Pinned{t.Name, t.Version, t.SHA256})
+	}
+	for _, t := range proposal.Default().Types() {
+		v.Tasks = append(v.Tasks, Pinned{t.ID, t.Version, t.SHA256})
+	}
+	files, err := fs.Glob(contracts.Prompts, "prompts/*@*.md")
+	if err != nil {
+		return v, err
+	}
+	var agents []string
+	for _, f := range files {
+		agents = append(agents, strings.SplitN(path.Base(f), "@", 2)[0])
+	}
+	slices.Sort(agents)
+	for _, a := range slices.Compact(agents) {
+		p, err := assistant.DefaultPrompt(a)
+		if err != nil {
+			return v, err
+		}
+		v.Prompts = append(v.Prompts, Pinned{p.Agent, p.Version, p.SHA256})
+	}
+	return v, nil
 }
 
 // SuiteReport is one suite: whether its harness is sound, and each recorded model's run.
@@ -59,6 +115,9 @@ func evaluate(ctx context.Context, o Options) error {
 	}
 	live := os.Getenv(local.LiveEnv) == "1"
 	rep := Report{Mode: "replay", RanAt: clock.System{}.Now().UTC(), Passed: true, Suites: []SuiteReport{}}
+	if rep.Versions, err = versions(); err != nil {
+		return err
+	}
 	var models []string
 	if live {
 		if o.Model == "" {
@@ -101,6 +160,13 @@ func evaluate(ctx context.Context, o Options) error {
 		}
 		rep.Suites = append(rep.Suites, sr)
 	}
+	for name, into := range map[string]*json.RawMessage{"assistant.json": &rep.Assistant, "agent.json": &rep.Agents} {
+		if raw, err := os.ReadFile(filepath.Join(o.Out, name)); err == nil { // #nosec G304 -- the report directory this run writes
+			*into = raw
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+	}
 	if err := write(o.Out, rep); err != nil {
 		return err
 	}
@@ -121,6 +187,12 @@ func evaluate(ctx context.Context, o Options) error {
 	}
 	fmt.Printf("✔ evals (%s): %d of %d suites run on a recorded model, every suite sound; report in %s\n", rep.Mode, ranOn(rep), len(rep.Suites),
 		filepath.Join(o.Out, "report.json"))
+	if len(rep.Assistant) > 0 {
+		fmt.Println("✔ the assistant's suites are in the report, as TestTheAssistantSuites ran them")
+	}
+	if len(rep.Agents) > 0 {
+		fmt.Println("✔ the scheduled agents' suites are in the report, as TestTheAgentSuites ran them")
+	}
 	return nil
 }
 

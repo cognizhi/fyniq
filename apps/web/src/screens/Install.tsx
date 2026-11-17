@@ -190,7 +190,7 @@ function Wizard({ session, providers, first }: { session: Session | null; provid
               There is a problem
             </span>
             {problem.field ? (
-              <a className="fy-small" href={`#setup-${problem.field}`}>
+              <a className="fy-small" href={`#setup-${problem.field}`} id="setup-problem-message">
                 {problem.message}
               </a>
             ) : (
@@ -222,7 +222,7 @@ function Wizard({ session, providers, first }: { session: Session | null; provid
                 <label className="fy-label" htmlFor="setup-name">
                   Your name <span className="fy-req" aria-hidden="true">*</span>
                 </label>
-                <input className="fy-input" id="setup-name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={problem?.field === "name"} />
+                <input className="fy-input" id="setup-name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={problem?.field === "name"} aria-describedby={problem?.field === "name" ? "setup-problem-message" : undefined} />
               </div>
               <div className="fy-actionbar fy-actionbar--editor">
                 <button className="fy-btn fy-btn--primary" type="submit">
@@ -276,7 +276,7 @@ function Wizard({ session, providers, first }: { session: Session | null; provid
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 aria-invalid={problem?.field === "code"}
-                aria-describedby="setup-code-help"
+                aria-describedby={problem?.field === "code" ? "setup-code-help setup-problem-message" : "setup-code-help"}
               />
               <span className="fy-help" id="setup-code-help">
                 Printed by <span className="fy-mono">make setup-code</span> on the server; in the cloud it is in Secret Manager. Case,
@@ -307,7 +307,7 @@ function Wizard({ session, providers, first }: { session: Session | null; provid
               <label className="fy-label" htmlFor="setup-company">
                 Company name <span className="fy-req" aria-hidden="true">*</span>
               </label>
-              <input className="fy-input" id="setup-company" autoComplete="organization" value={company} onChange={(e) => setCompany(e.target.value)} aria-invalid={problem?.field === "company"} />
+              <input className="fy-input" id="setup-company" autoComplete="organization" value={company} onChange={(e) => setCompany(e.target.value)} aria-invalid={problem?.field === "company"} aria-describedby={problem?.field === "company" ? "setup-problem-message" : undefined} />
             </div>
             <div className="fy-field">
               <label className="fy-label" htmlFor="setup-currency">
