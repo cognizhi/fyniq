@@ -122,10 +122,11 @@ const (
 // reimbursement of claims (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148); voiding a disposal of a fixed asset
 // (FR-FA-03, p1-fixed-assets); a change of a vendor's bank details (FR-CT-03, rev 0.153); the member a director or
 // shareholder signs in as (FR-EQ-01, rev 0.167); merging an account into another (FR-COA-04, rev 0.174); a holder's
-// record and a share class (FR-EQ-15, FR-EQ-16, rev 0.203); the workbook import's commit (FR-MIG-01, rev 0.258); recording the corporate profile's records (FR-CS-01, rev 0.282).
+// record and a share class (FR-EQ-15, FR-EQ-16, rev 0.203); the workbook import's commit (FR-MIG-01, rev 0.258); recording the corporate profile's records (FR-CS-01, rev 0.282); an integration client's
+// registration (FR-INT-02, p1-public-api task 3.1).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
 	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts, CapTable,
-	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile}
+	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile, ConnectedApps}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -565,6 +566,13 @@ var (
 	SetAIConnectionCredential = Policy{Operation: "setAIConnectionCredential", Capability: AIProviders, Need: Create}
 	EnableAIConnection        = Policy{Operation: "enableAIConnection", Capability: AIProviders, Need: Create}
 	DisableAIConnection       = Policy{Operation: "disableAIConnection", Capability: AIProviders, Need: Create}
+	// Integration clients (FR-INT-02, SEC-07; p1-public-api task 3.1): an Administrator asks to register one with its narrow
+	// scopes, and the Owner, who holds the Connected apps row's A with a second approver, approves; revoking one is never
+	// held back. Read under any right on the row (the quarterly access review's list, FR-CTL-06).
+	ListIntegrationClients  = Policy{Operation: "listIntegrationClients", Capability: ConnectedApps, Need: View}
+	GetIntegrationClient    = Policy{Operation: "getIntegrationClient", Capability: ConnectedApps, Need: View}
+	CreateIntegrationClient = Policy{Operation: "createIntegrationClient", Capability: ConnectedApps, Need: Create}
+	RevokeIntegrationClient = Policy{Operation: "revokeIntegrationClient", Capability: ConnectedApps, Need: Create}
 	// The data-class policy (AI-75): read under any right on the row; changed by one person's request the Owner approves.
 	GetAIDataPolicy    = Policy{Operation: "getAIDataPolicy", Capability: AIProviders, Need: View}
 	ChangeAIDataPolicy = Policy{Operation: "changeAIDataPolicy", Capability: AIProviders, Need: Create}
@@ -1917,7 +1925,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,

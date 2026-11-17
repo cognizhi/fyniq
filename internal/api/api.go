@@ -19,6 +19,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/netip"
 	"slices"
 	"strconv"
 	"strings"
@@ -64,6 +65,10 @@ type Deps struct {
 	// D3): the wiring passes version.Release, which this package never imports. Zero: a development build.
 	Release compliance.Release
 	Limits  Limits // the requests a client may make a minute in an organisation (FR-INT-16); zero: DefaultLimits
+	// OAuthClients registers integration clients with the OAuth server (FR-INT-02); nil when it is not configured, and then
+	// none can be registered. APIAudience is the audience their tokens name: the API's.
+	OAuthClients ports.OAuthClients
+	APIAudience  string
 	// Staging keeps uploads until their record is final, and Scanner checks them for malware (FR-DOC-13,
 	// FR-DOC-01); without either, no file can be attached.
 	Staging ports.BlobStore
@@ -216,6 +221,7 @@ func Config(version string) huma.Config {
 	cfg.Tags = []*huma.Tag{
 		{Name: "Installation", Description: "First-run setup of a new installation (FR-ADM-06)."},
 		{Name: "Connectors", Description: "Outside services as connectors: the catalogue, the installation's and the organisation's, their lifecycle, keys and tests (FR-INT-20, FR-INT-25…27)."},
+		{Name: "Integrations", Description: "Integration clients: systems that call the API on their own, with OAuth client credentials by class, narrow scopes, their networks and limits, registered by two people and revoked at once (FR-INT-02, SEC-07)."},
 		{Name: "Session", Description: "Signing in to the web app: the providers, and your own session (SEC-05, FR-ADM-08)."},
 		{Name: "Organisation", Description: "The organisation your session is in."},
 		{Name: "Chart of accounts", Description: "Accounts: what the ledger posts to (PRD-001 §8.2)."},
@@ -531,6 +537,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerClaimCategories(a)
 	registerClaimEvidence(a)
 	registerSession(a)
+	registerIntegrationClients(a)
 	a.registerInternal(mux)
 	return a
 }
@@ -697,6 +704,15 @@ func (a *API) authenticate(ctx huma.Context, next func(huma.Context)) {
 			"The request was sent from another site with your Fyniq session.", "Do it in Fyniq itself."))
 		return
 	}
+	// SEC-07: a registered client calls only from the networks it was registered with.
+	if ip, err := netip.ParseAddr(storage.AuditFrom(ctx.Context()).Request.IP); p.Scoped && (err != nil || !p.AllowsIP(ip)) {
+		a.deps.Log.WarnContext(ctx.Context(), "api.refused", "operation", ctx.Operation().OperationID, "code", CodeForbidden, "client", p.Client,
+			"reason", "outside the client's networks", "request_id", requestID(ctx.Context()))
+		_ = huma.WriteErr(a.API, ctx, http.StatusForbidden, "", problem(CodeForbidden,
+			"This API client may not call Fyniq from this network (SEC-07).",
+			"Call from one of the networks the client was registered with, or ask an Administrator to register it with this one."))
+		return
+	}
 	c := authn.WithPrincipal(ctx.Context(), p)
 	org := ""
 	if p.Organisation != uuid.Nil {
@@ -756,6 +772,11 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 		if d = authz.Decide(policy, p.Roles, p.AI()); !d.Allowed {
 			refusal = problem(CodeForbidden, fmt.Sprintf("Your roles hold no %q right on %q.", string(policy.Need), policy.Capability),
 				"Ask an Owner or Administrator for a role with that right (PRD-001 Appendix D).")
+		} else if p.Scoped && !authz.ScopeAllows(p.Scopes, policy) {
+			// FR-INT-02: a registered client's scopes narrow its member's roles to whole areas; never approve or release.
+			d = authz.Decision{Reason: fmt.Sprintf("the client's scopes %v do not cover %q on %q", p.Scopes, string(policy.Need), policy.Capability)}
+			refusal = problem(CodeForbidden, fmt.Sprintf("This API client's scopes do not cover the %q right on %q.", string(policy.Need), policy.Capability),
+				"Register a client with the scope this needs (fyniq.read.<area> or fyniq.write.<area>), or do it in Fyniq; no client approves or releases.")
 		}
 	}
 	if refusal != nil {

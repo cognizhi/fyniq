@@ -231,6 +231,7 @@ var fyCodes = map[string]string{
 	"FY353": storage.CodeCorporateOfficer,   // an officer outside their rules, or their member not of the organisation (000392)
 	"FY354": storage.CodeNomineeEntry,       // a nominee entry outside its rules, or its director or holder not one (000394)
 	"FY355": storage.CodeStatementsApproval, // a statements approval outside its rules (000394)
+	"FY420": storage.CodeAPIClient,          // an API client removed, rewritten, revoked twice or changed after its revocation (000432)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

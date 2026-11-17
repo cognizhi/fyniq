@@ -593,6 +593,35 @@ type FyniqAnnouncementDismissal struct {
 	DismissedAt    time.Time
 }
 
+type FyniqApiClient struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Kind            string
+	ClientID        string
+	Name            string
+	Class           string
+	OwnerID         uuid.UUID
+	Scopes          []string
+	IpAllow         []string
+	ReadsPerMinute  *int32
+	WritesPerMinute *int32
+	KeyThumbprint   *string
+	ExpiresAt       time.Time
+	ApprovalID      *uuid.UUID
+	Version         int32
+	CreatedBy       string
+	CreatedAt       time.Time
+	RevokedAt       *time.Time
+	RevokedBy       *string
+	RevokeReason    *string
+}
+
+type FyniqApiClientRoute struct {
+	ClientID string
+	Owner    uuid.UUID
+	ID       uuid.UUID
+}
+
 type FyniqAppUser struct {
 	UserID      uuid.UUID
 	DisplayName string

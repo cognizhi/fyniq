@@ -6716,6 +6716,7 @@ components:
             - nominee_entry
             - statements_approval
             - corporate_document
+            - api_client
           examples:
             - organisation_setting
           type: string
@@ -6798,6 +6799,8 @@ components:
             - nominee_entry.record
             - statements_approval.record
             - corporate_document.record
+            - api_client.create
+            - api_client.reclass
           examples:
             - organisation_setting.change
           type: string
@@ -7098,6 +7101,7 @@ components:
             - nominee_entry
             - statements_approval
             - corporate_document
+            - api_client
           examples:
             - organisation_setting
           type: string
@@ -7248,6 +7252,7 @@ components:
             - nominee_entry
             - statements_approval
             - corporate_document
+            - api_client
           examples:
             - organisation_setting
           type: string
@@ -29691,6 +29696,245 @@ components:
         - class_account_id
         - denominator
         - price_decimals
+      type: object
+    IntegrationClient:
+      additionalProperties: false
+      properties:
+        approval_id:
+          description: The approval request that registered it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60
+          format: uuid
+          type: string
+        class:
+          description: "Its client class (AI-34): integration. Every change it makes still goes through the approval policies."
+          enum:
+            - integration
+          examples:
+            - integration
+          type: string
+        client_id:
+          description: "The OAuth client ID: the iss and sub of the client's private_key_jwt assertions, and the client_id of its token requests (client_credentials grant)."
+          examples:
+            - 6f1c2b9e-3d4a-4c5b-8e7f-0a1b2c3d4e5f
+          type: string
+        created_at:
+          examples:
+            - "2026-11-17T09:00:00Z"
+          format: date-time
+          type: string
+        created_by:
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          type: string
+        expires_at:
+          description: "When it stops: within a year of its registration (SEC-07)."
+          examples:
+            - "2027-11-17T00:00:00Z"
+          format: date-time
+          type: string
+        id:
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d50
+          format: uuid
+          type: string
+        key_thumbprint:
+          description: The RFC 7638 SHA-256 thumbprint of the public key its assertions are signed with.
+          examples:
+            - NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs
+          type: string
+        name:
+          description: Its name in the organisation.
+          examples:
+            - Nightly canary
+          type: string
+        networks:
+          description: "The networks it may call from, as CIDR prefixes; none: anywhere."
+          items:
+            description: A network, as a CIDR prefix.
+            examples:
+              - 203.0.113.0/24
+            maxLength: 49
+            minLength: 1
+            type: string
+          type: array
+        owner_id:
+          description: "The member it acts for: it never does more than this member may do now."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+        reads_per_minute:
+          description: "Its own limit of reads a minute; none: the platform's 600."
+          examples:
+            - 60
+          format: int64
+          type: integer
+        revoke_reason:
+          examples:
+            - The integration was retired.
+          type: string
+        revoked_at:
+          examples:
+            - "2026-12-01T09:00:00Z"
+          format: date-time
+          type: string
+        revoked_by:
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          type: string
+        scopes:
+          description: "Its narrow scopes: fyniq.read.<area> views an area, fyniq.write.<area> also prepares and posts in it. No scope approves or releases."
+          items:
+            description: "A narrow scope: fyniq.read.<area> or fyniq.write.<area>."
+            examples:
+              - fyniq.read.accounting
+            pattern: ^fyniq\.(read|write)\.[a-z]+$
+            type: string
+          type: array
+        status:
+          description: live until it expires or is revoked.
+          enum:
+            - live
+            - expired
+            - revoked
+          examples:
+            - live
+          type: string
+        version:
+          examples:
+            - 1
+          format: int64
+          type: integer
+        writes_per_minute:
+          description: "Its own limit of writes a minute; none: the platform's 120."
+          examples:
+            - 30
+          format: int64
+          type: integer
+      required:
+        - id
+        - client_id
+        - name
+        - class
+        - owner_id
+        - scopes
+        - networks
+        - key_thumbprint
+        - expires_at
+        - status
+        - version
+        - approval_id
+        - created_by
+        - created_at
+      type: object
+    IntegrationClientCreate:
+      additionalProperties: false
+      properties:
+        expires_at:
+          description: When it stops, within a year (SEC-07).
+          examples:
+            - "2027-11-17T00:00:00Z"
+          format: date-time
+          type: string
+        name:
+          description: Its name in the organisation.
+          examples:
+            - Nightly canary
+          maxLength: 80
+          minLength: 1
+          type: string
+        networks:
+          description: "The networks it may call from, as CIDR prefixes; none: anywhere. Give them where you can (SEC-07)."
+          items:
+            description: A network, as a CIDR prefix.
+            examples:
+              - 203.0.113.0/24
+            maxLength: 49
+            minLength: 1
+            type: string
+          maxItems: 32
+          type:
+            - array
+            - "null"
+        owner_id:
+          description: The member it acts for; you when left out. It never does more than this member may do now.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+        public_key:
+          additionalProperties: {}
+          description: "The public half of the key its private_key_jwt assertions are signed with, as a JWK (RFC 7517): an EC P-256 key (ES256) or an RSA key of 2048 bits or more (RS256). Never send the private key."
+          examples:
+            - crv: P-256
+              kty: EC
+              x: f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU
+              "y": x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0
+          type: object
+        reads_per_minute:
+          description: "Its own limit of reads a minute, at most the platform's 600; none: the platform's."
+          examples:
+            - 60
+          format: int64
+          maximum: 600
+          minimum: 0
+          type: integer
+        scopes:
+          description: "Its narrow scopes, only what it needs: fyniq.read.<area> (reports, sales, purchases, banking, accounting, planning, compliance) or fyniq.write.<area> (sales, purchases, banking, accounting)."
+          items:
+            description: "A narrow scope: fyniq.read.<area> or fyniq.write.<area>."
+            examples:
+              - fyniq.read.accounting
+            pattern: ^fyniq\.(read|write)\.[a-z]+$
+            type: string
+          maxItems: 16
+          minItems: 1
+          type:
+            - array
+            - "null"
+        writes_per_minute:
+          description: "Its own limit of writes a minute, at most the platform's 120; none: the platform's."
+          examples:
+            - 30
+          format: int64
+          maximum: 120
+          minimum: 0
+          type: integer
+      required:
+        - name
+        - scopes
+        - expires_at
+        - public_key
+      type: object
+    IntegrationClientList:
+      additionalProperties: false
+      properties:
+        items:
+          description: The clients, oldest first.
+          items:
+            $ref: "#/components/schemas/IntegrationClient"
+          type: array
+        next_cursor:
+          description: The cursor of the next page; none on the last.
+          examples:
+            - eyJhZnRlciI6IjEwMDAifQ
+          type: string
+      required:
+        - items
+      type: object
+    IntegrationClientRevoke:
+      additionalProperties: false
+      properties:
+        reason:
+          description: Why it is revoked, for the access review.
+          examples:
+            - The integration was retired.
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - reason
       type: object
     InventoryEntryInput:
       additionalProperties: false
@@ -147612,6 +147856,621 @@ paths:
       x-fyniq-permission:
         capability: Cap table, holders, investors, equity transactions (rev 0.3)
         right: V
+  /v1/integration-clients:
+    get:
+      description: "The organisation's integration clients (FR-INT-02, SEC-07), oldest first, a page at a time (FR-INT-10): each one's OAuth client ID, the member it acts for, its scopes, networks, own rate limits, key thumbprint, expiry and status, revoked ones included, for the quarterly access review (FR-CTL-06). Never a key or a token. Read-only; no side effects."
+      operationId: listIntegrationClients
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntegrationClientList"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the organisation's integration clients
+      tags:
+        - Integrations
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
+        right: V
+    post:
+      description: "Asks to register an integration client (FR-INT-02, SEC-07, AI-34): a system that obtains its own access tokens from Fyniq's OAuth server with the client-credentials grant, authenticating with private_key_jwt (RFC 7523) signed by the key whose public half you give; no shared secret exists. It acts for the member you name (you, when you name none) and never does more than they may now; its scopes narrow that to whole areas, and no scope approves or releases. Give the networks it calls from where you can, and its expiry, within a year. Every field is checked at once. It is dual controlled (golden rule 6, FR-INT-02): the answer is the approval request, which the Owner, who holds A on \"Connected apps\", approves; only then is the client registered with the OAuth server, and its client ID appears on getIntegrationClient. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. Needs a person signed in with step-up. On the never-list for the AI and MCP (§9.6)."
+      operationId: createIntegrationClient
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IntegrationClientCreate"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: Accepted
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-API-CLIENT-01` An API client is kept, revoked once, and never rewritten; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CLIENT-01` The client's name is not valid; `API-CLIENT-02` Not a scope an API client may be granted; `API-CLIENT-03` Not a network in CIDR form; `API-CLIENT-04` The client's limit is outside the platform's; `API-CLIENT-05` The client's expiry is not within a year; `API-CLIENT-06` Not a public key an integration may sign with; `API-CLIENT-07` The client's member is not an active member with a role; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Ask to register an integration client
+      tags:
+        - Integrations
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-CLIENT-01
+        - API-CLIENT-02
+        - API-CLIENT-03
+        - API-CLIENT-04
+        - API-CLIENT-05
+        - API-CLIENT-06
+        - API-CLIENT-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - APR-06
+        - STORAGE-API-CLIENT-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
+        right: C
+  /v1/integration-clients/{integration_client_id}:
+    get:
+      description: One integration client (FR-INT-02) with its ETag for revoking it. Never a key or a token. Read-only; no side effects.
+      operationId: getIntegrationClient
+      parameters:
+        - description: The integration client's ID in Fyniq.
+          in: path
+          name: integration_client_id
+          required: true
+          schema:
+            description: The integration client's ID in Fyniq.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d50
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntegrationClient"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The client's version, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get an integration client
+      tags:
+        - Integrations
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
+        right: V
+  /v1/integration-clients/{integration_client_id}/revoke:
+    post:
+      description: "Revokes an integration client at once (FR-INT-02, SEC-07): never held back for a second person. The API refuses its tokens from now, within the 30 seconds an introspection is trusted (AI-38), and the OAuth server then deletes the client and every token it was issued. It is kept, revoked, for the access review; it is never live again. Side effects: its new version, the audit event api_client.revoked with the reason, and the deletion queued for the worker. Needs If-Match with its ETag; idempotent with Idempotency-Key; Prefer: return=preview shows the result and saves nothing. On the never-list for the AI and MCP (§9.6)."
+      operationId: revokeIntegrationClient
+      parameters:
+        - description: The integration client's ID in Fyniq.
+          in: path
+          name: integration_client_id
+          required: true
+          schema:
+            description: The integration client's ID in Fyniq.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d50
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IntegrationClientRevoke"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntegrationClient"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The client's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-CLIENT-08` The client is revoked already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-API-CLIENT-01` An API client is kept, revoked once, and never rewritten; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Revoke an integration client
+      tags:
+        - Integrations
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CLIENT-08
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-API-CLIENT-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
+        right: C
   /v1/investor-rights:
     post:
       description: "Drafts a holder's rights from the agreements (FR-EQ-22, design D10), recorded and never computed: the directors they may appoint, an observer, whether they appoint or remove a board majority, information rights, pro-rata and the matters that need their consent. Attach the agreements with addInvestorRightsEvidence, then ask another person to approve them with requestInvestorRightsApproval: recorded, they supersede the rights before. A board majority or consent matters make the holder one the controller test names for a person to weigh (FR-EQ-25). Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
@@ -211384,6 +212243,8 @@ tags:
     name: Installation
   - description: "Outside services as connectors: the catalogue, the installation's and the organisation's, their lifecycle, keys and tests (FR-INT-20, FR-INT-25…27)."
     name: Connectors
+  - description: "Integration clients: systems that call the API on their own, with OAuth client credentials by class, narrow scopes, their networks and limits, registered by two people and revoked at once (FR-INT-02, SEC-07)."
+    name: Integrations
   - description: "Signing in to the web app: the providers, and your own session (SEC-05, FR-ADM-08)."
     name: Session
   - description: The organisation your session is in.

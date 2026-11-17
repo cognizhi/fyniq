@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expires_at": {
+      "description": "When it stops, within a year (SEC-07).",
+      "examples": [
+        "2027-11-17T00:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name in the organisation.",
+      "examples": [
+        "Nightly canary"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "networks": {
+      "description": "The networks it may call from, as CIDR prefixes; none: anywhere. Give them where you can (SEC-07).",
+      "items": {
+        "description": "A network, as a CIDR prefix.",
+        "examples": [
+          "203.0.113.0/24"
+        ],
+        "maxLength": 49,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "owner_id": {
+      "description": "The member it acts for; you when left out. It never does more than this member may do now.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "public_key": {
+      "additionalProperties": {},
+      "description": "The public half of the key its private_key_jwt assertions are signed with, as a JWK (RFC 7517): an EC P-256 key (ES256) or an RSA key of 2048 bits or more (RS256). Never send the private key.",
+      "examples": [
+        {
+          "crv": "P-256",
+          "kty": "EC",
+          "x": "f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",
+          "y": "x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0"
+        }
+      ],
+      "type": "object"
+    },
+    "reads_per_minute": {
+      "description": "Its own limit of reads a minute, at most the platform's 600; none: the platform's.",
+      "examples": [
+        60
+      ],
+      "format": "int64",
+      "maximum": 600,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "scopes": {
+      "description": "Its narrow scopes, only what it needs: fyniq.read.\u003carea\u003e (reports, sales, purchases, banking, accounting, planning, compliance) or fyniq.write.\u003carea\u003e (sales, purchases, banking, accounting).",
+      "items": {
+        "description": "A narrow scope: fyniq.read.\u003carea\u003e or fyniq.write.\u003carea\u003e.",
+        "examples": [
+          "fyniq.read.accounting"
+        ],
+        "pattern": "^fyniq\\.(read|write)\\.[a-z]+$",
+        "type": "string"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "writes_per_minute": {
+      "description": "Its own limit of writes a minute, at most the platform's 120; none: the platform's.",
+      "examples": [
+        30
+      ],
+      "format": "int64",
+      "maximum": 120,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "name",
+    "scopes",
+    "expires_at",
+    "public_key"
+  ],
+  "title": "IntegrationClientCreate",
+  "type": "object"
+}

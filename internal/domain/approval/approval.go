@@ -175,6 +175,11 @@ const (
 	// among them, is asked by the Owner or an Administrator and approved by the Owner or a second approver who holds the
 	// row's A; its key is the agent's ID.
 	ObjectAIRoute = "ai_route"
+	// ObjectAPIClient is an API client of the organisation (FR-INT-02, SEC-07): registering an integration client with its
+	// narrow scopes, and reclassing a personal access token as an integration, are asked by a person with C on "Connected
+	// apps" and approved by the Owner, who holds its A with a second approver; its key is the client's ID. Revoking one is
+	// never held back.
+	ObjectAPIClient = "api_client"
 	// ObjectAIProposal is an AI proposal to execute (AI-89, AI-P4, AI-P5, AI-10; rev 0.280): one step of the task type's
 	// approver roles who could do its command themselves signs the payload's hash; the person who asked may sign their
 	// own tier-1 proposal; no organisation changes its policy. Its key is the proposal's id.
@@ -321,6 +326,10 @@ const (
 	OpAIConnectionPrice = "ai_connection.price"
 	// OpAIRouteChange makes the asked route its agent's next version (AI-74).
 	OpAIRouteChange = "ai_route.change"
+	// OpAPIClientCreate registers an integration client with the OAuth server and records it (FR-INT-02).
+	OpAPIClientCreate = "api_client.create"
+	// OpAPIClientReclass reclasses a personal access token from agent to integration (FR-INT-02).
+	OpAPIClientReclass = "api_client.reclass"
 	// OpAIDataPolicyChange makes the asked policy the organisation's next version (AI-75).
 	OpAIDataPolicyChange = "ai_data_policy.change"
 	// OpAIProposalExecute marks the proposal Approved and queues it for the executor, which runs it as the approver
@@ -386,6 +395,8 @@ var Operations = map[string]string{
 	OpAIConnectionAllowModel:   ObjectAIConnection,
 	OpAIConnectionPrice:        ObjectAIConnection,
 	OpAIRouteChange:            ObjectAIRoute,
+	OpAPIClientCreate:          ObjectAPIClient,
+	OpAPIClientReclass:         ObjectAPIClient,
 	OpAIProposalExecute:        ObjectAIProposal,
 	OpCorporateDetailRecord:    ObjectCorporateDetail,
 	OpCorporateOfficerRecord:   ObjectCorporateOfficer,
@@ -508,6 +519,8 @@ var Dependencies = map[string][]string{
 	ObjectAIDataPolicy: {"version"},
 	// the route's version: what it replaces
 	ObjectAIRoute: {"version"},
+	// the client's version and whether it is live ("new" before it exists): what is registered or reclassed
+	ObjectAPIClient: {"status"},
 	// the proposal's status and its payload's hash: what executes
 	ObjectAIProposal: {"status", "payload_sha256"},
 	// the detail's version and status, and the day it takes effect: what is recorded
@@ -581,6 +594,7 @@ var Rows = map[string]string{
 	ObjectAIConnection:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectAIDataPolicy:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectAIRoute:             "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
+	ObjectAPIClient:           "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)",
 	// Who signs a proposal is its task type's (the request names the roles and the command's right); who sees it is the
 	// AI activity log's: each member their own, the Owner and the DPO every one.
 	ObjectAIProposal:         "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)",
@@ -680,6 +694,7 @@ var Policies = map[string]Policy{
 	ObjectAIConnection:        {ObjectType: ObjectAIConnection, Version: "founder/ai_connection@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAIDataPolicy:        {ObjectType: ObjectAIDataPolicy, Version: "founder/ai_data_policy@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAIRoute:             {ObjectType: ObjectAIRoute, Version: "founder/ai_route@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
+	ObjectAPIClient:           {ObjectType: ObjectAPIClient, Version: "founder/api_client@2026-11-17.1", Steps: []Step{{Quorum: 1}}},
 	// Fixed: no policy removes a proposal's step or automates it, in any team mode (AI-P4, AI-06, CTL-AI-03); the request
 	// narrows its step to the task type's approver roles.
 	ObjectAIProposal:         {ObjectType: ObjectAIProposal, Version: "founder/ai_proposal@2026-11-15.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
