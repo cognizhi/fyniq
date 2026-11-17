@@ -137,6 +137,14 @@ class TheTraceGate(unittest.TestCase):
         self.assertTrue(tr.is_covered("quality/calculation-correctness: Golden data set, sample company", anchors, titled, {}, self.src))
         self.assertFalse(tr.is_covered("quality/calculation-correctness: Golden data set, regressions", anchors, titled, {}, self.src))
 
+    def test_a_principles_id_with_a_letter_before_its_number_is_an_anchor(self):
+        # §9.1's AI principles are AI-P1 to AI-P8: their tags counted for nothing while the ID pattern wanted digits
+        # straight after the last hyphen, so the launch gate listed them untested.
+        anchors, _ = tr.covered({"AI-P3": set(), "AI-P5 What is approved is exactly what is executed": set()}, self.src)
+        self.assertEqual(anchors, {"AI-P3", "AI-P5"})
+        self.assertTrue(tr.is_covered("AI-P3", anchors, set(), {}, self.src))
+        self.assertIsNone(tr.prdspec.anchor_at_start("AI-PX3", self.src))
+
     def test_the_launch_gate_counts_exceptions_and_reports_prose(self):
         subset = {"changes": [{"id": "p1-x", "requirements": ["FR-GL-01", "FR-GL-02", "FR-GL-03", "C.2 #9",
                                                                "ledger/posting-rules: A posting rule"], "scenarios": ["G4-001"]}]}
