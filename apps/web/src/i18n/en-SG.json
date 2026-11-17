@@ -44,6 +44,10 @@
       "label": "Sign out",
       "tooltip": "Ends your session in this browser."
     },
+    "shell.tour": {
+      "label": "Take the tour again",
+      "tooltip": "A short tour of the pages you use, step by step. It changes nothing; Esc ends it."
+    },
     "shell.help": {
       "label": "Help",
       "tooltip": "About Fyniq, and the version you are on."

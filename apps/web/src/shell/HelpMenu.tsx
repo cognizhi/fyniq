@@ -1,6 +1,6 @@
 import { Menu } from "@base-ui/react/menu";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { BookOpen, CircleHelp, Info } from "lucide-react";
+import { BookOpen, CircleHelp, Compass, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
@@ -11,6 +11,7 @@ import { dateTime } from "../format/date";
 import { guideFor } from "../help/links";
 import { helpText } from "../i18n";
 import { cn } from "../lib/utils";
+import { startTour } from "../tour/state";
 import { Icon, problemOf } from "../ui";
 
 // The header's Help menu (screen inventory: the app shell's header; REL-05, p1-security-hardening design D11). About
@@ -25,6 +26,7 @@ export function HelpMenu({ className }: { className?: string }) {
   const help = helpText("shell.help");
   const a = helpText("shell.about");
   const g = helpText("help.guide");
+  const t = helpText("shell.tour");
   const navigate = useNavigate();
   const path = useRouterState({ select: (st) => st.location.pathname });
   // The guide opens on the page of the screen the person is on (FR-UX-33), else at its index.
@@ -35,7 +37,7 @@ export function HelpMenu({ className }: { className?: string }) {
   return (
     <>
       <Menu.Root>
-        <Menu.Trigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), className)} aria-label={help.label} title={help.tooltip}>
+        <Menu.Trigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), className)} aria-label={help.label} title={help.tooltip} data-tour="help">
           <Icon of={CircleHelp} size={20} />
         </Menu.Trigger>
         <Menu.Portal>
@@ -44,6 +46,10 @@ export function HelpMenu({ className }: { className?: string }) {
               <Menu.Item className={item} onClick={open}>
                 <Icon of={BookOpen} />
                 <span>{g.label}</span>
+              </Menu.Item>
+              <Menu.Item className={item} onClick={() => startTour(0)} title={t.tooltip}>
+                <Icon of={Compass} />
+                <span>{t.label}</span>
               </Menu.Item>
               <Menu.Item className={item} onClick={() => setAbout(true)}>
                 <Icon of={Info} />

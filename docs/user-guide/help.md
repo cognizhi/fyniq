@@ -3,7 +3,7 @@ key: help.guide
 title: Read the user guide
 mode: basic
 roles: [all]
-requirements: [FR-UX-32]
+requirements: [FR-UX-32, FR-UX-34]
 status: draft            # written with the guide's first page in the app (P1); reviewed when the shell's screens are built
 ---
 
@@ -29,6 +29,16 @@ describes the Fyniq you are using, and the assistant reads the same pages to ans
 ## Print a page
 
 - On a page, select **Print**. The header, the navigation and the buttons are left out of the print.
+
+## Take the tour
+
+- The first time you sign in, Fyniq offers a short tour of the pages you will use: up to 7 steps, about 2
+  minutes. Select **Start the tour**, or **Not now**.
+- Each step points at a part of the page and says what it is for. Select **Next** or **Back**, or press → and
+  ←; **Skip tour** or Esc ends it. The tour only points: it clicks nothing and changes nothing.
+- If you leave it part-way, Fyniq offers to **Resume the tour** where you left it. **Help** › **Take the tour
+  again**, or the command palette, replays it any time.
+- What you see depends on your roles: an employee's tour shows their claims, an accountant's the books.
 
 ## Related
 

@@ -150,6 +150,13 @@
   If-Match, Idempotency-Key, preview), each person's own (`HLP-01` for a caller that is not a person). Test
   `TestTheTourSavesOnlyItsOwnState`: every save writes the state and its audit event and nothing else (G4-104).
   **Left:** the tour itself in the web app and its end-to-end test per role (QA-UI-06).)
+  (18 Nov 2026, the tour in the web app: `tour/Tour.tsx` is MASTER.md §12's walkthrough (a non-modal spotlight and
+  caption card on the real interface, focus to its title, → and ← and the buttons, Esc ends it, each step announced,
+  focus back where it was; no movement with reduced motion); `tour/steps.ts` a variant per role group (founder,
+  accountant, employee, approver, board viewer), at most seven steps on elements marked `data-tour`, a hidden one
+  skipped; `tour/TourHost.tsx` offers it where the person lands until they answer, offers to resume one left part-way,
+  runs it on Home for those who have it, and saves each step, finished or skipped, its only write. Help › Take the tour
+  again replays it. Guide `help.md` (Take the tour), compiled. Tests `tour.test.tsx`, `e2e/tour.spec.ts`.)
   (17 Nov 2026, the user guide, for the launch gate: `/help` builds every page of `docs/user-guide/` into the web app
   (`help/guide.ts`, at build time; the web image copies the guide and the release notes), lists those the person's
   roles call for, Basic ones in Basic mode with how many Expert adds, and searches them as they type; `/help/$key`

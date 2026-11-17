@@ -619,3 +619,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-17] compile | docs/user-guide/help.md → help.guide (the user guide in the app, FR-UX-32)
 
 ## [2026-11-17] compile | docs/user-guide/home.md → home.overview (Help opens the user guide)
+
+## [2026-11-18] compile | docs/user-guide/help.md → help.guide (Take the tour, FR-UX-34)
