@@ -548,9 +548,9 @@ jobs:
       - run: gcloud container binauthz attestations sign-and-create
 `)
 	// main as well as releases, publishing as the attester, no scan before publishing, the generator by branch, no admit
-	// as the attester, attesting before the provenance exists, and a key-signed image
-	if got := ReleaseWorkflowViolations(planted); len(got) != 7 {
-		t.Fatalf("want 7 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
+	// as the attester, attesting before the provenance exists, a key-signed image, and no launch gate
+	if got := ReleaseWorkflowViolations(planted); len(got) != 8 {
+		t.Fatalf("want 8 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
 	}
 	// Only the SLSA generator may be named by a tag, and only at a release.
 	tagged := []byte(`
@@ -571,6 +571,34 @@ jobs:
 `)
 	if got := WorkflowViolations("tagged.yml", tagged); len(got) != 2 {
 		t.Fatalf("want the generator by branch and another workflow by tag refused, got %d:\n%s", len(got), strings.Join(got, "\n"))
+	}
+}
+
+// The release builds no image while a launch requirement is untested (p1-launch-readiness task 7.2): release.yml's
+// images job waits for the launch gate, whose step is exactly `make trace-gate PHASE=launch`. Each planted way round it is
+// refused: no wait, another phase, a step that cannot fail, and a gate that may fail without failing the release.
+// scripts/test_trace_requirements.py runs the gate's step itself on a planted repository (the release's dry run).
+// req: QA-TRACE-01
+func TestTheReleaseWaitsForTheLaunchGate(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join(repoRoot(t), ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(src)
+	for what, planted := range map[string]string{
+		"the images job does not wait":  strings.Replace(text, "    needs: launch-gate\n", "", 1),
+		"another phase":                 strings.Replace(text, "- run: make trace-gate PHASE=launch\n", "- run: make trace-gate PHASE=P1\n", 1),
+		"a step that cannot fail":       strings.Replace(text, "- run: make trace-gate PHASE=launch\n", "- run: make trace-gate PHASE=launch || true\n", 1),
+		"the gate may fail and pass on": strings.Replace(text, "    timeout-minutes: 15\n", "    timeout-minutes: 15\n    continue-on-error: true\n", 1),
+		"the step may fail and pass on": strings.Replace(text, "      - run: make trace-gate PHASE=launch\n", "      - run: make trace-gate PHASE=launch\n        continue-on-error: true\n", 1),
+	} {
+		if planted == text {
+			t.Fatalf("%s: the plant changed nothing; release.yml's launch gate moved", what)
+		}
+		got := ReleaseWorkflowViolations([]byte(planted))
+		if len(got) != 1 || !strings.Contains(got[0], "launch-gate") {
+			t.Errorf("%s: want the launch gate's violation alone, got:\n%s", what, strings.Join(got, "\n"))
+		}
 	}
 }
 
