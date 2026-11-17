@@ -550,3 +550,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-14] compile | docs/user-guide/ai-settings.md → settings.ai (new page: the AI switch, budgets and usage, AI-13, AI-77)
 
 ## [2026-11-14] compile | docs/user-guide/ai-providers.md → settings.ai-providers (new page: the AI providers, AI-71…AI-75)
+
+## [2026-11-17] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the organisation's motion switch, FR-UX-38)

@@ -43367,6 +43367,12 @@ export interface components {
             /** @description The organisation's feature switches today (FR-ORG-06); absent when you are a member of none. */
             features?: components["schemas"]["Features"];
             /**
+             * @description The organisation's motion (FR-UX-38): off shows every screen's final state at once for everyone, whatever each person chose; absent when you are a member of none.
+             * @example on
+             * @enum {string}
+             */
+            motion?: "on" | "off";
+            /**
              * Format: uuid
              * @description The organisation your session is in; absent when you are a member of none.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d02
