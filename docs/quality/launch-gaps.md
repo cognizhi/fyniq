@@ -10,9 +10,9 @@ On main, the launch subset (`docs/prd/plans/launch-subset.json`) holds 37 change
 
 | | Requirements and scenarios |
 |---|---|
-| Covered by a tagged test | 640 |
+| Covered by a tagged test | 644 |
 | Excepted (`docs/prd/plans/launch-exceptions.json`) | 38 |
-| Reported, not blocking: S and C rows, and the specs' prose requirements with no ID | 166 |
+| Reported, not blocking: S and C rows, and the specs' prose requirements with no ID | 162 |
 | Untested, blocking | 80 |
 
 Once the stacked chain (#645 to #743) merges, 36 stay untested. The chain's tests cover 44.
@@ -83,7 +83,8 @@ Built behaviour that no test asserted in full:
 
 ### Built in this change (9)
 
-- Tasks 3 to 7 (7): QA-ENG-07 with the 13 unnumbered sets, QA-RPT-04, QA-UI-06 with G4-104, QA-UI-07, QA-UI-08 and
+- Tasks 3 to 7 (7): QA-ENG-07 with the unnumbered sets (9 of 13 left: the posting set and three of its pinned cases
+  are in, `TestTheWorkbookGoldenSets`), QA-RPT-04, QA-UI-06 with G4-104, QA-UI-07, QA-UI-08 and
   QA-E2E-01.
 - Task 3.1, with the workbook's golden sets (2): G4-038's migrated forced-paid bill (its bank half is
   `TestMatchingABankLineSettlesWhatItPays`), and G4-016's revaluation differences in the migration register.

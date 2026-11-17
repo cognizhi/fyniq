@@ -89,10 +89,27 @@ and names the requirement IDs it proves.
   - `// req: QA-ENG-07`;
   - `// req: quality/calculation-correctness Golden data set, sample company` and the other five sets;
   - `TestTheFixturesAreTheRecordedOnes` (hashes and commit).
+  So far (16 Nov 2026):
+  - The script reads the workbook's files as data (literals, dates and rows; nothing of that repository runs) at
+    `a705fd14`, the commit the migration's sample is pinned at, and writes each set's scenario, a mapping of every row
+    to the document it became or why it does not post, and `sources.json` with the hashes. `expected.json` is kept by
+    hand from the workbook's tests, each figure naming its test (`test/golden/workbook/README.md`).
+  - The posting edge cases: 71 figures of `tests/test_edge_posting.py` (document totals, Doc Lines amounts, what stays
+    owed, 7030 by month, the spreads, each asset's depreciation, July's GST on the accounts) hold on the engine and on
+    the oracle, which agree to the cent and both refuse the 8 ✖ rows the format can hold
+    (`TestTheWorkbookGoldenSets`). Payroll waits for pay runs, which are not in the launch; the F5 boxes for F5
+    (`p1-gst`).
+  - The sample company is reconciled by the migration (QA-MIG-01: 1,649 figures against the workbook's engine); its
+    oracle side is still to do.
+  - Left: the non-posting, document-number, regression and miscellaneous sets, the sample's oracle side, then
+    `// req: QA-ENG-07`.
 - [ ] 3.2 The pinned cases of Appendix G.2 that launch: document totals, FX and rounding on 7030, depreciation,
   unrealised revaluation, a balance converted to shares (RND-SHARE) and a SAFE's conversion and dilution. Each is
   worked by hand from its source, asserted in Go and in the oracle, and tagged with its requirement. The hourly cost is
   recorded `after-go-live` with projects (rev 0.146).
+  So far (16 Nov 2026): the document totals, 7030's June and August, and the assets' depreciation hold in the posting
+  set (`TestTheWorkbookGoldenSets`, tagged with each). Left: the unrealised revaluation (the miscellaneous set), the
+  tags on RND-SHARE's and the SAFE's pinned tests, and the hourly cost's exception.
 - [x] 3.3 Export round-trip (QA-RPT-03) for every export of the launch:
   - financial statements, the cap table, a director's statement, the report exports and the tenant export's CSVs;
   - XLSX re-read figure by figure, including a value at 15 significant digits and one above it written as text;
