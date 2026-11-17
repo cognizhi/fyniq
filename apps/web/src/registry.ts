@@ -73,6 +73,9 @@ export const routes = [
   { kind: "route", id: "break-glass", path: "/break-glass", mode: "basic", signedIn: true, help: "approvals.break-glass", guide: "settings.team-mode#break-glass" },
   { kind: "route", id: "contacts", path: "/contacts", mode: "basic", signedIn: true, help: "contacts.overview", guide: "contacts.manage" },
   { kind: "route", id: "global-search", path: "/search", mode: "basic", signedIn: true, help: "shell.search", guide: "shell.search" },
+  // The user guide, built from docs/user-guide/ (FR-UX-32).
+  { kind: "route", id: "help", path: "/help", mode: "basic", signedIn: true, help: "help.guide", guide: "help.guide" },
+  { kind: "route", id: "help-page", path: "/help/$key", mode: "basic", signedIn: true, help: "help.page", guide: "help.guide#open-a-page" },
   { kind: "route", id: "contact-record", path: "/contacts/$contactId", mode: "basic", signedIn: true, help: "contacts.record", guide: "contacts.manage#what-a-contact-stands-at" },
   { kind: "route", id: "items", path: "/items", mode: "basic", signedIn: true, help: "items.overview", guide: "contacts.manage#items-and-prices" },
   { kind: "route", id: "invoices", path: "/sales/invoices", mode: "basic", signedIn: true, help: "sales.invoices", guide: "sales.invoices" },

@@ -390,6 +390,7 @@ Source: PRD-001 §9.5 · Priority M · Phase P1
 - **WHEN** they try to approve it themselves
 - **THEN** in Standard mode it is refused and another eligible approver is needed
 - **AND** in Founder mode it is refused above the FM-2 threshold, and otherwise allowed, flagged "self-approved" and queued for the FM-3 review
+- **AND** (rev 0.286) it is proved after go-live, with the first tier-2 task types; launch has only the company secretary's tier-1 ones, which their requester may approve
 
 ### Requirement: AI-11 Idempotent, atomic execution
 Executions SHALL be idempotent (proposal ID as key) and atomic (one database transaction), and SHALL never bypass period locks, approval policies or validations.
