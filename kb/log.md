@@ -523,6 +523,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-11] compile | docs/user-guide/general-ledger.md, docs/user-guide/financial-statements.md → reports.general-ledger, reports.statements (the general ledger export has no limit of lines, NFR-PERF-05)
 
 ## [2026-11-11] compile | docs/user-guide/checks.md → checks.books-health (the checks run at most once a minute through a burst of changes)
+
 ## [2026-11-11] compile | docs/user-guide/forecast.md → planning.forecast (PRD-001 rev 0.247: the results first, a recorded forecast's plan folded)
 
 ## [2026-11-12] compile | docs/user-guide/financial-statements.md → reports.statements (the Trace panel: a figure's breakdown, ledger lines as at the statement's revision, source and history; FR-UX-04)
@@ -551,8 +552,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-14] compile | docs/user-guide/ai-providers.md → settings.ai-providers (new page: the AI providers, AI-71…AI-75)
 
-## [2026-11-17] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the organisation's motion switch, FR-UX-38)
-
 ## [2026-11-14] compile | docs/user-guide/ai-providers.md → settings.ai-providers (a connection's own page: turn it on or off, replace the key, its models, qualify a model, where its prompts go)
 
 ## [2026-11-14] compile | docs/user-guide/ai-routes.md → settings.ai-routes (new page: model routes and the route editor, AI-74, AI-76, AI-26)
+
+## [2026-11-17] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the organisation's motion switch, FR-UX-38)
