@@ -234,7 +234,7 @@ func check(t Tool) error {
 		f(t.Limits.TimeoutMS >= 1 && t.Limits.TimeoutMS <= MaxTimeoutMS, "limits.timeout_ms is %d, not 1 to %d (AI-04)", t.Limits.TimeoutMS, MaxTimeoutMS),
 		f(t.Limits.ResultTokens >= 1 && t.Limits.ResultTokens <= MaxResultTokens, "limits.result_tokens is %d, not 1 to %d (AI-04)",
 			t.Limits.ResultTokens, MaxResultTokens),
-		checkInput(t.InputSchema),
+		CheckInput(t.InputSchema),
 	)
 }
 
@@ -252,9 +252,10 @@ func firstOf(errs ...error) error {
 var schemaWords = []string{"type", "description", "enum", "pattern", "minLength", "maxLength", "minimum", "maximum", "default",
 	"properties", "required", "additionalProperties", "items", "minItems", "maxItems"}
 
-// checkInput refuses an input schema that is not strict and bounded: an object closed to other properties at every
-// level, every string bounded by an enum, a pattern or a length, every array by a length (AI-04).
-func checkInput(raw json.RawMessage) error {
+// CheckInput refuses an input schema that is not strict and bounded: an object closed to other properties at every
+// level, every string bounded by an enum, a pattern or a length, every array by a length (AI-04). The proposal
+// catalogue's task types take the same rules (AI-27).
+func CheckInput(raw json.RawMessage) error {
 	var s map[string]any
 	if err := json.Unmarshal(raw, &s); err != nil {
 		return fmt.Errorf("inputSchema: %w", err)
