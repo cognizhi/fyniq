@@ -4328,6 +4328,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/compliance/secretary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the AI company secretary assistant
+         * @description The company secretary assistant's workspace (FR-CS-04, AI-62, AI-63): whether it is on or paused, the Owner it acts for, its schedule and caps, when it runs next, its latest run and the open findings of its latest finished run, Not assessed first. It never files, signs, approves or marks an obligation met. Read-only; no side effects.
+         */
+        get: operations["getCompanySecretary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/secretary/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the assistant's runs
+         * @description The company secretary assistant's runs, newest first, a page at a time, filtered by state (AI-65, AI-67): each with what started it, what became of it, Fyniq's summary, its findings by status, and whether what it found is new since the run done before it. Read-only; no side effects.
+         */
+        get: operations["listAgentRuns"];
+        put?: never;
+        /**
+         * Run the assistant now
+         * @description Run now (AI-62): queues a run of the company secretary assistant at once, requested by you and acting for the Owner who turned it on (AI-63). The worker runs it as any other: its deterministic checks first, the model only if an input changed. Refused while the assistant is off or paused. Side effects: the queued run and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and queues nothing.
+         */
+        post: operations["runCompanySecretary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/secretary/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a run's report
+         * @description One run of the company secretary assistant as its report shows it (AI-64, AI-65, FR-CS-03): the ledger revision, the packs and the knowledge base it read; every finding with its status, rule, source, evidence and next step, Not assessed first; the tasks they have; the proposals it made that you may see; and the model's words, as written and labelled AI. Read-only; no side effects.
+         */
+        get: operations["getAgentRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/compliance/shredding-runs": {
         parameters: {
             query?: never;
@@ -16253,7 +16317,7 @@ export interface components {
         };
         AIProposalDetail: {
             /**
-             * @description The AI that proposed it.
+             * @description The AI that proposed it: chat, the assistant's turns, or a scheduled agent, such as company_secretary.
              * @example chat
              */
             agent: string;
@@ -16415,6 +16479,11 @@ export interface components {
             next_cursor?: string;
         };
         AIProposalSummary: {
+            /**
+             * @description The AI that proposed it: chat, the assistant's turns, or a scheduled agent, such as company_secretary.
+             * @example chat
+             */
+            agent: string;
             /**
              * Format: uuid
              * @description Its approval request, where a person decides it.
@@ -18555,6 +18624,345 @@ export interface components {
             differences: components["schemas"]["AcraDifferenceView"][];
             /** @description The extract in force: the recorded one of the latest business profile; absent before one is recorded. */
             extract?: components["schemas"]["AcraExtractView"];
+        };
+        AgentFindingCounts: {
+            /**
+             * Format: int64
+             * @description ✖: cannot go on until fixed.
+             * @example 0
+             */
+            blocked: number;
+            /**
+             * Format: int64
+             * @description ⏰: due or overdue.
+             * @example 2
+             */
+            due: number;
+            /**
+             * Format: int64
+             * @description ⚠ Not assessed: an input it needs is missing or out of date.
+             * @example 3
+             */
+            not_assessed: number;
+            /**
+             * Format: int64
+             * @example 12
+             */
+            ok: number;
+            /**
+             * Format: int64
+             * @description ⚠: please review.
+             * @example 1
+             */
+            review: number;
+        };
+        AgentNextRun: {
+            /**
+             * Format: date-time
+             * @example 2026-11-16T23:00:00Z
+             */
+            at: string;
+            /**
+             * @description The schedule's entry.
+             * @example monitor
+             * @enum {string}
+             */
+            entry: "monitor" | "cross_check";
+        };
+        AgentPackVersion: {
+            /** @example sg-gst */
+            pack: string;
+            /** @example sg-gst@2026.1 */
+            version: string;
+        };
+        AgentRunFinding: {
+            /**
+             * @description What, why and what to do next.
+             * @example The GST return for Oct to Dec 2026 is due on 31 Jan 2027 and is not filed.
+             */
+            detail?: string;
+            /**
+             * Format: date
+             * @description When it is due.
+             * @example 2027-01-31
+             */
+            due_on?: string;
+            /** @description The records and documents behind it, as links in the web app. */
+            evidence?: string[] | null;
+            /**
+             * @description The finding's stable key.
+             * @example calendar:gst_f5:2027-01-31
+             */
+            key: string;
+            /**
+             * @description The next step.
+             * @example Record it in Compliance › Statutory calendar once it is filed
+             */
+            next?: string;
+            /**
+             * @description The statutory pack read.
+             * @example sg-gst@2026.1
+             */
+            pack?: string;
+            /**
+             * @description The rule it applies.
+             * @example gst.return-due
+             */
+            rule?: string;
+            /**
+             * @description The rule's source.
+             * @example https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/filing-gst/filing-gst-returns
+             */
+            source?: string;
+            /**
+             * @description Its status: ✔, ⚠, ✖, ⏰ or Not assessed.
+             * @example due
+             * @enum {string}
+             */
+            status: "ok" | "review" | "blocked" | "due" | "not_assessed";
+            /**
+             * @description Its compliance task.
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+             */
+            task?: string;
+            /**
+             * @description In plain words.
+             * @example File the GST return
+             */
+            title: string;
+            /**
+             * @description The deadline window it is in: 30, 14, 7 or 1 days ahead, or overdue.
+             * @example 14
+             */
+            window?: string;
+        };
+        AgentRunModel: {
+            /** @example claude-opus-5-5 */
+            model: string;
+            text: components["schemas"]["AIText"];
+            /**
+             * Format: int64
+             * @example 12000
+             */
+            tokens: number;
+            /**
+             * Format: int64
+             * @example 4
+             */
+            tool_calls: number;
+        };
+        AgentRunPage: {
+            items: components["schemas"]["AgentRunSummary"][];
+            /**
+             * @description The cursor of the next page; absent on the last.
+             * @example MDE5M2EzYzItNmQwZS03YTFiLTljNGQtNWU2ZjdhOGI5YzEy
+             */
+            next_cursor?: string;
+        };
+        AgentRunReport: {
+            /** @description Its findings by status, once done. */
+            counts: components["schemas"]["AgentFindingCounts"];
+            /** @description Every finding, Not assessed first. */
+            findings: components["schemas"]["AgentRunFinding"][];
+            /**
+             * Format: date-time
+             * @example 2026-11-15T23:01:10Z
+             */
+            finished_at?: string;
+            /**
+             * Format: uuid
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c12
+             */
+            id: string;
+            /**
+             * @description The knowledge base it read.
+             * @example none
+             */
+            kb_snapshot?: string;
+            /**
+             * Format: int64
+             * @description The books' revision it read (ENG-46).
+             * @example 42
+             */
+            ledger_revision: number;
+            /** @description The model step, when it asked the model. */
+            model?: components["schemas"]["AgentRunModel"];
+            /**
+             * @description Whether it asked the model: only when an input changed, for the monitor and events.
+             * @example true
+             */
+            model_used: boolean;
+            /**
+             * @description Whether what it found differs from the run done before it: new since the last run.
+             * @example true
+             */
+            new: boolean;
+            /** @description The statutory packs it read. */
+            packs: components["schemas"]["AgentPackVersion"][];
+            /** @description The proposals it made that you may see. */
+            proposals: components["schemas"]["AIProposalSummary"][];
+            /**
+             * @description Why it failed or was skipped.
+             * @example the agent is paused
+             */
+            reason?: string;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            skill_version: number;
+            /**
+             * Format: date-time
+             * @description When it was due.
+             * @example 2026-11-15T23:00:00Z
+             */
+            slot_at: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T23:00:05Z
+             */
+            started_at?: string;
+            /**
+             * @example done
+             * @enum {string}
+             */
+            status: "queued" | "running" | "done" | "failed" | "skipped";
+            /**
+             * @description Fyniq's summary, never "all clear" while anything is open (AI-65).
+             * @example 2 things need you this week.
+             */
+            summary?: string;
+            /** @description The tasks its findings have. */
+            tasks: components["schemas"]["ComplianceTask"][];
+            /**
+             * @description What started it: schedule:<entry>, event:<kind>:<key> or run_now.
+             * @example schedule:monitor
+             */
+            trigger: string;
+        };
+        AgentRunSummary: {
+            /** @description Its findings by status, once done. */
+            counts: components["schemas"]["AgentFindingCounts"];
+            /**
+             * Format: date-time
+             * @example 2026-11-15T23:01:10Z
+             */
+            finished_at?: string;
+            /**
+             * Format: uuid
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c12
+             */
+            id: string;
+            /**
+             * @description Whether it asked the model: only when an input changed, for the monitor and events.
+             * @example true
+             */
+            model_used: boolean;
+            /**
+             * @description Whether what it found differs from the run done before it: new since the last run.
+             * @example true
+             */
+            new: boolean;
+            /**
+             * @description Why it failed or was skipped.
+             * @example the agent is paused
+             */
+            reason?: string;
+            /**
+             * Format: date-time
+             * @description When it was due.
+             * @example 2026-11-15T23:00:00Z
+             */
+            slot_at: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T23:00:05Z
+             */
+            started_at?: string;
+            /**
+             * @example done
+             * @enum {string}
+             */
+            status: "queued" | "running" | "done" | "failed" | "skipped";
+            /**
+             * @description Fyniq's summary, never "all clear" while anything is open (AI-65).
+             * @example 2 things need you this week.
+             */
+            summary?: string;
+            /**
+             * @description What started it: schedule:<entry>, event:<kind>:<key> or run_now.
+             * @example schedule:monitor
+             */
+            trigger: string;
+        };
+        AgentSchedule: {
+            /**
+             * @description Whether it runs after each month's close.
+             * @example true
+             */
+            after_close: boolean;
+            /**
+             * @description How it tells them.
+             * @example [
+             *       "inbox",
+             *       "email"
+             *     ]
+             */
+            channels: string[];
+            /**
+             * @description The weekly full cross-check, cron-style in Singapore time.
+             * @example 0 8 * * 1
+             */
+            cross_check: string;
+            /**
+             * Format: int64
+             * @description How many days before a deadline the Owner is told too.
+             * @example 7
+             */
+            escalate_days: number;
+            /**
+             * @description The events that start a run.
+             * @example [
+             *       "period_closed",
+             *       "filing_recorded"
+             *     ]
+             */
+            events: string[];
+            /**
+             * @description Whether it runs one month after the financial year ends.
+             * @example true
+             */
+            fy_end_pack: boolean;
+            /**
+             * @description The daily deadline and lodgement monitor, cron-style in Singapore time.
+             * @example 0 7 * * *
+             */
+            monitor: string;
+            /**
+             * @description When its emails wait, in Singapore time.
+             * @example 22:00-07:00
+             */
+            quiet_hours: string;
+            /**
+             * @description The roles it tells; its tasks belong to the first.
+             * @example [
+             *       "owner",
+             *       "company_secretary"
+             *     ]
+             */
+            recipients: string[];
+            /**
+             * Format: int64
+             * @description The most model tokens one run may use.
+             * @example 200000
+             */
+            run_tokens: number;
+            /**
+             * Format: int64
+             * @description The most reads one run may make.
+             * @example 20
+             */
+            tool_calls: number;
         };
         Announcement: {
             /**
@@ -24590,6 +24998,45 @@ export interface components {
              * @example I have reviewed October 2026's close and its checks, and the books for the month are complete as far as I know.
              */
             statement: string;
+        };
+        CompanySecretary: {
+            /**
+             * Format: uuid
+             * @description The Owner who turned it on: its runs read and propose as them (AI-63).
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+             */
+            acts_for?: string;
+            /**
+             * @description Their name.
+             * @example Tan Ah Kow
+             */
+            acts_for_name?: string;
+            /** @description The open findings of its latest finished run: Not assessed first, then ✖, ⏰ and ⚠ (AI-65). */
+            findings: components["schemas"]["AgentRunFinding"][];
+            /** @description Its latest run that finished. */
+            last_done?: components["schemas"]["AgentRunSummary"];
+            /** @description Its latest run, whatever became of it. */
+            latest?: components["schemas"]["AgentRunSummary"];
+            /** @description When each schedule entry runs next, while it is on and not paused. */
+            next_runs: components["schemas"]["AgentNextRun"][];
+            schedule: components["schemas"]["AgentSchedule"];
+            /**
+             * Format: date-time
+             * @description When turning it on was approved.
+             * @example 2026-11-15T02:00:00Z
+             */
+            since?: string;
+            /**
+             * @description Its skill and version.
+             * @example company-secretary@1
+             */
+            skill: string;
+            /**
+             * @description off until an Owner turns it on with a second approver; paused by an Owner at once.
+             * @example on
+             * @enum {string}
+             */
+            state: "off" | "on" | "paused";
         };
         CompleteTransferInputBody: {
             /**
@@ -54463,6 +54910,8 @@ export interface operations {
                 cursor?: string;
                 /** @description Only proposals in this state; leave it out for all. */
                 status?: "draft" | "invalid" | "pending" | "approved" | "rejected" | "expired" | "superseded" | "executing" | "executed" | "stale" | "failed";
+                /** @description Only the proposals of this AI: the assistant's turns, or a scheduled agent's runs. */
+                agent?: "chat" | "company_secretary";
             };
             header?: never;
             path?: never;
@@ -80787,6 +81236,448 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCompanySecretary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanySecretary"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAgentRuns: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only runs in this state; leave it out for all. */
+                status?: "queued" | "running" | "done" | "failed" | "skipped";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    runCompanySecretary: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunSummary"];
+                };
+            };
+            /** @description Accepted */
+            202: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    Location?: string;
+                    /** @description return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunSummary"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `AI-AGENT-02` The assistant is off or paused; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAgentRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The run. */
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunReport"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

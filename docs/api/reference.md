@@ -13698,6 +13698,92 @@ Records a review of the risk's latest version (CMP-06): who reviewed it and when
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `COMPLIANCE-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-RISK-01`
 
+### `GET /v1/compliance/secretary`
+
+**Get the AI company secretary assistant** (`getCompanySecretary`)
+
+The company secretary assistant's workspace (FR-CS-04, AI-62, AI-63): whether it is on or paused, the Owner it acts for, its schedule and caps, when it runs next, its latest run and the open findings of its latest finished run, Not assessed first. It never files, signs, approves or marks an obligation met. Read-only; no side effects.
+
+- **Permission:** View on AI company secretary: enable, schedule, runs and drafts (rev 0.6)
+- **Responses:**
+  - `200` OK [`CompanySecretary`](../../contracts/schemas/CompanySecretary.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/compliance/secretary/runs`
+
+**List the assistant's runs** (`listAgentRuns`)
+
+The company secretary assistant's runs, newest first, a page at a time, filtered by state (AI-65, AI-67): each with what started it, what became of it, Fyniq's summary, its findings by status, and whether what it found is new since the run done before it. Read-only; no side effects.
+
+- **Permission:** View on AI company secretary: enable, schedule, runs and drafts (rev 0.6)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `status` (query): Only runs in this state; leave it out for all.
+- **Responses:**
+  - `200` OK [`AgentRunPage`](../../contracts/schemas/AgentRunPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/compliance/secretary/runs`
+
+**Run the assistant now** (`runCompanySecretary`)
+
+Run now (AI-62): queues a run of the company secretary assistant at once, requested by you and acting for the Owner who turned it on (AI-63). The worker runs it as any other: its deterministic checks first, the model only if an input changed. Refused while the assistant is off or paused. Side effects: the queued run and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and queues nothing.
+
+- **Permission:** Create on AI company secretary: enable, schedule, runs and drafts (rev 0.6). Run now is the schedule's: C on the AI company secretary's row, which the Administrator holds; the Owner, whose cell is A, too.
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AgentRunSummary`](../../contracts/schemas/AgentRunSummary.schema.json)
+  - `202` Accepted [`AgentRunSummary`](../../contracts/schemas/AgentRunSummary.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `AI-AGENT-02` The assistant is off or paused; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `AI-AGENT-02`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/compliance/secretary/runs/{run_id}`
+
+**Get a run's report** (`getAgentRun`)
+
+One run of the company secretary assistant as its report shows it (AI-64, AI-65, FR-CS-03): the ledger revision, the packs and the knowledge base it read; every finding with its status, rule, source, evidence and next step, Not assessed first; the tasks they have; the proposals it made that you may see; and the model's words, as written and labelled AI. Read-only; no side effects.
+
+- **Permission:** View on AI company secretary: enable, schedule, runs and drafts (rev 0.6)
+- **Parameters:**
+  - `run_id` (path, required): The run.
+- **Responses:**
+  - `200` OK [`AgentRunReport`](../../contracts/schemas/AgentRunReport.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/compliance/shredding-runs`
 
 **List the shredding runs** (`listShreddingRuns`)
@@ -15347,6 +15433,7 @@ The AI's proposals you may see (design D5), newest first, a page at a time: thos
   - `page_size` (query): How many items per page, up to 500.
   - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
   - `status` (query): Only proposals in this state; leave it out for all.
+  - `agent` (query): Only the proposals of this AI: the assistant's turns, or a scheduled agent's runs.
 - **Responses:**
   - `200` OK [`AIProposalPage`](../../contracts/schemas/AIProposalPage.schema.json)
   - `401` Unauthorized: `API-AUTH-01` Sign-in required.

@@ -2,6 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "agent": {
+      "description": "The AI that proposed it: chat, the assistant's turns, or a scheduled agent, such as company_secretary.",
+      "examples": [
+        "chat"
+      ],
+      "type": "string"
+    },
     "approval_id": {
       "description": "Its approval request, where a person decides it.",
       "examples": [
@@ -111,6 +118,7 @@
     "tier",
     "status",
     "requested_by",
+    "agent",
     "items",
     "proposed_at",
     "expires_at"

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "AgentRunSummary.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "The cursor of the next page; absent on the last.",
+      "examples": [
+        "MDE5M2EzYzItNmQwZS03YTFiLTljNGQtNWU2ZjdhOGI5YzEy"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "AgentRunPage",
+  "type": "object"
+}

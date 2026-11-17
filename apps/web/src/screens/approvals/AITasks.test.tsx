@@ -31,6 +31,7 @@ const executed: Row = {
   status: "executed",
   summary: "Creates the task Hold the AGM, due 30 June 2027",
   requested_by: "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d99",
+  agent: "chat",
   items: 0,
   proposed_at: "2026-11-15T01:00:00Z",
   expires_at: "2026-11-18T01:00:00Z",

@@ -14,6 +14,8 @@ SELECT * FROM fyniq.ai_proposal
 WHERE (cardinality(sqlc.arg(statuses)::text[]) = 0 OR status = ANY (sqlc.arg(statuses)::text[]))
   AND (sqlc.narg(requested_by)::uuid IS NULL OR requested_by = sqlc.narg(requested_by)::uuid)
   AND (sqlc.narg(turn_id)::uuid IS NULL OR turn_id = sqlc.narg(turn_id)::uuid)
+  AND (sqlc.narg(run_id)::uuid IS NULL OR run_id = sqlc.narg(run_id)::uuid)
+  AND (sqlc.arg(agent)::text = '' OR agent = sqlc.arg(agent)::text)
   AND (sqlc.arg(after)::uuid = '00000000-0000-0000-0000-000000000000'::uuid OR id < sqlc.arg(after)::uuid)
 ORDER BY id DESC
 LIMIT sqlc.arg(max_rows);

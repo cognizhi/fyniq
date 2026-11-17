@@ -107,6 +107,15 @@ func TestTheAIProposesATaskTheSecretaryApproves(t *testing.T) {
 		t.Errorf("a proposal for a deterministic finding: %s", theirs.Raw)
 	}
 
+	// The proposals of the assistant's turns, apart from a scheduled agent's.
+	owner := f.as(f.ahkow)
+	if l := e.call(http.MethodGet, "/v1/ai/proposals?agent=chat", owner, nil); len(l.Body["items"].([]any)) != 3 || !strings.Contains(l.Raw, `"agent":"chat"`) {
+		t.Errorf("the turns' proposals: %s", l.Raw)
+	}
+	if l := e.call(http.MethodGet, "/v1/ai/proposals?agent=company_secretary", owner, nil); len(l.Body["items"].([]any)) != 0 {
+		t.Errorf("the assistant's proposals: %s", l.Raw)
+	}
+
 	// Approved by the Company secretary, it runs as them: the task, raised from the proposal.
 	pr := execute(approve(first))
 	if pr.Status != storage.ProposalExecuted || !strings.Contains(string(pr.Execution), "compliance_task:") {

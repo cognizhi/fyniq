@@ -17,15 +17,19 @@ SELECT organisation_id, id, task_type, task_version, task_sha256, payload, paylo
 WHERE (cardinality($1::text[]) = 0 OR status = ANY ($1::text[]))
   AND ($2::uuid IS NULL OR requested_by = $2::uuid)
   AND ($3::uuid IS NULL OR turn_id = $3::uuid)
-  AND ($4::uuid = '00000000-0000-0000-0000-000000000000'::uuid OR id < $4::uuid)
+  AND ($4::uuid IS NULL OR run_id = $4::uuid)
+  AND ($5::text = '' OR agent = $5::text)
+  AND ($6::uuid = '00000000-0000-0000-0000-000000000000'::uuid OR id < $6::uuid)
 ORDER BY id DESC
-LIMIT $5
+LIMIT $7
 `
 
 type AIProposalsPageParams struct {
 	Statuses    []string
 	RequestedBy *uuid.UUID
 	TurnID      *uuid.UUID
+	RunID       *uuid.UUID
+	Agent       string
 	After       uuid.UUID
 	MaxRows     int32
 }
@@ -35,6 +39,8 @@ func (q *Queries) AIProposalsPage(ctx context.Context, arg AIProposalsPageParams
 		arg.Statuses,
 		arg.RequestedBy,
 		arg.TurnID,
+		arg.RunID,
+		arg.Agent,
 		arg.After,
 		arg.MaxRows,
 	)

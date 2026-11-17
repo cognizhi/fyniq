@@ -88,7 +88,7 @@ func (s Scheduler) ScheduleIn(ctx context.Context, org uuid.UUID) (int, error) {
 					return err
 				}
 				for slot := spec.Next(from.Add(-time.Minute)); !slot.IsZero() && !slot.After(now.Add(Window)); slot = spec.Next(slot) {
-					queued, err := s.queue(ctx, u, org, skill, on.ActsFor, "schedule:"+entry, slot, now, nil)
+					_, queued, err := s.queue(ctx, u, org, skill, on.ActsFor, "schedule:"+entry, slot, now, nil)
 					if err != nil {
 						return err
 					}
@@ -107,23 +107,35 @@ func (s Scheduler) ScheduleIn(ctx context.Context, org uuid.UUID) (int, error) {
 // and enqueues it for its slot; queued is false when the slot was queued already.
 func (s Scheduler) Queue(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, skill Skill, actsFor uuid.UUID, trigger string,
 	slot time.Time, requestedBy *uuid.UUID) (bool, error) {
-	return s.queue(ctx, u, org, skill, actsFor, trigger, slot, s.Clock.Now(), requestedBy)
+	_, queued, err := s.queue(ctx, u, org, skill, actsFor, trigger, slot, s.Clock.Now(), requestedBy)
+	return queued, err
 }
 
+// RunNow queues a run of skill's agent at once, as a person's Run now asks (AI-62): requested by them, acting for the
+// Owner who turned it on (AI-63).
+func (s Scheduler) RunNow(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, skill Skill, actsFor, by uuid.UUID) (storage.AgentRun, error) {
+	now := s.Clock.Now()
+	run, _, err := s.queue(ctx, u, org, skill, actsFor, TriggerRunNow, now, now, &by)
+	return run, err
+}
+
+// TriggerRunNow is the trigger of a run a person asked for.
+const TriggerRunNow = "run_now"
+
 func (s Scheduler) queue(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, skill Skill, actsFor uuid.UUID, trigger string,
-	slot, now time.Time, requestedBy *uuid.UUID) (bool, error) {
+	slot, now time.Time, requestedBy *uuid.UUID) (storage.AgentRun, bool, error) {
 	run, queued, err := u.AgentRuns().Queue(ctx, storage.NewAgentRun{Agent: skill.Name, SkillVersion: skill.Version, SkillSHA256: skill.SHA256,
 		Trigger: trigger, SlotAt: slot, ActsFor: actsFor, RequestedBy: requestedBy, QueuedAt: now})
 	if err != nil || !queued {
-		return false, err
+		return run, false, err
 	}
 	payload, err := json.Marshal(RunWork{RunID: run.ID})
 	if err != nil {
-		return false, err
+		return run, false, err
 	}
 	_, err = s.Dispatcher.EnqueueAt(ctx, u, org, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: RunKind, Payload: payload,
 		BusinessKey: run.ID.String()}, slot)
-	return err == nil, err
+	return run, err == nil, err
 }
 
 // State is an agent's configuration in an organisation on a day (AI-62, AI-63; design D2): whether it is on and who

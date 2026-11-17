@@ -3,7 +3,7 @@
   "additionalProperties": false,
   "properties": {
     "agent": {
-      "description": "The AI that proposed it.",
+      "description": "The AI that proposed it: chat, the assistant's turns, or a scheduled agent, such as company_secretary.",
       "examples": [
         "chat"
       ],
@@ -239,7 +239,6 @@
     "payload_sha256",
     "item_list",
     "evidence",
-    "agent",
     "model",
     "prompt",
     "you_may_approve",
@@ -249,6 +248,7 @@
     "tier",
     "status",
     "requested_by",
+    "agent",
     "items",
     "proposed_at",
     "expires_at"

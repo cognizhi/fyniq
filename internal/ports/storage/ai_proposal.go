@@ -84,6 +84,8 @@ type AIProposalQuery struct {
 	Statuses    []string
 	RequestedBy *uuid.UUID
 	Turn        *uuid.UUID
+	Run         *uuid.UUID // a scheduled agent's run's
+	Agent       string     // the AI that proposed them, such as company_secretary
 	After       uuid.UUID
 	Limit       int
 }

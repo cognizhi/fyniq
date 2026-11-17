@@ -45,15 +45,30 @@ type AgentRunFinding struct {
 	Key      string   `json:"key" maxLength:"200" doc:"The finding's stable key." example:"calendar:gst_f5:2027-01-31"`
 	Status   string   `json:"status" enum:"ok,review,blocked,due,not_assessed" doc:"Its status: ✔, ⚠, ✖, ⏰ or Not assessed." example:"due"`
 	Title    string   `json:"title" maxLength:"300" doc:"In plain words." example:"File the GST return"`
-	Detail   string   `json:"detail,omitempty" maxLength:"2000" doc:"What, why and what to do next."`
+	Detail   string   `json:"detail,omitempty" maxLength:"2000" doc:"What, why and what to do next." example:"The GST return for Oct to Dec 2026 is due on 31 Jan 2027 and is not filed."`
 	Rule     string   `json:"rule,omitempty" maxLength:"200" doc:"The rule it applies." example:"gst.return-due"`
-	Source   string   `json:"source,omitempty" maxLength:"500" doc:"The rule's source."`
+	Source   string   `json:"source,omitempty" maxLength:"500" doc:"The rule's source." example:"https://www.iras.gov.sg/taxes/goods-services-tax-(gst)/filing-gst/filing-gst-returns"`
 	Pack     string   `json:"pack,omitempty" maxLength:"100" doc:"The statutory pack read." example:"sg-gst@2026.1"`
-	Evidence []string `json:"evidence,omitempty" maxItems:"50" doc:"The records and documents behind it."`
-	Next     string   `json:"next,omitempty" maxLength:"500" doc:"The next step."`
+	Evidence []string `json:"evidence,omitempty" maxItems:"50" doc:"The records and documents behind it, as links in the web app."`
+	Next     string   `json:"next,omitempty" maxLength:"500" doc:"The next step." example:"Record it in Compliance › Statutory calendar once it is filed"`
 	DueOn    string   `json:"due_on,omitempty" format:"date" doc:"When it is due." example:"2027-01-31"`
 	Window   string   `json:"window,omitempty" maxLength:"20" doc:"The deadline window it is in: 30, 14, 7 or 1 days ahead, or overdue." example:"14"`
-	Task     string   `json:"task,omitempty" maxLength:"64" doc:"Its compliance task."`
+	Task     string   `json:"task,omitempty" maxLength:"64" doc:"Its compliance task." example:"0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d"`
+}
+
+// TransformSchema implements huma.SchemaTransformer: an example for each item of evidence (NFR-API-01).
+func (AgentRunFinding) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	itemExamples(s, map[string]any{"evidence": "/compliance/calendar"})
+	return s
+}
+
+// itemExamples gives the items of s's array properties an example each, which a field tag cannot.
+func itemExamples(s *huma.Schema, examples map[string]any) {
+	for name, example := range examples {
+		if p := s.Properties[name]; p != nil && p.Items != nil && len(p.Items.Examples) == 0 {
+			p.Items.Examples = []any{example}
+		}
+	}
 }
 
 // AgentRunModelStep is the worker's request: the run's organisation and its findings.
