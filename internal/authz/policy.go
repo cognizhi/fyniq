@@ -2113,6 +2113,17 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 	return d
 }
 
+// SecretaryCells are the Company secretary's own cells (Appendix D's note, rev 0.6, 0.280, 0.282; FR-CS-08,
+// p1-company-secretary design D7): C on the corporate profile and registers and on evidence, V on the whole equity
+// register and on the AI company secretary's runs. Elsewhere they take the Board viewer's column; no transaction,
+// payroll or bank detail. Their A on sec.* proposals is Decide's (SignsRequests).
+var SecretaryCells = map[Capability]Cell{
+	CorporateProfile:   {Rights: "C"},
+	Evidence:           {Rights: "C"},
+	CapTable:           {Rights: "V"},
+	AICompanySecretary: {Rights: "V"},
+}
+
 // SignsRequests are the operations that sign an approval request: approving, rejecting, and the passkey challenge for
 // either.
 var SignsRequests = []string{ApproveApproval.Operation, RejectApproval.Operation, ChallengeApproval.Operation}
@@ -2135,7 +2146,11 @@ func holds(p Policy, roles []Role) (Right, bool) {
 			continue
 		}
 		var rights string
-		switch cell := Grants[p.Capability][col]; {
+		cell := Grants[p.Capability][col]
+		if own, ok := SecretaryCells[p.Capability]; ok && r == CompanySecretary {
+			cell = own
+		}
+		switch {
 		case p.Capability == Membership:
 			rights = "V"
 		case col == "AI" && cell.Rights == "" && (cell.Qualifier == "Proposal" || cell.Qualifier == "Proposal (draft)"):
