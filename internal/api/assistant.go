@@ -443,6 +443,7 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 	var cited []aitool.Fact
 	var limits aiLimits
 	var propose []string
+	var rejected []assistant.Rejected
 	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		c, err := ownConversation(ctx, u, p, in.ConversationID)
 		if err != nil {
@@ -459,6 +460,9 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 		}
 		earlier, err := u.AIConversations().Turns(ctx, c.ID)
 		if err != nil {
+			return err
+		}
+		if rejected, err = rejectedOf(ctx, u, p.UserID, earlier); err != nil {
 			return err
 		}
 		if limits, err = a.admit(ctx, u, p.UserID, len(earlier), today); err != nil {
@@ -483,10 +487,14 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 		fail(err)
 		return
 	}
+	if err := a.screenRejections(ctx, rejected); err != nil {
+		fail(err)
+		return
+	}
 	// The turn is kept and its token ended whatever happens to the stream from here.
 	keep := context.WithoutCancel(ctx)
 	answer, err := a.askService(ctx, assistant.Question{Token: token, Text: turn.Question, Context: contextWords(in.Body.Context), History: history,
-		Earlier: cited, MaxReads: limits.reads, Propose: propose}, send)
+		Earlier: cited, MaxReads: limits.reads, Propose: propose, Rejected: rejected}, send)
 	finished := a.deps.Clock.Now()
 	turn.AnsweredAt = &finished
 	var calls []storage.AIToolCall

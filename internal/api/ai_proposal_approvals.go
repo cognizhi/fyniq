@@ -3,12 +3,14 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/assistant"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
@@ -150,7 +152,11 @@ func (a *API) executeAIProposal(ctx context.Context, u storage.UnitOfWork, r sto
 	if err != nil {
 		return err
 	}
-	approved, err := u.AIProposals().Approve(ctx, pr.ID, pr.Version, signer, nil, pr.Payload, a.deps.Clock.Now())
+	items, payload := []int(nil), pr.Payload
+	if sel, ok := selectionOf(ctx); ok {
+		items, payload = sel.items, sel.payload
+	}
+	approved, err := u.AIProposals().Approve(ctx, pr.ID, pr.Version, signer, items, payload, a.deps.Clock.Now())
 	if err != nil {
 		return err
 	}
@@ -177,4 +183,122 @@ func (a *API) rejectAIProposal(ctx context.Context, u storage.UnitOfWork, r stor
 	}
 	_, err = u.AIProposals().Reject(ctx, pr.ID, pr.Version, by, cut(reason, 1000), at)
 	return err
+}
+
+// selection is the items of a batch proposal an approver approves (AI-32): the payload cut to them and its hash, which
+// their signature signs with the envelope.
+type selection struct {
+	items   []int
+	payload string
+	sha     string
+}
+
+type selectionKey struct{}
+
+func withSelection(ctx context.Context, s selection) context.Context {
+	return context.WithValue(ctx, selectionKey{}, s)
+}
+
+func selectionOf(ctx context.Context) (selection, bool) {
+	s, ok := ctx.Value(selectionKey{}).(selection)
+	return s, ok
+}
+
+// proposalSelection is what an approval of r approves when it names items (AI-32): nil for the whole of a tier-1
+// proposal or for any other request. Items name an AI proposal's batch alone; a proposal above tier 1 of several items
+// is never approved in bulk: its approver names each item they approve.
+func (a *API) proposalSelection(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, items []int) (*selection, error) {
+	if r.ObjectType != approval.ObjectAIProposal {
+		if len(items) > 0 {
+			return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.items", Message: "only an AI proposal of several items has items to choose",
+				Fix: "Approve the request without items"}})
+		}
+		return nil, nil
+	}
+	id, err := uuid.Parse(r.ObjectKey)
+	if err != nil {
+		return nil, err
+	}
+	pr, err := u.AIProposals().Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if len(items) == 0 {
+		if pr.ItemCount > 1 && pr.RiskTier > proposal.Tier1 {
+			return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.items", Message: fmt.Sprintf(
+				"a tier-%d proposal of %d items is never approved in bulk: name each item you approve", pr.RiskTier, pr.ItemCount),
+				Fix: "Name the items you approve in items"}})
+		}
+		return nil, nil
+	}
+	if pr.ItemCount == 0 {
+		return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.items", Message: "this proposal is not a batch of items",
+			Fix: "Approve it without items"}})
+	}
+	payload, sha, err := proposal.Subset(pr.Payload, items)
+	if err != nil {
+		return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.items", Message: err.Error(),
+			Fix: fmt.Sprintf("Name items from 1 to %d, each once", pr.ItemCount)}})
+	}
+	chosen := slices.Clone(items)
+	slices.Sort(chosen)
+	return &selection{items: chosen, payload: payload, sha: sha}, nil
+}
+
+// rejectedOf are the latest proposals of a conversation's turns that a person rejected, with their reasons, for the next
+// turn to read (AI-14, design D8): at most five, the latest last.
+func rejectedOf(ctx context.Context, u storage.UnitOfWork, user uuid.UUID, turns []storage.AITurn) ([]assistant.Rejected, error) {
+	if len(turns) == 0 {
+		return nil, nil
+	}
+	ids := make(map[uuid.UUID]bool, len(turns))
+	for _, t := range turns {
+		ids[t.ID] = true
+	}
+	ps, err := u.AIProposals().List(ctx, storage.AIProposalQuery{Statuses: []string{storage.ProposalRejected}, RequestedBy: &user, Limit: 100})
+	if err != nil {
+		return nil, err
+	}
+	var out []assistant.Rejected
+	for _, p := range ps { // newest first
+		if p.Turn == nil || !ids[*p.Turn] {
+			continue
+		}
+		var impact struct {
+			Summary string `json:"summary"`
+		}
+		_ = json.Unmarshal(p.Impact, &impact)
+		out = append(out, assistant.Rejected{TaskType: p.TaskType, Summary: impact.Summary, Reason: p.Reason})
+		if len(out) == 5 {
+			break
+		}
+	}
+	slices.Reverse(out)
+	return out, nil
+}
+
+// screenRejections screens each rejection's reason on its way to the model, as a tool's text is (AI-18): a finding
+// withholds that reason; a screening that did not finish refuses the turn (fail closed).
+func (a *API) screenRejections(ctx context.Context, rs []assistant.Rejected) error {
+	for i := range rs {
+		err := a.screen(ctx, false, rs[i].Reason)
+		var p *Problem
+		switch {
+		case err == nil:
+		case errors.As(err, &p) && p.Code == CodeScreened:
+			rs[i].Reason = "withheld: screening flagged the person's words" // never the finding's words, which screening reads as more
+		default:
+			return err
+		}
+	}
+	return nil
+}
+
+// proposalItems are the items an approval names, as numbers.
+func proposalItems(items []ProposalItem) []int {
+	out := make([]int, len(items))
+	for i, n := range items {
+		out[i] = int(n)
+	}
+	return out
 }

@@ -110,6 +110,16 @@ type ApprovalDecision struct {
 	EnvelopeHash string           `json:"envelope_hash" minLength:"64" maxLength:"64" pattern:"^[0-9a-f]{64}$" doc:"The envelope_hash of the request you were shown: a request whose envelope differs is not signed (FR-APR-03)." example:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
 	Reason       string           `json:"reason,omitempty" maxLength:"500" doc:"Why you reject it: needed to reject." example:"Not this month"`
 	Passkey      *ApprovalPasskey `json:"passkey,omitempty" doc:"Sign with a passkey: your authenticator's answer to this request's challenge (POST /v1/approvals/{approval_id}/challenge). Without it, your session's step-up in the last 5 minutes signs (rev 0.44)."`
+	Items        []ProposalItem   `json:"items,omitempty" minItems:"1" maxItems:"100" doc:"For an AI proposal of several items, the items you approve, from 1: what executes is those alone, re-hashed and signed with the envelope (AI-32). Without it you approve them all, which only a tier-1 proposal allows."`
+}
+
+// ProposalItem is an item of an AI proposal's batch, from 1.
+type ProposalItem int
+
+// Schema implements huma.SchemaProvider.
+func (ProposalItem) Schema(huma.Registry) *huma.Schema {
+	low, high := 1.0, 100.0
+	return &huma.Schema{Type: "integer", Minimum: &low, Maximum: &high, Description: "An item of the proposal's batch, from 1.", Examples: []any{1}}
 }
 
 // ApprovalPasskey is your authenticator's answer to a request's challenge: it signs the request's envelope hash.
@@ -2272,6 +2282,13 @@ func registerApprovals(a *API) {
 				now := a.deps.Clock.Now()
 				signature := storage.NewApprovalSignature{RequestID: r.ID, Step: step, Signer: p.UserID, Decision: "approve",
 					EnvelopeHash: r.EnvelopeHash, MFAMethod: stepUpMethod, MFAAt: p.StepUpAt, SignedAt: now}
+				sel, err := a.proposalSelection(ctx, u, r, proposalItems(in.Body.Items))
+				if err != nil {
+					return decided{}, err
+				}
+				if sel != nil {
+					signature.SelectionSHA256, ctx = sel.sha, withSelection(ctx, *sel)
+				}
 				if err := a.withPasskey(ctx, u, p, name, r, in.Body.Passkey, &signature); err != nil {
 					return decided{}, err
 				}

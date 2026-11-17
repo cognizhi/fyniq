@@ -308,6 +308,28 @@ func TestTheModelProposesOnlyWhatTheTurnMay(t *testing.T) {
 	}
 }
 
+// A rejection's reason reaches the next turn's model as context (AI-14; design D8): which proposal, and the person's
+// words quoted as untrusted text, through the output filter, before the question.
+// req: AI-14
+// req: AI-20
+func TestRejectionsAreReadAsData(t *testing.T) {
+	b := &api{answers: []ports.ModelResponse{answer(words("Understood."))}}
+	if _, err := (&assistant.Assistant{Backend: b, Prompt: prompt(t)}).Answer(context.Background(), assistant.Question{Token: "fyai_t", Text: "What now?",
+		Rejected: []assistant.Rejected{{TaskType: "sec.create_task", Summary: "Creates the task Hold the AGM", Reason: "Not for S1234567D"}}},
+		func(assistant.Event) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	msgs := b.calls[0].Request.Messages
+	if len(msgs) != 3 || msgs[0].Role != ports.RoleUser || msgs[2].Parts[0].Text != "What now?" {
+		t.Fatalf("the messages: %+v", msgs)
+	}
+	note := msgs[0].Parts[0].Text
+	if !strings.Contains(note, "rejected_proposals") || !strings.Contains(note, `"untrusted_text":"Not for S****567D"`) ||
+		!strings.Contains(note, "sec.create_task") || strings.Contains(note, "1234567D") {
+		t.Errorf("the note: %s", note)
+	}
+}
+
 // The prompts are versioned files (AI-24, design D10): the latest version of an agent's prompt is the one a turn is
 // told, named and hashed as its file is; a file not named <agent>@<version>.md is refused.
 // req: AI-24

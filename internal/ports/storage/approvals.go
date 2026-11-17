@@ -110,6 +110,8 @@ type NewApprovalSignature struct {
 	SignedAt     time.Time
 	Reason       string
 	Passkey      *PasskeyAssertion // with MFAMethod passkey
+	// SelectionSHA256 is the hash of the items of an AI proposal its approver approves, re-hashed (AI-32); "" for the whole.
+	SelectionSHA256 string
 }
 
 // Approvals are the organisation's approval requests and their signatures. Every change is audited. The

@@ -496,6 +496,7 @@ approval_signature | passkey_id | uuid | null |
 approval_signature | authenticator_data | bytea | null | 
 approval_signature | client_data | bytea | null | 
 approval_signature | assertion_signature | bytea | null | 
+approval_signature | selection_sha256 | text | null | 
 audit_boundary | organisation_id | uuid | not null | current_org()
 audit_boundary | id | uuid | not null | uuidv7()
 audit_boundary | last_seq | bigint | not null | 
@@ -3074,6 +3075,7 @@ approval_signature | approval_signature_pkey | PRIMARY KEY (organisation_id, id)
 approval_signature | approval_signature_reason | CHECK ((((decision = 'reject'::text) = (reason IS NOT NULL)) AND ((reason IS NULL) OR ((length(btrim(reason)) >= 1) AND (length(btrim(reason)) <= 500)))))
 approval_signature | approval_signature_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES approval_request(organisation_id, id)
 approval_signature | approval_signature_request_id_not_null | NOT NULL request_id
+approval_signature | approval_signature_selection | CHECK (((selection_sha256 IS NULL) OR (selection_sha256 ~ '^[0-9a-f]{64}$'::text)))
 approval_signature | approval_signature_signed_at_not_null | NOT NULL signed_at
 approval_signature | approval_signature_signer_fkey | FOREIGN KEY (signer) REFERENCES app_user(user_id)
 approval_signature | approval_signature_signer_not_null | NOT NULL signer
@@ -7540,7 +7542,7 @@ ai_grant_for(p_org uuid, p_hash bytea, p_now timestamp with time zone, OUT user_
 ai_grant_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 40c869a0553155efacc78344366824c1
 ai_model_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 68783d56f55071fa6eeb49ac53beb8b4
 ai_price_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 10ea79dafbe968082a5dc082542e5997
-ai_proposal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 07f6ab3b5f0667038bcdcc48a7307b64
+ai_proposal_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c2b17fb005c9f0df74b10ee9ae412533
 ai_purge_conversations(p_before timestamp with time zone, OUT conversations integer, OUT turns integer) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 7fe0af9f8f3135d573b9063e73a9ab00
 ai_qualification_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abd6e63a09026b84d1a5ee96d11e0233
 ai_reserve(p_run uuid, p_step integer, p_agent text, p_connection uuid, p_person text, p_month text, p_amount numeric, p_tokens bigint) → jsonb | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d7de60573770113c34cae08e8f814277
@@ -7556,7 +7558,7 @@ approval_policy_guard() → trigger | security invoker | v | search_path=pg_cata
 approval_policy_voids() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 5c96f4771b1eddd81ec69ad86520e32a
 approval_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c3359e1c6e373efc4111560e22c9c455
 approval_request_voided() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 8a52518e632c789b205db97d82662924
-approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 109990dea6967285f3286d0282ee9dda
+approval_signature_check() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a65158e2f90c1cf29aa13ce54cab1188
 approval_steps_met(p_org uuid, p_request uuid, p_hash bytea, p_steps jsonb, p_upto integer) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 87283a918dece8cd6ce8b836a822f76d
 approval_steps_valid(p_steps jsonb) → boolean | security invoker | i | search_path=pg_catalog, pg_temp | d50ae4849ebdf5e7511ee70dc98ccfd3
 approval_void_pending(p_type text, p_key text, p_reason text) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 3d881befb6ede26f4ea128fc16cd228d

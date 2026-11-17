@@ -71,8 +71,14 @@
   proposal Approved with the payload approved and queues `ai_proposal.execute` for the executor; a rejection marks it
   Rejected with the reason. Every signer passes step-up, whatever the tier. Left: telling approvers a proposal waits
   (the Inbox, task 6.1) and voiding a request whose proposal expires or is superseded (task 5.2).
-- [ ] 4.2 Partial and bulk approval of a tier-1 proposal's items (the subset re-hashed and signed); a rejection's reason
+- [x] 4.2 Partial and bulk approval of a tier-1 proposal's items (the subset re-hashed and signed); a rejection's reason
   returned to the conversation or the run (design D8). Tests `// req: AI-32`, `// req: AI-14`.
+  As built (migrations 000379/000380): an approval names `items` from 1; the payload cut to them is re-hashed, and the
+  signature signs that hash with the envelope (`approval_signature.selection_sha256`, an `ai_proposal` approval's alone).
+  The proposal's guard approves it only as its signer signed: what is approved hashes to the payload's hash or to the
+  signed selection's. A tier-1 batch may be approved whole; above tier 1 the approver names the items. The next turn of
+  the conversation reads its rejected proposals (the latest five) with the person's reasons, quoted as untrusted text,
+  each screened first and withheld when flagged. The run's side waits for `p1-scheduled-agents`.
 - [ ] 4.3 The public operations: list and read proposals (each member their own and those they may approve; the Owner
   and the DPO every one), the summary from platform code, the impact, the diff and the evidence, the rationale apart
   (design D5); the authorisation matrix's rows. Tests `// req: AI-07`, `// req: ai/task-catalogue AI tasks page`.

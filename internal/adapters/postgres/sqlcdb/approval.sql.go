@@ -346,10 +346,10 @@ func (q *Queries) InsertApprovalRequest(ctx context.Context, arg InsertApprovalR
 
 const insertApprovalSignature = `-- name: InsertApprovalSignature :one
 INSERT INTO fyniq.approval_signature (request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason,
-  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature)
+  passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature, selection_sha256)
 VALUES ($1, $2, $3, $4, $5, $6,
   $7, $8, $9, $10, $11,
-  $12, $13, $14)
+  $12, $13, $14, $15)
 RETURNING id, request_id, step, signer, decision, envelope_hash, mfa_method, mfa_at, signed_at, reason, voided_at,
   passkey_challenge_id, passkey_id, authenticator_data, client_data, assertion_signature
 `
@@ -369,6 +369,7 @@ type InsertApprovalSignatureParams struct {
 	AuthenticatorData  []byte
 	ClientData         []byte
 	AssertionSignature []byte
+	SelectionSha256    *string
 }
 
 type InsertApprovalSignatureRow struct {
@@ -406,6 +407,7 @@ func (q *Queries) InsertApprovalSignature(ctx context.Context, arg InsertApprova
 		arg.AuthenticatorData,
 		arg.ClientData,
 		arg.AssertionSignature,
+		arg.SelectionSha256,
 	)
 	var i InsertApprovalSignatureRow
 	err := row.Scan(
