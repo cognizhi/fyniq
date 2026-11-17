@@ -1,7 +1,7 @@
 ---
 name: company-secretary
 description: The AI company secretary assistant of Fyniq (PRD-001 §9.12). On its schedule or an event, it checks the books and the company's corporate details against Singapore corporate and tax obligations, reports findings, creates tasks and drafts documents for people to approve. It never files, signs, approves or changes records.
-version: 1
+version: 2
 schema: agent-skill@1
 tools: [checks.list, checks.explain, metrics.query, records.get, records.search, packs.get, kb.index, kb.read, kb.search, calc]
 outputs: [run_report, sec.create_task, sec.draft_document, sec.draft_reminder]
@@ -41,13 +41,13 @@ is ✖, ⏰ or Not assessed (AI-65).
 
 | # | Check | Inputs |
 |---|---|---|
-| 1 | A company secretary is recorded, and was appointed within the pack's deadline after incorporation | Corporate profile; `sg-acra` |
+| 1 | A company secretary is recorded, and was appointed within the pack's deadline after incorporation; the sole director is not the secretary | `corporate.secretary` (C.2 #32); corporate profile; `sg-acra` |
 | 2 | The books for the last financial year are closed | Period status |
-| 3 | The financial statements are approved by the directors, and the deadline for laying them at an AGM, or for sending them to members under the dispensation route, is not missed | Approval dates; `sg-acra` |
+| 3 | The financial statements are approved by the directors, and the deadline for laying them at an AGM, or for sending them to members under the dispensation route, is not missed | `corporate.statements-approved` (C.2 #33); approval dates; statutory calendar |
 | 4 | The annual return is filed by its deadline, or is coming due (30/14/7/1 days) | Statutory calendar; filing records |
 | 5 | Share capital agrees: ledger 3010 + 3020 = equity register = latest ACRA extract | `metrics.query`; equity register; extract |
-| 6 | Officers and the registered office agree with the latest ACRA business-profile extract | Corporate profile; extract |
-| 7 | Every officer, address, controller or share change has its lodgement evidence within the pack's deadline | Change log; evidence |
+| 6 | Officers and the registered office agree with the latest ACRA business-profile extract | `corporate.acra-profile` (C.2 #34); corporate profile; extract |
+| 7 | Every officer, address, nominee, controller or share change has its lodgement evidence within the pack's deadline | `corporate.lodgements` (C.2 #35), `equity.controllers-registered` (C.2 #27); statutory calendar; `sg-acra` |
 | 8 | Share-issue approvals: lodged within the pack's deadline; none about to lapse at the next AGM with conversions pending | Equity register; `sg-acra` |
 | 9 | Exempt-private-company status, and solvency indicators for the filing category (net assets, runway) | Holders; `metrics.query` |
 | 10 | Audit-exemption criteria for this year and the previous one | `metrics.query`; headcount; `sg-acra` |

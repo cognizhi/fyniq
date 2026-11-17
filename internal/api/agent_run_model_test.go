@@ -131,7 +131,7 @@ func TestTheWorkerAsksTheModelForARun(t *testing.T) {
 		}
 		return err
 	})
-	if pr.Run == nil || *pr.Run != run.ID || pr.Agent != "company_secretary" || pr.Prompt != "company_secretary@1" || req.RequesterMFAMethod != runMFA {
+	if pr.Run == nil || *pr.Run != run.ID || pr.Agent != "company_secretary" || pr.Prompt != "company_secretary@2" || req.RequesterMFAMethod != runMFA {
 		t.Fatalf("the run's proposal: %+v, its request %+v", pr, req)
 	}
 

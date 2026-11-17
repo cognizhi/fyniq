@@ -62,7 +62,8 @@ func (f Finding) open() bool {
 
 // secretaryChecks are the checks the company secretary's checklist reads from the checks engine (FR-CS-03 in part).
 var secretaryChecks = []string{"gst.registration-threshold", "gst.return-due", "equity.acra-register", "equity.controllers-registered",
-	"equity.exempt-status", "equity.instruments-converted"}
+	"equity.exempt-status", "equity.instruments-converted", "corporate.secretary", "corporate.statements-approved", "corporate.acra-profile",
+	"corporate.lodgements"}
 
 // checkStatus is a check's status as a finding's.
 var checkStatus = map[string]string{"ok": FindingOK, "warning": FindingReview, "error": FindingBlocked, "due": FindingDue,
@@ -246,8 +247,9 @@ func onlyIfChanged(trigger string) bool {
 }
 
 // Deterministic are the findings Fyniq makes before any model step (AI-64), and the packs they read, by name: the
-// statutory calendar's items due in the next 30 days or overdue; the checks the checklist reads; and, until the
-// corporate profile is recorded, its checks Not assessed, naming the inputs they wait for (FR-CS-03).
+// statutory calendar's items due in the next 30 days or overdue, the corporate profile's lodgements among them; and the
+// checks the checklist reads, the corporate profile's (C.2 #32 to #35) among them, each Not assessed naming the input it
+// waits for while that is missing (FR-CS-03; skill version 2, p1-company-secretary design D5).
 func Deterministic(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]Finding, map[string]string, error) {
 	today := dayIn(now)
 	packs := map[string]string{}
@@ -301,10 +303,6 @@ func Deterministic(ctx context.Context, u storage.UnitOfWork, now time.Time) ([]
 		}
 		out = append(out, f)
 	}
-	out = append(out, Finding{Key: "corporate:profile", Status: FindingNotAssessed, Title: "The corporate profile's checks",
-		Detail: "The company secretary, the officers, the registered office, the controllers and the ACRA extract are checked " +
-			"against a corporate profile, which is not recorded yet",
-		Next: "These checks start once the corporate profile can be recorded"})
 	return out, packs, nil
 }
 

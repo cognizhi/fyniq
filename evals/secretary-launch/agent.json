@@ -43,7 +43,7 @@
       "description": "No financial year is set (G4-110 in part): its deadlines are Not assessed, and the summary says this is not an all clear.",
       "today": "2027-01-05",
       "expect": {
-        "findings": [{"key": "calendar:financial_year:-", "status": "not_assessed"}, {"key": "corporate:profile", "status": "not_assessed"}]
+        "findings": [{"key": "calendar:financial_year:-", "status": "not_assessed"}, {"key": "check:corporate.statements-approved", "status": "not_assessed"}]
       },
       "solution": {"text": "The financial years are not set: set them in the organisation's settings so their deadlines can be checked."}
     },

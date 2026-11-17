@@ -98,8 +98,13 @@
   - `corporate.statements-approved`: ⏰ for a year whose AGM, or statements to members, falls due within 30 days or
     has passed, with no approval recorded.
   - `corporate.acra-profile`: ⚠ for each difference of the reconciliation (2.5); Not assessed as it is.
-- [ ] 3.2 The company secretary skill, version 2: its checklist reads the corporate checks in place of the placeholder;
+- [x] 3.2 The company secretary skill, version 2: its checklist reads the corporate checks in place of the placeholder;
   re-pinned (design D5). Tests `// req: AI-64`, `// req: G4-110`.
+  As built: the runner's checks (`secretaryChecks`) gain `corporate.secretary`, `corporate.statements-approved`,
+  `corporate.acra-profile` and `corporate.lodgements`, and the `corporate:profile` placeholder is gone; each finding
+  takes its check's status, Not assessed naming the input. The skill's checklist rows 1, 3, 6 and 7 name them, and
+  `agents/agents.lock.json` pins version 2. A run queued under version 1 is skipped as its skill changed, by the
+  runner's existing rule. The launch suite's "no financial year" case now expects the statements check Not assessed.
 
 ## 4. Documents
 
