@@ -4,15 +4,18 @@ type: task
 title: Read books health and the checks, run them now, mark items reviewed and name a check's owner
 summary: Books health and the check statuses, when checks run, nightly verification, Run now, marking items reviewed, and naming owners
 sources:
-  - docs/user-guide/checks.md sha256:8aae958ebeb7f6d8938ca799b6bee37f4c1bf87e77f03724fe20bed4ff65d1d1
+  - docs/user-guide/checks.md sha256:ad8a346f32f926aedcd69f3a7ec3c9792514dd4b90a08cc2b5c35880e7a5fef3
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-14
+compiled_at: 2026-11-17
 aliases:
+  - run it again
+  - background task stopped
+  - replay failed work
   - books health
   - checks
   - checks page
@@ -83,6 +86,15 @@ aliases:
 - Two checks are reviewed only where their control lives: a logged action in the **review log**, and the quarter's access review on **Settings → Access review** ([[settings.access-review]]).
 
 (src: docs/user-guide/checks.md#mark-an-item-reviewed)
+
+## Run a stopped task again
+
+- Fyniq does some work in the background, such as sending an email or making a recurring document; a task that fails is tried again by itself.
+- One that fails every time stops, and **Every scheduled job ran on time** lists it with when it stopped and why.
+- Once what stopped it is fixed, an Owner or an Administrator selects **Run it again** beside it and confirms: it goes back in the queue with its attempts counted afresh, and its last error stays on record.
+- Each run again is kept in the audit trail; the task leaves the check once the checks run again.
+
+(src: docs/user-guide/checks.md#run-a-stopped-task-again)
 
 ## Name a check's owner
 
