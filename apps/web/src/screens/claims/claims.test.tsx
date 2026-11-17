@@ -5,7 +5,7 @@ import { answer, ownerSession, problem, seen, type Answer } from "../../test/api
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { noAuthenticator } from "../../test/webauthn";
-import { personalOnly } from "../Home";
+import { personalOnly } from "../../shell/navigation";
 import { checkClaim, ClaimEditor, newReceipt, type ClaimForm } from "./ClaimEditor";
 import type { Advance, CardLine, Claim } from "./claims";
 import { ClaimsReview } from "./ClaimsReview";

@@ -49,7 +49,17 @@
   person, the organisation, the mode and the "Confirm it's you" dialog (`stepup.tsx`: a passkey, or signing in again;
   an action the API refuses with API-AUTHZ-05 runs once more after it, with the same Idempotency-Key). Settings sits at
   the sidebar's foot; the Settings page lists its pages from the registry's `settingsNav`, cut by role and mode, and in
-  Basic says how many more Expert mode shows (FR-UX-26). An unknown address says so, with a link to Home.)
+  Basic says how many more Expert mode shows (FR-UX-26). An unknown address says so, with a link to Home.
+  17 Nov 2026, with p1-launch-readiness 5.3: the sidebar follows §7.1's table of what each role sees (FR-UX-40: an
+  area for a right in one of its capabilities; a right that only approves, or reads one reference list, gives none).
+  A person with personal rights only gets the personal workspace (FR-UX-39), and lands on My claims; the
+  Administrator lands on Settings, the Auditor and the Board viewer on Reports, the Company secretary and the DPO on
+  Compliance (`landingOf`). A page outside the person's areas shows "This page isn't part of your access"
+  (`shell/NotPartOfAccess.tsx`, `mayOpen`) with a way back, never part of the page. Tests `navigation.test.ts` (each
+  role's areas, the union of two, landings) and the browser walkthroughs `journeys/walkthroughs.spec.ts`, which also
+  read the hidden area's list through the API and expect 403. **Left:** badges, the record page anatomy, the
+  organisation switcher, the Finance | People switch; the Approver's "Home: My department" and the Auditor's
+  workspace.)
 - [ ] 2.2 The command palette, global search in PostgreSQL under row-level security, and Inbox triage whose approve shortcut opens the confirmation. Tests `// req: FR-UX-01`, `// req: FR-UX-02` and `// req: FR-UX-03`
   (20 Oct 2026, in part: the Inbox lists the approval requests and the weekly review; a request opens on its own page,
   and only its confirmation decides (FR-UX-03). The command palette leaves out pages of one record. **Left:** global
