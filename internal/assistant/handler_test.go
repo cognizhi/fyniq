@@ -30,7 +30,7 @@ func (callers) Verify(token, class string) error {
 // req: AI-P2
 // asvs: V8.2.1
 func TestTurnsAreTheAPIsAlone(t *testing.T) {
-	b := &api{answers: []ports.ModelResponse{text("Revenue was in the fact cited.")}}
+	b := &api{answers: []ports.ModelResponse{answer(words("The books have no revenue yet."))}}
 	h := assistant.Handler{Assistant: &assistant.Assistant{Backend: b, Prompt: prompt(t)}, Callers: callers{}}
 	post := func(token string, body any) *httptest.ResponseRecorder {
 		raw, _ := json.Marshal(body)

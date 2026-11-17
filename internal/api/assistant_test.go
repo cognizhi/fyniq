@@ -58,10 +58,14 @@ func TestTheAssistantAnswersThroughTheAPI(t *testing.T) {
 			MadeAt: e.clock.Now(), Steps: []storage.AIRouteStep{{ConnectionID: sg, Model: "gpt-6"}}})
 		return err
 	})
+	direct := e.call(http.MethodPost, "/v1/metrics:query", e.as(authz.Controller), map[string]any{"measure": "revenue", "from": "2026-11", "to": "2026-11"})
+	want := direct.Body["facts"].([]any)[0].(map[string]any)
+	cited, _ := json.Marshal(assistant.Structured{Segments: []assistant.Segment{{Text: "Revenue in November 2026 was "},
+		{Fact: want["id"].(string), Measure: "revenue", From: want["from"].(string), To: want["to"].(string), Currency: "SGD"}, {Text: "."}}})
 	model := &scripted{answers: []ports.ModelResponse{
 		{Parts: []ports.ModelPart{{Kind: ports.PartToolCall, CallID: "c1", Tool: "metrics_query", Input: json.RawMessage(`{"measure":"revenue","from":"2026-11","to":"2026-11"}`)}},
 			StopReason: ports.StopToolCall},
-		{Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "Revenue in November is in the fact cited."}}, StopReason: ports.StopEnd},
+		{Parts: []ports.ModelPart{{Kind: ports.PartText, Text: string(cited)}}, StopReason: ports.StopEnd},
 	}}
 	e.api.deps.AIProviders = func(context.Context, storage.UnitOfWork, storage.AIConnection) (ports.ModelProvider, error) {
 		return model, nil
@@ -83,9 +87,8 @@ func TestTheAssistantAnswersThroughTheAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	direct := e.call(http.MethodPost, "/v1/metrics:query", e.as(authz.Controller), map[string]any{"measure": "revenue", "from": "2026-11", "to": "2026-11"})
-	want := direct.Body["facts"].([]any)[0].(map[string]any)
-	if out.Stop != assistant.StopAnswered || len(out.Facts) != 1 || out.Facts[0].ID != want["id"] || out.Facts[0].Value != want["value"] || len(out.Runs) != 2 {
+	if out.Stop != assistant.StopAnswered || len(out.Facts) != 1 || out.Facts[0].ID != want["id"] || out.Facts[0].Value != want["value"] || len(out.Runs) != 2 ||
+		out.Grounding.Regenerated || !strings.HasPrefix(out.Text, "Revenue in November 2026 was SGD ") {
 		t.Fatalf("the answer: %+v", out)
 	}
 	first, second := model.requests[0], model.requests[1]
