@@ -92,13 +92,16 @@ type Backend interface {
 	CallTool(ctx context.Context, token string, tool string, input json.RawMessage) (ToolResult, error)
 }
 
-// Question is a turn to answer: the turn's delegated token, the person's words, what they asked about (FR-UX-17), and
-// the conversation's earlier turns as the API sends them.
+// Question is a turn to answer: the turn's delegated token, the person's words, what they asked about (FR-UX-17), the
+// conversation's earlier turns as the API sends them, the facts those turns cited, which this turn may cite again
+// (AI-08: a figure from an earlier turn keeps its fact ID), and the most reads it may make (design D9).
 type Question struct {
-	Token   string               `json:"token"`
-	Text    string               `json:"question"`
-	Context string               `json:"context,omitempty"`
-	History []ports.ModelMessage `json:"history,omitempty"`
+	Token    string               `json:"token"`
+	Text     string               `json:"question"`
+	Context  string               `json:"context,omitempty"`
+	History  []ports.ModelMessage `json:"history,omitempty"`
+	Earlier  []aitool.Fact        `json:"earlier_facts,omitempty"`
+	MaxReads int                  `json:"max_reads,omitempty"`
 }
 
 // The kinds of an event the assistant streams while it answers.
@@ -186,15 +189,24 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 	if tools == nil {
 		tools = aitool.Default()
 	}
-	limit, maxTokens := cmpOr(a.MaxToolCalls, DefaultToolCalls), cmpOr(a.MaxTokens, DefaultMaxTokens)
+	limit, maxTokens := cmpOr(q.MaxReads, cmpOr(a.MaxToolCalls, DefaultToolCalls)), cmpOr(a.MaxTokens, DefaultMaxTokens)
 	var names []string
 	for _, t := range tools.Tools() {
 		names = append(names, t.Name)
 	}
 	out := Answer{Prompt: a.Prompt.Name(), PromptSHA256: a.Prompt.SHA256, Facts: []aitool.Fact{}, Runs: []string{}, ToolCalls: []ToolCall{},
 		Segments: []Segment{}, Cited: []string{}}
-	facts := map[string]aitool.Fact{}
-	known := func(id string) (aitool.Fact, bool) { f, ok := facts[id]; return f, ok }
+	facts, earlier := map[string]aitool.Fact{}, map[string]aitool.Fact{}
+	for _, f := range q.Earlier {
+		earlier[f.ID] = f
+	}
+	known := func(id string) (aitool.Fact, bool) {
+		if f, ok := facts[id]; ok {
+			return f, true
+		}
+		f, ok := earlier[id]
+		return f, ok
+	}
 	keep := func(fs []aitool.Fact) {
 		for _, f := range fs {
 			if _, ok := facts[f.ID]; !ok {
@@ -242,6 +254,13 @@ func (a *Assistant) Answer(ctx context.Context, q Question, emit func(Event) err
 			}
 			text, cited := Render(s, known)
 			out.Segments, out.Cited, out.Text, out.Stop = s.Segments, cited, aiexclusion.Filter(text), StopAnswered
+			for _, id := range cited { // an earlier turn's fact cited again is kept with this turn too
+				if _, read := facts[id]; !read {
+					if f, ok := earlier[id]; ok {
+						facts[id], out.Facts = f, append(out.Facts, f)
+					}
+				}
+			}
 			break
 		}
 		if calls+len(asked) > limit {

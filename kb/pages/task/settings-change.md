@@ -4,7 +4,7 @@ type: task
 title: Change or reset an organisation setting, or edit the profile
 summary: Change a company-wide setting from a date, reset it to recommended, why some need a second approver, and edit the profile
 sources:
-  - docs/user-guide/organisation-settings.md sha256:185fa7bf483644d20df204a3e7a5dc22bbecc9bb941a6bc2583b424154649b2b
+  - docs/user-guide/organisation-settings.md sha256:5bfabbfaeff8105ffd95e916e7cddaae898646b5cc7081e1e8a16a5920467153
 data_class: general
 taint: trusted
 status: draft
@@ -34,7 +34,7 @@ aliases:
 
 ## Settings that need a second approver
 
-- Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when incoming-funds alerts expire, the AI assistant, the AI's access to pay and the fields it never reads, details in notification email and the sign-out after inactivity need a second approver.
+- Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when incoming-funds alerts expire, the AI assistant, the AI's access to pay, the fields it never reads and its limits, details in notification email and the sign-out after inactivity need a second approver.
 - They show **Needs a second approver**, and the button says **Ask for approval** instead of **Save**. Saving a change to one asks for approval: the setting keeps its value until another member who approves settings, such as an Owner, approves it ([[approvals.decide]]).
 - The AI assistant is the exception when it is switched **off**: that takes effect at once, with no second approver, and the AI stops: new requests are refused, and a reply being written stops within seconds. Switching it back on still needs a second approver. AI payroll access turns off at once the same way.
 

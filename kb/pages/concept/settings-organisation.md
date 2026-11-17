@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:185fa7bf483644d20df204a3e7a5dc22bbecc9bb941a6bc2583b424154649b2b
+  - docs/user-guide/organisation-settings.md sha256:5bfabbfaeff8105ffd95e916e7cddaae898646b5cc7081e1e8a16a5920467153
 data_class: general
 taint: trusted
 status: draft
@@ -14,6 +14,8 @@ schema: kb-schema@1
 compiled_at: 2026-11-15
 aliases:
   - AI payroll access
+  - assistant limits
+  - too many questions
   - fields the AI never reads
   - what the AI never sees
   - data protection officer
@@ -163,6 +165,15 @@ The calendar itself: [[compliance.calendar]].
 - **Fields the AI never reads**: none unless changed. Add field names of your own, separated by commas, such as `notes, memo`, to keep them from the AI too; a field can be added to the list, never taken off the never-send list. Changing it needs a second approver.
 
 (src: docs/user-guide/organisation-settings.md#ai-and-personal-data)
+
+## AI limits
+
+- The assistant answers within limits, so a script or a slip cannot run up the AI's cost; each needs a second approver to change.
+- **Questions a person may ask the assistant a minute**: 20 unless changed, from 1 to 1,000. **A day**: 200 unless changed, from 1 to 100,000, counted over the last 24 hours. Past either, the assistant says so and answers again once it eases.
+- **Reads of the books for one question**: 8 unless changed, from 1 to 20. A question needing more is answered in part, saying so; ask about one thing at a time.
+- **Questions in one conversation**: 40 unless changed, from 2 to 200. Past 20, the oldest questions are summarised, keeping the figures they cited; at the limit, start a new conversation.
+
+(src: docs/user-guide/organisation-settings.md#ai-limits)
 
 ## Payment terms
 

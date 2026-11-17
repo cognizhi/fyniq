@@ -52,7 +52,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 - [x] 5.2 Grounding and rendering (design D7): structured answers citing facts, figures rendered from their facts,
   attribution checked, one regeneration then "could not establish"; the Markdown subset. Tests `// req: AI-08`,
   `// req: AI-21`, `// req: AI-69` (G4-089, G4-090).
-- [ ] 5.3 Limits (design D9): turns per person a minute and a day, tool calls per turn, conversation length with
+- [x] 5.3 Limits (design D9): turns per person a minute and a day, tool calls per turn, conversation length with
   compaction keeping facts by ID; the settings. Tests `// req: AI-23`.
 
 ## 6. Conversations
