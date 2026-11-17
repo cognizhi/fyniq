@@ -203,5 +203,11 @@
 
 ## 6. Screens
 
+  (18 Nov 2026, the page-load and interaction budgets, for the launch gate (NFR-PERF-UI-01): `e2e/performance.spec.ts`,
+  in Chrome over an emulated 4G link (9 Mbps down, 1.5 Mbps up, 85 ms) on the built app with fixture answers: the
+  75th percentile Largest Contentful Paint of eight cold loads of Home, the invoices, the Inbox and Settings under 1.5 s,
+  the slowest interaction's next paint under 200 ms (the mode switch, the palette, the Help menu), and a change of route
+  whose data is cached under 300 ms; it logs what it measured (locally, at half the CPU: 1.3 s, 48 ms, 35 ms). **Left:**
+  NFR-L10N-01's externalised strings and per-user formats.)
 - [ ] 6.1 Build the 18 shell screens as designed. Each has help keys, a `docs/user-guide/` page compiled into `kb/`, and a tour step where it is on the first-run path
 - [ ] 6.2 Finish with `make check`, `make test` and `make test-e2e`
