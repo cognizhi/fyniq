@@ -64,6 +64,8 @@ See proposal.md for why. What exists today:
   Consumer-app tokens, chat sessions, cookies and command-line seats are refused by the auth methods offered (AI-73).
 - Each connection's egress is its base URL's host only; a self-hosted endpoint must be a registered private endpoint
   (SEC-37).
+- As built: timeouts and retries are among each provider's settings (its manifest's configuration); the request rate
+  limit and the circuit breaker are the connector's, fixed in its manifest, not per connection.
 
 **D3. Model lists, read whole or not trusted (AI-80, AI-81, AI-84).**
 - `ai_model_list_read` (connection, time, `complete` / `partial` / `failed`, pages, the models added and removed) and
@@ -105,6 +107,10 @@ See proposal.md for why. What exists today:
   checks the connection (and any gateway) against it before each call and each fallback, and a connection without a
   complete list read within its stale limit (14 days) or with a version-less alias serves no personal or payroll
   class (AI-84, AI-87). Classes never drop within a conversation.
+- As built (verification, slice 33): the stale limit is `airoute.ListStale`, 14 days, the same for every connection; the
+  router reads each step's connection's last complete read and, past the limit or with none, skips the step for a call
+  carrying personal data or payroll, saying why (AI-84); a partial or failed read does not make it current. C.2 #55
+  warns earlier, after 3 days.
 
 **D6. Routes per agent, presets as configuration (AI-74, AI-26).**
 - `ai_agent` lists the agents (the chat loop, document capture, bank categorisation, each task type's drafting, report
@@ -256,6 +262,9 @@ See proposal.md for why. What exists today:
   the value); `ai_model.listed` (system), `.allowed`, `.removed`, `.probed`; `ai_price.changed` (system user, or the
   Owner); `ai_route.changed`; `ai_qualification.recorded`; `ai_budget.changed`; `ai.switched_on`, `ai.switched_off`;
   `ai_activity.read` for a restricted entry (AUD-05).
+- As built: a request (to add, change, re-key or switch on a connection, allow a model, widen a route or price a model)
+  is audited as its approval request and its decision; a budget set is `ai_budget.set`; the AI switch is the setting
+  `features.ai_assistant`, audited as a setting change; prices add `ai_price.confirmed`, `.declined` and `.withdrawn`.
 - C.2 #55 flags a route that falls back past its daily threshold, an alias not re-qualified this week, a budget or
   quota within 20%, a model retiring within 30 days, retired or unlisted, and a connection whose list was not read for
   3 days.
@@ -287,8 +296,8 @@ See proposal.md for why. What exists today:
 - [A poisoned or broken price catalogue] → digest, licence check, decimal parsing, suspicious drops held for review,
   Owner prices never overwritten.
 - [Budget races] → one database function reserves under row locks; the concurrent-spend scenario is a test.
-- [The AI role gains writes] → only append-only call and reservation functions in its own organisation; the grants
-  snapshot and an attack test prove nothing else.
+- [The AI role gains writes] → as built (D11), it holds none, functions included (CMP-AI-01): calls and reservations
+  are recorded by the API's and the worker's roles; the grants snapshot and an attack test prove it.
 
 ## Migration Plan
 
