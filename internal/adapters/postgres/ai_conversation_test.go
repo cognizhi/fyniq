@@ -117,6 +117,9 @@ func TestAttackAIConversationsOnlyGoForward(t *testing.T) {
 		{"the owner giving it to another", "fyniq_migrator", `UPDATE fyniq.ai_conversation SET user_id = gen_random_uuid()`, []string{"FY341", "23503"}},
 		{"the owner rewriting a question", "fyniq_migrator", `UPDATE fyniq.ai_turn SET question = 'Something else'`, []string{"FY341"}},
 		{"the owner rewriting an answer", "fyniq_migrator", `UPDATE fyniq.ai_turn SET answer = 'Revenue was SGD 1,000,000.00.'`, []string{"FY341"}},
+		{"the owner hiding what a turn read", "fyniq_migrator", `UPDATE fyniq.ai_turn SET classes = '{}'`, []string{"FY341"}},
+		{"a class that is none", "fyniq_migrator", `INSERT INTO fyniq.ai_turn (conversation_id, user_id, question, asked_at, classes)
+		  SELECT conversation_id, user_id, 'x', now(), '{secrets}' FROM fyniq.ai_turn LIMIT 1`, []string{"23514"}},
 		{"the owner changing a tool call", "fyniq_migrator", `UPDATE fyniq.ai_tool_call SET outcome = 'read', code = ''`, []string{"FY341"}},
 		{"the owner changing feedback", "fyniq_migrator", `UPDATE fyniq.ai_feedback SET rating = 'up'`, []string{"FY341"}},
 		{"the owner removing turns", "fyniq_migrator", `DELETE FROM fyniq.ai_turn`, []string{"FY341", "23503"}},

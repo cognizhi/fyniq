@@ -69,7 +69,7 @@ fyniq_api       INSERT    ai_tool_call (code, duration_ms, facts, input, n, omit
 fyniq_api       SELECT    ai_tool_call
 fyniq_api       INSERT    ai_turn (asked_at, context, conversation_id, question, user_id)
 fyniq_api       SELECT    ai_turn
-fyniq_api       UPDATE    ai_turn (answer, answered_at, cited, code, facts, input_tokens, output_tokens, prompt, prompt_sha256, regenerated, runs, segments, status, withheld)
+fyniq_api       UPDATE    ai_turn (answer, answered_at, cited, classes, code, facts, input_tokens, output_tokens, prompt, prompt_sha256, regenerated, runs, segments, status, withheld)
 fyniq_api       INSERT    allocation (amount, base_amount, base_currency, base_minor_units, currency, document_id, minor_units, on_date, realised_fx, reverses_id, source_id, source_version, tax, tolerance, written_at, written_by)
 fyniq_api       SELECT    allocation
 fyniq_api       INSERT    announcement (dismissible, ends_at, link, message, published_at, published_by, roles, severity, starts_at)

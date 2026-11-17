@@ -61,7 +61,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   role, the export catalogue, goldens); `/v1/assistant/conversations` and their turns as server-sent events relayed
   from the AI service; admission (the switch, limits); context attached (FR-UX-17). Tests `// req: AI-P1`,
   `// req: AI-P8`, `// req: FR-UX-17`, `// req: AI-12`.
-- [ ] 6.2 The AI activity log lists turns and tool calls with their classes and masks. Tests `// req: AI-12`,
+- [x] 6.2 The AI activity log lists turns and tool calls with their classes and masks. Tests `// req: AI-12`,
   `// req: AI-P8`.
 - [ ] 6.3 The purge of conversations after `retention.ai_conversations_days`, as a scheduled job, recorded. Test
   `// req: data/backup-and-recovery Retention of AI conversations`.

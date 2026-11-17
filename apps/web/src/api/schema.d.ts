@@ -408,6 +408,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/activity/turns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the assistant's turns in the AI activity log
+         * @description The assistant's turns (AI-12), newest first, a page at a time: who asked, what, how it ended and why, the prompt it was told and its hash, its model calls' runs, its tokens, the classes of data it read, what grounding did, and each read it made with its outcome and counts, never its input or what it read; filtered by person and days. Each member reads their own; the Owner and the DPO read everyone's (Appendix D, rev 0.276). Someone else's turn that read payroll shows masked to a reader who may not see payroll unmasked (FR-PAY-13). Side effects: showing such a turn unmasked writes the audit event ai_activity.read (AUD-05); otherwise none. On the never-list for the AI and MCP (§9.6).
+         */
+        get: operations["listAITurnActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ai/budgets": {
         parameters: {
             query?: never;
@@ -16217,6 +16237,103 @@ export interface components {
              */
             withheld: number;
         };
+        AITurnActivity: {
+            /**
+             * Format: date-time
+             * @example 2026-11-15T08:00:04Z
+             */
+            answered_at?: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T08:00:00Z
+             */
+            asked_at: string;
+            /**
+             * Format: int64
+             * @description How many facts its answer cites.
+             * @example 2
+             */
+            cited: number;
+            /** @description The classes of data it read (AI-83). */
+            classes: ("know-how" | "business-figures" | "personal-data" | "payroll")[];
+            /** @example AI-LIMIT-01 */
+            code?: string;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+             */
+            conversation_id: string;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @example 2400
+             */
+            input_tokens: number;
+            /**
+             * @description It read payroll and you may not see payroll unmasked: its question is withheld (FR-PAY-13).
+             * @example false
+             */
+            masked: boolean;
+            /**
+             * Format: int64
+             * @example 310
+             */
+            output_tokens: number;
+            /**
+             * @description Who asked: user:<id>.
+             * @example user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
+             */
+            person: string;
+            /**
+             * @description The system prompt it was told, and its hash (AI-24).
+             * @example chat@2
+             */
+            prompt?: string;
+            /** @example 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef */
+            prompt_sha256?: string;
+            /**
+             * @description What was asked; absent when masked.
+             * @example What is our cash runway?
+             */
+            question?: string;
+            /**
+             * @description Its answer failed the figures' check once (AI-08).
+             * @example false
+             */
+            regenerated: boolean;
+            /** @description Its model calls' runs, whose attempts listAIActivity shows. */
+            runs: string[];
+            /**
+             * @example answered
+             * @enum {string}
+             */
+            status: "answering" | "answered" | "refused" | "failed";
+            tool_calls: components["schemas"]["AITurnToolCall"][];
+            /**
+             * Format: int64
+             * @description Figures or words withheld after the check.
+             * @example 0
+             */
+            withheld: number;
+        };
+        AITurnActivityPage: {
+            items: components["schemas"]["AITurnActivity"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjIwMjYtMTEtMTRUMDk6MDA6MDBafDAxOTMifQ
+             */
+            next_cursor?: string;
+            /**
+             * @description own: your own turns only; all: every member's, for the Owner and the DPO (Appendix D).
+             * @example own
+             * @enum {string}
+             */
+            scope: "own" | "all";
+        };
         AITurnContext: {
             /**
              * @description A record's ID, or a figure's fact ID.
@@ -16252,6 +16369,52 @@ export interface components {
              * @example metrics.query
              */
             tool?: string;
+        };
+        AITurnToolCall: {
+            /**
+             * @description Why it was refused.
+             * @example AI-TOOL-03
+             */
+            code?: string;
+            /**
+             * Format: int64
+             * @example 120
+             */
+            duration_ms: number;
+            /**
+             * Format: int64
+             * @description How many facts it read.
+             * @example 3
+             */
+            facts: number;
+            /**
+             * Format: int64
+             * @description How many lists its limits cut.
+             * @example 0
+             */
+            omitted: number;
+            /**
+             * @example read
+             * @enum {string}
+             */
+            outcome: "read" | "refused";
+            /**
+             * @description The hash of what the model read of it.
+             * @example 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+             */
+            output_sha256?: string;
+            /** @example metrics.query */
+            tool: string;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            version: number;
+            /**
+             * @description Screening withheld its free text (AI-18).
+             * @example false
+             */
+            withheld: boolean;
         };
         AIUsage: {
             by_agent: components["schemas"]["AIUsageByAgent"][];
@@ -50500,6 +50663,110 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AIActivityPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAITurnActivity: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only this member's turns, by user ID: for the Owner and the DPO; anyone else reads only their own. */
+                person?: string;
+                /** @description Only turns asked on or after this day, in Singapore time. */
+                from?: string;
+                /** @description Only turns asked on or before this day. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AITurnActivityPage"];
                 };
             };
             /** @description Unauthorized: `API-AUTH-01` Sign-in required. */

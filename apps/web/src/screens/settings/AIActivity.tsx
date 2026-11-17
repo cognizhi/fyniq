@@ -16,6 +16,14 @@ import { classWords } from "./AIRoutes";
 import { SettingsPage } from "./SettingsPage";
 
 type Entry = components["schemas"]["AIActivityEntry"];
+type Turn = components["schemas"]["AITurnActivity"];
+
+const turnWords: Record<Turn["status"], { label: string; tone: string; icon: typeof CircleCheck }> = {
+  answering: { label: "Answering", tone: "fy-chip--neutral", icon: Repeat },
+  answered: { label: "Answered", tone: "fy-chip--good", icon: CircleCheck },
+  refused: { label: "Refused", tone: "fy-chip--warning", icon: CircleSlash },
+  failed: { label: "Failed", tone: "fy-chip--critical", icon: CircleX },
+};
 
 const outcomeWords: Record<Entry["outcome"], { label: string; tone: string; icon: typeof CircleCheck }> = {
   ok: { label: "Served", tone: "fy-chip--good", icon: CircleCheck },
@@ -60,6 +68,18 @@ export function AIActivity() {
     },
     getNextPageParam: (last) => last.next_cursor,
   });
+  const turnFilter = Object.fromEntries(Object.entries({ person: filter.person, from: filter.from, to: filter.to }).filter(([, v]) => v !== ""));
+  const turnList = useInfiniteQuery({
+    queryKey: ["ai-activity-turns", turnFilter],
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const { data, error } = await api.GET("/v1/ai/activity/turns", { params: { query: { page_size: 20, cursor: pageParam, ...turnFilter } } });
+      if (error) throw error;
+      return data;
+    },
+    getNextPageParam: (last) => last.next_cursor,
+  });
+  const turns = turnList.data?.pages.flatMap((p) => p.items) ?? [];
   const items = list.data?.pages.flatMap((p) => p.items) ?? [];
   const everyone = list.data?.pages[0]?.scope === "all";
   const names = { agents: agents.data ?? [], connections: [], people: people.data ?? [] };
@@ -154,6 +174,97 @@ export function AIActivity() {
           ))}
         </div>
       )}
+      <section className="fy-card" aria-labelledby={`${id}-turns`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-turns`}>
+            Questions to the assistant
+          </h2>
+        </div>
+        {turnList.isError && <Refusal problem={problemOf(turnList.error)} title="The assistant's questions could not be shown" />}
+        {turnList.data && turns.length === 0 && <p className="fy-card__body fy-secondary">No questions to the assistant {filter.from || filter.to || filter.person ? "match the filter" : "yet"}.</p>}
+        {turns.length > 0 && (
+          <div className="fy-tablewrap">
+            <table className="fy-table fy-table--cards" aria-labelledby={`${id}-turns`}>
+              <thead>
+                <tr>
+                  <th scope="col">When</th>
+                  {everyone && <th scope="col">Asked by</th>}
+                  <th scope="col">Question</th>
+                  <th scope="col">Outcome</th>
+                  <th scope="col">Reads of the books</th>
+                  <th scope="col" className="fy-num">
+                    Tokens in / out
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {turns.map((tu) => {
+                  const o = turnWords[tu.status];
+                  return (
+                    <tr key={tu.id}>
+                      <td data-card="title">{dateTime(tu.asked_at)}</td>
+                      {everyone && <td>{personName(tu.person, names)}</td>}
+                      <td className="whitespace-normal">
+                        {tu.masked ? (
+                          <span className="fy-small fy-secondary fy-row gap-1">
+                            <Icon of={EyeOff} />
+                            Masked: it read payroll
+                          </span>
+                        ) : (
+                          <span className="fy-stack gap-0">
+                            <span>{tu.question}</span>
+                            {tu.classes.length > 0 && <span className="fy-small fy-secondary">{tu.classes.map((c) => classWords[c]).join(", ")}</span>}
+                          </span>
+                        )}
+                      </td>
+                      <td className="whitespace-normal">
+                        <span className="fy-stack gap-1">
+                          <span className={`fy-chip ${o.tone} self-start`}>
+                            <Icon of={o.icon} />
+                            {o.label}
+                          </span>
+                          {tu.code && <span className="fy-small fy-mono">{tu.code}</span>}
+                          {tu.regenerated && <span className="fy-small fy-secondary">Asked again: a figure failed the check</span>}
+                          {tu.runs.length > 0 && (
+                            <Button size="sm" variant="ghost" className="self-start" onClick={() => set({ run: tu.runs[0] })} aria-label={`Show the model calls of the question of ${dateTime(tu.asked_at)}`}>
+                              <Icon of={Repeat} />
+                              Its model calls
+                            </Button>
+                          )}
+                        </span>
+                      </td>
+                      <td className="whitespace-normal">
+                        {tu.tool_calls.length === 0 ? (
+                          <span className="fy-secondary">None</span>
+                        ) : (
+                          <ul className="fy-stack gap-0">
+                            {tu.tool_calls.map((c, i) => (
+                              <li key={i} className="fy-small">
+                                <span className="fy-mono">{c.tool}</span> {c.outcome === "read" ? `read ${count(c.facts)} figure${c.facts === 1 ? "" : "s"}` : `refused ${c.code ?? ""}`}
+                                {c.withheld ? ", text withheld" : ""}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                      <td className="fy-num">
+                        {count(tu.input_tokens)} / {count(tu.output_tokens)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {turnList.hasNextPage && (
+          <div className="fy-card__body">
+            <Button variant="secondary" onClick={() => void turnList.fetchNextPage()} disabled={turnList.isFetchingNextPage}>
+              {turnList.isFetchingNextPage ? "Loading…" : "Show more questions"}
+            </Button>
+          </div>
+        )}
+      </section>
       <section className="fy-card" aria-labelledby={`${id}-entries`}>
         <div className="fy-card__head">
           <h2 className="fy-h3" id={`${id}-entries`}>

@@ -52,8 +52,19 @@ type AITurn struct {
 	OutputTokens int64
 	Regenerated  bool
 	Withheld     int
+	Classes      []string // the classes of data it read (AI-83), as its grant had them when it ended
 	AskedAt      time.Time
 	AnsweredAt   *time.Time
+}
+
+// AITurnQuery selects turns for the AI activity log: one person's or everyone's (uuid.Nil), asked in [From, To), newest
+// first, before a cursor's turn, at most Limit.
+type AITurnQuery struct {
+	User     uuid.UUID
+	From, To time.Time
+	BeforeAt *time.Time
+	BeforeID uuid.UUID
+	Limit    int
 }
 
 // AIToolCall is a read a turn made, as it ran: the tool and its version, the input, a hash of what the model read, the
@@ -106,6 +117,8 @@ type AIConversations interface {
 	Turns(ctx context.Context, conversation uuid.UUID) ([]AITurn, error)
 	// ToolCalls are a turn's tool calls, in order.
 	ToolCalls(ctx context.Context, turn uuid.UUID) ([]AIToolCall, error)
+	// Page are the turns the query selects, for the AI activity log (AI-12), with each one's tool calls.
+	Page(ctx context.Context, q AITurnQuery) ([]AITurn, map[uuid.UUID][]AIToolCall, error)
 	// Asked counts the turns a person asked since a time, whatever their end (design D9).
 	Asked(ctx context.Context, user uuid.UUID, since time.Time) (int, error)
 	// Give keeps a person's feedback on a turn, once, audited.

@@ -371,6 +371,7 @@ ai_turn | regenerated | boolean | not null | false
 ai_turn | withheld | integer | not null | 0
 ai_turn | asked_at | timestamp with time zone | not null | 
 ai_turn | answered_at | timestamp with time zone | null | 
+ai_turn | classes | text[] | not null | '{}'::text[]
 allocation | organisation_id | uuid | not null | current_org()
 allocation | id | uuid | not null | uuidv7()
 allocation | source_id | uuid | not null | 
@@ -2831,6 +2832,8 @@ ai_turn | ai_turn_answer_not_null | NOT NULL answer
 ai_turn | ai_turn_answered | CHECK (((answered_at IS NULL) OR (answered_at >= asked_at)))
 ai_turn | ai_turn_asked_at_not_null | NOT NULL asked_at
 ai_turn | ai_turn_cited_not_null | NOT NULL cited
+ai_turn | ai_turn_classes | CHECK ((classes <@ ARRAY['know-how'::text, 'business-figures'::text, 'personal-data'::text, 'payroll'::text, 'restricted'::text]))
+ai_turn | ai_turn_classes_not_null | NOT NULL classes
 ai_turn | ai_turn_code | CHECK (((code ~ '^([A-Z][A-Z0-9-]{1,40})?$'::text) AND ((status = ANY (ARRAY['refused'::text, 'failed'::text])) = (code <> ''::text))))
 ai_turn | ai_turn_code_not_null | NOT NULL code
 ai_turn | ai_turn_conversation_fkey | FOREIGN KEY (organisation_id, conversation_id) REFERENCES ai_conversation(organisation_id, id)

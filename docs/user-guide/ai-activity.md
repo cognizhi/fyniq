@@ -33,6 +33,15 @@ Every attempt is kept, whether it was served or not.
 - The tiles above the list count, in the entries shown, how many were served, fell back, failed or stopped, and were
   masked.
 
+## Questions to the assistant
+
+- Above the model calls, each question asked of the assistant: when, who asked (for the Owner and the data protection
+  officer), the question and the classes of data it read, how it ended (**Answered**, **Refused** with the code of what
+  stopped it, or **Failed**), whether a figure failed the check and the answer was asked for again, each read of the
+  books it made and how many figures it read, and its tokens.
+- What a read returned is never shown here, only how it went. **Its model calls** shows the calls the question made.
+- Someone else's question that read payroll is masked for a reader who may not see payroll unmasked.
+
 ## Masked entries
 
 - Someone else's entry that carried payroll is masked for a reader who may not see payroll unmasked: its detail is
