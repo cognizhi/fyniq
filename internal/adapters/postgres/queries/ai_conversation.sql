@@ -65,5 +65,30 @@ INSERT INTO fyniq.ai_feedback (turn_id, user_id, rating, reason, given_at)
 VALUES (sqlc.arg(turn_id), sqlc.arg(user_id), sqlc.arg(rating), sqlc.arg(reason), sqlc.arg(given_at))
 RETURNING id;
 
+-- name: AIFeedbackOfConversation :many
+SELECT f.id, f.turn_id, f.user_id, f.rating, f.reason, f.given_at, f.reviewed_by, f.reviewed_at, f.decision
+FROM fyniq.ai_feedback f JOIN fyniq.ai_turn t ON t.organisation_id = f.organisation_id AND t.id = f.turn_id
+WHERE t.conversation_id = sqlc.arg(conversation_id) AND f.user_id = sqlc.arg(user_id);
+
+-- name: AIFeedbackPage :many
+SELECT f.id, f.turn_id, f.user_id, f.rating, f.reason, f.given_at, f.reviewed_by, f.reviewed_at, f.decision,
+  t.conversation_id, t.user_id AS asker, t.question, t.answer, t.classes
+FROM fyniq.ai_feedback f JOIN fyniq.ai_turn t ON t.organisation_id = f.organisation_id AND t.id = f.turn_id
+WHERE (sqlc.narg(state)::text IS NULL OR (sqlc.narg(state)::text = 'waiting' AND f.decision IS NULL) OR f.decision = sqlc.narg(state)::text)
+  AND (sqlc.narg(rating)::text IS NULL OR f.rating = sqlc.narg(rating)::text)
+  AND (sqlc.narg(before_at)::timestamptz IS NULL OR (f.given_at, f.id) < (sqlc.narg(before_at)::timestamptz, sqlc.arg(before_id)::uuid))
+ORDER BY f.given_at DESC, f.id DESC
+LIMIT sqlc.arg(max_rows);
+
+-- name: GetAIFeedback :one
+SELECT f.id, f.turn_id, f.user_id, f.rating, f.reason, f.given_at, f.reviewed_by, f.reviewed_at, f.decision,
+  t.conversation_id, t.user_id AS asker, t.question, t.answer, t.classes
+FROM fyniq.ai_feedback f JOIN fyniq.ai_turn t ON t.organisation_id = f.organisation_id AND t.id = f.turn_id
+WHERE f.id = sqlc.arg(id);
+
+-- name: ReviewAIFeedback :execrows
+UPDATE fyniq.ai_feedback SET reviewed_by = sqlc.arg(reviewed_by), reviewed_at = sqlc.arg(reviewed_at), decision = sqlc.arg(decision)
+WHERE id = sqlc.arg(id) AND decision IS NULL;
+
 -- name: PurgeAIConversations :one
 SELECT conversations::int AS conversations, turns::int AS turns FROM fyniq.ai_purge_conversations(sqlc.arg(before)::timestamptz);

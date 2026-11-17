@@ -116,6 +116,15 @@ type AITurn struct {
 	Withheld    int            `json:"withheld" doc:"Figures or words withheld because they still failed the check." example:"0"`
 	AskedAt     string         `json:"asked_at" format:"date-time" example:"2026-11-15T08:00:00Z"`
 	AnsweredAt  string         `json:"answered_at,omitempty" format:"date-time" example:"2026-11-15T08:00:04Z"`
+	Feedback    *AITurnRating  `json:"feedback,omitempty" doc:"Your rating of its answer, once given (QA-AI-05)."`
+}
+
+// AITurnRating is a person's rating of a turn's answer, as they read their conversation.
+type AITurnRating struct {
+	ID     string `json:"id" format:"uuid" example:"0193a3f2-7c1e-7a2b-9c4d-5e6f70819a51"`
+	Rating string `json:"rating" enum:"up,down" example:"down"`
+	Reason string `json:"reason" example:"It used June's figures, not July's."`
+	State  string `json:"state" enum:"waiting,golden,dismissed" doc:"Where its review is." example:"waiting"`
 }
 
 // AIFact is a fact an answer cites (AI-68), as the person's screen shows it with its source and lineage.
@@ -343,10 +352,22 @@ func registerAssistant(a *API) {
 			if err != nil {
 				return err
 			}
+			rated, err := u.AIConversations().Ratings(ctx, c.ID, p.UserID)
+			if err != nil {
+				return err
+			}
 			out = conversationOf(c)
 			out.Turns = make([]AITurn, 0, len(turns))
 			for _, t := range turns {
-				out.Turns = append(out.Turns, turnOf(t))
+				turn := turnOf(t)
+				if f, ok := rated[t.ID]; ok {
+					state := storage.FeedbackWaiting
+					if f.Decision != "" {
+						state = f.Decision
+					}
+					turn.Feedback = &AITurnRating{ID: f.ID.String(), Rating: f.Rating, Reason: f.Reason, State: state}
+				}
+				out.Turns = append(out.Turns, turn)
 			}
 			return nil
 		})

@@ -306,6 +306,17 @@ AI-28).**
 - Monitoring: per turn, grounding failures, refusals, tool errors, screening flags and cost, as activity-log fields and
   OpenTelemetry counters, summarised on AI usage; approval rates arrive with proposals. Feedback is reviewed by an
   Owner or Administrator before it joins the golden set.
+- As built (task 6.4): `giveAIFeedback` (`POST .../turns/{turn_id}/feedback`, on the conversations' row, each person's own
+  answered or refused turn, a reason of 1 to 1,000 characters, once: `STORAGE-DUPLICATE-01`; a turn still answering or
+  failed is `AI-FEEDBACK-01`), and `getAIConversation` shows each turn's rating and where its review is.
+  `listAIFeedback` (`GET /v1/ai/feedback`, by state and rating) and `reviewAIFeedback` (`golden` or `dismissed`, once:
+  `AI-FEEDBACK-03`) are on the AI providers' row under C, where qualifying a model runs the evals: the Administrator
+  holds it, and the Owner, whose cell is A, reviews through `OwnerMay`, stated in the contract. The reviewer reads the
+  question, the answer and the reason; someone else's turn that read payroll is masked to a reviewer who may not see
+  payroll unmasked, as in the activity log, and can only be dismissed (`AI-FEEDBACK-02`), and an unmasked read is
+  `ai_activity.read` (AUD-05). The review is a section of the AI activity page for the Owner and the Administrator.
+  How golden feedback becomes a golden question is task 8.2's: its question, rewritten for the sample company with
+  expectations from the seed, never an organisation's figures (DEV-08).
 
 **D14. Local mode (DEV-09, ADR-T4).**
 - The AI service runs in the Compose stack; replay answers from `evals/cassettes/`; live runs only with

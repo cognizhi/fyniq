@@ -740,6 +740,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List feedback on the assistant's answers
+         * @description Feedback on the assistant's answers for an Owner or Administrator to review (QA-AI-05), newest first, a page at a time, with the question, the answer, the reason and the classes of data the turn read; filtered by state and rating. Golden feedback is what feeds the eval set. Someone else's turn that read payroll shows masked to a reader who may not see payroll unmasked (FR-PAY-13). Side effects: showing such feedback unmasked writes the audit event ai_activity.read (AUD-05); otherwise none. On the never-list for the AI and MCP (§9.6).
+         */
+        get: operations["listAIFeedback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/feedback/{feedback_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review feedback on an answer of the assistant
+         * @description An Owner or Administrator decides feedback waiting (QA-AI-05): golden feeds the eval set, dismissed does not. Feedback masked to the reviewer, on someone else's turn that read payroll, can only be dismissed: what joins the golden set was read by the person who put it there. Side effects: the decision and its audit event ai_feedback.reviewed; showing payroll unmasked also writes ai_activity.read (AUD-05). On the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["reviewAIFeedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ai/presets": {
         parameters: {
             query?: never;
@@ -1274,6 +1314,26 @@ export interface paths {
          * @description Asks a question in one of the caller's own conversations, with what it is about (FR-UX-17), and streams the answer as server-sent events: status while it reads the books, then answer with the turn as kept, or error with what stopped it. The assistant reads as the caller, through the read tools, with a token for this turn alone (AI-01); every figure in the answer is rendered from a fact it read (AI-08). Side effects: the turn, its reads and its audit event; the model calls in the AI activity log. A refusal after the stream began, such as the AI switched off or a conversation not found, is its error event.
          */
         post: operations["askAIConversation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/conversations/{conversation_id}/turns/{turn_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rate an answer of the assistant
+         * @description A thumbs up or down on an answer in one of the caller's own conversations, with why (QA-AI-05), once per answer. An Owner or Administrator reviews it with the question and the answer; only what they mark golden feeds the eval set. A turn still answering, or one that failed, has no answer to rate. Side effects: the feedback and its audit event ai_feedback.given. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for MCP and agent clients (§9.6).
+         */
+        post: operations["giveAIFeedback"];
         delete?: never;
         options?: never;
         head?: never;
@@ -15322,6 +15382,105 @@ export interface components {
              */
             value?: string;
         };
+        AIFeedback: {
+            /**
+             * @description The answer it rates, as its person read it; absent when masked.
+             * @example July's revenue was SGD 48,200.00.
+             */
+            answer?: string;
+            /** @description The classes of data the turn read (AI-83). */
+            classes: ("know-how" | "business-figures" | "personal-data" | "payroll")[];
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+             */
+            conversation_id: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-15T08:01:00Z
+             */
+            given_at: string;
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a51
+             */
+            id: string;
+            /**
+             * @description Its turn read payroll and you may not see payroll unmasked: its question, answer and reason are withheld (FR-PAY-13), and it can only be dismissed.
+             * @example false
+             */
+            masked: boolean;
+            /**
+             * @description Who gave it: user:<id>.
+             * @example user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
+             */
+            person: string;
+            /**
+             * @description What was asked; absent when masked.
+             * @example What was July's revenue?
+             */
+            question?: string;
+            /**
+             * @example down
+             * @enum {string}
+             */
+            rating: "up" | "down";
+            /**
+             * @description Why; absent when masked.
+             * @example It used June's figures, not July's.
+             */
+            reason?: string;
+            /**
+             * Format: date-time
+             * @example 2026-11-16T02:00:00Z
+             */
+            reviewed_at?: string;
+            /**
+             * @description Who reviewed it: user:<id>.
+             * @example user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2e
+             */
+            reviewed_by?: string;
+            /**
+             * @description waiting: for an Owner or Administrator to review; golden: it feeds the eval set; dismissed: it does not.
+             * @example waiting
+             * @enum {string}
+             */
+            state: "waiting" | "golden" | "dismissed";
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c
+             */
+            turn_id: string;
+        };
+        AIFeedbackIn: {
+            /**
+             * @description up: the answer helped; down: it did not.
+             * @example down
+             * @enum {string}
+             */
+            rating: "up" | "down";
+            /**
+             * @description Why, in your words. An Owner or Administrator reads it with the question and the answer when they review it.
+             * @example It used June's figures, not July's.
+             */
+            reason: string;
+        };
+        AIFeedbackPage: {
+            items: components["schemas"]["AIFeedback"][];
+            /**
+             * @description Send it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjIwMjYtMTEtMTVUMDg6MDE6MDBafDAxOTMifQ
+             */
+            next_cursor?: string;
+        };
+        AIFeedbackReviewIn: {
+            /**
+             * @description golden: it feeds the eval set (QA-AI-05); dismissed: it does not.
+             * @example golden
+             * @enum {string}
+             */
+            decision: "golden" | "dismissed";
+        };
         AIInventory: {
             /** @description The data categories the AI processes: every class a route carries. */
             classes: ("know-how" | "business-figures" | "personal-data" | "payroll")[];
@@ -16211,6 +16370,8 @@ export interface components {
              */
             code?: string;
             context?: components["schemas"]["AITurnContext"];
+            /** @description Your rating of its answer, once given (QA-AI-05). */
+            feedback?: components["schemas"]["AITurnRating"];
             /**
              * Format: uuid
              * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c
@@ -16360,6 +16521,26 @@ export interface components {
              * @example What is our cash runway?
              */
             question: string;
+        };
+        AITurnRating: {
+            /**
+             * Format: uuid
+             * @example 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a51
+             */
+            id: string;
+            /**
+             * @example down
+             * @enum {string}
+             */
+            rating: "up" | "down";
+            /** @example It used June's figures, not July's. */
+            reason: string;
+            /**
+             * @description Where its review is.
+             * @example waiting
+             * @enum {string}
+             */
+            state: "waiting" | "golden" | "dismissed";
         };
         AITurnStatus: {
             /** @example Reading the books */
@@ -53025,6 +53206,217 @@ export interface operations {
             };
         };
     };
+    listAIFeedback: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description Only feedback in this state; leave it out for all. */
+                state?: "waiting" | "golden" | "dismissed";
+                /** @description Only up or only down. */
+                rating?: "up" | "down";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIFeedbackPage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    reviewAIFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The feedback. */
+                feedback_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIFeedbackReviewIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIFeedback"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `AI-FEEDBACK-02` Masked feedback cannot join the golden set; `AI-FEEDBACK-03` The feedback was reviewed already; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getAIPresets: {
         parameters: {
             query?: never;
@@ -56580,6 +56972,165 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable: `AI-ASSISTANT-02` The AI service did not answer. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    giveAIFeedback: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The conversation. */
+                conversation_id: string;
+                /** @description The turn whose answer it rates. */
+                turn_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIFeedbackIn"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIFeedback"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIFeedback"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `AI-FEEDBACK-01` The turn has no answer to rate; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
                 headers: {
                     [name: string]: unknown;

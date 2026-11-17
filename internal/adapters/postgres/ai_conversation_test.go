@@ -88,6 +88,39 @@ func TestAttackAIConversationsOnlyGoForward(t *testing.T) {
 	}); err == nil {
 		t.Error("feedback given twice")
 	}
+	// Reviewed once, by an Owner or Administrator (QA-AI-05): golden only then.
+	review := func(decision string) error {
+		return api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			list, err := u.AIConversations().Feedback(ctx, storage.AIFeedbackQuery{State: storage.FeedbackWaiting, Limit: 10})
+			if err != nil || len(list) != 1 || list[0].Question != turn.Question || list[0].Asker != person {
+				t.Errorf("the feedback waiting: %+v %v", list, err)
+				return err
+			}
+			return u.AIConversations().Review(ctx, list[0].ID, person, decision, answered.Add(time.Hour))
+		})
+	}
+	if err := review(storage.FeedbackGolden); err != nil {
+		t.Fatal(err)
+	}
+	if err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		golden, err := u.AIConversations().Feedback(ctx, storage.AIFeedbackQuery{State: storage.FeedbackGolden, Rating: "down", Limit: 10})
+		if err != nil {
+			return err
+		}
+		rated, err := u.AIConversations().Ratings(ctx, conv.ID, person)
+		if err != nil {
+			return err
+		}
+		if len(golden) != 1 || golden[0].Decision != storage.FeedbackGolden || golden[0].ReviewedBy == nil || rated[turn.ID].Decision != storage.FeedbackGolden {
+			t.Errorf("the golden feedback: %+v %+v", golden, rated)
+		}
+		if err := u.AIConversations().Review(ctx, golden[0].ID, person, storage.FeedbackDismissed, answered.Add(2*time.Hour)); err != ports.ErrNotFound {
+			t.Errorf("reviewed twice: %v", err)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
 	del := func() error {
 		return api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
 			return u.AIConversations().Delete(ctx, conv.ID, answered)
@@ -122,6 +155,7 @@ func TestAttackAIConversationsOnlyGoForward(t *testing.T) {
 		  SELECT conversation_id, user_id, 'x', now(), '{secrets}' FROM fyniq.ai_turn LIMIT 1`, []string{"23514"}},
 		{"the owner changing a tool call", "fyniq_migrator", `UPDATE fyniq.ai_tool_call SET outcome = 'read', code = ''`, []string{"FY341"}},
 		{"the owner changing feedback", "fyniq_migrator", `UPDATE fyniq.ai_feedback SET rating = 'up'`, []string{"FY341"}},
+		{"the owner reviewing feedback again", "fyniq_migrator", `UPDATE fyniq.ai_feedback SET decision = 'dismissed'`, []string{"FY341"}},
 		{"the owner removing turns", "fyniq_migrator", `DELETE FROM fyniq.ai_turn`, []string{"FY341", "23503"}},
 		{"the owner removing a conversation", "fyniq_migrator", `DELETE FROM fyniq.ai_conversation`, []string{"FY341", "23503"}},
 		{"the owner emptying them", "fyniq_migrator", `TRUNCATE fyniq.ai_feedback, fyniq.ai_tool_call, fyniq.ai_turn, fyniq.ai_conversation`, []string{"FY060", "0A000"}},

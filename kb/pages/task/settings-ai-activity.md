@@ -2,9 +2,9 @@
 key: settings.ai-activity
 type: task
 title: See what the AI did, and use your own AI plan
-summary: Settings › AI activity: every model call, whose entries you see, outcomes, tokens and cost, masked payroll entries, filters; your own AI plan, not offered yet
+summary: Settings › AI activity: model calls, outcomes, tokens and cost, the assistant's questions, reviewing feedback on answers, masked payroll; your own AI plan
 sources:
-  - docs/user-guide/ai-activity.md sha256:85432952ad6e62825ad066748c8034bab759c5c98dfc3576a9a48c12eeac5a44
+  - docs/user-guide/ai-activity.md sha256:5dd816690abc610cdda4dc91d43f3b5039089fcf9842521a0a121f392ea35272
 data_class: general
 taint: trusted
 status: published
@@ -19,6 +19,9 @@ aliases:
   - AI cost per call
   - my own ChatGPT plan
   - use my own Claude subscription
+  - thumbs down on an answer
+  - review AI feedback
+  - golden set
 ---
 
 # See what the AI did, and use your own AI plan
@@ -50,6 +53,15 @@ aliases:
 - What a read returned is never shown, only how it went; **Its model calls** shows the calls the question made. Someone else's question that read payroll is masked for a reader who may not see payroll unmasked.
 
 (src: docs/user-guide/ai-activity.md#questions-to-the-assistant)
+
+## Feedback on answers
+
+- Members rate the assistant's answers with a thumbs up or down and a reason, once per answer; their conversation shows the rating and where its review is.
+- The Owner and an Administrator see **Feedback on answers** here: each rating, its reason, who gave it, the question and the answer; **Show** picks waiting, golden set, dismissed or all.
+- **Add to the golden set** puts it in the set the assistant's evals are built from; **Dismiss** leaves it out. Reviewed once; unreviewed feedback never feeds the evals.
+- Feedback on someone else's question that read payroll is masked for a reviewer who may not see payroll unmasked and can only be dismissed; someone who sees payroll can add it. Showing it unmasked is recorded in the audit trail.
+
+(src: docs/user-guide/ai-activity.md#feedback-on-answers)
 
 ## Masked entries
 

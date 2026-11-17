@@ -231,6 +231,84 @@ func (r aiConversations) Give(ctx context.Context, f storage.AIFeedback) (storag
 		"turn_id": f.Turn.String(), "rating": f.Rating}}})
 }
 
+func (r aiConversations) Ratings(ctx context.Context, conversation, user uuid.UUID) (map[uuid.UUID]storage.AIFeedback, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.AIFeedbackOfConversation(ctx, sqlcdb.AIFeedbackOfConversationParams{ConversationID: conversation, UserID: user})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make(map[uuid.UUID]storage.AIFeedback, len(rows))
+	for _, row := range rows {
+		f := storage.AIFeedback{ID: row.ID, Turn: row.TurnID, UserID: row.UserID, Rating: row.Rating, Reason: row.Reason, GivenAt: row.GivenAt,
+			ReviewedBy: row.ReviewedBy, ReviewedAt: row.ReviewedAt}
+		if row.Decision != nil {
+			f.Decision = *row.Decision
+		}
+		out[row.TurnID] = f
+	}
+	return out, nil
+}
+
+func (r aiConversations) Feedback(ctx context.Context, q storage.AIFeedbackQuery) ([]storage.AIFeedbackEntry, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	var state, rating *string
+	if q.State != "" {
+		state = &q.State
+	}
+	if q.Rating != "" {
+		rating = &q.Rating
+	}
+	rows, err := r.u.q.AIFeedbackPage(ctx, sqlcdb.AIFeedbackPageParams{State: state, Rating: rating, BeforeAt: q.BeforeAt, BeforeID: q.BeforeID,
+		MaxRows: int32(min(max(q.Limit, 1), 501))}) // #nosec G115 -- capped
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.AIFeedbackEntry, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, feedbackEntry(sqlcdb.GetAIFeedbackRow(row)))
+	}
+	return out, nil
+}
+
+func (r aiConversations) FeedbackEntry(ctx context.Context, id uuid.UUID) (storage.AIFeedbackEntry, error) {
+	if err := r.u.check(); err != nil {
+		return storage.AIFeedbackEntry{}, err
+	}
+	row, err := r.u.q.GetAIFeedback(ctx, id)
+	if err != nil {
+		return storage.AIFeedbackEntry{}, mapError(err)
+	}
+	return feedbackEntry(row), nil
+}
+
+func feedbackEntry(row sqlcdb.GetAIFeedbackRow) storage.AIFeedbackEntry {
+	e := storage.AIFeedbackEntry{AIFeedback: storage.AIFeedback{ID: row.ID, Turn: row.TurnID, UserID: row.UserID, Rating: row.Rating, Reason: row.Reason,
+		GivenAt: row.GivenAt, ReviewedBy: row.ReviewedBy, ReviewedAt: row.ReviewedAt}, Conversation: row.ConversationID, Asker: row.Asker,
+		Question: row.Question, Answer: row.Answer, Classes: row.Classes}
+	if row.Decision != nil {
+		e.Decision = *row.Decision
+	}
+	return e
+}
+
+func (r aiConversations) Review(ctx context.Context, id, by uuid.UUID, decision string, at time.Time) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	n, err := r.u.q.ReviewAIFeedback(ctx, sqlcdb.ReviewAIFeedbackParams{ReviewedBy: &by, ReviewedAt: &at, Decision: &decision, ID: id})
+	if err != nil {
+		return mapError(err)
+	}
+	if n == 0 {
+		return ports.ErrNotFound
+	}
+	return r.u.event(ctx, "ai_feedback.reviewed", "ai_feedback", id, nil, map[string][2]any{"decision": {nil, decision}})
+}
+
 func (r aiConversations) Purge(ctx context.Context, before time.Time) (int, int, error) {
 	if err := r.u.check(); err != nil {
 		return 0, 0, err

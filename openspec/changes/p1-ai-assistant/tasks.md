@@ -65,7 +65,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
   `// req: AI-P8`.
 - [x] 6.3 The purge of conversations after `retention.ai_conversations_days`, as a scheduled job, recorded. Test
   `// req: data/backup-and-recovery Retention of AI conversations`.
-- [ ] 6.4 Feedback: thumbs up or down with a reason, reviewed by an Owner or Administrator before it joins the golden
+- [x] 6.4 Feedback: thumbs up or down with a reason, reviewed by an Owner or Administrator before it joins the golden
   set. Tests `// req: QA-AI-05`.
 
 ## 7. The panel

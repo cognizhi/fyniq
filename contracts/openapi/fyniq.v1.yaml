@@ -1174,6 +1174,155 @@ components:
         - source
         - lineage
       type: object
+    AIFeedback:
+      additionalProperties: false
+      properties:
+        answer:
+          description: The answer it rates, as its person read it; absent when masked.
+          examples:
+            - July's revenue was SGD 48,200.00.
+          type: string
+        classes:
+          description: The classes of data the turn read (AI-83).
+          items:
+            description: "A class of data: restricted data never goes to an AI provider (AI-75)."
+            enum:
+              - know-how
+              - business-figures
+              - personal-data
+              - payroll
+            examples:
+              - business-figures
+            type: string
+          type: array
+        conversation_id:
+          examples:
+            - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+          format: uuid
+          type: string
+        given_at:
+          examples:
+            - "2026-11-15T08:01:00Z"
+          format: date-time
+          type: string
+        id:
+          examples:
+            - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a51
+          format: uuid
+          type: string
+        masked:
+          description: "Its turn read payroll and you may not see payroll unmasked: its question, answer and reason are withheld (FR-PAY-13), and it can only be dismissed."
+          examples:
+            - false
+          type: boolean
+        person:
+          description: "Who gave it: user:<id>."
+          examples:
+            - user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
+          type: string
+        question:
+          description: What was asked; absent when masked.
+          examples:
+            - What was July's revenue?
+          type: string
+        rating:
+          enum:
+            - up
+            - down
+          examples:
+            - down
+          type: string
+        reason:
+          description: Why; absent when masked.
+          examples:
+            - It used June's figures, not July's.
+          type: string
+        reviewed_at:
+          examples:
+            - "2026-11-16T02:00:00Z"
+          format: date-time
+          type: string
+        reviewed_by:
+          description: "Who reviewed it: user:<id>."
+          examples:
+            - user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2e
+          type: string
+        state:
+          description: "waiting: for an Owner or Administrator to review; golden: it feeds the eval set; dismissed: it does not."
+          enum:
+            - waiting
+            - golden
+            - dismissed
+          examples:
+            - waiting
+          type: string
+        turn_id:
+          examples:
+            - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c
+          format: uuid
+          type: string
+      required:
+        - id
+        - turn_id
+        - conversation_id
+        - person
+        - rating
+        - classes
+        - given_at
+        - state
+        - masked
+      type: object
+    AIFeedbackIn:
+      additionalProperties: false
+      properties:
+        rating:
+          description: "up: the answer helped; down: it did not."
+          enum:
+            - up
+            - down
+          examples:
+            - down
+          type: string
+        reason:
+          description: Why, in your words. An Owner or Administrator reads it with the question and the answer when they review it.
+          examples:
+            - It used June's figures, not July's.
+          maxLength: 1000
+          minLength: 1
+          type: string
+      required:
+        - rating
+        - reason
+      type: object
+    AIFeedbackPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/AIFeedback"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjIwMjYtMTEtMTVUMDg6MDE6MDBafDAxOTMifQ
+          type: string
+      required:
+        - items
+      type: object
+    AIFeedbackReviewIn:
+      additionalProperties: false
+      properties:
+        decision:
+          description: "golden: it feeds the eval set (QA-AI-05); dismissed: it does not."
+          enum:
+            - golden
+            - dismissed
+          examples:
+            - golden
+          type: string
+      required:
+        - decision
+      type: object
     AIInventory:
       additionalProperties: false
       properties:
@@ -2650,6 +2799,9 @@ components:
           type: string
         context:
           $ref: "#/components/schemas/AITurnContext"
+        feedback:
+          $ref: "#/components/schemas/AITurnRating"
+          description: Your rating of its answer, once given (QA-AI-05).
         id:
           examples:
             - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c
@@ -2902,6 +3054,40 @@ components:
           type: string
       required:
         - question
+      type: object
+    AITurnRating:
+      additionalProperties: false
+      properties:
+        id:
+          examples:
+            - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a51
+          format: uuid
+          type: string
+        rating:
+          enum:
+            - up
+            - down
+          examples:
+            - down
+          type: string
+        reason:
+          examples:
+            - It used June's figures, not July's.
+          type: string
+        state:
+          description: Where its review is.
+          enum:
+            - waiting
+            - golden
+            - dismissed
+          examples:
+            - waiting
+          type: string
+      required:
+        - id
+        - rating
+        - reason
+        - state
       type: object
     AITurnStatus:
       additionalProperties: false
@@ -55135,6 +55321,294 @@ paths:
       x-fyniq-permission:
         capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
         right: C
+  /v1/ai/feedback:
+    get:
+      description: "Feedback on the assistant's answers for an Owner or Administrator to review (QA-AI-05), newest first, a page at a time, with the question, the answer, the reason and the classes of data the turn read; filtered by state and rating. Golden feedback is what feeds the eval set. Someone else's turn that read payroll shows masked to a reader who may not see payroll unmasked (FR-PAY-13). Side effects: showing such feedback unmasked writes the audit event ai_activity.read (AUD-05); otherwise none. On the never-list for the AI and MCP (§9.6)."
+      operationId: listAIFeedback
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only feedback in this state; leave it out for all.
+          explode: false
+          in: query
+          name: state
+          schema:
+            description: Only feedback in this state; leave it out for all.
+            enum:
+              - waiting
+              - golden
+              - dismissed
+            examples:
+              - waiting
+            type: string
+        - description: Only up or only down.
+          explode: false
+          in: query
+          name: rating
+          schema:
+            description: Only up or only down.
+            enum:
+              - up
+              - down
+            examples:
+              - down
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIFeedbackPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List feedback on the assistant's answers
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-ASSISTANT-01
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
+        note: The Owner holds A on "AI providers and model routes", not C, and reviews feedback as the Administrator does (QA-AI-05).
+        right: C
+  /v1/ai/feedback/{feedback_id}/review:
+    post:
+      description: "An Owner or Administrator decides feedback waiting (QA-AI-05): golden feeds the eval set, dismissed does not. Feedback masked to the reviewer, on someone else's turn that read payroll, can only be dismissed: what joins the golden set was read by the person who put it there. Side effects: the decision and its audit event ai_feedback.reviewed; showing payroll unmasked also writes ai_activity.read (AUD-05). On the never-list for the AI and MCP (§9.6)."
+      operationId: reviewAIFeedback
+      parameters:
+        - description: The feedback.
+          in: path
+          name: feedback_id
+          required: true
+          schema:
+            description: The feedback.
+            examples:
+              - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a51
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIFeedbackReviewIn"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIFeedback"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `AI-FEEDBACK-02` Masked feedback cannot join the golden set; `AI-FEEDBACK-03` The feedback was reviewed already; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Review feedback on an answer of the assistant
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-ASSISTANT-01
+        - AI-FEEDBACK-02
+        - AI-FEEDBACK-03
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: "Feedback is reviewed once: a second review is refused as no longer waiting, so the request is idempotent by itself."
+        Prefer: A review decides one feedback, with nothing to preview.
+      x-fyniq-permission:
+        capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
+        note: The Owner holds A on "AI providers and model routes", not C, and reviews feedback as the Administrator does (QA-AI-05).
+        right: C
   /v1/ai/presets:
     get:
       description: "ADR-T2's options as route presets (AI-26): A Singapore only, the default at go-live and always for personal data and payroll; B the global endpoint; C by data class. Each names a provider, a region and a model line, never a model ID, and gives each agent the route that pins the newest allowed model of its lines from the connections' discovered lists that passed the agent's evals there (AI-78), with what it leaves out, or why it gives none. A route is set from it with setAIRoute, as any other. Read-only; no side effects."
@@ -60010,6 +60484,220 @@ paths:
         Idempotency-Key: "Each question is a turn of its own: asked again, it is answered again."
         If-Match: "Asking adds a turn and leaves the conversation as it was: there is no version of it to match."
         Prefer: An answer cannot be previewed without asking.
+      x-fyniq-permission:
+        capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
+        right: V
+  /v1/assistant/conversations/{conversation_id}/turns/{turn_id}/feedback:
+    post:
+      description: "A thumbs up or down on an answer in one of the caller's own conversations, with why (QA-AI-05), once per answer. An Owner or Administrator reviews it with the question and the answer; only what they mark golden feeds the eval set. A turn still answering, or one that failed, has no answer to rate. Side effects: the feedback and its audit event ai_feedback.given. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for MCP and agent clients (§9.6)."
+      operationId: giveAIFeedback
+      parameters:
+        - description: The conversation.
+          in: path
+          name: conversation_id
+          required: true
+          schema:
+            description: The conversation.
+            examples:
+              - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b
+            format: uuid
+            type: string
+        - description: The turn whose answer it rates.
+          in: path
+          name: turn_id
+          required: true
+          schema:
+            description: The turn whose answer it rates.
+            examples:
+              - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIFeedbackIn"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIFeedback"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIFeedback"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `AI-FEEDBACK-01` The turn has no answer to rate; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Rate an answer of the assistant
+      tags:
+        - Assistant
+      x-fyniq-error-codes:
+        - AI-ASSISTANT-01
+        - AI-FEEDBACK-01
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        If-Match: "Feedback is given once per answer, and the database refuses a second: there is no version to match."
       x-fyniq-permission:
         capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
         right: V

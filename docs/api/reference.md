@@ -15109,6 +15109,51 @@ Asks for the policy's next version (AI-75): per data class, the connections it m
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `AI-DATA-02`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-RATE-01`, `APR-06`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+### `GET /v1/ai/feedback`
+
+**List feedback on the assistant's answers** (`listAIFeedback`)
+
+Feedback on the assistant's answers for an Owner or Administrator to review (QA-AI-05), newest first, a page at a time, with the question, the answer, the reason and the classes of data the turn read; filtered by state and rating. Golden feedback is what feeds the eval set. Someone else's turn that read payroll shows masked to a reader who may not see payroll unmasked (FR-PAY-13). Side effects: showing such feedback unmasked writes the audit event ai_activity.read (AUD-05); otherwise none. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75). The Owner holds A on "AI providers and model routes", not C, and reviews feedback as the Administrator does (QA-AI-05).
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `state` (query): Only feedback in this state; leave it out for all.
+  - `rating` (query): Only up or only down.
+- **Responses:**
+  - `200` OK [`AIFeedbackPage`](../../contracts/schemas/AIFeedbackPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `AI-ASSISTANT-01`, `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/ai/feedback/{feedback_id}/review`
+
+**Review feedback on an answer of the assistant** (`reviewAIFeedback`)
+
+An Owner or Administrator decides feedback waiting (QA-AI-05): golden feeds the eval set, dismissed does not. Feedback masked to the reviewer, on someone else's turn that read payroll, can only be dismissed: what joins the golden set was read by the person who put it there. Side effects: the decision and its audit event ai_feedback.reviewed; showing payroll unmasked also writes ai_activity.read (AUD-05). On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75). The Owner holds A on "AI providers and model routes", not C, and reviews feedback as the Administrator does (QA-AI-05).
+- **Parameters:**
+  - `feedback_id` (path, required): The feedback.
+- **Request body:** [`AIFeedbackReviewIn`](../../contracts/schemas/AIFeedbackReviewIn.schema.json)
+- **Responses:**
+  - `200` OK [`AIFeedback`](../../contracts/schemas/AIFeedback.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `AI-FEEDBACK-02` Masked feedback cannot join the golden set; `AI-FEEDBACK-03` The feedback was reviewed already; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `AI-ASSISTANT-01`, `AI-FEEDBACK-02`, `AI-FEEDBACK-03`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/ai/presets`
 
 **Get the route presets** (`getAIPresets`)
@@ -15422,6 +15467,35 @@ Asks a question in one of the caller's own conversations, with what it is about 
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
   - `503` Service Unavailable: `AI-ASSISTANT-02` The AI service did not answer.
 - **Error codes:** `AI-ASSISTANT-01`, `AI-ASSISTANT-02`, `AI-LIMIT-01`, `AI-LIMIT-02`, `AI-LIMIT-03`, `AI-ROUTER-05`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
+
+### `POST /v1/assistant/conversations/{conversation_id}/turns/{turn_id}/feedback`
+
+**Rate an answer of the assistant** (`giveAIFeedback`)
+
+A thumbs up or down on an answer in one of the caller's own conversations, with why (QA-AI-05), once per answer. An Owner or Administrator reviews it with the question and the answer; only what they mark golden feeds the eval set. A turn still answering, or one that failed, has no answer to rate. Side effects: the feedback and its audit event ai_feedback.given. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for MCP and agent clients (§9.6).
+
+- **Permission:** View on AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)
+- **Parameters:**
+  - `conversation_id` (path, required): The conversation.
+  - `turn_id` (path, required): The turn whose answer it rates.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`AIFeedbackIn`](../../contracts/schemas/AIFeedbackIn.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`AIFeedback`](../../contracts/schemas/AIFeedback.schema.json)
+  - `201` Created [`AIFeedback`](../../contracts/schemas/AIFeedback.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `AI-FEEDBACK-01` The turn has no answer to rate; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `AI-ASSISTANT-01`, `AI-FEEDBACK-01`, `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
 ## Import
 

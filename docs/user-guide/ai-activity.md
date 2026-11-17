@@ -3,7 +3,7 @@ key: settings.ai-activity
 title: See what the AI did, and use your own AI plan
 mode: expert
 roles: [all]
-requirements: [AI-12, AI-73, AI-74, AI-76]
+requirements: [AI-12, AI-73, AI-74, AI-76, QA-AI-05]
 ---
 
 # See what the AI did, and use your own AI plan
@@ -41,6 +41,18 @@ Every attempt is kept, whether it was served or not.
   books it made and how many figures it read, and its tokens.
 - What a read returned is never shown here, only how it went. **Its model calls** shows the calls the question made.
 - Someone else's question that read payroll is masked for a reader who may not see payroll unmasked.
+
+## Feedback on answers
+
+- Members rate the assistant's answers with a thumbs up or down and a reason, once per answer. Their own conversation
+  shows the rating and where its review is.
+- The Owner and an Administrator see **Feedback on answers** on this page: each rating with its reason, who gave it,
+  the question and the answer. **Show** picks feedback waiting for review, in the golden set, dismissed, or all.
+- **Add to the golden set** puts it in the set the assistant's evals are built from; **Dismiss** leaves it out.
+  Feedback is reviewed once, and feedback nobody reviewed never feeds the evals.
+- Feedback on someone else's question that read payroll is masked for a reviewer who may not see payroll unmasked, and
+  can only be dismissed; someone who sees payroll can add it to the golden set. When it is shown unmasked, the audit
+  trail records it.
 
 ## Masked entries
 
