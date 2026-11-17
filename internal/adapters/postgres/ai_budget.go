@@ -85,7 +85,7 @@ func (r aiBudgets) Reserve(ctx context.Context, res storage.AIReservation) (uuid
 		return uuid.Nil, nil, err
 	}
 	raw, err := r.u.q.ReserveAI(ctx, sqlcdb.ReserveAIParams{Run: res.Run, Step: int32(min(max(res.Step, 0), 5)), Agent: res.Agent, // #nosec G115 -- capped
-		Connection: res.Connection, Person: res.Person, Month: res.Month, Amount: optional(res.Amount)})
+		Connection: res.Connection, Person: res.Person, Month: res.Month, Amount: optional(res.Amount), Tokens: max(res.Tokens, 0)})
 	if err != nil {
 		return uuid.Nil, nil, mapError(err)
 	}
@@ -102,12 +102,12 @@ func (r aiBudgets) Reserve(ctx context.Context, res storage.AIReservation) (uuid
 	return out.ID, out.Alerts, nil
 }
 
-func (r aiBudgets) Settle(ctx context.Context, id uuid.UUID, actual string, known bool) error {
+func (r aiBudgets) Settle(ctx context.Context, id uuid.UUID, actual string, tokens int64, known bool) error {
 	if err := r.u.check(); err != nil {
 		return err
 	}
 	if id == uuid.Nil {
 		return ports.ErrNotFound
 	}
-	return mapError(r.u.q.SettleAI(ctx, sqlcdb.SettleAIParams{Reservation: id, Actual: optional(actual), Known: known}))
+	return mapError(r.u.q.SettleAI(ctx, sqlcdb.SettleAIParams{Reservation: id, Actual: optional(actual), ActualTokens: max(tokens, 0), Known: known}))
 }

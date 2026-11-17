@@ -84,18 +84,26 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 6. The activity log and the switch
 
-- [ ] 6.1 The AI activity log over `ai_call` (and the entry kinds later changes add): own for each person, all for the
+- [x] 6.1 The AI activity log over `ai_call` (and the entry kinds later changes add): own for each person, all for the
   Owner and compliance, restricted classes masked, reading them audited (AUD-05), retained as audit data. The API's
   `/v1/ai/activity`. Tests `// req: AI-12`.
-- [ ] 6.2 The switch `ai.enabled` (off at once by the Owner; on with a second approver), refusing new calls at once and
+  As built: `GET /v1/ai/activity` (newest first, by agent, person, run and days); who reads what is Appendix D's new
+  row "AI activity log" (PRD-001 rev 0.276); `ai_call` is never changed or removed (FY335), so it is kept as audit data.
+- [x] 6.2 The switch `ai.enabled` (off at once by the Owner; on with a second approver), refusing new calls at once and
   stopping streams within 60 seconds; organisation and per-person token budgets with alerts. The API's
   `/v1/ai/settings`. Tests `// req: AI-13`.
+  As built (design D9): the switch, as the existing setting `features.ai_assistant` (FR-ORG-06), off at once and on
+  with a second approver; the router's checks; `GET /v1/ai/settings` and the Owner's `POST /v1/ai/settings/switch-off`;
+  token budgets for the organisation and each person (`tokens:organisation`, `tokens:person:<id>` under
+  `/v1/ai/budgets`), reserved and settled with the cost.
 
 ## 7. Checks and compliance
 
-- [ ] 7.1 C.2 #55, with a fixture that triggers each of its six conditions. Tests `// req: C.2 #55`.
-- [ ] 7.2 The AI inventory in the Compliance Center (connections, models, routes; prompts and tool versions as later
+- [x] 7.1 C.2 #55, with a fixture that triggers each of its six conditions. Tests `// req: C.2 #55`.
+  As built: the check `ai.model-routes` (area AI), and the setting `ai.fallbacks_per_day` (design D14).
+- [x] 7.2 The AI inventory in the Compliance Center (connections, models, routes; prompts and tool versions as later
   changes add them; owners and data categories) beside the AI DPIA in the DPIA register. Tests `// req: CMP-AI-02`.
+  As built: `GET /v1/compliance/ai-inventory` and its card on Data protection's Impact assessments tab (design D14).
 
 ## 8. Screens, help and the guide
 

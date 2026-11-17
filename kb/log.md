@@ -540,3 +540,9 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-13] compile | docs/user-guide/workbook-import.md → settings.import (M3's commit and M4's register and sign-off)
 
 ## [2026-11-13] compile | docs/user-guide/workbook-import.md → settings.import (M5's parallel month and M6's archive and go-live)
+
+## [2026-11-14] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the AI assistant switches off at once, AI-13)
+
+## [2026-11-14] compile | docs/user-guide/organisation-settings.md, docs/user-guide/checks.md → settings.organisation, settings.change, checks.overview (AI routes: the fallbacks threshold and C.2 #55)
+
+## [2026-11-14] compile | docs/user-guide/compliance-data-protection.md → compliance.data-protection (the AI inventory, CMP-AI-02)

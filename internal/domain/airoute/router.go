@@ -18,6 +18,7 @@ const (
 	CodeUnhandled = "AI-ROUTER-02" // the call carries a class of data its route does not handle
 	CodeNoStep    = "AI-ROUTER-03" // no step left can take the call: nothing was sent where it may not go (AI-76, AI-83)
 	CodeRefused   = "AI-ROUTER-04" // the provider refused the request as invalid, or a stream broke after it began
+	CodeSwitchOff = "AI-ROUTER-05" // the AI is switched off for the organisation (AI-13)
 )
 
 // Stop is a run the router stopped, in Fyniq's words.

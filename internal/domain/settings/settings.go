@@ -31,6 +31,7 @@ const (
 	Hours     Kind = "hours"      // a whole number of hours
 	Days      Kind = "days"       // a whole number of days
 	Years     Kind = "years"      // a whole number of years
+	Count     Kind = "count"      // a whole number of times, such as fallbacks a day
 	Months    Kind = "months"     // a whole number of months
 	AmountSGD Kind = "amount_sgd" // Singapore dollars, with cents, such as "50.00"
 	Percent   Kind = "percent"    // a percentage with at most two decimals, such as "3" or "2.5"
@@ -52,6 +53,7 @@ type Definition struct {
 	Guide        string   // the guide page and section that explains it, such as /help/organisation-settings#features
 	Requirement  string   // the PRD requirement it implements
 	DualControl  bool     // FM-1: a change needs a second approver
+	OffAtOnce    bool     // a kill switch (AI-13): turning it off needs no second approver and takes effect as recorded
 	Fixed        bool     // set by the platform: shown, never changed
 	LengthenOnly bool     // a change may only lengthen it
 	Min, Max     string   // the range of a number, inclusive
@@ -67,6 +69,10 @@ var Catalogue = []Definition{
 	{Key: "accounting.signing_step_up", Group: "Approvals", Label: "Second factor to sign the accounting framework and policies", Kind: Switch, Recommended: "true",
 		Reason: "The accountant's signature turns management statements into financial statements, so it asks for a passkey or authenticator app, as other approvals do",
 		Guide:  guide + "accounting-sign-off", Requirement: "FR-ORG-10", DualControl: true},
+	{Key: "ai.fallbacks_per_day", Group: "AI", Label: "Fallbacks a day before a route needs attention", Kind: Count, Recommended: "5", Min: "1",
+		Max:    "1000",
+		Reason: "A primary that fails over five times in a day is not reliable enough to lead its route: Checks shows it so someone looks",
+		Guide:  guide + "ai-routes", Requirement: "AI-76", DualControl: true},
 	{Key: "approvals.break_glass_cap", Group: "Approvals", Label: "Break-glass payment cap", Kind: AmountSGD, Recommended: "20000.00",
 		Reason: "In Founder mode, while the other founder is unreachable, an Owner's break-glass releases waiting payment batches of up to S$20,000 in all; more waits for the other founder (the founders' decision of 16 Oct 2026)",
 		Guide:  guide + "break-glass-payment-cap", Requirement: "FM-8", DualControl: true, Min: "0.00", Max: "1000000.00"},
@@ -157,8 +163,8 @@ var Catalogue = []Definition{
 		Reason:  "A filing or payment to IRAS, CPF Board or ACRA rests on its acknowledgement (FR-DOC-06)",
 		Guide:   guide + "evidence-rules", Requirement: "FR-DOC-06", DualControl: true},
 	{Key: "features.ai_assistant", Group: "Features", Label: "AI assistant", Kind: Switch, Recommended: "false",
-		Reason: "AI is off until an Owner turns it on with a second approver (closed by default)",
-		Guide:  guide + "features", Requirement: "FR-ORG-06", DualControl: true},
+		Reason: "AI is off until an Owner turns it on with a second approver (closed by default); turning it off takes effect at once",
+		Guide:  guide + "features", Requirement: "FR-ORG-06", DualControl: true, OffAtOnce: true},
 	{Key: "features.multi_currency", Group: "Features", Label: "Multi-currency", Kind: Switch, Recommended: "true",
 		Reason: "Start-ups usually pay some bills in other currencies, such as cloud and software subscriptions in US dollars",
 		Guide:  guide + "features", Requirement: "FR-ORG-06"},
@@ -271,15 +277,19 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 			return bad("Send true or false")
 		}
 		return raw, nil
-	case Minutes, Hours, Days, Months, Years:
+	case Minutes, Hours, Days, Months, Years, Count:
+		unit := string(d.Kind)
+		if d.Kind == Count {
+			unit = "times"
+		}
 		if !whole.MatchString(raw) {
-			return bad(fmt.Sprintf("Send a whole number of %s, from %s to %s", d.Kind, d.Min, d.Max))
+			return bad(fmt.Sprintf("Send a whole number of %s, from %s to %s", unit, d.Min, d.Max))
 		}
 		n, _ := strconv.Atoi(raw) // at most six digits, checked above
 		lo, _ := strconv.Atoi(d.Min)
 		hi, _ := strconv.Atoi(d.Max)
 		if n < lo || n > hi {
-			return bad(fmt.Sprintf("Send a whole number of %s, from %s to %s", d.Kind, d.Min, d.Max))
+			return bad(fmt.Sprintf("Send a whole number of %s, from %s to %s", unit, d.Min, d.Max))
 		}
 		return raw, nil
 	case AmountSGD:
