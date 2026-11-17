@@ -75,6 +75,7 @@ type ModelOutcome struct {
 	Text      string
 	Tokens    int
 	ToolCalls int
+	Tools     []string // the read tools it called, by name (CTL-AI-09)
 	Proposals int
 }
 
@@ -225,7 +226,7 @@ func (r Runner) finish(ctx context.Context, org uuid.UUID, run storage.AgentRun,
 		summary := Summary(findings)
 		done, err := u.AgentRuns().Finish(ctx, run.ID, run.Version, storage.AgentReport{Fingerprint: fingerprint, LedgerRevision: revision,
 			PackVersions: packs, KBSnapshot: "none", Findings: body, Summary: summary, ModelUsed: used, Model: outcome.Model,
-			ModelText: cut(outcome.Text, 20000), Tokens: outcome.Tokens, ToolCalls: outcome.ToolCalls}, now)
+			ModelText: cut(outcome.Text, 20000), Tokens: outcome.Tokens, ToolCalls: outcome.ToolCalls, Tools: outcome.Tools}, now)
 		if err != nil {
 			return err
 		}

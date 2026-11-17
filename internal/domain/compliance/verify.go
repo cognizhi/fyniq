@@ -50,6 +50,7 @@ var verifications = map[string]verification{
 	"audit.exports-reconciled": exportsReconciled,
 	"ai.traces":                aiTraces,
 	"ai.proposals-approved":    proposalsApproved,
+	"ai.agent-runs":            agentRuns,
 }
 
 // Built reports whether the verification name is built.

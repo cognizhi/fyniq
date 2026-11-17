@@ -7,13 +7,16 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 
+	registry "github.com/cognizhi/fyniq/compliance"
 	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/assistant"
+	"github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/proposal"
@@ -154,6 +157,17 @@ func TestTheWorkerAsksTheModelForARun(t *testing.T) {
 	}
 	if last := textOfRequest(model.requests[len(model.requests)-1]); !strings.Contains(last, "The AGM is not until June") || !strings.Contains(last, "untrusted_text") {
 		t.Errorf("the rejection did not reach the next run as data: %s", last)
+	}
+
+	// The nightly check of CTL-AI-09 finds nothing in them: each stayed inside its skill.
+	controls, err := registry.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rep, err := compliance.Runner{Store: workerStore(t), Clock: e.clock, Controls: controls}.Verify(ctx, e.books.Org)
+	i := slices.IndexFunc(rep.Runs, func(r storage.ControlRun) bool { return r.Check == "verify ai.agent-runs" })
+	if err != nil || i < 0 || !rep.Runs[i].OK || !strings.Contains(rep.Runs[i].Detail, "run(s) of the scheduled agents that ended") {
+		t.Errorf("the nightly check of the runs: %v %+v", err, rep.Runs)
 	}
 
 	// No step for a run that ended, nor for a paused agent; no other token opens the step, and the worker's opens nothing else.

@@ -150,6 +150,7 @@ type FyniqAgentRun struct {
 	Tokens         *int32
 	ToolCalls      *int32
 	Version        int32
+	Tools          []string
 }
 
 type FyniqAiAgent struct {

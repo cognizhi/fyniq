@@ -63,7 +63,7 @@ func (r agentRuns) List(ctx context.Context, q storage.AgentRunQuery) ([]storage
 	if statuses == nil {
 		statuses = []string{}
 	}
-	rows, err := r.u.q.AgentRunsPage(ctx, sqlcdb.AgentRunsPageParams{Agent: q.Agent, Statuses: statuses, After: q.After, MaxRows: int32(q.Limit)}) // #nosec G115 -- at most 500
+	rows, err := r.u.q.AgentRunsPage(ctx, sqlcdb.AgentRunsPageParams{Agent: q.Agent, Statuses: statuses, FinishedSince: q.FinishedSince, After: q.After, MaxRows: int32(q.Limit)}) // #nosec G115 -- at most 500
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -124,12 +124,16 @@ func (r agentRuns) Finish(ctx context.Context, id uuid.UUID, version int, rep st
 		}
 	}
 	tokens, calls := int32(min(max(rep.Tokens, 0), 1<<30)), int32(min(max(rep.ToolCalls, 0), 1<<30)) // #nosec G115 -- capped
+	var tools []string                                                                               // the read tools its model step called; none when it did not ask the model
+	if rep.ModelUsed {
+		tools = append([]string{}, rep.Tools...)
+	}
 	changes := map[string][2]any{"fingerprint": {nil, rep.Fingerprint}, "ledger_revision": {nil, rep.LedgerRevision},
 		"findings_sha256": {nil, hashOf(findings)}, "model_used": {nil, rep.ModelUsed}}
 	return r.step(ctx, id, "done", changes, func() (sqlcdb.FyniqAgentRun, error) {
 		return r.u.q.FinishAgentRun(ctx, sqlcdb.FinishAgentRunParams{FinishedAt: &at, Fingerprint: &rep.Fingerprint, LedgerRevision: &rep.LedgerRevision,
 			PackVersions: packs, KbSnapshot: &rep.KBSnapshot, Findings: findings, Summary: &rep.Summary, ModelUsed: &rep.ModelUsed, Model: model,
-			ModelText: text, Tokens: &tokens, ToolCalls: &calls, ID: id, Version: v32(version)})
+			ModelText: text, Tokens: &tokens, ToolCalls: &calls, Tools: tools, ID: id, Version: v32(version)})
 	})
 }
 
@@ -173,7 +177,7 @@ func toAgentRun(row sqlcdb.FyniqAgentRun) (storage.AgentRun, error) {
 	}
 	rep.Fingerprint, rep.LedgerRevision, rep.KBSnapshot, rep.Summary = deref(row.Fingerprint), deref(row.LedgerRevision), deref(row.KbSnapshot), deref(row.Summary)
 	rep.ModelUsed, rep.Model, rep.ModelText = deref(row.ModelUsed), deref(row.Model), deref(row.ModelText)
-	rep.Tokens, rep.ToolCalls = int(deref(row.Tokens)), int(deref(row.ToolCalls))
+	rep.Tokens, rep.ToolCalls, rep.Tools = int(deref(row.Tokens)), int(deref(row.ToolCalls)), row.Tools
 	out.Report = &rep
 	return out, nil
 }

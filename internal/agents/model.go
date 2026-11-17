@@ -30,12 +30,13 @@ type ModelStepRequest struct {
 // ModelStepOutcome is the API's answer: the model's words as written, grounded, the model, what the step used and how
 // many proposals it made, and how it ended.
 type ModelStepOutcome struct {
-	Model     string `json:"model"`
-	Text      string `json:"text"`
-	Tokens    int    `json:"tokens"`
-	ToolCalls int    `json:"tool_calls"`
-	Proposals int    `json:"proposals"`
-	Stop      string `json:"stop"`
+	Model     string   `json:"model"`
+	Text      string   `json:"text"`
+	Tokens    int      `json:"tokens"`
+	ToolCalls int      `json:"tool_calls"`
+	Tools     []string `json:"tools"`
+	Proposals int      `json:"proposals"`
+	Stop      string   `json:"stop"`
 }
 
 // APIModel is the run's model step through the API (design D5 step 5): POST <URL>/agent-runs/{id}/model with the
@@ -83,5 +84,5 @@ func (m APIModel) Step(ctx context.Context, org uuid.UUID, run storage.AgentRun,
 	if err := json.Unmarshal(data, &out); err != nil {
 		return ModelOutcome{}, fmt.Errorf("the API's answer: %w", err)
 	}
-	return ModelOutcome{Model: out.Model, Text: out.Text, Tokens: out.Tokens, ToolCalls: out.ToolCalls, Proposals: out.Proposals}, nil
+	return ModelOutcome{Model: out.Model, Text: out.Text, Tokens: out.Tokens, ToolCalls: out.ToolCalls, Tools: out.Tools, Proposals: out.Proposals}, nil
 }

@@ -114,6 +114,7 @@ agent_run | model_text | text | null |
 agent_run | tokens | integer | null | 
 agent_run | tool_calls | integer | null | 
 agent_run | version | integer | not null | 1
+agent_run | tools | text[] | null | 
 ai_agent | id | text | not null | 
 ai_agent | name | text | not null | 
 ai_agent | description | text | not null | 
@@ -2527,6 +2528,7 @@ agent_run | agent_run_slot_at_not_null | NOT NULL slot_at
 agent_run | agent_run_state | CHECK ((((started_at IS NOT NULL) = (status = ANY (ARRAY['running'::text, 'done'::text, 'failed'::text]))) AND ((finished_at IS NOT NULL) = (status = ANY (ARRAY['done'::text, 'failed'::text, 'skipped'::text]))) AND ((reason <> ''::text) = (status = ANY (ARRAY['failed'::text, 'skipped'::text]))) AND ((status <> 'done'::text) OR ((fingerprint ~ '^[0-9a-f]{64}$'::text) AND (ledger_revision IS NOT NULL) AND (pack_versions IS NOT NULL) AND (kb_snapshot IS NOT NULL) AND (jsonb_typeof(findings) = 'array'::text) AND (summary <> ''::text) AND (model_used IS NOT NULL))) AND ((model_used IS TRUE) = (model IS NOT NULL)) AND ((model_text IS NULL) OR (model_used IS TRUE)) AND ((started_at IS NULL) OR (started_at >= queued_at)) AND ((finished_at IS NULL) OR (finished_at >= queued_at)) AND ((finished_at IS NULL) OR (started_at IS NULL) OR (finished_at >= started_at))))
 agent_run | agent_run_status | CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'done'::text, 'failed'::text, 'skipped'::text])))
 agent_run | agent_run_status_not_null | NOT NULL status
+agent_run | agent_run_tools | CHECK (((tools IS NULL) OR ((model_used IS TRUE) AND (cardinality(tools) <= 200) AND (array_position(tools, NULL::text) IS NULL))))
 agent_run | agent_run_trigger | CHECK (((trigger ~ '^(schedule:[a-z_]{1,40}|event:[a-z_]{1,40}:[A-Za-z0-9:._-]{1,100}|run_now)$'::text) AND ((requested_by IS NOT NULL) = (trigger = 'run_now'::text))))
 agent_run | agent_run_trigger_not_null | NOT NULL trigger
 agent_run | agent_run_version | CHECK ((version >= 1))
@@ -7653,7 +7655,7 @@ accountant_review_query_guard() → trigger | security invoker | v | search_path
 accountant_review_reopened() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 491d4ed52fee22eca39aaef26dfcb647
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
 acra_extract_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e61f76b3fe2a4eb691c487471ba73494
-agent_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | f0d3d9f96392ba8d5beefd6e7700a58a
+agent_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0118eb467235c701b88d5fd9d379481c
 ai_budget_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 59adc0b6ced792e22b069f66bc8ccb23
 ai_call_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b4e1754c041a743ac2f43d2baf8bb4b4
 ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 051ffeb8214e6453575d1964f565ecfd

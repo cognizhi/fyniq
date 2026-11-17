@@ -209,8 +209,16 @@
     `evals/cassettes/agent`. `make evals` runs it and folds its report in as `agents`.
   - `secretary-launch`: G4-076, an overdue filing with a drafted reminder, no financial year, and an injected memo.
     None is recorded yet: `FYNIQ_EVALS_RELEASE=1` fails until a model's runs are recorded [live-verify].
-- [ ] 8.2 `verify ai.agent-runs` nightly; `compliance/controls/CTL-AI-09.yaml` running (design D11). Tests
+- [x] 8.2 `verify ai.agent-runs` nightly; `compliance/controls/CTL-AI-09.yaml` running (design D11). Tests
   `// req: CTL-AI-09`.
+  As built:
+  - Migration 000390 (validated in 000391): a run keeps the read tools its model step called (`agent_run.tools`). The
+    worker writes them once, as the run ends; the model step returns them.
+  - `verify ai.agent-runs` checks each run that ended in the last day: its tools must be its pinned skill's, and its
+    proposals of its skill's outputs under its own agent. A run of a skill the release does not pin is counted and not
+    checked.
+  - CTL-AI-09 runs both checks: CI (`TestEveryChangeToASkillIsANewVersion`, with the never-list refused as a skill
+    loads) and nightly.
 
 ## 9. The finish
 
