@@ -8,6 +8,8 @@ package assistant
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -133,6 +135,8 @@ type ToolCall struct {
 	Omitted  int             `json:"omitted,omitempty"`
 	Withheld bool            `json:"withheld,omitempty"`
 	Duration time.Duration   `json:"duration_ns"`
+	// OutputSHA256 is the hash of what the model read of it.
+	OutputSHA256 string `json:"output_sha256,omitempty"`
 }
 
 // How a turn ends.
@@ -311,6 +315,8 @@ func (a *Assistant) runTool(ctx context.Context, token string, tools *aitool.Reg
 	if err != nil {
 		return failed("AI-TOOL", "The read's result could not be read.")
 	}
+	sum := sha256.Sum256([]byte(text))
+	record.OutputSHA256 = hex.EncodeToString(sum[:])
 	return ports.ModelPart{Kind: ports.PartToolResult, CallID: call.CallID, Tool: call.Tool, Text: text}, record, result.Facts
 }
 

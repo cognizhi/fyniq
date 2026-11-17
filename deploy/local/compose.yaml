@@ -31,6 +31,7 @@ x-fyniq-env: &fyniq-env
   FYNIQ_WORKER_URL: http://worker:8080
   FYNIQ_EXECUTOR_URL: http://executor:8080
   FYNIQ_RENDER_URL: http://render:8080       # the private render service (PRD-001 §12.3, rev 0.96)
+  FYNIQ_AI_URL: http://ai:8080               # the AI service, which answers the assistant's turns (p1-ai-assistant D3)
   FYNIQ_DATA_DIR: /tmp/fyniq
 
 # The data the API, the worker and the executor share, as the cloud's buckets and keys are shared: blobs (uploads,

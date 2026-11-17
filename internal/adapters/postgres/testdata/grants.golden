@@ -32,8 +32,14 @@ fyniq_api       SELECT    ai_connection
 fyniq_api       UPDATE    ai_connection (auth, auto_qualify, billing_mode, changed_at, changed_by, configuration, credential_ref, credential_set_at, data_handling, host, name, preset, quota, self_hosted, state, version)
 fyniq_api       INSERT    ai_connection_version (approval_id, connection_id, made_at, made_by, snapshot, step, version)
 fyniq_api       SELECT    ai_connection_version
+fyniq_api       INSERT    ai_conversation (created_at, title, user_id)
+fyniq_api       SELECT    ai_conversation
+fyniq_api       UPDATE    ai_conversation (deleted_at)
 fyniq_api       INSERT    ai_data_policy (approval_id, made_at, made_by, policy, version)
 fyniq_api       SELECT    ai_data_policy
+fyniq_api       INSERT    ai_feedback (given_at, rating, reason, turn_id, user_id)
+fyniq_api       SELECT    ai_feedback
+fyniq_api       UPDATE    ai_feedback (decision, reviewed_at, reviewed_by)
 fyniq_api       INSERT    ai_grant (expires_at, issued_at, token_hash, turn_id, user_id)
 fyniq_api       SELECT    ai_grant
 fyniq_api       UPDATE    ai_grant (classes, ended_at)
@@ -59,6 +65,11 @@ fyniq_api       SELECT    ai_route
 fyniq_api       INSERT    ai_route_step (cache, connection_id, effort, model, position, route_id)
 fyniq_api       SELECT    ai_route_step
 fyniq_api       EXECUTE   ai_settle()
+fyniq_api       INSERT    ai_tool_call (code, duration_ms, facts, input, n, omitted, outcome, output_sha256, tool, turn_id, version, withheld)
+fyniq_api       SELECT    ai_tool_call
+fyniq_api       INSERT    ai_turn (asked_at, context, conversation_id, question, user_id)
+fyniq_api       SELECT    ai_turn
+fyniq_api       UPDATE    ai_turn (answer, answered_at, cited, code, facts, input_tokens, output_tokens, prompt, prompt_sha256, regenerated, runs, segments, status, withheld)
 fyniq_api       INSERT    allocation (amount, base_amount, base_currency, base_minor_units, currency, document_id, minor_units, on_date, realised_fx, reverses_id, source_id, source_version, tax, tolerance, written_at, written_by)
 fyniq_api       SELECT    allocation
 fyniq_api       INSERT    announcement (dismissible, ends_at, link, message, published_at, published_by, roles, severity, starts_at)
@@ -614,7 +625,9 @@ fyniq_readonly  SELECT    ai_budget
 fyniq_readonly  SELECT    ai_call
 fyniq_readonly  SELECT    ai_connection
 fyniq_readonly  SELECT    ai_connection_version
+fyniq_readonly  SELECT    ai_conversation
 fyniq_readonly  SELECT    ai_data_policy
+fyniq_readonly  SELECT    ai_feedback
 fyniq_readonly  SELECT    ai_model
 fyniq_readonly  SELECT    ai_model_list_read
 fyniq_readonly  SELECT    ai_price
@@ -624,6 +637,8 @@ fyniq_readonly  SELECT    ai_qualification
 fyniq_readonly  SELECT    ai_reservation
 fyniq_readonly  SELECT    ai_route
 fyniq_readonly  SELECT    ai_route_step
+fyniq_readonly  SELECT    ai_tool_call
+fyniq_readonly  SELECT    ai_turn
 fyniq_readonly  SELECT    allocation
 fyniq_readonly  SELECT    announcement
 fyniq_readonly  SELECT    announcement_dismissal
@@ -803,7 +818,9 @@ fyniq_worker    SELECT    ai_budget
 fyniq_worker    SELECT    ai_call
 fyniq_worker    SELECT    ai_connection
 fyniq_worker    SELECT    ai_connection_version
+fyniq_worker    SELECT    ai_conversation
 fyniq_worker    SELECT    ai_data_policy
+fyniq_worker    SELECT    ai_feedback
 fyniq_worker    INSERT    ai_model (alias_of, allowed, connection_id, context_window, first_listed_at, last_listed_at, listed, listed_price, max_output, model, name, not_callable_at, provider_created, reports, shutdown_at)
 fyniq_worker    SELECT    ai_model
 fyniq_worker    UPDATE    ai_model (alias_of, allowed, context_window, last_listed_at, listed, listed_price, max_output, name, not_callable_at, price_checked_at, provider_created, reports, shutdown_at, unpriced)
@@ -823,6 +840,8 @@ fyniq_worker    EXECUTE   ai_reserve()
 fyniq_worker    SELECT    ai_route
 fyniq_worker    SELECT    ai_route_step
 fyniq_worker    EXECUTE   ai_settle()
+fyniq_worker    SELECT    ai_tool_call
+fyniq_worker    SELECT    ai_turn
 fyniq_worker    SELECT    allocation
 fyniq_worker    SELECT    announcement
 fyniq_worker    SELECT    announcement_dismissal

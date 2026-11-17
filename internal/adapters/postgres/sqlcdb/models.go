@@ -219,6 +219,15 @@ type FyniqAiConnectionVersion struct {
 	MadeAt         time.Time
 }
 
+type FyniqAiConversation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Title          string
+	CreatedAt      time.Time
+	DeletedAt      *time.Time
+}
+
 type FyniqAiDataPolicy struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -227,6 +236,19 @@ type FyniqAiDataPolicy struct {
 	ApprovalID     uuid.UUID
 	MadeBy         string
 	MadeAt         time.Time
+}
+
+type FyniqAiFeedback struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	TurnID         uuid.UUID
+	UserID         uuid.UUID
+	Rating         string
+	Reason         string
+	GivenAt        time.Time
+	ReviewedBy     *uuid.UUID
+	ReviewedAt     *time.Time
+	Decision       *string
 }
 
 type FyniqAiGrant struct {
@@ -407,6 +429,47 @@ type FyniqAiRouteStep struct {
 	Model          string
 	Effort         string
 	Cache          bool
+}
+
+type FyniqAiToolCall struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	TurnID         uuid.UUID
+	N              int32
+	Tool           string
+	Version        int32
+	Input          []byte
+	OutputSha256   string
+	Outcome        string
+	Code           string
+	Facts          int32
+	Omitted        int32
+	Withheld       bool
+	DurationMs     int32
+}
+
+type FyniqAiTurn struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConversationID uuid.UUID
+	UserID         uuid.UUID
+	Question       string
+	Context        []byte
+	Status         string
+	Code           string
+	Answer         string
+	Segments       []byte
+	Cited          []string
+	Facts          []byte
+	Prompt         string
+	PromptSha256   string
+	Runs           []uuid.UUID
+	InputTokens    int64
+	OutputTokens   int64
+	Regenerated    bool
+	Withheld       int32
+	AskedAt        time.Time
+	AnsweredAt     *time.Time
 }
 
 type FyniqAllocation struct {

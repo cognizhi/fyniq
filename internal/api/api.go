@@ -88,6 +88,9 @@ type Deps struct {
 	// AIProviders builds an AI connection's model provider (AI-70), read in the work's unit of work; nil: the connector
 	// runtime's, through the egress guard to the connection's one host.
 	AIProviders func(ctx context.Context, u storage.UnitOfWork, c storage.AIConnection) (ports.ModelProvider, error)
+	// Assistant is the AI service, which answers the assistant's turns (p1-ai-assistant design D3); nil: every turn fails,
+	// saying the AI service is not set up.
+	Assistant *AssistantService
 	// Screening screens what the AI service sends a model, the tools' untrusted text and the models' answers (AI-18,
 	// AI-P7; p1-ai-assistant design D8): Model Armor, or local mode's stub; nil: no AI call is sent and no tool runs.
 	Screening ports.Screening
@@ -221,6 +224,7 @@ func Config(version string) huma.Config {
 		{Name: "Migration", Description: "The move from the zh-sheet-accounting workbook (FR-MIG-01, §17.1): the organisation's one migration, its steps M1 to M6, the workbook uploaded as M1's evidence and its validation report before anything is committed."},
 		{Name: "Data", Description: "The organisation's data as a whole: the full tenant export (FR-MIG-04), dual controlled, saved only by its requester."},
 		{Name: "AI", Description: "The AI's configuration: connections to model providers, their credentials and billing (AI-72, AI-73, AI-79), dual controlled; never reachable by the AI or over MCP (§9.6)."},
+		{Name: "Assistant", Description: "Ask the books in plain words: a person's own conversations with the assistant, answered as them through the read tools, every figure from a fact (AI-P1, AI-08); never reachable by the AI or over MCP (§9.6)."},
 		{Name: "Import", Description: "The generic import (FR-MIG-03): each entity's template, laid out as the workbook's sheet for it, as CSV or XLSX, and the import of a file filled in it, with its dry run; each row entered through its own command, in any organisation, under the entity's own right."},
 		{Name: "Planning", Description: "Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08)."},
 		{Name: "Audit trail", Description: "The audit trail (PRD-001 §11.5): the explorer and its export (FR-CTL-03, AUD-07), and Verify integrity for a range of days (AUD-03). Every saved change, sign-in, sensitive read and export is in it."},
@@ -359,6 +363,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerApprovalPolicies(a)
 	registerPacks(a)
 	registerStatutoryValues(a)
+	registerAssistant(a)
 	registerTeamMode(a)
 	registerPasskeys(a)
 	registerDevices(a)
@@ -519,6 +524,23 @@ var commonCodes = []string{CodeUnauthenticated, CodeForbidden, CodeNoOrganisatio
 // exists without a policy (SEC-02), its permission and its error codes in the document
 // (NFR-API-01).
 func register[I, O any](a *API, p authz.Policy, op huma.Operation, codes []string, h func(ctx context.Context, in *I) (*O, error)) {
+	op = a.prepare(p, op, codes)
+	huma.Register(a.API, op, func(ctx context.Context, in *I) (*O, error) {
+		out, err := h(ctx, in)
+		if err != nil {
+			pr := problemFrom(ctx, err)
+			if pr.Instance == "" {
+				pr.Instance = instance(ctx)
+			}
+			return nil, pr
+		}
+		return out, nil
+	})
+}
+
+// prepare records p as op's policy and names on op its error codes, their statuses and its permission, for register and
+// for an operation that streams.
+func (a *API) prepare(p authz.Policy, op huma.Operation, codes []string) huma.Operation {
 	if op.OperationID == "" || op.OperationID != p.Operation {
 		panic(fmt.Sprintf("api: operation %q registered with the policy of %q", op.OperationID, p.Operation))
 	}
@@ -563,17 +585,7 @@ func register[I, O any](a *API, p authz.Policy, op huma.Operation, codes []strin
 	}
 	op.Extensions["x-fyniq-permission"] = permission
 	op.Extensions["x-fyniq-error-codes"] = codes
-	huma.Register(a.API, op, func(ctx context.Context, in *I) (*O, error) {
-		out, err := h(ctx, in)
-		if err != nil {
-			pr := problemFrom(ctx, err)
-			if pr.Instance == "" {
-				pr.Instance = instance(ctx)
-			}
-			return nil, pr
-		}
-		return out, nil
-	})
+	return op
 }
 
 // describeErrors names, on each error response of the document, the codes it carries.

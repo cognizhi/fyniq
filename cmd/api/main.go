@@ -93,7 +93,10 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	// The internal API takes the AI service's service tokens (p1-ai-assistant design D4): HMAC locally, Google's OIDC
 	// tokens for the "ai" invoker in the cloud [live-verify]; without that invoker it refuses every call.
 	d.Services = kit.Tokens
-	d.Screening = kit.Screening                           // nil until configured: then no AI call is sent (fail closed)
+	d.Screening = kit.Screening // nil until configured: then no AI call is sent (fail closed)
+	if kit.AssistantURL != "" { // the AI service, which answers the assistant's turns (p1-ai-assistant design D3)
+		d.Assistant = &api.AssistantService{URL: kit.AssistantURL, Token: kit.AssistantToken, HTTP: kit.AssistantHTTP}
+	}
 	d.AlertThresholds = kit.Alerts(deps.Clock).Thresholds // SEC-31's settings
 	// Verify integrity reads the anchors with the key that signed them (AUD-03) [live-verify: the api account reads the
 	// anchors' bucket and the signing key's public key].

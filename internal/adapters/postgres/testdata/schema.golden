@@ -166,6 +166,12 @@ ai_connection_version | snapshot | jsonb | not null |
 ai_connection_version | approval_id | uuid | null | 
 ai_connection_version | made_by | text | not null | 
 ai_connection_version | made_at | timestamp with time zone | not null | 
+ai_conversation | organisation_id | uuid | not null | current_org()
+ai_conversation | id | uuid | not null | uuidv7()
+ai_conversation | user_id | uuid | not null | 
+ai_conversation | title | text | not null | ''::text
+ai_conversation | created_at | timestamp with time zone | not null | 
+ai_conversation | deleted_at | timestamp with time zone | null | 
 ai_data_policy | organisation_id | uuid | not null | current_org()
 ai_data_policy | id | uuid | not null | uuidv7()
 ai_data_policy | version | integer | not null | 
@@ -173,6 +179,16 @@ ai_data_policy | policy | jsonb | not null |
 ai_data_policy | approval_id | uuid | not null | 
 ai_data_policy | made_by | text | not null | 
 ai_data_policy | made_at | timestamp with time zone | not null | 
+ai_feedback | organisation_id | uuid | not null | current_org()
+ai_feedback | id | uuid | not null | uuidv7()
+ai_feedback | turn_id | uuid | not null | 
+ai_feedback | user_id | uuid | not null | 
+ai_feedback | rating | text | not null | 
+ai_feedback | reason | text | not null | ''::text
+ai_feedback | given_at | timestamp with time zone | not null | 
+ai_feedback | reviewed_by | uuid | null | 
+ai_feedback | reviewed_at | timestamp with time zone | null | 
+ai_feedback | decision | text | null | 
 ai_grant | organisation_id | uuid | not null | current_org()
 ai_grant | id | uuid | not null | uuidv7()
 ai_grant | token_hash | bytea | not null | 
@@ -320,6 +336,41 @@ ai_route_step | connection_id | uuid | not null |
 ai_route_step | model | text | not null | 
 ai_route_step | effort | text | not null | ''::text
 ai_route_step | cache | boolean | not null | true
+ai_tool_call | organisation_id | uuid | not null | current_org()
+ai_tool_call | id | uuid | not null | uuidv7()
+ai_tool_call | turn_id | uuid | not null | 
+ai_tool_call | n | integer | not null | 
+ai_tool_call | tool | text | not null | 
+ai_tool_call | version | integer | not null | 
+ai_tool_call | input | jsonb | not null | 
+ai_tool_call | output_sha256 | text | not null | ''::text
+ai_tool_call | outcome | text | not null | 
+ai_tool_call | code | text | not null | ''::text
+ai_tool_call | facts | integer | not null | 0
+ai_tool_call | omitted | integer | not null | 0
+ai_tool_call | withheld | boolean | not null | false
+ai_tool_call | duration_ms | integer | not null | 0
+ai_turn | organisation_id | uuid | not null | current_org()
+ai_turn | id | uuid | not null | uuidv7()
+ai_turn | conversation_id | uuid | not null | 
+ai_turn | user_id | uuid | not null | 
+ai_turn | question | text | not null | 
+ai_turn | context | jsonb | null | 
+ai_turn | status | text | not null | 'answering'::text
+ai_turn | code | text | not null | ''::text
+ai_turn | answer | text | not null | ''::text
+ai_turn | segments | jsonb | not null | '[]'::jsonb
+ai_turn | cited | text[] | not null | '{}'::text[]
+ai_turn | facts | jsonb | not null | '[]'::jsonb
+ai_turn | prompt | text | not null | ''::text
+ai_turn | prompt_sha256 | text | not null | ''::text
+ai_turn | runs | uuid[] | not null | '{}'::uuid[]
+ai_turn | input_tokens | bigint | not null | 0
+ai_turn | output_tokens | bigint | not null | 0
+ai_turn | regenerated | boolean | not null | false
+ai_turn | withheld | integer | not null | 0
+ai_turn | asked_at | timestamp with time zone | not null | 
+ai_turn | answered_at | timestamp with time zone | null | 
 allocation | organisation_id | uuid | not null | current_org()
 allocation | id | uuid | not null | uuidv7()
 allocation | source_id | uuid | not null | 
@@ -2501,6 +2552,16 @@ ai_connection_version | ai_connection_version_snapshot_object | CHECK ((jsonb_ty
 ai_connection_version | ai_connection_version_step_known | CHECK ((step = ANY (ARRAY['created'::text, 'changed'::text, 'credential'::text, 'enabled'::text, 'disabled'::text])))
 ai_connection_version | ai_connection_version_step_not_null | NOT NULL step
 ai_connection_version | ai_connection_version_version_not_null | NOT NULL version
+ai_conversation | ai_conversation_created_at_not_null | NOT NULL created_at
+ai_conversation | ai_conversation_deleted | CHECK (((deleted_at IS NULL) OR (deleted_at >= created_at)))
+ai_conversation | ai_conversation_id_not_null | NOT NULL id
+ai_conversation | ai_conversation_organisation_id_not_null | NOT NULL organisation_id
+ai_conversation | ai_conversation_pkey | PRIMARY KEY (organisation_id, id)
+ai_conversation | ai_conversation_title_length | CHECK ((length(title) <= 200))
+ai_conversation | ai_conversation_title_not_null | NOT NULL title
+ai_conversation | ai_conversation_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+ai_conversation | ai_conversation_user_id_not_null | NOT NULL user_id
+ai_conversation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 ai_data_policy | ai_data_policy_approval_id_not_null | NOT NULL approval_id
 ai_data_policy | ai_data_policy_id_not_null | NOT NULL id
 ai_data_policy | ai_data_policy_made_at_not_null | NOT NULL made_at
@@ -2515,6 +2576,21 @@ ai_data_policy | ai_data_policy_version | UNIQUE (organisation_id, version)
 ai_data_policy | ai_data_policy_version_not_null | NOT NULL version
 ai_data_policy | ai_data_policy_version_positive | CHECK ((version >= 1))
 ai_data_policy | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_feedback | ai_feedback_given_at_not_null | NOT NULL given_at
+ai_feedback | ai_feedback_id_not_null | NOT NULL id
+ai_feedback | ai_feedback_once | UNIQUE (organisation_id, turn_id, user_id)
+ai_feedback | ai_feedback_organisation_id_not_null | NOT NULL organisation_id
+ai_feedback | ai_feedback_pkey | PRIMARY KEY (organisation_id, id)
+ai_feedback | ai_feedback_rating | CHECK (((rating = ANY (ARRAY['up'::text, 'down'::text])) AND (length(reason) <= 1000)))
+ai_feedback | ai_feedback_rating_not_null | NOT NULL rating
+ai_feedback | ai_feedback_reason_not_null | NOT NULL reason
+ai_feedback | ai_feedback_review | CHECK ((((reviewed_at IS NULL) = (decision IS NULL)) AND ((reviewed_at IS NULL) = (reviewed_by IS NULL)) AND ((decision IS NULL) OR (decision = ANY (ARRAY['golden'::text, 'dismissed'::text]))) AND ((reviewed_at IS NULL) OR (reviewed_at >= given_at))))
+ai_feedback | ai_feedback_reviewer_fkey | FOREIGN KEY (reviewed_by) REFERENCES app_user(user_id)
+ai_feedback | ai_feedback_turn_fkey | FOREIGN KEY (organisation_id, turn_id) REFERENCES ai_turn(organisation_id, id)
+ai_feedback | ai_feedback_turn_id_not_null | NOT NULL turn_id
+ai_feedback | ai_feedback_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+ai_feedback | ai_feedback_user_id_not_null | NOT NULL user_id
+ai_feedback | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 ai_grant | ai_grant_classes | CHECK ((classes <@ ARRAY['know-how'::text, 'business-figures'::text, 'personal-data'::text, 'payroll'::text]))
 ai_grant | ai_grant_classes_not_null | NOT NULL classes
 ai_grant | ai_grant_ended | CHECK (((ended_at IS NULL) OR (ended_at >= issued_at)))
@@ -2727,6 +2803,59 @@ ai_route_step | ai_route_step_position_not_null | NOT NULL "position"
 ai_route_step | ai_route_step_position_range | CHECK ((("position" >= 1) AND ("position" <= 5)))
 ai_route_step | ai_route_step_route_fkey | FOREIGN KEY (organisation_id, route_id) REFERENCES ai_route(organisation_id, id)
 ai_route_step | ai_route_step_route_id_not_null | NOT NULL route_id
+ai_tool_call | ai_tool_call_code | CHECK (((code ~ '^([A-Z][A-Z0-9-]{1,40})?$'::text) AND (output_sha256 ~ '^([0-9a-f]{64})?$'::text)))
+ai_tool_call | ai_tool_call_code_not_null | NOT NULL code
+ai_tool_call | ai_tool_call_counts | CHECK (((facts >= 0) AND (omitted >= 0) AND (duration_ms >= 0)))
+ai_tool_call | ai_tool_call_duration_ms_not_null | NOT NULL duration_ms
+ai_tool_call | ai_tool_call_facts_not_null | NOT NULL facts
+ai_tool_call | ai_tool_call_id_not_null | NOT NULL id
+ai_tool_call | ai_tool_call_input_not_null | NOT NULL input
+ai_tool_call | ai_tool_call_input_size | CHECK ((pg_column_size(input) <= 16384))
+ai_tool_call | ai_tool_call_n | CHECK (((n >= 1) AND (n <= 100)))
+ai_tool_call | ai_tool_call_n_not_null | NOT NULL n
+ai_tool_call | ai_tool_call_omitted_not_null | NOT NULL omitted
+ai_tool_call | ai_tool_call_organisation_id_not_null | NOT NULL organisation_id
+ai_tool_call | ai_tool_call_outcome | CHECK (((outcome = ANY (ARRAY['read'::text, 'refused'::text])) AND ((outcome = 'refused'::text) = (code <> ''::text))))
+ai_tool_call | ai_tool_call_outcome_not_null | NOT NULL outcome
+ai_tool_call | ai_tool_call_output_sha256_not_null | NOT NULL output_sha256
+ai_tool_call | ai_tool_call_pkey | PRIMARY KEY (organisation_id, id)
+ai_tool_call | ai_tool_call_place | UNIQUE (organisation_id, turn_id, n)
+ai_tool_call | ai_tool_call_tool | CHECK (((tool ~ '^[a-z_]+(\.[a-z_]+)?$'::text) AND (version >= 0)))
+ai_tool_call | ai_tool_call_tool_not_null | NOT NULL tool
+ai_tool_call | ai_tool_call_turn_fkey | FOREIGN KEY (organisation_id, turn_id) REFERENCES ai_turn(organisation_id, id)
+ai_tool_call | ai_tool_call_turn_id_not_null | NOT NULL turn_id
+ai_tool_call | ai_tool_call_version_not_null | NOT NULL version
+ai_tool_call | ai_tool_call_withheld_not_null | NOT NULL withheld
+ai_turn | ai_turn_answer_length | CHECK ((length(answer) <= 40000))
+ai_turn | ai_turn_answer_not_null | NOT NULL answer
+ai_turn | ai_turn_answered | CHECK (((answered_at IS NULL) OR (answered_at >= asked_at)))
+ai_turn | ai_turn_asked_at_not_null | NOT NULL asked_at
+ai_turn | ai_turn_cited_not_null | NOT NULL cited
+ai_turn | ai_turn_code | CHECK (((code ~ '^([A-Z][A-Z0-9-]{1,40})?$'::text) AND ((status = ANY (ARRAY['refused'::text, 'failed'::text])) = (code <> ''::text))))
+ai_turn | ai_turn_code_not_null | NOT NULL code
+ai_turn | ai_turn_conversation_fkey | FOREIGN KEY (organisation_id, conversation_id) REFERENCES ai_conversation(organisation_id, id)
+ai_turn | ai_turn_conversation_id_not_null | NOT NULL conversation_id
+ai_turn | ai_turn_counts | CHECK (((input_tokens >= 0) AND (output_tokens >= 0) AND (withheld >= 0)))
+ai_turn | ai_turn_facts_not_null | NOT NULL facts
+ai_turn | ai_turn_id_not_null | NOT NULL id
+ai_turn | ai_turn_input_tokens_not_null | NOT NULL input_tokens
+ai_turn | ai_turn_organisation_id_not_null | NOT NULL organisation_id
+ai_turn | ai_turn_output_tokens_not_null | NOT NULL output_tokens
+ai_turn | ai_turn_pkey | PRIMARY KEY (organisation_id, id)
+ai_turn | ai_turn_prompt | CHECK (((prompt ~ '^([a-z][a-z_]{1,30}@[1-9][0-9]{0,3})?$'::text) AND (prompt_sha256 ~ '^([0-9a-f]{64})?$'::text)))
+ai_turn | ai_turn_prompt_not_null | NOT NULL prompt
+ai_turn | ai_turn_prompt_sha256_not_null | NOT NULL prompt_sha256
+ai_turn | ai_turn_question_length | CHECK (((length(question) >= 1) AND (length(question) <= 4000)))
+ai_turn | ai_turn_question_not_null | NOT NULL question
+ai_turn | ai_turn_regenerated_not_null | NOT NULL regenerated
+ai_turn | ai_turn_runs_not_null | NOT NULL runs
+ai_turn | ai_turn_segments_not_null | NOT NULL segments
+ai_turn | ai_turn_status | CHECK (((status = ANY (ARRAY['answering'::text, 'answered'::text, 'refused'::text, 'failed'::text])) AND ((status = 'answering'::text) = (answered_at IS NULL))))
+ai_turn | ai_turn_status_not_null | NOT NULL status
+ai_turn | ai_turn_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+ai_turn | ai_turn_user_id_not_null | NOT NULL user_id
+ai_turn | ai_turn_withheld_not_null | NOT NULL withheld
+ai_turn | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 allocation | allocation_actor_format | CHECK ((written_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 allocation | allocation_amount_not_null | NOT NULL amount
 allocation | allocation_amount_scale | CHECK (((amount <> 'NaN'::numeric) AND (amount <> (0)::numeric) AND (amount = trunc(amount, (minor_units)::integer))))
@@ -5863,6 +5992,7 @@ CREATE INDEX ai_call_by_connection ON fyniq.ai_call USING btree (organisation_id
 CREATE INDEX ai_call_by_price ON fyniq.ai_call USING btree (organisation_id, price_id)
 CREATE INDEX ai_call_by_run ON fyniq.ai_call USING btree (organisation_id, run_id)
 CREATE INDEX ai_call_by_time ON fyniq.ai_call USING btree (organisation_id, started_at DESC, id DESC)
+CREATE INDEX ai_conversation_of_user ON fyniq.ai_conversation USING btree (organisation_id, user_id, created_at DESC)
 CREATE INDEX ai_model_list_read_connection ON fyniq.ai_model_list_read USING btree (organisation_id, connection_id, read_at DESC)
 CREATE INDEX ai_price_by_approval ON fyniq.ai_price USING btree (organisation_id, approval_id)
 CREATE INDEX ai_price_by_catalogue ON fyniq.ai_price USING btree (organisation_id, catalogue_id)
@@ -5872,6 +6002,8 @@ CREATE INDEX ai_reservation_by_month ON fyniq.ai_reservation USING btree (organi
 CREATE INDEX ai_reservation_by_run ON fyniq.ai_reservation USING btree (organisation_id, run_id)
 CREATE INDEX ai_route_by_approval ON fyniq.ai_route USING btree (organisation_id, approval_id)
 CREATE INDEX ai_route_step_by_model ON fyniq.ai_route_step USING btree (organisation_id, connection_id, model)
+CREATE INDEX ai_turn_of_conversation ON fyniq.ai_turn USING btree (organisation_id, conversation_id, asked_at)
+CREATE INDEX ai_turn_of_user ON fyniq.ai_turn USING btree (organisation_id, user_id, asked_at)
 CREATE INDEX allocation_document ON fyniq.allocation USING btree (organisation_id, document_id, on_date)
 CREATE INDEX allocation_source ON fyniq.allocation USING btree (organisation_id, source_id)
 CREATE INDEX announcement_ends ON fyniq.announcement USING btree (organisation_id, ends_at)
@@ -6015,8 +6147,11 @@ CREATE UNIQUE INDEX ai_connection_name ON fyniq.ai_connection USING btree (organ
 CREATE UNIQUE INDEX ai_connection_pkey ON fyniq.ai_connection USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_connection_version_id ON fyniq.ai_connection_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_connection_version_pkey ON fyniq.ai_connection_version USING btree (organisation_id, connection_id, version)
+CREATE UNIQUE INDEX ai_conversation_pkey ON fyniq.ai_conversation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_data_policy_pkey ON fyniq.ai_data_policy USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_data_policy_version ON fyniq.ai_data_policy USING btree (organisation_id, version)
+CREATE UNIQUE INDEX ai_feedback_once ON fyniq.ai_feedback USING btree (organisation_id, turn_id, user_id)
+CREATE UNIQUE INDEX ai_feedback_pkey ON fyniq.ai_feedback USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_grant_pkey ON fyniq.ai_grant USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_grant_token ON fyniq.ai_grant USING btree (organisation_id, token_hash)
 CREATE UNIQUE INDEX ai_grant_turn ON fyniq.ai_grant USING btree (organisation_id, turn_id)
@@ -6037,6 +6172,9 @@ CREATE UNIQUE INDEX ai_route_step_once ON fyniq.ai_route_step USING btree (organ
 CREATE UNIQUE INDEX ai_route_step_pkey ON fyniq.ai_route_step USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_route_step_position ON fyniq.ai_route_step USING btree (organisation_id, route_id, "position")
 CREATE UNIQUE INDEX ai_route_version ON fyniq.ai_route USING btree (organisation_id, agent, version)
+CREATE UNIQUE INDEX ai_tool_call_pkey ON fyniq.ai_tool_call USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_tool_call_place ON fyniq.ai_tool_call USING btree (organisation_id, turn_id, n)
+CREATE UNIQUE INDEX ai_turn_pkey ON fyniq.ai_turn USING btree (organisation_id, id)
 CREATE UNIQUE INDEX allocation_pkey ON fyniq.allocation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX allocation_reversed_once ON fyniq.allocation USING btree (organisation_id, reverses_id)
 CREATE UNIQUE INDEX announcement_dismissal_once ON fyniq.announcement_dismissal USING btree (organisation_id, user_id, announcement_id)
@@ -6466,6 +6604,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounta
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_framework DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_framework', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accounting_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accounting_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_connection DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_connection', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_conversation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_conversation', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.ai_feedback DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_feedback', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.announcement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('announcement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.bank_feed DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_feed', 'money_account_id')
@@ -6519,6 +6659,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.statemen
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_installation_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.super_admin_grant DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_grant_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.user_membership DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_membership', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER UPDATE ON fyniq.ai_turn DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_turn', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER UPDATE ON fyniq.bank_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_line', 'id')
 CREATE CONSTRAINT TRIGGER require_audit_status AFTER UPDATE ON fyniq.check_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION require_audit('check_state', 'id')
 CREATE CONSTRAINT TRIGGER require_audit_status AFTER UPDATE ON fyniq.control_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION require_audit('control_state', 'id')
@@ -6548,8 +6689,12 @@ CREATE TRIGGER ai_connection_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai
 CREATE TRIGGER ai_connection_no_truncate BEFORE TRUNCATE ON fyniq.ai_connection FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_connection_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_connection_version FOR EACH ROW EXECUTE FUNCTION ai_connection_guard()
 CREATE TRIGGER ai_connection_version_no_truncate BEFORE TRUNCATE ON fyniq.ai_connection_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_conversation_guard BEFORE DELETE OR UPDATE ON fyniq.ai_conversation FOR EACH ROW EXECUTE FUNCTION ai_conversation_guard()
+CREATE TRIGGER ai_conversation_no_truncate BEFORE TRUNCATE ON fyniq.ai_conversation FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_data_policy_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_data_policy FOR EACH ROW EXECUTE FUNCTION ai_data_policy_guard()
 CREATE TRIGGER ai_data_policy_no_truncate BEFORE TRUNCATE ON fyniq.ai_data_policy FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_feedback_guard BEFORE DELETE OR UPDATE ON fyniq.ai_feedback FOR EACH ROW EXECUTE FUNCTION ai_conversation_guard()
+CREATE TRIGGER ai_feedback_no_truncate BEFORE TRUNCATE ON fyniq.ai_feedback FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_grant_guard BEFORE DELETE OR UPDATE ON fyniq.ai_grant FOR EACH ROW EXECUTE FUNCTION ai_grant_guard()
 CREATE TRIGGER ai_grant_no_truncate BEFORE TRUNCATE ON fyniq.ai_grant FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_model_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_model FOR EACH ROW EXECUTE FUNCTION ai_model_guard()
@@ -6568,6 +6713,10 @@ CREATE TRIGGER ai_route_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_rout
 CREATE TRIGGER ai_route_no_truncate BEFORE TRUNCATE ON fyniq.ai_route FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_route_step_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_route_step FOR EACH ROW EXECUTE FUNCTION ai_route_guard()
 CREATE TRIGGER ai_route_step_no_truncate BEFORE TRUNCATE ON fyniq.ai_route_step FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_tool_call_guard BEFORE DELETE OR UPDATE ON fyniq.ai_tool_call FOR EACH ROW EXECUTE FUNCTION ai_conversation_guard()
+CREATE TRIGGER ai_tool_call_no_truncate BEFORE TRUNCATE ON fyniq.ai_tool_call FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_turn_guard BEFORE DELETE OR UPDATE ON fyniq.ai_turn FOR EACH ROW EXECUTE FUNCTION ai_conversation_guard()
+CREATE TRIGGER ai_turn_no_truncate BEFORE TRUNCATE ON fyniq.ai_turn FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER allocation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.allocation FOR EACH ROW EXECUTE FUNCTION allocation_guard()
 CREATE TRIGGER allocation_no_truncate BEFORE TRUNCATE ON fyniq.allocation FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER announcement_dismissal_guard BEFORE DELETE OR UPDATE ON fyniq.announcement_dismissal FOR EACH ROW EXECUTE FUNCTION announcement_dismissal_guard()
@@ -6906,7 +7055,9 @@ ai_budget | tenant_isolation | * | (organisation_id = current_org()) | (organisa
 ai_call | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_connection | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_connection_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_conversation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_data_policy | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_feedback | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_grant | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_model | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_model_list_read | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -6916,6 +7067,8 @@ ai_qualification | tenant_isolation | * | (organisation_id = current_org()) | (o
 ai_reservation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_route | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_route_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_tool_call | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_turn | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 allocation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 announcement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 announcement_dismissal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7085,7 +7238,9 @@ ai_budget | enabled | forced
 ai_call | enabled | forced
 ai_connection | enabled | forced
 ai_connection_version | enabled | forced
+ai_conversation | enabled | forced
 ai_data_policy | enabled | forced
+ai_feedback | enabled | forced
 ai_grant | enabled | forced
 ai_model | enabled | forced
 ai_model_list_read | enabled | forced
@@ -7096,6 +7251,8 @@ ai_qualification | enabled | forced
 ai_reservation | enabled | forced
 ai_route | enabled | forced
 ai_route_step | enabled | forced
+ai_tool_call | enabled | forced
+ai_turn | enabled | forced
 allocation | enabled | forced
 announcement | enabled | forced
 announcement_dismissal | enabled | forced
@@ -7299,6 +7456,7 @@ ai_budget_guard() → trigger | security invoker | v | search_path=pg_catalog, f
 ai_call_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b4e1754c041a743ac2f43d2baf8bb4b4
 ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 051ffeb8214e6453575d1964f565ecfd
 ai_connection_versioned() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a621838f732c5e3908d9cdfcac8fe1df
+ai_conversation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 2c9e52c788d9236261bb715b2542186f
 ai_data_policy_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 486d90ec3cf0223149322c97d6726f81
 ai_grant_for(p_org uuid, p_hash bytea, p_now timestamp with time zone, OUT user_id uuid, OUT turn_id uuid, OUT roles text[], OUT expires_at timestamp with time zone) → record | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 849d7114d3f03ce72b04acfd7752af7b
 ai_grant_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b9192d71bbd7b7a3c49a44519d076a1e

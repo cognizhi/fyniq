@@ -275,6 +275,8 @@ var codeFacts = map[string]struct {
 	semantic.CodeMeasure:          {422, "Not a measure of the semantic layer"},
 	CodeToolInput:                 {422, "Not the tool's input"},
 	CodeScreened:                  {422, "Screening stopped it"},
+	CodeAIPersonOnly:              {403, "Only a person asks the assistant"},
+	CodeAIService:                 {503, "The AI service did not answer"},
 	CodeScreenIncomplete:          {503, "Screening did not finish"},
 	CodeToolElse:                  {422, "Not a tool the API runs"},
 	CodeToolRefused:               {422, "The tool's read was refused"},

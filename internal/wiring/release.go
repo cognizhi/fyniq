@@ -58,6 +58,9 @@ type Config struct {
 	// Scanner is the private scanner service, clamd behind an HTTP front (FR-DOC-08, SEC-24; PRD-001 rev 0.247): its URL,
 	// its audience and its callers' accounts; without it, or FYNIQ_CLAMD_ADDR, no file can be attached.
 	Scanner gcp.Callers `json:"scanner"`
+	// AI is the AI service (p1-ai-assistant design D3) [live-verify]: its URL on internal ingress and its audience; the
+	// api's account is among its callers. Without it every turn fails, saying the AI service is not set up.
+	AI gcp.Callers `json:"ai"`
 	// Exports is the weekly export's instance and buckets (DR-02, DR-04; p1-operations-dr design D1): the instance's
 	// resource name (projects/<project>/instances/<name>), its database, and the weekly and monthly buckets in the audit
 	// project. Without it the export job fails, which its heartbeat's absence alert shows.
@@ -129,6 +132,10 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		staging, locked := gcp.NewStorage(gcp.StorageAPI, c.Evidence.Staging, tokens, google), gcp.NewStorage(gcp.StorageAPI, c.Evidence.Bucket, tokens, google)
 		staging.Sign, locked.Sign = sign, sign
 		kit.Staging, kit.Evidence = staging, locked
+	}
+	if strings.HasPrefix(c.AI.URL, "https://") && c.AI.Audience != "" { // the AI service, as the service's own account [live-verify]
+		kit.AssistantURL, kit.AssistantToken = c.AI.URL, gcp.IdentityTokens(c.AI.Audience, nil)
+		kit.AssistantHTTP = platform.Bounded(16<<20, 5*time.Minute).For(egress.HostOf(c.AI.URL))
 	}
 	if strings.HasPrefix(c.Render.URL, "https://") && c.Render.Audience != "" { // as the service's own account
 		kit.Render = &render.Client{URL: c.Render.URL, Token: gcp.IdentityTokens(c.Render.Audience, nil),

@@ -57,7 +57,7 @@ Each slice is its own pull request, stacked in order; each passes `make check` a
 
 ## 6. Conversations
 
-- [ ] 6.1 Migrations for `ai_conversation`, `ai_turn`, `ai_tool_call`, `ai_feedback` (append-only, FORCE RLS, the API's
+- [x] 6.1 Migrations for `ai_conversation`, `ai_turn`, `ai_tool_call`, `ai_feedback` (append-only, FORCE RLS, the API's
   role, the export catalogue, goldens); `/v1/assistant/conversations` and their turns as server-sent events relayed
   from the AI service; admission (the switch, limits); context attached (FR-UX-17). Tests `// req: AI-P1`,
   `// req: AI-P8`, `// req: FR-UX-17`, `// req: AI-12`.
