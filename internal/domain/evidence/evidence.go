@@ -228,10 +228,19 @@ func (c Committer) Commit(ctx context.Context, org uuid.UUID) (int, error) {
 	if zone == nil {
 		zone = singapore
 	}
-	until := RetainUntil(fyStart, RecordsYears(), c.Clock.Now(), zone)
+	now := c.Clock.Now()
 	n := 0
 	var errs []error
 	for _, e := range waiting {
+		var until time.Time
+		if err := c.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			d, err := u.Documents().Get(ctx, e.DocumentID)
+			until = retainUntilOf(fyStart, RecordsYears(), now, d, zone)
+			return err
+		}); err != nil {
+			errs = append(errs, fmt.Errorf("evidence %s: %w", e.ID, err))
+			continue
+		}
 		if err := c.commit(ctx, org, e, until); err != nil {
 			errs = append(errs, fmt.Errorf("evidence %s: %w", e.ID, err))
 			continue

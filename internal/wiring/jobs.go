@@ -264,6 +264,14 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := journal.ExpireQuotesDueAll(ctx, k.Store, clock.Now())
 			return err
 		},
+		"evidence.extend": func(ctx context.Context) error {
+			c, ok := k.Committer(clock)
+			if !ok {
+				return nil
+			}
+			_, err := c.ExtendAll(ctx)
+			return err
+		},
 		"evidence.verify": func(ctx context.Context) error {
 			if k.Evidence == nil {
 				return nil

@@ -621,3 +621,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-17] compile | docs/user-guide/home.md → home.overview (Help opens the user guide)
 
 ## [2026-11-17] compile | docs/user-guide/banking.md → banking.categorise (Plain and Accountant views on the grid, FR-UX-08); the other pages citing it re-hashed, unchanged
+
+## [2026-11-18] compile | docs/user-guide/evidence-search.md → compliance.evidence (how long files are kept, FR-DOC-02, G4-068)
