@@ -111,6 +111,13 @@ See proposal.md for why. What exists today:
   documents' totals and the audit chain.
 - A failure raises the same alert as a failed ledger verification.
 - Locally it is a job and a test. In the dev cloud it is `[live-verify]`.
+- **The canary writes as a client of the public API** (the owner's decision of 16 Nov 2026, taken interactively). The
+  jobs run as the worker's database role, which by design creates no documents. An `integration`-class OAuth client
+  of the canary organisation proves the whole stack and adds no grant; it waits for FR-INT-02's integration clients
+  (`p1-public-api` task 3.1), and until then the job does nothing.
+  - *Not chosen:* a database role of its own (a new role that writes ledger data in production, bypassing the API);
+    an endpoint inside the API called by the scheduler (outside the public contract); after go-live (QA-PROD-01 only
+    partly met at launch).
 
 **D9. The release policy for calculation defects is a CI check.**
 - `scripts/release_policy.py` fails a pull request that has a `fix` commit touching `internal/domain/`,
