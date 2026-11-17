@@ -1,7 +1,8 @@
 // The visual snapshots' one sign-in (p1-launch-readiness design D5): before any picture, the person scripts/visual.sh
-// invited joins the organisation through the local sign-in page, and adds what the sample company lacks for a key page,
-// a customer and a draft invoice dated within the business date's month. Their signed-in state and the invoice's page
-// are kept for the run, so a failed picture never signs in again with a used invitation.
+// invited joins the organisation through the local sign-in page, adds what the sample company lacks for a key page, a
+// customer and a draft invoice dated within the business date's month, and answers the first-run tour's offer. Their
+// signed-in state and the invoice's page are kept for the run, so a failed picture never signs in again with a used
+// invitation.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { chromium, expect, type BrowserContext, type FullConfig } from "@playwright/test";
@@ -42,6 +43,12 @@ export default async function setup(config: FullConfig): Promise<void> {
     });
     if (r.status() !== 201) throw new Error(`the draft invoice: ${r.status()} ${await r.text()}`);
     const invoice = `/sales/invoices/${((await r.json()) as { id: string }).id}`;
+    // The pictures are of the pages as a person who has answered the first-run tour sees them (FR-UX-34): no offer.
+    const t = await page.request.put("/api/v1/help-state/tour", {
+      headers: { "Sec-Fetch-Site": "same-origin", "If-Match": "*" },
+      data: { tour: "skipped", step: 0 },
+    });
+    if (t.status() !== 200) throw new Error(`answering the tour: ${t.status()} ${await t.text()}`);
 
     mkdirSync(resolve(statePath, ".."), { recursive: true });
     const out: Setup = { storageState: await context.storageState(), invoice };
