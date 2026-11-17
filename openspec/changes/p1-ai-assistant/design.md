@@ -194,6 +194,16 @@ AI-28).**
   port with prompts and answers; an incomplete screening fails closed (`ports.ErrScreeningIncomplete`).
 - CTL-AI-06 runs in `make test` and weekly: planted NRIC, bank numbers and payroll in the sample company must reach no
   recorded model request; its report is evidence.
+- As built (task 4.1): `internal/domain/aiexclusion` and a response transformer of the public API (`excludeForAI`,
+  after the masking of an M right), so every answer to an AI principal is filtered, the read tools' included, as MCP's
+  will be. The never-send fields go by name, or by a name ending in theirs (`client_secret`, `director_nric`): identity
+  numbers, full bank account numbers, secrets and authentication data, home addresses, and an individual's address.
+  Pay goes unless `ai.payroll_access` (a switch, off, dual controlled, off at once) is on and the person holds a view of
+  "Pay runs, employee data" themselves. `ai.exclusions` (a new kind of setting, `fields`: field names separated by
+  commas, dual controlled) adds the Owner's fields; the never-send list is code, so no setting takes a field off it. The
+  output filter masks, in any text left, an NRIC or FIN whose check letter is right (S****567D) and a bank-number shape,
+  9 to 18 digits whole or in groups split by hyphens or spaces (****6789); a decimal, a date, a word, a path, a UUID and
+  a reference numbered within a year (2026-00012) are left alone. The AI service's own filter comes with it (task 5.1).
 
 **D9. Denial of wallet and limits (AI-23).**
 - Per person: 20 turns a minute and 200 a day (settings, dual controlled); per turn: at most 8 tool calls and the

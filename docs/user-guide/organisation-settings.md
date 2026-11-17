@@ -136,14 +136,15 @@ takes, such as INV-0042.
 ## Settings that need a second approver
 
 - Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when
-  incoming-funds alerts expire, the AI assistant, details in notification email and the sign-out after inactivity
-  need a second approver before they change: they show **Needs a second approver**.
+  incoming-funds alerts expire, the AI assistant, the AI's access to pay and the fields it never reads, details in
+  notification email and the sign-out after inactivity need a second approver before they change: they show **Needs a
+  second approver**.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
   approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
 - The AI assistant is the exception when you switch it **off**: that takes effect at once, with no second
   approver, and the AI stops: new requests are refused, and a reply being written stops within seconds.
-  Switching it back on still needs a second approver.
+  Switching it back on still needs a second approver. AI payroll access turns off at once the same way.
 
 ## Features
 
@@ -163,6 +164,18 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
 - **Fallbacks a day before a route needs attention**: 5 unless changed, from 1 to 1,000. When an agent's route falls
   back more often than this in a day, **Checks** shows it, so someone looks at the route's first step.
 - Changing it needs a second approver.
+
+## AI and personal data
+
+- Some data never reaches the AI, whatever is set here: NRIC and FIN numbers, full bank account numbers, passwords and
+  other secrets, and home addresses. Fyniq takes them out of everything the assistant reads, and masks an NRIC or a
+  bank account number it finds in text, keeping only its last characters.
+- **AI payroll access**: off unless changed. Pay, such as salaries, stays away from the AI. Turned on, the AI reads pay
+  only for people who may see payroll themselves. Turning it on needs a second approver; turning it off takes effect
+  at once.
+- **Fields the AI never reads**: none unless changed. Add field names of your own, separated by commas, such as
+  `notes, memo`, to keep them from the AI too. You can add to the list, never take a field off the list above.
+  Changing it needs a second approver.
 
 ## Payment terms
 

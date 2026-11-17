@@ -44,6 +44,8 @@ export function valueText(kind: Setting["kind"], v: string): string {
       return `${v}%`;
     case "choice":
       return choiceText(v);
+    case "fields":
+      return v ? v.split(",").join(", ") : "None";
     default:
       return v;
   }
@@ -124,6 +126,7 @@ function check(s: Setting, v: string): string {
   if (s.kind === "text") return t ? "" : "Enter a value.";
   if (s.kind === "choice") return (s.choices ?? []).includes(t) ? "" : "Choose one of the values offered.";
   if (s.kind === "account_code") return /^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$/.test(t) ? "" : "Enter the code of an account in your chart, such as 6460.";
+  if (s.kind === "fields") return /^$|^[a-z][a-z0-9_]{0,40}(\s*,\s*[a-z][a-z0-9_]{0,40})*$/.test(t) ? "" : "Enter field names separated by commas, in lower case with underscores, such as notes, memo.";
   return "";
 }
 
