@@ -24,6 +24,7 @@ import (
 // req: FR-CS-03
 // req: FR-CS-06
 // req: C.2 #32
+// req: C.2 #54
 // req: C.2 #33
 // req: C.2 #34
 // req: C.2 #35

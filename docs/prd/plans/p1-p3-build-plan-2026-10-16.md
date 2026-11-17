@@ -533,6 +533,35 @@ Two things wait beyond it: each model's recordings of the agent suites, and the 
 Model Armor, `[live-verify]` in the dev cloud. The secretary's own checks and documents come with
 `p1-company-secretary`.
 
+`p1-company-secretary` was proposed and built on 16 Nov 2026, one pull request per slice from #724 onwards. The owner
+decided three things that day:
+- the corporate profile has its own row in Appendix D (rev 0.282): the Accountant and the Company secretary record
+  changes, and the Owner and the Controller approve them;
+- a run whose AI step cannot run keeps its findings and tasks and says why (rev 0.283);
+- the templates and `sec.draft_document` are built now, and the Act-only rules wait for a person to read SSO.
+
+The parts:
+- `sg-acra@2026.1`, ACRA's guidance kept apart from the Act's sections, with its periods counted in days, business days
+  and months;
+- the corporate profile: the company's details, officers, nominee registers and the directors' approvals of the
+  statements, each recorded on another person's approval with its evidence;
+- the lodgements in the statutory calendar, and the profile against ACRA's business profile;
+- the checks C.2 #32 to #35, each Not assessed with its missing input named, and the skill's version 2 reading them;
+- the Company secretary role's own cells, and the screen `corporate-profile` with its papers and minute book;
+- nine templates rendered to PDF by the render service's new paper layout, the minute book, and `sec.draft_document`,
+  whose text approved is its base;
+- the launch suite's G4-102 and G4-110 cases, and the threat model's T11 and T12.
+
+Building it found and fixed three things:
+- the agent evals never ran the checks before the monitor, so their check findings all said "has not run yet";
+- a paper with no UEN or office broke the PDF layout;
+- the executor could not read the register of members it needs for a members' resolution.
+
+Several things wait beyond it:
+- the Act-only rules (s177, s184A–G, s188) in `sg-acra@2026.2`, for a person to read SSO;
+- the accountant's review of the pack and the checks, and a lawyer's of the templates (the review register, #734);
+- the annual return pack (FR-CS-07) in P2.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |

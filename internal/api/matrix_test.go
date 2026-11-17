@@ -2602,9 +2602,11 @@ func expected(t *testing.T, rows map[string]map[string]string, role authz.Role, 
 var secretaryNote = map[authz.Capability]string{authz.CorporateProfile: "C", authz.Evidence: "C", authz.CapTable: "V", authz.AICompanySecretary: "V"}
 
 // The authorisation matrix: every role of §7.1, the AI and the Super admin × every operation,
-// allowed or refused as Appendix D says, and a refusal changes nothing (§17.3 exit item 2, API half).
+// allowed or refused as Appendix D says, and a refusal changes nothing (§17.3 exit item 2, API half). The Company
+// secretary's cells come from Appendix D's note (FR-CS-08, secretaryNote).
 // req: QA-SEC-03
 // req: SEC-02
+// req: FR-CS-08
 // asvs: V8.2.1, V8.3.1
 func TestAuthorisationMatrix(t *testing.T) {
 	e := newEnv(t)

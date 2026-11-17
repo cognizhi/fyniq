@@ -210,5 +210,13 @@
   - Building it found the harness's check findings were "has not run yet": nothing ran the checks before the monitor. Each
     case's day now runs them first, as the nightly checks do, and a finding that still says so fails the harness. The
     launch cases' check expectations are now real.
-- [ ] 7.2 The review register's entries for the pack and the checks (FR-UX-41), in a pull request of their own; the
+- [x] 7.2 The review register's entries for the pack and the checks (FR-UX-41), in a pull request of their own; the
   build plan's paragraph; `make check`, `make test` and `make evals` pass.
+  As built:
+  - The review register gains two areas in #734, which waits for a person:
+    - `corporate` (the accountant): the pack's deadlines and the checks, on the profile, the calendar and the run
+      report;
+    - `papers` (a lawyer): the templates, on the company secretary workspace.
+  - The build plan's paragraph says what was built and what waits.
+  - The scheduled agents' threat model gains T11 (papers from a proposal) and T12 (papers and personal data).
+  - Each slice passed `make check` and `make test` before it was pushed, and the last passed `make evals`.
