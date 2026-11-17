@@ -4,15 +4,17 @@ type: task
 title: Keep the data protection registers
 summary: The PDPA programme - the data inventory and its quarterly review, impact assessments, access requests, breaches, overseas transfers and the DPO
 sources:
-  - docs/user-guide/compliance-data-protection.md sha256:08305624cf63173b430960db023547fd9687cd6d69e57fe47625db5db92c2477
+  - docs/user-guide/compliance-data-protection.md sha256:ffdae454c5570db31adf7a5f4020f28a8307b50f26d7a37fca10930cf9837e05
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-09
+compiled_at: 2026-11-14
 aliases:
+  - AI inventory
+  - AI models in use
   - DPIA
   - impact assessment
   - data inventory
@@ -70,6 +72,13 @@ aliases:
 - A processing without an approved assessment shows as overdue on **Reviews and attestations** ([[compliance.reviews]]).
 
 (src: docs/user-guide/compliance-data-protection.md#impact-assessments)
+
+## The AI inventory
+
+- Beside the assessments, the **AI inventory** shows what the AI uses, read from its settings so it is always up to date: each connection to a model provider, in use or waiting, with its allowed models and where prompts are processed; each AI agent's route; the prompts and tools, which come with the AI assistant; and the data categories the routes carry.
+- **Assessment current**: the AI assistant's assessment was approved after the last change to the AI's connections or routes. **Assessment to review**: something changed since, so the Compliance officer reviews it and approves it again.
+
+(src: docs/user-guide/compliance-data-protection.md#the-ai-inventory)
 
 ## Access and correction requests
 

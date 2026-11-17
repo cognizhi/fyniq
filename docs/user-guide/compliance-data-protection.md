@@ -52,6 +52,18 @@ have counsel confirm them before you approve.
 
 A processing that goes on without an approved assessment shows as overdue on **Reviews and attestations**.
 
+## The AI inventory
+
+Beside the assessments, the **AI inventory** shows what the AI uses, read from its settings, so it is always up to date:
+- each **connection** to a model provider, in use or waiting: its allowed models and where prompts are processed;
+- each AI agent's **route**: the models it uses, in order;
+- the **prompts and tools**, which come with the AI assistant;
+- the **data categories** the routes carry.
+
+**Assessment current** means the AI assistant's assessment was approved after the last change to the AI's
+connections or routes. **Assessment to review** means something changed since: the Compliance officer reviews the
+assessment and approves it again.
+
 ## Access and correction requests
 
 People may ask to see the personal data the company holds about them, or to correct it. A member asks in **Settings** ›

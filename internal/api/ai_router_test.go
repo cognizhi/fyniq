@@ -7,10 +7,12 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/ai"
+	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/airoute"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -53,6 +55,16 @@ func (s *stepModel) ListModels(context.Context, string) (ports.ModelPage, error)
 
 var full = ports.ModelCapabilities{Tools: true, StrictOutput: true, Streaming: true, Caching: true, Reasoning: true}
 
+// aiSwitchedOn turns the organisation's AI switch on from today, as an approved change would (AI-13).
+func aiSwitchedOn(e *env) {
+	e.t.Helper()
+	y, m, d := e.clock.Now().In(appclock.Singapore).Date()
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.Settings().Record(ctx, ai.Switch, "false", "true", time.Date(y, m, d, 0, 0, 0, 0, time.UTC), 1)
+		return err
+	})
+}
+
 // The router follows an agent's route (AI-76, AI-83, AI-87, AI-27): before each attempt it checks the step against the
 // classes the call carries and the capabilities it needs, skipping one that does not meet them without sending it
 // anything; it fails over on a busy, missing or failing step only to an eligible one, and stops with a plain message and
@@ -64,6 +76,7 @@ var full = ports.ModelCapabilities{Tools: true, StrictOutput: true, Streaming: t
 // req: AI-27
 func TestTheRouterFailsOverOnlyToEligibleSteps(t *testing.T) {
 	e := newEnv(t)
+	aiSwitchedOn(e)
 	sg := routable(e, "Router Singapore", "SG", []string{"gpt-6"})
 	us := routable(e, "Router overseas", "US", []string{"gpt-6"})
 	models := map[uuid.UUID]*stepModel{sg: {caps: full}, us: {caps: full}}
