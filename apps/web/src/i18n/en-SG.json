@@ -600,6 +600,22 @@
       "label": "Ask for approval",
       "tooltip": "Send the drafted entry, with the company secretary's confirmation, to another Owner or the Controller to record."
     },
+    "corporate-detail.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the BizFile+ acknowledgement of the change, or the business profile that shows it."
+    },
+    "corporate-officer.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the officer's consent to act or the resolution, the BizFile+ acknowledgement, or the business profile that shows them."
+    },
+    "nominee-entry.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the nominee's notice to the company, the register's extract or ACRA's acknowledgement."
+    },
+    "statements-approval.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the directors' resolution or signed statement approving the financial statements."
+    },
     "controller-entry.attach-evidence": {
       "label": "Attach",
       "tooltip": "Attach the company secretary's confirmation, with the register's extract, ACRA's acknowledgement or a notice and its reply."
@@ -2355,6 +2371,42 @@
     "compliance.calendar": {
       "label": "Statutory calendar",
       "tooltip": "Every filing and payment deadline, worked out from your financial years, GST return periods and settings."
+    },
+    "compliance.corporate-profile": {
+      "label": "Corporate profile and registers",
+      "tooltip": "The company as ACRA's registers hold it: its details, officers, nominees and the directors' approvals, each recorded with its evidence and checked against ACRA."
+    },
+    "corporate-profile.checks": {
+      "label": "Checks",
+      "tooltip": "The company secretary, the statements' approval, the profile against ACRA and the lodgements: each shows its status, or what it needs to be assessed."
+    },
+    "corporate-profile.details": {
+      "label": "The company",
+      "tooltip": "The name, registered office and SSIC code in force, from the day each took effect, with the earlier ones in the history."
+    },
+    "corporate-profile.officers": {
+      "label": "Officers",
+      "tooltip": "The directors, the named company secretary, the CEO and the auditors in office, with the days they were appointed and lodged."
+    },
+    "corporate-profile.nominees": {
+      "label": "Nominee directors and shareholders",
+      "tooltip": "The registers of nominees: whom each acts for, and the days the company's register and ACRA's central register were updated."
+    },
+    "corporate-profile.acra": {
+      "label": "Against ACRA's business profile",
+      "tooltip": "The officers and the registered office compared with the latest business profile typed in, on its day."
+    },
+    "corporate-profile.lodgements": {
+      "label": "Lodgements",
+      "tooltip": "Each change ACRA must be told of, with its deadline: done once the day it was lodged is recorded on its record."
+    },
+    "corporate-profile.approvals": {
+      "label": "Directors' approval of the financial statements",
+      "tooltip": "The day the directors approved each year's statements, and the day they were sent to the members."
+    },
+    "corporate-profile.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Sends the draft, with its evidence, to the Owner or the Controller to record. Nobody records their own change."
     },
     "compliance.secretary": {
       "label": "Company secretary assistant",

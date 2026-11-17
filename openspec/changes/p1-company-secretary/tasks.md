@@ -128,10 +128,17 @@
 
 ## 6. The screen
 
-- [ ] 6.1 Compliance → Corporate profile and registers (`corporate-profile`, Expert): the profile and its history, the
+- [x] 6.1 Compliance → Corporate profile and registers (`corporate-profile`, Expert): the profile and its history, the
   officers and the named secretary, controllers and nominees, the extract and its differences, each lodgement. Help
   keys, its guide page compiled into `kb/`, and the fragment updated locally (design D8). Tests `// req: FR-CS-01`,
   `// req: FR-CS-06`, Vitest with axe.
+  As built: `/compliance/corporate-profile` shows the four checks (C.2 #32 to #35), the details in force and their
+  history, the officers in office with the named secretary, the nominee registers (controllers linked to the equity
+  register), the comparison with ACRA, the lodgements due and the statements approvals. The Accountant and the Company
+  secretary draft each record in a dialog, attach its evidence and ask for approval in place. The ACRA extract's form
+  (Equity › Reconciliation) gains officers and the registered office. Guide `corporate-profile.md` compiled into
+  `compliance.corporate-profile`, the equity guide and its page updated; the fragment rewritten to the built headings,
+  not published (Claude Design is held).
 
 ## 7. Evals and the finish
 

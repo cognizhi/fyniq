@@ -403,6 +403,9 @@ profile shows it, and paid-up capital with share capital in the ledger.
   ACRA is right, correct the register by a reversal citing the extract; where the typing is wrong,
   type the profile in again.
 - While the register holds shares and no business profile is recorded, the check is not assessed.
+- The same extract can hold the officers the business profile lists, with the day each was appointed, and its
+  registered office: select **Add an officer** and type each as it lists them, names only. The corporate profile is
+  compared with them on the extract's day (Compliance › Corporate profile and registers).
 
 ## Correct a transaction
 

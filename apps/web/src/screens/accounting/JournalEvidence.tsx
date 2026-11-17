@@ -41,7 +41,7 @@ export const invoiceAttachers = ["owner", "controller", "accountant", "bookkeepe
 // books start, a director's pay choice or fee, or the exempt-private-company status (FR-DOC-05, FR-AP-14, FR-AP-18,
 // FR-CT-03, FR-AP-22, FR-EQ-03, FR-EQ-04, FR-EQ-11), at its ETag.
 export interface EvidenceRecord {
-  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession" | "holder-record" | "share-class" | "equity-transaction" | "instrument" | "instrument-enablement" | "pool-resolution" | "option-grant" | "option-event" | "investor-rights" | "controller-entry" | "acra-extract" | "gst-forecast" | "statutory-filing";
+  kind: "journal" | "bill" | "invoice" | "claim" | "card-line" | "bank-change" | "my-bank-change" | "claimant-bank-change" | "pre-incorporation-cost" | "pay-choice" | "director-fee" | "exempt-status" | "director-settlement" | "owner-succession" | "holder-record" | "share-class" | "equity-transaction" | "instrument" | "instrument-enablement" | "pool-resolution" | "option-grant" | "option-event" | "investor-rights" | "controller-entry" | "corporate-detail" | "corporate-officer" | "nominee-entry" | "statements-approval" | "acra-extract" | "gst-forecast" | "statutory-filing";
   id: string;
   etag: string;
 }
@@ -72,6 +72,10 @@ const kindsOf = {
   "option-event": ["Leaver's letter", "Board minute", "Notice of lapse"],
   "investor-rights": ["Shareholders' agreement", "Side letter", "Subscription agreement"],
   "controller-entry": ["Company secretary's confirmation", "Register extract", "ACRA acknowledgement", "Notice and reply"],
+  "corporate-detail": ["BizFile+ acknowledgement", "ACRA business profile", "Directors' resolution"],
+  "corporate-officer": ["Consent to act", "Directors' resolution", "BizFile+ acknowledgement", "ACRA business profile"],
+  "nominee-entry": ["Nominee's notice", "Register extract", "ACRA acknowledgement"],
+  "statements-approval": ["Directors' resolution", "Statement by directors", "Signed financial statements"],
   "acra-extract": ["ACRA business profile"],
   "gst-forecast": ["Signed contract", "Confirmed order", "Letter of award"],
   "statutory-filing": ["IRAS acknowledgement", "CPF Board acknowledgement", "ACRA acknowledgement", "AGM minutes"],
@@ -103,6 +107,10 @@ const nouns = {
   "option-event": "forfeiture or expiry",
   "investor-rights": "investor's rights",
   "controller-entry": "controller entry",
+  "corporate-detail": "corporate detail",
+  "corporate-officer": "officer's record",
+  "nominee-entry": "nominee entry",
+  "statements-approval": "statements approval",
   "acra-extract": "ACRA extract",
   "gst-forecast": "GST forecast",
   "statutory-filing": "filing record",
@@ -158,6 +166,14 @@ async function files(r: EvidenceRecord): Promise<Evidence[]> {
                           ? await api.GET("/v1/investor-rights/{rights_id}/evidence", { params: { path: { rights_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "controller-entry"
                           ? await api.GET("/v1/controller-entries/{entry_id}/evidence", { params: { path: { entry_id: r.id }, query: { page_size: 100 } } })
+                        : r.kind === "corporate-detail"
+                          ? await api.GET("/v1/corporate-profile/details/{detail_id}/evidence", { params: { path: { detail_id: r.id }, query: { page_size: 100 } } })
+                        : r.kind === "corporate-officer"
+                          ? await api.GET("/v1/corporate-profile/officers/{version_id}/evidence", { params: { path: { version_id: r.id }, query: { page_size: 100 } } })
+                        : r.kind === "nominee-entry"
+                          ? await api.GET("/v1/corporate-profile/nominees/{nominee_id}/evidence", { params: { path: { nominee_id: r.id }, query: { page_size: 100 } } })
+                        : r.kind === "statements-approval"
+                          ? await api.GET("/v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence", { params: { path: { statements_approval_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "acra-extract"
                           ? await api.GET("/v1/acra-extracts/{extract_id}/evidence", { params: { path: { extract_id: r.id }, query: { page_size: 100 } } })
                         : r.kind === "gst-forecast"
@@ -328,6 +344,14 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                           ? api.POST("/v1/investor-rights/{rights_id}/evidence", { params: { path: { rights_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "controller-entry"
                           ? api.POST("/v1/controller-entries/{entry_id}/evidence", { params: { path: { entry_id: record.id }, header }, body, bodySerializer })
+                        : record.kind === "corporate-detail"
+                          ? api.POST("/v1/corporate-profile/details/{detail_id}/evidence", { params: { path: { detail_id: record.id }, header }, body, bodySerializer })
+                        : record.kind === "corporate-officer"
+                          ? api.POST("/v1/corporate-profile/officers/{version_id}/evidence", { params: { path: { version_id: record.id }, header }, body, bodySerializer })
+                        : record.kind === "nominee-entry"
+                          ? api.POST("/v1/corporate-profile/nominees/{nominee_id}/evidence", { params: { path: { nominee_id: record.id }, header }, body, bodySerializer })
+                        : record.kind === "statements-approval"
+                          ? api.POST("/v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence", { params: { path: { statements_approval_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "acra-extract"
                           ? api.POST("/v1/acra-extracts/{extract_id}/evidence", { params: { path: { extract_id: record.id }, header }, body, bodySerializer })
                         : record.kind === "gst-forecast"
@@ -395,6 +419,14 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                         ? await api.GET("/v1/investor-rights/{rights_id}/evidence/{evidence_id}", { params: { path: { rights_id: record.id, evidence_id: e.id } } })
                       : record.kind === "controller-entry"
                         ? await api.GET("/v1/controller-entries/{entry_id}/evidence/{evidence_id}", { params: { path: { entry_id: record.id, evidence_id: e.id } } })
+                      : record.kind === "corporate-detail"
+                        ? await api.GET("/v1/corporate-profile/details/{detail_id}/evidence/{evidence_id}", { params: { path: { detail_id: record.id, evidence_id: e.id } } })
+                      : record.kind === "corporate-officer"
+                        ? await api.GET("/v1/corporate-profile/officers/{version_id}/evidence/{evidence_id}", { params: { path: { version_id: record.id, evidence_id: e.id } } })
+                      : record.kind === "nominee-entry"
+                        ? await api.GET("/v1/corporate-profile/nominees/{nominee_id}/evidence/{evidence_id}", { params: { path: { nominee_id: record.id, evidence_id: e.id } } })
+                      : record.kind === "statements-approval"
+                        ? await api.GET("/v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}", { params: { path: { statements_approval_id: record.id, evidence_id: e.id } } })
                       : record.kind === "acra-extract"
                         ? await api.GET("/v1/acra-extracts/{extract_id}/evidence/{evidence_id}", { params: { path: { extract_id: record.id, evidence_id: e.id } } })
                       : record.kind === "gst-forecast"
@@ -444,6 +476,14 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged }: { record:
                         ? api.DELETE("/v1/investor-rights/{rights_id}/evidence/{evidence_id}", { params: { path: { rights_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "controller-entry"
                         ? api.DELETE("/v1/controller-entries/{entry_id}/evidence/{evidence_id}", { params: { path: { entry_id: record.id, evidence_id: e.id }, header } })
+                      : record.kind === "corporate-detail"
+                        ? api.DELETE("/v1/corporate-profile/details/{detail_id}/evidence/{evidence_id}", { params: { path: { detail_id: record.id, evidence_id: e.id }, header } })
+                      : record.kind === "corporate-officer"
+                        ? api.DELETE("/v1/corporate-profile/officers/{version_id}/evidence/{evidence_id}", { params: { path: { version_id: record.id, evidence_id: e.id }, header } })
+                      : record.kind === "nominee-entry"
+                        ? api.DELETE("/v1/corporate-profile/nominees/{nominee_id}/evidence/{evidence_id}", { params: { path: { nominee_id: record.id, evidence_id: e.id }, header } })
+                      : record.kind === "statements-approval"
+                        ? api.DELETE("/v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}", { params: { path: { statements_approval_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "acra-extract"
                         ? api.DELETE("/v1/acra-extracts/{extract_id}/evidence/{evidence_id}", { params: { path: { extract_id: record.id, evidence_id: e.id }, header } })
                       : record.kind === "gst-forecast"
