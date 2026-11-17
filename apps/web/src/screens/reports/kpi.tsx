@@ -1,12 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Info } from "lucide-react";
-import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import { api } from "../../api/client";
+import { HelpPopover } from "../../components/HelpPopover";
 import type { components } from "../../api/schema";
 import { formatAmount } from "../../format/amount";
 import { month as monthName } from "../../format/date";
-import { Icon } from "../../ui";
 import type { Period } from "../accounting/data";
 
 export type KPIs = components["schemas"]["KPIs"];
@@ -69,72 +67,17 @@ export const sourceNames: Record<string, string> = {
   "subscription data": "Subscription data, from P2",
 };
 
-const POPOVER = 300; // the kit's .fy-popover width
-const GUTTER = 16; // the page's side gutter at its narrowest
-
 // About is a KPI's definition behind an ⓘ (MASTER.md "Help and onboarding"; FR-UX-31): it opens on click, Enter, hover
 // and focus, stays while the pointer is over it, and Esc closes it. It says how the figure is worked out, the dates it
 // reads, where it comes from and the definition's version (FR-KPI-03).
 export function About({ k }: { k: KPI }) {
-  const id = useId();
-  const [open, setOpen] = useState(false);
-  const [pinned, setPinned] = useState(false);
-  const [place, setPlace] = useState({ left: 0, width: POPOVER });
-  const wrap = useRef<HTMLSpanElement>(null);
-  const close = () => {
-    setOpen(false);
-    setPinned(false);
-  };
-  // The popover is as wide as the kit's (300 px) or the window less its gutters, and moves left so that it stays in
-  // the window: the ⓘ of a tile on the right, or on a phone, would otherwise push it past the edge.
-  useLayoutEffect(() => {
-    const el = wrap.current;
-    if (!open || !el) return;
-    const at = el.getBoundingClientRect().left;
-    const width = Math.min(POPOVER, window.innerWidth - 2 * GUTTER);
-    setPlace({ width, left: Math.min(0, window.innerWidth - GUTTER - width - at) });
-  }, [open]);
-  const keys = (e: KeyboardEvent) => {
-    if (e.key === "Escape" && open) {
-      e.stopPropagation();
-      close();
-    }
-  };
   return (
-    <span
-      ref={wrap}
-      className="relative inline-flex"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => !pinned && setOpen(false)}
-      onFocus={() => setOpen(true)}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) close();
-      }}
-      onKeyDown={keys}
-    >
-      <button
-        className="fy-info"
-        type="button"
-        aria-label={`About ${k.name}`}
-        aria-expanded={open}
-        aria-controls={open ? id : undefined}
-        onClick={() => {
-          setPinned(!pinned || !open);
-          setOpen(!pinned || !open);
-        }}
-      >
-        <Icon of={Info} />
-      </button>
-      {open && (
-        <span id={id} className="fy-popover top-7 max-w-none font-normal" style={{ left: place.left, width: place.width }} role="note">
-          <span className="fy-strong text-foreground">{k.name}</span>
-          <span className="fy-small text-foreground whitespace-normal">{k.formula}</span>
-          <span className="fy-small fy-muted whitespace-normal">
-            Reads {k.date_basis}. Source: {(sourceNames[k.source] ?? k.source).toLowerCase()}. Definition {k.version}.
-          </span>
-        </span>
-      )}
-    </span>
+    <HelpPopover title={k.name}>
+      <span className="fy-small text-foreground whitespace-normal">{k.formula}</span>
+      <span className="fy-small fy-muted whitespace-normal">
+        Reads {k.date_basis}. Source: {(sourceNames[k.source] ?? k.source).toLowerCase()}. Definition {k.version}.
+      </span>
+    </HelpPopover>
   );
 }
 

@@ -10,6 +10,7 @@ import { formatAmount } from "../../format/amount";
 import { date } from "../../format/date";
 import { negate, sign } from "../../format/decimal";
 import { helpText } from "../../i18n";
+import { Term } from "../../help/Term";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { BankTabs, makers } from "./BankAccounts";
@@ -248,7 +249,10 @@ function Flags({ line }: { line: Line }) {
         <Icon of={TriangleAlert} size={20} />
         <div className="fy-banner__text">
           <span className="fy-strong">In suspense</span>
-          <span className="fy-small">It is posted to suspense (2999) until you categorise or match it; the close warns while suspense is not nil.</span>
+          <span className="fy-small">
+            It is posted to <Term name="Suspense">suspense</Term> (2999) until you categorise or match it; the <Term name="Close">close</Term> warns while suspense is
+            not nil.
+          </span>
         </div>
       </div>
     );
