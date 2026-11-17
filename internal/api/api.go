@@ -39,6 +39,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/passkey"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/proposal"
 	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/render"
 	"github.com/cognizhi/fyniq/internal/telemetry"
@@ -96,6 +97,9 @@ type Deps struct {
 	Screening ports.Screening
 	// EvalSuites are the agents' eval suites a model is qualified with (AI-78); nil: the release's, evals.Suites.
 	EvalSuites fs.FS
+	// Catalogue is the AI's task catalogue (§9.6, AI-32; p1-ai-proposals-core design D1); nil: the release's,
+	// proposal.Default().
+	Catalogue *proposal.Catalogue
 	// APIBase is where the browser reaches the API on the web app's origin: "/api" (the default) behind the load balancer
 	// and Caddy. The API's own download links start with it.
 	APIBase string

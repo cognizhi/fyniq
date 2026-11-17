@@ -576,3 +576,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-15] compile | docs/user-guide/ai-assistant.md → ai.assistant (Ask about this, Explain, Simulate, rating an answer; p1-ai-assistant task 7.2)
 
 ## [2026-11-15] compile | docs/user-guide/ai-settings.md, docs/user-guide/ai-activity.md → settings.ai, settings.ai-activity (the assistant's monitoring, QA-AI-04; p1-ai-assistant task 8.4)
+
+## [2026-11-15] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the AI task types setting, ai.task_types: off at once when narrowed)

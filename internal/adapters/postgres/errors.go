@@ -422,7 +422,7 @@ var constraintCodes = map[string]struct{ code, message string }{
 	"sod_override_once":                         {storage.CodeApproval, "that request overrode that conflict already"},
 	"organisation_setting_region_fixed":         {storage.CodeInvalid, "the data region is set by the platform and never changes"},
 	"organisation_setting_key_format":           {storage.CodeInvalid, "the setting's key is not one Fyniq knows"},
-	"organisation_setting_value_length":         {storage.CodeInvalid, "the setting's value is empty or longer than 200 characters"},
+	"organisation_setting_value_length":         {storage.CodeInvalid, "the setting's value is empty or longer than 200 characters (a list, 4,000)"},
 	"item_code_key":                             {storage.CodeDuplicate, "an item with this code already exists"},
 	"item_code_format":                          {storage.CodeInvalid, "the item code is not 1 to 30 letters, digits, dots, underscores, slashes or hyphens"},
 	"item_lengths":                              {storage.CodeInvalid, "a text of the item is empty or too long"},

@@ -67,8 +67,8 @@ func TestTheCatalogueShipsEverySettingAtAValidRecommendedValue(t *testing.T) {
 		if !ok || !headings[section] {
 			t.Errorf("%s: the guide link %q has no section in the guide", d.Key, d.Guide)
 		}
-		if d.OffAtOnce && (d.Kind != Switch || !d.DualControl) {
-			t.Errorf("%s: only a switch under dual control turns off at once (AI-13)", d.Key)
+		if d.OffAtOnce && ((d.Kind != Switch && d.Kind != TaskTypes) || !d.DualControl) {
+			t.Errorf("%s: only a switch or the task types under dual control turn off at once (AI-13, AI-32)", d.Key)
 		}
 		if d.Fixed {
 			continue
@@ -108,6 +108,12 @@ func TestValuesAreReadByKindAndRange(t *testing.T) {
 	region, _ := Lookup("data.region")
 	charges, _ := Lookup("bank.charges_account")
 	fields, _ := Lookup("ai.exclusions")
+	tasks, _ := Lookup("ai.task_types")
+	var many []string
+	for _, a := range "abcdefghijklmnopqrstuvwxy" {
+		many = append(many, "t.a_"+string(a), "t.b_"+string(a))
+	}
+	fiftyOne := strings.Join(append(many, "t.c"), ",")
 	for _, c := range []struct {
 		d       Definition
 		in, out string
@@ -118,6 +124,8 @@ func TestValuesAreReadByKindAndRange(t *testing.T) {
 		{sw, "true", "true"}, {sw, "false", "false"},
 		{charges, "6460", "6460"}, {charges, "6460.10", "6460.10"},
 		{fields, "", ""}, {fields, "notes", "notes"}, {fields, " memo, notes ,memo", "memo,notes"},
+		{tasks, "", ""}, {tasks, "sec.create_task", "sec.create_task"},
+		{tasks, " sec.draft_reminder,sec.create_task, sec.draft_reminder", "sec.create_task,sec.draft_reminder"},
 	} {
 		if v, p := Normalise(c.d, c.in); p != nil || v != c.out {
 			t.Errorf("%s = %q: %q %v; want %q", c.d.Key, c.in, v, p, c.out)
@@ -134,6 +142,8 @@ func TestValuesAreReadByKindAndRange(t *testing.T) {
 		{region, "europe-west1"},
 		{charges, ""}, {charges, "64 60"}, {charges, "-6460"}, {charges, "6460-bank-charges-and-more-than-twenty"},
 		{fields, "Notes"}, {fields, "notes,"}, {fields, "notes;memo"}, {fields, "line.notes"},
+		{tasks, "sec"}, {tasks, "sec.create_task,"}, {tasks, "Sec.create_task"}, {tasks, "sec.create-task"},
+		{tasks, fiftyOne}, {charges, strings.Repeat("6", 201)}, {tasks, strings.Repeat("t.a,", 1001)},
 	} {
 		if v, p := Normalise(c.d, c.in); code(p) != CodeValue || v != "" {
 			t.Errorf("%s = %q: want %s, got %q %v", c.d.Key, c.in, CodeValue, v, p)
@@ -237,5 +247,38 @@ func TestTheAuditTrailsRetentionShipsAsDecided(t *testing.T) {
 	}
 	if d, _ := Lookup("retention.purge_after_retention"); d.Kind != Switch {
 		t.Errorf("the purge is a switch: %+v", d)
+	}
+}
+
+// The AI's task types are off until an Owner turns each on with a second approver; removing one, or all, is a kill
+// switch and takes effect at once, but a change that adds any still waits for the second approver.
+// req: AI-32
+// req: AI-13
+func TestTaskTypesNarrowAtOnceAndWidenUnderDualControl(t *testing.T) {
+	tasks, _ := Lookup("ai.task_types")
+	sw, _ := Lookup("ai.payroll_access")
+	if tasks.Recommended != "" || !tasks.DualControl || !tasks.OffAtOnce {
+		t.Fatalf("ai.task_types: %+v", tasks)
+	}
+	for _, c := range []struct {
+		d          Definition
+		was, value string
+		want       bool
+	}{
+		{tasks, "sec.create_task,sec.draft_reminder", "sec.create_task", true},
+		{tasks, "sec.create_task", "", true},
+		{tasks, "", "", true},
+		{tasks, "", "sec.create_task", false},
+		{tasks, "sec.create_task", "sec.create_task,sec.draft_reminder", false},
+		{tasks, "sec.create_task", "sec.draft_reminder", false},
+		{sw, "true", "false", true},
+		{sw, "false", "true", false},
+	} {
+		if got := Narrows(c.d, c.was, c.value); got != c.want {
+			t.Errorf("%s from %q to %q narrows: %v; want %v", c.d.Key, c.was, c.value, got, c.want)
+		}
+	}
+	if terms, _ := Lookup("sales.payment_terms_days"); Narrows(terms, "45", "30") {
+		t.Error("a setting that is no kill switch narrows")
 	}
 }

@@ -42,6 +42,9 @@ const (
 	Choice Kind = "choice"
 	// Fields is a list of field names, such as "notes,memo": comma-separated, each lower-case words joined by underscores.
 	Fields Kind = "fields"
+	// TaskTypes is a list of the proposal catalogue's task types, such as "sec.create_task,sec.draft_reminder":
+	// comma-separated IDs; the API checks each is in the release's catalogue (AI-32).
+	TaskTypes Kind = "task_types"
 )
 
 // Definition is one setting: what it holds, its recommended value and why, and the rules a change to it meets.
@@ -55,7 +58,7 @@ type Definition struct {
 	Guide        string   // the guide page and section that explains it, such as /help/organisation-settings#features
 	Requirement  string   // the PRD requirement it implements
 	DualControl  bool     // FM-1: a change needs a second approver
-	OffAtOnce    bool     // a kill switch (AI-13): turning it off needs no second approver and takes effect as recorded
+	OffAtOnce    bool     // a kill switch (AI-13): turning it off, or narrowing it, needs no second approver and takes effect as recorded
 	Fixed        bool     // set by the platform: shown, never changed
 	LengthenOnly bool     // a change may only lengthen it
 	Min, Max     string   // the range of a number, inclusive
@@ -95,6 +98,9 @@ var Catalogue = []Definition{
 	{Key: "ai.reads_per_question", Group: "AI", Label: "Reads of the books for one question", Kind: Count, Recommended: "8", Min: "1", Max: "20",
 		Reason: "Eight reads answer most questions; a question needing more is better asked in parts, and each read costs a model call",
 		Guide:  guide + "ai-limits", Requirement: "AI-23", DualControl: true},
+	{Key: "ai.task_types", Group: "AI", Label: "Changes the AI may propose", Kind: TaskTypes, Recommended: "",
+		Reason: "Every task type starts off: an Owner turns each on with a second approver, and each proposal still waits for a person's approval; turning one off takes effect at once",
+		Guide:  guide + "ai-task-types", Requirement: "AI-32", DualControl: true, OffAtOnce: true},
 	{Key: "approvals.break_glass_cap", Group: "Approvals", Label: "Break-glass payment cap", Kind: AmountSGD, Recommended: "20000.00",
 		Reason: "In Founder mode, while the other founder is unreachable, an Owner's break-glass releases waiting payment batches of up to S$20,000 in all; more waits for the other founder (the founders' decision of 16 Oct 2026)",
 		Guide:  guide + "break-glass-payment-cap", Requirement: "FM-8", DualControl: true, Min: "0.00", Max: "1000000.00"},
@@ -282,7 +288,9 @@ var (
 	accountCode = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$`)
 	// fieldName is a field's name in the API's JSON, as an exclusion names it.
 	fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]{0,40}$`)
-	sgd       = money.MustLookup("SGD")
+	// taskTypeID is a proposal catalogue's task type, as internal/proposal names it.
+	taskTypeID = regexp.MustCompile(`^[a-z]+\.[a-z]+(_[a-z]+)*$`)
+	sgd        = money.MustLookup("SGD")
 )
 
 // Normalise reads raw as a value of d, and returns it as stored: "true", "30", "50.00" or "2.5". It refuses
@@ -294,6 +302,9 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 	}
 	if raw == "" && d.Recommended == "" && !d.Fixed {
 		return "", nil
+	}
+	if list := d.Kind == Fields || d.Kind == TaskTypes; (!list && len(raw) > 200) || len(raw) > 4000 {
+		return bad("Send at most 200 characters, or 4,000 for a list")
 	}
 	switch d.Kind {
 	case Switch:
@@ -348,6 +359,22 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 		}
 		slices.Sort(names)
 		return strings.Join(names, ","), nil
+	case TaskTypes:
+		var ids []string
+		for _, n := range strings.Split(raw, ",") {
+			n = strings.TrimSpace(n)
+			if !taskTypeID.MatchString(n) || len(n) > 56 {
+				return bad("Send task types separated by commas, each as the AI tasks page names it, such as sec.create_task")
+			}
+			if !slices.Contains(ids, n) {
+				ids = append(ids, n)
+			}
+		}
+		if len(ids) > 50 {
+			return bad("Send at most 50 task types")
+		}
+		slices.Sort(ids)
+		return strings.Join(ids, ","), nil
 	case Percent:
 		var v apd.Decimal
 		if !percent.MatchString(raw) {
@@ -435,4 +462,22 @@ func Check(d Definition, value string, from, today time.Time, changes []storage.
 		}
 	}
 	return out
+}
+
+// Narrows is whether a change from was to value only takes away, so a kill switch applies it at once (AI-13, AI-32): a
+// switch turned off, or task types removed and none added.
+func Narrows(d Definition, was, value string) bool {
+	switch d.Kind {
+	case Switch:
+		return value == "false"
+	case TaskTypes:
+		before := strings.Split(was, ",")
+		for _, id := range strings.Split(value, ",") {
+			if id != "" && !slices.Contains(before, id) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }
