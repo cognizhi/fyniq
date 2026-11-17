@@ -17,8 +17,8 @@ export function navFor<T extends NavFeature>(items: readonly T[], session: Pick<
   );
 }
 
-// The compact bottom bar holds at most five items: four of the person's, then More (MASTER.md §5.1).
-export function bottomBar<T extends NavFeature>(visible: readonly T[]): { items: T[]; more: boolean } {
-  const items = visible.filter((n) => n.bottom).slice(0, 4);
-  return { items, more: visible.length > items.length };
+// The compact bottom bar holds at most five items: four of the person's, then More (MASTER.md §5.1), which is always
+// there, since its sheet also holds the account (appearance, About and sign out) the compact header has no room for.
+export function bottomBar<T extends NavFeature>(visible: readonly T[]): T[] {
+  return visible.filter((n) => n.bottom).slice(0, 4);
 }

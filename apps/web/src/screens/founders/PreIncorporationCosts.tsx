@@ -305,7 +305,7 @@ function DecideDialog({ cost, onClose, onDone }: { cost: PreCost; onClose: () =>
           </select>
         </Field>
         {hasGST && (
-          <label className="fy-check">
+          <label className="fy-row gap-2">
             <input type="checkbox" checked={claimGST} onChange={(e) => setClaimGST(e.target.checked)} />
             <span>
               Claim the GST shown ({formatAmount(cost.gst?.amount ?? "0")}) as input tax

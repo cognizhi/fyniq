@@ -1,6 +1,6 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutGrid, LogOut, Search, X } from "lucide-react";
+import { Info, LayoutGrid, LogOut, Search, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import type { Session } from "../api/client";
 import { Button, buttonVariants } from "../components/ui/button";
@@ -8,8 +8,8 @@ import { helpText } from "../i18n";
 import { setMode } from "../mode";
 import { nav, type Mode, type NavFeature } from "../registry";
 import { Icon } from "../ui";
-import { AppearanceMenu } from "./AppearanceMenu";
-import { HelpMenu } from "./HelpMenu";
+import { AppearanceChoices, AppearanceMenu } from "./AppearanceMenu";
+import { About, HelpMenu } from "./HelpMenu";
 import { bottomBar, navFor } from "./navigation";
 
 const CommandPalette = lazy(() => import("./CommandPalette"));
@@ -55,30 +55,40 @@ function NavList({ items, path, onNavigate, groups = mainGroups }: { items: read
 }
 
 // ModeSwitch is the header's Basic | Expert control (FR-UX-23, experience/modes): the current mode
-// is always visible. It changes only what is shown (FR-UX-24); the page, its filters and drafts stay.
+// is always visible. It changes only what is shown (FR-UX-24); the page, its filters and drafts stay. In the compact
+// class it is the designed pill (docs/design/screens AppShell), one button that names the mode and switches it, since a
+// 320 px header has no room for both options (FR-UX-37).
 export function ModeSwitch({ mode }: { mode: Mode }) {
   const h = helpText("shell.mode");
   const choices: [Mode, string][] = [
     ["basic", "Basic"],
     ["expert", "Expert"],
   ];
+  const name = (m: Mode) => (m === "basic" ? "Basic" : "Expert");
+  const other: Mode = mode === "basic" ? "expert" : "basic";
   return (
-    <div className="fy-segmented" role="radiogroup" aria-label={h.label} title={h.tooltip}>
-      {choices.map(([m, label]) => (
-        <button key={m} type="button" role="radio" aria-checked={mode === m} tabIndex={mode === m ? 0 : -1} onClick={() => setMode(m)}
-          onKeyDown={(e) => {
-            if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
-              e.preventDefault();
-              const next = m === "basic" ? "expert" : "basic";
-              setMode(next);
-              (e.currentTarget.parentElement?.querySelector(`[data-mode="${next}"]`) as HTMLElement | null)?.focus();
-            }
-          }}
-          data-mode={m}>
-          {label}
-        </button>
-      ))}
-    </div>
+    <>
+      <button type="button" className="fy-modepill fy-only-compact pointer-coarse:min-h-(--touch-target)" onClick={() => setMode(other)} title={h.tooltip}
+        aria-label={`${h.label}: ${name(mode)}. Switch to ${name(other)}`}>
+        {name(mode)}
+      </button>
+      <div className="fy-segmented fy-from-medium" role="radiogroup" aria-label={h.label} title={h.tooltip}>
+        {choices.map(([m, label]) => (
+          <button key={m} type="button" role="radio" aria-checked={mode === m} tabIndex={mode === m ? 0 : -1} onClick={() => setMode(m)}
+            onKeyDown={(e) => {
+              if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
+                e.preventDefault();
+                const next = m === "basic" ? "expert" : "basic";
+                setMode(next);
+                (e.currentTarget.parentElement?.querySelector(`[data-mode="${next}"]`) as HTMLElement | null)?.focus();
+              }
+            }}
+            data-mode={m}>
+            {label}
+          </button>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -102,10 +112,12 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
   const [open, setOpen] = useState(false);
   const [wanted, setWanted] = useState(false); // load the palette's code only once it is asked for
   const [more, setMore] = useState(false);
+  const [about, setAbout] = useState(false);
   const visible = navFor(nav, session, mode);
   const bottom = bottomBar(visible);
   const search = helpText("shell.command-palette");
   const signOut = helpText("auth.sign-out");
+  const aboutText = helpText("shell.about");
   const openPalette = () => {
     setWanted(true);
     setOpen(true);
@@ -130,9 +142,7 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
       </a>
       <nav className="fy-side" aria-label="Main">
         <Link to="/" className="fy-brand" aria-label="Fyniq home">
-          <span className="fy-brand__mark" aria-hidden="true">
-            f
-          </span>
+          <span className="fy-brand__mark" aria-hidden="true" data-letter="f" />
           <span className="fy-brand__word" aria-hidden="true">
             Fyniq
           </span>
@@ -144,9 +154,7 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
       </nav>
       <header className="fy-top">
         <Link to="/" className="fy-brand" aria-label="Fyniq home">
-          <span className="fy-brand__mark" aria-hidden="true">
-            f
-          </span>
+          <span className="fy-brand__mark" aria-hidden="true" data-letter="f" />
         </Link>
         {logo}
         <span className="fy-top__title fy-truncate">{title}</span>
@@ -162,9 +170,9 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
           </Button>
           {operations}
           {bell}
-          <AppearanceMenu />
-          <HelpMenu />
-          <form method="post" action="/api/auth/signout">
+          <AppearanceMenu className="fy-from-medium" />
+          <HelpMenu className="fy-from-medium" />
+          <form method="post" action="/api/auth/signout" className="fy-from-medium">
             <button className={buttonVariants({ variant: "ghost", size: "icon" })} type="submit" aria-label={signOut.label} title={signOut.tooltip}>
               <Icon of={LogOut} size={20} />
             </button>
@@ -176,32 +184,55 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
         {children}
       </main>
       <nav className="fy-bottom" aria-label="Main, bottom bar">
-        {bottom.items.map((n) => (
+        {bottom.map((n) => (
           <NavItem key={n.id} item={n} current={current(n, path)} className="fy-bottom__item" />
         ))}
-        {bottom.more && (
-          <button type="button" className="fy-bottom__item border-0 bg-transparent font-[inherit]" onClick={() => setMore(true)}>
-            <Icon of={LayoutGrid} />
-            <span>More</span>
-          </button>
-        )}
+        <button type="button" className="fy-bottom__item border-0 bg-transparent font-[inherit]" onClick={() => setMore(true)} aria-haspopup="dialog">
+          <Icon of={LayoutGrid} />
+          <span>More</span>
+        </button>
       </nav>
-      {bottom.more && (
-        <Dialog.Root open={more} onOpenChange={setMore}>
-          <Dialog.Portal>
-            <Dialog.Backdrop className="fixed inset-0 z-(--z-modal) bg-scrim" />
-            <Dialog.Popup data-slot="dialog-popup" className="fixed inset-x-0 bottom-0 z-(--z-modal) max-h-[80vh] overflow-y-auto rounded-t-lg border-t border-border bg-surface-1 p-3 shadow-3">
-              <div className="flex items-center justify-between pb-2">
-                <Dialog.Title className="text-lg font-semibold">More</Dialog.Title>
-                <Dialog.Close className={buttonVariants({ variant: "ghost", size: "icon" })} aria-label="Close">
-                  <Icon of={X} size={20} />
-                </Dialog.Close>
-              </div>
-              <NavList items={visible} path={path} onNavigate={() => setMore(false)} groups={allGroups} />
-            </Dialog.Popup>
-          </Dialog.Portal>
-        </Dialog.Root>
-      )}
+      {/* The compact More sheet: the whole navigation, then the account's appearance, About and sign out, which the
+          compact header has no room for (docs/design/screens AppShell; FR-UX-37). It is always there, so a person whose
+          roles show few pages still reaches them. */}
+      <Dialog.Root open={more} onOpenChange={setMore}>
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-(--z-modal) bg-scrim" />
+          <Dialog.Popup data-slot="dialog-popup" className="fixed inset-x-0 bottom-0 z-(--z-modal) max-h-[80vh] overflow-y-auto rounded-t-lg border-t border-border bg-surface-1 p-3 shadow-3">
+            <div className="flex items-center justify-between pb-2">
+              <Dialog.Title className="text-lg font-semibold">More</Dialog.Title>
+              <Dialog.Close className={buttonVariants({ variant: "ghost", size: "icon" })} aria-label="Close">
+                <Icon of={X} size={20} />
+              </Dialog.Close>
+            </div>
+            <NavList items={visible} path={path} onNavigate={() => setMore(false)} groups={allGroups} />
+            <hr className="fy-divider my-3" />
+            <section className="fy-stack fy-stack--3" aria-labelledby="more-appearance">
+              <h3 className="fy-eyebrow" id="more-appearance">
+                Appearance
+              </h3>
+              <AppearanceChoices />
+            </section>
+            <div className="fy-row fy-row--between fy-row--wrap mt-3">
+              <button type="button" className="fy-btn fy-btn--ghost fy-btn--sm" title={aboutText.tooltip} aria-haspopup="dialog"
+                onClick={() => {
+                  setMore(false);
+                  setAbout(true);
+                }}>
+                <Icon of={Info} />
+                {aboutText.label}
+              </button>
+              <form method="post" action="/api/auth/signout">
+                <button className="fy-btn fy-btn--ghost fy-btn--sm" type="submit" title={signOut.tooltip}>
+                  <Icon of={LogOut} />
+                  {signOut.label}
+                </button>
+              </form>
+            </div>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
+      <About open={about} onOpenChange={setAbout} />
       {wanted && (
         <Suspense fallback={null}>
           <CommandPalette open={open} onOpenChange={setOpen} />
