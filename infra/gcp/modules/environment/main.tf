@@ -181,7 +181,14 @@ locals {
     invokers = merge(
       { for class, c in local.spec.classes : class => { service_account = local.email["tasks-${class}"], audience = local.url[c.service] } },
       { scheduler = { service_account = local.email["scheduler"], audience = "${local.url["api"]}/internal/tick" } },
+      # The AI service's calls to the api's internal API (PRD-001 §9.3 rev 0.277, p1-ai-assistant design D4) [live-verify].
+      { ai = { service_account = local.email["ai"], audience = "${local.url["api"]}/internal/v1" } },
+      # The worker's one call to the api's internal API, a scheduled agent's model step (PRD-001 rev 0.281,
+      # p1-scheduled-agents design D5) [live-verify].
+      { agent_runs = { service_account = local.email["worker"], audience = "${local.url["api"]}/internal/v1/agent-runs" } },
     )
+    # Where the worker sends that step, and the audience of its own token (internal/wiring/release.go Config.API).
+    api      = { url = "${local.url["api"]}/internal/v1", audience = "${local.url["api"]}/internal/v1/agent-runs", service_accounts = [local.email["worker"]] }
     anchors  = var.anchors
     evidence = var.evidence
     job      = "projects/${var.project}/locations/${local.region}/jobs/jobs"

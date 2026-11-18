@@ -74,3 +74,7 @@ FROM fyniq.inbound_file WHERE message_id = sqlc.arg(message_id) ORDER BY kind DE
 UPDATE fyniq.inbound_file SET removed_at = sqlc.arg(removed_at)
 WHERE message_id = sqlc.arg(message_id) AND removed_at IS NULL
 RETURNING id, message_id, kind, file_name, media_type, size_bytes, sha256, original_sha256, blob_key, stored_at, removed_at;
+
+-- name: EmailMatches :many
+SELECT m.organisation_id::uuid AS organisation_id, m.user_id::uuid AS user_id
+  FROM fyniq.email_matches(sqlc.arg(email)::text, sqlc.arg(issuer)::text, sqlc.arg(subject)::text) m;

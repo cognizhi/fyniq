@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "decision": {
+      "description": "golden: it feeds the eval set (QA-AI-05); dismissed: it does not.",
+      "enum": [
+        "golden",
+        "dismissed"
+      ],
+      "examples": [
+        "golden"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "decision"
+  ],
+  "title": "AIFeedbackReviewIn",
+  "type": "object"
+}

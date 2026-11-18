@@ -39,7 +39,7 @@ PRD2 = ROOT / "docs/prd/prd-002-nemura-people.md"
 
 TAG = re.compile(r"(?://|#|--)\s*req:\s*(.+?)\s*$")
 # The test files tags count in (design D2).
-TEST_FILE = re.compile(r"(_test\.go|\.test\.tsx?|^apps/web/e2e/.+\.spec\.ts|^apps/web/journeys/.+\.spec\.ts|\.stories\.tsx|"
+TEST_FILE = re.compile(r"(_test\.go|\.test\.tsx?|^apps/web/e2e/.+\.spec\.ts|^apps/web/journeys/.+\.spec\.ts|^apps/web/visual/.+\.spec\.ts|\.stories\.tsx|"
                        r"^oracle/(?:.+/)?test_[^/]+\.py|^test/.+\.py|^scripts/test_[^/]+\.py|^db/.+_test\.sql)$")
 PHASE = re.compile(r"\bP[0-3]\b")
 MOVE = re.compile(r"\(rev 0\.\d+: (P[0-3])\b")

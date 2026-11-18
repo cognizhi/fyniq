@@ -7,6 +7,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { RecurringInvoicePage, checkRecurringInvoice } from "./RecurringInvoicePage";
 import { RecurringInvoices, repeatsOf } from "./RecurringInvoices";
+import { invalid } from "../../test/invalid";
 
 type RecurringInvoice = components["schemas"]["RecurringInvoice"];
 
@@ -68,6 +69,8 @@ describe("A recurring invoice", () => {
     expect(checkRecurringInvoice({ ...form, every: "w2", day_of_month: "" }, "SGD").input?.schedule).toEqual({ every_weeks: 2, starts_on: "2026-11-01", ends_on: undefined });
     expect(checkRecurringInvoice({ ...form, day_of_month: "32" }, "SGD").errors.day_of_month).toBe("Enter a day from 1 to 31.");
     expect(checkRecurringInvoice({ ...form, name: " " }, "SGD").errors.name).toBe("Name it, such as Analytics subscription, Acme.");
+    expect(checkRecurringInvoice({ ...form, starts_on: "" }, "SGD").errors.starts_on).toBe("Enter the date it starts from.");
+    expect(checkRecurringInvoice({ ...form, ends_on: "2026-10-01" }, "SGD").errors.ends_on).toBe("End it on or after its start, or leave the end empty.");
   });
 
   it("set to issue and send, asks another person to approve its content; axe finds nothing", async () => {
@@ -87,6 +90,15 @@ describe("A recurring invoice", () => {
     await screen.findByRole("option", { name: "Acme Analytics Pte Ltd" });
     await screen.findByRole("option", { name: /4010 Software revenue/ });
     await screen.findByRole("option", { name: /^SR:/ });
+    // QA-UI-01: a field it cannot read is marked, with its message beside it, and nothing is sent.
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: " " } });
+    fireEvent.change(screen.getByLabelText("Starts on"), { target: { value: "" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Save" })[0]!);
+    await invalid(document.body, "Name", "Name it, such as Analytics subscription, Acme.");
+    await invalid(document.body, "Starts on", "Enter the date it starts from.");
+    expect(sent.some((s) => s.method === "PUT")).toBe(false);
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: weekly.name } });
+    fireEvent.change(screen.getByLabelText("Starts on"), { target: { value: "2026-11-02" } });
     fireEvent.change(screen.getByLabelText("What the scheduler does"), { target: { value: "issue_and_send" } });
     fireEvent.click(screen.getAllByRole("button", { name: "Save" })[0]!);
     await waitFor(() => expect(sent.some((s) => s.method === "PUT" && s.path === "/v1/recurring-invoices/r2")).toBe(true));

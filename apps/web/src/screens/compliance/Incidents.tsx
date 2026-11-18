@@ -184,7 +184,7 @@ function IncidentForm({ onClose }: { onClose: () => void }) {
         <fieldset className="fy-field" title={helpText("incidents.severity").tooltip}>
           <legend className="fy-label">{helpText("incidents.severity").label}</legend>
           {(Object.keys(severities) as Severity[]).map((s) => (
-            <label key={s} className="fy-check">
+            <label key={s} className="fy-row gap-2">
               <input type="radio" name={`${id}-severity`} checked={form.severity === s} onChange={() => setForm({ ...form, severity: s })} />
               {severities[s].label}
             </label>

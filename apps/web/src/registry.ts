@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Building, CalendarClock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Bot, Building, CalendarClock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, ScrollText, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -67,10 +67,15 @@ export const routes = [
   { kind: "route", id: "claim-trips", path: "/me/claims/$claimId/mileage", mode: "basic", signedIn: true, help: "claims.trips", guide: "claims.my-claims#claim-a-trip-in-your-own-vehicle" },
   { kind: "route", id: "inbox", path: "/inbox", mode: "basic", signedIn: true, help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
   { kind: "route", id: "approval", path: "/approvals/$approvalId", mode: "basic", signedIn: true, help: "approvals.request", guide: "approvals.decide#approve-or-reject" },
+  { kind: "route", id: "ai-proposal", path: "/inbox/proposals/$proposalId", mode: "basic", signedIn: true, help: "ai-proposal.review", guide: "ai.proposals#review-a-proposal" },
+  { kind: "route", id: "ai-tasks", path: "/inbox/ai-tasks", mode: "basic", signedIn: true, help: "ai-tasks.page", guide: "ai.proposals#the-ai-tasks-page" },
   { kind: "route", id: "review-log", path: "/review-log", mode: "basic", signedIn: true, help: "approvals.review-log", guide: "approvals.decide#review-high-risk-actions" },
   { kind: "route", id: "break-glass", path: "/break-glass", mode: "basic", signedIn: true, help: "approvals.break-glass", guide: "settings.team-mode#break-glass" },
   { kind: "route", id: "contacts", path: "/contacts", mode: "basic", signedIn: true, help: "contacts.overview", guide: "contacts.manage" },
   { kind: "route", id: "global-search", path: "/search", mode: "basic", signedIn: true, help: "shell.search", guide: "shell.search" },
+  // The user guide, built from docs/user-guide/ (FR-UX-32).
+  { kind: "route", id: "help", path: "/help", mode: "basic", signedIn: true, help: "help.guide", guide: "help.guide" },
+  { kind: "route", id: "help-page", path: "/help/$key", mode: "basic", signedIn: true, help: "help.page", guide: "help.guide#open-a-page" },
   { kind: "route", id: "contact-record", path: "/contacts/$contactId", mode: "basic", signedIn: true, help: "contacts.record", guide: "contacts.manage#what-a-contact-stands-at" },
   { kind: "route", id: "items", path: "/items", mode: "basic", signedIn: true, help: "items.overview", guide: "contacts.manage#items-and-prices" },
   { kind: "route", id: "invoices", path: "/sales/invoices", mode: "basic", signedIn: true, help: "sales.invoices", guide: "sales.invoices" },
@@ -146,6 +151,13 @@ export const routes = [
   { kind: "route", id: "period-close", path: "/accounting/close/$periodId", mode: "expert", signedIn: true, help: "accounting.period-close", guide: "accounting.periods#close-a-month" },
   { kind: "route", id: "accountant-reviews", path: "/accounting/reviews", mode: "expert", signedIn: true, help: "accounting.reviews", guide: "accounting.reviews" },
   { kind: "route", id: "compliance-calendar", path: "/compliance/calendar", mode: "basic", signedIn: true, help: "compliance.calendar", guide: "compliance.calendar" },
+  // The AI company secretary assistant (FR-CS-04 in part, AI-62, AI-65; p1-scheduled-agents design D9): its workspace is
+  // Basic and a run's report Expert; a finding's status shows in both.
+  { kind: "route", id: "company-secretary", path: "/compliance/secretary", mode: "basic", signedIn: true, help: "compliance.secretary", guide: "compliance.secretary" },
+  // The corporate profile and registers (FR-CS-01, FR-CS-06; p1-company-secretary design D8): Expert, its checks' statuses
+  // shown in both modes on Checks.
+  { kind: "route", id: "corporate-profile", path: "/compliance/corporate-profile", mode: "expert", signedIn: true, help: "compliance.corporate-profile", guide: "compliance.corporate-profile" },
+  { kind: "route", id: "agent-run-report", path: "/compliance/secretary/runs/$runId", mode: "expert", signedIn: true, help: "compliance.secretary-run", guide: "compliance.secretary#a-runs-report" },
   // Planning (FR-PLN-09; p1-planning design D12): the short-term cash flow is Basic, its what-ifs Expert.
   { kind: "route", id: "planning-cash", path: "/planning/cash", mode: "basic", signedIn: true, help: "planning.cash", guide: "planning.cash" },
   { kind: "route", id: "planning-feasibility", path: "/planning/feasibility", mode: "expert", signedIn: true, help: "planning.feasibility", guide: "planning.feasibility" },
@@ -182,6 +194,14 @@ export const routes = [
   { kind: "route", id: "settings-access-review", path: "/settings/access-review", mode: "expert", signedIn: true, help: "settings.access-review", guide: "settings.access-review" },
   // Settings › Data (FR-MIG-04; p1-workbook-migration task 9.2): the data region and retention, and the full export.
   { kind: "route", id: "settings-data", path: "/settings/data", mode: "expert", signedIn: true, help: "settings.data", guide: "settings.data" },
+  { kind: "route", id: "settings-ai", path: "/settings/ai", mode: "expert", signedIn: true, help: "settings.ai", guide: "settings.ai" },
+  { kind: "route", id: "settings-ai-usage", path: "/settings/ai/usage", mode: "expert", signedIn: true, help: "settings.ai-usage", guide: "settings.ai#usage-and-budgets" },
+  { kind: "route", id: "settings-ai-providers", path: "/settings/ai/providers", mode: "expert", signedIn: true, help: "settings.ai-providers", guide: "settings.ai-providers" },
+  { kind: "route", id: "settings-ai-connection", path: "/settings/ai/providers/$connection", mode: "expert", signedIn: true, help: "settings.ai-connection", guide: "settings.ai-providers#a-connections-own-page" },
+  { kind: "route", id: "settings-ai-routes", path: "/settings/ai/routes", mode: "expert", signedIn: true, help: "settings.ai-routes", guide: "settings.ai-routes" },
+  { kind: "route", id: "settings-ai-route", path: "/settings/ai/routes/$agent", mode: "expert", signedIn: true, help: "settings.ai-route", guide: "settings.ai-routes#change-an-agents-route" },
+  { kind: "route", id: "settings-ai-activity", path: "/settings/ai/activity", mode: "expert", signedIn: true, help: "settings.ai-activity", guide: "settings.ai-activity" },
+  { kind: "route", id: "settings-ai-plan", path: "/settings/profile/ai-plan", mode: "basic", signedIn: true, help: "settings.ai-plan", guide: "settings.ai-activity#your-own-ai-plan" },
   // Settings › Import (FR-MIG-01…03; p1-workbook-migration task 9.1): the move from the workbook, M1 to M6, and the generic import.
   { kind: "route", id: "settings-import", path: "/settings/import", mode: "expert", signedIn: true, help: "settings.import", guide: "settings.import" },
   { kind: "route", id: "settings-team-mode", path: "/settings/team-mode", mode: "expert", signedIn: true, help: "settings.team-mode", guide: "settings.team-mode" },
@@ -216,8 +236,32 @@ export const actions = [
   { kind: "action", id: "compliance.heartbeat-drills", mode: "expert", help: "compliance.heartbeat-drills", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "heartbeat-drills.minutes", mode: "expert", help: "heartbeat-drills.minutes", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "shell.help", mode: "basic", help: "shell.help", guide: "home.overview#see-which-version-you-are-on" },
+  // Keyboard-first entry (FR-UX-06): the shortcut sheet on ?, the switch and keys of the single-character shortcuts, and
+  // the command palette's actions on selected rows.
+  { kind: "action", id: "shell.shortcuts", mode: "basic", help: "shell.shortcuts", guide: "shell.shortcuts" },
+  { kind: "action", id: "shortcuts.settings", mode: "basic", help: "shortcuts.settings", guide: "shell.shortcuts#turn-them-off-or-change-the-keys" },
+  { kind: "action", id: "shortcuts.bulk", mode: "basic", help: "shortcuts.bulk", guide: "shell.shortcuts#act-on-selected-rows" },
+  // The first-run tour (FR-UX-34): offered at first, and from Help and the command palette any time.
+  { kind: "action", id: "shell.tour", mode: "basic", help: "shell.tour", guide: "help.guide#take-the-tour" },
+  // Plain view or Accountant view of money in and out (FR-UX-08): Expert's; Basic always uses Plain view.
+  { kind: "action", id: "ledger-view", mode: "expert", help: "ledger.view", guide: "banking.accounts#categorise-the-waiting-lines" },
+  { kind: "action", id: "shell.assistant", mode: "basic", help: "shell.assistant", guide: "ai.assistant" },
+  { kind: "action", id: "assistant.ask-about-this", mode: "basic", help: "assistant.ask-about-this", guide: "ai.assistant#ask-about-a-record-a-report-or-a-figure" },
+  { kind: "action", id: "assistant.feedback", mode: "basic", help: "assistant.feedback", guide: "ai.assistant#rate-an-answer" },
+  { kind: "action", id: "assistant.simulate", mode: "basic", help: "assistant.simulate", guide: "ai.assistant#explain-and-simulate" },
+  { kind: "action", id: "ai-proposal.items", mode: "basic", help: "ai-proposal.items", guide: "ai.proposals#approve-or-reject" },
+  { kind: "action", id: "ai-proposal.rationale", mode: "basic", help: "ai-proposal.rationale", guide: "ai.proposals#review-a-proposal" },
+  { kind: "action", id: "ai-tasks.turn", mode: "basic", help: "ai-tasks.turn", guide: "ai.proposals#turn-a-task-type-on-or-off" },
+  { kind: "action", id: "company-secretary.run-now", mode: "basic", help: "compliance.secretary-run-now", guide: "compliance.secretary#run-now-and-pause" },
+  { kind: "action", id: "corporate-profile.ask", mode: "expert", help: "corporate-profile.ask", guide: "compliance.corporate-profile#record-a-change" },
+  { kind: "action", id: "corporate-profile.draft-paper", mode: "expert", help: "corporate-profile.draft-paper", guide: "compliance.corporate-profile#draft-a-resolution-notice-or-minutes" },
+  { kind: "action", id: "corporate-profile.paper-pdf", mode: "expert", help: "corporate-profile.paper-pdf", guide: "compliance.corporate-profile#draft-a-resolution-notice-or-minutes" },
+  { kind: "action", id: "corporate-profile.record-minute-book", mode: "expert", help: "corporate-profile.record-minute-book", guide: "compliance.corporate-profile#draft-a-resolution-notice-or-minutes" },
   { kind: "action", id: "shell.about", mode: "basic", help: "shell.about", guide: "home.overview#see-which-version-you-are-on" },
   // Home's tiles from the plans (FR-KPI-01, FR-PLN-03): against the budget in Expert; the forecast's cash-out month in both.
+  // Home's per-role work and its deadlines (§7.1, FR-UX-40; docs/design/screens Home's upcoming deadlines).
+  { kind: "action", id: "home.your-work", mode: "basic", help: "home.your-work", guide: "home.overview#your-work" },
+  { kind: "action", id: "home.deadlines", mode: "basic", help: "home.deadlines", guide: "home.overview#upcoming-deadlines" },
   { kind: "action", id: "home.revenue-vs-budget", mode: "expert", help: "home.revenue-vs-budget", guide: "home.overview#read-the-plans-on-home" },
   { kind: "action", id: "home.costs-vs-budget", mode: "expert", help: "home.costs-vs-budget", guide: "home.overview#read-the-plans-on-home" },
   { kind: "action", id: "home.forecast-cash-out", mode: "basic", help: "home.forecast-cash-out", guide: "home.overview#read-the-plans-on-home" },
@@ -275,6 +319,20 @@ export const actions = [
   { kind: "action", id: "access-review.export", mode: "expert", help: "access-review.export", guide: "settings.access-review#download-it" },
   { kind: "action", id: "tenant-export.request", mode: "expert", help: "tenant-export.request", guide: "settings.data#ask-for-a-full-export" },
   { kind: "action", id: "tenant-export.save", mode: "expert", help: "tenant-export.save", guide: "settings.data#save-it" },
+  { kind: "action", id: "ai.switch-off", mode: "expert", help: "ai.switch-off", guide: "settings.ai#the-ai-switch" },
+  { kind: "action", id: "ai.switch-on", mode: "expert", help: "ai.switch-on", guide: "settings.ai#the-ai-switch" },
+  { kind: "action", id: "ai.budgets", mode: "expert", help: "ai.budgets", guide: "settings.ai#budgets" },
+  { kind: "action", id: "ai.budget-set", mode: "expert", help: "ai.budget-set", guide: "settings.ai#budgets" },
+  { kind: "action", id: "ai.connection-add", mode: "expert", help: "ai.connection-add", guide: "settings.ai-providers#add-a-connection" },
+  { kind: "action", id: "ai.data-policy", mode: "expert", help: "ai.data-policy", guide: "settings.ai-providers#which-data-may-go-where" },
+  { kind: "action", id: "ai.connection-enable", mode: "expert", help: "ai.connection-enable", guide: "settings.ai-providers#turn-it-on-or-off" },
+  { kind: "action", id: "ai.connection-disable", mode: "expert", help: "ai.connection-disable", guide: "settings.ai-providers#turn-it-on-or-off" },
+  { kind: "action", id: "ai.connection-key", mode: "expert", help: "ai.connection-key", guide: "settings.ai-providers#replace-the-key" },
+  { kind: "action", id: "ai.model-allow", mode: "expert", help: "ai.model-allow", guide: "settings.ai-providers#its-models" },
+  { kind: "action", id: "ai.model-price", mode: "expert", help: "ai.model-price", guide: "settings.ai-providers#its-models" },
+  { kind: "action", id: "ai.model-qualify", mode: "expert", help: "ai.model-qualify", guide: "settings.ai-providers#qualify-a-model" },
+  { kind: "action", id: "ai.route-save", mode: "expert", help: "ai.route-save", guide: "settings.ai-routes#change-an-agents-route" },
+  { kind: "action", id: "ai.data-handling", mode: "expert", help: "ai.data-handling", guide: "settings.ai-providers#where-its-prompts-go" },
   { kind: "action", id: "workbook-import.start", mode: "expert", help: "workbook-import.start", guide: "settings.import#start-the-import" },
   { kind: "action", id: "workbook-import.upload", mode: "expert", help: "workbook-import.upload", guide: "settings.import#upload-and-check-the-workbook" },
   { kind: "action", id: "workbook-import.sign-mapping", mode: "expert", help: "workbook-import.sign-mapping", guide: "settings.import#map-and-sign" },
@@ -417,6 +475,7 @@ export const actions = [
   { kind: "action", id: "calendar.tile-overdue", mode: "basic", help: "calendar.tile-overdue", guide: "compliance.calendar#reminders-and-checks" },
   { kind: "action", id: "calendar.tile-done", mode: "basic", help: "calendar.tile-done", guide: "compliance.calendar#record-a-filing" },
   { kind: "action", id: "inbox.deadlines", mode: "basic", help: "inbox.deadlines", guide: "compliance.calendar#reminders-and-checks" },
+  { kind: "action", id: "inbox.tasks", mode: "basic", help: "inbox.tasks", guide: "compliance.secretary#tasks-in-the-inbox" },
   { kind: "action", id: "controls.filter", mode: "expert", help: "controls.filter", guide: "compliance.controls#filter-by-framework" },
   { kind: "action", id: "inbox.controls", mode: "basic", help: "inbox.controls", guide: "compliance.controls#when-a-control-fails" },
   { kind: "action", id: "inbox.reviews", mode: "basic", help: "inbox.reviews", guide: "compliance.reviews#sign-off-a-review" },
@@ -426,6 +485,7 @@ export const actions = [
   { kind: "action", id: "data-protection.entry", mode: "expert", help: "data-protection.entry", guide: "compliance.data-protection#add-what-the-company-holds-elsewhere" },
   { kind: "action", id: "data-protection.review", mode: "expert", help: "data-protection.review", guide: "compliance.data-protection#review-the-inventory-each-quarter" },
   { kind: "action", id: "data-protection.dpias", mode: "expert", help: "data-protection.dpias", guide: "compliance.data-protection#impact-assessments" },
+  { kind: "action", id: "data-protection.ai-inventory", mode: "expert", help: "data-protection.ai-inventory", guide: "compliance.data-protection#the-ai-inventory" },
   { kind: "action", id: "data-protection.requests", mode: "expert", help: "data-protection.requests", guide: "compliance.data-protection#access-and-correction-requests" },
   { kind: "action", id: "data-protection.breaches", mode: "expert", help: "data-protection.breaches", guide: "compliance.data-protection#breaches" },
   { kind: "action", id: "data-protection.transfers", mode: "expert", help: "data-protection.transfers", guide: "compliance.data-protection#overseas-transfers" },
@@ -624,6 +684,7 @@ export const actions = [
   { kind: "action", id: "checks.run", mode: "basic", help: "checks.run", guide: "checks.overview#run-the-checks-now" },
   { kind: "action", id: "checks.owner", mode: "basic", help: "checks.owner", guide: "checks.overview#name-a-checks-owner" },
   { kind: "action", id: "checks.review", mode: "basic", help: "checks.review", guide: "checks.overview#mark-an-item-reviewed" },
+  { kind: "action", id: "checks.replay", mode: "basic", help: "checks.replay", guide: "checks.overview#run-a-stopped-task-again" },
   { kind: "action", id: "close.run-checks", mode: "expert", help: "close.run-checks", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.attest", mode: "expert", help: "close.attest", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.reopen", mode: "expert", help: "close.reopen", guide: "accounting.periods#reopen-a-month" },
@@ -665,27 +726,28 @@ export const actions = [
 ] as const satisfies readonly ActionFeature[];
 
 // The sidebar's items in the designed order (the NAV list in docs/design/screens/build.py). Each
-// module adds its item with its first screen; the sidebar holds at most 13 (§7.1).
+// module adds its item with its first screen; the sidebar holds at most 13 (§7.1). Each area's roles are §7.1's table
+// of what each role sees (FR-UX-40, the reference for QA-UI-08): a right that only reads reference data (the chart,
+// the policies) or only approves within a department or a limit gives no area; the approvals arrive in the Inbox. The
+// API decides what each role may do, whatever the sidebar shows.
 export const nav = [
   { kind: "nav", id: "nav.home", route: "/", icon: House, group: "main", roles: "all", bottom: true, mode: "basic", help: "home.overview", guide: "home.overview" },
   { kind: "nav", id: "nav.my-claims", route: "/me/claims", icon: Wallet, group: "personal", roles: ["employee"], mode: "basic", help: "claims.my-claims", guide: "claims.my-claims" },
   { kind: "nav", id: "nav.my-shares", route: "/me/shares", icon: ChartPie, group: "personal", roles: ["employee"], mode: "basic", help: "equity.my-shares", guide: "equity.register#my-shares-and-options" },
   { kind: "nav", id: "nav.money-i-put-in", route: "/me/money-i-put-in", icon: HandCoins, group: "personal", roles: ["owner"], mode: "basic", help: "founders.money-i-put-in", guide: "equity.founders-money#see-what-the-company-owes-you" },
   { kind: "nav", id: "nav.inbox", route: "/inbox", icon: Inbox, group: "main", roles: "all", bottom: true, mode: "basic", help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
-  { kind: "nav", id: "nav.contacts", route: "/contacts", icon: Contact, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "accountant", "controller", "owner", "auditor", "tax_agent", "dpo"], mode: "basic", help: "contacts.overview", guide: "contacts.manage" },
-  { kind: "nav", id: "nav.sales", route: "/sales/invoices", icon: Receipt, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.sales", guide: "sales.invoices" },
+  { kind: "nav", id: "nav.contacts", route: "/contacts", icon: Contact, group: "main", roles: ["bookkeeper", "ar_specialist", "ap_specialist", "accountant", "controller", "owner", "tax_agent"], mode: "basic", help: "contacts.overview", guide: "contacts.manage" },
+  { kind: "nav", id: "nav.sales", route: "/sales/invoices", icon: Receipt, group: "main", roles: ["bookkeeper", "ar_specialist", "accountant", "controller", "owner", "tax_agent"], mode: "basic", help: "nav.sales", guide: "sales.invoices" },
   // Accounting is Expert (experience/modes "Basic and Expert navigation"); its first page is the chart.
-  { kind: "nav", id: "nav.purchases", route: "/purchases/bills", icon: ReceiptText, group: "main", roles: ["approver", "bookkeeper", "ap_specialist", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "basic", help: "nav.purchases", guide: "purchases.bills" },
-  // Banking shows to the roles that may view bank transactions (Appendix D, V or more); the API decides the rest.
-  { kind: "nav", id: "nav.claims-review", route: "/purchases/claims", icon: ReceiptText, group: "main", roles: ["approver", "controller", "accountant", "ap_specialist", "bookkeeper", "owner", "auditor", "tax_agent"], mode: "basic", help: "claims.review", guide: "claims.approve-team#approve-or-return-a-claim" },
-  { kind: "nav", id: "nav.banking", route: "/banking", icon: Landmark, group: "main", roles: ["bookkeeper", "accountant", "controller", "owner", "ar_specialist", "ap_specialist", "payment_releaser", "auditor", "tax_agent"], mode: "basic", help: "banking.accounts", guide: "banking.accounts" },
-  // Reports show to the roles that read every account (Appendix D "Reports, dashboards", V without a qualifier).
-  { kind: "nav", id: "nav.reports", route: "/reports", icon: ChartColumn, group: "main", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "auditor", "tax_agent", "dpo"], mode: "basic", help: "reports.index", guide: "reports.statements" },
-  { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["approver", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
-  { kind: "nav", id: "nav.equity", route: "/equity", icon: ChartPie, group: "main", roles: ["owner", "controller", "accountant", "auditor", "tax_agent", "dpo", "board_viewer", "company_secretary"], mode: "basic", help: "nav.equity", guide: "equity.register" },
-  // Planning shows to the roles that read the plans (Appendix D "Budgets, forecasts", V), in Expert's sidebar.
-  { kind: "nav", id: "nav.planning", route: "/planning/cash", icon: ChartLine, group: "main", roles: ["owner", "controller", "accountant", "approver", "auditor", "tax_agent", "board_viewer"], mode: "expert", help: "nav.planning", guide: "planning.cash" },
-  { kind: "nav", id: "nav.compliance", route: "/compliance", icon: CalendarClock, group: "main", roles: ["owner", "administrator", "controller", "accountant", "auditor", "tax_agent", "dpo"], mode: "basic", help: "nav.compliance", guide: "compliance.calendar" },
+  { kind: "nav", id: "nav.purchases", route: "/purchases/bills", icon: ReceiptText, group: "main", roles: ["bookkeeper", "ap_specialist", "payment_releaser", "accountant", "controller", "owner", "tax_agent"], mode: "basic", help: "nav.purchases", guide: "purchases.bills" },
+  { kind: "nav", id: "nav.claims-review", route: "/purchases/claims", icon: ReceiptText, group: "main", roles: ["controller", "accountant", "ap_specialist", "bookkeeper", "owner", "tax_agent"], mode: "basic", help: "claims.review", guide: "claims.approve-team#approve-or-return-a-claim" },
+  { kind: "nav", id: "nav.banking", route: "/banking", icon: Landmark, group: "main", roles: ["bookkeeper", "accountant", "controller", "owner", "ar_specialist", "ap_specialist", "payment_releaser", "tax_agent"], mode: "basic", help: "banking.accounts", guide: "banking.accounts" },
+  { kind: "nav", id: "nav.reports", route: "/reports", icon: ChartColumn, group: "main", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "ar_specialist", "ap_specialist", "payment_releaser", "payroll_administrator", "approver", "auditor", "tax_agent", "board_viewer"], mode: "basic", help: "reports.index", guide: "reports.statements" },
+  { kind: "nav", id: "nav.accounting", route: "/accounting", icon: BookOpen, group: "main", roles: ["bookkeeper", "accountant", "controller", "owner", "auditor", "tax_agent"], mode: "expert", help: "nav.accounting", guide: "accounting.journals" },
+  { kind: "nav", id: "nav.equity", route: "/equity", icon: ChartPie, group: "main", roles: ["owner", "controller", "accountant", "tax_agent", "board_viewer", "company_secretary"], mode: "basic", help: "nav.equity", guide: "equity.register" },
+  // Planning is in Expert's sidebar.
+  { kind: "nav", id: "nav.planning", route: "/planning/cash", icon: ChartLine, group: "main", roles: ["owner", "controller", "accountant", "approver", "tax_agent"], mode: "expert", help: "nav.planning", guide: "planning.cash" },
+  { kind: "nav", id: "nav.compliance", route: "/compliance", icon: CalendarClock, group: "main", roles: ["owner", "administrator", "controller", "accountant", "auditor", "tax_agent", "dpo", "company_secretary"], mode: "basic", help: "nav.compliance", guide: "compliance.calendar" },
   { kind: "nav", id: "nav.settings", route: "/settings", icon: Settings, group: "footer", roles: "all", mode: "basic", help: "settings.overview", guide: "home.overview#settings" },
 ] as const satisfies readonly NavFeature[];
 
@@ -694,6 +756,7 @@ export const nav = [
 export const settingsNav = [
   { kind: "nav", id: "settings.profile", route: "/settings/profile", icon: UserRound, group: "you", roles: "all", mode: "basic", help: "settings.profile", guide: "preferences.security" },
   { kind: "nav", id: "settings.notifications", route: "/settings/notifications", icon: Bell, group: "you", roles: "all", mode: "basic", help: "settings.notifications", guide: "settings.notifications" },
+  { kind: "nav", id: "settings.ai-activity", route: "/settings/ai/activity", icon: ScrollText, group: "you", roles: "all", mode: "expert", help: "settings.ai-activity", guide: "settings.ai-activity" },
   // The organisation's pages show to the roles that may view them (Appendix D, V or more); the API decides the rest.
   { kind: "nav", id: "settings.organisation", route: "/settings/organisation", icon: Building, group: "organisation", roles: "all", mode: "expert", help: "settings.organisation", guide: "settings.organisation" },
   { kind: "nav", id: "settings.brand", route: "/settings/brand", icon: Palette, group: "organisation", roles: ["owner", "administrator", "controller"], mode: "basic", help: "settings.brand", guide: "settings.brand" },
@@ -708,6 +771,7 @@ export const settingsNav = [
   { kind: "nav", id: "settings.integrations", route: "/settings/integrations", icon: Plug, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.integrations", guide: "settings.integrations" },
   { kind: "nav", id: "settings.announcements", route: "/settings/announcements", icon: Megaphone, group: "organisation", roles: ["owner", "administrator", "auditor"], mode: "expert", help: "settings.announcements", guide: "settings.announcements" },
   { kind: "nav", id: "settings.data", route: "/settings/data", icon: Database, group: "organisation", roles: ["owner", "administrator", "dpo"], mode: "expert", help: "settings.data", guide: "settings.data" },
+  { kind: "nav", id: "settings.ai", route: "/settings/ai", icon: Bot, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.ai", guide: "settings.ai" },
   { kind: "nav", id: "settings.import", route: "/settings/import", icon: FileSpreadsheet, group: "organisation", roles: ["owner", "controller", "accountant", "auditor"], mode: "expert", help: "settings.import", guide: "settings.import" },
   // The installation's pages show to Super admins only (super_admin, from GET /v1/session).
   { kind: "nav", id: "settings.sign-in-providers", route: "/settings/sign-in-providers", icon: KeyRound, group: "installation", roles: ["super_admin"], mode: "expert", help: "settings.sign-in-providers", guide: "settings.sign-in-providers" },

@@ -197,6 +197,14 @@ run "the_wiring_the_services_read" {
     error_message = "the tick's token is for /internal/tick, as the api checks"
   }
   assert {
+    condition     = jsondecode(output.gcp_config).invokers.ai.audience == "https://api-123456789012.asia-southeast1.run.app/internal/v1" && jsondecode(output.gcp_config).invokers.ai.service_account == "run-ai@fyniq-staging.iam.gserviceaccount.com"
+    error_message = "the AI service's token is for the api's internal API, as its own account (PRD-001 §9.3 rev 0.277)"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).invokers.agent_runs.service_account == "run-worker@fyniq-staging.iam.gserviceaccount.com" && jsondecode(output.gcp_config).invokers.agent_runs.audience == jsondecode(output.gcp_config).api.audience && jsondecode(output.gcp_config).api.url == "https://api-123456789012.asia-southeast1.run.app/internal/v1"
+    error_message = "the worker's model step goes to the api's internal API with a token for agent-runs, as the worker's own account (PRD-001 rev 0.281)"
+  }
+  assert {
     condition     = jsondecode(output.gcp_config).job == "projects/fyniq-staging/locations/asia-southeast1/jobs/jobs" && jsondecode(output.gcp_config).anchors.bucket == "fyniq-staging-audit-anchors"
     error_message = "the jobs image's job and the anchors"
   }

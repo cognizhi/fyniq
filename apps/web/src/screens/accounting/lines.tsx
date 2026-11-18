@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CircleCheck, CircleX, Plus, Trash2 } from "lucide-react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
+import type { AdvancedDetail } from "../../components/AdvancedDetails";
 import { Button } from "../../components/ui/button";
 import { formatAmount } from "../../format/amount";
 import { date as dateOf } from "../../format/date";
@@ -240,6 +241,19 @@ export function useDimensions() {
   return { dimensions, values, byId: new Map(values.map((v) => [v.id, v])) };
 }
 
+// useDimensionDetails names a line's dimension values for "Has advanced details" (FR-UX-25): each one Basic mode does not
+// show inline, which is every one but those of a dimension the line's account requires.
+export function useDimensionDetails(): (ids: readonly string[], line: string, account?: Pick<Account, "required_dimension_ids">) => AdvancedDetail[] {
+  const { dimensions, byId } = useDimensions();
+  return (ids, line, account) =>
+    ids.flatMap((id) => {
+      const v = byId.get(id);
+      const d = v && dimensions.find((x) => x.id === v.dimension_id);
+      if (!v || !d || !d.active || account?.required_dimension_ids?.includes(d.id)) return [];
+      return [{ label: `${line} · ${d.name}`, value: `${v.code} ${v.name}` }];
+    });
+}
+
 // valueCodes are a line's values as their codes, in the order of the dimensions: "ENG · ATLAS".
 export function valueCodes(ids: readonly string[] | undefined, dimensions: readonly Dimension[], byId: Map<string, DimensionValue>): string {
   const order = new Map(dimensions.map((d, i) => [d.id, i]));
@@ -255,8 +269,9 @@ export function valueCodes(ids: readonly string[] | undefined, dimensions: reado
 // the line already has a value of, with that dimension's values in use. A dimension the line's account requires says
 // so; the API refuses a line that leaves it out (DIM-05; a journal's lines on the account that net to zero excepted).
 // keyPrefix is the line's key, for the elements' IDs; prefix what a screen reader hears before each name ("Line 1: " by
-// default, "" for none). With expertOnly, as on an invoice, a choice is an Expert field (§7.8) unless the line has a
-// value of it or its account requires it: nothing set or needed is hidden in Basic.
+// default, "" for none). With expertOnly, as on an invoice, a choice is an Expert field (§7.8) unless its account requires
+// it or its dimension is out of use with a value to clear; in Basic mode, a value the line has shows read-only under
+// "Has advanced details" (FR-UX-25, useDimensionDetails).
 export function DimensionFields({ ids, keyPrefix, n, prefix, account, set, described, className = "fy-field col-span-2 medium:col-span-4 expanded:col-span-3", disabled, expertOnly }: {
   ids: readonly string[];
   keyPrefix: string;
@@ -282,7 +297,7 @@ export function DimensionFields({ ids, keyPrefix, n, prefix, account, set, descr
         const current = chosen ? byId.get(chosen) : undefined;
         const needed = d.active && account?.required_dimension_ids?.includes(d.id) ? account : undefined;
         return (
-          <div key={d.id} className={`${className}${expertOnly && !chosen && !needed ? " fy-expert-only" : ""}`}>
+          <div key={d.id} className={`${className}${expertOnly && !needed && d.active ? " fy-expert-only" : ""}`}>
             <label className="fy-label" htmlFor={key}>
               {prefix !== "" && <span className="fy-sr">{prefix ?? `Line ${n}: `}</span>}
               {d.name}

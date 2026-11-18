@@ -56,7 +56,7 @@ func startSessionsWith(t *testing.T, more ...signin.Provider) *sessionStack {
 	out := outbox.Dispatcher{Store: e.store, Queue: local.NewMemory(), Clock: e.clock}
 	flow := signin.Flow{Sessions: e.store, Clock: e.clock, Origin: srv.URL, Base: "", Log: slog.New(slog.NewJSONHandler(e.log, nil)),
 		Alert: signin.Alerts(signin.EmailAlert(e.store, e.store, out), signin.NotifyAlert(e.store, e.store, out),
-			signin.AuditSignIn(e.store, e.store)),
+			signin.AuditSignIn(e.store, e.store), signin.AuditEmailMatch(e.store, e.store)),
 		Linked: signin.NotifyLink(e.store, e.store, out), SignedOut: signin.AuditSignOut(e.store, e.store)}
 	dev, err := local.NewDevSignIn(append([]signin.Provider{local.DevSignInProvider}, more...), "", flow.Callback(), e.clock)
 	if err != nil {

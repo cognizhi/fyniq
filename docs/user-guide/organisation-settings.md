@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [CMP-PD-01, FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10]
+requirements: [CMP-PD-01, FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32]
 status: draft
 ---
 
@@ -136,14 +136,16 @@ takes, such as INV-0042.
 ## Settings that need a second approver
 
 - Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when
-  incoming-funds alerts expire, the AI assistant, details in notification email and the sign-out after inactivity
-  need a second approver before they change: they show **Needs a second approver**.
+  incoming-funds alerts expire, the AI assistant, the AI's access to pay, the fields it never reads, its limits and
+  the changes it may propose, details in notification email and the sign-out after inactivity need a second approver before they change: they show
+  **Needs a second approver**.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
   approves settings, such as an Owner, approves it (see [Approve a change](approvals.md)).
 - The AI assistant is the exception when you switch it **off**: that takes effect at once, with no second
   approver, and the AI stops: new requests are refused, and a reply being written stops within seconds.
-  Switching it back on still needs a second approver.
+  Switching it back on still needs a second approver. AI payroll access turns off at once the same way, and so does
+  taking a change off the changes the AI may propose.
 
 ## Features
 
@@ -156,6 +158,80 @@ Switch off what the company does not use, and Fyniq hides it from menus and page
 | Projects and time | Off | Off until you track time or costs by project |
 | Portals for customers and investors | Off | Off until there are customers or investors to invite |
 | AI assistant | Off | AI stays off until an Owner turns it on with a second approver; switching it off takes effect at once |
+
+## Motion
+
+Fyniq uses a few short transitions so you can follow what changed: a page or panel fading in, rows
+entering, a count changing. An Administrator can turn **Motion** off for the whole organisation; every
+screen then shows its final state at once, for everyone. It is on by default, and the change is kept in
+the setting's history.
+
+Each person can still choose **Reduce motion** in the Appearance menu, and a device set to reduce motion
+always wins.
+
+## AI routes
+
+- Each AI agent runs on a route: a model on a connection first, then the fallbacks it may use when the first fails.
+- **Fallbacks a day before a route needs attention**: 5 unless changed, from 1 to 1,000. When an agent's route falls
+  back more often than this in a day, **Checks** shows it, so someone looks at the route's first step.
+- Changing it needs a second approver.
+
+## AI and personal data
+
+- Some data never reaches the AI, whatever is set here: NRIC and FIN numbers, full bank account numbers, passwords and
+  other secrets, and home addresses. Fyniq takes them out of everything the assistant reads, and masks an NRIC or a
+  bank account number it finds in text, keeping only its last characters.
+- **AI payroll access**: off unless changed. Pay, such as salaries, stays away from the AI. Turned on, the AI reads pay
+  only for people who may see payroll themselves. Turning it on needs a second approver; turning it off takes effect
+  at once.
+- **Fields the AI never reads**: none unless changed. Add field names of your own, separated by commas, such as
+  `notes, memo`, to keep them from the AI too. You can add to the list, never take a field off the list above.
+  Changing it needs a second approver.
+
+## AI limits
+
+- The assistant answers within limits, so a script or a slip cannot run up the AI's cost. Each needs a second approver
+  to change.
+- **Questions a person may ask the assistant a minute**: 20 unless changed, from 1 to 1,000. **A day**: 200 unless
+  changed, from 1 to 100,000, counted over the last 24 hours. Past either, the assistant says so and answers again
+  once it eases.
+- **Reads of the books for one question**: 8 unless changed, from 1 to 20. A question needing more is answered in
+  part, saying so; ask about one thing at a time.
+- **Questions in one conversation**: 40 unless changed, from 2 to 200. Past 20, the oldest questions are summarised,
+  keeping the figures they cited; at the limit, start a new conversation.
+
+## AI task types
+
+- The AI never changes the books itself. It may only propose a change of a kind this release lists, a **task type**.
+  A member who may approve that kind of change decides, and only then does Fyniq make it, in that member's name.
+- **Changes the AI may propose**: none unless changed. Enter the task types to allow, separated by commas, as the
+  release names them, such as `sec.create_task`. A task type the release does not have is refused.
+- Adding a task type needs a second approver. Taking one off, or all of them, takes effect at once, with no second
+  approver: the AI stops offering it.
+- Some changes can never be proposed, whatever is set here: approving or rejecting anything, payments, payee bank
+  details, users, roles and team mode, approval policies, the AI's own settings, statutory parameters, reopening a
+  period, voiding or deleting, filing with an authority, exporting the company's data, and the audit trail.
+
+## Company secretary assistant
+
+- The **company secretary assistant** checks the company's obligations on a schedule, reports, raises tasks and drafts
+  reminders for people to approve. It is not the company secretary, and it never files, signs or marks an obligation
+  as met.
+- **Company secretary assistant**: off unless changed. Turning it on needs a second approver; its runs then act for
+  the Owner who turned it on. Turning it off takes effect at once.
+- **Paused**: pausing stops its runs at once and keeps its schedule. The statutory calendar's reminders keep coming.
+- Its schedule, in Singapore time:
+  - **Deadline and lodgement monitor**: daily at 07:00 (`0 7 * * *`);
+  - **Full cross-check**: Mondays at 08:00 (`0 8 * * 1`);
+  - **Run after each month's close** and **Run one month after the financial year ends**: on.
+  A schedule is five cron fields, minute hour day month weekday, or `off`.
+- **Events that start a run**: a period closed, shares issued or transferred, a filing recorded, and deadline windows,
+  30, 14, 7 and 1 days ahead.
+- **Quiet hours**: 22:00 to 07:00. A run in them still runs and records; its emails wait until they end.
+- **Who it tells** (the Owner and the Company secretary) and **How it tells them** (the Inbox and email). Its tasks
+  belong to the first of these roles. **Tell the Owner this many days before a deadline**: 7.
+- **Reads one run may make**: 20. **Tokens one run may use**: 200000, beside the agent's monthly budget in AI settings.
+- Every one of these, except pausing, needs a second approver.
 
 ## Payment terms
 

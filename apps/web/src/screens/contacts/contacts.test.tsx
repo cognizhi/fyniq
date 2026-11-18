@@ -6,6 +6,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { Contacts } from "./Contacts";
 import { Items } from "./Items";
+import { invalid } from "../../test/invalid";
 
 const bookkeeper = { ...ownerSession, roles: ["bookkeeper"] } as Session;
 const northwind = { id: "c1", legal_name: "Northwind Analytics Pte Ltd", customer: true, vendor: false, active: true, uen_or_tax_id: "202312345K", billing_email: "ap@northwind.example", payment_terms_days: 30, possible_duplicates: [], version: 1 };
@@ -47,6 +48,24 @@ describe("Contacts", () => {
     const posts = seen.filter((s) => s.method === "POST");
     expect(posts[1]?.headers.get("Idempotency-Key")).toBeTruthy();
     expect(posts[1]?.body).toEqual({ legal_name: "Northwind Analytics Pte. Ltd.", customer: true, vendor: false, country: "SG", currency: "SGD" });
+  });
+
+  // QA-UI-01: every field it cannot read is marked at once, with what it needs beside it.
+  it("marks each field it cannot read, every one at once, before anything is sent", async () => {
+    answer({ "GET /v1/contacts": { status: 200, body: { items: [northwind] } } });
+    renderPage(Contacts, { path: "/contacts", session: bookkeeper });
+    fireEvent.click(await screen.findByRole("button", { name: "New contact" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: "A vendor" }));
+    fireEvent.change(within(dialog).getByLabelText("Payment terms (days)"), { target: { value: "400" } });
+    fireEvent.change(within(dialog).getByLabelText("Early-payment discount (%)"), { target: { value: "150" } });
+    fireEvent.change(within(dialog).getByLabelText("If paid within (days)"), { target: { value: "0" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add the contact" }));
+    await invalid(dialog, "Legal name", "Enter the contact's legal name.");
+    await invalid(dialog, "Payment terms (days)", "Enter 0 to 365 days, or leave it empty for the organisation's default.");
+    await invalid(dialog, "Early-payment discount (%)", "Enter the percentage off, above 0 and below 100, such as 2.");
+    await invalid(dialog, "If paid within (days)", "Enter 1 to 365 days.");
+    expect(calls()).not.toContain("POST /v1/contacts");
   });
 
   it("needs a role, and clears payment terms with -1 over the contact's version", async () => {
@@ -225,8 +244,18 @@ describe("Items and prices", () => {
     fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "Subscription" } });
     fireEvent.change(within(dialog).getByLabelText("Unit price 1"), { target: { value: "1,200" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Add the item" }));
-    expect(await within(dialog).findByText(/plain decimal with up to 6 decimals/)).toBeTruthy();
+    await invalid(dialog, "Unit price 1", "A price is a plain decimal with up to 6 decimals, such as 180.00, without commas or a currency sign.");
+    fireEvent.change(within(dialog).getByLabelText("Code"), { target: { value: " " } });
+    fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "" } });
+    fireEvent.change(within(dialog).getByLabelText("Currency 1"), { target: { value: "S$" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add the item" }));
+    await invalid(dialog, "Code", "Give the item a code; it never changes.");
+    await invalid(dialog, "Name", "Give the item a name.");
+    await invalid(dialog, "Currency 1", "A currency is three letters, such as SGD.");
     expect(calls()).not.toContain("POST /v1/items");
+    fireEvent.change(within(dialog).getByLabelText("Code"), { target: { value: "SUB" } });
+    fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "Subscription" } });
+    fireEvent.change(within(dialog).getByLabelText("Currency 1"), { target: { value: "SGD" } });
     fireEvent.change(within(dialog).getByLabelText("Unit price 1"), { target: { value: "1200.00" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Add a price in another currency" }));
     fireEvent.change(within(dialog).getByLabelText("Currency 2"), { target: { value: "usd" } });

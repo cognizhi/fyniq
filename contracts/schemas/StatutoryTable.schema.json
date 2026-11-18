@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "columns": {
+      "description": "Its columns, in order.",
+      "items": {
+        "description": "A column of the table, as the pack names it.",
+        "examples": [
+          "amount"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "description": {
+      "examples": [
+        "GST limits in force by date"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "examples": [
+        "limits"
+      ],
+      "type": "string"
+    },
+    "rows": {
+      "items": {
+        "$ref": "StatutoryRow.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "columns",
+    "rows"
+  ],
+  "title": "StatutoryTable",
+  "type": "object"
+}

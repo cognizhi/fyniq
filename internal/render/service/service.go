@@ -78,17 +78,24 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	x := typst.Input{Logo: in.Logo, Created: in.Created.UTC()}
-	if in.Report != nil {
-		// A report is laid out by its caller: it names no document type, and has no particulars to find.
-		if in.DocumentType != "" || len(in.Logo) > 0 || in.Check {
-			reply(w, http.StatusBadRequest, render.Problem{Code: render.CodeRequest, Message: "a report names no document type, logo or particulars check"})
+	if in.Report != nil || in.Paper != nil {
+		// A report or a paper is laid out by its caller: it names no document type, and has no particulars to find.
+		if in.DocumentType != "" || len(in.Logo) > 0 || in.Check || (in.Report != nil && in.Paper != nil) {
+			reply(w, http.StatusBadRequest, render.Problem{Code: render.CodeRequest,
+				Message: "a report or a paper names no document type, logo or particulars check, and comes alone"})
 			return
 		}
-		if err := in.Report.Check(); err != nil {
+		var err error
+		if in.Report != nil {
+			err = in.Report.Check()
+		} else {
+			err = in.Paper.Check()
+		}
+		if err != nil {
 			reply(w, http.StatusUnprocessableEntity, render.Problem{Code: render.CodeRequest, Message: err.Error()})
 			return
 		}
-		x.Report = in.Report
+		x.Report, x.Paper = in.Report, in.Paper
 	} else {
 		if ps := doctemplate.Check(doctemplate.KindDocument, in.DocumentType, in.Content); len(ps) > 0 {
 			reply(w, http.StatusUnprocessableEntity, render.Problem{Code: render.CodeTemplate, Message: "the template breaks its rules", Errors: ps})
@@ -136,8 +143,8 @@ func (h *Handler) slot(w http.ResponseWriter, r *http.Request) (done func(), ok 
 // the brand makes it (an SVG through the sanitiser, a PNG decoded and written again), and the PNG no larger than a
 // document's logo may be.
 func (h *Handler) raster(w http.ResponseWriter, r *http.Request, in render.Request) {
-	if in.DocumentType != "" || in.Report != nil || len(in.Logo) > 0 || in.Check || in.Pages {
-		reply(w, http.StatusBadRequest, render.Problem{Code: render.CodeRequest, Message: "a logo to rasterise comes alone, with no document, report or logo"})
+	if in.DocumentType != "" || in.Report != nil || in.Paper != nil || len(in.Logo) > 0 || in.Check || in.Pages {
+		reply(w, http.StatusBadRequest, render.Problem{Code: render.CodeRequest, Message: "a logo to rasterise comes alone, with no document, report, paper or logo"})
 		return
 	}
 	clean, err := brand.Check(brand.Light, in.Raster)

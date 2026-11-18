@@ -1,0 +1,112 @@
+[
+ {
+  "sheet": "Transactions",
+  "row": 1,
+  "status": "",
+  "fixture": "spaced_refs",
+  "workbook": "Acme pays INV-1",
+  "document": "RC-INV-1",
+  "read": "matched with the spaces around its reference trimmed, as Fyniq's matcher does"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 2,
+  "status": "",
+  "fixture": "spaced_refs",
+  "workbook": "Acme pays INV-2 less a bank fee",
+  "document": "RC-INV-2",
+  "read": "matched with the spaces around its reference trimmed, as Fyniq's matcher does"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 3,
+  "status": "",
+  "fixture": "spaced_refs",
+  "workbook": "Pay Beta for B-7",
+  "document": "PY-B-7",
+  "read": "matched with the spaces around its reference trimmed, as Fyniq's matcher does"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 4,
+  "status": "",
+  "fixture": "spaced_refs",
+  "workbook": "Pay Beta for SUP 42",
+  "document": "PY-SUP-42",
+  "read": "matched with the spaces around its reference trimmed, as Fyniq's matcher does"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 5,
+  "status": "",
+  "fixture": "spaced_refs",
+  "workbook": "Acme deposit, invoice to follow",
+  "document": "RC-ACCT-05",
+  "read": "recorded on account for its contact (FR-AR-18): a payment with no invoice yet"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 1,
+  "status": "",
+  "fixture": "spaced_refs",
+  "workbook": "INV-1",
+  "document": "INV-1"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 2,
+  "status": "",
+  "fixture": "spaced_refs",
+  "workbook": "INV-2",
+  "document": "INV-2"
+ },
+ {
+  "sheet": "Bills",
+  "row": 1,
+  "status": "",
+  "fixture": "spaced_refs",
+  "workbook": "B-7",
+  "document": "B-7"
+ },
+ {
+  "sheet": "Bills",
+  "row": 2,
+  "status": "",
+  "fixture": "spaced_refs",
+  "workbook": "SUP 42 ",
+  "document": "SUP-42",
+  "read": "its number 'SUP 42 ' is the scenario's SUP-42: the format's IDs take no such character; the bank matcher's test names the number itself"
+ },
+ {
+  "sheet": "Journal",
+  "row": 1,
+  "status": "",
+  "fixture": "two_dates",
+  "workbook": "J-1",
+  "not_ported": "a Fyniq journal has one date, so its lines cannot have two (FR-GL-01)"
+ },
+ {
+  "sheet": "Journal",
+  "row": 2,
+  "status": "",
+  "fixture": "two_dates",
+  "workbook": "J-1",
+  "not_ported": "a Fyniq journal has one date, so its lines cannot have two (FR-GL-01)"
+ },
+ {
+  "sheet": "Journal",
+  "row": 3,
+  "status": "",
+  "fixture": "two_dates",
+  "workbook": "J-2",
+  "document": "J-2"
+ },
+ {
+  "sheet": "Journal",
+  "row": 4,
+  "status": "",
+  "fixture": "two_dates",
+  "workbook": "J-2",
+  "document": "J-2"
+ }
+]

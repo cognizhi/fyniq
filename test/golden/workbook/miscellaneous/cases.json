@@ -1,0 +1,69 @@
+[
+ {
+  "block": "tests/test_edge_misc.py",
+  "statuses": [
+   "test_bank_import_sees_transfer_recorded_from_other_account"
+  ],
+  "figures": "the transfer from savings, recorded once",
+  "fyniq": "The statement import sees the other side of a transfer already recorded",
+  "tests": [
+   "TestATransfersOtherSideIsRecognised"
+  ]
+ },
+ {
+  "block": "tests/test_edge_misc.py",
+  "statuses": [
+   "test_timesheets_and_hourly_cost"
+  ],
+  "after_go_live": "projects, timesheets and the hourly cost come with projects and pay runs (rev 0.146: the pinned hourly cost is recorded after go-live)"
+ },
+ {
+  "block": "tests/test_edge_misc.py",
+  "statuses": [
+   "test_foreign_currency_reminder_carry_forward_and_fx"
+  ],
+  "figures": "the unrealised FX of 210, posted as each month-end's revaluation and reversed on day 1",
+  "fyniq": "A reminder emails the invoice's own PDF, in its currency (FR-AR-08); a clean start carries each open invoice, bill and credit note as an opening item in its currency at its rate (rev 0.257, 0.261)",
+  "tests": [
+   "TestRemindersWaitForAPerson",
+   "TestACleanStartCarriesTheBalancesForward",
+   "TestAnOpeningItemPostsItsTotalAgainstTheClearingAccount"
+  ]
+ },
+ {
+  "block": "tests/test_edge_misc.py",
+  "statuses": [
+   "test_statement_ageing_reconciles_to_balance"
+  ],
+  "figures": "the customer's balance of 372: an invoice, a credit note and a payment not matched to an invoice"
+ },
+ {
+  "block": "tests/test_edge_misc.py",
+  "statuses": [
+   "test_discount_budget_reduces_revenue_budget"
+  ],
+  "fyniq": "A budget is signed as the P&L shows it, so the migration negates the workbook's positive discount budget; a bank or cash account below zero at a month's end is warned of by the close's checks (C.1 #31)",
+  "tests": [
+   "TestADiscountBudgetReducesRevenue",
+   "TestEachCloseBackedCheckReadsItsOwnFindings"
+  ]
+ },
+ {
+  "block": "tests/test_edge_misc.py",
+  "statuses": [
+   "test_print_leaves_missing_dates_blank"
+  ],
+  "not_applicable": "Fyniq renders each document's PDF from the document itself, and a quote has its validity date (FR-AR-01)"
+ },
+ {
+  "block": "tests/test_edge_misc.py",
+  "statuses": [
+   "test_feasibility_without_irr_and_short_averages"
+  ],
+  "fyniq": "The workbook's study without an investment: an NPV of 8,346.88, no IRR, an immediate payback, feasible",
+  "tests": [
+   "TestTheWorkbooksStudyWithoutAnInvestment"
+  ],
+  "not_applicable": "the averages of the books' last three months are hints the workbook's feasibility and forecast sheets show; Fyniq's study takes the figures typed for it (FR-PLN-06)"
+ }
+]

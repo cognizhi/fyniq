@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "from": {
+      "description": "The day they take effect: incorporation, or the day the name, office or SSIC code changed.",
+      "examples": [
+        "2026-03-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "lodged_on": {
+      "description": "The day BizFile+ acknowledged the change: within 14 days for the registered office (s143).",
+      "examples": [
+        "2026-03-09"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "name": {
+      "description": "The company's name as ACRA registers it.",
+      "examples": [
+        "Cognizhi Pte. Ltd."
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "note": {
+      "description": "A note for the record.",
+      "examples": [
+        "Moved to the new office"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "registered_office": {
+      "description": "The registered office's address.",
+      "examples": [
+        "1 North Bridge Road, #08-08, Singapore 179094"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "ssic": {
+      "description": "The primary activity's five-digit SSIC code.",
+      "examples": [
+        "62011"
+      ],
+      "maxLength": 5,
+      "type": "string"
+    }
+  },
+  "required": [
+    "from",
+    "name",
+    "registered_office",
+    "ssic"
+  ],
+  "title": "CorporateDetailDraft",
+  "type": "object"
+}

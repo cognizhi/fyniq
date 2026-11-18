@@ -46,6 +46,8 @@ var (
 	// ceremonies are bound to it (FR-ADM-02).
 	webOrigin     func() string
 	registerOAuth func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions)
+	// oauthAudience is the API's audience at the OAuth server: the audience of every integration client's tokens.
+	oauthAudience = func() string { return os.Getenv("FYNIQ_API_AUDIENCE") }
 )
 
 func main() {
@@ -71,7 +73,8 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 			out := outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
 			hooks = signin.Hooks{
 				Alert: signin.Alerts(signin.EmailAlert(kit.Store, kit.Store, out), signin.NotifyAlert(kit.Store, kit.Store, out),
-					signin.AuditSignIn(kit.Store, kit.Store), security.QueueSignInCheck(kit.Store, kit.Store, out)), // SEC-31: an admin's sign-in, checked by the worker
+					signin.AuditSignIn(kit.Store, kit.Store), signin.AuditEmailMatch(kit.Store, kit.Store), // G4-061: another identity with a member's email
+					security.QueueSignInCheck(kit.Store, kit.Store, out)), // SEC-31: an admin's sign-in, checked by the worker
 				Linked:    signin.NotifyLink(kit.Store, kit.Store, out),
 				SignedOut: signin.AuditSignOut(kit.Store, kit.Store),
 			}
@@ -90,6 +93,13 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		return nil
 	}
 	d.Store, d.Installation = kit.Store, kit.Store
+	// The internal API takes the AI service's service tokens (p1-ai-assistant design D4): HMAC locally, Google's OIDC
+	// tokens for the "ai" invoker in the cloud [live-verify]; without that invoker it refuses every call.
+	d.Services = kit.Tokens
+	d.Screening = kit.Screening // nil until configured: then no AI call is sent (fail closed)
+	if kit.AssistantURL != "" { // the AI service, which answers the assistant's turns (p1-ai-assistant design D3)
+		d.Assistant = &api.AssistantService{URL: kit.AssistantURL, Token: kit.AssistantToken, HTTP: kit.AssistantHTTP}
+	}
 	d.AlertThresholds = kit.Alerts(deps.Clock).Thresholds // SEC-31's settings
 	// Verify integrity reads the anchors with the key that signed them (AUD-03) [live-verify: the api account reads the
 	// anchors' bucket and the signing key's public key].
@@ -103,6 +113,9 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	d.Mail = api.MailInfo{From: kit.Mail.From, Domains: kit.Mail.Domains, Check: dns.Results, CaptureDomain: kit.Mail.CaptureDomain,
 		ProvidersFrom: kit.MailProviders}
 	d.Outbox = &outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}
+	if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" { // FR-INT-02: integration clients, registered with the OAuth server
+		d.OAuthClients, d.APIAudience = wiring.Hydra(admin), oauthAudience()
+	}
 	// The connectors (FR-INT-20, rev 0.139): the release's catalogue, the store their keys go to, and the runtime the
 	// connection test goes through.
 	d.Connectors = api.ConnectorDeps{Catalogue: kit.Connectors, Secrets: kit.ConnectorSecrets, Names: kit.ConnectorNames, Runtime: kit.Runtime(deps.Clock)}

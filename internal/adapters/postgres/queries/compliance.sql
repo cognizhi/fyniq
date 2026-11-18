@@ -28,6 +28,25 @@ SELECT r.id, r.object_type, r.object_key, r.decided_at::timestamptz AS decided_a
    AND r.status = 'approved' AND r.decided_at >= sqlc.arg(since)
  ORDER BY r.decided_at, r.id;
 
+-- name: ExecutedProposals :many
+-- CTL-AI-02: each AI proposal executed since the window began, with what was approved, its approval request, the people
+-- whose live approvals signed the request's envelope, and the approvals of it the audit trail records for an actor that
+-- is not a person.
+SELECT p.id, p.finished_at::timestamptz AS finished_at, p.payload_sha256, coalesce(p.approved_payload, '')::text AS approved_payload,
+       coalesce(p.approved_sha256, '')::text AS approved_sha256, p.decided_by, r.id AS request_id,
+       coalesce(r.object_type || ':' || r.object_key, '')::text AS request_object, coalesce(r.status, '')::text AS request_status,
+       coalesce(r.envelope, '')::text AS envelope,
+       coalesce((SELECT array_agg(s.signer ORDER BY s.signed_at) FROM fyniq.approval_signature s
+                  WHERE s.organisation_id = r.organisation_id AND s.request_id = r.id AND s.decision = 'approve'
+                    AND s.voided_at IS NULL AND s.envelope_hash = r.envelope_hash), '{}')::uuid[] AS signers,
+       (SELECT count(*) FROM fyniq.audit_event e
+         WHERE e.organisation_id = p.organisation_id AND e.object_type = 'approval_request' AND e.object_id = r.id
+           AND e.action = 'approval.given' AND (e.body::jsonb -> 'actor' ->> 'type') IS DISTINCT FROM 'user')::integer AS not_by_a_person
+  FROM fyniq.ai_proposal p
+  LEFT JOIN fyniq.approval_request r ON r.organisation_id = p.organisation_id AND r.id = p.approval_request_id
+ WHERE p.status = 'executed' AND p.finished_at >= sqlc.arg(since)
+ ORDER BY p.finished_at, p.id;
+
 -- name: DualControlReleases :many
 -- CTL-FIN-08: each payment batch released since the window began, with its approval's signatures (all of them, and those
 -- of whoever prepared the batch or asked for its approval) or whether its break-glass's Owner used it for the batch.

@@ -7,10 +7,10 @@ package reportexport
 // Exported are the tables the export writes, each as tables/<name>.csv.
 var Exported = []string{
 	"access_review_attestation", "account", "accountant_review", "accountant_review_journal", "accountant_review_query",
-	"accounting_framework", "accounting_policy", "ai_budget", "ai_call", "ai_connection", "ai_connection_version", "ai_data_policy", "ai_model", "ai_model_list_read", "ai_price", "ai_price_rate", "ai_qualification", "ai_reservation", "ai_route", "ai_route_step", "allocation", "announcement", "announcement_dismissal",
-	"approval_policy", "approval_request", "approval_signature", "audit_boundary", "audit_chain", "audit_event",
+	"accounting_framework", "accounting_policy", "ai_budget", "ai_call", "ai_connection", "ai_connection_version", "ai_conversation", "ai_feedback", "ai_data_policy", "ai_model", "ai_model_list_read", "ai_price", "ai_price_rate", "ai_proposal", "ai_qualification", "ai_reservation", "ai_route", "ai_route_step", "ai_tool_call", "ai_turn", "agent_run", "allocation", "announcement", "announcement_dismissal",
+	"api_client", "approval_policy", "approval_request", "approval_signature", "audit_boundary", "audit_chain", "audit_event",
 	"audit_recovery", "audit_recovery_acknowledgement", "audit_request_detail", "balance", "bank_feed",
-	"bank_gap", "bank_line", "bank_match", "bank_reconciliation", "bank_rule", "bank_signal", "bank_statement",
+	"bank_gap", "bank_line", "bank_match", "bank_reconciliation", "bank_rule", "bank_signal", "bank_statement", "compliance_task",
 	"bank_transfer", "bill_payment_plan", "brand_version", "break_glass", "break_glass_use", "capture_address",
 	"capture_sender", "check_owner", "check_review", "check_run", "check_state", "claim_category", "claim_place",
 	"close_checklist_entry", "close_checklist_template", "consent_purpose", "consent_record", "contact",
@@ -33,7 +33,7 @@ var Exported = []string{
 	"recurring_invoice_version", "recurring_journal", "recurring_journal_version", "report_export", "restore_drill",
 	"review_log_entry", "review_log_review", "risk", "risk_review", "risk_version", "role_assignment", "sales_reminder",
 	"security_incident", "security_incident_step", "share_issue", "sod_override", "statement_mapping",
-	"statutory_pack_activation", "team_mode", "tick_drill", "user_membership", "withholding_decision",
+	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "withholding_decision",
 }
 
 // Excluded are the tables the export leaves out, with why: no secret, key, token, idempotency key or job in flight
@@ -46,6 +46,7 @@ var Excluded = map[string]string{
 	"person_key":                    "key material: each person's data key, wrapped by the platform's key (§11.8)",
 	"organisation_connector_secret": "secrets: where the integrations' credentials are kept in the secret store",
 	"tenant_directory":              "the platform's directory of organisations: the organisation table holds the organisation's record",
+	"ai_grant":                      "tokens: the assistant's delegated read grants, each live for one turn of at most 5 minutes",
 }
 
 // Dropped are the columns an exported table leaves out, with why: a token's hash, and a sealed value, which the export

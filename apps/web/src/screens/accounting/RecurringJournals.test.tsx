@@ -8,6 +8,7 @@ import { renderPage } from "../../test/render";
 import { checkRecurring, RecurringJournalPage, type RecurringForm } from "./RecurringJournalPage";
 import { ordinal, RecurringJournals, repeats } from "./RecurringJournals";
 import { newLine } from "./lines";
+import { invalid } from "../../test/invalid";
 
 type Recurring = components["schemas"]["RecurringJournal"];
 
@@ -53,7 +54,27 @@ describe("recurring journals", () => {
     const f: RecurringForm = { name: " ", every_months: "1", day_of_month: "32", starts_on: "2026-11-01", ends_on: "2026-10-01", memo: "", reverses: false, lines: [newLine("SGD")] };
     const { input, errors } = checkRecurring(f, "SGD");
     expect(input).toBeUndefined();
-    expect(Object.keys(errors).sort()).toEqual(["day_of_month", "ends_on", "lines", "name"]);
+    expect(errors).toEqual({
+      day_of_month: "Enter a day from 1 to 31.",
+      ends_on: "End it on or after its start, or leave the end empty.",
+      lines: "Add a line.",
+      name: "Name it, such as Office rent accrual.",
+    });
+    expect(checkRecurring({ ...f, name: "Rent", day_of_month: "1", starts_on: "", ends_on: "" }, "SGD").errors.starts_on).toBe("Enter the date it starts from.");
+  });
+
+  // QA-UI-01: each field it cannot read is marked, with its message beside it, and nothing is sent.
+  it("marks each field it cannot read, before anything is sent", async () => {
+    answer({ "GET /v1/accounts": { status: 200, body: accounts } });
+    renderPage(RecurringJournalPage, { path: "/accounting/journals/recurring/new", session: accountant });
+    fireEvent.change(await screen.findByLabelText("Name"), { target: { value: " " } });
+    fireEvent.change(screen.getByLabelText("On day"), { target: { value: "0" } });
+    fireEvent.change(screen.getByLabelText("Starts on"), { target: { value: "" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Check" })[0] as HTMLElement);
+    await invalid(document.body, "Name", "Name it, such as Office rent accrual.");
+    await invalid(document.body, "On day", "Enter a day from 1 to 31.");
+    await invalid(document.body, "Starts on", "Enter the date it starts from.");
+    expect(seen.filter((s) => s.method === "POST")).toEqual([]);
   });
 
   it("lists them with their schedule, next draft, total and status, behind the Recurring tab; axe finds nothing", async () => {

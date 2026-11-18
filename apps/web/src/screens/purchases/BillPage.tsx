@@ -25,6 +25,7 @@ import { ApplyCredit, Payments, RecordPayment } from "./Payments";
 import { PaymentPlanCard } from "./BillsBoard";
 import { natures, nonResident, residenceOf, WithholdingCard } from "./Withholding";
 import { auditReaders, PurgedPostings } from "../compliance/PurgedPostings";
+import { AskAboutThis } from "../../components/ai/AskAboutThis";
 
 type Draft = components["schemas"]["BillDraft"];
 type Check = components["schemas"]["BillCheck"];
@@ -614,6 +615,11 @@ export function BillPage() {
             </p>
           )}
         </div>
+        {bill && billId && (
+          <div className="fy-pagehead__actions">
+            <AskAboutThis context={{ kind: credit ? "vendor_credit" : "bill", id: billId, label: title.slice(0, 200) }} />
+          </div>
+        )}
       </div>
       <ReviewBanner screen={isNew || bill?.status === "draft" ? "bill-editor" : "bill-record"} />
       {billId && (bill?.status === "posted" || bill?.status === "reversed") && roles.some((r) => auditReaders.includes(r)) && <PurgedPostings recordId={billId} />}
@@ -679,7 +685,7 @@ export function BillPage() {
           }}
         />
       )}
-      <form className="fy-stack fy-stack--6" onSubmit={(e) => void save(e)} noValidate>
+      <form className="fy-stack fy-stack--6" data-enter="next" onSubmit={(e) => void save(e)} noValidate>
         <section className="fy-card" aria-labelledby={`${id}-supp`}>
           <div className="fy-card__head">
             <h2 className="fy-h3" id={`${id}-supp`}>

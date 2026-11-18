@@ -159,6 +159,7 @@
     "access/roles-and-segregation: Permission matrix: Expense claims",
     "access/roles-and-segregation: Permission matrix: Director accounts, settlements, share issues",
     "access/roles-and-segregation: Permission matrix: Cap table, holders, investors, equity transactions",
+    "access/roles-and-segregation: Permission matrix: Corporate profile and registers",
     "access/roles-and-segregation: Permission matrix: Evidence: add, supersede",
     "access/roles-and-segregation: Permission matrix: Knowledge base: compiled pages and index",
     "access/roles-and-segregation: Permission matrix: AI company secretary: enable, schedule, runs and drafts",
@@ -1006,12 +1007,9 @@
     "AI-68",
     "AI-05",
     "QA-AI-01",
-    "QA-AI-02",
     "QA-AI-03",
     "QA-AI-04",
     "QA-AI-05",
-    "QA-AI-06",
-    "QA-AI-07",
     "AI-18",
     "AI-19",
     "AI-20",
@@ -1021,13 +1019,59 @@
     "AI-24",
     "AI-25",
     "AI-69",
-    "ai/guardrails: External agents and MCP clients cannot abuse identity or tools",
+    "AI-P1",
+    "AI-P2",
+    "AI-P6",
+    "AI-P7",
+    "AI-P8",
+    "AI-08",
+    "ai/proposals: The orchestrator holds no write credential",
     "CTL-AI-06",
     "data/backup-and-recovery: Retention of AI conversations",
     "FR-UX-17"
    ],
    "scenarios": [
-    "G4-087"
+    "G4-087",
+    "G4-089",
+    "G4-090"
+   ]
+  },
+  {
+   "id": "p1-ai-proposals-core",
+   "wave": 6,
+   "launch": "Launch (owner, 15 Nov 2026: the proposals the company secretary's agent needs)",
+   "requirements": [
+    "QA-AI-02",
+    "AI-P3",
+    "AI-P4",
+    "AI-P5",
+    "ai/proposals: Proposal lifecycle",
+    "ai/proposals: Proposal content and payload hash",
+    "ai/proposals: Proposal rationale, evidence and dry-run impact",
+    "ai/proposals: Proposal tier, originator, approvals and execution record",
+    "AI-06",
+    "AI-07",
+    "AI-10",
+    "AI-11",
+    "AI-14",
+    "AI-30",
+    "AI-32",
+    "AI-89",
+    "ai/proposals: The executor runs approved proposals as the approving human",
+    "ai/task-catalogue: Catalogue as versioned, dual-controlled data",
+    "ai/task-catalogue: Catalogue entry attributes",
+    "ai/task-catalogue: Risk tiers and approver roles",
+    "ai/task-catalogue: Never in the catalogue",
+    "ai/task-catalogue: AI tasks page",
+    "CTL-AI-02",
+    "CTL-AI-03",
+    "CTL-AI-04",
+    "C.2 #19",
+    "platform/release-and-versioning: AI catalogue, prompt and tool versions"
+   ],
+   "scenarios": [
+    "G4-058",
+    "G4-095"
    ]
   },
   {
@@ -1035,6 +1079,7 @@
    "wave": 6,
    "launch": "Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs)",
    "requirements": [
+    "QA-AI-07",
     "ai/scheduled-agents: AI company secretary assistant",
     "ai/scheduled-agents: Recommended default schedule",
     "AI-61",
@@ -1044,6 +1089,8 @@
     "AI-65",
     "AI-66",
     "AI-67",
+    "ai/task-catalogue: sec.create_task Create a compliance task",
+    "ai/task-catalogue: sec.draft_reminder Draft a reminder about an obligation",
     "CTL-AI-09",
     "C.2 #36"
    ],
@@ -1057,6 +1104,7 @@
    "wave": 6,
    "launch": "Launch (owner, 13 Nov 2026: in full, with the AI secretary's scheduled checks)",
    "requirements": [
+    "ai/task-catalogue: sec.draft_document Draft a corporate document",
     "C.2 #32",
     "C.2 #33",
     "C.2 #34",

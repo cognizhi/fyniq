@@ -6,6 +6,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { checkOrder, PurchaseOrderPage, type OrderForm } from "./PurchaseOrderPage";
 import { PurchaseOrders, type Order } from "./PurchaseOrders";
+import { invalid } from "../../test/invalid";
 
 const standard: Organisation = { id: ownerSession.organisation_id, name: "Cognizhi Pte Ltd", base_currency: "SGD", base_minor_units: 2, team_mode: "standard", version: 1 };
 const accountant = { ...ownerSession, roles: ["accountant"] } as Session;
@@ -65,7 +66,13 @@ describe("purchase orders", () => {
     const f: OrderForm = { supplier_id: "", reference: "", date: "2026-10-14", expected_on: "", currency: "SGD", notes: "", lines: [{ key: "l1", account_id: "", description: "x", quantity: "0", unit_price: "1.1234567", gst_code: "" }] };
     const { draft, errors } = checkOrder(f, "SGD");
     expect(draft).toBeUndefined();
-    expect(Object.keys(errors).sort()).toEqual(["l1.account", "l1.gst_code", "l1.quantity", "l1.unit_price"]);
+    expect(errors).toEqual({
+      "l1.account": "Choose what the line is for.",
+      "l1.gst_code": "Choose the GST code the supplier will charge.",
+      "l1.quantity": "Enter how many, such as 3 or 2.5.",
+      "l1.unit_price": "Enter the price of one before GST, such as 1,850.00.",
+    });
+    expect(checkOrder({ ...f, currency: "S$", lines: [] }, "SGD").errors).toEqual({ currency: "Enter a currency code, such as SGD.", lines: "Add a line for what is ordered." });
     f.lines = [{ key: "l1", account_id: "a6100", description: "Licence", quantity: "2.5", unit_price: "1,850.00", gst_code: "TX" }];
     expect(checkOrder(f, "SGD").draft?.lines?.[0]).toMatchObject({ quantity: "2.5", unit_price: "1850.00" });
   });
@@ -99,6 +106,13 @@ describe("purchase orders", () => {
     expect(screen.getByRole("link", { name: "BILL-0012" }).getAttribute("href")).toBe("/purchases/bills/b9");
     fireEvent.click(screen.getByRole("button", { name: "Make a bill…" }));
     const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Licence (6 left)"), { target: { value: "two" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Make a bill" }));
+    await invalid(dialog, "Licence (6 left)", "Enter a quantity, or leave it blank to take none of this line.");
+    fireEvent.change(within(dialog).getByLabelText("Licence (6 left)"), { target: { value: "" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Make a bill" }));
+    expect(await within(dialog).findByText("Take some of at least one line.")).toBeTruthy();
+    expect(seen.some((s) => s.path === "/v1/purchase-orders/o1/bill")).toBe(false);
     fireEvent.change(within(dialog).getByLabelText("Licence (6 left)"), { target: { value: "2" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Make a bill" }));
     await waitFor(() => expect(seen.find((s) => s.path === "/v1/purchase-orders/o1/bill")?.body).toEqual({ lines: [{ line: 1, quantity: "2" }] }));

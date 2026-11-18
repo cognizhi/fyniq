@@ -1,0 +1,25 @@
+{
+  "id": "sec-draft-reminder",
+  "agent": "chat",
+  "version": 1,
+  "kind": "proposal",
+  "description": "sec.draft_reminder's proposal cases (QA-AI-02; p1-scheduled-agents task 6.2): a person asks for a reminder about an obligation, and the right proposal names the role it goes to, its subject, its message and the obligation's key, waiting for a person before it is sent.",
+  "company": {"seed": 1, "journals": 24},
+  "task_types": ["sec.draft_reminder"],
+  "cases": [
+    {
+      "id": "annual-return",
+      "question": "Draft a reminder to the company secretary with the subject \"The annual return is due\" and the message \"The annual return is due by 31 July 2027. Please prepare it.\", about calendar:annual_return:2027-07-31.",
+      "expect": {"proposal": {"task_type": "sec.draft_reminder", "payload": {"to_role": "company_secretary", "subject": "The annual return is due",
+        "message": "The annual return is due by 31 July 2027. Please prepare it.", "obligation": "calendar:annual_return:2027-07-31"}}},
+      "solution": []
+    },
+    {
+      "id": "gst-return",
+      "question": "Draft a reminder to the company secretary with the subject \"File the GST return\" and the message \"The GST return for October to December 2026 is due by 31 January 2027.\", about calendar:gst_f5:2027-01-31.",
+      "expect": {"proposal": {"task_type": "sec.draft_reminder", "payload": {"to_role": "company_secretary", "subject": "File the GST return",
+        "message": "The GST return for October to December 2026 is due by 31 January 2027.", "obligation": "calendar:gst_f5:2027-01-31"}}},
+      "solution": []
+    }
+  ]
+}

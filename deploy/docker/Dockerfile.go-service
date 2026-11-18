@@ -31,6 +31,8 @@ COPY compliance ./compliance
 COPY packs ./packs
 COPY connectors ./connectors
 COPY evals ./evals
+COPY agents ./agents
+COPY contracts/ai ./contracts/ai
 
 ARG SERVICE
 ARG FLAVOUR=release

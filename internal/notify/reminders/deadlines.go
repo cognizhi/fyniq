@@ -72,11 +72,12 @@ func DeadlinesDueIn(ctx context.Context, store storage.Store, d outbox.Dispatche
 		if err != nil {
 			return err
 		}
-		audience := notify.Audience{Capability: string(authz.StatutoryCalendar), Need: "C"}
 		for _, it := range c.Items {
 			if it.Due.IsZero() {
 				continue
 			}
+			// Those who record the item: every item for C on the row, its area's for a right qualified to it (rev 0.285).
+			audience := notify.Audience{Capability: string(authz.StatutoryCalendar), Need: "C", Qualified: []string{it.Area}}
 			left := int(it.Due.Sub(today).Hours() / 24)
 			var typ, title string
 			switch {

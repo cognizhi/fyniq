@@ -52,7 +52,7 @@
       "type": "string"
     },
     "writer": {
-      "description": "The file's format and version: payment-list@1 is the payment list keyed into the bank (rev 0.156).",
+      "description": "The file's format and version, from the money account's payment file when it was released (rev 0.157): payment-list@1 is the payment list keyed into the bank (rev 0.156); wise-batch@N is Wise's batch payment file and dbs-uff@N DBS IDEAL's UFF, once built. A later change of the account's file never changes it.",
       "examples": [
         "payment-list@1"
       ],

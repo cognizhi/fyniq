@@ -1127,6 +1127,7 @@ func TestKPIRoundsOnceHalfAwayFromZero(t *testing.T) {
 // req: FR-EQ-06
 // req: ledger/money-and-rounding Pinned conversion at S$1.20 a share
 // req: ledger/money-and-rounding Pinned conversion at S$0.0375 a share
+// req: quality/calculation-correctness Pinned conversion of a balance to shares (RND-SHARE)
 func TestSharePinnedCases(t *testing.T) {
 	for _, c := range []struct{ amount, price, shares, converted, remainder string }{
 		{"12345.67", "1.20", "10288", "12345.60", "0.07"},

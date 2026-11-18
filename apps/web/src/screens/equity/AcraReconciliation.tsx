@@ -19,6 +19,7 @@ import { count } from "./optionWords";
 
 type Extract = components["schemas"]["AcraExtractView"];
 type ExtractDraft = components["schemas"]["AcraExtractDraft"];
+type Officer = components["schemas"]["AcraOfficerDraft"];
 type Reconciliation = components["schemas"]["AcraReconciliation"];
 type Check = components["schemas"]["CheckOut"];
 
@@ -66,11 +67,13 @@ function ExtractForm({ draft, start, onClose, onDone }: { draft: Extract | null;
   const queries = useQueryClient();
   const holders = useQuery({ queryKey: ["holders"], queryFn: listHolders });
   const capital = useCapital();
-  const [form, setForm] = useState<ExtractDraft>({ ...start, holdings: start.holdings.map((h) => ({ ...h })) });
+  const [form, setForm] = useState<ExtractDraft>({ ...start, holdings: start.holdings.map((h) => ({ ...h })), officers: (start.officers ?? []).map((o) => ({ ...o })) });
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [key] = useState(newKey);
   const set = (i: number, x: Partial<ExtractDraft["holdings"][number]>) => setForm({ ...form, holdings: form.holdings.map((h, j) => (j === i ? { ...h, ...x } : h)) });
+  const officers = form.officers ?? [];
+  const setOfficer = (i: number, x: Partial<Officer>) => setForm({ ...form, officers: officers.map((o, j) => (j === i ? { ...o, ...x } : o)) });
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -79,6 +82,9 @@ function ExtractForm({ draft, start, onClose, onDone }: { draft: Extract | null;
       profile_on: form.profile_on,
       holdings: form.holdings.filter((h) => h.holder_id || h.shares).map((h) => ({ ...h, shares: h.shares.replace(/[,\s]/g, "") })),
     };
+    const typed = officers.filter((o) => o.name.trim() || o.appointed_on).map((o) => ({ ...o, name: o.name.trim() }));
+    if (typed.length > 0) body.officers = typed;
+    if (form.registered_office?.trim()) body.registered_office = form.registered_office.trim();
     if (form.note?.trim()) body.note = form.note.trim();
     const out = await guarded(confirm, () =>
       draft
@@ -142,6 +148,38 @@ function ExtractForm({ draft, start, onClose, onDone }: { draft: Extract | null;
             </Button>
           </div>
         </fieldset>
+        <fieldset className="fy-field">
+          <legend className="fy-label">Officers (optional)</legend>
+          <div className="fy-stack fy-stack--2">
+            {officers.map((o, i) => (
+              <div key={i} className="fy-row fy-row--wrap gap-2">
+                <input className="fy-input" aria-label={`Officer ${i + 1}: name`} maxLength={200} value={o.name} placeholder="Name" onChange={(e) => setOfficer(i, { name: e.target.value })} />
+                <select className="fy-select" aria-label={`Officer ${i + 1}: office`} value={o.role} onChange={(e) => setOfficer(i, { role: e.target.value as Officer["role"] })}>
+                  <option value="director">Director</option>
+                  <option value="secretary">Company secretary</option>
+                  <option value="ceo">CEO</option>
+                  <option value="auditor">Auditor</option>
+                </select>
+                <input className="fy-input" type="date" aria-label={`Officer ${i + 1}: appointed on`} value={o.appointed_on} onChange={(e) => setOfficer(i, { appointed_on: e.target.value })} />
+                <Button variant="ghost" size="sm" type="button" aria-label={`Remove officer ${i + 1}`} onClick={() => setForm({ ...form, officers: officers.filter((_, j) => j !== i) })}>
+                  <Icon of={Trash2} />
+                </Button>
+              </div>
+            ))}
+            <Button variant="ghost" size="sm" type="button" style={{ alignSelf: "flex-start" }}
+              onClick={() => setForm({ ...form, officers: [...officers, { name: "", role: "director", appointed_on: "" }] })}>
+              <Icon of={Plus} />
+              Add an officer
+            </Button>
+            <span className="fy-help">As the business profile lists them, to compare with the corporate profile; names only, never an identifier.</span>
+          </div>
+        </fieldset>
+        <div className="fy-field">
+          <label className="fy-label" htmlFor={`${id}-office`}>
+            Registered office (optional)
+          </label>
+          <input className="fy-input" id={`${id}-office`} maxLength={500} value={form.registered_office ?? ""} onChange={(e) => setForm({ ...form, registered_office: e.target.value })} />
+        </div>
         <div className="fy-field">
           <label className="fy-label" htmlFor={`${id}-note`}>
             Note (optional)
@@ -391,7 +429,8 @@ export function AcraReconciliation() {
       </div>
       {editing && (
         <ExtractForm draft={editing === "draft" ? draft : null}
-          start={editing === "draft" && draft ? { profile_on: draft.profile_on, holdings: draft.holdings.map((h) => ({ holder_id: h.holder_id, class_account_id: h.class_account_id, shares: h.shares })), note: draft.note } : start}
+          start={editing === "draft" && draft ? { profile_on: draft.profile_on, holdings: draft.holdings.map((h) => ({ holder_id: h.holder_id, class_account_id: h.class_account_id, shares: h.shares })),
+            officers: draft.officers, registered_office: draft.registered_office, note: draft.note } : start}
           onClose={() => setEditing(null)} onDone={setStatus} />
       )}
     </div>

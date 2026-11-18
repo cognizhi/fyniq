@@ -50,7 +50,7 @@ var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbe
 	"fx_feed_rate", "capture_name", "installation_announcement", "document_link_token", "installation_connector",
 	"installation_connector_secret", "installation_change", "connector_route", "invitation_code", "sign_in_method",
 	"user_recovery_code", "recovery_confirmation", "account_recovery", "join_domain", "private_endpoint", "ip_rate_window", "ai_price_catalogue",
-	"ai_agent"}
+	"ai_agent", "api_client_route"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain", "opening_balance"}
@@ -204,11 +204,24 @@ SELECT con.conname, src.relname, dst.relname,
 	}
 }
 
+// deletable are the only tables an application role may delete rows of, each with why: housekeeping no person reads as
+// a record, swept on its schedule, and an item's price list, replaced whole with its item, whose audited versions keep
+// the prices before and after. Nothing else is hard-deleted by any action; only the audited retention purge removes
+// data, through its own functions (FR-UX-14, §11.9).
+var deletable = map[string]string{
+	"fyniq_api item_price":           "an item's price list, replaced with the item's audited version",
+	"fyniq_worker authz_refusal":     "refusals kept for their security-log retention, then swept",
+	"fyniq_worker check_run":         "the checks' superseded runs; each check keeps its latest state",
+	"fyniq_worker idempotency_key":   "idempotency records past their window",
+	"fyniq_worker rate_limit_window": "rate-limit counters past their window",
+}
+
 // req: SEC-03
 // asvs: V13.2.2
 // req: data/data-model Tenancy and row-level security
 // req: data/data-model Global tables
 // req: data/data-model Insert-only ledger records
+// req: FR-UX-14
 func TestEachRoleHoldsExactlyItsGrants(t *testing.T) {
 	c := conn(t, "fyniq")
 	var b strings.Builder
@@ -235,6 +248,9 @@ func TestEachRoleHoldsExactlyItsGrants(t *testing.T) {
 		case writes[priv] && slices.Contains(globalTables, object):
 			t.Errorf("%s holds %s on %s: a global table is read-only to every application role; it changes only through "+
 				"the installation's audited functions or a release (§11.4)", grantee, priv, object)
+		case priv == "DELETE" && deletable[grantee+" "+object] == "":
+			t.Errorf("%s holds DELETE on %s: nothing is hard-deleted by any action (FR-UX-14); void, withdraw or mark it, and let "+
+				"the retention purge remove it, or name why its rows are housekeeping in deletable", grantee, object)
 		case (priv == "UPDATE" || priv == "DELETE") && (strings.HasPrefix(object, "journal_") || object == "ledger_revision"):
 			t.Errorf("%s holds %s on %s: posted history is append-only (INV-02)", grantee, priv, object)
 		case (priv == "UPDATE" || priv == "DELETE") && strings.HasPrefix(object, "audit_"):

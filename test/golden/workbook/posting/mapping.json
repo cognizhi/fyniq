@@ -1,0 +1,1148 @@
+[
+ {
+  "sheet": "Transactions",
+  "row": 1,
+  "status": "✔ OK",
+  "workbook": "Subscription sale (SR)",
+  "document": "BT-01"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 2,
+  "status": "✖ Enter the date",
+  "workbook": "No date",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter the date"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 3,
+  "status": "✖ Date not recognised",
+  "workbook": "Text date",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Date not recognised"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 4,
+  "status": "✖ Enter money in or money out",
+  "workbook": "No amount",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter money in or money out"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 5,
+  "status": "✖ Use only one of in / out",
+  "workbook": "Both",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Use only one of in / out"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 6,
+  "status": "✖ Choose the bank / cash account",
+  "workbook": "No bank",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Choose the bank / cash account"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 7,
+  "status": "✖ Bank account not on Accounts sheet",
+  "workbook": "Unknown bank",
+  "document": "BT-07"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 8,
+  "status": "✖ Choose a category",
+  "workbook": "No category",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Choose a category"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 9,
+  "status": "✖ Category not on Accounts sheet",
+  "workbook": "Unknown category",
+  "document": "BT-09"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 10,
+  "status": "✖ Category is the same bank account",
+  "workbook": "Bank to itself",
+  "document": "BT-10"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 11,
+  "status": "⚠ Put the invoice # in Reference",
+  "workbook": "Customer paid, no ref",
+  "document": "RC-ACCT-11",
+  "read": "recorded on account for its contact (FR-AR-18): a payment with no invoice yet"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 12,
+  "status": "⚠ Invoice # not on Invoices",
+  "workbook": "Customer paid, bad ref",
+  "not_ported": "its reference names no document: the line waits for its match (FR-BNK-07)"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 13,
+  "status": "⚠ Put the bill # in Reference",
+  "workbook": "Paid supplier, no ref",
+  "document": "PY-ACCT-13",
+  "read": "recorded on account for its contact (FR-AR-18): a payment with no invoice yet"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 14,
+  "status": "⚠ Bill # not on Bills",
+  "workbook": "Paid supplier, bad ref",
+  "not_ported": "its reference names no document: the line waits for its match (FR-BNK-07)"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 15,
+  "status": "⚠ Only P&L categories can be spread",
+  "workbook": "Laptop with months",
+  "document": "BT-15",
+  "read": "not spread: Fyniq offers a spread only on an income or expense account (FR-GL-03)"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 16,
+  "status": "⚠ Dated before books start",
+  "workbook": "Before books start",
+  "not_ported": "Fyniq has no period before the books start: what came before is in the opening balances (FR-GL-06)"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 17,
+  "status": "⚠ In suspense – ask accountant",
+  "workbook": "Unknown receipt",
+  "document": "BT-17"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 18,
+  "status": "✔ Locked (closed month)",
+  "workbook": "In a closed month",
+  "document": "BT-18"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 19,
+  "status": "✔ OK",
+  "workbook": "Annual plan paid up front (spread 12)",
+  "document": "BT-19"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 20,
+  "status": "✔ OK",
+  "workbook": "Insurance paid for 6 months",
+  "document": "BT-20"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 21,
+  "status": "✔ OK",
+  "workbook": "Transfer to savings",
+  "document": "TR-21"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 22,
+  "status": "✔ OK",
+  "workbook": "Card top-up",
+  "document": "TR-22"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 23,
+  "status": "✔ OK",
+  "workbook": "Card: software",
+  "document": "BT-23"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 24,
+  "status": "⚠ Dated after the 'as of' date",
+  "workbook": "Dated after the as-of date",
+  "document": "BT-24"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 25,
+  "status": "✔ OK",
+  "workbook": "SR sale",
+  "document": "BT-25"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 26,
+  "status": "✔ OK",
+  "workbook": "ZR export",
+  "document": "BT-26"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 27,
+  "status": "✔ OK",
+  "workbook": "ES interest",
+  "document": "BT-27"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 28,
+  "status": "✔ OK",
+  "workbook": "OS supply",
+  "document": "BT-28"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 29,
+  "status": "✔ OK",
+  "workbook": "TX purchase",
+  "document": "BT-29"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 30,
+  "status": "✔ OK",
+  "workbook": "IM import GST",
+  "document": "BT-30"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 31,
+  "status": "✔ OK",
+  "workbook": "ZP flight",
+  "document": "BT-31"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 32,
+  "status": "✔ OK",
+  "workbook": "BL medical",
+  "document": "BT-32"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 33,
+  "status": "✔ OK",
+  "workbook": "NR supplier",
+  "document": "BT-33"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 34,
+  "status": "✔ OK",
+  "workbook": "EP bank fee",
+  "document": "BT-34"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 35,
+  "status": "✔ OK",
+  "workbook": "OP overseas SaaS",
+  "document": "BT-35"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 36,
+  "status": "✔ OK",
+  "workbook": "NA loan in",
+  "document": "BT-36"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 37,
+  "status": "✔ OK",
+  "workbook": "INV-E01 paid",
+  "document": "RC-INV-E01"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 38,
+  "status": "✔ OK",
+  "workbook": "INV-E16 part payment",
+  "document": "RC-INV-E16"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 39,
+  "status": "✔ OK",
+  "workbook": "INV-E17 part payment",
+  "document": "RC-INV-E17"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 40,
+  "status": "✔ OK",
+  "workbook": "INV-E20 paid (USD, rounding)",
+  "document": "RC-INV-E20"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 41,
+  "status": "✔ OK",
+  "workbook": "INV-E23 paid in full (never auto-close)",
+  "document": "RC-INV-E23"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 42,
+  "status": "✔ OK",
+  "workbook": "INV-E24 opening item paid",
+  "document": "RC-INV-E24"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 43,
+  "status": "✔ OK",
+  "workbook": "INV-E28 short-paid by 0.60",
+  "document": "RC-INV-E28"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 44,
+  "status": "✔ OK",
+  "workbook": "INV-E29 overpaid",
+  "document": "RC-INV-E29"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 45,
+  "status": "⚠ Dated after the 'as of' date",
+  "workbook": "INV-E30 paid late",
+  "document": "RC-INV-E30"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 46,
+  "status": "✔ OK",
+  "workbook": "SB-E01 paid",
+  "document": "PY-SB-E01"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 47,
+  "status": "✔ OK",
+  "workbook": "SB-E16 part payment",
+  "document": "PY-SB-E16"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 48,
+  "status": "✔ OK",
+  "workbook": "SB-E17 part payment",
+  "document": "PY-SB-E17"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 49,
+  "status": "✔ OK",
+  "workbook": "SB-E21 paid (USD, forced)",
+  "document": "PY-SB-E21"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 1,
+  "status": "✔ Paid",
+  "workbook": "INV-E01",
+  "document": "INV-E01"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 2,
+  "status": "✖ Enter the invoice #",
+  "workbook": "Services",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter the invoice #"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 3,
+  "status": "✖ Duplicate number",
+  "workbook": "INV-E03",
+  "not_ported": "Fyniq numbers each document from its sequence (FR-ORG-04), so two cannot share a number"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 4,
+  "status": "✖ Duplicate number",
+  "workbook": "INV-E03",
+  "not_ported": "Fyniq numbers each document from its sequence (FR-ORG-04), so two cannot share a number"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 5,
+  "status": "✖ Enter the date",
+  "workbook": "INV-E04",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter the date"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 6,
+  "status": "✖ Date not recognised",
+  "workbook": "INV-E05",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Date not recognised"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 7,
+  "status": "✖ Enter the amount (or add lines on Doc Lines)",
+  "workbook": "INV-E06",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter the amount (or add lines on Doc Lines)"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 8,
+  "status": "✖ Choose a category",
+  "workbook": "INV-E07",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Choose a category"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 9,
+  "status": "✖ Category not on Accounts sheet",
+  "workbook": "INV-E08",
+  "document": "INV-E08"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 10,
+  "status": "✖ No exchange rate for this currency",
+  "workbook": "INV-E09",
+  "not_ported": "a currency Fyniq has no rate for is refused at entry by the rate cascade (ENG-40)"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 11,
+  "status": "⚠ Choose the customer",
+  "workbook": "INV-E10",
+  "not_ported": "Fyniq names the customer or supplier before a document posts (FR-AR-01, FR-AP-01)"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 12,
+  "status": "⚠ No payment recorded yet",
+  "workbook": "INV-E11",
+  "document": "INV-E11"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 13,
+  "status": "⚠ Before books start – opening item?",
+  "workbook": "INV-E12",
+  "not_ported": "dated before the books start and not an opening item: Fyniq takes such a document only as an opening item (FR-GL-06, rev 0.257)"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 14,
+  "status": "✎ Draft – not booked",
+  "workbook": "INV-E13",
+  "not_ported": "a draft posts nothing, in Fyniq as in the workbook"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 15,
+  "status": "⚠ Amount differs from Doc Lines total",
+  "workbook": "INV-E14",
+  "document": "INV-E14",
+  "read": "its lines, not the amount typed: a Fyniq document's total is its lines' (FR-AR-01)"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 16,
+  "status": "Credit note",
+  "workbook": "CN-E15",
+  "document": "CN-E15"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 17,
+  "status": "⏰ Part-paid – overdue",
+  "workbook": "INV-E16",
+  "document": "INV-E16"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 18,
+  "status": "Part-paid",
+  "workbook": "INV-E17",
+  "document": "INV-E17"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 19,
+  "status": "⏰ Overdue",
+  "workbook": "INV-E18",
+  "document": "INV-E18"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 20,
+  "status": "Awaiting payment",
+  "workbook": "INV-E19",
+  "document": "INV-E19"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 21,
+  "status": "✔ Paid",
+  "workbook": "INV-E20",
+  "document": "INV-E20"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 22,
+  "status": "Awaiting payment",
+  "workbook": "INV-E21",
+  "document": "INV-E21"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 23,
+  "status": "⏰ Overdue",
+  "workbook": "INV-E22",
+  "document": "INV-E22"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 24,
+  "status": "✔ Paid – kept open (Mark = No)",
+  "workbook": "INV-E23",
+  "document": "INV-E23"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 25,
+  "status": "✔ Paid",
+  "workbook": "INV-E24",
+  "document": "INV-E24"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 26,
+  "status": "Awaiting payment",
+  "workbook": "INV-E25",
+  "document": "INV-E25"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 27,
+  "status": "Awaiting payment",
+  "workbook": "INV-E26",
+  "document": "INV-E26",
+  "read": "without its line of quantity 0, which the API refuses (a line of nothing); the total is the same"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 28,
+  "status": "✔ Paid",
+  "workbook": "INV-E28",
+  "document": "INV-E28"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 29,
+  "status": "⚠ Overpaid – refund or credit the difference",
+  "workbook": "INV-E29",
+  "document": "INV-E29"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 30,
+  "status": "⏰ Overdue",
+  "workbook": "INV-E30",
+  "document": "INV-E30"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 31,
+  "status": "Awaiting payment",
+  "workbook": "INV-E31",
+  "document": "INV-E31"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 32,
+  "status": "⏰ Overdue",
+  "workbook": "INV-E32",
+  "document": "INV-E32"
+ },
+ {
+  "sheet": "Bills",
+  "row": 1,
+  "status": "✔ Paid",
+  "workbook": "SB-E01",
+  "document": "SB-E01"
+ },
+ {
+  "sheet": "Bills",
+  "row": 2,
+  "status": "✖ Enter the bill #",
+  "workbook": "Supplies",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter the bill #"
+ },
+ {
+  "sheet": "Bills",
+  "row": 3,
+  "status": "✖ Duplicate number",
+  "workbook": "SB-E03",
+  "not_ported": "Fyniq numbers each document from its sequence (FR-ORG-04), so two cannot share a number"
+ },
+ {
+  "sheet": "Bills",
+  "row": 4,
+  "status": "✖ Duplicate number",
+  "workbook": "SB-E03",
+  "not_ported": "Fyniq numbers each document from its sequence (FR-ORG-04), so two cannot share a number"
+ },
+ {
+  "sheet": "Bills",
+  "row": 5,
+  "status": "✖ Enter the date",
+  "workbook": "SB-E04",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter the date"
+ },
+ {
+  "sheet": "Bills",
+  "row": 6,
+  "status": "✖ Date not recognised",
+  "workbook": "SB-E05",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Date not recognised"
+ },
+ {
+  "sheet": "Bills",
+  "row": 7,
+  "status": "✖ Enter the amount",
+  "workbook": "SB-E06",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter the amount"
+ },
+ {
+  "sheet": "Bills",
+  "row": 8,
+  "status": "✖ Choose a category",
+  "workbook": "SB-E07",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Choose a category"
+ },
+ {
+  "sheet": "Bills",
+  "row": 9,
+  "status": "✖ Category not on Accounts sheet",
+  "workbook": "SB-E08",
+  "document": "SB-E08"
+ },
+ {
+  "sheet": "Bills",
+  "row": 10,
+  "status": "✖ No exchange rate for this currency",
+  "workbook": "SB-E09",
+  "not_ported": "a currency Fyniq has no rate for is refused at entry by the rate cascade (ENG-40)"
+ },
+ {
+  "sheet": "Bills",
+  "row": 11,
+  "status": "⚠ Choose the supplier",
+  "workbook": "SB-E10",
+  "not_ported": "Fyniq names the customer or supplier before a document posts (FR-AR-01, FR-AP-01)"
+ },
+ {
+  "sheet": "Bills",
+  "row": 12,
+  "status": "⚠ No payment recorded yet",
+  "workbook": "SB-E11",
+  "document": "SB-E11"
+ },
+ {
+  "sheet": "Bills",
+  "row": 13,
+  "status": "⚠ Before books start – opening item?",
+  "workbook": "SB-E12",
+  "not_ported": "dated before the books start and not an opening item: Fyniq takes such a document only as an opening item (FR-GL-06, rev 0.257)"
+ },
+ {
+  "sheet": "Bills",
+  "row": 14,
+  "status": "✎ Draft – not booked",
+  "workbook": "SB-E13",
+  "not_ported": "a draft posts nothing, in Fyniq as in the workbook"
+ },
+ {
+  "sheet": "Bills",
+  "row": 15,
+  "status": "Credit note",
+  "workbook": "SB-E15",
+  "document": "SB-E15"
+ },
+ {
+  "sheet": "Bills",
+  "row": 16,
+  "status": "⏰ Part-paid – overdue",
+  "workbook": "SB-E16",
+  "document": "SB-E16"
+ },
+ {
+  "sheet": "Bills",
+  "row": 17,
+  "status": "Part-paid",
+  "workbook": "SB-E17",
+  "document": "SB-E17"
+ },
+ {
+  "sheet": "Bills",
+  "row": 18,
+  "status": "⏰ Overdue",
+  "workbook": "SB-E18",
+  "document": "SB-E18"
+ },
+ {
+  "sheet": "Bills",
+  "row": 19,
+  "status": "Due within 7 days",
+  "workbook": "SB-E19",
+  "document": "SB-E19"
+ },
+ {
+  "sheet": "Bills",
+  "row": 20,
+  "status": "To pay",
+  "workbook": "SB-E20",
+  "document": "SB-E20"
+ },
+ {
+  "sheet": "Bills",
+  "row": 21,
+  "status": "✔ Paid",
+  "workbook": "SB-E21",
+  "document": "SB-E21"
+ },
+ {
+  "sheet": "Bills",
+  "row": 22,
+  "status": "⏰ Overdue",
+  "workbook": "SB-E22",
+  "document": "SB-E22"
+ },
+ {
+  "sheet": "Bills",
+  "row": 23,
+  "status": "⏰ Overdue",
+  "workbook": "SB-E23",
+  "document": "SB-E23",
+  "read": "not spread: Fyniq offers a spread only on an income or expense account (FR-GL-03)"
+ },
+ {
+  "sheet": "Journal",
+  "row": 3,
+  "status": "✖ Enter an entry #",
+  "workbook": "No entry #",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter an entry #"
+ },
+ {
+  "sheet": "Journal",
+  "row": 4,
+  "status": "✖ Enter the date",
+  "workbook": "J-E02",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter the date"
+ },
+ {
+  "sheet": "Journal",
+  "row": 5,
+  "status": "✖ Another line of this entry has an error",
+  "workbook": "J-E02",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter the date"
+ },
+ {
+  "sheet": "Journal",
+  "row": 6,
+  "status": "✖ Date not recognised",
+  "workbook": "J-E03",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Date not recognised"
+ },
+ {
+  "sheet": "Journal",
+  "row": 7,
+  "status": "✖ Another line of this entry has an error",
+  "workbook": "J-E03",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Date not recognised"
+ },
+ {
+  "sheet": "Journal",
+  "row": 8,
+  "status": "✖ Choose an account",
+  "workbook": "J-E04",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Choose an account"
+ },
+ {
+  "sheet": "Journal",
+  "row": 9,
+  "status": "✖ Another line of this entry has an error",
+  "workbook": "J-E04",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Choose an account"
+ },
+ {
+  "sheet": "Journal",
+  "row": 12,
+  "status": "✖ Use debit OR credit on a line",
+  "workbook": "J-E06",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Use debit OR credit on a line"
+ },
+ {
+  "sheet": "Journal",
+  "row": 13,
+  "status": "✖ Another line of this entry has an error",
+  "workbook": "J-E06",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Use debit OR credit on a line"
+ },
+ {
+  "sheet": "Journal",
+  "row": 14,
+  "status": "✖ Enter a debit or a credit",
+  "workbook": "J-E07",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter a debit or a credit"
+ },
+ {
+  "sheet": "Journal",
+  "row": 15,
+  "status": "✖ Another line of this entry has an error",
+  "workbook": "J-E07",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter a debit or a credit"
+ },
+ {
+  "sheet": "Journal",
+  "row": 18,
+  "status": "✖ Lines of this entry have different dates",
+  "workbook": "J-E12",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Lines of this entry have different dates"
+ },
+ {
+  "sheet": "Journal",
+  "row": 19,
+  "status": "✖ Lines of this entry have different dates",
+  "workbook": "J-E12",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Lines of this entry have different dates"
+ },
+ {
+  "sheet": "Journal",
+  "row": 20,
+  "status": "⚠ Dated before books start",
+  "workbook": "J-E09",
+  "not_ported": "Fyniq has no period before the books start: what came before is in the opening balances (FR-GL-06)"
+ },
+ {
+  "sheet": "Journal",
+  "row": 21,
+  "status": "⚠ Dated before books start",
+  "workbook": "J-E09",
+  "not_ported": "Fyniq has no period before the books start: what came before is in the opening balances (FR-GL-06)"
+ },
+ {
+  "sheet": "Journal",
+  "row": 1,
+  "status": "✔ OK",
+  "workbook": "J-E01",
+  "document": "J-E01"
+ },
+ {
+  "sheet": "Journal",
+  "row": 2,
+  "status": "✔ OK",
+  "workbook": "J-E01",
+  "document": "J-E01"
+ },
+ {
+  "sheet": "Journal",
+  "row": 10,
+  "status": "✖ Account not on Accounts sheet",
+  "workbook": "J-E05",
+  "document": "J-E05"
+ },
+ {
+  "sheet": "Journal",
+  "row": 11,
+  "status": "✖ Another line of this entry has an error",
+  "workbook": "J-E05",
+  "document": "J-E05"
+ },
+ {
+  "sheet": "Journal",
+  "row": 16,
+  "status": "✖ Entry does not balance",
+  "workbook": "J-E08",
+  "document": "J-E08"
+ },
+ {
+  "sheet": "Journal",
+  "row": 17,
+  "status": "✖ Entry does not balance",
+  "workbook": "J-E08",
+  "document": "J-E08"
+ },
+ {
+  "sheet": "Journal",
+  "row": 22,
+  "status": "✔ Locked (closed month)",
+  "workbook": "J-E10",
+  "document": "J-E10"
+ },
+ {
+  "sheet": "Journal",
+  "row": 23,
+  "status": "✔ Locked (closed month)",
+  "workbook": "J-E10",
+  "document": "J-E10"
+ },
+ {
+  "sheet": "Journal",
+  "row": 24,
+  "status": "✔ OK",
+  "workbook": "J-E11",
+  "document": "J-E11"
+ },
+ {
+  "sheet": "Journal",
+  "row": 25,
+  "status": "✔ OK",
+  "workbook": "J-E11",
+  "document": "J-E11"
+ },
+ {
+  "sheet": "Journal",
+  "row": 26,
+  "status": "✔ OK",
+  "workbook": "J-E11",
+  "document": "J-E11"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 1,
+  "status": "✔ OK",
+  "workbook": "E55 Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 2,
+  "status": "✔ OK",
+  "workbook": "E60 Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 3,
+  "status": "✔ OK",
+  "workbook": "E65 PR",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 4,
+  "status": "✔ OK",
+  "workbook": "E70 Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 5,
+  "status": "✔ OK",
+  "workbook": "E71 Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 6,
+  "status": "✔ OK",
+  "workbook": "EFX Foreigner",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 7,
+  "status": "✔ OK",
+  "workbook": "EHI Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 8,
+  "status": "⚠ Wage below $750 – check CPF",
+  "workbook": "ELO Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 9,
+  "status": "✔ OK",
+  "workbook": "ELO Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 10,
+  "status": "✔ OK",
+  "workbook": "E55 Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 11,
+  "status": "✖ Enter the pay month",
+  "workbook": "E60 Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 12,
+  "status": "✖ Month not recognised",
+  "workbook": "E60 Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 13,
+  "status": "✖ Choose the employee",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 14,
+  "status": "✖ Employee not on Employees sheet",
+  "workbook": "Nobody",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 15,
+  "status": "✖ Department has no valid salary account",
+  "workbook": "ENODEPT Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 16,
+  "status": "✖ Employee entered twice this month",
+  "workbook": "E60 Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 17,
+  "status": "✖ Employee entered twice this month",
+  "workbook": "E60 Citizen",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 18,
+  "status": "⚠ Before books start",
+  "workbook": "E65 PR",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Payroll",
+  "row": 19,
+  "status": "✔ Locked (closed month)",
+  "workbook": "E65 PR",
+  "not_ported": "pay runs (FR-PAY-01 to FR-PAY-03) are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Quotes & Orders",
+  "row": 1,
+  "status": "⏰ Accepted – create the invoice",
+  "workbook": "Q-E01",
+  "not_ported": "a quote or an order posts nothing; its statuses are the non-posting set's"
+ },
+ {
+  "sheet": "Quotes & Orders",
+  "row": 2,
+  "status": "⚠ Amount differs from Doc Lines total",
+  "workbook": "Q-E02",
+  "not_ported": "a quote or an order posts nothing; its statuses are the non-posting set's"
+ },
+ {
+  "sheet": "Quotes & Orders",
+  "row": 3,
+  "status": "Open",
+  "workbook": "PO-E03",
+  "not_ported": "a quote or an order posts nothing; its statuses are the non-posting set's"
+ },
+ {
+  "sheet": "Assets",
+  "row": 1,
+  "status": "✔ Depreciating",
+  "workbook": "Laptop",
+  "document": "FA-01"
+ },
+ {
+  "sheet": "Assets",
+  "row": 2,
+  "status": "✖ Enter the purchase date",
+  "workbook": "No date",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter the purchase date"
+ },
+ {
+  "sheet": "Assets",
+  "row": 3,
+  "status": "✖ Enter the cost",
+  "workbook": "No cost",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter the cost"
+ },
+ {
+  "sheet": "Assets",
+  "row": 4,
+  "status": "✖ Enter the useful life (months)",
+  "workbook": "No life",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Enter the useful life (months)"
+ },
+ {
+  "sheet": "Assets",
+  "row": 5,
+  "status": "✖ Choose the asset account",
+  "workbook": "No account",
+  "not_ported": "an input the API refuses before posting (ENG-23, ENG-44): Choose the asset account"
+ },
+ {
+  "sheet": "Assets",
+  "row": 6,
+  "status": "✖ Residual value above cost",
+  "workbook": "Residual too high",
+  "document": "FA-06"
+ },
+ {
+  "sheet": "Assets",
+  "row": 7,
+  "status": "⚠ Describe the asset",
+  "document": "FA-07"
+ },
+ {
+  "sheet": "Assets",
+  "row": 8,
+  "status": "Disposed – journal the disposal",
+  "workbook": "Old phone",
+  "document": "FA-08",
+  "read": "its disposal posts too (AD-08, a write-off with no proceeds): the workbook asks for a journal"
+ },
+ {
+  "sheet": "Assets",
+  "row": 9,
+  "status": "✔ Fully depreciated",
+  "workbook": "Short-lived licence",
+  "document": "FA-09"
+ },
+ {
+  "sheet": "Assets",
+  "row": 10,
+  "status": "✔ Depreciating",
+  "workbook": "Office fit-out",
+  "document": "FA-10"
+ },
+ {
+  "sheet": "Assets",
+  "row": 11,
+  "status": "✔ Depreciating",
+  "workbook": "Server bought before books start",
+  "document": "FA-11"
+ }
+]

@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/aibudget"
+	"github.com/cognizhi/fyniq/internal/domain/aiconnection"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -179,5 +180,146 @@ func TestBudgetsAdmitOnlyWhatTheyCover(t *testing.T) {
 	}
 	if quota == nil || quota["amount"] != float64(1000000) || quota["used"] != float64(0) || quota["resets"] == nil {
 		t.Errorf("a subscription's quota: %s", u.Raw)
+	}
+}
+
+// Token budgets (AI-13): the organisation's and a person's month of tokens bound every call, whatever it costs. The
+// Owner sets them as tokens:organisation and tokens:person:<id>; a call whose most tokens they cannot cover is not sent,
+// its person's reaching 80% raises the alert, and the budgets show what the month used in tokens.
+// req: AI-13
+// req: AI-86
+func TestTokenBudgetsBoundEveryCall(t *testing.T) {
+	e := newEnv(t)
+	aiSwitchedOn(e)
+	f := foundersIn(e)
+	owner := f.as(f.weiling, authz.Owner)
+	sg := routable(e, "Tokens primary", "SG", nil, "gpt-6")
+	pricedInBase(e, sg, "gpt-6")
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.AIRoutes().Save(ctx, storage.AIRoute{Agent: "chat", Version: 1, Classes: []string{"business-figures"}, MadeBy: "user:tokens",
+			MadeAt: e.clock.Now(), Steps: []storage.AIRouteStep{{ConnectionID: sg, Model: "gpt-6"}}})
+		return err
+	})
+	model := &stepModel{caps: full}
+	router := ai.Router{Store: e.api.deps.Store, Clock: e.clock, Outbox: e.api.deps.Outbox,
+		Provider: func(context.Context, storage.UnitOfWork, storage.AIConnection) (ports.ModelProvider, error) {
+			return model, nil
+		}}
+	ask := ai.Call{Agent: "chat", Classes: []string{"business-figures"}, Actor: "user:" + f.ahkow, Request: ports.ModelRequest{MaxTokens: 1024,
+		Messages: []ports.ModelMessage{{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: "What was revenue?"}}}}}}
+	set := func(key, match string, amount any) response {
+		return e.call(http.MethodPut, "/v1/ai/budgets/"+key, owner, map[string]any{"amount": amount}, "If-Match", match)
+	}
+	ctx := context.Background()
+	spent := func(err error) bool {
+		var be *aibudget.Error
+		return errors.As(err, &be) && be.Code == aibudget.CodeSpent
+	}
+
+	e.problemIs(set("tokens:agent:chat", `"0"`, "1000"), "setAIBudget", 422, aibudget.CodeBudget)
+	e.problemIs(set("tokens:organisation", `"0"`, "1.5"), "setAIBudget", 422, aibudget.CodeBudget)
+	if r := set("tokens:organisation", `"0"`, "1000"); r.Status != http.StatusOK || r.str("unit") != "tokens" || r.str("key") != "tokens:organisation" {
+		t.Fatalf("the organisation's tokens: %d %s", r.Status, r.Raw)
+	}
+	// A call that could use 1,024 tokens of output alone is not sent against 1,000.
+	if _, err := router.Run(ctx, e.books.Org, ask); !spent(err) || model.calls != 0 {
+		t.Fatalf("past the organisation's tokens: %v", err)
+	}
+	if r := set("tokens:organisation", `"1"`, "1000000"); r.Status != http.StatusOK {
+		t.Fatalf("raising it: %d %s", r.Status, r.Raw)
+	}
+	if r := set("tokens:person:"+f.ahkow, `"0"`, "3000"); r.Status != http.StatusOK || r.str("subject") != "user:"+f.ahkow {
+		t.Fatalf("a person's tokens: %d %s", r.Status, r.Raw)
+	}
+	// Each answer uses 1,500 tokens (1,000 in, 500 out), and a call reserves a little over 1,024 (its prompt and all its
+	// output): the second call's reservation reaches 80% of the person's 3,000, and a third could not be covered.
+	for i := range 2 {
+		if _, err := router.Run(ctx, e.books.Org, ask); err != nil {
+			t.Fatalf("call %d: %v", i+1, err)
+		}
+	}
+	if _, err := router.Run(ctx, e.books.Org, ask); !spent(err) {
+		t.Errorf("past the person's tokens: %v", err)
+	}
+	key := uuid.NewSHA1(uuid.NameSpaceOID, []byte(e.books.Org.String()+" ai-budget tokens_person user:"+f.ahkow+" "+aibudget.Month(e.clock.Now())))
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		yes, err := u.Notifications().Emitted(ctx, notify.AIBudgetType, key)
+		if err == nil && !yes {
+			t.Error("no alert at 80% of the person's tokens")
+		}
+		return err
+	})
+	got := e.call(http.MethodGet, "/v1/ai/budgets", owner, nil)
+	for _, b := range got.Body["budgets"].([]any) {
+		b := b.(map[string]any)
+		if b["key"] == "tokens:person:"+f.ahkow && (b["used"] != "3000" || b["unit"] != "tokens" || b["alerted"] != true) {
+			t.Errorf("the person's tokens: %v", b)
+		}
+	}
+}
+
+// A plan that draws its quota at different rates per model (AI-73): the connection keeps each model's rate with the
+// plan's published terms it comes from, and the month's usage meters each model at its rate, rounded down; rates
+// without their terms are refused.
+// req: AI-73
+// req: AI-77
+func TestAPlansQuotaDrawsAtEachModelsRate(t *testing.T) {
+	e := newEnv(t)
+	f := foundersIn(e)
+	admin, owner := f.as(f.ahkow, authz.Administrator), f.as(f.weiling, authz.Owner)
+	quota := map[string]any{"amount": 300, "unit": "requests", "window": "month", "fee": "19.00", "currency": "USD",
+		"rates": []any{map[string]any{"model": "kimi-big", "rate": "10"}, map[string]any{"model": "kimi-small", "rate": "0.33"}}}
+	create := func(q map[string]any) response {
+		return e.call(http.MethodPost, "/v1/ai/connections", admin, map[string]any{"name": "Kimi plan", "connector": "openai-compatible", "preset": "kimi",
+			"auth": "api-key", "configuration": map[string]any{"preset": "kimi"}, "credential": "not-a-real-key-for-tests", "billing": map[string]any{"mode": "subscription", "quota": q}})
+	}
+	e.problemIs(create(quota), "createAIConnection", 422, aiconnection.CodeBilling)
+	quota["terms"] = map[string]any{"url": "https://example.com/plan-terms", "title": "The plan's terms", "checked_on": "2026-10-01"}
+	asked := create(quota)
+	if asked.Status != http.StatusAccepted {
+		t.Fatalf("asking: %d %s", asked.Status, asked.Raw)
+	}
+	if d := f.decide(owner, asked.str("id"), "approve", hashOf(asked)); d.Status != http.StatusOK {
+		t.Fatalf("approving: %d %s", d.Status, d.Raw)
+	}
+	list := e.call(http.MethodGet, "/v1/ai/connections", owner, nil)
+	c := list.Body["items"].([]any)[0].(map[string]any)
+	q := c["billing"].(map[string]any)["quota"].(map[string]any)
+	if q["terms"].(map[string]any)["title"] != "The plan's terms" || len(q["rates"].([]any)) != 2 {
+		t.Fatalf("the plan: %s", list.Raw)
+	}
+	id := uuid.MustParse(c["id"].(string))
+
+	// Two requests of the big model (20), three of the small one (0.99) and four of another (4): 24.99, so 24 drawn.
+	now := e.clock.Now()
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		var models []storage.AIModel
+		for _, m := range []string{"kimi-big", "kimi-small", "kimi-plain"} {
+			models = append(models, storage.AIModel{ConnectionID: id, Model: m, FirstListed: now, LastListed: now, Listed: true})
+		}
+		if _, err := u.AIModels().Record(ctx, storage.AIModelListRead{ConnectionID: id, Trigger: "refresh", Outcome: "complete", Pages: 1, ReadBy: "user:plans",
+			ReadAt: now}, models); err != nil {
+			return err
+		}
+		for m, n := range map[string]int{"kimi-big": 2, "kimi-small": 3, "kimi-plain": 4} {
+			for range n {
+				if _, err := u.AICalls().Record(ctx, storage.AICall{Run: uuid.Must(uuid.NewV7()), Agent: "chat", RouteVersion: 1, Step: 1, ConnectionID: id,
+					ModelRequested: m, ModelReported: m, Actor: "user:plans", Classes: []string{"business-figures"}, Outcome: "ok", Input: 10, Output: 5,
+					StartedAt: now}); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	u := e.call(http.MethodGet, "/v1/ai/usage", admin, nil)
+	var use map[string]any
+	for _, x := range u.Body["by_connection"].([]any) {
+		if x.(map[string]any)["connection_id"] == id.String() {
+			use, _ = x.(map[string]any)["quota"].(map[string]any)
+		}
+	}
+	if use == nil || use["used"] != float64(24) || use["unit"] != "requests" {
+		t.Errorf("the plan's use: %s", u.Raw)
 	}
 }

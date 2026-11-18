@@ -523,6 +523,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-11] compile | docs/user-guide/general-ledger.md, docs/user-guide/financial-statements.md → reports.general-ledger, reports.statements (the general ledger export has no limit of lines, NFR-PERF-05)
 
 ## [2026-11-11] compile | docs/user-guide/checks.md → checks.books-health (the checks run at most once a minute through a burst of changes)
+
 ## [2026-11-11] compile | docs/user-guide/forecast.md → planning.forecast (PRD-001 rev 0.247: the results first, a recorded forecast's plan folded)
 
 ## [2026-11-12] compile | docs/user-guide/financial-statements.md → reports.statements (the Trace panel: a figure's breakdown, ledger lines as at the statement's revision, source and history; FR-UX-04)
@@ -542,3 +543,95 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-13] compile | docs/user-guide/workbook-import.md → settings.import (M5's parallel month and M6's archive and go-live)
 
 ## [2026-11-14] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the AI assistant switches off at once, AI-13)
+
+## [2026-11-14] compile | docs/user-guide/organisation-settings.md, docs/user-guide/checks.md → settings.organisation, settings.change, checks.overview (AI routes: the fallbacks threshold and C.2 #55)
+
+## [2026-11-14] compile | docs/user-guide/compliance-data-protection.md → compliance.data-protection (the AI inventory, CMP-AI-02)
+
+## [2026-11-14] compile | docs/user-guide/ai-settings.md → settings.ai (new page: the AI switch, budgets and usage, AI-13, AI-77)
+
+## [2026-11-14] compile | docs/user-guide/ai-providers.md → settings.ai-providers (new page: the AI providers, AI-71…AI-75)
+
+## [2026-11-14] compile | docs/user-guide/ai-providers.md → settings.ai-providers (a connection's own page: turn it on or off, replace the key, its models, qualify a model, where its prompts go)
+
+## [2026-11-14] compile | docs/user-guide/ai-routes.md → settings.ai-routes (new page: model routes and the route editor, AI-74, AI-76, AI-26)
+
+## [2026-11-14] compile | docs/user-guide/ai-activity.md → settings.ai-activity (new page: the AI activity log and your own AI plan, AI-12, AI-73)
+
+## [2026-11-14] compile | docs/user-guide/ai-providers.md → settings.ai-providers (a list not read whole for 14 days carries no personal data or payroll, AI-84)
+
+## [2026-11-14] compile | docs/user-guide/ai-providers.md → settings.ai-providers (models that draw a plan's quota at another rate, AI-73)
+
+## [2026-11-15] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (AI and personal data: the never-send list, AI payroll access and the fields the AI never reads; p1-ai-assistant task 4.1)
+
+## [2026-11-15] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (AI limits: questions a minute and a day, reads per question, questions per conversation; p1-ai-assistant task 5.3)
+
+## [2026-11-15] compile | docs/user-guide/ai-activity.md → settings.ai-activity (questions to the assistant in the AI activity log; p1-ai-assistant task 6.2)
+
+## [2026-11-15] compile | docs/user-guide/ai-activity.md → settings.ai-activity (feedback on the assistant's answers and its review, QA-AI-05; p1-ai-assistant task 6.4)
+
+## [2026-11-15] compile | docs/user-guide/ai-assistant.md → ai.assistant (the assistant panel; p1-ai-assistant task 7.1), linked from settings.ai-activity
+
+## [2026-11-15] compile | docs/user-guide/appearance.md, docs/user-guide/home.md → preferences.appearance, home.find-your-way (on a phone, Appearance, Help and Sign out are under More)
+
+## [2026-11-15] compile | docs/user-guide/ai-assistant.md → ai.assistant (Ask about this, Explain, Simulate, rating an answer; p1-ai-assistant task 7.2)
+
+## [2026-11-15] compile | docs/user-guide/ai-settings.md, docs/user-guide/ai-activity.md → settings.ai, settings.ai-activity (the assistant's monitoring, QA-AI-04; p1-ai-assistant task 8.4)
+
+## [2026-11-15] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the AI task types setting, ai.task_types: off at once when narrowed)
+
+## [2026-11-15] compile | docs/user-guide/ai-proposals.md → ai.proposals (reviewing and deciding an AI proposal: the summary apart from the AI's reasons, items, rejection reasons, expiry)
+
+## [2026-11-15] compile | docs/user-guide/ai-proposals.md → ai.proposals (the AI tasks page: its proposal history, catalogue and never-list; turning a task type on or off)
+
+## [2026-11-15] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the company secretary assistant's settings)
+
+## [2026-11-15] compile | docs/user-guide/ai-proposals.md → ai.proposals (the compliance task the AI may propose, sec.create_task)
+
+## [2026-11-15] compile | docs/user-guide/ai-proposals.md → ai.proposals (the reminder the AI may draft, sec.draft_reminder)
+
+## [2026-11-15] compile | docs/user-guide/company-secretary.md → compliance.secretary (the company secretary assistant's workspace)
+
+## [2026-11-15] compile | docs/user-guide/company-secretary.md → compliance.secretary (the tasks in the Inbox)
+
+## [2026-11-16] compile | docs/user-guide/corporate-profile.md → compliance.corporate-profile (p1-company-secretary task 6.1: the corporate profile and registers screen)
+
+## [2026-11-16] compile | docs/user-guide/equity-register.md → equity.register (the extract's officers and registered office, p1-company-secretary tasks 2.5 and 6.1)
+
+## [2026-11-16] compile | docs/user-guide/company-secretary.md → compliance.secretary (a run without its AI step, rev 0.283)
+
+## [2026-11-16] compile | docs/user-guide/corporate-profile.md → compliance.corporate-profile (drafting resolutions, notices and minutes from Fyniq's templates, FR-CS-05)
+
+## [2026-11-16] compile | docs/user-guide/corporate-profile.md → compliance.corporate-profile (the signed copy and the minute book, FR-CS-05)
+
+## [2026-11-16] compile | docs/user-guide/ai-proposals.md → ai.proposals-approve (sec.draft_document, FR-CS-05)
+
+## [2026-11-17] compile | docs/user-guide/evidence-search.md → compliance.evidence (files open from the search, only my files, show more, filings and GST forecasts searched, a filing missing its acknowledgement)
+
+## [2026-11-17] compile | docs/user-guide/journals.md, docs/user-guide/bills.md → accounting.journals, purchases.bills (a HEIC photo is not accepted yet: export it as JPEG)
+
+## [2026-11-17] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the organisation's motion switch, FR-UX-38)
+
+## [2026-11-17] compile | docs/user-guide/statutory-calendar.md → compliance.record-filing, compliance.calendar (the Company secretary records the corporate items, PRD-001 rev 0.285)
+
+## [2026-11-17] compile | docs/user-guide/home.md → home.overview (Your work by role and Upcoming deadlines on Home, §7.1)
+
+## [2026-11-17] compile | docs/user-guide/keyboard-shortcuts.md → shell.shortcuts (new page: keyboard-first entry, FR-UX-06)
+
+## [2026-11-17] compile | docs/user-guide/profile-and-security.md → preferences.security (its Keyboard section, linking shell.shortcuts)
+
+## [2026-11-17] compile | docs/user-guide/checks.md → checks.overview (run a stopped background task again, C.2 #12, G4-073)
+
+## [2026-11-17] compile | docs/user-guide/help.md → help.guide (the user guide in the app, FR-UX-32)
+
+## [2026-11-17] compile | docs/user-guide/home.md → home.overview (Help opens the user guide)
+
+## [2026-11-17] compile | docs/user-guide/invoices.md, bills.md, claims-my-claims.md → sales.invoices, purchases.bills, claims.my-claims (Has advanced details in Basic mode, FR-UX-25)
+
+## [2026-11-17] compile | docs/user-guide/banking.md → banking.categorise (Plain and Accountant views on the grid, FR-UX-08); the other pages citing it re-hashed, unchanged
+
+## [2026-11-18] compile | docs/user-guide/statutory-packs.md → settings.statutory-packs (an update waiting to be activated, ENG-33, G4-103)
+
+## [2026-11-18] compile | docs/user-guide/help.md → help.guide (Take the tour, FR-UX-34)
+
+## [2026-11-18] compile | docs/user-guide/approvals.md → approvals.decide (FM-6: unusual items in the weekly review, rev 0.287)

@@ -1,0 +1,30 @@
+[
+ {
+  "block": "tests/test_edge_misc.py",
+  "status": "test_bank_import_sees_transfer_recorded_from_other_account"
+ },
+ {
+  "block": "tests/test_edge_misc.py",
+  "status": "test_timesheets_and_hourly_cost"
+ },
+ {
+  "block": "tests/test_edge_misc.py",
+  "status": "test_foreign_currency_reminder_carry_forward_and_fx"
+ },
+ {
+  "block": "tests/test_edge_misc.py",
+  "status": "test_statement_ageing_reconciles_to_balance"
+ },
+ {
+  "block": "tests/test_edge_misc.py",
+  "status": "test_discount_budget_reduces_revenue_budget"
+ },
+ {
+  "block": "tests/test_edge_misc.py",
+  "status": "test_print_leaves_missing_dates_blank"
+ },
+ {
+  "block": "tests/test_edge_misc.py",
+  "status": "test_feasibility_without_irr_and_short_averages"
+ }
+]
