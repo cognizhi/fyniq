@@ -24,3 +24,15 @@ var Prompts embed.FS
 //
 //go:embed tasks
 var Tasks embed.FS
+
+// MCPScopes is the scope each read tool needs over MCP, by the tool and the input that selects what it reads
+// (mcp-scopes.json; p1-mcp-first-party design D4). A tool or an input value it does not name is not exposed.
+//
+//go:embed mcp-scopes.json
+var MCPScopes []byte
+
+// MCPManifest is the MCP tool surface the release serves, generated from the tools and the scope map and pinned by a
+// SHA-256 per definition (mcp-manifest.json; AI-40, CTL-MCP-02). The server refuses a definition whose hash differs.
+//
+//go:embed mcp-manifest.json
+var MCPManifest []byte

@@ -25,6 +25,8 @@
 !agents/agents.go
 !agents/*/SKILL.md
 !contracts/ai/ai.go
+!contracts/ai/mcp-scopes.json
+!contracts/ai/mcp-manifest.json
 !contracts/ai/tools/
 !contracts/ai/prompts/
 !contracts/ai/tasks/

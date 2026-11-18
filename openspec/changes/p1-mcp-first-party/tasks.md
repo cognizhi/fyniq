@@ -78,10 +78,22 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 
 ## 5. The tool surface (AI-16, AI-17, AI-40)
 
-- [ ] 5.1 `contracts/ai/mcp-scopes.json` (design D4) and the generator for `contracts/ai/mcp-manifest.json` (a Go test with
+- [x] 5.1 `contracts/ai/mcp-scopes.json` (design D4) and the generator for `contracts/ai/mcp-manifest.json` (a Go test with
   `-update`): exposed tools with annotations, scope and SHA-256; default deny for an unmapped tool or input value; the
   never-list as a build gate on the generator, from the catalogue loader's list. Tests `// req: AI-40`, `// req: AI-17`,
   `// req: CTL-MCP-02` (planted never-list commands fail the build; every registry tool is listed as mapped or not).
+  Built: `internal/mcpsurface` (`Build`, `Verify`, `Scopes.Needs`), `contracts/ai/mcp-scopes.json` and the generated
+  `contracts/ai/mcp-manifest.json` (`go test ./internal/mcpsurface -update`). Seven of the registry's eight tools are exposed,
+  with scopes read from the input: `metrics.query` and `lineage.explain` by measure and by dimension (customer needs
+  `fyniq.read.sales`, vendor `fyniq.read.purchases`, account `fyniq.read.accounting`), `records.get` and `records.search` by
+  kind (searching needs a kind: the manifest makes it required), the checks and `packs.get` by `fyniq.read.compliance`.
+  Not exposed in P1: `calc` (it runs in the AI service), contacts and expense claims (personal data), and every kind or
+  measure not named: a test requires each enum value to be mapped or listed unexposed with its reason. The never-list is
+  applied to a tool's verb, not its name, because the catalogue loader's words include `packs`, which would refuse the read
+  tool `packs.get`; the gate also refuses a tool that is not read-only and closed-world, that runs outside the API, a write
+  verb, and any scope outside the read areas (payroll, equity and the propose scopes cannot be mapped). **Left for 7.x:** the
+  `propose_<type>` and proposal-read tools join the manifest with their own rule (a task type is refused by
+  `proposal.Refuse` on its ID and command).
 - [ ] 5.2 `tools/list` from the embedded manifest, per person (their scopes, the organisation's enabled task types), refusing
   to start or to serve a tool whose definition's hash differs; descriptions free of organisation data. Tests `// req: AI-40`,
   `// req: AI-17` (a version per change; every tool's behaviour against its description and schema), `// req: CTL-MCP-02`
