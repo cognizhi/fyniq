@@ -241,6 +241,8 @@ export const actions = [
   { kind: "action", id: "shell.shortcuts", mode: "basic", help: "shell.shortcuts", guide: "shell.shortcuts" },
   { kind: "action", id: "shortcuts.settings", mode: "basic", help: "shortcuts.settings", guide: "shell.shortcuts#turn-them-off-or-change-the-keys" },
   { kind: "action", id: "shortcuts.bulk", mode: "basic", help: "shortcuts.bulk", guide: "shell.shortcuts#act-on-selected-rows" },
+  // The first-run tour (FR-UX-34): offered at first, and from Help and the command palette any time.
+  { kind: "action", id: "shell.tour", mode: "basic", help: "shell.tour", guide: "help.guide#take-the-tour" },
   // Plain view or Accountant view of money in and out (FR-UX-08): Expert's; Basic always uses Plain view.
   { kind: "action", id: "ledger-view", mode: "expert", help: "ledger.view", guide: "banking.accounts#categorise-the-waiting-lines" },
   { kind: "action", id: "shell.assistant", mode: "basic", help: "shell.assistant", guide: "ai.assistant" },
@@ -682,6 +684,7 @@ export const actions = [
   { kind: "action", id: "checks.run", mode: "basic", help: "checks.run", guide: "checks.overview#run-the-checks-now" },
   { kind: "action", id: "checks.owner", mode: "basic", help: "checks.owner", guide: "checks.overview#name-a-checks-owner" },
   { kind: "action", id: "checks.review", mode: "basic", help: "checks.review", guide: "checks.overview#mark-an-item-reviewed" },
+  { kind: "action", id: "checks.replay", mode: "basic", help: "checks.replay", guide: "checks.overview#run-a-stopped-task-again" },
   { kind: "action", id: "close.run-checks", mode: "expert", help: "close.run-checks", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.attest", mode: "expert", help: "close.attest", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.reopen", mode: "expert", help: "close.reopen", guide: "accounting.periods#reopen-a-month" },

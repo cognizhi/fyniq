@@ -56,6 +56,8 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "listChecks cursor", "getCheck cursor")
 	// A review names the item's version itself and changes nothing of the check (rev 0.164).
 	want = append(want, "reviewCheckItem If-Match")
+	// A replay acts on a task that stopped, which nothing else changes (G4-073).
+	want = append(want, "replayBackgroundWork If-Match")
 	// A trail's recoveries are one per restore behind its anchors, read whole (AUD-09, design D8).
 	want = append(want, "listAuditRecoveries cursor", "listAuditPurges cursor")
 	want = append(want, "listControls cursor", "getControl cursor")                                                             // the control dashboard (CMP-01)

@@ -190,6 +190,33 @@ describe("An invoice", () => {
     expect(body.lines![0]).toMatchObject({ account_id: "a4010", dimension_value_ids: ["v1"] });
   });
 
+  // req: FR-UX-25
+  // req: experience/modes FR-UX-25 Nothing silently hidden on records
+  it("shows a line's Expert values under Has advanced details in Basic, read-only, and inline in Expert", async () => {
+    const dims = {
+      "GET /v1/dimensions": { status: 200, body: { items: [{ id: "d2", kind: "project", name: "Project", active: true, version: 1 }] } },
+      "GET /v1/dimension-values": { status: 200, body: { items: [{ id: "v2", dimension_id: "d2", code: "ATLAS", name: "Atlas", active: true, version: 1 }] } },
+    };
+    const tagged: Invoice = { ...draft, lines: [{ ...draft.lines[0]!, discount_percent: "10", dimension_value_ids: ["v2"] }] };
+    answer({ ...reads, ...dims, "GET /v1/invoices/v1": read(tagged) });
+    const basic = renderPage(InvoicePage, { path: "/sales/invoices/v1", route: "/sales/invoices/$invoiceId", session: bookkeeper, organisation: standard, mode: "basic" });
+    const toggle = await screen.findByRole("button", { name: "Has advanced details (2)" });
+    fireEvent.click(toggle);
+    const group = screen.getByRole("group", { name: "Has advanced details (2)" });
+    expect(within(group).getByText("Line 1 · Project").nextElementSibling?.textContent).toBe("ATLAS Atlas");
+    expect(within(group).getByText("Line 1 · Discount").nextElementSibling?.textContent).toBe("10%");
+    expect(within(group).getByRole("button", { name: "Open in Expert mode" })).toBeTruthy();
+    // The fields themselves are Expert's: the kit hides them in Basic.
+    expect(screen.getByLabelText("Line 1: Project").closest(".fy-field")!.className).toContain("fy-expert-only");
+    expect(screen.getByLabelText("Discount (%, optional)").closest(".fy-field")!.className).toContain("fy-expert-only");
+    await noViolations(basic.container);
+    basic.unmount();
+    answer({ ...reads, ...dims, "GET /v1/invoices/v1": read(tagged) });
+    renderPage(InvoicePage, { path: "/sales/invoices/v1", route: "/sales/invoices/$invoiceId", session: bookkeeper, organisation: standard, mode: "expert" });
+    expect(await screen.findByDisplayValue("10")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Has advanced details/ })).toBeNull();
+  });
+
   it("says what to fix before saving", () => {
     const form = { customer_id: "", reference: "", date: "", due_date: "", currency: "SGD", fx_rate: "", notes: "", invoice_id: "" };
     const line = { key: "l1", item_id: "", description: "x", quantity: "two", unit_price: "", discount: "120", account_id: "", gst_code: "", spread_months: "", spread_from: "", dimension_value_ids: [] };

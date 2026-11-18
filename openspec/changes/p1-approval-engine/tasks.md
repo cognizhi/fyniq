@@ -67,6 +67,12 @@
   /v1/approval-policies` and `GET /v1/approval-policies/{object_type}` (with its history). Tests:
   `TestApprovalPolicyChangesAreApprovedAndKept`, `TestAttackApprovalPoliciesAreApprovedVersions`. The pack-version
   half of G4-057 arrives with pack activation (task 4.1).)
+  (18 Nov 2026, G4-057's pack half, for the launch gate: the envelope of an invoice, a bill, a purchase order, a
+  customer deposit and an expense claim now holds `gst_pack`, the sg-gst versions the organisation has activated and
+  those the release carries (`gst.PackState`), which their GST codes and rates are read from (FR-APR-10's "versions of
+  the parameter packs used"). Activating a version while such an approval waits, or a release that carries another,
+  changes the envelope: the old approval cannot execute (APR-04, the request void), and asked again it restarts under
+  the version in force. Test `TestAPackActivatedWhileAnApprovalWaitsRestartsIt`.)
 - [x] 2.3 The approval view: document, ledger impact, affected balances and checks, and the diff against the previous version. Test `// req: FR-APR-02`
   (20 Oct 2026: `GET /v1/approvals` and `GET /v1/approvals/{id}` show the envelope, its hash, what the request changes
   before and after, the signatures and whether the caller may sign; a request is shown to its requester and to whoever

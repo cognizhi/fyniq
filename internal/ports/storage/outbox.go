@@ -89,6 +89,18 @@ type Outbox interface {
 	// Hold ends holder's lease without an outcome: the row waits until until, dispatched again then, and the attempt
 	// its lease counted is given back (FR-INT-26: work held while its connectors are paused spends no attempt).
 	Hold(ctx context.Context, id uuid.UUID, holder string, until time.Time, why string) error
+	// Dead are the rows whose attempts ran out, the latest first, at most limit (C.2 #12): background work a person
+	// looks at and replays.
+	Dead(ctx context.Context, limit int) ([]DeadRow, error)
+	// Replay sends a dead row back to pending with its attempts counted afresh (§12.11, C.2 #12, G4-073), keeping its
+	// last error; ports.ErrNotFound when no dead row has that ID.
+	Replay(ctx context.Context, id uuid.UUID) (OutboxRow, error)
+}
+
+// DeadRow is a row whose attempts ran out, and when it died.
+type DeadRow struct {
+	OutboxRow
+	DiedAt time.Time
 }
 
 // Sweeping is what the tick needs from an organisation's outbox (§12.11).
