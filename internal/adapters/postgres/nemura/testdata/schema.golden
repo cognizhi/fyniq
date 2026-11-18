@@ -1,9 +1,24 @@
 ## tables (table | owner | rls | forced)
+audit_chain | nemura_migrator | true | true
+audit_event | nemura_migrator | true | true
 organisation | nemura_migrator | true | true
 tenant_directory | nemura_migrator | false | false
 tenants | nemura_migrator | false | false
 
 ## columns (table | column | type | not null | default)
+audit_chain | organisation_id | uuid | true | nemura.current_org()
+audit_chain | seq | bigint | true | 0
+audit_chain | head_hash | bytea | true | '\x0000000000000000000000000000000000000000000000000000000000000000'::bytea
+audit_event | organisation_id | uuid | true | nemura.current_org()
+audit_event | id | uuid | true | 
+audit_event | seq | bigint | true | 
+audit_event | body | text | true | 
+audit_event | prev_hash | bytea | true | 
+audit_event | hash | bytea | true | 
+audit_event | created_xact | bigint | true | 
+audit_event | action | text | false | ((body)::jsonb ->> 'action'::text)
+audit_event | object_type | text | false | (((body)::jsonb -> 'object'::text) ->> 'type'::text)
+audit_event | object_id | uuid | false | ((((body)::jsonb -> 'object'::text) ->> 'id'::text))::uuid
 organisation | organisation_id | uuid | true | nemura.current_org()
 organisation | name | text | true | 
 organisation | created_at | timestamp with time zone | true | now()
@@ -11,27 +26,111 @@ tenant_directory | organisation_id | uuid | true |
 tenant_directory | created_at | timestamp with time zone | true | now()
 
 ## constraints (table | name | definition)
+audit_chain | audit_chain_hash_sha256 | CHECK ((length(head_hash) = 32))
+audit_chain | audit_chain_head_hash_not_null | NOT NULL head_hash
+audit_chain | audit_chain_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+audit_chain | audit_chain_organisation_id_not_null | NOT NULL organisation_id
+audit_chain | audit_chain_pkey | PRIMARY KEY (organisation_id)
+audit_chain | audit_chain_seq_not_negative | CHECK ((seq >= 0))
+audit_chain | audit_chain_seq_not_null | NOT NULL seq
+audit_event | audit_event_body_fields | CHECK (((body)::jsonb ?& ARRAY['schema'::text, 'event_id'::text, 'organisation_id'::text, 'occurred_at'::text, 'actor'::text, 'action'::text, 'object'::text]))
+audit_event | audit_event_body_ids | CHECK ((((((body)::jsonb ->> 'event_id'::text))::uuid = id) AND ((((body)::jsonb ->> 'organisation_id'::text))::uuid = organisation_id)))
+audit_event | audit_event_body_not_null | NOT NULL body
+audit_event | audit_event_body_object | CHECK ((jsonb_typeof((body)::jsonb) = 'object'::text))
+audit_event | audit_event_body_size | CHECK ((octet_length(body) <= 2097152))
+audit_event | audit_event_created_xact_not_null | NOT NULL created_xact
+audit_event | audit_event_hash_not_null | NOT NULL hash
+audit_event | audit_event_hashes_sha256 | CHECK (((length(prev_hash) = 32) AND (length(hash) = 32)))
+audit_event | audit_event_id_not_null | NOT NULL id
+audit_event | audit_event_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+audit_event | audit_event_organisation_id_not_null | NOT NULL organisation_id
+audit_event | audit_event_pkey | PRIMARY KEY (organisation_id, id)
+audit_event | audit_event_prev_hash_not_null | NOT NULL prev_hash
+audit_event | audit_event_seq_key | UNIQUE (organisation_id, seq)
+audit_event | audit_event_seq_not_null | NOT NULL seq
+audit_event | audit_event_seq_positive | CHECK ((seq > 0))
 organisation | organisation_created_at_not_null | NOT NULL created_at
 organisation | organisation_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 200)))
 organisation | organisation_name_not_null | NOT NULL name
 organisation | organisation_organisation_id_not_null | NOT NULL organisation_id
 organisation | organisation_pkey | PRIMARY KEY (organisation_id)
+organisation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 tenant_directory | tenant_directory_created_at_not_null | NOT NULL created_at
 tenant_directory | tenant_directory_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
 tenant_directory | tenant_directory_organisation_id_not_null | NOT NULL organisation_id
 tenant_directory | tenant_directory_pkey | PRIMARY KEY (organisation_id)
 
 ## indexes
+CREATE UNIQUE INDEX audit_chain_pkey ON nemura.audit_chain USING btree (organisation_id)
+CREATE INDEX audit_event_object_idx ON nemura.audit_event USING btree (organisation_id, created_xact, object_type, object_id)
+CREATE UNIQUE INDEX audit_event_pkey ON nemura.audit_event USING btree (organisation_id, id)
+CREATE UNIQUE INDEX audit_event_seq_key ON nemura.audit_event USING btree (organisation_id, seq)
 CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organisation_id)
 CREATE UNIQUE INDEX tenant_directory_pkey ON nemura.tenant_directory USING btree (organisation_id)
 
 ## triggers
+CREATE TRIGGER audit_chain_guard BEFORE DELETE OR UPDATE ON nemura.audit_chain FOR EACH ROW EXECUTE FUNCTION nemura.audit_chain_guard()
+CREATE TRIGGER audit_chain_no_truncate BEFORE TRUNCATE ON nemura.audit_chain FOR EACH STATEMENT EXECUTE FUNCTION nemura.audit_immutable()
+CREATE TRIGGER audit_event_append BEFORE INSERT ON nemura.audit_event FOR EACH ROW EXECUTE FUNCTION nemura.audit_event_append()
+CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON nemura.audit_event FOR EACH ROW EXECUTE FUNCTION nemura.audit_immutable()
+CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON nemura.audit_event FOR EACH STATEMENT EXECUTE FUNCTION nemura.audit_immutable()
 CREATE TRIGGER organisation_registered AFTER INSERT ON nemura.organisation FOR EACH ROW EXECUTE FUNCTION nemura.organisation_registered()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('organisation', 'organisation_id')
 
 ## policies (table | name | using | with check)
+audit_chain | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+audit_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 
 ## functions (definition)
+CREATE OR REPLACE FUNCTION nemura.audit_chain_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.seq <> OLD.seq + 1 THEN
+    RAISE EXCEPTION 'The audit chain head only moves forward by one event' USING ERRCODE = 'NM060';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.audit_event_append()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  org uuid := nemura.require_org();
+  h   record;
+BEGIN
+  SELECT seq, head_hash INTO h FROM nemura.audit_chain WHERE organisation_id = org FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'The organisation of this transaction has no audit chain' USING ERRCODE = 'NM006';
+  END IF;
+  NEW.organisation_id := org;
+  NEW.seq := h.seq + 1;
+  NEW.prev_hash := h.head_hash;
+  NEW.hash := sha256(h.head_hash || convert_to(NEW.body, 'UTF8'));
+  NEW.created_xact := pg_current_xact_id()::text::bigint;
+  UPDATE nemura.audit_chain SET seq = NEW.seq, head_hash = NEW.hash WHERE organisation_id = org;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.audit_immutable()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  RAISE EXCEPTION 'The audit trail cannot be changed or deleted (% on %)', TG_OP, TG_TABLE_NAME
+    USING ERRCODE = 'NM060', HINT = 'Audit events are append-only (AUD-08).';
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.current_org()
  RETURNS uuid
  LANGUAGE sql
@@ -47,7 +146,32 @@ CREATE OR REPLACE FUNCTION nemura.organisation_registered()
  SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
 AS $function$
 BEGIN
+  INSERT INTO nemura.audit_chain (organisation_id) VALUES (NEW.organisation_id);
   INSERT INTO nemura.tenant_directory (organisation_id) VALUES (NEW.organisation_id);
+  RETURN NULL;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.require_audit()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  audited_type text := TG_ARGV[0];
+  audited_id   uuid := (to_jsonb(NEW) ->> TG_ARGV[1])::uuid;
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM nemura.audit_event e
+     WHERE e.organisation_id = NEW.organisation_id
+       AND e.created_xact = pg_current_xact_id()::text::bigint
+       AND e.object_type = audited_type
+       AND e.object_id = audited_id) THEN
+    RAISE EXCEPTION 'The change to % % has no audit event in its transaction', audited_type, audited_id
+      USING ERRCODE = 'NM061',
+            HINT = 'Write changes through the unit of work, which records their audit events (AUD-08).';
+  END IF;
   RETURN NULL;
 END
 $function$
