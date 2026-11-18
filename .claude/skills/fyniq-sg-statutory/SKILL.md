@@ -18,7 +18,9 @@ Changing a future rate never changes the past.
 > `sg-cit@2026.1` (rate, SUTE/PTE tiers and rebates by YA, `pack.CITRate`/`CITExemption`/`CITRebate`),
 > `sg-cpf@2026.1` (rates above S$750 for citizens and third-year PRs by age band, 2026 and 2027, and the
 > ceilings; `pack.CPFRatesOn`/`CPFCeiling`) and `sg-sdl@2026.1` (`pack.SDLOn`). The CPF graduated rates and
-> the first two PR years (`sg-cpf@2026.2`) and `sg-shg` are still to write, with `p1-payroll-link`.
+> the first two PR years (`sg-cpf@2026.2`) are still to write, with `p1-payroll-link`. `sg-shg@2026.1` (18 Nov 2026,
+> `p1-statutory-packs`) holds the four funds' contributions by wage band (`pack.SHGOn`); the CPF Board's page gives no
+> effective date, so it starts with 2026 as `sg-sdl@2026.1` does, on the page's own copies of 2023 to 2026 being alike.
 > Activation waits for the approval engine. Keep this skill in step as they land.
 > **Every January**, add the new year's public holidays from MOM's page to a new `sg-deadlines` version:
 > a working day in a year without them is Not assessed, so CPF items stop at the year's end.
