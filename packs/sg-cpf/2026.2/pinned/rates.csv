@@ -8,7 +8,7 @@ CPF-06,2026-06,sc_spr3,71,2500.00,0.075,0.05,"above 70",cpf-rates-2026
 CPF-07,2027-01,sc_spr3,58,5000.00,0.165,0.19,"above 55 to 60 from 1 January 2027: 35.5% in all",cpf-rates-2027
 CPF-08,2027-01,sc_spr3,63,5000.00,0.13,0.13,"above 60 to 65 from 1 January 2027: 26% in all",cpf-rates-2027
 CPF-09,2027-01,sc_spr3,40,9000.00,0.17,0.20,"55 and below is unchanged in 2027",cpf-rates-2027
-CPF-10,2026-06,sc_spr3,30,750.00,none,none,"a wage of $750 is in the graduated range, not held by this version",cpf-rates-2026
+CPF-10,2026-06,sc_spr3,30,750.00,none,none,"a wage of $750 is in the graduated range: this table starts a cent above, and low_wages holds $750",cpf-rates-2026
 CPF-11,2025-12,sc_spr3,30,7600.00,none,none,"wages earned before 2026 are not held by this version",cpf-rates-2026
 CPF-12,2026-03,sc_spr3,30,12000.00,0.17,0.20,"above the Ordinary Wage ceiling the rate is the same; the ceiling limits the wages it applies to",cpf-rates-2026 iras-cpf-ceilings
 CPF-13,2026-06,spr1_gg,30,5000.00,0.04,0.05,"first-year permanent resident at graduated rates of both, age 30: 9% in all, 5% by the employee",cpf-table-2-2026

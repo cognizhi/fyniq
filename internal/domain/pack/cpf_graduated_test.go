@@ -12,7 +12,6 @@ import (
 // req: ENG-30
 // req: ENG-31
 // req: QA-ENG-08
-// req: FR-PLN-02
 // The first two years of permanent residence and the graduated range, worked by hand from the CPF Board's tables: the
 // formulas below are the printed ones, evaluated here without the pack.
 func TestTheCPFPackHoldsTheGraduatedRangeAndEveryResidencyYear(t *testing.T) {
