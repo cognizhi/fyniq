@@ -17,6 +17,8 @@ aliases:
   - reconciled without a click
   - undo a match
   - weekly review sample
+  - matched by mistake
+  - undo an automatic match
 ---
 
 # What Fyniq reconciled by itself, and undoing it

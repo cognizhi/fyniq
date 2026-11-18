@@ -20,6 +20,8 @@ aliases:
   - funding gap
   - break-even month
   - record the forecast
+  - hiring plan
+  - effect of hiring on cash
 ---
 
 # The driver forecast and its scenarios

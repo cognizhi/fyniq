@@ -20,6 +20,8 @@ aliases:
   - difference
   - override
   - who may sign off a reconciliation
+  - bank feed matches the books
+  - check the bank against the books
 ---
 
 # Reconcile a money account for a month, and sign it off

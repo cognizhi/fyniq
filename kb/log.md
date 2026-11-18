@@ -647,3 +647,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-18] compile | docs/user-guide/ai-activity.md -> settings.ai-activity (an answer's know-how page versions in the activity log, AI-12, AI-51)
 
 ## [2026-11-18] compile | docs/user-guide/ai-assistant.md -> ai.assistant (ask how something works: know-how answers with chips to guide pages, AI-51, AI-53)
+
+## [2026-11-18] edit | added aliases for users' own wording to 17 pages after the QA-AI-06 retrieval baseline (a retrieval miss is fixed in the compile step, AI-58)

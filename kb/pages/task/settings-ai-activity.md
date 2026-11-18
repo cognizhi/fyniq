@@ -22,6 +22,8 @@ aliases:
   - thumbs down on an answer
   - review AI feedback
   - golden set
+  - what the AI did with my data
+  - AI data use
 ---
 
 # See what the AI did, and use your own AI plan

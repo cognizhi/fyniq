@@ -21,6 +21,9 @@ aliases:
   - dispose of an asset
   - write off an asset
   - sell an asset
+  - wear and tear
+  - depreciation of a laptop
+  - depreciation of equipment
 ---
 
 # Keep the fixed asset register

@@ -22,6 +22,8 @@ aliases:
   - break-glass
   - emergency payment
   - other founder unreachable
+  - no second approver in a small team
+  - solo founder approvals
 ---
 
 # Team mode: how strictly duties are separated
