@@ -1,0 +1,1 @@
+warn KB-ORPHAN kb/pages/concept/b.md
