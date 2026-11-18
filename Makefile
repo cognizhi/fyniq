@@ -147,13 +147,16 @@ oracle-test: ## Run the independent oracle's own tests: hand-worked journals, th
 sqlc: ## Regenerate the PostgreSQL adapter's typed queries from db/migrations and its queries/
 	@cd internal/adapters/postgres && $(MISE) sqlc generate && echo "✔ internal/adapters/postgres/sqlcdb regenerated"
 
-openapi: ## Regenerate the API contract contracts/openapi/fyniq.v1.yaml and the internal one (fyniq-internal.v1.yaml), its JSON Schemas, the API reference and llms.txt from the code, and the web app's client; review the diff
+openapi: ## Regenerate Nemura's API contract contracts/openapi/nemura/nemura.v1.yaml, the API contract contracts/openapi/fyniq.v1.yaml and the internal one (fyniq-internal.v1.yaml), its JSON Schemas, the API reference and llms.txt from the code, and the web app's client; review the diff
 	@$(MISE) go test ./internal/api -run 'TestTheContractIsTheCode|TestTheInternalContractIsTheCode|TestTheReferenceIsTheContract' -count=1 -args -update && echo "✔ contracts/openapi/fyniq.v1.yaml, contracts/schemas/ and docs/api/ regenerated"
+	@$(MISE) go test ./internal/nemura/api -run 'TestTheContractIsTheCode' -count=1 -args -update && echo "✔ contracts/openapi/nemura/nemura.v1.yaml regenerated"
 	@$(MISE) pnpm --filter @fyniq/web -s gen:api >/dev/null && echo "✔ apps/web/src/api/schema.d.ts regenerated"
 
 api-check: ## The API contract: Spectral lint (NFR-API-01) and the web app's generated client is current (FR-INT-17); oasdiff runs in the Go tests (QA-API-02)
 	@$(MISE) pnpm exec spectral lint contracts/openapi/fyniq.v1.yaml --ruleset contracts/openapi/spectral.yaml --fail-severity warn --quiet \
 	  && echo "✔ the API contract passes Spectral"
+	@$(MISE) pnpm exec spectral lint contracts/openapi/nemura/nemura.v1.yaml --ruleset contracts/openapi/nemura/spectral.yaml --fail-severity warn --quiet \
+	  && echo "✔ Nemura's API contract passes Spectral"
 	@$(MISE) pnpm --filter @fyniq/web -s check:api >/dev/null || { echo "✖ apps/web/src/api/schema.d.ts is stale: run pnpm --filter @fyniq/web gen:api"; exit 1; }
 	@echo "✔ the web app's API client matches the contract"
 
