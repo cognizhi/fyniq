@@ -63880,9 +63880,7 @@ paths:
                           type: string
                         id:
                           description: The event ID.
-                          oneOf:
-                            - type: integer
-                            - type: string
+                          type: integer
                         retry:
                           description: The retry time in milliseconds.
                           type: integer
@@ -63900,9 +63898,7 @@ paths:
                           type: string
                         id:
                           description: The event ID.
-                          oneOf:
-                            - type: integer
-                            - type: string
+                          type: integer
                         retry:
                           description: The retry time in milliseconds.
                           type: integer
@@ -63920,9 +63916,7 @@ paths:
                           type: string
                         id:
                           description: The event ID.
-                          oneOf:
-                            - type: integer
-                            - type: string
+                          type: integer
                         retry:
                           description: The retry time in milliseconds.
                           type: integer
