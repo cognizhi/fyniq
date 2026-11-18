@@ -3,7 +3,16 @@
   "additionalProperties": false,
   "properties": {
     "aliases": {
+      "examples": [
+        [
+          "claims rule",
+          "expense rule"
+        ]
+      ],
       "items": {
+        "examples": [
+          "claims rule"
+        ],
         "type": "string"
       },
       "type": "array"

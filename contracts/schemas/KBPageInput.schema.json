@@ -3,23 +3,26 @@
   "additionalProperties": false,
   "properties": {
     "aliases": {
-      "description": "Other words people use for it, which search matches.",
+      "description": "Other words people use for it, at most 30 of at most 60 characters, which search matches.",
       "examples": [
         [
-          "claims rule"
+          "claims rule",
+          "expense rule"
         ]
       ],
       "items": {
+        "examples": [
+          "claims rule"
+        ],
         "type": "string"
       },
-      "maxItems": 30,
-      "type": [
-        "array",
-        "null"
-      ]
+      "type": "array"
     },
     "body": {
       "description": "Markdown: a title, then sections, each citing its source as (src: note:\u003ckey\u003e#\u003canchor\u003e), (src: setting:\u003ckey\u003e#\u003canchor\u003e) or (src: platform:\u003ckey\u003e#\u003canchor\u003e). Every number in it must be in a source it cites.",
+      "examples": [
+        "# Expense policy"
+      ],
       "maxLength": 60000,
       "minLength": 1,
       "type": "string"

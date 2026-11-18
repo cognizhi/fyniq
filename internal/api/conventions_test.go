@@ -62,6 +62,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "listAuditRecoveries cursor", "listAuditPurges cursor")
 	want = append(want, "listControls cursor", "getControl cursor")                                                             // the control dashboard (CMP-01)
 	want = append(want, "listAITaskTypes cursor")                                                                               // the AI tasks page's catalogue (§9.6)
+	want = append(want, "listKBNotes cursor") // the organisation's knowledge-base notes (AI-50)
 	want = append(want, "listRisks cursor")                                                                                     // the risk register (CMP-06)
 	want = append(want, "listComplianceReviews cursor")                                                                         // the recurring reviews (CMP-03)
 	want = append(want, "listPolicies cursor", "getPolicy cursor")                                                              // the policy library (CMP-07)

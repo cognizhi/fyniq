@@ -545,6 +545,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerSession(a)
 	registerIntegrationClients(a)
 	a.registerInternal(mux)
+	approvalEnumsAreExtensible(a.API)
 	return a
 }
 

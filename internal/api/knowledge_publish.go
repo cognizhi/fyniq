@@ -54,8 +54,8 @@ type KBPageInput struct {
 	Type    string          `json:"type" enum:"concept,task,reference,policy,decision" doc:"What the page is." example:"policy"`
 	Title   string          `json:"title" minLength:"1" maxLength:"200" example:"Expense policy"`
 	Summary string          `json:"summary" minLength:"1" maxLength:"160" doc:"One line the index shows." example:"How claims are made here."`
-	Aliases []string        `json:"aliases,omitempty" maxItems:"30" doc:"Other words people use for it, which search matches." example:"[\"claims rule\"]"`
-	Body    string          `json:"body" minLength:"1" maxLength:"60000" doc:"Markdown: a title, then sections, each citing its source as (src: note:<key>#<anchor>), (src: setting:<key>#<anchor>) or (src: platform:<key>#<anchor>). Every number in it must be in a source it cites."`
+	Aliases []string        `json:"aliases,omitempty" nullable:"false" doc:"Other words people use for it, at most 30 of at most 60 characters, which search matches." example:"[\"claims rule\",\"expense rule\"]"`
+	Body    string          `json:"body" minLength:"1" maxLength:"60000" example:"# Expense policy" doc:"Markdown: a title, then sections, each citing its source as (src: note:<key>#<anchor>), (src: setting:<key>#<anchor>) or (src: platform:<key>#<anchor>). Every number in it must be in a source it cites."`
 	Sources []KBSourceInput `json:"sources" maxItems:"50" doc:"What the page is made from; each section cites one of these."`
 }
 
@@ -68,7 +68,7 @@ type KBPageVersion struct {
 	Type        string          `json:"type" example:"policy"`
 	Title       string          `json:"title" example:"Expense policy"`
 	Summary     string          `json:"summary" example:"How claims are made here."`
-	Aliases     []string        `json:"aliases" nullable:"false"`
+	Aliases     []string        `json:"aliases" nullable:"false" example:"[\"claims rule\",\"expense rule\"]"`
 	Body        string          `json:"body" example:"# Expense policy"`
 	Sources     []KBSourceInput `json:"sources" nullable:"false"`
 	DataClass   string          `json:"data_class" example:"general"`
@@ -428,6 +428,14 @@ func registerKnowledgePublishing(a *API) {
 			}
 			seen[ref] = true
 		}
+		if len(in.Aliases) > 30 {
+			problems = append(problems, FieldProblem{Code: CodeInvalid, Field: "body.aliases", Message: "lists more than 30 aliases", Fix: "Keep the words people really use"})
+		}
+		for i, al := range in.Aliases {
+			if n := len([]rune(al)); n == 0 || n > 60 {
+				problems = append(problems, FieldProblem{Code: CodeInvalid, Field: fmt.Sprintf("body.aliases[%d]", i), Message: "is empty or longer than 60 characters", Fix: "Give a short phrase"})
+			}
+		}
 		if m := secretShape.FindString(in.Body + " " + in.Title + " " + in.Summary); m != "" {
 			problems = append(problems, FieldProblem{Code: CodeInvalid, Field: "body.body", Message: "holds what looks like an identity number, a bank account number or a secret",
 				Fix: "Take it out: the assistant reads pages, and these never reach it (AI-02)"})
@@ -633,4 +641,16 @@ func registerKnowledgePublishing(a *API) {
 		}
 		return &kbRequestOut{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 	})
+}
+
+// TransformSchema implements huma.SchemaTransformer: an example for each alias (NFR-API-01).
+func (KBPageInput) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	itemExamples(s, map[string]any{"aliases": "claims rule"})
+	return s
+}
+
+// TransformSchema implements huma.SchemaTransformer: an example for each alias (NFR-API-01).
+func (KBPageVersion) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	itemExamples(s, map[string]any{"aliases": "claims rule"})
+	return s
 }

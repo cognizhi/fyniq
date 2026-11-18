@@ -20220,15 +20220,13 @@ export interface components {
             /**
              * @description What it changes.
              * @example organisation_setting
-             * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection" | "ai_data_policy" | "ai_route" | "ai_proposal" | "corporate_detail" | "corporate_officer" | "nominee_entry" | "statements_approval" | "corporate_document" | "api_client" | "kb_publication";
+            object_type: string;
             /**
              * @description What executes on its approval.
              * @example organisation_setting.change
-             * @enum {string}
              */
-            operation: "organisation_setting.change" | "role.assign" | "role.revoke" | "member.remove" | "member_invitation.create" | "approval_policy.change" | "statutory_pack.activate" | "team_mode.change" | "period.reopen" | "journal.post" | "journal.reverse" | "journal.edit" | "opening_balance.edit" | "bill.post" | "bill.void" | "bill.edit" | "bill_payment.void" | "credit_application.void" | "supplier_refund.void" | "purchase_order.approve" | "document_template.publish" | "invoice.post" | "invoice.void" | "invoice.edit" | "customer_receipt.void" | "write_off.post" | "write_off.void" | "customer_credit_application.void" | "customer_refund.void" | "customer_deposit.void" | "recurring_invoice.approve" | "connector.change" | "bank_rule.auto_apply" | "expense_claim.post" | "claim_reimbursement.void" | "cash_advance.void" | "asset_disposal.void" | "fixed_asset.void" | "payee_bank_change.approve" | "claimant_bank_change.approve" | "payment_batch.approve" | "payment_batch.reapprove" | "contact_member_link.change" | "director_fee.post" | "director_settlement.approve" | "director_repayment.void" | "account.merge" | "bank_reconciliation.sign" | "holder_record.record" | "share_class.record" | "equity_transaction.approve" | "instrument.record" | "instrument_template.enable" | "option_pool.record" | "option_grant.record" | "option_event.record" | "round_scenario.approve" | "investor_right.record" | "controller_entry.record" | "budget.record" | "migration.commit" | "tenant_export.prepare" | "ai_connection.create" | "ai_connection.change" | "ai_connection.credential" | "ai_connection.enable" | "ai_data_policy.change" | "ai_connection.allow_model" | "ai_connection.price" | "ai_route.change" | "ai_proposal.execute" | "corporate_detail.record" | "corporate_officer.record" | "nominee_entry.record" | "statements_approval.record" | "corporate_document.record" | "api_client.create" | "api_client.reclass" | "kb_publication.publish";
+            operation: string;
             /**
              * @description The approval policy's version it keeps (G4-057).
              * @example founder/organisation_setting@2026-10-20.1
@@ -20379,9 +20377,8 @@ export interface components {
             /**
              * @description The kind of change it covers.
              * @example organisation_setting
-             * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection" | "ai_data_policy" | "ai_route" | "ai_proposal" | "corporate_detail" | "corporate_officer" | "nominee_entry" | "statements_approval" | "corporate_document" | "api_client" | "kb_publication";
+            object_type: string;
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -20425,9 +20422,8 @@ export interface components {
             /**
              * @description The kind of change it covers.
              * @example organisation_setting
-             * @enum {string}
              */
-            object_type: "organisation_setting" | "membership" | "member_invitation" | "approval_policy" | "statutory_pack" | "team_mode" | "period" | "journal" | "opening_balance" | "bill" | "bill_payment" | "credit_application" | "supplier_refund" | "purchase_order" | "document_template" | "invoice" | "customer_receipt" | "write_off" | "customer_credit_application" | "customer_refund" | "customer_deposit" | "recurring_invoice" | "connector" | "bank_rule" | "expense_claim" | "claim_reimbursement" | "cash_advance" | "asset_disposal" | "fixed_asset" | "payee_bank_change" | "claimant_bank_change" | "payment_batch" | "contact_member_link" | "director_fee" | "director_settlement" | "director_repayment" | "account" | "bank_reconciliation" | "holder_record" | "share_class" | "equity_transaction" | "instrument" | "instrument_template" | "option_pool" | "option_grant" | "option_event" | "round_scenario" | "investor_right" | "controller_entry" | "budget" | "migration_commit" | "tenant_export" | "ai_connection" | "ai_data_policy" | "ai_route" | "ai_proposal" | "corporate_detail" | "corporate_officer" | "nominee_entry" | "statements_approval" | "corporate_document" | "api_client" | "kb_publication";
+            object_type: string;
             /**
              * @description The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
              * @example Organisation profile, financial year, defaults (rev 0.29)
@@ -38109,13 +38105,17 @@ export interface components {
         };
         KBPageInput: {
             /**
-             * @description Other words people use for it, which search matches.
+             * @description Other words people use for it, at most 30 of at most 60 characters, which search matches.
              * @example [
-             *       "claims rule"
+             *       "claims rule",
+             *       "expense rule"
              *     ]
              */
-            aliases?: string[] | null;
-            /** @description Markdown: a title, then sections, each citing its source as (src: note:<key>#<anchor>), (src: setting:<key>#<anchor>) or (src: platform:<key>#<anchor>). Every number in it must be in a source it cites. */
+            aliases?: string[];
+            /**
+             * @description Markdown: a title, then sections, each citing its source as (src: note:<key>#<anchor>), (src: setting:<key>#<anchor>) or (src: platform:<key>#<anchor>). Every number in it must be in a source it cites.
+             * @example # Expense policy
+             */
             body: string;
             /** @description What the page is made from; each section cites one of these. */
             sources: components["schemas"]["KBSourceInput"][] | null;
@@ -38134,6 +38134,12 @@ export interface components {
             type: "concept" | "task" | "reference" | "policy" | "decision";
         };
         KBPageVersion: {
+            /**
+             * @example [
+             *       "claims rule",
+             *       "expense rule"
+             *     ]
+             */
             aliases: string[];
             /**
              * @description user:<id>, kb-compiler or system.

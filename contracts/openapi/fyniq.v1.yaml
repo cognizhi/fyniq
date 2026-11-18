@@ -6721,7 +6721,10 @@ components:
           type: string
         object_type:
           description: What it changes.
-          enum:
+          examples:
+            - organisation_setting
+          type: string
+          x-extensible-enum:
             - organisation_setting
             - membership
             - member_invitation
@@ -6785,12 +6788,12 @@ components:
             - corporate_document
             - api_client
             - kb_publication
-          examples:
-            - organisation_setting
-          type: string
         operation:
           description: What executes on its approval.
-          enum:
+          examples:
+            - organisation_setting.change
+          type: string
+          x-extensible-enum:
             - organisation_setting.change
             - role.assign
             - role.revoke
@@ -6870,9 +6873,6 @@ components:
             - api_client.create
             - api_client.reclass
             - kb_publication.publish
-          examples:
-            - organisation_setting.change
-          type: string
         policy:
           description: The approval policy's version it keeps (G4-057).
           examples:
@@ -7108,7 +7108,10 @@ components:
           type: integer
         object_type:
           description: The kind of change it covers.
-          enum:
+          examples:
+            - organisation_setting
+          type: string
+          x-extensible-enum:
             - organisation_setting
             - membership
             - member_invitation
@@ -7172,9 +7175,6 @@ components:
             - corporate_document
             - api_client
             - kb_publication
-          examples:
-            - organisation_setting
-          type: string
         row:
           description: The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
           examples:
@@ -7260,7 +7260,10 @@ components:
           type: integer
         object_type:
           description: The kind of change it covers.
-          enum:
+          examples:
+            - organisation_setting
+          type: string
+          x-extensible-enum:
             - organisation_setting
             - membership
             - member_invitation
@@ -7324,9 +7327,6 @@ components:
             - corporate_document
             - api_client
             - kb_publication
-          examples:
-            - organisation_setting
-          type: string
         row:
           description: The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
           examples:
@@ -32627,17 +32627,19 @@ components:
       additionalProperties: false
       properties:
         aliases:
-          description: Other words people use for it, which search matches.
+          description: Other words people use for it, at most 30 of at most 60 characters, which search matches.
           examples:
             - - claims rule
+              - expense rule
           items:
+            examples:
+              - claims rule
             type: string
-          maxItems: 30
-          type:
-            - array
-            - "null"
+          type: array
         body:
           description: "Markdown: a title, then sections, each citing its source as (src: note:<key>#<anchor>), (src: setting:<key>#<anchor>) or (src: platform:<key>#<anchor>). Every number in it must be in a source it cites."
+          examples:
+            - "# Expense policy"
           maxLength: 60000
           minLength: 1
           type: string
@@ -32684,7 +32686,12 @@ components:
       additionalProperties: false
       properties:
         aliases:
+          examples:
+            - - claims rule
+              - expense rule
           items:
+            examples:
+              - claims rule
             type: string
           type: array
         author:

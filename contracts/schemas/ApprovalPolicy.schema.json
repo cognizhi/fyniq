@@ -26,7 +26,11 @@
     },
     "object_type": {
       "description": "The kind of change it covers.",
-      "enum": [
+      "examples": [
+        "organisation_setting"
+      ],
+      "type": "string",
+      "x-extensible-enum": [
         "organisation_setting",
         "membership",
         "member_invitation",
@@ -90,11 +94,7 @@
         "corporate_document",
         "api_client",
         "kb_publication"
-      ],
-      "examples": [
-        "organisation_setting"
-      ],
-      "type": "string"
+      ]
     },
     "row": {
       "description": "The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.",
