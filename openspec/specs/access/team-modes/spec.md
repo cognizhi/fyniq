@@ -275,6 +275,11 @@ Source: PRD-001 §6.4
 - **WHEN** the AI has reviewed an item
 - **THEN** it does not approve it
 
+#### Scenario: Rule-based at launch (rev 0.287)
+- **WHEN** the weekly review is opened in Founder mode at launch
+- **THEN** its unusual items are those rules find in journals, payee bank-detail changes and payments, each with its reason
+- **AND** the AI's explanation of each follows after go-live
+
 ### Requirement: FM-7 Accountant review
 In Founder mode, the external accountant SHALL review at least quarterly, through time-boxed access with read access to the full audit trail, and each review SHALL be a record per period with its sign-off.
 
