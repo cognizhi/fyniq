@@ -169,7 +169,7 @@ func (r kbRepo) PlatformSearch(ctx context.Context, s storage.KBSearch) ([]stora
 		return nil, err
 	}
 	rows, err := r.u.q.KBPlatformSearch(ctx, sqlcdb.KBPlatformSearchParams{Terms: nonNil(s.Terms), Roles: nonNil(s.Reader.Roles),
-		Classes: nonNil(s.Reader.Classes), Scope: s.Scope, MaxHits: int32(s.Limit)})
+		Classes: nonNil(s.Reader.Classes), Scope: s.Scope, MaxHits: int32(min(max(s.Limit, 1), 50))}) // #nosec G115 -- capped; the function refuses more than 50
 	if err != nil {
 		return nil, mapError(err)
 	}
