@@ -10,7 +10,6 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/knowledge"
 )
 
-// req: AI-52
 // The Go lint and scripts/kb.py give the same findings on every fixture of test/kb/fixtures (scripts/test_kb_fixtures.py
 // is the other half): a rule changed in one and not the other fails one of them. The index each fixture ships is the one
 // kb.py generated, so RenderIndex is checked against it too.

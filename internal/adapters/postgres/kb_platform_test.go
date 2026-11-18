@@ -115,8 +115,6 @@ func keysOf(es []storage.KBEntry) []string {
 
 var allClasses = []string{"general", "personal", "payroll", "equity", "identity"}
 
-// req: AI-54
-// req: AI-50
 // The reader filter is the query's (migration 000560): a page is open to a reader only when every guide page it was compiled
 // from is open to one of their roles and its data class is one they may read; an Owner reads every audience; what a reader
 // may not open is not in their index, their search, their page reads or their citations at all.
@@ -183,8 +181,6 @@ func TestTheReaderFilterIsTheQuerys(t *testing.T) {
 	}
 }
 
-// req: AI-58
-// req: AI-51
 // Search is PostgreSQL full-text search over the pages, their aliases and the raw guide, ranked: the users' own words find
 // a page through its aliases, a typo through trigram similarity, a raw source when only it has the words, and the scope
 // narrows what is searched; a draft is marked.
@@ -233,8 +229,6 @@ func TestSearchIsFullTextOverPagesAliasesAndSources(t *testing.T) {
 	wantState(t, "a scope that is not one", err, "FY560")
 }
 
-// req: AI-50
-// req: AI-56
 // The migrator loads the release's own knowledge base, as the release ships it, whole and once: loading it again changes
 // nothing, a later release replaces it, and every page the index lists opens.
 func TestTheMigratorLoadsTheShippedKnowledgeBase(t *testing.T) {
@@ -312,7 +306,6 @@ func TestTheMigratorLoadsTheShippedKnowledgeBase(t *testing.T) {
 }
 
 // req: data/data-model Global tables
-// req: AI-54
 // req: QA-ENG-05
 // asvs: V8.2.2
 // asvs: V13.2.2
