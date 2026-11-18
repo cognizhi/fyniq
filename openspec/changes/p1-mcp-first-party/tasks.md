@@ -4,17 +4,24 @@ Each slice is its own pull request; each passes `make check` and its own tests, 
 leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) unchanged. Migration numbers are in design.md
 (000580 to 000599).
 
-- [ ] 1.1 Hydra's facts, against the pinned v26.2.0 on the local stack (the in-memory Hydra of `internal/api/oauth_test.go`):
+- [x] 1.1 Hydra's facts, against the pinned v26.2.0 on the local stack (the in-memory Hydra of `internal/api/oauth_test.go`):
   what it does with `resource` at the authorisation and the token request, whether the response carries `iss`, whether a
   loopback redirect on any port matches a registered one, that dynamic client registration is off, and that a public client
   registered with `token_endpoint_auth_method: none` completes the flow. Each answer is a test (`// req: AI-36`,
   `// req: AI-35`, `// asvs: V10.4.1`) and a line in design.md "Open questions". If Hydra cannot emit `iss` or accept the
   redirect, the gap and the options go to the owner.
-- [ ] 1.2 What the installed clients send: Claude Code and Claude Desktop pointed at a recording stub on the local stack,
+  Built: `TestHydraAndTheParametersAnMCPClientSends` (`internal/api/oauth_mcp_facts_test.go`). `resource` is not an audience;
+  loopback redirects match on any port for `127.0.0.1` and `localhost`; dynamic registration answers 404; Hydra emits no `iss`
+  (a SHOULD in the revision in force; recorded in design D7 and left for the review pack).
+- [x] 1.2 What the installed clients send: Claude Code and Claude Desktop pointed at a recording stub on the local stack,
   capturing `MCP-Protocol-Version`, the methods, whether `initialize` and `Mcp-Session-Id` appear, and how each obtains a
   `client_id` (pre-registered, dynamic, Client ID Metadata Document). The versions and the capture go in the pull request
   and in design.md; they decide Decisions needed 2 and whether task 4.3 is built (DEV-06). A client that cannot use a
   pre-registered ID is a finding for the owner, not a workaround.
+  Built (the capture is in design D7): Claude Code 2.1.327 sends `server/discover` (2026-07-28) first and falls back to
+  `initialize` (2025-11-25) only after a failure, looks for the path-suffixed protected-resource metadata, and accepts a
+  pre-registered client ID with a fixed callback port. **Left:** Claude Desktop, which cannot be run against a local stack
+  (design "Open questions"); task 4.3 stays conditional.
 
 ## 2. Closed by default (AI-35, FR-INT-03)
 

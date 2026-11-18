@@ -153,11 +153,11 @@ What the repository holds today (read on 19 Nov 2026, main at `5823cbf4`):
 - Authentication is per request: the bearer token on every POST, never a session ID. That makes AI-39's "session ID is not
   authentication" true by construction for this revision, and the session-fixation red-team case becomes "a stale
   `Mcp-Session-Id` is ignored and cannot widen anything".
-- Older clients (2025-06-18, 2025-11-25) use `initialize` and `Mcp-Session-Id`. If the installed Claude Desktop or Claude Code
-  still do, a compatibility layer is needed: `initialize` answered, a random session ID bound to the token's subject and
+- Older clients (2025-06-18, 2025-11-25) use `initialize` and `Mcp-Session-Id`. Claude Code 2.1.327 tries the modern shape
+  first (task 1.2), so a compatibility layer is not needed for it. If Claude Desktop, or a later finding, needs one: `initialize` answered, a random session ID bound to the token's subject and
   client ID (a session presented with another token is refused), GET and legacy DELETE handled as the AI-39 text says. This is
-  the larger surface; "Decisions needed" 2 asks which eras to serve and task 1.2 first captures what the installed clients
-  send, so the answer rests on evidence.
+  the larger surface; "Decisions needed" 2 asks which eras to serve and task 1.2 captured what the installed Claude Code
+  sends, so the answer rests on evidence for it; Claude Desktop is still open.
 - stdio and the legacy HTTP+SSE endpoints are not offered (nothing is mounted); Cloud Armor and the load balancer sit in front
   in the cloud `[live-verify]`.
 
@@ -182,10 +182,33 @@ What the repository holds today (read on 19 Nov 2026, main at `5823cbf4`):
   `ports.OAuthClients.RegisterPublicClient`: `token_endpoint_auth_method: none`, `authorization_code` and `refresh_token`
   grants only, the MCP audience only, class `agent`, loopback redirect URIs (any port, per RFC 8252, if Hydra allows it:
   task 1.1) from `contracts/ai/mcp-clients.json`.
-- **Verified before built, not assumed (task 1.1):** what Hydra v26.2.0 does with `resource` at authorize and token; whether
-  `iss` is emitted; loopback redirect on any port; whether a pre-registered `client_id` can be given to the installed Claude
-  Code and Claude Desktop with dynamic registration off (DEV-06 depends on it; if the clients insist on registering, the
-  allowlisted-client rule is satisfied by a Client ID Metadata Document, which is P2's, and the decision returns to the owner).
+- **Verified against the pinned Hydra v26.2.0 (task 1.1, `TestHydraAndTheParametersAnMCPClientSends`, 19 Nov 2026):**
+  - `resource` is **not** turned into an audience: the login and consent requests have empty requested audiences and the
+    request URL carries `resource`. The consent app reads it and sets the audience itself (G4-082); the token request may
+    repeat `resource` and is accepted; the issued token's audience is exactly what consent granted.
+  - A loopback redirect registered without a port matches on any port, for `127.0.0.1` and for `localhost` (Claude Code asks
+    for `http://localhost:<port>/callback`), and a different path does not match.
+  - Dynamic client registration is off (`POST /oauth2/register` answers 404).
+  - Hydra emits **no `iss`** in the authorisation response and its metadata does not set
+    `authorization_response_iss_parameter_supported`. The revision in force makes `iss` a SHOULD for the authorisation server
+    and has a client proceed when both are absent; it says a later revision is expected to make it a MUST. Not an owner decision
+    now; a gap for the security-review pack, and the test fails when an upgrade starts emitting it so the consent app can rely
+    on it. A fix, if the MUST arrives, is Hydra's, or a thin proxy in front of it.
+- **Verified against the installed Claude Code 2.1.327 (task 1.2, a recording stub on 127.0.0.1, 19 Nov 2026):**
+  - It sends `POST /mcp` `server/discover` first, with `MCP-Protocol-Version: 2026-07-28` and `Mcp-Method: server/discover`,
+    and the `_meta` of the revision (client info and capabilities, including elicitation, which this server never offers).
+    Only after that failed did it fall back to `initialize` with `protocolVersion: 2025-11-25`; so a server that answers
+    `server/discover` correctly is spoken to in the modern shape.
+  - It looks for `/.well-known/oauth-protected-resource/mcp` (the path-suffixed form, with `MCP-Protocol-Version: 2025-11-25`),
+    then `/.well-known/oauth-authorization-server` and `/.well-known/openid-configuration`, and, with no client ID given, tries
+    dynamic registration (`POST /register`, `application_type: native`, redirect `http://localhost:3118/callback`).
+  - A pre-registered client works: `claude mcp add --client-id <id> --callback-port <port> …`, or `oauth: {clientId,
+    callbackPort}` in a `--mcp-config` file; with it the client did not try to register. DEV-06 therefore needs no dynamic
+    registration: the local instructions give the client ID and a fixed port the registered redirect allows.
+  - It notes "SEP-2352 isolation" (issuer-stamped credentials), another reason Hydra's missing `iss` is on the review list.
+  - **Not verified: Claude Desktop.** Its remote servers are added as connectors that sign in from Anthropic's side with
+    Anthropic's callback URL and need a publicly reachable `/mcp`, which a local stack is not; whether a pre-registered client ID
+    is accepted there, and with which redirect, is `[live-verify]` and goes to the owner as an open question below.
 
 **D8. Delegation is Q40 option (b), carried with its conditions (AI-36).**
 - Wire `mcpdelegation.Delegator` behind a signer port: a local ES256 key in the secret store locally; Cloud KMS
@@ -312,9 +335,10 @@ Each has a recommended default, which the build uses until the owner decides; a 
      Costs: a second image to budget (`deploy/docker/budgets.json`), sign, scan and deploy, and a routing change at the switch.
    - C. Replace the shell now. Rejected: it contradicts the plan's gate on review #4 and the launch task's promise.
 2. **Which MCP protocol revisions the server speaks** (slice 4; changes AI-39, so a PRD revision).
-   - **A. 2026-07-28, and the earlier handshake revisions as a compatibility layer only if task 1.2's capture shows the installed
-     Claude Desktop or Claude Code still sends them** (recommended): the modern, sessionless shape is the smaller surface, and
-     the compatibility layer (a bound `Mcp-Session-Id`, as AI-39 says) is built only on evidence.
+   - **A. 2026-07-28, and the earlier handshake revisions as a compatibility layer only if Claude Desktop (or a later finding)
+     needs them** (recommended): Claude Code 2.1.327 was captured speaking the modern shape first (task 1.2), the modern,
+     sessionless shape is the smaller surface, and the compatibility layer (a bound `Mcp-Session-Id`, as AI-39 says) is built
+     only on evidence.
    - B. 2026-07-28 only: smallest surface and AI-39's session wording replaced by per-request authentication; may exclude
      clients that have not moved.
    - C. Both always: widest reach, the largest surface to attack and to keep in step.
@@ -337,8 +361,10 @@ proposals an hour, 500 rows or 256 KB as ceilings); a second factor within the e
 
 ## Open questions
 
-- Whether Hydra v26.2.0 emits `iss`, accepts `resource` without `audience`, and allows loopback redirects on any port
-  (task 1.1 answers each against the local stack and records the answer here).
-- Which protocol revision and which registration method the installed Claude Code and Claude Desktop use (task 1.2's capture;
-  the versions are noted in the pull request).
+- Claude Desktop: how it connects to a remote MCP server (an Anthropic-hosted connector with a public URL and Anthropic's
+  callback, or a local bridge), whether it accepts a pre-registered client ID, and which protocol revision it sends. Cannot be
+  checked on a laptop's local stack; `[live-verify]` with the dev cloud. If it needs dynamic registration or a Client ID Metadata
+  Document, the first-party allowlist cannot include it until `p2-api-third-parties` builds those, and the owner decides
+  whether P1 ships with Claude Code alone.
+- Whether the missing `iss` (RFC 9207) must be fixed before the switch is set: today a SHOULD in the revision in force.
 - Every statutory or vendor claim left as `[verify]` in the PRD stays so; nothing here restates one.
