@@ -4,14 +4,14 @@ type: task
 title: The Home page, search and commands, long work, Settings, the version, and signing out
 summary: Home (pulse, tiles, plans, your work, deadlines, set-up), Search and commands (Ctrl+K), Operations, Settings, the version (Help › About), signing out
 sources:
-  - docs/user-guide/home.md sha256:f9d429385c8d965080e1ce59fea9b1786d1aa3589152b6d88dff81f6228bc881
+  - docs/user-guide/home.md sha256:409653610a991d47626cac0fb91ceb0047d4f6131cdf97ab2afdfcf4fccbd9af
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-17
+compiled_at: 2026-11-18
 aliases:
   - your work
   - what do I need to do today
@@ -80,6 +80,8 @@ aliases:
 - **AR specialist**: draft invoices to finish, invoices overdue, receipts to apply (the customer statements show each one) and quotes waiting for an answer.
 - **AP specialist**: draft bills to finish, bills overdue, bills to pay, payment batches being prepared, approved claims to pay and bank-detail changes waiting for a second person.
 - **Payment releaser**: batches waiting for release and payments the bank rejected, then each bank account's balance.
+- The Administrator lands on **Settings**, and the Company secretary and the DPO on **Compliance**, where their rows come first: the Administrator's people asking to join, invitations waiting to be accepted, role changes waiting for a second approver and integrations failing; the Company secretary's items to see to, register updates waiting for approval and the upcoming deadlines; the DPO's data requests to answer and breaches still open.
+- The Auditor lands on **Reports**, where **Your engagement** says until when the read-only access lasts and opens the journals, the evidence and the audit trail.
 - A row whose list the person's roles cannot read is left out rather than shown as nothing to do; with several roles each row shows once.
 - The Owner, the Controller, the Accountant and the Tax agent read the same work from the pulse card, the tiles and the Inbox, so the card does not show for them alone.
 - **Upcoming deadlines** lists the next five statutory deadlines from the calendar, those **Overdue** or **Due soon** first, each with its date; **The statutory calendar** opens it when Compliance is one of the person's areas ([[compliance.calendar]]).
