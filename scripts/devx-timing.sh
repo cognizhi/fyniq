@@ -38,11 +38,20 @@ later=$(since "$t")
 # comment alone compiles to the same package and relinks nothing.
 wait_for 120 all_up || { echo "✖ the other services did not start within 2 minutes; see .data/dev/*.log" >&2; stop_dev "$pid"; exit 1; }
 before=$(restarts)
+# Where the reload's time goes, as the job's summary shows it: the edit until the api's binary is written (watchexec's
+# stop, the recompile and the link), then until it listens, then until /healthz answers.
+binstamp() { stat -c %y .data/dev/bin/api 2>/dev/null || stat -f %m .data/dev/bin/api; }
+binbefore=$(binstamp); linked=""; listening=""
+restarted() {
+  [ -n "$linked" ] || { [ "$(binstamp)" != "$binbefore" ] && linked=$(since "$t"); }
+  [ -n "$listening" ] || { [ "$(restarts)" -gt "$before" ] && listening=$(since "$t"); }
+  [ -n "$listening" ] && curl -fsS localhost:8081/healthz >/dev/null 2>&1
+}
 cp internal/version/version.go .data/version.go.orig
 trap 'cp .data/version.go.orig internal/version/version.go' EXIT
 t=$(now)
 printf '\nvar devxTiming = "%s"\n' "$t" >>internal/version/version.go
-wait_for 60 sh -c "[ \$(grep -c 'listening on' .data/dev/api.log) -gt $before ] && curl -fsS localhost:8081/healthz >/dev/null" \
+wait_for 60 restarted \
   || { echo "✖ the api did not restart after a Go change; is watchexec installed?" >&2; stop_dev "$pid"; exit 1; }
 reload=$(since "$t")
 stop_dev "$pid"
@@ -54,6 +63,7 @@ report=$(cat <<MD
 | \`make setup && make dev\`, first run (NFR-DEVX-01, DEV-01) | ≤ 600 s | ${first} s |
 | \`make dev\`, later run (NFR-DEVX-01) | ≤ 60 s | ${later} s |
 | Go change to restarted api (NFR-DEVX-03) | ≤ 3 s | ${reload} s |
+|   of it: binary linked after, listening after | | ${linked:-?} s, ${listening:-?} s |
 MD
 )
 echo "$report"
