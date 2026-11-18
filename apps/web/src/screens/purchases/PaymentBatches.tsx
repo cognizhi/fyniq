@@ -279,6 +279,12 @@ export function PaymentBatches() {
           <h2 className="fy-h3">No payment batches {status ? "here" : "yet"}</h2>
           <p className="fy-secondary">A batch pays approved bills and claims from one SGD bank account on one date: one payment per supplier, one per claimant.</p>
           {!may && <p className="fy-small fy-secondary">An Accountant or an AP specialist prepares batches.</p>}
+          {may && !status && (
+            <Button variant="secondary" size="sm" className="self-center" onClick={() => setAdding(true)}>
+              <Icon of={Plus} />
+              Prepare the first batch
+            </Button>
+          )}
         </div>
       )}
       {items.length > 0 && (

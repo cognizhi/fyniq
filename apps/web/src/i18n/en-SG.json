@@ -44,6 +44,17 @@
       "label": "Sign out",
       "tooltip": "Ends your session in this browser."
     },
+    "home.books-health": {
+      "label": "Books health",
+      "tooltip": "How the books stand by the checks that ran: OK, Review or Problems.",
+      "detail": "Fyniq runs checks on the books, such as whether every bank line is recorded and nothing waits in suspense. Problems means a check found something that blocks closing the month; Review means something to look at.",
+      "example": "a bank line left in suspense at the month end shows here until someone says what it is for.",
+      "expert": "The score is the worst status among the checks that ran; a check not assessed is counted beside it, not in it."
+    },
+    "home.what-happened": {
+      "label": "What happened? Where to record it",
+      "tooltip": "Pick what happened, such as a customer paid you, and Fyniq says where to record it and what to do there."
+    },
     "shell.shortcuts": {
       "label": "Keyboard shortcuts",
       "tooltip": "Every keyboard shortcut you can use, and where to turn single-character shortcuts off or change their keys. Shortcut: ?"
