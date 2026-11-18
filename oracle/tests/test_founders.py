@@ -254,6 +254,7 @@ def test_a_repayment_that_breaks_a_rule_is_rejected(change, reason):
 
 # req: RND-SHARE
 # req: FR-EQ-06
+# req: quality/calculation-correctness Pinned conversion of a balance to shares (RND-SHARE)
 @pytest.mark.parametrize(
     ("amount", "price", "shares", "converted", "remainder"),
     [

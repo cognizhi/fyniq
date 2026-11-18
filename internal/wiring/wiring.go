@@ -6,10 +6,12 @@ package wiring
 
 import (
 	"context"
+	"net/http"
 
 	"golang.org/x/oauth2"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/canary"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/backup"
 	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
@@ -66,11 +68,29 @@ type Kit struct {
 	// ModelTokens are the service's own account's tokens, for an AI connection that authenticates with workload identity
 	// (AI-72): the metadata server's in the cloud; nil locally, where such a connection cannot be read.
 	ModelTokens oauth2.TokenSource
+	// Assistant is the AI service, which answers the assistant's turns (p1-ai-assistant design D3): its URL, the API's token
+	// for it (of the class assistant.Class) and the client it is reached through; no URL: every turn fails, saying so.
+	AssistantURL   string
+	AssistantToken func(ctx context.Context) (string, error)
+	AssistantHTTP  *http.Client
+	// AgentModel is the API's internal operations as the worker calls them for a scheduled agent's model step
+	// (PRD-001 rev 0.281; p1-scheduled-agents design D5): their URL, the worker's token for them (of the class
+	// agents.ModelClass) and the client it is reached through; no URL: the runs stay deterministic, saying the model was
+	// not used.
+	AgentModelURL   string
+	AgentModelToken func(ctx context.Context) (string, error)
+	AgentModelHTTP  *http.Client
+	// Screening screens what the AI sends a model and what it answers (AI-18, AI-P7; p1-ai-assistant design D8): Model
+	// Armor in the cloud, local mode's stub of it; nil: no AI call is sent (fail closed).
+	Screening ports.Screening
 	// Posture and Logs are the platform's open cloud findings and a sample of its logs, which the Compliance Center's
 	// platform verifications read (SEC-33, CTL-DP-03): Security Command Center and Cloud Logging in the cloud, a fake
 	// and the files of a directory locally. Nil: those verifications do not run.
 	Posture ports.Posture
 	Logs    ports.LogReader
+	// Canary posts and verifies the night's synthetic transactions in the canary organisation through the public API
+	// (QA-PROD-01): nil until its client is configured, which waits for the integration clients (p1-public-api task 3.1).
+	Canary *canary.Canary
 	// Backup exports the database each week, into Exports' buckets (DR-02, DR-04; p1-operations-dr design D1): Cloud SQL's
 	// export in the cloud, pg_dump locally. Nil: the export job fails, so its heartbeat's absence alerts.
 	Backup        ports.DatabaseBackup

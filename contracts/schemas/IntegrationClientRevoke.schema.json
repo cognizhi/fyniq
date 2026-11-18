@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "Why it is revoked, for the access review.",
+      "examples": [
+        "The integration was retired."
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "IntegrationClientRevoke",
+  "type": "object"
+}

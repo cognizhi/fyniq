@@ -19,6 +19,12 @@ arrive in P1's wave 6 (`p1-mcp-first-party`, `p1-ai-proposals`). Until then an a
   every client not classed otherwise, as an **agent** (AI-34). You see at most what both the person's
   roles and the AI column of the permission matrix allow (PRD-001 Appendix D). Excluded fields never
   reach you (AI-02), and masked ones arrive masked.
+- **A system that calls Fyniq on its own is not an agent:** it is registered as an **integration client**
+  (FR-INT-02, SEC-07). An Administrator asks with `createIntegrationClient`, and the Owner approves with a
+  second person. It then gets tokens with the client-credentials grant, signing a `private_key_jwt`
+  assertion with its own key, and calls only from its networks, within its own limits, until it expires
+  or is revoked. Its narrow scopes (`fyniq.read.<area>`, `fyniq.write.<area>`) never approve or release,
+  and it never does more than the member it acts for may do now.
 - **Read with the `GET` operations** in the [reference](reference.md):
   - lists come a page at a time: send `next_cursor` back as `cursor` until it is absent;
   - money is a decimal string with its currency, never a number, so keep it as text;

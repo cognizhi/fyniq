@@ -133,7 +133,14 @@
         "tenant_export",
         "ai_connection",
         "ai_data_policy",
-        "ai_route"
+        "ai_route",
+        "ai_proposal",
+        "corporate_detail",
+        "corporate_officer",
+        "nominee_entry",
+        "statements_approval",
+        "corporate_document",
+        "api_client"
       ],
       "examples": [
         "organisation_setting"
@@ -212,7 +219,15 @@
         "ai_data_policy.change",
         "ai_connection.allow_model",
         "ai_connection.price",
-        "ai_route.change"
+        "ai_route.change",
+        "ai_proposal.execute",
+        "corporate_detail.record",
+        "corporate_officer.record",
+        "nominee_entry.record",
+        "statements_approval.record",
+        "corporate_document.record",
+        "api_client.create",
+        "api_client.reclass"
       ],
       "examples": [
         "organisation_setting.change"

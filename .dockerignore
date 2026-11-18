@@ -22,6 +22,12 @@
 !packs/
 !connectors/
 !evals/evals.go
+!agents/agents.go
+!agents/*/SKILL.md
+!contracts/ai/ai.go
+!contracts/ai/tools/
+!contracts/ai/prompts/
+!contracts/ai/tasks/
 !evals/*/suite.json
 !package.json
 !pnpm-lock.yaml
@@ -30,9 +36,12 @@
 !docs/design-system/fyniq/tokens.css
 !docs/design/screens/kit/ui.css
 !docs/prd/reviews/review-status.json
+!docs/user-guide/
+!CHANGELOG.md
 !deploy/docker/
 !mise.toml
 apps/web/node_modules
 apps/web/dist
+apps/web/storybook-static
 apps/web/test-results
 apps/web/playwright-report

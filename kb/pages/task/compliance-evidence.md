@@ -4,14 +4,14 @@ type: task
 title: Find evidence across the records, and see what is missing
 summary: Search the files attached to records, open or save one, and list the posted records still missing their evidence
 sources:
-  - docs/user-guide/evidence-search.md sha256:007b85129827555d3c411690b1bc111de6860cd43eb2c5d7ee6a0b413b3bd479
+  - docs/user-guide/evidence-search.md sha256:71b7dc602969812798179259fc4585964ebeb011ed2ab70e2cc136d538cd5f44
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-06
+compiled_at: 2026-11-17
 aliases:
   - evidence search
   - find a receipt
@@ -22,28 +22,31 @@ aliases:
   - open a file
   - download a receipt
   - see an attachment
+  - files I attached
+  - filing acknowledgement
 ---
 
 # Find evidence across the records, and see what is missing
 
 ## What it is
 
-- **Evidence** (from **Accounting**, Expert mode) lists the files attached across the company's records: bills, invoices, journals, bank transactions, expense claims, changes of bank details, founders' money and Owner successions.
+- **Evidence** (from **Accounting**, Expert mode) lists the files attached across the company's records: bills, invoices, journals, bank transactions, expense claims, changes of bank details, founders' money, Owner successions, the equity register, statutory filings and payments, and GST forecasts.
 - Only the files on the records your role lets you see are listed.
 
 (src: docs/user-guide/evidence-search.md#what-it-is)
 
 ## Find evidence
 
-- Choose the **Records** to look in (or **All you may see**), type part of the **Evidence type** such as "invoice", set **Records from** and **to** for a period, then **Find**.
-- The newest records come first; each file shows its record, the record's date, its name, what it is and when it was attached, and a record's number opens it.
+- Choose the **Records** to look in (or **All you may see**), type part of the **Evidence type** such as "invoice", set **Records from** and **to** for a period, tick **Only files I attached** for your own files, then **Find**.
+- The newest records come first; each file shows its record, the record's date, its name, what it is and when it was attached, and a record's number opens it, or the page that lists it.
 - A file whose text shows an NRIC or FIN in full is marked **Shows an NRIC**.
+- The first 50 files show; **Show more** lists the next ones.
 
 (src: docs/user-guide/evidence-search.md#find-evidence)
 
 ## Open a file
 
-- In a record's **Evidence** panel, **Show** (the eye) shows a picture, such as a photo of a receipt or a screenshot, below the list, and **Hide** closes it.
+- In a record's **Evidence** panel, and in each row of **Find evidence**, **Show** (the eye) shows a picture, such as a photo of a receipt or a screenshot, below the list, and **Hide** closes it; a PDF is saved rather than shown.
 - **Save** (the arrow) saves any other file, such as a PDF or a spreadsheet; the saved copy keeps only the letters, digits, spaces, dots, dashes and underscores of its name.
 - Only a file on a record your role lets you see opens; an Employee opens the receipts of their own claims. The file is checked against the fingerprint recorded when it was attached, each opening is in the audit trail, and a file taken off a draft does not open.
 
@@ -51,7 +54,8 @@ aliases:
 
 ## Missing evidence
 
-- **Missing evidence** lists the posted records of the open months with no file while their evidence is required or recommended: a bill without the supplier's invoice or receipt, or a manual journal above the evidence threshold without its supporting calculation or document.
+- **Missing evidence** lists the posted records of the open months with no file while their evidence is required or recommended: a bill without the supplier's invoice or receipt, a manual journal above the evidence threshold without its supporting calculation or document, or a filing recorded as filed without its acknowledgement.
+- A filing's line opens the statutory calendar, where the record is withdrawn and recorded again with the file ([[compliance.record-filing]]).
 - Attach the file in the record's **Evidence** panel and it leaves the list; the same list is the check "Posted records have their evidence" on **Checks** ([[checks.overview]]).
 - What each kind of record needs is set in the organisation's evidence rules ([[settings.organisation]]).
 

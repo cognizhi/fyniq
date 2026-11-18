@@ -1,0 +1,17 @@
+{
+  "kind": "directors.approve_statements",
+  "version": 1,
+  "title": "Directors' resolution in writing",
+  "summary": "The directors approve a financial year's statements and authorise a director to sign them.",
+  "signers": "directors",
+  "fields": [
+    {"name": "fy_end", "type": "date", "label": "The financial year's last day"}
+  ],
+  "sections": [
+    {"paragraphs": ["We, being all the directors of {{.Company.Name}}, pass the following resolutions in writing, as the company's constitution allows."]},
+    {"heading": "Resolved", "items": [
+      "That the financial statements of the company for the financial year ended {{.F.fy_end}} be approved.",
+      "That any one director be authorised to sign the statement by the directors and the financial statements on behalf of the board."
+    ]}
+  ]
+}

@@ -1122,6 +1122,26 @@ func TestOrganisationSettings(t *testing.T) {
 	}
 }
 
+// The organisation's motion (FR-UX-38): on by default, an Administrator turns it off for everyone, an Employee's session
+// included, though an Employee cannot read the settings; the change is kept in the setting's history.
+// req: FR-UX-38
+func TestTheOrganisationsMotionReachesEveryone(t *testing.T) {
+	e := newEnv(t)
+	admin, employee := e.as(authz.Administrator), e.as(authz.Employee)
+	if s := e.call(http.MethodGet, "/v1/session", employee, nil); s.Status != 200 || s.str("motion") != "on" {
+		t.Fatalf("the session's motion by default: %d %s", s.Status, s.Raw)
+	}
+	r := e.call(http.MethodPatch, "/v1/organisation/settings/appearance.motion", admin, map[string]any{"value": "false"}, "If-Match", `"0"`)
+	if r.Status != 200 || r.str("value") != "false" || r.Body["version"] != float64(1) {
+		t.Fatalf("motion turned off: %d %s", r.Status, r.Raw)
+	}
+	if s := e.call(http.MethodGet, "/v1/session", employee, nil); s.str("motion") != "off" {
+		t.Errorf("the session's motion once off: %s", s.Raw)
+	}
+	e.problemIs(e.call(http.MethodPatch, "/v1/organisation/settings/appearance.motion", employee, map[string]any{"value": "true"}, "If-Match", `"1"`),
+		"updateSetting", 403, CodeForbidden)
+}
+
 // Members: until a second member joins, the Owner invites people with roles and changes roles alone (the
 // founder bootstrap); an invitation is a one-time code, kept without it, withdrawable; one made before keeps its
 // roles when accepted after; the last Owner keeps the role; from the second member on, role changes wait for a

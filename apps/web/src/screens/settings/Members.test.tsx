@@ -4,6 +4,7 @@ import { answer, calls, ownerSession, problem } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { Members } from "./Members";
+import { invalid } from "../../test/invalid";
 
 const ann = { id: "m-1", user_id: ownerSession.user_id, display_name: "Ann Tan", roles: [{ role: "owner" }, { role: "controller" }, { role: "administrator" }] };
 const ben = { id: "m-2", user_id: "u-2", display_name: "Ben Ong", roles: [{ role: "owner" }] };
@@ -77,8 +78,12 @@ describe("Members and roles", () => {
     fireEvent.click(within(dialog).getByRole("checkbox", { name: /Owner/ }));
     fireEvent.change(within(dialog).getByLabelText(/Roles end on/), { target: { value: "2026-12-31" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Create invitation" }));
-    expect(await within(dialog).findByText(/Enter the person's name/)).toBeTruthy();
-    expect(within(dialog).getByText(/The Owner role never ends/)).toBeTruthy();
+    await invalid(dialog, /^Name/, "Enter the person's name, up to 200 characters.");
+    await invalid(dialog, /^Roles end on/, "The Owner role never ends: leave the date empty, or invite the Owner separately.");
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: /Owner/ }));
+    for (const box of within(dialog).getAllByRole("checkbox") as HTMLInputElement[]) if (box.checked) fireEvent.click(box);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Create invitation" }));
+    expect(await within(dialog).findByText("Choose at least one role.")).toBeTruthy();
     expect(calls()).not.toContain("POST /v1/members/invitations");
   });
 

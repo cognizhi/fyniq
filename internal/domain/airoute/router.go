@@ -5,6 +5,7 @@ import (
 	"errors"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/cognizhi/fyniq/internal/domain/aipolicy"
 	"github.com/cognizhi/fyniq/internal/domain/aiprice"
@@ -75,12 +76,18 @@ func (n Needs) Lacking(c ports.ModelCapabilities) string {
 	return ""
 }
 
+// ListStale is how long a connection's last complete model-list read keeps it serving personal data and payroll
+// (AI-84's stale limit, 14 days by default): past it, or with no complete read, the step serves only know-how and
+// business figures until a complete read succeeds.
+const ListStale = 14 * 24 * time.Hour
+
 // StepState is what the router knows of a step before calling it.
 type StepState struct {
 	Enabled    bool
 	Allowed    bool   // on the connection's allow-list
 	Callable   bool   // listed, not past its shutdown, not refused by the provider (AI-81)
 	Alias      bool   // a moving alias, as the provider's list says (AI-87)
+	ListStale  bool   // the connection has no complete model-list read within ListStale (AI-84)
 	Standing   string // the model's qualification for the call's agent on this connection (AI-78): aiqual's standings
 	Priced     bool
 	Billing    string
@@ -112,6 +119,8 @@ func Why(classes []string, n Needs, s StepState, model string) string {
 		return model + " is a moving alias, which serves only know-how and business figures (AI-87)"
 	case s.Standing == aiqual.OutOfDate && sensitive(classes):
 		return model + "'s qualification is out of date: it carries no personal data or payroll until it is qualified again (AI-87)"
+	case s.ListStale && sensitive(classes):
+		return "the connection's model list has not been read whole for 14 days: it carries no personal data or payroll until a complete read (AI-84)"
 	}
 	if err := aiprice.Serves(s.Billing, s.SelfHosted, s.Priced, model); err != nil {
 		return model + " has no price in force on this usage-based connection (AI-82)"

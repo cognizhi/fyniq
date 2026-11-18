@@ -273,6 +273,16 @@ type budgetMonth struct {
 //
 // A budgets file (FR-MIG-03; rev 0.272) names each line's account by its code, its amounts as the budget enters them,
 // in the organisation's financial years; each year's budget is a draft, approved later as any budget is.
+// budgetSigned is a Budget sheet amount as Fyniq budgets it, signed as the P&L shows it: the workbook budgets discounts as
+// positive figures that reduce revenue (its contra group "Discounts & refunds"), so a discount line's amount is negated.
+func budgetSigned(line string, x *apd.Decimal) *apd.Decimal {
+	y := new(apd.Decimal).Set(x)
+	if strings.Contains(strings.ToLower(line), "discount") {
+		y.Neg(y)
+	}
+	return y
+}
+
 func (w *Workbook) budgets(m Mapping, path string) []Record {
 	accountOf := map[string]string{}
 	for _, l := range m.BudgetLines {
@@ -310,8 +320,8 @@ func (w *Workbook) budgets(m Mapping, path string) []Record {
 				sums[k] = new(apd.Decimal)
 			}
 			y := new(apd.Decimal).Set(x)
-			if strings.Contains(strings.ToLower(b.Line), "discount") && !w.drafts {
-				y.Neg(y)
+			if !w.drafts {
+				y = budgetSigned(b.Line, x)
 			}
 			if _, err := apd.BaseContext.WithPrecision(40).Add(sums[k], sums[k], y); err != nil {
 				panic(err)

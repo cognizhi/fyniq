@@ -91,7 +91,14 @@
         "tenant_export",
         "ai_connection",
         "ai_data_policy",
-        "ai_route"
+        "ai_route",
+        "ai_proposal",
+        "corporate_detail",
+        "corporate_officer",
+        "nominee_entry",
+        "statements_approval",
+        "corporate_document",
+        "api_client"
       ],
       "examples": [
         "organisation_setting"

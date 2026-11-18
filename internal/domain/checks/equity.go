@@ -249,7 +249,8 @@ func exemptStatusHolds(ctx context.Context, u storage.UnitOfWork, e *Env) (Resul
 }
 
 // C.2 #26: each holding where the register on the latest ACRA extract's day differs from the extract (⚠); not assessed
-// while the register holds shares and no extract is recorded.
+// while the register holds shares and no extract is recorded, or the latest extract is older than the register's last
+// change of shares, which it cannot show (G4-103).
 func acraRegisterAgrees(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
 	latest, diffs, err := equity.ReconcileIn(ctx, u)
 	if err != nil {
@@ -264,6 +265,20 @@ func acraRegisterAgrees(ctx context.Context, u storage.UnitOfWork, e *Env) (Resu
 			return Fine("No shares are recorded, so there is nothing to compare with ACRA yet"), nil
 		}
 		return Missing("the latest ACRA business profile, its holdings typed in with the PDF attached", "Equity › ACRA reconciliation"), nil
+	}
+	moves, err := equity.Moves(ctx, u)
+	if err != nil {
+		return Result{}, err
+	}
+	var last time.Time
+	for _, m := range moves {
+		if m.On.After(last) && !m.On.After(e.Today) {
+			last = m.On
+		}
+	}
+	if last.After(latest.Value.ProfileOn) {
+		return Missing(fmt.Sprintf("an ACRA business profile from %s or later: the latest, of %s, is older than the register's last change of "+
+			"shares", day(last), day(latest.Value.ProfileOn)), "Equity › ACRA reconciliation"), nil
 	}
 	if len(diffs) == 0 {
 		return Fine(fmt.Sprintf("The register agrees with ACRA's business profile of %s", day(latest.Value.ProfileOn))), nil

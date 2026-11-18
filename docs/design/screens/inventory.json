@@ -154,6 +154,7 @@
     "AI suggestions card in violet with the AI label (e.g. 'Rent for October is not yet categorised: code it to 6100?')",
     "Likely paid (FR-BNK-16, UC-BNK-02): the pending incoming-funds signals, each 'INV-0138 likely paid: S$10,900 alert from ACME ROBOTICS' with a Lucide banknote icon and a neutral chip, never violet or the AI label (a bank's alert is not AI content), linking to the invoice; nothing is posted until the statement line is reconciled",
     "Basic: pulse card, needs attention, four tiles (cash, burn, owed to us, we owe), deadlines. Expert: adds gross margin and GST tiles, cash chart drill to ledger lines, unrealised FX",
+    "Your work (§7.1, FR-UX-40): per-role rows in the list-card pattern of Waiting for you, each counting a list and opening it: the Bookkeeper's bank lines to categorise and drafts to finish; the AR specialist's overdue invoices, receipts to apply and quotes waiting; the AP specialist's overdue bills, bills to pay, batches being prepared, claims to pay and bank-detail changes waiting; the payment releaser's batches to release, rejected payments and bank balances. A read the role may not make leaves its row out",
     "Role variants: accountant sees close status and checks; employee sees My claims totals ('the company owes you S$27.30') and payslips; approver sees approvals waiting; board viewer sees KPIs only"
    ],
    "states": [
@@ -3644,6 +3645,7 @@
    "mode": "expert",
    "requirements": [
     "FR-CS-01",
+    "FR-CS-05",
     "FR-CS-06",
     "FR-EQ-25",
     "FR-EQ-11"
@@ -3655,12 +3657,14 @@
     "Registrable controllers (> 25% shares or votes, board-appointment rights), annual notices and 30-day replies; nominee directors and nominee shareholders",
     "ACRA business-profile extract upload and differences; P2 fetched via ACRA API",
     "A change opens its lodgement checklist (14 days for officers and registered office)",
-    "No secretary 6 months after incorporation ✖; sole director as secretary ✖"
+    "No secretary 6 months after incorporation ✖; sole director as secretary ✖",
+    "Papers and minute book: resolutions, notices and minutes drafted from Fyniq's templates (counsel to confirm) and the records, read and downloaded as PDF; the signed copy attached and recorded in the minute book on another person's approval; a draft the AI proposed labelled AI"
    ],
    "states": [
     "differs from ACRA extract",
     "lodgement due ⏰",
-    "extract out of date (Not assessed)"
+    "extract out of date (Not assessed)",
+    "paper drafted, waiting for its signed copy"
    ]
   },
   {

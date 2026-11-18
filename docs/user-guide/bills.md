@@ -54,7 +54,8 @@ SGD** as the supplier's tax invoice states it: that is the input tax claimed.
 
 Under **Evidence** on a saved bill or credit note, choose the file, say what it is (such as the
 invoice or a receipt) and select **Attach**. PDF, image, CSV, text, XLSX, DOCX and email files of up
-to 25 MB are accepted; Fyniq scans each one and strips image metadata such as location. A file whose
+to 25 MB are accepted; Fyniq scans each one and strips image metadata such as location. A HEIC photo,
+as an iPhone takes by default, is not accepted yet: export it as JPEG first. A file whose
 text shows an NRIC or FIN in full is marked **Shows an NRIC**: mask the number before you share it.
 
 - A bill posts only with the supplier's invoice or receipt attached, unless your organisation's
@@ -172,6 +173,10 @@ When the organisation uses dimensions, such as Department or Project, each line 
 of each, such as OPS Operations, so its cost shows by team or by project. The choices are in Expert
 mode; a line on an account that requires a dimension shows its choice in Basic mode too, with "needs
 one" under it, and the bill does not post until the line has one (DIM-05).
+
+In Basic mode, a bill whose lines have values in Expert's fields, such as a spread or a dimension
+value the account does not require, shows **Has advanced details** with how many. Open it to read
+them; **Open in Expert mode** to change them.
 
 A spread line's cost keeps its values each month it is released. A credit note's lines take values
 in the same way, and a recurring bill's lines pass theirs to each draft it makes.

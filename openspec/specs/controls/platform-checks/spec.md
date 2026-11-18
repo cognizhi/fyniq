@@ -551,6 +551,10 @@ Source: PRD-001 §C.2
 - **WHEN** a scheduled agent run is late
 - **THEN** the check flags it for review
 
+#### Scenario: Agent run without its AI step
+- **WHEN** a scheduled agent run ended with its findings but its AI step could not run (rev 0.283)
+- **THEN** the check flags it for review
+
 ### Requirement: C.2 #37 Sending domain alignment, bounces and complaints
 The system SHALL flag for review, on every relevant change and nightly, a sending domain that fails SPF, DKIM or DMARC alignment, or bounces or complaints above the threshold (FR-INT-21).
 

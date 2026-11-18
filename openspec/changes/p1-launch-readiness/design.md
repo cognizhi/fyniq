@@ -77,6 +77,11 @@ See proposal.md for why. What exists today:
   skill, never by editing the expected value.
 - The workbook's Python is not run: its expected values are its own pinned numbers, so nothing from that repository
   executes here.
+- (16 Nov 2026, the owner's decision, taken interactively) The sample company is ported by the migration's
+  reconciliation: its 1,649 figures on the engine against the workbook's own engine, with the differential suite on each
+  rule it posts by. It is not one oracle scenario, since it holds pay runs, which the scenario format has not and the
+  launch does not need. Sets that post nothing (the non-posting cases, the miscellaneous set's other tests) are
+  ported as a mapping of each case to the Fyniq test that holds the same rule, checked to name real tests.
 
 **D5. Visual snapshots run against the local stack, with hashes kept and images uploaded.**
 - Playwright runs in its pinned Linux container against `make up` with the sample company loaded. Fonts are vendored,
@@ -93,7 +98,16 @@ See proposal.md for why. What exists today:
 - QA-E2E-01, QA-UI-08 and QA-UI-07's device-class journeys sign in through the local sign-in page.
 - Each journey starts from a fresh organisation with the sample company loaded through `make seed-load`.
 - Each asserts both what the screen shows and what the API then returns.
-- The AI journey uses the replay model the eval suites use.
+- ~~The AI journey uses the replay model the eval suites use.~~ Superseded on 17 Nov 2026 by the owner's decision,
+  taken interactively: no model was recorded yet (recording needs a live key), and a recording is keyed on the exact
+  request, tool results included, so a journey's fresh organisation never matches one. The AI journeys (AI ask; AI
+  propose → approve → execute) use a **scripted local model**, in the local build only like the replay adapter: it makes
+  the reads the journey names and cites what they return, or makes the named proposal. The journeys so cover the panel,
+  the API, the orchestrator, the tools, numeric grounding, the proposal, its approval in the Inbox and the executor,
+  offline on every pull request; answer quality stays the eval suites' (QA-AI-01…03). Rejected: normalising IDs and
+  timestamps in replay keys and recording the journeys live (a key now, a re-recording at every prompt or tool change,
+  and a key that could hide a request that really changed); running them live in the dev cloud only, with a launch-gate
+  exception.
 - Rejected: fixture-answered journeys for these gates, which prove the screens but not the journeys.
 
 **D7. Storybook as written (rev 0.284).**
@@ -111,6 +125,13 @@ See proposal.md for why. What exists today:
   documents' totals and the audit chain.
 - A failure raises the same alert as a failed ledger verification.
 - Locally it is a job and a test. In the dev cloud it is `[live-verify]`.
+- **The canary writes as a client of the public API** (the owner's decision of 16 Nov 2026, taken interactively). The
+  jobs run as the worker's database role, which by design creates no documents. An `integration`-class OAuth client
+  of the canary organisation proves the whole stack and adds no grant; it waits for FR-INT-02's integration clients
+  (`p1-public-api` task 3.1), and until then the job does nothing.
+  - *Not chosen:* a database role of its own (a new role that writes ledger data in production, bypassing the API);
+    an endpoint inside the API called by the scheduler (outside the public contract); after go-live (QA-PROD-01 only
+    partly met at launch).
 
 **D9. The release policy for calculation defects is a CI check.**
 - `scripts/release_policy.py` fails a pull request that has a `fix` commit touching `internal/domain/`,

@@ -10,5 +10,6 @@ evidence: "Reconciliation log"
 owner: Owner
 checks:
   - frequency: N
-    status: planned
-    arrives: "p1-ai-proposals"
+    status: running
+    how: "verify ai.proposals-approved"
+    evidence: "the latest run in each organisation (fyniq.control_run), nightly: every proposal of the AI executed in the last day ran under its own approval request, approved, whose envelope signs the proposal's payload hash, with what was approved hashing as approved, a person's live approval among the signatures and the person it ran as among them, and no approval given by the AI or a service; each exception is listed by proposal (target 0)"

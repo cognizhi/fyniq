@@ -131,6 +131,11 @@ Source: PRD-001 §9.12 · Priority S · Phase P1
 - **WHEN** a general meeting notice is drafted
 - **THEN** it gives 14 days' notice (s177)
 
+#### Scenario: Templates before the Act-only rules
+- **GIVEN** the templates and `sec.draft_document` are built, marked counsel to confirm (rev 0.283)
+- **WHEN** `sg-acra@2026.2` adds s177, s188 and s184A–G from SSO
+- **THEN** the notice period, the minute-book month and the written-resolution majorities are checked from the pack
+
 ### Requirement: FR-CS-06 The named human secretary
 The corporate profile SHALL record the appointed company secretary, a person, internal or from a corporate secretarial firm, with the Company secretary role; the agent addresses its findings to them and to the directors.
 

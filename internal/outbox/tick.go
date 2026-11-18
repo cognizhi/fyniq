@@ -42,6 +42,14 @@ var PlatformSchedules = []Schedule{
 	{Job: "audit.erase", Every: 24 * time.Hour, Offset: 17*time.Hour + 30*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
 	// The purge after retention, weekly, where an organisation switched it on (AUD-09, AUD-10).
 	{Job: "retention.purge", Every: 7 * 24 * time.Hour, Offset: 17*time.Hour + 45*time.Minute, Lease: 2 * time.Hour, Stale: 8 * 24 * time.Hour},
+	// Daily at 01:55 Singapore time, the assistant's conversations past their retention, and those their people deleted
+	// (§11.9; p1-ai-assistant design D11).
+	{Job: "ai.conversations.purge", Every: 24 * time.Hour, Offset: 17*time.Hour + 55*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
+	// Every 15 minutes, the AI's proposals that waited past their expiry undecided (§9.5; p1-ai-proposals-core design D9).
+	{Job: "ai.proposals.expire", Every: 15 * time.Minute, Offset: 7 * time.Minute, Lease: 10 * time.Minute, Stale: time.Hour},
+	// Every tick, the scheduled agents' slots due before the next one, each delivered at its time (AI-62; p1-scheduled-agents
+	// design D4).
+	{Job: "agents.schedule", Every: TickInterval, Lease: 4 * time.Minute, Stale: 30 * time.Minute},
 	// Daily at 01:50 Singapore time, the person keys of years past their retention listed for the DPO, and the runs they
 	// approved shredded, register first (§11.8, rev 0.244).
 	{Job: "pdpa.shred", Every: 24 * time.Hour, Offset: 17*time.Hour + 50*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
@@ -69,6 +77,8 @@ var PlatformSchedules = []Schedule{
 	// Daily at 04:35, after the checks, each organisation's verifications of the Compliance Center (CTL-FIN-08,
 	// CTL-IAM-01, CTL-AUD-05; p1-compliance-center D4).
 	{Job: "compliance.run", Every: 24 * time.Hour, Offset: 20*time.Hour + 35*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
+	// Nightly at 04:50, in Founder mode, the last week's unusual journals and payments into the weekly review (FM-6, rev 0.287).
+	{Job: "review.unusual", Every: 24 * time.Hour, Offset: 20*time.Hour + 50*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
 	// Nightly at 04:30, the sending domains' DNS records and DMARC policy (FR-INT-21, rev 0.104).
 	{Job: "email.domains", Every: 24 * time.Hour, Offset: 20*time.Hour + 30*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Hourly at :50, the connectors' clean-up: replaced keys past their overlap, an uninstalled connector's keys, a refused
@@ -139,6 +149,9 @@ var PlatformSchedules = []Schedule{
 	// Hourly, the draft invoices of the recurring invoices due by each organisation's own today (FR-AR-07, FR-AUT-01;
 	// rev 0.135).
 	{Job: "invoices.recurring", Every: time.Hour, Offset: 20 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Nightly at 01:55 Singapore time, the canary's synthetic transactions through the public API (QA-PROD-01), before the
+	// audit-chain and ledger verifications, which then cover what it posted.
+	{Job: "canary.run", Every: 24 * time.Hour, Offset: 17*time.Hour + 55*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 }
 
 // TickInterval is how often Cloud Scheduler (locally the API's own loop) calls the tick; a setting.

@@ -1,0 +1,9 @@
+case,threshold,date,want,why,source
+AT-01,simplified_xbrl_revenue,2027-01-01,500000,"revenue for the current financial year does not exceed $500,000",acra-xbrl
+AT-02,simplified_xbrl_assets,2027-01-01,500000,"total assets for the current financial year do not exceed $500,000",acra-xbrl
+AT-03,audit_exempt_revenue,2027-01-01,10000000,"total annual revenue of $10 million or less",acra-audit-exemption
+AT-04,audit_exempt_assets,2027-01-01,10000000,"total assets of $10 million or less",acra-audit-exemption
+AT-05,audit_exempt_employees,2027-01-01,50,"50 employees or fewer",acra-audit-exemption
+AT-06,audit_exempt_criteria,2027-01-01,2,"at least two of the three criteria",acra-audit-exemption
+AT-07,audit_exempt_years,2027-01-01,2,"for the immediate past two consecutive financial years",acra-audit-exemption
+AT-08,audit_exempt_revenue,2026-11-01,none,"before the pack's first day this version knows no threshold",acra-audit-exemption

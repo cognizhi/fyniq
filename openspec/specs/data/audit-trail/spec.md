@@ -316,3 +316,23 @@ Source: PRD-001 §11.5 · Priority M · Phase P1
 #### Scenario: Before the boundary is refused
 - **WHEN** a report is asked for a date before the boundary, or as at a revision before the purge
 - **THEN** it is refused with its reason
+
+### Requirement: AUD-11 Retention and legal holds
+The DPO or an Owner SHALL place and lift holds on a record, a contact or a financial year, with a reason, each audited; while a hold stands the purge after retention SHALL skip what it covers and the evidence store SHALL keep its files, the database refusing a purge of held rows, and the DPO's Compliance page SHALL list the holds in force.
+
+Source: PRD-001 §11.5 · Priority S · Phase P2
+
+#### Scenario: A held year is not purged
+- **GIVEN** the purge switched on and a hold on a financial year whose retention has passed
+- **WHEN** the purge job runs
+- **THEN** it purges nothing that the hold covers
+- **AND** a purge of a held row is refused by the database
+
+#### Scenario: A hold is placed and lifted with a reason
+- **WHEN** the DPO places a hold, and later lifts it
+- **THEN** each carries a reason and is in the audit trail
+- **AND** the DPO's Compliance page lists the hold while it stands
+
+#### Scenario: After go-live (rev 0.288)
+- **WHEN** Fyniq goes live
+- **THEN** holds are not yet built: the purge is off until an organisation switches it on, and nothing is purged within the 5-year minimum

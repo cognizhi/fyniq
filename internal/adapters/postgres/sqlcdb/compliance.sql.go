@@ -131,6 +131,74 @@ func (q *Queries) DualControlReleases(ctx context.Context, since time.Time) ([]D
 	return items, nil
 }
 
+const executedProposals = `-- name: ExecutedProposals :many
+SELECT p.id, p.finished_at::timestamptz AS finished_at, p.payload_sha256, coalesce(p.approved_payload, '')::text AS approved_payload,
+       coalesce(p.approved_sha256, '')::text AS approved_sha256, p.decided_by, r.id AS request_id,
+       coalesce(r.object_type || ':' || r.object_key, '')::text AS request_object, coalesce(r.status, '')::text AS request_status,
+       coalesce(r.envelope, '')::text AS envelope,
+       coalesce((SELECT array_agg(s.signer ORDER BY s.signed_at) FROM fyniq.approval_signature s
+                  WHERE s.organisation_id = r.organisation_id AND s.request_id = r.id AND s.decision = 'approve'
+                    AND s.voided_at IS NULL AND s.envelope_hash = r.envelope_hash), '{}')::uuid[] AS signers,
+       (SELECT count(*) FROM fyniq.audit_event e
+         WHERE e.organisation_id = p.organisation_id AND e.object_type = 'approval_request' AND e.object_id = r.id
+           AND e.action = 'approval.given' AND (e.body::jsonb -> 'actor' ->> 'type') IS DISTINCT FROM 'user')::integer AS not_by_a_person
+  FROM fyniq.ai_proposal p
+  LEFT JOIN fyniq.approval_request r ON r.organisation_id = p.organisation_id AND r.id = p.approval_request_id
+ WHERE p.status = 'executed' AND p.finished_at >= $1
+ ORDER BY p.finished_at, p.id
+`
+
+type ExecutedProposalsRow struct {
+	ID              uuid.UUID
+	FinishedAt      time.Time
+	PayloadSha256   string
+	ApprovedPayload string
+	ApprovedSha256  string
+	DecidedBy       *uuid.UUID
+	RequestID       *uuid.UUID
+	RequestObject   string
+	RequestStatus   string
+	Envelope        string
+	Signers         []uuid.UUID
+	NotByAPerson    int32
+}
+
+// CTL-AI-02: each AI proposal executed since the window began, with what was approved, its approval request, the people
+// whose live approvals signed the request's envelope, and the approvals of it the audit trail records for an actor that
+// is not a person.
+func (q *Queries) ExecutedProposals(ctx context.Context, since *time.Time) ([]ExecutedProposalsRow, error) {
+	rows, err := q.db.Query(ctx, executedProposals, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExecutedProposalsRow
+	for rows.Next() {
+		var i ExecutedProposalsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FinishedAt,
+			&i.PayloadSha256,
+			&i.ApprovedPayload,
+			&i.ApprovedSha256,
+			&i.DecidedBy,
+			&i.RequestID,
+			&i.RequestObject,
+			&i.RequestStatus,
+			&i.Envelope,
+			&i.Signers,
+			&i.NotByAPerson,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const exportsWithoutTheirRecords = `-- name: ExportsWithoutTheirRecords :many
 SELECT 'report_export'::text AS kind, e.id::text AS object_key, e.requested_at::timestamptz AS at,
        'asked for, with no audit event'::text AS reason

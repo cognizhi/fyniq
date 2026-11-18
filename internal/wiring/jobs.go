@@ -16,10 +16,12 @@ import (
 	"github.com/cognizhi/fyniq/compliance"
 	"github.com/cognizhi/fyniq/evals"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
+	"github.com/cognizhi/fyniq/internal/canary"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
@@ -35,6 +37,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/retention"
 	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
+	"github.com/cognizhi/fyniq/internal/domain/unusual"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/logging"
 	"github.com/cognizhi/fyniq/internal/migration"
@@ -43,6 +46,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/proposal"
 	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/render"
 	"github.com/cognizhi/fyniq/internal/reportexport"
@@ -70,6 +74,18 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 				return err
 			}
 			_, err := audit.PurgeAll(ctx, k.Store, k.Blobs, k.Signer, clock)
+			return err
+		},
+		retention.AIConversationsJob: func(ctx context.Context) error { // §11.9: the assistant's conversations past their retention
+			_, err := retention.PurgeAIConversations(ctx, k.Store, clock)
+			return err
+		},
+		agents.ScheduleJob: func(ctx context.Context) error { // AI-62: each enabled agent's slots due before the next tick
+			_, err := agents.Scheduler{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Skills: agents.Default()}.ScheduleAll(ctx)
+			return err
+		},
+		proposal.ExpireJob: func(ctx context.Context) error { // §9.5: the AI's proposals past their expiry, undecided
+			_, err := proposal.ExpireAll(ctx, k.Store, clock)
 			return err
 		},
 		"pdpa.shred": func(ctx context.Context) error { // §11.8: years past their retention listed, approved runs shredded
@@ -241,6 +257,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		"bank.review-sample": func(ctx context.Context) error { // FR-BNK-14, FM-3: the week's sample into the review
 			return banking.SampleAll(ctx, k.Store, clock.Now())
 		},
+		unusual.Job: func(ctx context.Context) error { // FM-6 (rev 0.287): unusual journals and payments into the review
+			_, err := unusual.ReviewAll(ctx, k.Store, clock.Now())
+			return err
+		},
 		"bank.signals-expiry": func(ctx context.Context) error { // FR-BNK-16: alerts no statement line closed in time
 			_, err := banking.ExpireSignalsAll(ctx, k.Store, clock.Now())
 			return err
@@ -260,6 +280,16 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := k.Exports(clock).Expire(ctx, clock.Now())
 			return err
 		},
+		canary.Job: func(ctx context.Context) error { // QA-PROD-01: the canary's night, before the ledger and audit verifications
+			if k.Canary == nil {
+				fmt.Fprintln(os.Stderr, "canary.run: no canary client is configured (QA-PROD-01; it waits for p1-public-api task 3.1)")
+				return nil
+			}
+			r, err := k.Canary.Run(ctx, clock.Now().In(appclock.Singapore))
+			fmt.Fprintf(os.Stderr, "canary.run: %s: invoice %s, receipt %s, bill %s, payment %s, journal %s\n", r.Day, r.Invoice, r.Receipt,
+				r.Bill, r.Payment, r.Journal)
+			return err
+		},
 		"evidence.sweep": func(ctx context.Context) error {
 			if k.Staging == nil || k.Evidence == nil {
 				return nil
@@ -273,6 +303,16 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 // Fanout fans notification events out and sends their digests (FR-NTF-01, FR-NTF-02, FR-NTF-05).
 func (k *Kit) Fanout(clock ports.Clock) notify.Fanout {
 	return notify.Fanout{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Origin: k.Origin}
+}
+
+// AgentRuns runs the scheduled agents' queued runs (AI-64, AI-65; p1-scheduled-agents design D5), asking the model through
+// the API's internal operation when the kit names it, else deterministic alone.
+func (k *Kit) AgentRuns(clock ports.Clock) agents.Runner {
+	r := agents.Runner{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Skills: agents.Default()}
+	if k.AgentModelURL != "" {
+		r.Model = agents.APIModel{URL: k.AgentModelURL, Token: k.AgentModelToken, HTTP: k.AgentModelHTTP}.Step
+	}
+	return r
 }
 
 // Relays emits the installation's notices, such as a connector paused or a change waiting, in the organisations of the

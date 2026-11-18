@@ -49,7 +49,9 @@ type ImpactRefusal struct {
 }
 
 // impactOf works out what approving request id would post now, as p sees it, in a unit of work that is rolled back:
-// nil for a request that is not pending, or whose change posts nothing and is not refused.
+// nil for a request that is not pending, or whose change posts nothing and is not refused. An AI proposal's approval
+// posts nothing itself: it signs the payload and queues it for the executor, and the proposal shows its own dry run
+// (AI-07); so it has none, where a rolled-back approval without its signature would read as refused.
 func (a *API) impactOf(ctx context.Context, p authn.Principal, id uuid.UUID) (*ApprovalImpact, error) {
 	var out *ApprovalImpact
 	refuse := func(err error) {
@@ -58,7 +60,7 @@ func (a *API) impactOf(ctx context.Context, p authn.Principal, id uuid.UUID) (*A
 	}
 	err := a.deps.Store.Do(storage.WithPreview(ctx), p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		r, err := u.Approvals().Get(ctx, id)
-		if err != nil || r.Status != string(approval.Pending) {
+		if err != nil || r.Status != string(approval.Pending) || r.ObjectType == approval.ObjectAIProposal {
 			return err
 		}
 		s, err := storedOf(r)

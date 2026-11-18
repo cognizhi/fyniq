@@ -27,6 +27,18 @@ export default defineConfig({
   build: {
     // NFR-PERF-UI-03: the shell's initial JavaScript stays small; heavy parts load on demand.
     reportCompressedSize: true,
+    // NFR-PERF-UI-01: each Lucide icon and each small piece of the router and Base UI would be a chunk of its own; over
+    // HTTP/1.1's six connections fifty small requests queue behind each other, so they load as a few chunks instead.
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: "icons", test: /node_modules[\\/]lucide-react/ },
+            { name: "framework", test: /node_modules[\\/](react|react-dom|scheduler|@tanstack|@base-ui|@floating-ui|use-sync-external-store)[\\/]/ },
+          ],
+        },
+      },
+    },
     // NFR-BROWSER-01: the supported browsers' oldest versions (browsers.ts).
     target: buildTarget,
   },

@@ -23,6 +23,7 @@ import { issuers, preparers, StateChips, total, type Invoice } from "./Invoices"
 import { Checks, EmailDialog, Sends, Totals } from "./parts";
 import { RecordReceipt } from "./Receipts";
 import { auditReaders, PurgedPostings } from "../compliance/PurgedPostings";
+import { AskAboutThis } from "../../components/ai/AskAboutThis";
 
 type Draft = components["schemas"]["InvoiceDraft"];
 type EntryLine = components["schemas"]["EntryLine"];
@@ -490,6 +491,11 @@ export function InvoicePage() {
             </p>
           )}
         </div>
+        {invoice && invoiceId && (
+          <div className="fy-pagehead__actions">
+            <AskAboutThis context={{ kind: credit ? "credit_note" : "invoice", id: invoiceId, label: title.slice(0, 200) }} />
+          </div>
+        )}
       </div>
       <ReviewBanner screen={isNew || invoice?.status === "draft" ? "invoice-editor" : "invoice-record"} />
       {invoiceId && (invoice?.status === "posted" || invoice?.status === "reversed") && roles.some((r) => auditReaders.includes(r)) && <PurgedPostings recordId={invoiceId} />}
@@ -531,7 +537,7 @@ export function InvoicePage() {
         </div>
       )}
       {invoice && !form && !editing && <Checks checks={invoice.checks ?? []} />}
-      <form className="fy-stack fy-stack--6" onSubmit={(e) => void save(e)} noValidate>
+      <form className="fy-stack fy-stack--6" data-enter="next" onSubmit={(e) => void save(e)} noValidate>
         <section className="fy-card" aria-labelledby={`${id}-cust`}>
           <div className="fy-card__head">
             <h2 className="fy-h3" id={`${id}-cust`}>

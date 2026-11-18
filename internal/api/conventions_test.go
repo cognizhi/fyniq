@@ -33,13 +33,17 @@ func TestConventionExemptions(t *testing.T) {
 	for _, op := range []string{"approveJoinRequest", "rejectJoinRequest", "claimJoinDomain"} { // decided or claimed once
 		want = append(want, op+" Idempotency-Key", op+" Prefer")
 	}
+	want = append(want, "deleteAIConversation Prefer", "deleteAIConversation If-Match", "askAIConversation Idempotency-Key", "askAIConversation Prefer",
+		"askAIConversation If-Match")
+	want = append(want, "giveAIFeedback If-Match", "reviewAIFeedback Idempotency-Key", "reviewAIFeedback Prefer") // QA-AI-05: given once, reviewed once
 	want = append(want, "revokePasskey Prefer", "signOutDevice Prefer", "unlinkIdentity Prefer", "signOutOtherDevices Idempotency-Key", "signOutOtherDevices Prefer")
 	// A preview saves nothing, so a repeat is harmless and return=preview would answer the same (rev 0.97).
 	want = append(want, "previewDocumentTemplate Idempotency-Key", "previewDocumentTemplate Prefer")
 	// A back-test saves nothing either (FR-BNK-05).
 	want = append(want, "backTestBankRule Idempotency-Key", "backTestBankRule Prefer")
 	// Trying a round in the sandbox saves nothing too (FR-EQ-21), nor does a forecast run (FR-PLN-08).
-	want = append(want, "modelRound Idempotency-Key", "modelRound Prefer", "runForecast Idempotency-Key", "runForecast Prefer", "whatIfCashProjection Idempotency-Key", "whatIfCashProjection Prefer")
+	want = append(want, "modelRound Idempotency-Key", "modelRound Prefer", "runForecast Idempotency-Key", "runForecast Prefer", "whatIfCashProjection Idempotency-Key", "whatIfCashProjection Prefer",
+		"queryMetrics Idempotency-Key", "queryMetrics Prefer")
 	// Reconcile now posts each line in its own transaction; a repeat finds them no longer waiting (FR-BNK-14, rev 0.143).
 	want = append(want, "autoReconcileBankLines Idempotency-Key")
 	// A reveal changes no record: a repeat shows the number again and records another look (FR-CT-03, rev 0.153).
@@ -52,9 +56,12 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "listChecks cursor", "getCheck cursor")
 	// A review names the item's version itself and changes nothing of the check (rev 0.164).
 	want = append(want, "reviewCheckItem If-Match")
+	// A replay acts on a task that stopped, which nothing else changes (G4-073).
+	want = append(want, "replayBackgroundWork If-Match")
 	// A trail's recoveries are one per restore behind its anchors, read whole (AUD-09, design D8).
 	want = append(want, "listAuditRecoveries cursor", "listAuditPurges cursor")
 	want = append(want, "listControls cursor", "getControl cursor")                                                             // the control dashboard (CMP-01)
+	want = append(want, "listAITaskTypes cursor")                                                                               // the AI tasks page's catalogue (§9.6)
 	want = append(want, "listRisks cursor")                                                                                     // the risk register (CMP-06)
 	want = append(want, "listComplianceReviews cursor")                                                                         // the recurring reviews (CMP-03)
 	want = append(want, "listPolicies cursor", "getPolicy cursor")                                                              // the policy library (CMP-07)

@@ -6,6 +6,7 @@ export interface Answer {
   status: number;
   body?: unknown;
   headers?: Record<string, string>;
+  events?: string; // a server-sent event stream, sent as it is
 }
 
 export type Handler = Answer | ((body: unknown, req: Request) => Answer);
@@ -61,6 +62,7 @@ export async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): P
   const h = handlers[`${req.method} ${path}`];
   if (!h) return new Response(`no fixture for ${req.method} ${path}`, { status: 599 });
   const a = typeof h === "function" ? h(body, req) : h;
+  if (a.events !== undefined) return new Response(a.events, { status: a.status, headers: { "Content-Type": "text/event-stream", ...a.headers } });
   return new Response(a.body === undefined ? null : JSON.stringify(a.body), {
     status: a.status,
     headers: { "Content-Type": a.status >= 400 ? "application/problem+json" : "application/json", ...a.headers },

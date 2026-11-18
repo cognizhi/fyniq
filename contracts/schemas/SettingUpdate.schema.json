@@ -18,11 +18,11 @@
       "type": "boolean"
     },
     "value": {
-      "description": "The new value, as its kind writes it; or send reset.",
+      "description": "The new value, as its kind writes it: at most 200 characters, or 4,000 for a list (fields or task_types); or send reset.",
       "examples": [
         "45"
       ],
-      "maxLength": 200,
+      "maxLength": 4000,
       "type": "string"
     }
   },

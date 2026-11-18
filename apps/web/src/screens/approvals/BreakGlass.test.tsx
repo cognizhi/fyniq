@@ -4,6 +4,7 @@ import { answer, ownerSession } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { BreakGlassPage } from "./BreakGlass";
+import { invalid } from "../../test/invalid";
 
 const sgd = (amount: string) => ({ amount, currency: "SGD" });
 const weiLing = { kind: "user" as const, id: ownerSession.user_id, name: "Wei Ling Tan" };
@@ -29,7 +30,7 @@ describe("Break-glass", () => {
     expect(within(form).getByText(/Never: repaying a director, paying yourself/)).toBeTruthy();
     await noViolations(document.body);
     fireEvent.click(within(form).getByRole("button", { name: "Start break-glass" }));
-    expect(await within(form).findByText("Say who is unreachable and what must be paid.")).toBeTruthy();
+    await invalid(form, "Why", "Say who is unreachable and what must be paid.");
     fireEvent.change(within(form).getByLabelText("Why"), { target: { value: " Ah Kow is on a flight until Friday " } });
     fireEvent.click(within(form).getByRole("button", { name: "Start break-glass" }));
     expect(await screen.findByText(/Break-glass started: every Owner and the Accountant have been told/)).toBeTruthy();

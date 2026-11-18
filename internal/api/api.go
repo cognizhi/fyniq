@@ -9,6 +9,7 @@
 package api
 
 import (
+	"cmp"
 	"context"
 	"crypto/rand"
 	"encoding/json"
@@ -18,6 +19,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/netip"
 	"slices"
 	"strconv"
 	"strings"
@@ -26,6 +28,7 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/clientip"
@@ -39,6 +42,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/passkey"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/proposal"
 	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/render"
 	"github.com/cognizhi/fyniq/internal/telemetry"
@@ -61,6 +65,10 @@ type Deps struct {
 	// D3): the wiring passes version.Release, which this package never imports. Zero: a development build.
 	Release compliance.Release
 	Limits  Limits // the requests a client may make a minute in an organisation (FR-INT-16); zero: DefaultLimits
+	// OAuthClients registers integration clients with the OAuth server (FR-INT-02); nil when it is not configured, and then
+	// none can be registered. APIAudience is the audience their tokens name: the API's.
+	OAuthClients ports.OAuthClients
+	APIAudience  string
 	// Staging keeps uploads until their record is final, and Scanner checks them for malware (FR-DOC-13,
 	// FR-DOC-01); without either, no file can be attached.
 	Staging ports.BlobStore
@@ -88,13 +96,30 @@ type Deps struct {
 	// AIProviders builds an AI connection's model provider (AI-70), read in the work's unit of work; nil: the connector
 	// runtime's, through the egress guard to the connection's one host.
 	AIProviders func(ctx context.Context, u storage.UnitOfWork, c storage.AIConnection) (ports.ModelProvider, error)
+	// Assistant is the AI service, which answers the assistant's turns (p1-ai-assistant design D3); nil: every turn fails,
+	// saying the AI service is not set up.
+	Assistant *AssistantService
+	// Screening screens what the AI service sends a model, the tools' untrusted text and the models' answers (AI-18,
+	// AI-P7; p1-ai-assistant design D8): Model Armor, or local mode's stub; nil: no AI call is sent and no tool runs.
+	Screening ports.Screening
 	// EvalSuites are the agents' eval suites a model is qualified with (AI-78); nil: the release's, evals.Suites.
 	EvalSuites fs.FS
+	// Catalogue is the AI's task catalogue (§9.6, AI-32; p1-ai-proposals-core design D1); nil: the release's,
+	// proposal.Default().
+	Catalogue *proposal.Catalogue
+	// Commands are the domain commands of the catalogue's task types (p1-ai-proposals-core design D3); nil: none, as each
+	// task type arrives with its own.
+	Commands proposal.Commands
+	// Skills are the scheduled agents' skills (AI-61; p1-scheduled-agents design D1); nil: the release's, agents.Default().
+	Skills *agents.Skills
 	// APIBase is where the browser reaches the API on the web app's origin: "/api" (the default) behind the load balancer
 	// and Caddy. The API's own download links start with it.
 	APIBase string
 	// AlertThresholds are SEC-31's alert settings (FYNIQ_ALERT_THRESHOLDS); zero: security.Defaults.
 	AlertThresholds security.Thresholds
+	// Services verifies the service tokens the internal API takes: the AI service's, class ServiceAI (p1-ai-assistant
+	// design D4); nil: the internal API refuses every call.
+	Services ports.TaskTokens
 	// DownloadKey signs the API's own download links (SEC-24), shared by every instance; empty: each instance makes one.
 	// The cloud's evidence stores give signed URLs instead.
 	DownloadKey []byte
@@ -106,6 +131,8 @@ type Deps struct {
 // API is the registered API.
 type API struct {
 	huma.API
+	// internal is the internal API, the AI service's alone (internal.go).
+	internal     huma.API
 	deps         Deps
 	policies     map[string]authz.Policy
 	downloadKey  []byte // signs the API's own download links (SEC-24): Deps.DownloadKey, else one of its own
@@ -194,6 +221,7 @@ func Config(version string) huma.Config {
 	cfg.Tags = []*huma.Tag{
 		{Name: "Installation", Description: "First-run setup of a new installation (FR-ADM-06)."},
 		{Name: "Connectors", Description: "Outside services as connectors: the catalogue, the installation's and the organisation's, their lifecycle, keys and tests (FR-INT-20, FR-INT-25…27)."},
+		{Name: "Integrations", Description: "Integration clients: systems that call the API on their own, with OAuth client credentials by class, narrow scopes, their networks and limits, registered by two people and revoked at once (FR-INT-02, SEC-07)."},
 		{Name: "Session", Description: "Signing in to the web app: the providers, and your own session (SEC-05, FR-ADM-08)."},
 		{Name: "Organisation", Description: "The organisation your session is in."},
 		{Name: "Chart of accounts", Description: "Accounts: what the ledger posts to (PRD-001 §8.2)."},
@@ -208,11 +236,13 @@ func Config(version string) huma.Config {
 		{Name: "Exchange rates", Description: "Rates into the base currency: the daily feed, the organisation's own rates for a day and its monthly table, and the cascade a posting takes its rate from (FR-GL-05, ENG-40)."},
 		{Name: "Reports", Description: "Reports read from the ledger at one revision: the general ledger (FR-GL-11), and the statements as they arrive."},
 		{Name: "Equity", Description: "The equity register (§8.23): its holders, contacts marked shareholder or investor, with their records; the share classes with their rights, each recorded on another person's approval (FR-EQ-15, FR-EQ-16); and the equity transactions that move every share, approved by another person and made effective with ACRA's date (FR-EQ-17)."},
+		{Name: "Corporate profile", Description: "The corporate profile (§9.12): the company's name, registered office and SSIC code from a day, and its officers (directors, the secretary, the CEO and auditors) with their days and lodgements, each recorded on another person's approval with its evidence (FR-CS-01, FR-CS-06)."},
 		{Name: "Operations", Description: "Long work that runs in the background, polled until it is done: a request that starts it answers 202 with the operation in Location (FR-INT-11)."},
 		{Name: "Compliance", Description: "Statutory compliance: the GST registration monitor and its forecasts (FR-TAX-05), and the statutory calendar of filing and payment deadlines as it arrives (FR-TAX-07, CMP-02)."},
 		{Name: "Migration", Description: "The move from the zh-sheet-accounting workbook (FR-MIG-01, §17.1): the organisation's one migration, its steps M1 to M6, the workbook uploaded as M1's evidence and its validation report before anything is committed."},
 		{Name: "Data", Description: "The organisation's data as a whole: the full tenant export (FR-MIG-04), dual controlled, saved only by its requester."},
 		{Name: "AI", Description: "The AI's configuration: connections to model providers, their credentials and billing (AI-72, AI-73, AI-79), dual controlled; never reachable by the AI or over MCP (§9.6)."},
+		{Name: "Assistant", Description: "Ask the books in plain words: a person's own conversations with the assistant, answered as them through the read tools, every figure from a fact (AI-P1, AI-08); never reachable by the AI or over MCP (§9.6)."},
 		{Name: "Import", Description: "The generic import (FR-MIG-03): each entity's template, laid out as the workbook's sheet for it, as CSV or XLSX, and the import of a file filled in it, with its dry run; each row entered through its own command, in any organisation, under the entity's own right."},
 		{Name: "Planning", Description: "Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08)."},
 		{Name: "Audit trail", Description: "The audit trail (PRD-001 §11.5): the explorer and its export (FR-CTL-03, AUD-07), and Verify integrity for a range of days (AUD-03). Every saved change, sign-in, sensitive read and export is in it."},
@@ -225,6 +255,7 @@ func Config(version string) huma.Config {
 		{Name: "Evidence", Description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."},
 		{Name: "Search", Description: "The global search: documents, contacts, accounts and items by reference, name, words or amount, in what the caller may see (FR-UX-02, SEC-34)."},
 		{Name: "Notifications", Description: "Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05)."},
+		{Name: "Help", Description: "Each person's first-run tour state: the tour's only write (FR-UX-34, G4-104)."},
 		{Name: "Announcements", Description: "Banners under the header: those each person sees now, and the announcements the Owner and Administrator publish to their organisation (FR-NTF-03)."},
 		{Name: "Templates", Description: "Document and email templates as data: drafts, and numbered versions published under approval that never change (FR-TPL-01…05)."},
 	}
@@ -303,7 +334,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.repayments.AfterPosting = a.afterPosting
 	a.disposals.AfterPosting = a.afterPosting
 	cfg := Config(d.Version)
-	cfg.Transformers = append(cfg.Transformers, a.mask)
+	cfg.Transformers = append(cfg.Transformers, a.mask, a.excludeForAI)
 	a.API = humago.New(limitUploads{mux}, cfg)
 	a.UseMiddleware(a.requestContext, a.authenticate, a.limit, a.authorise)
 	registerOrganisation(a)
@@ -329,7 +360,9 @@ func New(mux humago.Mux, d Deps) *API {
 	registerFinancialExports(a)
 	registerManagementReports(a)
 	registerKPIs(a)
+	registerMetrics(a)
 	registerChecks(a)
+	registerBackgroundWork(a)
 	registerReportExports(a)
 	registerSchedules(a)
 	registerAccountMerges(a)
@@ -342,6 +375,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerCapture(a)
 	registerInbound(a)
 	registerNotifications(a)
+	registerHelpState(a)
 	registerBanners(a)
 	registerDelivery(a)
 	registerMembers(a)
@@ -349,6 +383,13 @@ func New(mux humago.Mux, d Deps) *API {
 	registerApprovals(a)
 	registerApprovalPolicies(a)
 	registerPacks(a)
+	registerStatutoryValues(a)
+	registerAssistant(a)
+	registerAITurnActivity(a)
+	registerAIFeedback(a)
+	registerAIProposalReads(a)
+	registerComplianceTasks(a)
+	registerCompanySecretary(a)
 	registerTeamMode(a)
 	registerPasskeys(a)
 	registerDevices(a)
@@ -365,6 +406,10 @@ func New(mux humago.Mux, d Deps) *API {
 	registerOptionEvents(a)
 	registerRoundScenarios(a)
 	registerHolderRights(a)
+	registerCorporateProfile(a)
+	registerCorporateRegisters(a)
+	registerCorporateDocuments(a)
+	registerCorporateReconciliation(a)
 	registerAcra(a)
 	registerGSTMonitor(a)
 	registerCalendar(a)
@@ -406,6 +451,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerAIQualifications(a)
 	registerAIActivity(a)
 	registerAISettings(a)
+	registerAIInventory(a)
 	registerAIUsage(a)
 	registerHeartbeatDrills(a)
 	registerPDTransfers(a)
@@ -494,6 +540,8 @@ func New(mux humago.Mux, d Deps) *API {
 	registerClaimCategories(a)
 	registerClaimEvidence(a)
 	registerSession(a)
+	registerIntegrationClients(a)
+	a.registerInternal(mux)
 	return a
 }
 
@@ -507,6 +555,23 @@ var commonCodes = []string{CodeUnauthenticated, CodeForbidden, CodeNoOrganisatio
 // exists without a policy (SEC-02), its permission and its error codes in the document
 // (NFR-API-01).
 func register[I, O any](a *API, p authz.Policy, op huma.Operation, codes []string, h func(ctx context.Context, in *I) (*O, error)) {
+	op = a.prepare(p, op, codes)
+	huma.Register(a.API, op, func(ctx context.Context, in *I) (*O, error) {
+		out, err := h(ctx, in)
+		if err != nil {
+			pr := problemFrom(ctx, err)
+			if pr.Instance == "" {
+				pr.Instance = instance(ctx)
+			}
+			return nil, pr
+		}
+		return out, nil
+	})
+}
+
+// prepare records p as op's policy and names on op its error codes, their statuses and its permission, for register and
+// for an operation that streams.
+func (a *API) prepare(p authz.Policy, op huma.Operation, codes []string) huma.Operation {
 	if op.OperationID == "" || op.OperationID != p.Operation {
 		panic(fmt.Sprintf("api: operation %q registered with the policy of %q", op.OperationID, p.Operation))
 	}
@@ -551,17 +616,7 @@ func register[I, O any](a *API, p authz.Policy, op huma.Operation, codes []strin
 	}
 	op.Extensions["x-fyniq-permission"] = permission
 	op.Extensions["x-fyniq-error-codes"] = codes
-	huma.Register(a.API, op, func(ctx context.Context, in *I) (*O, error) {
-		out, err := h(ctx, in)
-		if err != nil {
-			pr := problemFrom(ctx, err)
-			if pr.Instance == "" {
-				pr.Instance = instance(ctx)
-			}
-			return nil, pr
-		}
-		return out, nil
-	})
+	return op
 }
 
 // describeErrors names, on each error response of the document, the codes it carries.
@@ -652,6 +707,15 @@ func (a *API) authenticate(ctx huma.Context, next func(huma.Context)) {
 			"The request was sent from another site with your Fyniq session.", "Do it in Fyniq itself."))
 		return
 	}
+	// SEC-07: a registered client calls only from the networks it was registered with.
+	if ip, err := netip.ParseAddr(storage.AuditFrom(ctx.Context()).Request.IP); p.Scoped && (err != nil || !p.AllowsIP(ip)) {
+		a.deps.Log.WarnContext(ctx.Context(), "api.refused", "operation", ctx.Operation().OperationID, "code", CodeForbidden, "client", p.Client,
+			"reason", "outside the client's networks", "request_id", requestID(ctx.Context()))
+		_ = huma.WriteErr(a.API, ctx, http.StatusForbidden, "", problem(CodeForbidden,
+			"This API client may not call Fyniq from this network (SEC-07).",
+			"Call from one of the networks the client was registered with, or ask an Administrator to register it with this one."))
+		return
+	}
 	c := authn.WithPrincipal(ctx.Context(), p)
 	org := ""
 	if p.Organisation != uuid.Nil {
@@ -668,7 +732,7 @@ func (a *API) authenticate(ctx huma.Context, next func(huma.Context)) {
 		actor.Type = "integration"
 	case authn.ClassAgent:
 		audit.OnBehalfOf = actor
-		actor = &storage.Actor{Type: "ai", ID: p.Client}
+		actor = &storage.Actor{Type: "ai", ID: cmp.Or(p.Agent, p.Client)} // a run's agent by its name
 	}
 	audit.Actor = actor
 	audit.Request.Session = p.Client
@@ -695,6 +759,10 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 			"Sign in again with your authenticator app, or confirm it's you with a passkey.")
 	case p.Organisation == uuid.Nil && !policy.NoOrganisation:
 		refusal = problem(CodeNoOrganisation, "Your session is not in an organisation.", "Choose an organisation and sign in to it.")
+	case p.Delegated() != uuid.Nil && !aiReadable(op):
+		// The assistant's delegated token only reads, whatever the AI column grants (PRD-001 §9.3 rev 0.277, AI-19).
+		refusal = problem(CodeForbidden, "The assistant only reads: this operation changes data.",
+			"Do it yourself in Fyniq; the assistant can only answer and explain.")
 	case p.CoolingOffUntil.After(a.deps.Clock.Now()) && slices.Contains(authz.HeldInCoolingOff, op.OperationID):
 		// SEC-35: after a recovery, the account cannot approve, release, change bank details, roles or sign-in methods,
 		// or use break-glass until the cooling-off ends.
@@ -707,6 +775,11 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 		if d = authz.Decide(policy, p.Roles, p.AI()); !d.Allowed {
 			refusal = problem(CodeForbidden, fmt.Sprintf("Your roles hold no %q right on %q.", string(policy.Need), policy.Capability),
 				"Ask an Owner or Administrator for a role with that right (PRD-001 Appendix D).")
+		} else if p.Scoped && !authz.ScopeAllows(p.Scopes, policy) {
+			// FR-INT-02: a registered client's scopes narrow its member's roles to whole areas; never approve or release.
+			d = authz.Decision{Reason: fmt.Sprintf("the client's scopes %v do not cover %q on %q", p.Scopes, string(policy.Need), policy.Capability)}
+			refusal = problem(CodeForbidden, fmt.Sprintf("This API client's scopes do not cover the %q right on %q.", string(policy.Need), policy.Capability),
+				"Register a client with the scope this needs (fyniq.read.<area> or fyniq.write.<area>), or do it in Fyniq; no client approves or releases.")
 		}
 	}
 	if refusal != nil {

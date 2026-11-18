@@ -5,6 +5,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { ApprovalPolicies } from "./ApprovalPolicies";
 import { TeamMode } from "./TeamMode";
+import { invalid } from "../../test/invalid";
 
 const conflict = { conflict: "SOD-6", display_name: "Ann Tan", member_id: "m-1", user_id: ownerSession.user_id, roles: ["controller", "administrator"], overridden: false };
 const team = { mode: "founder", version: 1, blocks_conflicts: false, conflicts: [conflict], overrides: [], history: [] };
@@ -37,7 +38,7 @@ describe("Team mode", () => {
     const standard = await screen.findByRole("radio", { name: /Standard/ });
     fireEvent.click(standard);
     fireEvent.click(await screen.findByRole("button", { name: "Ask to switch to Standard" }));
-    expect(await screen.findByText(/Give the reason Ann Tan keeps both roles/)).toBeTruthy();
+    await invalid(document.body, /Why Ann Tan keeps/, "Give the reason Ann Tan keeps both roles, in up to 500 characters, or end one of their roles first.");
     fireEvent.change(screen.getByLabelText(/Why Ann Tan keeps/), { target: { value: "Founder who keeps the books" } });
     fireEvent.click(screen.getByRole("button", { name: "Ask to switch to Standard" }));
     expect(await screen.findByText(/Switch the team mode to Standard/)).toBeTruthy();

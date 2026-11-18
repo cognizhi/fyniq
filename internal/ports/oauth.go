@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 )
@@ -91,4 +92,29 @@ type Introspection struct {
 	ExpiresAt time.Time
 	IssuedAt  time.Time
 	Claims    map[string]any // the claims consent gave the access token
+}
+
+// OAuthClients registers the organisation's API clients with the OAuth server (ADR-T3, FR-INT-02): the server holds the
+// client and issues its tokens; Fyniq's record of the client decides what its tokens may do.
+type OAuthClients interface {
+	// RegisterIntegration registers a confidential client that obtains access tokens for one audience with the
+	// client-credentials grant only, authenticating with private_key_jwt (RFC 7523) signed by the key it names. It
+	// returns the server's client ID.
+	RegisterIntegration(ctx context.Context, c IntegrationRegistration) (string, error)
+	// RemoveClient deletes a client and every token issued to it; a client the server does not know is gone already.
+	RemoveClient(ctx context.Context, clientID string) error
+}
+
+// IntegrationRegistration is an integration client as the OAuth server registers it.
+type IntegrationRegistration struct {
+	Name     string
+	Class    string // AI-34: always integration here; kept in the client's metadata
+	Audience string // the API's: the only audience its tokens may name
+	Scopes   []string
+	// Key is the client's public key as a JWK (RFC 7517), and Alg the algorithm its assertions are signed with.
+	Key json.RawMessage
+	Alg string
+	// TokenLifespan is how long each access token lives (AI-38: at most 60 minutes).
+	TokenLifespan time.Duration
+	Organisation  string // kept in the client's metadata, for the operator; never trusted from it
 }

@@ -6,6 +6,7 @@ import { answer, ownerSession, problem, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { Accounting, dayAfter } from "./Accounting";
+import { invalid } from "../../test/invalid";
 
 type Year = components["schemas"]["AccountingYear"];
 
@@ -51,7 +52,12 @@ describe("the accounting framework and policies", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Record the framework" }));
     const dialog = await screen.findByRole("dialog");
-    expect((within(dialog).getByLabelText("Edition") as HTMLInputElement).value).toBe("effective for periods beginning on or after 1 January 2024");
+    const edition = (within(dialog).getByLabelText("Edition") as HTMLInputElement).value;
+    expect(edition).toBe("effective for periods beginning on or after 1 January 2024");
+    fireEvent.change(within(dialog).getByLabelText("Edition"), { target: { value: " " } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Record the framework" }));
+    await invalid(dialog, "Edition", "Name the edition."); // QA-UI-01
+    fireEvent.change(within(dialog).getByLabelText("Edition"), { target: { value: edition } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Record the framework" }));
     await waitFor(() => expect(seen.some((s) => s.method === "POST" && s.path === "/v1/organisation/accounting/framework" && s.headers.get("Idempotency-Key"))).toBe(true));
     const sent = seen.find((s) => s.method === "POST" && s.path === "/v1/organisation/accounting/framework");
