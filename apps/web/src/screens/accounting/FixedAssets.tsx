@@ -289,6 +289,9 @@ export function FixedAssets() {
           <Icon of={PackagePlus} size={24} />
           <h2 className="fy-h3">No assets yet</h2>
           <p className="fy-secondary">An asset is registered from the bill or bank line that bought it, under Not in the register yet, or, bought before the books start, with its opening figures.</p>
+          <button type="button" className="fy-btn fy-btn--secondary fy-btn--sm self-center" onClick={() => choose("unregistered")}>
+            See what is not in the register yet
+          </button>
         </div>
       )}
       {tab === "register" && items.length > 0 && (
@@ -357,6 +360,9 @@ export function FixedAssets() {
                 </tr>
               </tfoot>
             </table>
+            <button type="button" className="fy-btn fy-btn--secondary fy-btn--sm self-center" onClick={() => choose("unregistered")}>
+              See what is not in the register yet
+            </button>
           </div>
           {selected && <AssetPeek id={selected} may={may} base={base} accounts={codes} onSaid={setSaid} />}
         </div>

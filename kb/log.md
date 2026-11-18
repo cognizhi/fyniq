@@ -630,6 +630,10 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-17] compile | docs/user-guide/banking.md → banking.categorise (Plain and Accountant views on the grid, FR-UX-08); the other pages citing it re-hashed, unchanged
 
+## [2026-11-18] compile | docs/user-guide/glossary.md → reference.glossary (new page: the glossary the terms on pages read, FR-UX-11, FR-UX-30)
+
+## [2026-11-18] compile | docs/user-guide/home.md → home.overview (What happened? Where to record it, and empty lists' first actions, FR-UX-11)
+
 ## [2026-11-18] compile | docs/user-guide/evidence-search.md → compliance.evidence (how long files are kept, FR-DOC-02, G4-068)
 
 ## [2026-11-18] compile | docs/user-guide/statutory-packs.md → settings.statutory-packs (an update waiting to be activated, ENG-33, G4-103)
