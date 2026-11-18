@@ -313,12 +313,26 @@ fyniq_api       INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_api       SELECT    journal_entry
 fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_api       SELECT    journal_line
+fyniq_api       INSERT    kb_lint_finding (created_at, detail, kind, page_key, page_version)
+fyniq_api       SELECT    kb_lint_finding
+fyniq_api       UPDATE    kb_lint_finding (resolution, resolved_at, resolved_by, status)
+fyniq_api       SELECT    kb_live_page
+fyniq_api       INSERT    kb_note (body, created_at, created_by, data_class, key, kind, title, updated_at, updated_by)
+fyniq_api       SELECT    kb_note
+fyniq_api       UPDATE    kb_note (body, data_class, kind, title, updated_at, updated_by, version)
+fyniq_api       EXECUTE   kb_org_search()
+fyniq_api       INSERT    kb_page_version (aliases, author_kind, author_user, base_digest, base_key, body, compiler, created_at, data_class, human_edited, key, number, origin, prompt_version, restores, search, sources, summary, taint, title, type)
+fyniq_api       SELECT    kb_page_version
 fyniq_api       EXECUTE   kb_platform_index()
 fyniq_api       EXECUTE   kb_platform_info()
 fyniq_api       EXECUTE   kb_platform_page_get()
 fyniq_api       EXECUTE   kb_platform_page_guides()
 fyniq_api       EXECUTE   kb_platform_readable()
 fyniq_api       EXECUTE   kb_platform_search()
+fyniq_api       INSERT    kb_snapshot (approval_id, created_at, created_by, number, reason)
+fyniq_api       SELECT    kb_snapshot
+fyniq_api       INSERT    kb_snapshot_page (key, snapshot_number, version)
+fyniq_api       SELECT    kb_snapshot_page
 fyniq_api       INSERT    kpi_input (entered_at, entered_by, headcount, lost_customers, month, new_customers, paying_customers)
 fyniq_api       SELECT    kpi_input
 fyniq_api       UPDATE    kpi_input (entered_at, entered_by, headcount, lost_customers, new_customers, paying_customers, version)
@@ -762,6 +776,12 @@ fyniq_readonly  SELECT    job_slots
 fyniq_readonly  SELECT    join_request
 fyniq_readonly  SELECT    journal_entry
 fyniq_readonly  SELECT    journal_line
+fyniq_readonly  SELECT    kb_lint_finding
+fyniq_readonly  SELECT    kb_live_page
+fyniq_readonly  SELECT    kb_note
+fyniq_readonly  SELECT    kb_page_version
+fyniq_readonly  SELECT    kb_snapshot
+fyniq_readonly  SELECT    kb_snapshot_page
 fyniq_readonly  SELECT    kpi_input
 fyniq_readonly  SELECT    ledger_boundary
 fyniq_readonly  SELECT    ledger_purged_entry
@@ -1037,6 +1057,12 @@ fyniq_worker    INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_worker    SELECT    journal_entry
 fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_worker    SELECT    journal_line
+fyniq_worker    SELECT    kb_lint_finding
+fyniq_worker    SELECT    kb_live_page
+fyniq_worker    SELECT    kb_note
+fyniq_worker    SELECT    kb_page_version
+fyniq_worker    SELECT    kb_snapshot
+fyniq_worker    SELECT    kb_snapshot_page
 fyniq_worker    SELECT    kpi_input
 fyniq_worker    INSERT    ledger_boundary (anchor_key, approval, boundary, counts, purged_hash, written_at)
 fyniq_worker    SELECT    ledger_boundary

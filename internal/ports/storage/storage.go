@@ -89,6 +89,8 @@ type UnitOfWork interface {
 	Packs() Packs
 	// KnowledgeBase is the platform knowledge base the release loaded, read through the reader filter (AI-54).
 	KnowledgeBase() KnowledgeBase
+	// OrganisationKnowledge is the organisation's own notes, page versions and snapshots (AI-50, AI-56).
+	OrganisationKnowledge() OrganisationKnowledge
 	EmailMessages() EmailMessages
 	EmailSenders() EmailSenders
 	EmailSuppressions() EmailSuppressions

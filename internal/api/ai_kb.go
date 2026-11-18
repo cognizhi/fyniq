@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"slices"
@@ -69,8 +70,10 @@ func (a *API) runKBTool(ctx context.Context, tool aitool.Tool, in map[string]any
 	}
 	str := func(k string) string { s, _ := in[k].(string); return s }
 	res := AIToolResult{Facts: []aitool.Fact{}, Omitted: []aitool.Omission{}}
+	p, _ := authn.From(ctx)
+	mayReadNotes := authz.Decide(authz.Policy{Operation: "kb.notes", Capability: authz.KnowledgeBase, Need: authz.View}, p.Roles, false).Allowed
 	err = a.deps.Store.Do(ctx, authnOrg(ctx), func(ctx context.Context, u storage.UnitOfWork) error {
-		kb := u.KnowledgeBase()
+		kb, org := u.KnowledgeBase(), u.OrganisationKnowledge()
 		info, ok, err := kb.PlatformInfo(ctx)
 		if err != nil {
 			return err
@@ -84,8 +87,19 @@ func (a *API) runKBTool(ctx context.Context, tool aitool.Tool, in map[string]any
 			if err != nil {
 				return err
 			}
-			res.Content = kbIndexContent(info.Version, entries, str("section"), tool.Limits.ResultTokens)
+			live, err := org.LiveIndex(ctx, reader.Classes)
+			if err != nil {
+				return err
+			}
+			res.Content = kbIndexContent(info.Version, mergeIndex(entries, live), str("section"), tool.Limits.ResultTokens)
 		case "kb.read":
+			if mine, ok, err := org.LivePage(ctx, str("key"), reader.Classes); err != nil {
+				return err
+			} else if ok { // the organisation's own page, or its overlay of a platform page, wins
+				res.Content = kbPageContent(orgView(mine, mayReadNotes), str("section"), tool.Limits.ResultTokens)
+				res.KBPages = []AIKBPage{{Key: mine.Key, Version: fmt.Sprintf("organisation snapshot %d, version %d", mine.Snapshot, mine.Number)}}
+				return nil
+			}
 			page, ok, err := kb.PlatformPage(ctx, str("key"), reader)
 			if err != nil {
 				return err
@@ -97,7 +111,7 @@ func (a *API) runKBTool(ctx context.Context, tool aitool.Tool, in map[string]any
 			if err != nil {
 				return err
 			}
-			res.Content = kbPageContent(page, guides, str("section"), tool.Limits.ResultTokens)
+			res.Content = kbPageContent(platformView(page, guides), str("section"), tool.Limits.ResultTokens)
 			res.KBPages = []AIKBPage{{Key: page.Key, Version: kbVersion(page)}}
 		case "kb.search":
 			limit := 5
@@ -113,6 +127,13 @@ func (a *API) runKBTool(ctx context.Context, tool aitool.Tool, in map[string]any
 			if len(terms) > 0 {
 				if hits, err = kb.PlatformSearch(ctx, storage.KBSearch{Terms: terms, Scope: scope, Limit: limit, Reader: reader}); err != nil {
 					return err
+				}
+				if scope != "sources" {
+					mine, err := org.Search(ctx, terms, reader.Classes, limit)
+					if err != nil {
+						return err
+					}
+					hits = mergeHits(hits, mine, limit)
 				}
 			}
 			res.Content = kbSearchContent(hits, terms)
@@ -193,46 +214,56 @@ func kbIndexContent(release string, entries []storage.KBEntry, section string, b
 	return content
 }
 
-// kbPageContent is a page as the model reads it: its sections with their words and the guide pages each cites, in full
-// while it fits the tool's result, otherwise its outline and the section asked for (design D3). The page's own citation
-// markers are left out of the words; each section's citations come beside them, resolved to the guide pages a person can
-// open, never to this page.
-func kbPageContent(p storage.KBPlatformPage, guides []storage.KBGuideRef, section string, budget int) map[string]any {
-	byFile := map[string]storage.KBGuideRef{}
-	for _, g := range guides {
-		byFile[g.File] = g
-	}
-	type cite struct {
-		Guide  string `json:"guide"`
-		Title  string `json:"title"`
-		Anchor string `json:"anchor"`
-		Draft  bool   `json:"draft,omitempty"`
-	}
+// kbCite is a source a section cites, as the model reads it and as Fyniq resolves it: a guide page, or what an organisation
+// page comes from (a note or a setting), never a compiled page.
+type kbCite struct {
+	Guide  string `json:"guide,omitempty"`
+	Title  string `json:"title"`
+	Anchor string `json:"anchor"`
+	Draft  bool   `json:"draft,omitempty"`
+	Href   string `json:"href,omitempty"`
+}
+
+// kbPageView is what a page's content is made from, whoever's page it is.
+type kbPageView struct {
+	Key, Type, Title, Summary, Body string
+	Aliases                         []string
+	Version, Release                string
+	Draft                           bool
+	Note                            string // the page's own hint to the model
+	Resolve                         func(path, anchor string) (kbCite, bool)
+}
+
+// kbPageContent is a page as the model reads it: its sections with their words and the sources each cites, in full while it
+// fits the tool's result, otherwise its outline and the section asked for (design D3). The page's own citation markers are
+// left out of the words; each section's citations come beside them, resolved to what a person can open (a guide page, a note
+// or a setting), never to this page.
+func kbPageContent(p kbPageView, section string, budget int) map[string]any {
 	type sec struct {
-		Section string `json:"section"`
-		Heading string `json:"heading"`
-		Text    string `json:"text,omitempty"`
-		Cites   []cite `json:"cites"`
+		Section string   `json:"section"`
+		Heading string   `json:"heading"`
+		Text    string   `json:"text,omitempty"`
+		Cites   []kbCite `json:"cites"`
 	}
 	var secs []sec
 	for _, s := range knowledge.Sections(p.Body) {
-		x := sec{Section: s.Anchor, Heading: s.Heading, Text: knowledge.Cited(s.Words()), Cites: []cite{}}
+		x := sec{Section: s.Anchor, Heading: s.Heading, Text: knowledge.Cited(s.Words()), Cites: []kbCite{}}
 		for _, c := range s.Cites() {
-			if g, ok := byFile[c.Path]; ok {
-				x.Cites = append(x.Cites, cite{Guide: g.Key, Title: g.Title, Anchor: c.Anchor, Draft: g.Draft})
+			if r, ok := p.Resolve(c.Path, c.Anchor); ok {
+				x.Cites = append(x.Cites, r)
 			}
 		}
 		secs = append(secs, x)
 	}
 	content := map[string]any{
-		"key": p.Key, "type": p.Type, "title": p.Title, "summary": p.Summary, "version": kbVersion(p), "release": p.Release,
-		"draft": p.Status == "draft",
+		"key": p.Key, "type": p.Type, "title": p.Title, "summary": p.Summary, "version": p.Version, "release": p.Release,
+		"draft": p.Draft,
 	}
 	if len(p.Aliases) > 0 {
 		content["aliases"] = p.Aliases
 	}
-	if p.Status == "draft" {
-		content["note"] = "Compiled from a guide page still awaiting review: say so when you rely on it."
+	if p.Note != "" {
+		content["note"] = p.Note
 	}
 	if intro := knowledge.Intro(p.Body); intro != "" {
 		content["intro"] = knowledge.Cited(intro)
@@ -277,6 +308,63 @@ func kbPageContent(p storage.KBPlatformPage, guides []storage.KBGuideRef, sectio
 	return content
 }
 
+// platformView is a platform page as kbPageContent reads it: its citations are the guide pages it was compiled from.
+func platformView(p storage.KBPlatformPage, guides []storage.KBGuideRef) kbPageView {
+	byFile := map[string]storage.KBGuideRef{}
+	for _, g := range guides {
+		byFile[g.File] = g
+	}
+	v := kbPageView{Key: p.Key, Type: p.Type, Title: p.Title, Summary: p.Summary, Body: p.Body, Aliases: p.Aliases, Version: kbVersion(p),
+		Release: p.Release, Draft: p.Status == "draft", Resolve: func(path, anchor string) (kbCite, bool) {
+			g, ok := byFile[path]
+			return kbCite{Guide: g.Key, Title: g.Title, Anchor: anchor, Draft: g.Draft}, ok
+		}}
+	if v.Draft {
+		v.Note = "Compiled from a guide page still awaiting review: say so when you rely on it."
+	}
+	return v
+}
+
+// orgSource is one source of an organisation page, as its version records it: a note, a setting, or the platform page an
+// overlay replaces.
+type orgSource struct {
+	Kind  string `json:"kind"`
+	Ref   string `json:"ref"`
+	Title string `json:"title"`
+}
+
+// orgView is an organisation page as kbPageContent reads it: a section cites "note:<key>#anchor", "setting:<key>#anchor" or
+// "platform:<key>#anchor", resolved to what the reader can open. A note is the organisation's own and is shown to those who
+// may read the knowledge base's notes; anyone else is told it is the organisation's policy, with no link.
+func orgView(p storage.KBLivePage, mayReadNotes bool) kbPageView {
+	var srcs []orgSource
+	_ = json.Unmarshal(p.Sources, &srcs)
+	return kbPageView{Key: p.Key, Type: p.Type, Title: p.Title, Summary: p.Summary, Body: p.Body, Aliases: p.Aliases,
+		Version: fmt.Sprintf("organisation snapshot %d, version %d", p.Snapshot, p.Number), Release: "organisation",
+		Note: "This is the organisation's own page, written or approved by its people: its policies and decisions, not Fyniq's guide.",
+		Resolve: func(path, anchor string) (kbCite, bool) {
+			kind, ref, _ := strings.Cut(path, ":")
+			title := ref
+			for _, s := range srcs {
+				if s.Kind == kind && s.Ref == ref && s.Title != "" {
+					title = s.Title
+				}
+			}
+			switch kind {
+			case "note":
+				if !mayReadNotes {
+					return kbCite{Title: "The organisation's policy", Anchor: anchor}, true
+				}
+				return kbCite{Title: "Note: " + title, Anchor: anchor, Href: "/settings/ai/knowledge-base#note-" + ref}, true
+			case "setting":
+				return kbCite{Title: "Setting: " + title, Anchor: anchor, Href: "/settings#" + ref}, true
+			case "platform":
+				return kbCite{Guide: ref, Title: title, Anchor: anchor, Href: "/help/" + ref + "#" + anchor}, true
+			}
+			return kbCite{}, false
+		}}
+}
+
 func isRuneStart(s string, i int) bool { return i >= len(s) || s[i]&0xC0 != 0x80 }
 
 var highlight = regexp.MustCompile(`</?b>`)
@@ -317,6 +405,66 @@ func kbPagesOut(in []storage.KBPageVersion) []AIKBPage {
 	out := make([]AIKBPage, 0, len(in))
 	for _, p := range in {
 		out = append(out, AIKBPage{Key: p.Key, Version: p.Version})
+	}
+	return out
+}
+
+// mergeIndex is the platform's index with the organisation's published pages: an organisation page takes the place of a
+// platform page of the same key (its overlay), and is listed with the rest by type and key.
+func mergeIndex(platform []storage.KBEntry, mine []storage.KBLivePage) []storage.KBEntry {
+	byKey := map[string]storage.KBEntry{}
+	for _, e := range platform {
+		byKey[e.Key] = e
+	}
+	for _, p := range mine {
+		byKey[p.Key] = p.KBEntry
+	}
+	out := make([]storage.KBEntry, 0, len(byKey))
+	for _, e := range byKey {
+		out = append(out, e)
+	}
+	order := func(t string) int {
+		return slices.Index([]string{"concept", "task", "reference", "policy", "decision"}, t)
+	}
+	slices.SortFunc(out, func(a, b storage.KBEntry) int {
+		if c := order(a.Type) - order(b.Type); c != 0 {
+			return c
+		}
+		return strings.Compare(a.Key, b.Key)
+	})
+	return out
+}
+
+// mergeHits are the organisation's hits, then the platform's, each best first, cut to limit: the organisation's own page
+// that matches answers a question about "our" rule before the guide does, and the two ranks are of different searches, so they
+// are not mixed. An organisation page replaces a platform hit of the same key (its overlay).
+func mergeHits(platform, mine []storage.KBHit, limit int) []storage.KBHit {
+	own := map[string]bool{}
+	for _, h := range mine {
+		own[h.Key] = true
+	}
+	byRank := func(a, b storage.KBHit) int {
+		switch {
+		case a.Rank > b.Rank:
+			return -1
+		case a.Rank < b.Rank:
+			return 1
+		}
+		return 0
+	}
+	out := slices.Clone(mine)
+	slices.SortStableFunc(out, byRank)
+	rest := make([]storage.KBHit, 0, len(platform))
+	for _, h := range platform {
+		if h.Kind == "page" && own[h.Key] {
+			continue
+		}
+		rest = append(rest, h)
+	}
+	slices.SortStableFunc(rest, byRank)
+	out = append(out, rest...)
+	if len(out) > limit {
+		out = out[:limit]
 	}
 	return out
 }

@@ -17,14 +17,14 @@
       "type": "boolean"
     },
     "guide": {
-      "description": "The guide page's key.",
+      "description": "The guide page's key; none for what an organisation's own page comes from.",
       "examples": [
         "claims.approve-team"
       ],
       "type": "string"
     },
     "href": {
-      "description": "Where it opens in the web app.",
+      "description": "Where it opens in the web app; none when the reader may not open it (an organisation's note they may not read).",
       "examples": [
         "/help/claims.approve-team#who-approves"
       ],
@@ -39,10 +39,8 @@
     }
   },
   "required": [
-    "guide",
     "title",
-    "anchor",
-    "href"
+    "anchor"
   ],
   "title": "AISource",
   "type": "object"

@@ -16,10 +16,11 @@ import (
 
 // Source is a guide page a know-how sentence cites: what the reader can open, with the heading it comes from.
 type Source struct {
-	Guide  string `json:"guide"`
+	Guide  string `json:"guide,omitempty"` // the guide page's key; empty for what an organisation page comes from
 	Title  string `json:"title"`
 	Anchor string `json:"anchor"`
 	Draft  bool   `json:"draft,omitempty"`
+	Href   string `json:"href,omitempty"` // where it opens, when it is not the guide: a note or a setting; none when the reader may not open it
 }
 
 // pageSection is a section of a page the turn read: its words, and the guide pages it cites.

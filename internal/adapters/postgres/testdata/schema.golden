@@ -1491,6 +1491,70 @@ journal_line | recorded_at | timestamp with time zone | not null | now()
 journal_line | party_id | uuid | null | 
 journal_line | dimension_set_id | uuid | null | 
 journal_line | instrument_id | uuid | null | 
+kb_lint_finding | organisation_id | uuid | not null | current_org()
+kb_lint_finding | id | uuid | not null | uuidv7()
+kb_lint_finding | kind | text | not null | 
+kb_lint_finding | page_key | text | null | 
+kb_lint_finding | page_version | integer | null | 
+kb_lint_finding | detail | text | not null | 
+kb_lint_finding | status | text | not null | 'open'::text
+kb_lint_finding | created_at | timestamp with time zone | not null | 
+kb_lint_finding | resolved_by | uuid | null | 
+kb_lint_finding | resolved_at | timestamp with time zone | null | 
+kb_lint_finding | resolution | text | not null | ''::text
+kb_live_page | organisation_id | uuid | null | 
+kb_live_page | key | text | null | 
+kb_live_page | number | integer | null | 
+kb_live_page | type | text | null | 
+kb_live_page | title | text | null | 
+kb_live_page | summary | text | null | 
+kb_live_page | aliases | text[] | null | 
+kb_live_page | body | text | null | 
+kb_live_page | sources | jsonb | null | 
+kb_live_page | data_class | text | null | 
+kb_live_page | taint | text | null | 
+kb_live_page | origin | text | null | 
+kb_live_page | human_edited | boolean | null | 
+kb_live_page | base_key | text | null | 
+kb_live_page | base_digest | text | null | 
+kb_live_page | created_at | timestamp with time zone | null | 
+kb_live_page | search | tsvector | null | 
+kb_live_page | snapshot_number | integer | null | 
+kb_note | organisation_id | uuid | not null | current_org()
+kb_note | id | uuid | not null | uuidv7()
+kb_note | key | text | not null | 
+kb_note | kind | text | not null | 
+kb_note | title | text | not null | 
+kb_note | body | text | not null | 
+kb_note | data_class | text | not null | 'general'::text
+kb_note | version | integer | not null | 1
+kb_note | created_by | uuid | not null | 
+kb_note | created_at | timestamp with time zone | not null | 
+kb_note | updated_by | uuid | not null | 
+kb_note | updated_at | timestamp with time zone | not null | 
+kb_page_version | organisation_id | uuid | not null | current_org()
+kb_page_version | id | uuid | not null | uuidv7()
+kb_page_version | key | text | not null | 
+kb_page_version | number | integer | not null | 
+kb_page_version | type | text | not null | 
+kb_page_version | title | text | not null | 
+kb_page_version | summary | text | not null | 
+kb_page_version | aliases | text[] | not null | '{}'::text[]
+kb_page_version | body | text | not null | 
+kb_page_version | sources | jsonb | not null | '[]'::jsonb
+kb_page_version | data_class | text | not null | 'general'::text
+kb_page_version | taint | text | not null | 'trusted'::text
+kb_page_version | origin | text | not null | 
+kb_page_version | human_edited | boolean | not null | false
+kb_page_version | base_key | text | null | 
+kb_page_version | base_digest | text | null | 
+kb_page_version | restores | integer | null | 
+kb_page_version | compiler | text | not null | ''::text
+kb_page_version | prompt_version | text | not null | ''::text
+kb_page_version | author_kind | text | not null | 
+kb_page_version | author_user | uuid | null | 
+kb_page_version | created_at | timestamp with time zone | not null | 
+kb_page_version | search | tsvector | not null | 
 kb_platform_page | key | text | not null | 
 kb_platform_page | type | text | not null | 
 kb_platform_page | title | text | not null | 
@@ -1522,6 +1586,18 @@ kb_platform_source | roles | text[] | not null |
 kb_platform_source | status | text | not null | 
 kb_platform_source | body | text | not null | 
 kb_platform_source | search | tsvector | not null | 
+kb_snapshot | organisation_id | uuid | not null | current_org()
+kb_snapshot | id | uuid | not null | uuidv7()
+kb_snapshot | number | integer | not null | 
+kb_snapshot | approval_id | uuid | null | 
+kb_snapshot | created_by | uuid | null | 
+kb_snapshot | reason | text | not null | ''::text
+kb_snapshot | created_at | timestamp with time zone | not null | 
+kb_snapshot_page | organisation_id | uuid | not null | current_org()
+kb_snapshot_page | id | uuid | not null | uuidv7()
+kb_snapshot_page | snapshot_number | integer | not null | 
+kb_snapshot_page | key | text | not null | 
+kb_snapshot_page | version | integer | not null | 
 kpi_input | organisation_id | uuid | not null | current_org()
 kpi_input | id | uuid | not null | uuidv7()
 kpi_input | month | date | not null | 
@@ -4783,6 +4859,82 @@ journal_line | journal_line_party_fkey | FOREIGN KEY (organisation_id, party_id)
 journal_line | journal_line_pkey | PRIMARY KEY (organisation_id, id)
 journal_line | journal_line_posting_date_not_null | NOT NULL posting_date
 journal_line | journal_line_recorded_at_not_null | NOT NULL recorded_at
+kb_lint_finding | kb_lint_finding_created_at_not_null | NOT NULL created_at
+kb_lint_finding | kb_lint_finding_detail_not_null | NOT NULL detail
+kb_lint_finding | kb_lint_finding_id_not_null | NOT NULL id
+kb_lint_finding | kb_lint_finding_kind | CHECK ((kind = ANY (ARRAY['stale'::text, 'contradiction'::text, 'number_not_in_source'::text, 'source_without_page'::text, 'orphan'::text, 'human_edit_conflict'::text, 'superseded'::text, 'missing_cross_reference'::text, 'citation'::text, 'front_matter'::text])))
+kb_lint_finding | kb_lint_finding_kind_not_null | NOT NULL kind
+kb_lint_finding | kb_lint_finding_organisation_id_not_null | NOT NULL organisation_id
+kb_lint_finding | kb_lint_finding_pkey | PRIMARY KEY (organisation_id, id)
+kb_lint_finding | kb_lint_finding_resolution_not_null | NOT NULL resolution
+kb_lint_finding | kb_lint_finding_resolver_fkey | FOREIGN KEY (resolved_by) REFERENCES app_user(user_id)
+kb_lint_finding | kb_lint_finding_state | CHECK (((status = ANY (ARRAY['open'::text, 'resolved'::text])) AND ((status = 'resolved'::text) = (resolved_at IS NOT NULL)) AND ((status = 'resolved'::text) = (resolved_by IS NOT NULL))))
+kb_lint_finding | kb_lint_finding_status_not_null | NOT NULL status
+kb_lint_finding | kb_lint_finding_text | CHECK ((((length(btrim(detail)) >= 1) AND (length(btrim(detail)) <= 1000)) AND (length(resolution) <= 1000)))
+kb_lint_finding | kb_lint_finding_version | CHECK (((page_version IS NULL) OR ((page_key IS NOT NULL) AND (page_version >= 1))))
+kb_lint_finding | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+kb_note | kb_note_body_not_null | NOT NULL body
+kb_note | kb_note_class | CHECK ((data_class = ANY (ARRAY['general'::text, 'personal'::text, 'payroll'::text, 'equity'::text, 'identity'::text])))
+kb_note | kb_note_created_at_not_null | NOT NULL created_at
+kb_note | kb_note_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+kb_note | kb_note_created_by_not_null | NOT NULL created_by
+kb_note | kb_note_data_class_not_null | NOT NULL data_class
+kb_note | kb_note_id_not_null | NOT NULL id
+kb_note | kb_note_key | UNIQUE (organisation_id, key)
+kb_note | kb_note_key_format | CHECK ((key ~ '^[a-z0-9][a-z0-9.-]{0,99}$'::text))
+kb_note | kb_note_key_not_null | NOT NULL key
+kb_note | kb_note_kind | CHECK ((kind = ANY (ARRAY['note'::text, 'policy'::text, 'decision'::text])))
+kb_note | kb_note_kind_not_null | NOT NULL kind
+kb_note | kb_note_organisation_id_not_null | NOT NULL organisation_id
+kb_note | kb_note_pkey | PRIMARY KEY (organisation_id, id)
+kb_note | kb_note_text | CHECK ((((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)) AND ((length(body) >= 1) AND (length(body) <= 20000))))
+kb_note | kb_note_title_not_null | NOT NULL title
+kb_note | kb_note_updated | CHECK ((updated_at >= created_at))
+kb_note | kb_note_updated_at_not_null | NOT NULL updated_at
+kb_note | kb_note_updated_by_fkey | FOREIGN KEY (updated_by) REFERENCES app_user(user_id)
+kb_note | kb_note_updated_by_not_null | NOT NULL updated_by
+kb_note | kb_note_version | CHECK ((version >= 1))
+kb_note | kb_note_version_not_null | NOT NULL version
+kb_note | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+kb_page_version | kb_page_version_alias_count | CHECK ((cardinality(aliases) <= 30))
+kb_page_version | kb_page_version_aliases_not_null | NOT NULL aliases
+kb_page_version | kb_page_version_author | CHECK (((author_kind = ANY (ARRAY['person'::text, 'compiler'::text, 'system'::text])) AND ((author_kind = 'person'::text) = (author_user IS NOT NULL))))
+kb_page_version | kb_page_version_author_fkey | FOREIGN KEY (author_user) REFERENCES app_user(user_id)
+kb_page_version | kb_page_version_author_kind_not_null | NOT NULL author_kind
+kb_page_version | kb_page_version_body_not_null | NOT NULL body
+kb_page_version | kb_page_version_class | CHECK ((data_class = ANY (ARRAY['general'::text, 'personal'::text, 'payroll'::text, 'equity'::text, 'identity'::text])))
+kb_page_version | kb_page_version_compiler_not_null | NOT NULL compiler
+kb_page_version | kb_page_version_created_at_not_null | NOT NULL created_at
+kb_page_version | kb_page_version_data_class_not_null | NOT NULL data_class
+kb_page_version | kb_page_version_human | CHECK ((human_edited = (origin = ANY (ARRAY['human_edited'::text, 'overlay'::text, 'rollback'::text]))))
+kb_page_version | kb_page_version_human_edited_not_null | NOT NULL human_edited
+kb_page_version | kb_page_version_id_not_null | NOT NULL id
+kb_page_version | kb_page_version_key_format | CHECK ((key ~ '^[a-z0-9][a-z0-9.-]{0,99}$'::text))
+kb_page_version | kb_page_version_key_not_null | NOT NULL key
+kb_page_version | kb_page_version_number | UNIQUE (organisation_id, key, number)
+kb_page_version | kb_page_version_number_not_null | NOT NULL number
+kb_page_version | kb_page_version_number_positive | CHECK ((number >= 1))
+kb_page_version | kb_page_version_org_key | CHECK (((origin = ANY (ARRAY['overlay'::text, 'rollback'::text])) OR (key ~~ 'org.%'::text)))
+kb_page_version | kb_page_version_organisation_id_not_null | NOT NULL organisation_id
+kb_page_version | kb_page_version_origin | CHECK ((origin = ANY (ARRAY['rendered'::text, 'compiled'::text, 'human_edited'::text, 'overlay'::text, 'rollback'::text])))
+kb_page_version | kb_page_version_origin_author | CHECK ((((origin = 'compiled'::text) AND (author_kind = 'compiler'::text)) OR ((origin = 'rendered'::text) AND (author_kind = 'system'::text)) OR ((origin = ANY (ARRAY['human_edited'::text, 'overlay'::text, 'rollback'::text])) AND (author_kind = 'person'::text))))
+kb_page_version | kb_page_version_origin_not_null | NOT NULL origin
+kb_page_version | kb_page_version_overlay | CHECK ((((origin = 'overlay'::text) = ((base_key IS NOT NULL) AND (base_digest IS NOT NULL))) AND ((base_digest IS NULL) OR (base_digest ~ '^[0-9a-f]{64}$'::text))))
+kb_page_version | kb_page_version_pkey | PRIMARY KEY (organisation_id, id)
+kb_page_version | kb_page_version_prompt_version_not_null | NOT NULL prompt_version
+kb_page_version | kb_page_version_rollback | CHECK ((((origin = 'rollback'::text) = (restores IS NOT NULL)) AND ((restores IS NULL) OR (restores < number))))
+kb_page_version | kb_page_version_search_not_null | NOT NULL search
+kb_page_version | kb_page_version_sources | CHECK (((jsonb_typeof(sources) = 'array'::text) AND (jsonb_array_length(sources) <= 50)))
+kb_page_version | kb_page_version_sources_not_null | NOT NULL sources
+kb_page_version | kb_page_version_summary_not_null | NOT NULL summary
+kb_page_version | kb_page_version_taint | CHECK ((taint = ANY (ARRAY['trusted'::text, 'untrusted'::text])))
+kb_page_version | kb_page_version_taint_not_null | NOT NULL taint
+kb_page_version | kb_page_version_text | CHECK ((((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)) AND ((length(summary) >= 1) AND (length(summary) <= 160)) AND ((length(body) >= 1) AND (length(body) <= 60000))))
+kb_page_version | kb_page_version_title_not_null | NOT NULL title
+kb_page_version | kb_page_version_trusted | CHECK ((taint = 'trusted'::text))
+kb_page_version | kb_page_version_type | CHECK ((type = ANY (ARRAY['concept'::text, 'task'::text, 'reference'::text, 'policy'::text, 'decision'::text])))
+kb_page_version | kb_page_version_type_not_null | NOT NULL type
+kb_page_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 kb_platform_page | kb_platform_page_aliases_not_null | NOT NULL aliases
 kb_platform_page | kb_platform_page_body_not_null | NOT NULL body
 kb_platform_page | kb_platform_page_class | CHECK ((data_class = ANY (ARRAY['general'::text, 'personal'::text, 'payroll'::text, 'equity'::text, 'identity'::text])))
@@ -4836,6 +4988,27 @@ kb_platform_source | kb_platform_source_search_not_null | NOT NULL search
 kb_platform_source | kb_platform_source_status | CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text])))
 kb_platform_source | kb_platform_source_status_not_null | NOT NULL status
 kb_platform_source | kb_platform_source_title_not_null | NOT NULL title
+kb_snapshot | kb_snapshot_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
+kb_snapshot | kb_snapshot_created_at_not_null | NOT NULL created_at
+kb_snapshot | kb_snapshot_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+kb_snapshot | kb_snapshot_id | UNIQUE (organisation_id, id)
+kb_snapshot | kb_snapshot_id_not_null | NOT NULL id
+kb_snapshot | kb_snapshot_number | CHECK ((number >= 1))
+kb_snapshot | kb_snapshot_number_not_null | NOT NULL number
+kb_snapshot | kb_snapshot_organisation_id_not_null | NOT NULL organisation_id
+kb_snapshot | kb_snapshot_pkey | PRIMARY KEY (organisation_id, number)
+kb_snapshot | kb_snapshot_reason | CHECK ((length(reason) <= 1000))
+kb_snapshot | kb_snapshot_reason_not_null | NOT NULL reason
+kb_snapshot | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+kb_snapshot_page | kb_snapshot_page_id | UNIQUE (organisation_id, id)
+kb_snapshot_page | kb_snapshot_page_id_not_null | NOT NULL id
+kb_snapshot_page | kb_snapshot_page_key_not_null | NOT NULL key
+kb_snapshot_page | kb_snapshot_page_organisation_id_not_null | NOT NULL organisation_id
+kb_snapshot_page | kb_snapshot_page_pkey | PRIMARY KEY (organisation_id, snapshot_number, key)
+kb_snapshot_page | kb_snapshot_page_snapshot_fkey | FOREIGN KEY (organisation_id, snapshot_number) REFERENCES kb_snapshot(organisation_id, number)
+kb_snapshot_page | kb_snapshot_page_snapshot_number_not_null | NOT NULL snapshot_number
+kb_snapshot_page | kb_snapshot_page_version_fkey | FOREIGN KEY (organisation_id, key, version) REFERENCES kb_page_version(organisation_id, key, number)
+kb_snapshot_page | kb_snapshot_page_version_not_null | NOT NULL version
 kpi_input | kpi_input_customers_together | CHECK ((((paying_customers IS NULL) = (new_customers IS NULL)) AND ((new_customers IS NULL) = (lost_customers IS NULL))))
 kpi_input | kpi_input_entered_at_not_null | NOT NULL entered_at
 kpi_input | kpi_input_entered_by | CHECK (((length(btrim(entered_by)) >= 1) AND (length(btrim(entered_by)) <= 200)))
@@ -6440,6 +6613,8 @@ CREATE INDEX journal_line_account_amount ON fyniq.journal_line USING btree (orga
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
 CREATE INDEX journal_line_instrument_idx ON fyniq.journal_line USING btree (organisation_id, instrument_id, posting_date) WHERE (instrument_id IS NOT NULL)
 CREATE INDEX journal_line_party_idx ON fyniq.journal_line USING btree (organisation_id, party_id, posting_date) WHERE (party_id IS NOT NULL)
+CREATE INDEX kb_lint_finding_open ON fyniq.kb_lint_finding USING btree (organisation_id, status, created_at)
+CREATE INDEX kb_page_version_search ON fyniq.kb_page_version USING gin (organisation_id, search)
 CREATE INDEX kb_platform_page_search ON fyniq.kb_platform_page USING gin (search)
 CREATE INDEX kb_platform_page_title_trgm ON fyniq.kb_platform_page USING gin (lower(title) fyniq_ext.gin_trgm_ops)
 CREATE INDEX kb_platform_source_search ON fyniq.kb_platform_source USING gin (search)
@@ -6718,10 +6893,19 @@ CREATE UNIQUE INDEX journal_entry_reverses_key ON fyniq.journal_entry USING btre
 CREATE UNIQUE INDEX journal_entry_revision_key ON fyniq.journal_entry USING btree (organisation_id, ledger_revision)
 CREATE UNIQUE INDEX journal_line_entry_line_key ON fyniq.journal_line USING btree (organisation_id, entry_id, line_no)
 CREATE UNIQUE INDEX journal_line_pkey ON fyniq.journal_line USING btree (organisation_id, id)
+CREATE UNIQUE INDEX kb_lint_finding_pkey ON fyniq.kb_lint_finding USING btree (organisation_id, id)
+CREATE UNIQUE INDEX kb_note_key ON fyniq.kb_note USING btree (organisation_id, key)
+CREATE UNIQUE INDEX kb_note_pkey ON fyniq.kb_note USING btree (organisation_id, id)
+CREATE UNIQUE INDEX kb_page_version_number ON fyniq.kb_page_version USING btree (organisation_id, key, number)
+CREATE UNIQUE INDEX kb_page_version_pkey ON fyniq.kb_page_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX kb_platform_page_pkey ON fyniq.kb_platform_page USING btree (key)
 CREATE UNIQUE INDEX kb_platform_page_source_pkey ON fyniq.kb_platform_page_source USING btree (page_key, file)
 CREATE UNIQUE INDEX kb_platform_release_pkey ON fyniq.kb_platform_release USING btree (singleton)
 CREATE UNIQUE INDEX kb_platform_source_pkey ON fyniq.kb_platform_source USING btree (file)
+CREATE UNIQUE INDEX kb_snapshot_id ON fyniq.kb_snapshot USING btree (organisation_id, id)
+CREATE UNIQUE INDEX kb_snapshot_page_id ON fyniq.kb_snapshot_page USING btree (organisation_id, id)
+CREATE UNIQUE INDEX kb_snapshot_page_pkey ON fyniq.kb_snapshot_page USING btree (organisation_id, snapshot_number, key)
+CREATE UNIQUE INDEX kb_snapshot_pkey ON fyniq.kb_snapshot USING btree (organisation_id, number)
 CREATE UNIQUE INDEX kpi_input_id_key ON fyniq.kpi_input USING btree (organisation_id, id)
 CREATE UNIQUE INDEX kpi_input_pkey ON fyniq.kpi_input USING btree (organisation_id, month)
 CREATE UNIQUE INDEX ledger_boundary_boundary_key ON fyniq.ledger_boundary USING btree (organisation_id, boundary)
@@ -6932,6 +7116,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_sender DEFER
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.equity_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'transaction_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.holding_movement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('holding_movement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.kb_page_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_page_version', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.kb_snapshot DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_snapshot', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ledger_boundary DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ledger_boundary', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_archive DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
@@ -7027,6 +7213,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.join_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('join_request', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.kb_lint_finding DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_lint_finding', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.kb_note DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_note', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.kpi_input DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kpi_input', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.member_invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('member_invitation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.migration_commit DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
@@ -7285,6 +7473,16 @@ CREATE TRIGGER journal_line_balances AFTER INSERT ON fyniq.journal_line REFERENC
 CREATE TRIGGER journal_line_check BEFORE INSERT ON fyniq.journal_line FOR EACH ROW EXECUTE FUNCTION journal_line_check()
 CREATE TRIGGER journal_line_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_line FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER journal_line_no_truncate BEFORE TRUNCATE ON fyniq.journal_line FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
+CREATE TRIGGER kb_lint_finding_guard BEFORE DELETE OR UPDATE ON fyniq.kb_lint_finding FOR EACH ROW EXECUTE FUNCTION kb_guard()
+CREATE TRIGGER kb_lint_finding_no_truncate BEFORE TRUNCATE ON fyniq.kb_lint_finding FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER kb_note_guard BEFORE DELETE OR UPDATE ON fyniq.kb_note FOR EACH ROW EXECUTE FUNCTION kb_guard()
+CREATE TRIGGER kb_note_no_truncate BEFORE TRUNCATE ON fyniq.kb_note FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER kb_page_version_guard BEFORE DELETE OR UPDATE ON fyniq.kb_page_version FOR EACH ROW EXECUTE FUNCTION kb_guard()
+CREATE TRIGGER kb_page_version_no_truncate BEFORE TRUNCATE ON fyniq.kb_page_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER kb_snapshot_guard BEFORE DELETE OR UPDATE ON fyniq.kb_snapshot FOR EACH ROW EXECUTE FUNCTION kb_guard()
+CREATE TRIGGER kb_snapshot_no_truncate BEFORE TRUNCATE ON fyniq.kb_snapshot FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER kb_snapshot_page_guard BEFORE DELETE OR UPDATE ON fyniq.kb_snapshot_page FOR EACH ROW EXECUTE FUNCTION kb_guard()
+CREATE TRIGGER kb_snapshot_page_no_truncate BEFORE TRUNCATE ON fyniq.kb_snapshot_page FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER kpi_input_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.kpi_input FOR EACH ROW EXECUTE FUNCTION kpi_input_guard()
 CREATE TRIGGER kpi_input_no_truncate BEFORE TRUNCATE ON fyniq.kpi_input FOR EACH STATEMENT EXECUTE FUNCTION kpi_input_guard()
 CREATE TRIGGER last_owner_guard BEFORE UPDATE OF revoked_at ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION last_owner_guard()
@@ -7558,6 +7756,11 @@ item_price | tenant_isolation | * | (organisation_id = current_org()) | (organis
 join_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+kb_lint_finding | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+kb_note | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+kb_page_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+kb_snapshot | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+kb_snapshot_page | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 kpi_input | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_boundary | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_purged_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7764,10 +7967,15 @@ join_domain | disabled | not forced
 join_request | enabled | forced
 journal_entry | enabled | forced
 journal_line | enabled | forced
+kb_lint_finding | enabled | forced
+kb_note | enabled | forced
+kb_page_version | enabled | forced
 kb_platform_page | disabled | not forced
 kb_platform_page_source | disabled | not forced
 kb_platform_release | disabled | not forced
 kb_platform_source | disabled | not forced
+kb_snapshot | enabled | forced
+kb_snapshot_page | enabled | forced
 kpi_input | enabled | forced
 ledger_boundary | enabled | forced
 ledger_purged_entry | enabled | forced
@@ -8071,6 +8279,8 @@ journal_immutable() → trigger | security invoker | v | search_path=pg_catalog,
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0f5bd691e4430aa3432cee16293c5fe1
 journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 55a3d18429a41eae4bbb8231d3bf02d4
 journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b9269db42a6b251fcf5f6ec4576b4fb8
+kb_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 02422d85fbd6befcedcfdf5c3323050f
+kb_org_search(p_terms text[], p_classes text[], p_limit integer) → TABLE(key text, title text, summary text, snippet text, rank real) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 15760a3c14a0882488f678a84615fbad
 kb_platform_index(p_roles text[], p_classes text[]) → TABLE(key text, type text, title text, summary text, status text, data_class text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 7b424e41cfdc6ce4aae26d2373cd74dd
 kb_platform_info() → TABLE(version text, schema text, digest text, loaded_at timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02dda96e1273c149a12b7ce0e8a0f6a3
 kb_platform_load(p_release jsonb) → void | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ba55718a26c440e56e79a88cac713b2c

@@ -340,3 +340,131 @@ func TestAKnowHowAnswerWorksThroughTheRealToolPath(t *testing.T) {
 		t.Errorf("the page version recorded: %+v", out.ToolCalls)
 	}
 }
+
+// The organisation's published pages are read with the platform's (AI-50, AI-54, AI-56; p1-knowledge-base design D3, D5): the
+// index lists them, a read returns them with their sources resolved to what the reader can open (a note only to those who may
+// read the notes, a setting to anyone), a search finds them, and an overlay takes the place of the platform page it replaces
+// for this organisation alone. A page in a class the reader may not read, and a draft, are not there. The page version an
+// answer used names the snapshot and the version.
+// asvs: V8.2.1, V8.2.2
+func TestTheOrganisationsPublishedPagesAreReadWithThePlatformsPages(t *testing.T) {
+	e := newEnv(t)
+	corpus := shippedKB(t)
+	code := e.call(http.MethodPost, "/v1/members/invitations", e.as(authz.Owner), map[string]any{"display_name": "Staff", "roles": []string{"employee"}}).str("code")
+	f := foundersIn(e)
+	service, err := e.services.Token(ServiceAI)
+	if err != nil {
+		t.Fatal(err)
+	}
+	grant := func(user string) string {
+		var token string
+		e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			token, err = e.api.issueAIGrant(ctx, u, e.books.Org, uuid.MustParse(user), uuid.New())
+			return err
+		})
+		return token
+	}
+	owner := grant(f.ahkow)
+	staff := e.call(http.MethodPost, "/v1/members", e.principal(authn.Principal{Subject: "staff-" + uuid.NewString(), Client: "web"}),
+		map[string]any{"invitation_code": code, "display_name": "Staff"}).str("user_id")
+	employee := grant(staff)
+	tool := func(token, name string, input map[string]any) response {
+		return e.call(http.MethodPost, "/internal/v1/tool-calls", token, map[string]any{"tool": name, "input": input}, ServiceTokenHeader, service)
+	}
+	person := uuid.MustParse(f.ahkow)
+	platform := corpus.Pages[0]
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		k := u.OrganisationKnowledge()
+		add := func(v storage.KBVersion) {
+			v.CreatedAt, v.AuthorKind, v.AuthorUser, v.HumanEdited = e.clock.Now(), "person", person, true
+			if _, err := k.AddVersion(ctx, v); err != nil {
+				t.Fatal(err)
+			}
+		}
+		add(storage.KBVersion{Key: "org.expense-policy", Type: "policy", Title: "Expense policy", Summary: "How claims are made here.", Aliases: []string{"claims rule"},
+			Body:    "# Expense policy\n\n## Claims\n\nClaims are made within 14 days of the receipt date. (src: note:expense-policy#claims)\n\nA founder approves claims up to a limit. (src: setting:approvals.self_approval_limit#value)\n",
+			Sources: []byte(`[{"kind":"note","ref":"expense-policy","title":"Expense policy"},{"kind":"setting","ref":"approvals.self_approval_limit","title":"Self-approval limit"}]`),
+			Origin:  storage.KBOriginHumanEdited})
+		add(storage.KBVersion{Key: "org.pay-rules", Type: "policy", Title: "Pay rules", Summary: "How pay is decided here.", Body: "# Pay rules\n\n## Rules\n\nPay is monthly. (src: note:pay#rules)\n", DataClass: "payroll", Origin: storage.KBOriginHumanEdited})
+		add(storage.KBVersion{Key: "org.draft-only", Type: "policy", Title: "Not yet approved", Summary: "A draft.", Body: "# Draft\n\n## Text\n\nNot published. (src: note:x#text)\n", Origin: storage.KBOriginHumanEdited})
+		add(storage.KBVersion{Key: platform.Key, Type: platform.Type, Title: "Our version of " + platform.Title, Summary: "The organisation's own wording.",
+			Body: "# Ours\n\n## Our rule\n\nWe do it our way. (src: platform:" + platform.Key + "#our-rule)\n", Origin: storage.KBOriginOverlay, BaseKey: platform.Key, BaseDigest: platform.Digest})
+		_, err := k.Publish(ctx, map[string]int{"org.expense-policy": 1, "org.pay-rules": 1, platform.Key: 1}, nil, &person, "first", e.clock.Now())
+		return err
+	})
+	content := func(r response) map[string]any {
+		t.Helper()
+		if r.Status != http.StatusOK {
+			t.Fatalf("callAITool: %d %s", r.Status, r.Raw)
+		}
+		c, _ := r.Body["content"].(map[string]any)
+		return c
+	}
+	// The index lists the organisation's published pages, an overlay in place of its platform page, never a draft or a class the reader may not read.
+	for who, token := range map[string]string{"owner": owner, "employee": employee} {
+		got, _ := content(tool(token, "kb.index", map[string]any{"section": "org"}))["pages"].([]any)
+		if !containsKey(got, "org.expense-policy") || containsKey(got, "org.pay-rules") || containsKey(got, "org.draft-only") {
+			t.Errorf("the %s's org index: %v", who, got)
+		}
+	}
+	// A page, with its sources resolved to what the reader can open.
+	cites := func(token string) []any {
+		r := tool(token, "kb.read", map[string]any{"key": "org.expense-policy"})
+		pg := content(r)
+		pages, _ := r.Body["kb_pages"].([]any)
+		if len(pages) != 1 || pages[0].(map[string]any)["version"] != "organisation snapshot 1, version 1" {
+			t.Errorf("the version used: %s", r.Raw)
+		}
+		var out []any
+		for _, s := range pg["sections"].([]any) {
+			out = append(out, s.(map[string]any)["cites"].([]any)...)
+		}
+		return out
+	}
+	byTitle := func(cs []any) map[string]map[string]any {
+		m := map[string]map[string]any{}
+		for _, c := range cs {
+			m[c.(map[string]any)["title"].(string)] = c.(map[string]any)
+		}
+		return m
+	}
+	o := byTitle(cites(owner))
+	if o["Note: Expense policy"]["href"] != "/settings/ai/knowledge-base#note-expense-policy" || o["Setting: Self-approval limit"]["href"] != "/settings#approvals.self_approval_limit" {
+		t.Errorf("the Owner's sources: %v", o)
+	}
+	em := byTitle(cites(employee))
+	if em["The organisation's policy"]["href"] != nil || em["The organisation's policy"] == nil || em["Setting: Self-approval limit"]["href"] == nil {
+		t.Errorf("an employee's sources: %v", em)
+	}
+	if r := tool(employee, "kb.read", map[string]any{"key": "org.pay-rules"}); r.Status != http.StatusUnprocessableEntity {
+		t.Errorf("an employee read a payroll page: %d %s", r.Status, r.Raw)
+	}
+	if r := tool(owner, "kb.read", map[string]any{"key": "org.pay-rules"}); r.Status != http.StatusUnprocessableEntity {
+		t.Errorf("the Owner read a payroll page with AI payroll access off: %d %s", r.Status, r.Raw)
+	}
+	if r := tool(owner, "kb.read", map[string]any{"key": "org.draft-only"}); r.Status != http.StatusUnprocessableEntity {
+		t.Errorf("a draft was read: %d %s", r.Status, r.Raw)
+	}
+	// An overlay replaces the platform page, for this organisation: its words, its version, its search.
+	o2 := content(tool(owner, "kb.read", map[string]any{"key": platform.Key}))
+	intro, _ := o2["intro"].(string)
+	if !strings.Contains(intro+firstSectionText(o2), "our way") || !strings.Contains(o2["version"].(string), "organisation snapshot 1") {
+		t.Errorf("the overlay did not replace the platform page: %v", o2)
+	}
+	hits, _ := content(tool(owner, "kb.search", map[string]any{"query": "claims rule receipt date", "scope": "pages"}))["hits"].([]any)
+	if len(hits) == 0 || hits[0].(map[string]any)["key"] != "org.expense-policy" {
+		t.Errorf("the search: %v", hits)
+	}
+	if hits, _ := content(tool(owner, "kb.search", map[string]any{"query": "pay is monthly", "scope": "pages"}))["hits"].([]any); containsKey(hits, "org.pay-rules") {
+		t.Errorf("a payroll page was found: %v", hits)
+	}
+}
+
+func firstSectionText(c map[string]any) string {
+	secs, _ := c["sections"].([]any)
+	if len(secs) == 0 {
+		return ""
+	}
+	s, _ := secs[0].(map[string]any)["text"].(string)
+	return s
+}

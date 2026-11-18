@@ -108,17 +108,21 @@ type AISegment struct {
 // AISource is a guide page a know-how answer comes from (AI-51): what the person can open, never one of the assistant's own
 // compiled pages. Fyniq resolves it from the section the assistant read; the assistant never names it.
 type AISource struct {
-	Guide  string `json:"guide" doc:"The guide page's key." example:"claims.approve-team"`
+	Guide  string `json:"guide,omitempty" doc:"The guide page's key; none for what an organisation's own page comes from." example:"claims.approve-team"`
 	Title  string `json:"title" doc:"Its title." example:"Approving your team's claims"`
 	Anchor string `json:"anchor" doc:"The heading it comes from." example:"who-approves"`
 	Draft  bool   `json:"draft,omitempty" doc:"true when the guide page is still awaiting review (the guide shows it with its banner, FR-UX-41)." example:"false"`
-	Href   string `json:"href" doc:"Where it opens in the web app." example:"/help/claims.approve-team#who-approves"`
+	Href   string `json:"href,omitempty" doc:"Where it opens in the web app; none when the reader may not open it (an organisation's note they may not read)." example:"/help/claims.approve-team#who-approves"`
 }
 
 func sourcesOut(in []assistant.Source) []AISource {
 	out := make([]AISource, 0, len(in))
 	for _, s := range in {
-		out = append(out, AISource{Guide: s.Guide, Title: s.Title, Anchor: s.Anchor, Draft: s.Draft, Href: "/help/" + s.Guide + "#" + s.Anchor})
+		src := AISource{Guide: s.Guide, Title: s.Title, Anchor: s.Anchor, Draft: s.Draft, Href: s.Href}
+		if s.Guide != "" && s.Href == "" {
+			src.Href = "/help/" + s.Guide + "#" + s.Anchor
+		}
+		out = append(out, src)
 	}
 	return out
 }

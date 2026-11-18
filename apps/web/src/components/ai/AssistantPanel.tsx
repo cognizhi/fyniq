@@ -6,7 +6,6 @@ import { api } from "../../api/client";
 import { date } from "../../format/date";
 import type { Mode } from "../../registry";
 import { type ApiProblem, Icon, problemOf } from "../../ui";
-import { guideLink } from "../../help/links";
 import { Refusal } from "../Refusal";
 import { Button } from "../ui/button";
 import { AiBadge } from "./AiBadge";
@@ -329,7 +328,7 @@ function TurnView({ turn: t, expert, conversation, onRated }: {
         {t.sources.length > 0 && (
           <div className="fy-row fy-row--wrap gap-1" aria-label="Where the explanation comes from" role="group">
             {t.sources.map((s) => (
-              <GuideSource key={`${s.guide}#${s.anchor}`} source={s} />
+              <GuideSource key={`${s.guide ?? ""}${s.title}#${s.anchor}`} source={s} />
             ))}
           </div>
         )}
@@ -358,12 +357,20 @@ function TurnView({ turn: t, expert, conversation, onRated }: {
 // GuideSource is a chip naming the guide page an explanation comes from, opening it (AI-51): always a page the person can open
 // in the user guide, never one of the assistant's own compiled pages. A page still awaiting review says so.
 function GuideSource({ source: s }: { source: NonNullable<Turn["sources"]>[number] }) {
-  const { to, hash } = guideLink(`${s.guide}#${s.anchor}`);
-  return (
-    <Link className="fy-tag" to={to} hash={hash} title={s.draft ? "This guide page is still awaiting review" : `From the guide: ${s.title}`}>
+  const label = `${s.title}${s.draft ? " (awaiting review)" : ""}`;
+  const body = (
+    <>
       <Icon of={BookOpen} />
-      {s.title}
-      {s.draft ? " (awaiting review)" : ""}
+      {label}
+    </>
+  );
+  if (!s.href) {
+    return <span className="fy-tag">{body}</span>; // what the reader may not open is named, not linked
+  }
+  const [to = "", hash] = s.href.split("#");
+  return (
+    <Link className="fy-tag" to={to} hash={hash} title={s.draft ? "This guide page is still awaiting review" : `From ${s.title}`}>
+      {body}
     </Link>
   );
 }
