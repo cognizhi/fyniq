@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, AI, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:a31445d3c111689fb367f92bd788f988517bc4431584471854c661b80f71b77c
+  - docs/user-guide/organisation-settings.md sha256:365b3cbc25dc9f52c15f0391ad01eb7f8b621c0b74f7e9c29214553c2b692b2f
 data_class: general
 taint: trusted
 status: draft
@@ -353,6 +353,7 @@ The calendar itself: [[compliance.calendar]].
 
 - **Evidence for bills**: a bill posts only with the supplier's invoice or receipt attached.
 - **Evidence for manual journals**: a manual journal whose debits are above S$1,000 posts only with a supporting calculation or document attached; **Evidence for manual journals above** sets the amount.
+- **Largest evidence file**: a file larger than this is refused when it is attached; it is 25 MB by default, the most Fyniq takes, and an organisation may lower it.
 - **Evidence for statutory filings and payments**: an item of the statutory calendar is recorded as filed only with its acknowledgement attached, such as IRAS's or ACRA's acknowledgement of a return, CPF Board's of a payment, or an AGM's minutes.
 - Each is **required** by default; **recommended** lets the record post without a file and **Checks** lists it; **optional** asks for nothing. Changing any of them needs a second approver.
 - Files go in the record's **Evidence** panel ([[purchases.bills]], [[accounting.journals]]); **Accounting › Evidence** lists the records still missing theirs ([[compliance.evidence]]).

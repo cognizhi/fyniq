@@ -40,6 +40,7 @@ const (
 	CodeImage   = "DOC-07" // the image's structure cannot be read
 	CodeMacro   = "DOC-08" // an office file with macros or ActiveX controls
 	CodeArchive = "DOC-09" // an office file whose archive is unreadable, too large or a compression bomb
+	CodeConvert = "DOC-11" // a HEIC photo the converter could not turn into a JPEG (DOC-10 is a missing required file)
 )
 
 // Problem is a rule an upload breaks, in plain words (ENG-23).
@@ -62,24 +63,64 @@ func hash(b []byte) string {
 	return hex.EncodeToString(s[:])
 }
 
-// Check runs FR-DOC-08's checks on an upload: size, type from the content, a malware scan of the file as
-// received, and image metadata stripped. A scanner that fails, or none at all, refuses the file: it is
-// never attached unscanned. The returned error is a failure of the scanner, not of the file.
+// Check runs FR-DOC-08's checks on an upload with no converter: a HEIC photo is refused with its own message.
 func Check(ctx context.Context, scanner ports.Scanner, name string, data []byte) (File, []Problem, error) {
+	return CheckWith(ctx, Checker{Scanner: scanner}, name, data)
+}
+
+// Checker is what an upload is checked with: the malware scanner, always, and a converter where the installation has
+// one. Without a converter a HEIC photo is refused and a preview cannot be made.
+type Checker struct {
+	Scanner   ports.Scanner
+	Converter ports.Converter
+	// MaxBytes is the largest file accepted: an organisation's setting, never above the 25 MB the service takes
+	// (FR-DOC-08). Zero is the 25 MB.
+	MaxBytes int
+}
+
+func (c Checker) limit() int {
+	if c.MaxBytes <= 0 || c.MaxBytes > MaxBytes {
+		return MaxBytes
+	}
+	return c.MaxBytes
+}
+
+func (c Checker) scan(ctx context.Context, name string, data []byte) (*Problem, error) {
+	if c.Scanner == nil {
+		return nil, errors.New("no malware scanner is configured, so no file can be attached")
+	}
+	verdict, err := c.Scanner.Scan(ctx, bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("the malware scan did not finish: %w", err)
+	}
+	if !verdict.Clean {
+		return &Problem{CodeMalware, "file", fmt.Sprintf("The malware scan flagged the file (%s), so it was not stored.", verdict.Signature),
+			"Do not open it. Ask the sender for a clean copy, or report it to your administrator."}, nil
+	}
+	return nil, nil
+}
+
+// CheckWith runs FR-DOC-08's checks on an upload: size, type from the content, a malware scan of the file as
+// received, a HEIC photo converted to JPEG (scanned again, as it is the converter's output), and image metadata stripped.
+// A scanner that fails, or none at all, refuses the file: it is never attached unscanned. The returned error is a
+// failure of the scanner or the converter, not of the file.
+func CheckWith(ctx context.Context, c Checker, name string, data []byte) (File, []Problem, error) {
 	f := File{Name: SafeName(name)}
+	limit := c.limit()
 	switch {
 	case len(data) == 0:
 		return f, []Problem{{CodeSize, "file", "The file is empty.", "Choose the file again; it may not have finished saving."}}, nil
-	case len(data) > MaxBytes:
-		return f, []Problem{{CodeSize, "file", fmt.Sprintf("The file is %.1f MB; the limit is 25 MB.", float64(len(data))/(1<<20)),
+	case len(data) > limit:
+		return f, []Problem{{CodeSize, "file", fmt.Sprintf("The file is %.1f MB; the limit is %d MB.", float64(len(data))/(1<<20), limit>>20),
 			"Compress it, or split it into smaller files."}}, nil
 	}
 	mt, ok := Sniff(data, f.Name)
-	if !ok && IsHEIC(data) {
+	heic := !ok && IsHEIC(data)
+	if heic && c.Converter == nil {
 		return f, []Problem{{CodeType, "file", "The file is a HEIC photo, which Fyniq does not convert to JPEG yet, so it was not stored.",
 			"Export it as JPEG and attach that. On an iPhone, Settings › Camera › Formats › Most Compatible takes new photos as JPEG."}}, nil
 	}
-	if !ok {
+	if !ok && !heic {
 		return f, []Problem{{CodeType, "file", "The file's content is not " + Accepted + ".",
 			"Save or export it as PDF, or as a PNG or JPEG picture, and attach that."}}, nil
 	}
@@ -88,25 +129,52 @@ func Check(ctx context.Context, scanner ports.Scanner, name string, data []byte)
 			return f, []Problem{*p}, nil
 		}
 	}
-	if scanner == nil {
-		return f, nil, errors.New("no malware scanner is configured, so no file can be attached")
+	if p, err := c.scan(ctx, f.Name, data); err != nil || p != nil {
+		if p != nil {
+			return f, []Problem{*p}, nil
+		}
+		return f, nil, err
 	}
-	verdict, err := scanner.Scan(ctx, bytes.NewReader(data))
-	if err != nil {
-		return f, nil, fmt.Errorf("the malware scan did not finish: %w", err)
-	}
-	if !verdict.Clean {
-		return f, []Problem{{CodeMalware, "file", fmt.Sprintf("The malware scan flagged the file (%s), so it was not stored.", verdict.Signature),
-			"Do not open it. Ask the sender for a clean copy, or report it to your administrator."}}, nil
+	original := data
+	if heic {
+		out, err := c.Converter.Convert(ctx, ports.ConvertHEICToJPEG, data)
+		if errors.Is(err, ports.ErrNotConvertible) {
+			return f, []Problem{{CodeConvert, "file", "The HEIC photo could not be converted to JPEG, so it was not stored.",
+				"Export it as JPEG from the Photos app and attach that."}}, nil
+		}
+		if err != nil {
+			return f, nil, fmt.Errorf("the HEIC conversion did not finish: %w", err)
+		}
+		// The converter's output is untrusted: its type is decided from its content, it is scanned, and it must be a JPEG.
+		if got, ok := Sniff(out.Data, ""); !ok || got != "image/jpeg" || len(out.Data) > MaxBytes {
+			return f, []Problem{{CodeConvert, "file", "The HEIC photo could not be converted to JPEG, so it was not stored.",
+				"Export it as JPEG from the Photos app and attach that."}}, nil
+		}
+		if p, err := c.scan(ctx, f.Name, out.Data); err != nil || p != nil {
+			if p != nil {
+				return f, []Problem{*p}, nil
+			}
+			return f, nil, err
+		}
+		mt, data = "image/jpeg", out.Data
+		f.Name = jpegName(f.Name)
 	}
 	stored, err := StripMetadata(mt, data)
 	if err != nil {
 		return f, []Problem{{CodeImage, "file", "The picture's structure cannot be read, so it was not stored.",
 			"Open it in an image editor, save it again as PNG or JPEG, and attach that."}}, nil
 	}
-	f.MediaType, f.Data, f.SHA256, f.OriginalSHA256 = mt, stored, hash(stored), hash(data)
+	f.MediaType, f.Data, f.SHA256, f.OriginalSHA256 = mt, stored, hash(stored), hash(original)
 	f.NRIC = UnmaskedNRIC(mt, data)
 	return f, nil, nil
+}
+
+// jpegName is a converted photo's name: the original's, ending .jpg.
+func jpegName(name string) string {
+	if i := strings.LastIndex(name, "."); i > 0 {
+		name = name[:i]
+	}
+	return name + ".jpg"
 }
 
 // Details are what the uploader says about a file (FR-DOC-05).
