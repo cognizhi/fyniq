@@ -403,6 +403,16 @@ func (r Runner) one(ctx context.Context, org uuid.UUID, d Definition, e *Env) (o
 		}
 	}()
 	err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, p := range d.Packs {
+			current, later, err := pendingUpdate(ctx, u, p, e.Today)
+			if err != nil {
+				return err
+			}
+			if later != "" {
+				out = basedOnPending(p, current, later)
+				return nil
+			}
+		}
 		var err error
 		out, err = d.Run(ctx, u, e)
 		return err
