@@ -626,4 +626,6 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-17] compile | docs/user-guide/banking.md → banking.categorise (Plain and Accountant views on the grid, FR-UX-08); the other pages citing it re-hashed, unchanged
 
+## [2026-11-18] compile | docs/user-guide/statutory-packs.md → settings.statutory-packs (an update waiting to be activated, ENG-33, G4-103)
+
 ## [2026-11-18] compile | docs/user-guide/help.md → help.guide (Take the tour, FR-UX-34)

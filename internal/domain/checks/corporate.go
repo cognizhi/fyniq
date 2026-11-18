@@ -30,11 +30,12 @@ var corporateChecks = []Definition{
 		Explain: "A company appoints a secretary within six months of incorporation, and the office is never vacant for more than " +
 			"six months. The secretary is a natural person resident in Singapore and never the sole director. With no details " +
 			"recorded from incorporation, it is not assessed.",
-		Rules: "FR-CS-06, s171", Owner: "accountant", View: viewCorporate, Triggers: []string{"document"}, Run: secretaryAppointed},
+		Rules: "FR-CS-06, s171", Owner: "accountant", View: viewCorporate, Triggers: []string{"document"}, Packs: []string{"sg-acra"}, Run: secretaryAppointed},
 	{Key: "corporate.statements-approved", Ref: "C.2 #33", Area: "Corporate", Worst: Due, Title: "The directors approve the financial statements in time",
 		Explain: "The directors approve each year's financial statements before the AGM, or before they are sent to the members " +
 			"instead. Within 30 days of that deadline, an approval not recorded is due. With no financial year set, it is not assessed.",
-		Rules: "FR-CS-03, s201", Owner: "accountant", View: viewCorporate, Triggers: []string{"document", "statutory_filing"}, Run: statementsApproved},
+		Rules: "FR-CS-03, s201", Owner: "accountant", View: viewCorporate, Triggers: []string{"document", "statutory_filing"},
+		Packs: []string{"sg-deadlines", "sg-acra"}, Run: statementsApproved},
 	{Key: "corporate.acra-profile", Ref: "C.2 #34", Area: "Corporate", Worst: Warning, Title: "The corporate profile agrees with ACRA's business profile",
 		Explain: "The officers in office and the registered office are compared with the latest ACRA business profile typed in, on " +
 			"its day. ACRA keeps the registers of officers, so a difference is fixed in the profile, or explained. With no extract, " +
@@ -44,7 +45,8 @@ var corporateChecks = []Definition{
 		Explain: "An officer's appointment or cessation and a change of the registered office are lodged within 14 days; a nominee " +
 			"director or shareholder is entered in the company's register within 7 days and filed with ACRA's central register within " +
 			"2 business days after. A change past its deadline with no day lodged recorded is due.",
-		Rules: "FR-CS-01, FR-CS-02, G4-102", Owner: "accountant", View: viewCorporate, Triggers: []string{"document"}, Run: lodgementsMade},
+		Rules: "FR-CS-01, FR-CS-02, G4-102", Owner: "accountant", View: viewCorporate, Triggers: []string{"document"}, Packs: []string{"sg-deadlines", "sg-acra"},
+		Run: lodgementsMade},
 }
 
 // incorporatedOn is the day of the profile's first detail: the company's incorporation; nil when none is recorded.
