@@ -139,7 +139,7 @@ test("Home shows the pulse card and tiles, and Expert draws the three charts", a
   // a definition opens over the card, at the kit's width, inside the window, even from the right-hand figure
   const inside = async (name: string) => {
     await pulse.getByRole("button", { name }).click();
-    const note = page.getByRole("note").filter({ hasText: "worked out, in words" });
+    const note = page.getByRole("dialog", { name: name.replace(/^About /, "") }); // the ⓘ popover, named by the KPI (FR-UX-30)
     await expect(note).toBeVisible();
     const box = (await note.boundingBox())!;
     const width = page.viewportSize()!.width;
@@ -186,7 +186,8 @@ test("the KPI page lists the month's KPIs, and an Owner enters the month's count
   const seen = await serve(page);
   await page.goto("/reports/kpis");
   await expect(page.getByRole("heading", { level: 1, name: "Start-up KPIs" })).toBeVisible();
-  await expect(page.getByRole("table", { name: "The KPIs of Oct 2026 beside Sept 2026" })).toBeVisible();
+  // the engines' locale data spell September differently ("Sep" in WebKit, "Sept" in Chrome)
+  await expect(page.getByRole("table", { name: /^The KPIs of Oct 2026 beside Sept? 2026$/ })).toBeVisible();
   await shot(page, "kpis");
   const card = page.getByRole("region", { name: "Customer counts and headcount, Oct 2026" });
   await card.getByRole("button", { name: "Enter" }).click();
