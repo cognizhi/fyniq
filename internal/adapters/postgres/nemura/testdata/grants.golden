@@ -29,6 +29,11 @@ nemura_api | column nemura.outbox.payload | INSERT
 nemura_api | column nemura.outbox.state | UPDATE
 nemura_api | column nemura.outbox.task_name | UPDATE
 nemura_api | column nemura.outbox.worker_class | INSERT
+nemura_api | column nemura.reporting_line.effective_from | INSERT
+nemura_api | column nemura.reporting_line.effective_to | UPDATE
+nemura_api | column nemura.reporting_line.id | INSERT
+nemura_api | column nemura.reporting_line.manager_id | INSERT
+nemura_api | column nemura.reporting_line.report_id | INSERT
 nemura_api | column nemura.role_assignment.approval_id | INSERT
 nemura_api | column nemura.role_assignment.effective_from | INSERT
 nemura_api | column nemura.role_assignment.effective_to | UPDATE
@@ -38,14 +43,21 @@ nemura_api | column nemura.role_assignment.member_id | INSERT
 nemura_api | column nemura.role_assignment.role | INSERT
 nemura_api | database | CONNECT
 nemura_api | function nemura.current_org | EXECUTE
+nemura_api | function nemura.current_person | EXECUTE
+nemura_api | function nemura.has_role | EXECUTE
+nemura_api | function nemura.is_manager_of | EXECUTE
 nemura_api | schema nemura | USAGE
 nemura_api | table nemura.approval_request | SELECT
 nemura_api | table nemura.member | SELECT
 nemura_api | table nemura.organisation | SELECT
 nemura_api | table nemura.outbox | SELECT
+nemura_api | table nemura.reporting_line | SELECT
 nemura_api | table nemura.role_assignment | SELECT
 nemura_assistant | database | CONNECT
 nemura_assistant | function nemura.current_org | EXECUTE
+nemura_assistant | function nemura.current_person | EXECUTE
+nemura_assistant | function nemura.has_role | EXECUTE
+nemura_assistant | function nemura.is_manager_of | EXECUTE
 nemura_assistant | schema nemura | USAGE
 nemura_executor | column nemura.audit_event.body | INSERT
 nemura_executor | column nemura.audit_event.id | INSERT
@@ -64,14 +76,21 @@ nemura_executor | column nemura.outbox.task_name | UPDATE
 nemura_executor | column nemura.outbox.worker_class | INSERT
 nemura_executor | database | CONNECT
 nemura_executor | function nemura.current_org | EXECUTE
+nemura_executor | function nemura.current_person | EXECUTE
+nemura_executor | function nemura.has_role | EXECUTE
+nemura_executor | function nemura.is_manager_of | EXECUTE
 nemura_executor | schema nemura | USAGE
 nemura_executor | table nemura.approval_request | SELECT
 nemura_executor | table nemura.member | SELECT
 nemura_executor | table nemura.organisation | SELECT
 nemura_executor | table nemura.outbox | SELECT
+nemura_executor | table nemura.reporting_line | SELECT
 nemura_executor | table nemura.role_assignment | SELECT
 nemura_readonly | database | CONNECT
 nemura_readonly | function nemura.current_org | EXECUTE
+nemura_readonly | function nemura.current_person | EXECUTE
+nemura_readonly | function nemura.has_role | EXECUTE
+nemura_readonly | function nemura.is_manager_of | EXECUTE
 nemura_readonly | schema nemura | USAGE
 nemura_readonly | table nemura.approval_request | SELECT
 nemura_readonly | table nemura.audit_chain | SELECT
@@ -79,6 +98,7 @@ nemura_readonly | table nemura.audit_event | SELECT
 nemura_readonly | table nemura.member | SELECT
 nemura_readonly | table nemura.organisation | SELECT
 nemura_readonly | table nemura.outbox | SELECT
+nemura_readonly | table nemura.reporting_line | SELECT
 nemura_readonly | table nemura.role_assignment | SELECT
 nemura_worker | column nemura.audit_event.body | INSERT
 nemura_worker | column nemura.audit_event.id | INSERT
@@ -97,6 +117,9 @@ nemura_worker | column nemura.outbox.task_name | UPDATE
 nemura_worker | column nemura.outbox.worker_class | INSERT
 nemura_worker | database | CONNECT
 nemura_worker | function nemura.current_org | EXECUTE
+nemura_worker | function nemura.current_person | EXECUTE
+nemura_worker | function nemura.has_role | EXECUTE
+nemura_worker | function nemura.is_manager_of | EXECUTE
 nemura_worker | schema nemura | USAGE
 nemura_worker | table nemura.approval_request | SELECT
 nemura_worker | table nemura.audit_chain | SELECT
@@ -104,5 +127,6 @@ nemura_worker | table nemura.audit_event | SELECT
 nemura_worker | table nemura.member | SELECT
 nemura_worker | table nemura.organisation | SELECT
 nemura_worker | table nemura.outbox | SELECT
+nemura_worker | table nemura.reporting_line | SELECT
 nemura_worker | table nemura.role_assignment | SELECT
 nemura_worker | table nemura.tenants | SELECT

@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/nemura/access"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/roles"
 )
@@ -150,5 +151,59 @@ func EndRole(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by uui
 		return errors.New("there is no open role assignment with that ID")
 	}
 	return Audit(ctx, tx, org, at, user(by), "nemura.role.revoked", audit.Object{Type: "role_assignment", ID: assignment},
+		map[string]audit.Change{"effective_to": {nil, on.Format(time.DateOnly)}}, "")
+}
+
+// RestrictedRefusal is the plain refusal of a restricted field the person may not see (NM_RESTRICTED_FIELD).
+type RestrictedRefusal struct{ Capability string }
+
+func (r *RestrictedRefusal) Error() string {
+	return "NM_RESTRICTED_FIELD: " + r.Capability + " is not for your role. Ask the person who holds it, or the HR administrator."
+}
+
+// ReadRestricted records that actor read field of capability for subject at the level given, and returns it as the level allows
+// (NM-PPL-02, NM-SEC-02): every read of a restricted field is audited, even one that is only masked, and one the person may not
+// see is refused and also audited as a refusal: the caller commits that event (it recognises the refusal with errors.As, answers
+// the person and returns nil), so a refusal is never lost to a rollback. The value never enters the event, only who, what and at
+// which level.
+func ReadRestricted(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, actor uuid.UUID, held []authz.Role, capability string, subject uuid.UUID, field, value string) (string, error) {
+	level := access.Of(held, capability, actor == subject)
+	action := "nemura.restricted.read"
+	if level == access.Hidden {
+		action = "nemura.restricted.refused"
+	}
+	if err := Audit(ctx, tx, org, at, user(actor), action, audit.Object{Type: "member", ID: subject},
+		map[string]audit.Change{"capability": {nil, capability}, "field": {nil, field}, "level": {nil, level.String()}}, ""); err != nil {
+		return "", err
+	}
+	shown, ok := access.Release(value, level)
+	if !ok {
+		return "", &RestrictedRefusal{Capability: capability}
+	}
+	return shown, nil
+}
+
+// AddReportingLine makes manager the line manager of report from a day (NM-ROLE-03), with its audit event; the people record
+// (p1-nemura-records-packs) edits it through this.
+func AddReportingLine(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by uuid.UUID, report, manager uuid.UUID, from time.Time) (uuid.UUID, error) {
+	id := uuid.Must(uuid.NewV7())
+	if _, err := tx.Exec(ctx, "INSERT INTO nemura.reporting_line (id, report_id, manager_id, effective_from) VALUES ($1, $2, $3, $4)",
+		id, report, manager, from.Format(time.DateOnly)); err != nil {
+		return uuid.Nil, err
+	}
+	return id, Audit(ctx, tx, org, at, user(by), "nemura.reporting_line.set", audit.Object{Type: "reporting_line", ID: id},
+		map[string]audit.Change{"report": {nil, report.String()}, "manager": {nil, manager.String()}, "effective_from": {nil, from.Format(time.DateOnly)}}, "")
+}
+
+// EndReportingLine ends a line on a day: history is kept.
+func EndReportingLine(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, line uuid.UUID, on time.Time) error {
+	tag, err := tx.Exec(ctx, "UPDATE nemura.reporting_line SET effective_to = $2 WHERE id = $1 AND effective_to IS NULL", line, on.Format(time.DateOnly))
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return errors.New("there is no open reporting line with that ID")
+	}
+	return Audit(ctx, tx, org, at, user(by), "nemura.reporting_line.ended", audit.Object{Type: "reporting_line", ID: line},
 		map[string]audit.Change{"effective_to": {nil, on.Format(time.DateOnly)}}, "")
 }
