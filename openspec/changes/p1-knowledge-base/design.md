@@ -249,9 +249,17 @@ What the first five slices settled, where the build differed from the text above
   versions travel in the tool result and the turn's tool call.
 - **Mode is not an access matter.** The guide's Basic and Expert split is a display preference; the assistant answers from a
   page whatever mode the reader is in.
+- **The compiler has no database role (decision 1, outcome).** It is a job with a service-token class and the API's four
+  compiler operations; the API holds the only database access, runs the lint again on every draft and writes the draft as
+  the compiler. The stronger boundary (no grant to widen) replaced the planned role and its attack tests.
+- **The Owner holds A on the knowledge-base row (decision 6).** Appendix D's row gives the Owner view, create and approve;
+  the Administrator edits and asks only, so Founder mode lets an Owner publish alone and Team mode asks another Owner.
+- **Rendered pages publish with the setting change (decision 3).** They are the setting's own words, so no second person
+  is asked; a person's edit of one is never overwritten.
 - **Left from this design:** layer 1's cached index (task 2.3), the platform's check against the pack in force (task 3.3),
-  the organisation's tables, rendered pages, the compiler and its role, publishing, the administration surface (tasks 4 to
-  8), the answer-level evals (`[live-verify]`) and CTL-AI-08's nightly and event checks (task 9.3).
+  overlays flagged when a platform page changes (7.2), the findings and recompile operations, the screen and its guide page
+  (8.1, 8.2), the weekly semantic lint and the schedule (6.3), the answer-level evals (`[live-verify]`) and CTL-AI-08's
+  nightly and event checks (9.3).
 
 ## Migration plan
 

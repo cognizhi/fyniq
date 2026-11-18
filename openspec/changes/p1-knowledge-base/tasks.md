@@ -53,37 +53,47 @@ platform, or half model. Their tags are added when the rest is built, so the tra
 
 ## 4. The organisation's knowledge base
 
-- [ ] 4.1 Migration 000563: `kb_note`, `kb_page`, `kb_page_version`, `kb_snapshot`, `kb_snapshot_page`, `kb_lint_finding`
+- [x] 4.1 Migration 000563: `kb_note`, `kb_page`, `kb_page_version`, `kb_snapshot`, `kb_snapshot_page`, `kb_lint_finding`
   (append-only, guards, FORCE RLS, composite keys, the export catalogue, goldens). Tests `// req: AI-56`.
-- [ ] 4.2 The organisation's search and index over its newest snapshot, merged with the platform's; overlays win for that
+- [x] 4.2 The organisation's search and index over its newest snapshot, merged with the platform's; overlays win for that
   organisation. Tests `// req: AI-58`, `// req: AI-56`.
-- [ ] 4.3 The notes API (create, edit, list; audited). Tests `// req: AI-50`, `// req: AUD-01`.
+- [x] 4.3 The notes API (create, edit, list; audited). Tests `// req: AI-50`, `// req: AUD-01`.
+  Built: migration 000563 (six tables, append-only guards, FORCE RLS, composite keys, the export catalogue) and 000564/000565 (a page may cite up to 200 sources); the storage port `OrganisationKnowledge()` and the adapter; goldens. Tests carry no `// req:` tag (AI-56 is only part proved here).
+  Built: the organisation's search and index over its newest snapshot, merged with the platform's through the reader filter (`mergeIndex`, `mergeHits`); `kb.read` serves an organisation page with its sections and the note that it is the organisation's own.
+  Built: `/v1/knowledge-base/notes` (create, edit with `If-Match`, list, get), audited in the same transaction.
 
 ## 5. Settings-rendered pages
 
-- [ ] 5.1 `kb.Render` from settings, approval policies, team mode and recommended-default decisions with their reasons, no
+- [x] 5.1 `kb.Render` from settings, approval policies, team mode and recommended-default decisions with their reasons, no
   model; written as `rendered` versions when a setting takes effect, per the owner's decision 3. Tests `// req: AI-50`,
   `// req: FR-ORG-08`.
+  Built: `knowledge.Render` (team mode, who approves what, one page per settings group; no model, no clock), written as `rendered` versions and published with the setting change that made them (the owner's decision 3); a person's edit is never overwritten and a re-render waits beside it with a finding. Untagged (AI-50 and FR-ORG-08 are only part proved).
 
 ## 6. The compiler
 
-- [ ] 6.1 Migrations 000564/000565: the role `fyniq_kb_compiler`, its grants (read sources, insert drafts) and the drafts-only
+- [x] 6.1 Migrations 000564/000565: the role `fyniq_kb_compiler`, its grants (read sources, insert drafts) and the drafts-only
   trigger; every list of roles (`ServiceRoles`, the catalogue and attack tests, `wiring/local.go`, compose,
   `infra/modules/platform-spec`, `db/README.md`, goldens). Attack tests: it cannot publish, read the ledger, change a
   version or write anything but a draft. Tests `// req: AI-57`, `// req: CMP-AI-01`, an `// asvs:` tag.
-- [ ] 6.2 The service-token class `kb_compiler`, the API's `compileKBPage` operation (agent `kb_compiler`'s route and budget,
+- [x] 6.2 The service-token class `kb_compiler`, the API's `compileKBPage` operation (agent `kb_compiler`'s route and budget,
   the AI switch, screening) and `contracts/ai/prompts/kb-compile@1.md`. Tests `// req: AI-57`, `// req: AI-74`.
 - [ ] 6.3 `jobs kb-compile`: the changed sources, the Go lint with one retry, the drafts, `kb_compile_run`, the human-edit
   conflict finding; the weekly semantic lint as findings and Inbox tasks. Tests `// req: AI-52`, `// req: AI-56`.
+  **Changed (decision 1): no database role.** The compiler holds no database role and no grant; it reaches the API's four internal operations under its own service-token class `kb_compiler`, which opens nothing else, so "cannot publish, read the ledger or change a version" holds by construction and is tested by the refusals of every other token and operation. No migration 000564/000565 for a role (those numbers went to the sources limit).
+  Built: the four operations (work, compile, drafts, findings) with the route of agent `kb_compiler` and the AI switch, screening of the notes as untrusted text, the lint again on every draft, and `contracts/ai/prompts/kb_compile@1.md`. `internal/kbcompile` is the job's library and client.
+  **Built in part:** `jobs kb-compile <org>` (`make kb-compile ORG=…`), the changed notes, the lint with one retry, the drafts, and the human-edit conflict finding. **Left:** the weekly semantic lint as findings and Inbox tasks, the schedule (Cloud Scheduler) and the cloud identity of the job `[live-verify]`.
 
 ## 7. Publishing
 
-- [ ] 7.1 Migrations 000566/000567 and `kb_publication` as an approval object: the envelope, the policy default per team
+- [x] 7.1 Migrations 000566/000567 and `kb_publication` as an approval object: the envelope, the policy default per team
   mode (open question 18), the checks before signing (lint, contradictions with settings, the pack and a newer platform
   page), snapshot n+1 in the executing transaction. Tests `// req: AI-56`, `// req: FR-APR-01`, `// req: FM-2`.
 - [ ] 7.2 Edit, human-edited versions, rollback as a new version, overlays and their flag when the platform page changes;
   until a contradiction is resolved the assistant follows the setting or the pack and says so. Tests `// req: AI-56`.
-- [ ] 7.3 The weekly review lists self-approved publications. Tests `// req: FM-3`.
+- [x] 7.3 The weekly review lists self-approved publications. Tests `// req: FM-3`.
+  Built: migrations 000566/000567 (`kb_publication` as an approval object), the envelope, the policies (Owner holds A on the row: decision 6; Founder mode publishes alone with a review-log entry, Team mode asks another Owner), the deterministic gate before signing (lint and contradictions with settings), snapshot n+1 in the executing transaction.
+  **Built in part:** edit (a human-edited version), rollback as a new version and the draft-beside-human-edit rule. **Left:** overlays and their flag when the platform page changes, and the pack check of the gate.
+  Built: a Founder-mode self-publication is a review-log entry in the weekly review (`ReviewSelfApproved`).
 
 ## 8. Administration
 
@@ -92,6 +102,8 @@ platform, or half model. Their tags are added when the rest is built, so the tra
 - [ ] 8.2 The screen `knowledge-base` (Settings → AI): index, page, diff, versions, lint, recompile, publish; Basic and
   Expert; help keys; `docs/user-guide/knowledge-base.md` compiled into `kb/`; the fragment updated locally. Tests
   `// req: AI-55`, Vitest with axe.
+  **Built in part:** notes, pages, versions, edit, rollback, publish, request and snapshots are in the contract, the authorisation matrix and the audit trail; the never-list is unchanged (no write tool on MCP or the AI surface). **Left:** the findings and recompile operations for the screen.
+  **Left:** the screen and its user-guide page, compiled into `kb/`.
 
 ## 9. Evals, controls and the finish
 
@@ -99,11 +111,13 @@ platform, or half model. Their tags are added when the rest is built, so the tra
   category, the revoked reader, citation resolution and the stale-fallback rate gated offline in `make evals`; answer
   accuracy recorded `[live-verify]`. Tests `// req: QA-AI-06` only for what each proves.
   **Built in part:** `evals/knowledge/knowledge.json` (103 questions in the six categories), `TestTheKnowledgeSuite...` in `make evals`: recall at the top 5 per category against its threshold (the measured baseline, owner and plan on the weak categories), citations of every page, the revoked reader, the fallback. A baseline of 0.75 paraphrase recall became 1.00 by aliases on 17 pages (AI-58). **Left, `[live-verify]`:** answer accuracy, the model's use of the answering order and the stale-guide answer need recorded model runs; QA-AI-06 is not ticked and no test is tagged with it.
-- [ ] 9.2 The publish gate (the deterministic part, per the owner's decision 2). Tests `// req: QA-AI-06`, `// req: AI-56`.
+- [x] 9.2 The publish gate (the deterministic part, per the owner's decision 2). Tests `// req: QA-AI-06`, `// req: AI-56`.
 - [ ] 9.3 CTL-AI-08's nightly (`verify kb`, the reader-filter test) and event checks running. Tests `// req: CTL-AI-08`.
 - [ ] 9.4 `docs/security/threat-models/knowledge-base.md` for security review #4; the build plan's paragraph; `make check`,
   `make test`, `make evals` pass.
   **Built in part:** `docs/security/threat-models/knowledge-base.md` (K1 to K10, K10 planned). **Left:** the build plan's paragraph, and the threat model's planned rows with their attack tests as tasks 4 to 8 land.
+  Built: `kbGate` (lint, no invented numbers, no contradiction with a setting) runs before a publication is signed or self-approved; the live part of QA-AI-06 stays `[live-verify]`.
+  **Left:** the nightly and event checks.
 
 ## Workflow follow-up
 
