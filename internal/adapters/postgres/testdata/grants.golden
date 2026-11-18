@@ -322,6 +322,8 @@ fyniq_api       SELECT    ledger_purged_entry
 fyniq_api       SELECT    ledger_revision
 fyniq_api       EXECUTE   link_identity()
 fyniq_api       EXECUTE   lock_ledger()
+fyniq_api       INSERT    mcp_user_optin (opted_in, set_at, user_id)
+fyniq_api       SELECT    mcp_user_optin
 fyniq_api       EXECUTE   member_emails()
 fyniq_api       INSERT    member_invitation (code_hash, created_at, display_name, expires_at, roles, roles_expire_at)
 fyniq_api       SELECT    member_invitation
@@ -760,6 +762,7 @@ fyniq_readonly  SELECT    kpi_input
 fyniq_readonly  SELECT    ledger_boundary
 fyniq_readonly  SELECT    ledger_purged_entry
 fyniq_readonly  SELECT    ledger_revision
+fyniq_readonly  SELECT    mcp_user_optin
 fyniq_readonly  SELECT    member_invitation
 fyniq_readonly  SELECT    migration_archive
 fyniq_readonly  SELECT    migration_commit
@@ -1038,6 +1041,7 @@ fyniq_worker    EXECUTE   ledger_purge()
 fyniq_worker    SELECT    ledger_purged_entry
 fyniq_worker    SELECT    ledger_revision
 fyniq_worker    EXECUTE   lock_ledger()
+fyniq_worker    SELECT    mcp_user_optin
 fyniq_worker    EXECUTE   member_emails()
 fyniq_worker    SELECT    member_invitation
 fyniq_worker    EXECUTE   member_names()

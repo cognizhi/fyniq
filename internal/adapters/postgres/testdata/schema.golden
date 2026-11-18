@@ -1521,6 +1521,11 @@ ledger_purged_entry | reverses_entry_id | uuid | null |
 ledger_purged_entry | boundary | date | not null | 
 ledger_revision | organisation_id | uuid | not null | current_org()
 ledger_revision | revision | bigint | not null | 0
+mcp_user_optin | organisation_id | uuid | not null | current_org()
+mcp_user_optin | id | uuid | not null | uuidv7()
+mcp_user_optin | user_id | uuid | not null | 
+mcp_user_optin | opted_in | boolean | not null | 
+mcp_user_optin | set_at | timestamp with time zone | not null | 
 member_invitation | organisation_id | uuid | not null | current_org()
 member_invitation | id | uuid | not null | uuidv7()
 member_invitation | code_hash | bytea | not null | 
@@ -4800,6 +4805,14 @@ ledger_revision | ledger_revision_organisation_fkey | FOREIGN KEY (organisation_
 ledger_revision | ledger_revision_organisation_id_not_null | NOT NULL organisation_id
 ledger_revision | ledger_revision_pkey | PRIMARY KEY (organisation_id)
 ledger_revision | ledger_revision_revision_not_null | NOT NULL revision
+mcp_user_optin | mcp_user_optin_id_not_null | NOT NULL id
+mcp_user_optin | mcp_user_optin_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+mcp_user_optin | mcp_user_optin_opted_in_not_null | NOT NULL opted_in
+mcp_user_optin | mcp_user_optin_organisation_id_not_null | NOT NULL organisation_id
+mcp_user_optin | mcp_user_optin_pkey | PRIMARY KEY (organisation_id, id)
+mcp_user_optin | mcp_user_optin_set_at_not_null | NOT NULL set_at
+mcp_user_optin | mcp_user_optin_user_id_not_null | NOT NULL user_id
+mcp_user_optin | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 member_invitation | member_invitation_accepted_by_fkey | FOREIGN KEY (accepted_by) REFERENCES app_user(user_id)
 member_invitation | member_invitation_code_hash_not_null | NOT NULL code_hash
 member_invitation | member_invitation_code_key | UNIQUE (organisation_id, code_hash)
@@ -5182,7 +5195,7 @@ organisation_setting | organisation_setting_recorded_at_not_null | NOT NULL reco
 organisation_setting | organisation_setting_region_fixed | CHECK ((key <> 'data.region'::text))
 organisation_setting | organisation_setting_value_length | CHECK (
 CASE
-    WHEN (key = ANY (ARRAY['ai.exclusions'::text, 'ai.task_types'::text])) THEN (length(value) <= 4000)
+    WHEN (key = ANY (ARRAY['ai.exclusions'::text, 'ai.task_types'::text, 'mcp.clients'::text])) THEN (length(value) <= 4000)
     ELSE ((length(value) >= 1) AND (length(value) <= 200))
 END)
 organisation_setting | organisation_setting_value_not_null | NOT NULL value
@@ -6354,6 +6367,7 @@ CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organis
 CREATE INDEX journal_line_instrument_idx ON fyniq.journal_line USING btree (organisation_id, instrument_id, posting_date) WHERE (instrument_id IS NOT NULL)
 CREATE INDEX journal_line_party_idx ON fyniq.journal_line USING btree (organisation_id, party_id, posting_date) WHERE (party_id IS NOT NULL)
 CREATE INDEX ledger_purged_entry_source_idx ON fyniq.ledger_purged_entry USING btree (organisation_id, source_id)
+CREATE INDEX mcp_user_optin_latest ON fyniq.mcp_user_optin USING btree (organisation_id, user_id, set_at)
 CREATE INDEX migration_archive_run ON fyniq.migration_archive USING btree (organisation_id, run_id)
 CREATE INDEX migration_commit_approval ON fyniq.migration_commit USING btree (organisation_id, approval_id)
 CREATE INDEX migration_commit_mapping ON fyniq.migration_commit USING btree (organisation_id, mapping_id)
@@ -6635,6 +6649,7 @@ CREATE UNIQUE INDEX ledger_boundary_pkey ON fyniq.ledger_boundary USING btree (o
 CREATE UNIQUE INDEX ledger_purged_entry_identity_key ON fyniq.ledger_purged_entry USING btree (organisation_id, posting_identity)
 CREATE UNIQUE INDEX ledger_purged_entry_pkey ON fyniq.ledger_purged_entry USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ledger_revision_pkey ON fyniq.ledger_revision USING btree (organisation_id)
+CREATE UNIQUE INDEX mcp_user_optin_pkey ON fyniq.mcp_user_optin USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_invitation_code_key ON fyniq.member_invitation USING btree (organisation_id, code_hash)
 CREATE UNIQUE INDEX member_invitation_pkey ON fyniq.member_invitation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX migration_archive_file ON fyniq.migration_archive USING btree (organisation_id, file_id)
@@ -6839,6 +6854,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.equity_step DEFERR
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.holding_movement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('holding_movement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ledger_boundary DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ledger_boundary', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.mcp_user_optin DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('mcp_user_optin', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_archive DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_file DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
@@ -7199,6 +7215,8 @@ CREATE TRIGGER ledger_boundary_no_truncate BEFORE TRUNCATE ON fyniq.ledger_bound
 CREATE TRIGGER ledger_purged_entry_immutable BEFORE DELETE OR UPDATE ON fyniq.ledger_purged_entry FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER ledger_purged_entry_no_truncate BEFORE TRUNCATE ON fyniq.ledger_purged_entry FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER ledger_revision_guard BEFORE DELETE OR UPDATE ON fyniq.ledger_revision FOR EACH ROW EXECUTE FUNCTION ledger_revision_guard()
+CREATE TRIGGER mcp_user_optin_guard BEFORE DELETE OR UPDATE ON fyniq.mcp_user_optin FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER mcp_user_optin_no_truncate BEFORE TRUNCATE ON fyniq.mcp_user_optin FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER member_invitation_guard BEFORE UPDATE ON fyniq.member_invitation FOR EACH ROW EXECUTE FUNCTION member_invitation_guard()
 CREATE TRIGGER membership_guard BEFORE INSERT OR UPDATE ON fyniq.user_membership FOR EACH ROW EXECUTE FUNCTION membership_guard()
 CREATE TRIGGER migration_archive_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.migration_archive FOR EACH ROW EXECUTE FUNCTION migration_archive_guard()
@@ -7468,6 +7486,7 @@ kpi_input | tenant_isolation | * | (organisation_id = current_org()) | (organisa
 ledger_boundary | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_purged_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_revision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+mcp_user_optin | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 member_invitation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_archive | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 migration_commit | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7674,6 +7693,7 @@ kpi_input | enabled | forced
 ledger_boundary | enabled | forced
 ledger_purged_entry | enabled | forced
 ledger_revision | enabled | forced
+mcp_user_optin | enabled | forced
 member_invitation | enabled | forced
 migration_archive | enabled | forced
 migration_commit | enabled | forced

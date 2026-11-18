@@ -1946,6 +1946,14 @@ type FyniqLedgerRevision struct {
 	Revision       int64
 }
 
+type FyniqMcpUserOptin struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	OptedIn        bool
+	SetAt          time.Time
+}
+
 type FyniqMemberInvitation struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

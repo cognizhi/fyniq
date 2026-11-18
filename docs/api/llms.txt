@@ -641,6 +641,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/me/director-account` (getMyDirectorAccount): Get your own director account
 - `POST /v1/me/director-account/confirmations` (confirmMyDirectorAccount): Confirm your balances at a year's end
 - `GET /v1/me/holding` (getMyHolding): Get my holding
+- `GET /v1/me/mcp` (getMyMCP): Get whether AI apps may work for you over MCP
+- `PUT /v1/me/mcp` (setMyMCP): Allow or stop AI apps working for you over MCP
 - `GET /v1/me/option-grants` (getMyOptionGrants): Get my grants of options
 - `GET /v1/me/personal-data-requests` (listMyPersonalDataRequests): List my requests about my personal data
 - `POST /v1/me/personal-data-requests` (askAboutMyPersonalData): Ask to see or correct my personal data

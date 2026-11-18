@@ -21,7 +21,7 @@ var Exported = []string{
 	"email_event", "email_message", "email_sender", "email_suppression", "equity_step", "evidence",
 	"fixed_asset_source", "fx_rate", "gst_registration", "holding_movement", "inbound_file", "inbound_message", "item",
 	"item_price", "join_request", "journal_entry", "journal_line", "kpi_input", "ledger_boundary",
-	"ledger_purged_entry", "ledger_revision", "member_invitation", "migration_archive", "migration_commit",
+	"ledger_purged_entry", "ledger_revision", "mcp_user_optin", "member_invitation", "migration_archive", "migration_commit",
 	"migration_difference", "migration_file", "migration_mapping", "migration_record", "migration_run",
 	"migration_signoff", "migration_step", "money_account", "money_account_source", "notification",
 	"notification_digest", "notification_event", "notification_preference", "opening_balance", "operation",

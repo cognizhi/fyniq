@@ -95,6 +95,8 @@ type UnitOfWork interface {
 	Notifications() Notifications
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates
+	// MCPOptIns are each person's opt-in to AI apps over MCP (AI-35).
+	MCPOptIns() MCPOptIns
 	// Announcements are the banners and their dismissals (FR-NTF-03).
 	Announcements() Announcements
 	Outbox() Outbox

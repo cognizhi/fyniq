@@ -284,10 +284,11 @@ Migrations 000580 to 000599 only (other changes use other ranges; they merge in 
 
 | No. | Slice | What |
 |---|---|---|
-| 000580 | 2.2 | `mcp_user_optin` (organisation, user, opted in at, opted out at), FORCE RLS, the API's grants only |
-| 000581 | 8.1 | `mcp_call` (append-only, FORCE RLS), its indexes for the window counts, the export catalogue, the data inventory class |
-| 000582 | 8.3 | `mcp_seen` (user, client, network prefix, first seen), for AI-45's new-client and new-origin alerts |
-| 000583 to 000599 | | Held back for follow-ups; unused numbers are not reused by others |
+| 000580 | 2.2 | `mcp_user_optin` (an append-only row per choice, the latest in force), FORCE RLS, the API's grants only |
+| 000581, 000582 | 2.2 | The settings table's value check lets `mcp.clients` be empty and up to 4,000 characters (`NOT VALID`, then validated), so the per-app kill switch can take off the last app |
+| 000583 | 8.1 | `mcp_call` (append-only, FORCE RLS), its indexes for the window counts, the export catalogue, the data inventory class |
+| 000584 | 8.3 | `mcp_seen` (user, client, network prefix, first seen), for AI-45's new-client and new-origin alerts |
+| 000585 to 000599 | | Held back for follow-ups; unused numbers are not reused by others |
 
 The settings need no migration (the catalogue is code). Goldens are updated with
 `go test -tags local ./internal/adapters/postgres -run TestSchemaSnapshot -update`; `make db-lint` runs on each.

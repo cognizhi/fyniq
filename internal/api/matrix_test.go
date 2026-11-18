@@ -588,6 +588,12 @@ var matrixCalls = map[string]matrixCall{
 	"getHelpState": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/help-state", asMatrixMember(e, tok), nil), nil
 	},
+	"getMyMCP": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/me/mcp", asMatrixMember(e, tok), nil), nil
+	},
+	"setMyMCP": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPut, "/v1/me/mcp", asMatrixMember(e, tok), map[string]any{"opted_in": true}, "If-Match", "*"), nil
+	},
 	"setTourState": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPut, "/v1/help-state/tour", asMatrixMember(e, tok), map[string]any{"tour": "started", "step": 0}, "If-Match", "*"), nil
 	},

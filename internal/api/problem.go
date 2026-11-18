@@ -397,6 +397,7 @@ var codeFacts = map[string]struct {
 	CodeCaptureTaken:              {409, "The name belongs to another organisation"},
 	CodeCaptureNoUser:             {422, "Not a person with an address of their own"},
 	CodeHelpNoUser:                {422, "Not a person with a tour of their own"},
+	CodeMCPNoUser:                 {422, "Not a person who may choose whether AI apps work for them"},
 	CodeSenderNotAddress:          {422, "Not one email address"},
 	CodeNotifyLocked:              {409, "A security notice is always on"},
 	CodeNotifyTime:                {422, "Not a time of day"},

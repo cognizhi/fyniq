@@ -35,9 +35,16 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   makes the messages say rows or kilobytes), the guide sections and the compiled knowledge-base pages. `mcp.clients` lists
   `claude-desktop` only because the release will pre-register it; whether Claude Desktop can connect at all is design
   "Open questions". Nothing reads the settings yet: the gates that do arrive with tasks 3.2 and 6.2.
-- [ ] 2.2 Migration 000580 `mcp_user_optin` (FORCE RLS, the API's grants only, the export catalogue, goldens, `make db-lint`),
+- [x] 2.2 Migration 000580 `mcp_user_optin` (FORCE RLS, the API's grants only, the export catalogue, goldens, `make db-lint`),
   the storage port and adapter, and `PUT /v1/me/mcp` and `GET /v1/me/mcp` for a person's own opt-in, audited. Tests
   `// req: AI-35`, an attack test that another person's opt-in cannot be set (`// asvs:`).
+  Built: migration 000580 `mcp_user_optin` (append-only like the tour's state, FORCE RLS, the API's insert and every reader's
+  select, none for the AI or the MCP service), `GET` and `PUT /v1/me/mcp` (the person's choice, the organisation's switch and
+  allowlist, and whether an app can connect; ETag and If-Match; audited), under the capability row `OwnMCPConnection` that
+  Appendix D already held (Owner to DPO and the tax agent; not Employee, Auditor or Board; never the AI). **Found while
+  building:** the settings table refused an empty value, so taking the last app off `mcp.clients`, the per-app kill switch,
+  would have failed; migrations 000581 and 000582 let that list be empty, as 000373 did for two others (task 2.1's
+  settings were correct, their storage was not). Migration numbers moved: see design "Migration plan".
 - [x] 2.3 The deployment switch (design D1): `cmd/mcp` serves `mcpshell` unless `FYNIQ_MCP_SERVER=on`, in every flavour and in
   the Compose profile; with it off the new package is not reached, and the shell's test and image budget are unchanged.
   Tests `// req: QA-MCP-01`, `// req: AI-35`.
@@ -150,14 +157,14 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 
 ## 8. Limits, audit, detection (AI-43, AI-44, AI-45)
 
-- [ ] 8.1 Migration 000581 `mcp_call` (append-only, FORCE RLS), one row per gated request with its refusals, audited in the
+- [ ] 8.1 Migration 000583 `mcp_call` (append-only, FORCE RLS), one row per gated request with its refusals, audited in the
   same transaction (AUD-01); the AI activity log lists them with the client and version, `jti`, user and IP. Tests
   `// req: AI-44`, `// req: AI-12`, `// req: AI-16` (audited as the assistant's calls are), an attack test that the table
   cannot be updated or deleted (`// asvs:`).
 - [ ] 8.2 The limits (design D9): requests a minute, tool calls an hour and a day, proposals an hour, result size, from
   `mcp_call` in the gate's transaction; 429 with `Retry-After`. Tests `// req: AI-43`.
 - [ ] 8.3 Kill switches and detection: the organisation switch (AI-13) and removing a client take effect within 60 seconds;
-  migration 000582 `mcp_seen`; alerts for a new client or network origin, a volume spike, repeated denied scopes, an
+  migration 000584 `mcp_seen`; alerts for a new client or network origin, a volume spike, repeated denied scopes, an
   excluded-field attempt and a red-team pattern hit, as security events (SEC-31) and an Owner's notice. Tests `// req: AI-43`
   (a switch denies every call within 60 seconds, measured), `// req: AI-45`, `// req: CTL-MCP-04`.
 

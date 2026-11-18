@@ -7,10 +7,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -115,5 +117,87 @@ func TestTheTourSavesOnlyItsOwnState(t *testing.T) {
 	}
 	if r := e.call(http.MethodPut, "/v1/help-state/tour", client, map[string]any{"tour": "started", "step": 0}, "If-Match", "*"); r.Status != 422 || r.str("code") != CodeHelpNoUser {
 		t.Fatalf("a client's tour: %d %s", r.Status, r.Raw)
+	}
+}
+
+// A person's opt-in to AI apps over MCP (AI-35): off until they choose, their own, audited as the save and nothing else, and
+// never a client's, an integration's or an AI's to make. With the organisation's switch and allowlist it is what lets an
+// AI app connect, so opting out is the person's own kill switch.
+// req: AI-35
+// req: CTL-MCP-03
+// asvs: V8.2.2, V4.1.1
+func TestAPersonOptsInToAIAppsAndNobodyElseDoes(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	ahkow := f.as(f.ahkow, authz.Owner, authz.Controller)
+	weiling := f.as(f.weiling, authz.Owner, authz.Controller)
+	drainWork(t, e)
+
+	got := e.call(http.MethodGet, "/v1/me/mcp", ahkow, nil)
+	if got.Status != 200 || got.Body["opted_in"] != false || got.Body["organisation_on"] != false || got.Body["can_connect"] != false || got.Header.Get("ETag") != got.str("etag") {
+		t.Fatalf("before choosing: %d %s", got.Status, got.Raw)
+	}
+	_, seq := auditActionsAfter(t, e, 0)
+
+	// Opting in does not let an app connect while the organisation's switch is off.
+	in := e.call(http.MethodPut, "/v1/me/mcp", ahkow, map[string]any{"opted_in": true}, "If-Match", got.str("etag"))
+	if in.Status != 200 || in.Body["opted_in"] != true || in.Body["can_connect"] != false {
+		t.Fatalf("opting in: %d %s", in.Status, in.Raw)
+	}
+	if stale := e.call(http.MethodPut, "/v1/me/mcp", ahkow, map[string]any{"opted_in": false}, "If-Match", got.str("etag")); stale.Status != 412 {
+		t.Fatalf("a stale choice was saved: %d %s", stale.Status, stale.Raw)
+	}
+
+	// With an Owner's switch on and an app allowed, it is what lets one connect; and opting out stops it again.
+	y, m, d := e.clock.Now().In(appclock.Singapore).Date()
+	from := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := u.Settings().Record(ctx, "features.mcp", "false", "true", from, 1); err != nil {
+			return err
+		}
+		_, err := u.Settings().Record(ctx, "mcp.clients", "", "claude-code", from, 1)
+		return err
+	})
+	if on := e.call(http.MethodGet, "/v1/me/mcp", ahkow, nil); on.Body["can_connect"] != true || on.Body["organisation_on"] != true || len(on.Body["apps"].([]any)) != 1 {
+		t.Fatalf("the organisation on and the person in: %s", on.Raw)
+	}
+	out := e.call(http.MethodPut, "/v1/me/mcp", ahkow, map[string]any{"opted_in": false}, "If-Match", in.Header.Get("ETag"))
+	if out.Status != 200 || out.Body["opted_in"] != false || out.Body["can_connect"] != false {
+		t.Fatalf("opting out: %d %s", out.Status, out.Raw)
+	}
+
+	// Wei Ling's choice is her own: not made, and Ah Kow's does not carry over.
+	theirs := e.call(http.MethodGet, "/v1/me/mcp", weiling, nil)
+	if theirs.Body["opted_in"] != false || theirs.Body["can_connect"] != false || theirs.Body["set_at"] != nil {
+		t.Fatalf("another person's choice: %s", theirs.Raw)
+	}
+
+	// Each save wrote its choice and its audit event, and nothing else did.
+	actions, _ := auditActionsAfter(t, e, seq)
+	saves := 0
+	for _, a := range actions {
+		if a == "mcp_user_optin.set" {
+			saves++
+		}
+	}
+	if saves != 2 {
+		t.Fatalf("the choices' audit events: %v", actions)
+	}
+
+	// Only a person chooses: not a client, an integration or an AI, and not an Employee, an Auditor or the Board.
+	for name, p := range map[string]authn.Principal{
+		"an integration": {Subject: "client-1", Client: "integration", Class: authn.ClassIntegration, Organisation: e.books.Org, Roles: []authz.Role{authz.Owner}},
+		"an AI app":      {Subject: "agent-1", Client: "claude-code", Class: authn.ClassAgent, Organisation: e.books.Org, Roles: []authz.Role{authz.Owner}},
+	} {
+		tok := e.principal(p)
+		if r := e.call(http.MethodPut, "/v1/me/mcp", tok, map[string]any{"opted_in": true}, "If-Match", "*"); r.Status != 403 && (r.Status != 422 || r.str("code") != CodeMCPNoUser) {
+			t.Errorf("%s opted a person in: %d %s", name, r.Status, r.Raw)
+		}
+	}
+	for _, role := range []authz.Role{authz.Employee, authz.Auditor, authz.BoardViewer} {
+		tok := e.as(role)
+		if r := e.call(http.MethodPut, "/v1/me/mcp", tok, map[string]any{"opted_in": true}, "If-Match", "*"); r.Status != 403 {
+			t.Errorf("%s: %d %s", role, r.Status, r.Raw)
+		}
 	}
 }
