@@ -4,6 +4,7 @@ import type { Session } from "../../api/client";
 import type { components } from "../../api/schema";
 import { answer, calls, ownerSession, problem } from "../../test/api";
 import { noViolations } from "../../test/axe";
+import { invalid } from "../../test/invalid";
 import { renderPage } from "../../test/render";
 import { ChartOfAccounts } from "./ChartOfAccounts";
 import { kindsLeft, requiredOn } from "./Dimensions";
@@ -91,6 +92,27 @@ describe("the chart's dimensions", () => {
     const post = seen.find((s) => s.method === "POST");
     expect(post?.body).toEqual({ kind: "custom", name: "Region" });
     expect(post?.headers.get("Idempotency-Key")).toBeTruthy();
+  });
+
+  // QA-UI-01: a dimension's name, and a value's code and name, say what they need beside them, before anything is sent.
+  it("says what a dimension and a value need beside each field, before anything is sent", async () => {
+    page([dept], [eng]);
+    renderPage(ChartOfAccounts, { path: "/accounting/chart-of-accounts", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "Change Department" }));
+    const dimension = await screen.findByRole("dialog");
+    fireEvent.change(within(dimension).getByLabelText("Name"), { target: { value: " " } });
+    fireEvent.click(within(dimension).getByRole("button", { name: "Save the dimension" }));
+    await invalid(dimension, "Name", "Give the dimension a name, such as Region.");
+    fireEvent.click(within(dimension).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: "Values of Department" }));
+    const form = within(await screen.findByRole("dialog")).getByRole("form", { name: "Add a value" });
+    fireEvent.change(within(form).getByLabelText("Code"), { target: { value: "R&D" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Add the value" }));
+    await invalid(form, "Code", "Give a code of a letter or digit, then up to 29 letters, digits, dots, slashes, underscores or hyphens, such as ENG.");
+    await invalid(form, "Name", "Give the value a name, such as Engineering.");
+    expect(calls()).not.toContain("POST /v1/dimension-values");
   });
 
   it("renames a dimension and puts it out of use, over its version", async () => {

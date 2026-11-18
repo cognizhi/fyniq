@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Session } from "../../api/client";
 import { answer, calls, ownerSession } from "../../test/api";
 import { noViolations } from "../../test/axe";
+import { invalid } from "../../test/invalid";
 import { renderPage } from "../../test/render";
 import type { components } from "../../api/schema";
 import { ChartOfAccounts, ordered } from "./ChartOfAccounts";
@@ -72,6 +73,30 @@ describe("the chart of accounts", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Add the account" }));
     expect(await screen.findByText("6115 Co-working added.")).toBeTruthy();
     expect(seen.find((s) => s.method === "POST")?.body).toEqual({ code: "6115", name: "Co-working", type: "expense", group: false, money_account: false, parent_id: "g1" });
+  });
+
+  // QA-UI-01: each field the form refuses says why beside it, marked invalid and described by its message, before
+  // anything is sent.
+  it("says what each field needs beside it, before anything is sent", async () => {
+    answer({ "GET /v1/accounts": { status: 200, body: { items: [office, rent] } } });
+    renderPage(ChartOfAccounts, { path: "/accounting/chart-of-accounts", session: accountant });
+    fireEvent.click(await screen.findByRole("button", { name: "New account" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Code"), { target: { value: "61 15" } });
+    fireEvent.change(within(dialog).getByLabelText("Type"), { target: { value: "asset" } });
+    fireEvent.change(within(dialog).getByLabelText("Report group"), { target: { value: "Property, plant & equipment" } });
+    fireEvent.change(within(dialog).getByLabelText("Default useful life (months)"), { target: { value: "601" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add the account" }));
+    for (const [label, message] of [
+      ["Code", "Give a code of 1 to 20 letters, digits, dots or hyphens, such as 6115."],
+      ["Name", "Give the account a name."],
+      ["Default useful life (months)", "Enter whole months from 1 to 600, such as 36, or leave it empty."],
+    ]) {
+      const input = await within(dialog).findByLabelText(label!);
+      expect(input.getAttribute("aria-invalid")).toBe("true");
+      expect(input.getAttribute("aria-describedby")?.split(" ").map((x) => document.getElementById(x)?.textContent)).toContain(message);
+    }
+    expect(calls()).not.toContain("POST /v1/accounts");
   });
 
   // req: FR-COA-04
@@ -197,7 +222,7 @@ describe("the chart of accounts", () => {
     const into = within(dialog).getByLabelText("Merge it into") as HTMLSelectElement;
     expect([...into.options].map((o) => o.text)).toEqual(["Choose an account", "6115 Co-working"]);
     fireEvent.click(within(dialog).getByRole("button", { name: "Ask for approval" }));
-    expect(await within(dialog).findByText("Choose the account to merge it into.")).toBeTruthy();
+    await invalid(dialog, "Merge it into", "Choose the account to merge it into.");
     fireEvent.change(into, { target: { value: "a2" } });
     fireEvent.change(within(dialog).getByLabelText("On"), { target: { value: "2026-11-30" } });
     await noViolations(dialog);

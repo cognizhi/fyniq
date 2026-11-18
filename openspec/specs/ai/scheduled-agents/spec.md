@@ -166,6 +166,12 @@ Source: PRD-001 §9.12 · Priority M · Phase P1
 - **THEN** its deterministic findings are reproduced
 - **AND** the model text is the text stored as written, not regenerated
 
+#### Scenario: The AI step cannot run
+- **GIVEN** the model is unavailable, the AI is off, no route is set or the budget is spent (rev 0.283)
+- **WHEN** a run reaches its model step
+- **THEN** it still ends with its deterministic findings, their tasks and Fyniq's summary, which says the AI could not explain this time
+- **AND** its report records that the model step did not run, and C.2 #36 flags it
+
 #### Scenario: G4-076 Deadline window reached with no data change
 - **GIVEN** a GST F5 deadline reaches 7 days with no data change
 - **WHEN** the agent runs twice

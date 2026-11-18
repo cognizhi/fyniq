@@ -343,7 +343,8 @@ func TestTheMappingIsSignedByTheAccountantAlone(t *testing.T) {
 // each with the code the API answers past its policy: allowed means that code, refused the policy's 403. The workbook
 // import's difference register needs a committed import, and the matrix's organisation posts as it goes, so it never
 // commits one (rev 0.266), nor uploads the parallel month's workbook (rev 0.268), nor signs it to archive (rev 0.269).
-var pastPolicy = map[string]string{"decideMigrationDifference": migration.CodeCommit, "signMigrationReconciliation": migration.CodeCommit,
+// Nor does it turn the company secretary assistant on, which waits for a second approver, so Run now finds it off.
+var pastPolicy = map[string]string{"runCompanySecretary": CodeAgentOff, "decideMigrationDifference": migration.CodeCommit, "signMigrationReconciliation": migration.CodeCommit,
 	"uploadMigrationParallelWorkbook": migration.CodeCommit, "decideMigrationParallelDifference": migration.CodeCommit,
 	"signMigrationParallel": migration.CodeCommit, "getMigrationParallelReport": CodeNotFound,
 	"uploadMigrationArchivePDF": migration.CodeCommit, "archiveMigration": migration.CodeParallel}

@@ -31,7 +31,10 @@ x-fyniq-env: &fyniq-env
   FYNIQ_WORKER_URL: http://worker:8080
   FYNIQ_EXECUTOR_URL: http://executor:8080
   FYNIQ_RENDER_URL: http://render:8080       # the private render service (PRD-001 §12.3, rev 0.96)
+  FYNIQ_AI_URL: http://ai:8080               # the AI service, which answers the assistant's turns (p1-ai-assistant D3)
   FYNIQ_DATA_DIR: /tmp/fyniq
+  # The business date (DEV-05): empty is today; the visual snapshots fix it so every run draws the same days.
+  FYNIQ_BUSINESS_DATE: ${FYNIQ_BUSINESS_DATE:-}
 
 # The data the API, the worker and the executor share, as the cloud's buckets and keys are shared: blobs (uploads,
 # evidence, exports) and the local keys. A named volume at the image user's home, so it is theirs (65532) and outlives the
@@ -157,6 +160,7 @@ services:
       FYNIQ_MCP_AUDIENCE: http://localhost:${FYNIQ_HTTP_PORT:-8080}/mcp
       FYNIQ_PUBLIC_ORIGIN: http://localhost:${FYNIQ_HTTP_PORT:-8080}   # where the browser is: sign-in sends it back here
       FYNIQ_CLAMD_ADDR: ${FYNIQ_CLAMD_ADDR:-}                # clamav:3310 with the scanner profile; else the EICAR fake
+      FYNIQ_TICK_INTERVAL: ${FYNIQ_TICK_INTERVAL:-5m}       # the API's own tick, as Cloud Scheduler's; the journeys' stack ticks faster
       # Caddy names the client in X-Fyniq-Client-IP, as the load balancer does (SEC-23): believed from the stack's own
       # network only.
       FYNIQ_TRUSTED_PROXIES: 172.16.0.0/12,192.168.0.0/16
@@ -168,7 +172,9 @@ services:
     <<: *hardened
     image: fyniq-ai:local
     profiles: [core]
-    environment: { <<: *fyniq-env }   # no database credential at all (§12.3)
+    environment:                      # no database credential and no provider key at all (§12.3)
+      <<: *fyniq-env
+      FYNIQ_API_INTERNAL_URL: http://api:8080/internal/v1   # every read and model call goes through the API
     healthcheck: *health
 
   mcp:
@@ -188,6 +194,7 @@ services:
       FYNIQ_DATABASE_URL: postgres://fyniq_worker:fyniq-local-only@postgres:5432/fyniq?sslmode=disable
       FYNIQ_DATA_DIR: /home/nonroot/fyniq          # the shared volume (x-shared-data)
       FYNIQ_OAUTH_ADMIN_URL: http://oauth:4445              # revokes a user's tokens after a change (AI-38)
+      FYNIQ_API_INTERNAL_URL: http://api:8080/internal/v1   # a scheduled agent's model step, asked of the API (rev 0.281)
     healthcheck: *health
 
   executor:                                   # own identity and database role (§12.3)

@@ -41,7 +41,7 @@ var areas = []string{"Books", "Setup", "Bank", "Sales", "Purchases", "Journals",
 
 // catalogue is every check built: by area, then in its slice's order.
 var catalogue = func() []Definition {
-	out := slices.Concat(booksChecks, setupChecks, documentChecks, closeChecks, controlChecks, paymentChecks, platformChecks, foundersChecks, equityChecks, taxChecks, evidenceChecks, planningChecks)
+	out := slices.Concat(booksChecks, setupChecks, documentChecks, closeChecks, controlChecks, paymentChecks, platformChecks, foundersChecks, equityChecks, corporateChecks, taxChecks, evidenceChecks, planningChecks, aiChecks, agentChecks)
 	slices.SortStableFunc(out, func(a, b Definition) int { return slices.Index(areas, a.Area) - slices.Index(areas, b.Area) })
 	return out
 }()
@@ -403,6 +403,16 @@ func (r Runner) one(ctx context.Context, org uuid.UUID, d Definition, e *Env) (o
 		}
 	}()
 	err := r.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+		for _, p := range d.Packs {
+			current, later, err := pendingUpdate(ctx, u, p, e.Today)
+			if err != nil {
+				return err
+			}
+			if later != "" {
+				out = basedOnPending(p, current, later)
+				return nil
+			}
+		}
 		var err error
 		out, err = d.Run(ctx, u, e)
 		return err

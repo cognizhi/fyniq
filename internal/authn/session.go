@@ -112,6 +112,8 @@ func Safe(method string) bool {
 type Release struct {
 	OAuth    Authenticator
 	Sessions Authenticator
+	// AI takes the assistant's delegated read tokens (AIGrants); nil refuses them.
+	AI Authenticator
 }
 
 // Authenticate implements Authenticator.
@@ -119,6 +121,11 @@ func (r Release) Authenticate(ctx context.Context, c Credentials) (Principal, er
 	switch {
 	case strings.HasPrefix(c.Authorization, "Bearer "+DevPrefix):
 		return Principal{}, ErrUnauthenticated // a local dev token means nothing here (DEV-07)
+	case strings.HasPrefix(c.Authorization, "Bearer "+AITokenPrefix):
+		if r.AI == nil {
+			return Principal{}, ErrUnauthenticated
+		}
+		return r.AI.Authenticate(ctx, Credentials{Authorization: c.Authorization})
 	case c.Authorization != "":
 		if r.OAuth == nil {
 			return Principal{}, ErrUnauthenticated

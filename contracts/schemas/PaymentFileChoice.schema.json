@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "description": "The file.",
+      "enum": [
+        "payment-list",
+        "wise-batch",
+        "dbs-uff"
+      ],
+      "examples": [
+        "wise-batch"
+      ],
+      "type": "string"
+    },
+    "offered": {
+      "description": "Whether the account may be set to it now.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "reason": {
+      "description": "When it is not offered, why, in plain words.",
+      "examples": [
+        "Payment file: Wise's batch payment file is only for a Wise account, and this account is not at Wise."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "format",
+    "offered"
+  ],
+  "title": "PaymentFileChoice",
+  "type": "object"
+}

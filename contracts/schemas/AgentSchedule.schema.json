@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "after_close": {
+      "description": "Whether it runs after each month's close.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "channels": {
+      "description": "How it tells them.",
+      "examples": [
+        [
+          "inbox",
+          "email"
+        ]
+      ],
+      "items": {
+        "examples": [
+          "inbox"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "cross_check": {
+      "description": "The weekly full cross-check, cron-style in Singapore time.",
+      "examples": [
+        "0 8 * * 1"
+      ],
+      "type": "string"
+    },
+    "escalate_days": {
+      "description": "How many days before a deadline the Owner is told too.",
+      "examples": [
+        7
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "events": {
+      "description": "The events that start a run.",
+      "examples": [
+        [
+          "period_closed",
+          "filing_recorded"
+        ]
+      ],
+      "items": {
+        "examples": [
+          "period_closed"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "fy_end_pack": {
+      "description": "Whether it runs one month after the financial year ends.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "monitor": {
+      "description": "The daily deadline and lodgement monitor, cron-style in Singapore time.",
+      "examples": [
+        "0 7 * * *"
+      ],
+      "type": "string"
+    },
+    "quiet_hours": {
+      "description": "When its emails wait, in Singapore time.",
+      "examples": [
+        "22:00-07:00"
+      ],
+      "type": "string"
+    },
+    "recipients": {
+      "description": "The roles it tells; its tasks belong to the first.",
+      "examples": [
+        [
+          "owner",
+          "company_secretary"
+        ]
+      ],
+      "items": {
+        "examples": [
+          "owner"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "run_tokens": {
+      "description": "The most model tokens one run may use.",
+      "examples": [
+        200000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "tool_calls": {
+      "description": "The most reads one run may make.",
+      "examples": [
+        20
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "monitor",
+    "cross_check",
+    "after_close",
+    "fy_end_pack",
+    "events",
+    "quiet_hours",
+    "recipients",
+    "channels",
+    "escalate_days",
+    "tool_calls",
+    "run_tokens"
+  ],
+  "title": "AgentSchedule",
+  "type": "object"
+}

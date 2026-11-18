@@ -108,6 +108,11 @@
   (migrations 000240 and 000241, FY272, FY273). Tests `TestSignInProviders`, `TestTheFlowFollowsTheProvidersSwitches`,
   `SignInProviders.test.tsx`. **Left:** joining by domain as a pending Employee membership an Owner approves; adding
   providers in the app (P2 or P3).)
+  (17 Nov 2026, for the launch gate, G4-061: a sign-in by an identity with no Fyniq user whose verified email is a
+  member's links and reaches nothing, as before, and is now recorded against the member in each of their
+  organisations' trails (`session.email_matched`, linked false), its actor the provider and a hash of the issuer and
+  subject. `fyniq.email_matches` (migration 000440) gives the API the members' organisations and IDs only; the hook is
+  `signin.AuditEmailMatch`. Test `TestYourSignIns`.)
   (7 Nov 2026, PRD-001 rev 0.199, on the owner's decision of the same day: joining by domain. An Owner claims the
   organisation's email domains (one organisation per domain); a Super admin lets a provider take requests for the
   domains it accepts. A person without an account, signed in with a verified email on a claimed domain, asks to join;

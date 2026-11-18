@@ -11,10 +11,11 @@ import { date } from "../../format/date";
 import { typed } from "../../format/decimal";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
+import { AdvancedDetails } from "../../components/AdvancedDetails";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { EvidencePanel } from "../accounting/JournalEvidence";
-import { DimensionFields } from "../accounting/lines";
+import { DimensionFields, useDimensionDetails } from "../accounting/lines";
 import { ConfirmDecision } from "../approvals/Decide";
 import { money, StageChip, useCategories, useClaimGSTCodes, type Claim, type ClaimLine } from "./claims";
 
@@ -146,8 +147,9 @@ export function checkClaim(f: ClaimForm, base: string): { draft?: Draft; errors:
 // again; a submitted one is withdrawn to change it. Anyone else who may see it sees it read-only.
 export function ClaimEditor() {
   const { claimId } = useParams({ strict: false }) as { claimId?: string };
-  const { session, organisation } = useSignedIn();
+  const { session, organisation, mode } = useSignedIn();
   const base = organisation?.base_currency ?? "SGD";
+  const dimensionDetails = useDimensionDetails();
   const navigate = useNavigate();
   const queries = useQueryClient();
   const confirm = useConfirm();
@@ -322,6 +324,7 @@ export function ClaimEditor() {
       {form && (
         <form
           className="fy-stack fy-stack--4"
+          data-enter="next"
           onSubmit={(e) => {
             e.preventDefault();
             void save();
@@ -482,6 +485,8 @@ export function ClaimEditor() {
               </ul>
             </section>
           )}
+          {/* A receipt's dimension values its category does not require are Expert's; in Basic they show here (FR-UX-25). */}
+          <AdvancedDetails mode={mode} details={form.lines.flatMap((l, i) => dimensionDetails(l.dimension_value_ids, `Receipt ${i + 1}`, categoryNeeds(categories.data ?? [], l.category_id)))} />
           {errors.lines && <p className="fy-error">{errors.lines}</p>}
           {editable && (
             <Button variant="ghost" className="self-start" onClick={() => setForm({ ...form, lines: [...form.lines, newReceipt(base, form.date)] })}>

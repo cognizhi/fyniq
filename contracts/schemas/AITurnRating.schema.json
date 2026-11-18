@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a51"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "rating": {
+      "enum": [
+        "up",
+        "down"
+      ],
+      "examples": [
+        "down"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "examples": [
+        "It used June's figures, not July's."
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "Where its review is.",
+      "enum": [
+        "waiting",
+        "golden",
+        "dismissed"
+      ],
+      "examples": [
+        "waiting"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "rating",
+    "reason",
+    "state"
+  ],
+  "title": "AITurnRating",
+  "type": "object"
+}

@@ -75,6 +75,10 @@ func Check(ctx context.Context, scanner ports.Scanner, name string, data []byte)
 			"Compress it, or split it into smaller files."}}, nil
 	}
 	mt, ok := Sniff(data, f.Name)
+	if !ok && IsHEIC(data) {
+		return f, []Problem{{CodeType, "file", "The file is a HEIC photo, which Fyniq does not convert to JPEG yet, so it was not stored.",
+			"Export it as JPEG and attach that. On an iPhone, Settings › Camera › Formats › Most Compatible takes new photos as JPEG."}}, nil
+	}
 	if !ok {
 		return f, []Problem{{CodeType, "file", "The file's content is not " + Accepted + ".",
 			"Save or export it as PDF, or as a PNG or JPEG picture, and attach that."}}, nil

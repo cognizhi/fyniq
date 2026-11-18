@@ -79,6 +79,10 @@
       "capability": "experience/help"
     },
     {
+      "match": "FR-UX-42",
+      "capability": "experience/navigation"
+    },
+    {
       "match": "FR-VIZ-.*",
       "capability": "experience/visualisation"
     },
@@ -207,7 +211,7 @@
       "capability": "ai/data-access"
     },
     {
-      "match": "AI-(0[6-9]|1[0-4]|3[0-3])",
+      "match": "AI-(0[6-9]|1[0-4]|3[0-3]|89)",
       "capability": "ai/proposals"
     },
     {

@@ -120,7 +120,13 @@ export function Search() {
               </span>
               <span className="fy-list__main">
                 <span className="fy-list__title whitespace-normal">
-                  {r.link ? <Link to={r.link}>{r.title}</Link> : r.title}
+                  {r.link ? (
+                    <Link to={r.link} className="fy-stretch">
+                      {r.title}
+                    </Link>
+                  ) : (
+                    r.title
+                  )}
                 </span>
                 <span className="fy-list__meta whitespace-normal">
                   {[groups.find((g) => g.key === r.group)?.label, r.date ? date(r.date) : "", r.status, r.detail].filter(Boolean).join(" · ")}

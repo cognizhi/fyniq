@@ -1,0 +1,14 @@
+[
+  {
+    "question": "What was revenue in January 2026?",
+    "reads": [{ "tool": "metrics.query", "input": { "measure": "revenue", "from": "2026-01", "to": "2026-01" } }],
+    "cite": [{ "measure": "revenue", "from": "2026-01-01", "to": "2026-01-31" }]
+  },
+  {
+    "question": "Create a compliance task titled \"Book the room for the AGM\" for the company secretary, due by 30 June 2027, with the finding key agent:agm-room-2027.",
+    "proposal": {
+      "task_type": "sec.create_task",
+      "payload": { "finding_key": "agent:agm-room-2027", "title": "Book the room for the AGM", "owner_role": "company_secretary", "due_on": "2027-06-30" }
+    }
+  }
+]

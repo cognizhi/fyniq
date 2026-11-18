@@ -10,6 +10,7 @@ import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
+import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { roleLabel } from "../approvals/words";
 import { itemLink, needsAction, readChecks, scores, statuses, type Check, type CheckItem, type Checks as ChecksOut } from "./data";
@@ -146,6 +147,10 @@ function Areas({ c }: { c: ChecksOut }) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [owning, setOwning] = useState<Check | null>(null);
   const [reviewing, setReviewing] = useState<{ c: Check; item: CheckItem } | null>(null);
+  const [replaying, setReplaying] = useState<CheckItem | null>(null);
+  const { session } = useSignedIn();
+  // Whoever is told when a background task stops replays it: an Owner or an Administrator (G4-073).
+  const canReplay = (session.roles ?? []).some((r) => r === "owner" || r === "administrator");
   const id = useId();
   const areas: string[] = [];
   for (const x of c.checks) if (!areas.includes(x.area)) areas.push(x.area);
@@ -192,9 +197,9 @@ function Areas({ c }: { c: ChecksOut }) {
                     </td>
                   </tr>
                   {acting.map((x) => (
-                    <Row key={x.key} c={x} canName={c.may_name_owners} onName={() => setOwning(x)} canReview={c.may_review} onReview={(item) => setReviewing({ c: x, item })} />
+                    <Row key={x.key} c={x} canName={c.may_name_owners} onName={() => setOwning(x)} canReview={c.may_review} onReview={(item) => setReviewing({ c: x, item })} canReplay={canReplay} onReplay={setReplaying} />
                   ))}
-                  {showFine && fine.map((x) => <Row key={x.key} c={x} canName={c.may_name_owners} onName={() => setOwning(x)} canReview={false} onReview={() => undefined} />)}
+                  {showFine && fine.map((x) => <Row key={x.key} c={x} canName={c.may_name_owners} onName={() => setOwning(x)} canReview={false} onReview={() => undefined} canReplay={false} onReplay={() => undefined} />)}
                   {!only && acting.length > 0 && fine.length > 0 && (
                     <tr>
                       <td data-card="title" colSpan={4}>
@@ -217,6 +222,7 @@ function Areas({ c }: { c: ChecksOut }) {
       </div>
       {owning && <OwnerDialog c={owning} onClose={() => setOwning(null)} />}
       {reviewing && <ReviewDialog c={reviewing.c} item={reviewing.item} onClose={() => setReviewing(null)} />}
+      {replaying && <ReplayDialog item={replaying} onClose={() => setReplaying(null)} />}
     </section>
   );
 }
@@ -235,7 +241,15 @@ function ownerName(c: Check): string {
 // toReview says whether an item is one to review (⚠, rev 0.164): its own severity, else its check's.
 const toReview = (c: Check, it: CheckItem) => (it.severity ?? (c.status === "warning" ? "warning" : "")) === "warning";
 
-function Row({ c, canName, onName, canReview, onReview }: { c: Check; canName: boolean; onName: () => void; canReview: boolean; onReview: (it: CheckItem) => void }) {
+function Row({ c, canName, onName, canReview, onReview, canReplay, onReplay }: {
+  c: Check;
+  canName: boolean;
+  onName: () => void;
+  canReview: boolean;
+  onReview: (it: CheckItem) => void;
+  canReplay: boolean;
+  onReplay: (it: CheckItem) => void;
+}) {
   const s = statuses[c.status];
   const more = c.count - c.items.length;
   return (
@@ -265,6 +279,15 @@ function Row({ c, canName, onName, canReview, onReview }: { c: Check; canName: b
                     )}
                     {it.detail ? `: ${it.detail}` : ""}
                     {it.severity && <span className="fy-sr"> ({it.severity === "error" ? "blocks the close" : "to review"})</span>}
+                    {canReplay && it.kind === "outbox" && it.id && (
+                      <>
+                        {" "}
+                        <Button variant="ghost" size="sm" className="h-6 px-1.5" title={helpText("checks.replay").tooltip} aria-label={`Run ${it.label} again`} onClick={() => onReplay(it)}>
+                          <Icon of={RefreshCw} />
+                          Run it again
+                        </Button>
+                      </>
+                    )}
                     {canReview && !c.reviewed_in && it.id && toReview(c, it) && (
                       <>
                         {" "}
@@ -431,6 +454,51 @@ function ReviewDialog({ c, item, onClose }: { c: Check; item: CheckItem; onClose
         </label>
         <textarea className="fy-input min-h-20" id={`${id}-note`} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
+    </Dialog>
+  );
+}
+
+// ReplayDialog runs a background task that stopped again (C.2 #12, G4-073): back in the queue with its attempts counted
+// afresh and its last error kept; the checks run again after it.
+function ReplayDialog({ item, onClose }: { item: CheckItem; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [key] = useState(() => crypto.randomUUID());
+  const [busy, setBusy] = useState(false);
+  const [refused, setRefused] = useState<ApiProblem | null>(null);
+  const replay = async () => {
+    setBusy(true);
+    setRefused(null);
+    const { error } = await api.POST("/v1/background-work/{work_id}/replay", {
+      params: { path: { work_id: item.id ?? "" }, header: { "Idempotency-Key": key } },
+    });
+    setBusy(false);
+    if (error) {
+      setRefused(problemOf(error));
+      return;
+    }
+    await qc.invalidateQueries({ queryKey: ["checks"] });
+    onClose();
+  };
+  return (
+    <Dialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      dismissible={!busy}
+      title={`Run ${item.label} again?`}
+      description="It goes back in the queue with its attempts counted afresh, and its last error stays on record. Run it again once what stopped it is fixed."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={() => void replay()} disabled={busy}>
+            Run it again
+          </Button>
+        </>
+      }
+    >
+      {refused && <Refusal problem={refused} title="It was not run again" />}
+      <p className="fy-small fy-secondary">{item.detail}</p>
     </Dialog>
   );
 }

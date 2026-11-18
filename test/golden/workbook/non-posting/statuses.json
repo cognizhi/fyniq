@@ -1,0 +1,502 @@
+[
+ {
+  "block": "check_status",
+  "status": "✔ OK"
+ },
+ {
+  "block": "check_status",
+  "status": "⚠ Check"
+ },
+ {
+  "block": "check_status",
+  "status": "✖ Fix now"
+ },
+ {
+  "block": "verdict",
+  "status": "⚠ MARGINAL – positive NPV but payback is longer than"
+ },
+ {
+  "block": "verdict",
+  "status": "✖ NOT FEASIBLE – the idea destroys value at a"
+ },
+ {
+  "block": "verdict",
+  "status": "⚠ MARGINAL – positive NPV but no payback within the period"
+ },
+ {
+  "block": "verdict",
+  "status": "✔ FEASIBLE – positive NPV"
+ },
+ {
+  "block": "gst_status",
+  "status": "✔ Below the threshold ("
+ },
+ {
+  "block": "gst_status",
+  "status": "✔ GST-registered"
+ },
+ {
+  "block": "gst_status",
+  "status": "⚠ Above the threshold this calendar year – apply for GST registration by 30 Jan"
+ },
+ {
+  "block": "gst_status",
+  "status": "⚠ Expected to exceed the threshold in the next 12 months – register within 30 days"
+ },
+ {
+  "block": "funding_cells",
+  "status": "✔ matches cap table"
+ },
+ {
+  "block": "funding_cells",
+  "status": "⚠ differs from amount paid"
+ },
+ {
+  "block": "collection_cells",
+  "status": "✔ OK"
+ },
+ {
+  "block": "collection_cells",
+  "status": "⚠ Must total 100%"
+ },
+ {
+  "block": "print_msg",
+  "status": "✔ Found – File → Print (or Download as PDF), print area"
+ },
+ {
+  "block": "print_msg",
+  "status": "✖ Not found on Invoices or Quotes & Orders"
+ },
+ {
+  "block": "ACC_ROWS",
+  "status": "⚠ Code must be a 4-digit number"
+ },
+ {
+  "block": "ACC_ROWS",
+  "status": "⚠ Code must be 4 digits"
+ },
+ {
+  "block": "ACC_ROWS",
+  "status": "✖ Duplicate code – this row is not used"
+ },
+ {
+  "block": "ACC_ROWS",
+  "status": "⚠ Enter a name"
+ },
+ {
+  "block": "ACC_ROWS",
+  "status": "⚠ Choose a type"
+ },
+ {
+  "block": "ACC_ROWS",
+  "status": "⚠ Choose a report group"
+ },
+ {
+  "block": "ACC_ROWS",
+  "status": "⚠ Unknown report group"
+ },
+ {
+  "block": "ACC_ROWS",
+  "status": "⚠ Report group belongs to another type"
+ },
+ {
+  "block": "ACC_ROWS",
+  "status": "⚠ Choose a cash-flow line"
+ },
+ {
+  "block": "ACC_ROWS",
+  "status": "⚠ Money accounts must be balance-sheet"
+ },
+ {
+  "block": "ACC_ROWS",
+  "status": "✔ OK"
+ },
+ {
+  "block": "ACC_ROWS",
+  "status": "⚠ Inactive but in use – reactivate it or move its entries"
+ },
+ {
+  "block": "ACC_IMPORT",
+  "status": "✖ Date not recognised"
+ },
+ {
+  "block": "ACC_IMPORT",
+  "status": "✖ No amount"
+ },
+ {
+  "block": "ACC_IMPORT",
+  "status": "✖ Choose the account at the top"
+ },
+ {
+  "block": "_accounts_statuses",
+  "status": "⚠ Duplicate code"
+ },
+ {
+  "block": "_accounts_numbers",
+  "status": "✔ OK"
+ },
+ {
+  "block": "CT_ROWS",
+  "status": "✔ OK"
+ },
+ {
+  "block": "CT_ROWS",
+  "status": "⚠ Duplicate name"
+ },
+ {
+  "block": "CT_ROWS",
+  "status": "⚠ Choose customer / supplier"
+ },
+ {
+  "block": "CT_ROWS",
+  "status": "⚠ Enter a name"
+ },
+ {
+  "block": "EMP_ROWS",
+  "status": "✔ OK"
+ },
+ {
+  "block": "EMP_ROWS",
+  "status": "⚠ Duplicate name"
+ },
+ {
+  "block": "EMP_ROWS",
+  "status": "⚠ Choose department"
+ },
+ {
+  "block": "EMP_ROWS",
+  "status": "⚠ Department has no salary account"
+ },
+ {
+  "block": "EMP_ROWS",
+  "status": "⚠ Choose residency"
+ },
+ {
+  "block": "EMP_ROWS",
+  "status": "⚠ Choose CPF age band"
+ },
+ {
+  "block": "EMP_ROWS",
+  "status": "⚠ Department's salary account is not on Accounts"
+ },
+ {
+  "block": "EMP_ROWS",
+  "status": "⚠ Enter a name"
+ },
+ {
+  "block": "FX_ROWS",
+  "status": "⚠ Duplicate month"
+ },
+ {
+  "block": "FX_ROWS",
+  "status": "⚠ Enter a rate"
+ },
+ {
+  "block": "FX_ROWS",
+  "status": "✔ OK"
+ },
+ {
+  "block": "FX_ROWS",
+  "status": "⚠ Choose the currency"
+ },
+ {
+  "block": "FX_ROWS",
+  "status": "⚠ Enter the month (any date in it)"
+ },
+ {
+  "block": "PEOPLE_LINES",
+  "status": "✔ OK"
+ },
+ {
+  "block": "_people_numbers",
+  "status": "✔ OK"
+ },
+ {
+  "block": "ITEM_ROWS",
+  "status": "✔ OK"
+ },
+ {
+  "block": "ITEM_ROWS",
+  "status": "⚠ Duplicate code"
+ },
+ {
+  "block": "ITEM_ROWS",
+  "status": "⚠ Enter a name"
+ },
+ {
+  "block": "ITEM_ROWS",
+  "status": "⚠ Code must not contain ' - '"
+ },
+ {
+  "block": "DL_ROWS",
+  "status": "✔ OK"
+ },
+ {
+  "block": "DL_ROWS",
+  "status": "⚠ No price"
+ },
+ {
+  "block": "DL_ROWS",
+  "status": "✖ Choose an item or type a description"
+ },
+ {
+  "block": "DL_ROWS",
+  "status": "✖ Enter the document #"
+ },
+ {
+  "block": "DL_ROWS",
+  "status": "⚠ Document # not on Invoices / Quotes"
+ },
+ {
+  "block": "QUO_ROWS",
+  "status": "⏰ Expired / late – follow up"
+ },
+ {
+  "block": "QUO_ROWS",
+  "status": "⚠ Enter the invoice / bill #"
+ },
+ {
+  "block": "QUO_ROWS",
+  "status": "✔ Closed"
+ },
+ {
+  "block": "QUO_ROWS",
+  "status": "⚠ No amount (enter it or add Doc Lines)"
+ },
+ {
+  "block": "QUO_ROWS",
+  "status": "✖ Duplicate number"
+ },
+ {
+  "block": "QUO_ROWS",
+  "status": "✖ Number already used on Invoices"
+ },
+ {
+  "block": "QUO_ROWS",
+  "status": "✖ Choose the type"
+ },
+ {
+  "block": "QUO_ROWS",
+  "status": "✖ Enter the number"
+ },
+ {
+  "block": "QUO_ROWS",
+  "status": "⏰ Accepted – create the invoice"
+ },
+ {
+  "block": "QUO_ROWS",
+  "status": "⚠ Amount differs from Doc Lines total"
+ },
+ {
+  "block": "PRJ_ROWS",
+  "status": "⚠ Over cost budget"
+ },
+ {
+  "block": "PRJ_ROWS",
+  "status": "⚠ Loss-making"
+ },
+ {
+  "block": "PRJ_ROWS",
+  "status": "✔ OK"
+ },
+ {
+  "block": "PRJ_ROWS",
+  "status": "⚠ Duplicate name"
+ },
+ {
+  "block": "PRJ_ROWS",
+  "status": "⚠ Enter a name"
+ },
+ {
+  "block": "TS_ROWS",
+  "status": "✔ OK"
+ },
+ {
+  "block": "TS_ROWS",
+  "status": "✖ Enter the date"
+ },
+ {
+  "block": "TS_ROWS",
+  "status": "✖ Choose the project"
+ },
+ {
+  "block": "TS_ROWS",
+  "status": "✖ Enter the hours"
+ },
+ {
+  "block": "TS_ROWS",
+  "status": "⚠ No bill rate"
+ },
+ {
+  "block": "TS_ROWS",
+  "status": "⚠ Invoice # not on Invoices"
+ },
+ {
+  "block": "REC_ROWS",
+  "status": "✔ Reconciled"
+ },
+ {
+  "block": "REC_ROWS",
+  "status": "⚠ Difference – tick matched rows / find missing"
+ },
+ {
+  "block": "REC_ROWS",
+  "status": "✖ Enter the statement balance"
+ },
+ {
+  "block": "REC_ROWS",
+  "status": "✖ Enter the statement date"
+ },
+ {
+  "block": "REC_ROWS",
+  "status": "⚠ Choose the account"
+ },
+ {
+  "block": "IMP_ROWS",
+  "status": "⚠ Already in Transactions – will skip"
+ },
+ {
+  "block": "IMP_ROWS",
+  "status": "✖ No amount"
+ },
+ {
+  "block": "IMP_ROWS",
+  "status": "✖ Date not recognised"
+ },
+ {
+  "block": "rec_status",
+  "status": "⚠ Choose the account"
+ },
+ {
+  "block": "rec_status",
+  "status": "✖ Enter the statement date"
+ },
+ {
+  "block": "rec_status",
+  "status": "✖ Enter the statement balance"
+ },
+ {
+  "block": "rec_status",
+  "status": "✔ Reconciled"
+ },
+ {
+  "block": "rec_status",
+  "status": "⚠ Difference – tick matched rows / find missing"
+ },
+ {
+  "block": "CLOSE_STATUS",
+  "status": "✔ Unchanged"
+ },
+ {
+  "block": "CLOSE_STATUS",
+  "status": "✖ Changed after closing"
+ },
+ {
+  "block": "bva_line",
+  "status": "✔ Ahead of budget"
+ },
+ {
+  "block": "bva_line",
+  "status": "⚠ Behind budget"
+ },
+ {
+  "block": "bva_line",
+  "status": "✔ Within budget"
+ },
+ {
+  "block": "bva_line",
+  "status": "⚠ Over budget"
+ },
+ {
+  "block": "REC",
+  "status": "✖ Choose type, frequency and first date"
+ },
+ {
+  "block": "REC",
+  "status": "✖ Enter category and amount"
+ },
+ {
+  "block": "REC",
+  "status": "✖ Choose the bank account"
+ },
+ {
+  "block": "REC",
+  "status": "✖ Choose the credit account"
+ },
+ {
+  "block": "REC",
+  "status": "✔ Finished"
+ },
+ {
+  "block": "REC",
+  "status": "⏰ Due – run CFH_GenerateRecurring"
+ },
+ {
+  "block": "REC",
+  "status": "✔ Up to date"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_duplicate_account_code_does_not_double_postings"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_duplicate_fx_month_uses_one_rate"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_hourly_cost_caps_employer_cpf_at_the_ow_ceiling"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_feasibility_without_inputs_gives_no_verdict"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_budget_check_counts_lines_with_amounts"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_duplicate_contact_does_not_distort_ageing"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_doc_line_in_error_is_left_out_of_the_invoice"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_pipeline_leaves_out_quotes_in_error"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_timesheet_rows_in_error_count_nowhere"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_duplicate_item_code_does_not_double_item_sales"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_import_sees_a_transfer_recorded_from_the_other_account"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_import_skips_only_as_many_lines_as_are_recorded"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_feasibility_without_investment"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_contact_names_with_wildcards"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_unbudgeted_spending_is_over_budget"
+ },
+ {
+  "block": "tests/test_edge_nonposting.py",
+  "status": "test_bug_opening_balance_without_code_is_flagged"
+ }
+]

@@ -1,0 +1,25 @@
+{
+  "id": "sec-create-task",
+  "agent": "chat",
+  "version": 1,
+  "kind": "proposal",
+  "description": "sec.create_task's proposal cases (QA-AI-02; p1-scheduled-agents task 6.1): a person asks for a compliance task, and the right proposal names its own finding's key, the title, the owner's role and the due date, waiting for a person.",
+  "company": {"seed": 1, "journals": 24},
+  "task_types": ["sec.create_task"],
+  "cases": [
+    {
+      "id": "agm-room",
+      "question": "Create a compliance task titled \"Book the room for the AGM\" for the company secretary, due by 30 June 2027, with the finding key agent:agm-room-2027.",
+      "expect": {"proposal": {"task_type": "sec.create_task", "payload": {"finding_key": "agent:agm-room-2027", "title": "Book the room for the AGM",
+        "owner_role": "company_secretary", "due_on": "2027-06-30"}}},
+      "solution": []
+    },
+    {
+      "id": "review-after-a-read",
+      "question": "Look at revenue for January 2026, then create a compliance task titled \"Review January's revenue\" for the owner, due by 28 February 2026, with the finding key agent:revenue-review-2026-01.",
+      "expect": {"proposal": {"task_type": "sec.create_task", "payload": {"finding_key": "agent:revenue-review-2026-01", "title": "Review January's revenue",
+        "owner_role": "owner", "due_on": "2026-02-28"}}},
+      "solution": [{"tool": "metrics.query", "input": {"from": "2026-01", "measure": "revenue", "to": "2026-01"}}]
+    }
+  ]
+}

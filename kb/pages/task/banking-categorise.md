@@ -4,7 +4,7 @@ type: task
 title: Categorise and match the waiting bank lines
 summary: Accept, change or skip each waiting line's suggestion, run Reconcile now, and in Expert split, transfer, match or suspend lines
 sources:
-  - docs/user-guide/banking.md sha256:784157b65337f7cce8b87902c4409661e4e29f476e0b77dfadf9e9a59d9062c9
+  - docs/user-guide/banking.md sha256:019de19b09be6ac3fa40b7d3251ca8fa62beba74f7364724e67a934f577efdd8
 data_class: general
 taint: trusted
 status: draft
@@ -41,6 +41,7 @@ aliases:
 ## In Expert mode
 
 - **Grid view** lists every waiting line with its best suggestion, to select several and accept their suggestions at once; each line posts on its own, so one refused never stops the others.
+- The grid's money shows in **Plain view** (Money in, Money out, the suggested category) or **Accountant view** (Debit and Credit as the account's ledger has them, the suggested account), the same figures; chosen on the grid or under **Settings › Profile and security**, and always Plain in Basic mode.
 - **Split the line** posts it to several accounts, each part with its amount, one part possibly taking the rest.
 - **Mark as a transfer** matches money moved between two of the company's accounts to the other side's line, or leaves it in transit until that line arrives.
 - **Match to documents** settles one customer's invoices or one supplier's bills with the line, several at once; what it pays beyond them stays as a credit with them, and a small shortfall settled in full clears within the settlement tolerance.

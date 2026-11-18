@@ -85,6 +85,7 @@ var Catalogue = []Type{
 	{Key: "bills.due", Label: "Bills to pay soon", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: "deadline.reminder", Label: "A statutory deadline is near", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: "deadline.overdue", Label: "A statutory deadline passed with nothing recorded", Category: Operations, Severity: "warning", Actionable: true, Email: storage.EmailDaily},
+	{Key: "agent.report", Label: "The company secretary assistant found something new", Category: Operations, Severity: "info", Actionable: true, Email: storage.EmailDaily},
 	{Key: "cash.below_buffer", Label: "Cash is projected to fall below the buffer", Category: Operations, Severity: "warning", Actionable: true, Email: storage.EmailDaily},
 	{Key: "cash.buffer_recovered", Label: "Cash is projected back above the buffer", Category: Operations, Severity: "info", Email: storage.EmailDaily},
 	{Key: "jobs.failed", Label: "A background job failed", Category: Operations, Severity: "warning", Email: storage.EmailDaily},
@@ -143,11 +144,14 @@ func Lookup(key string) (Type, bool) {
 }
 
 // Audience is whom an event concerns: these users, and the members whose roles hold one of Need's rights on the
-// Appendix D row Capability, except these.
+// Appendix D row Capability, except these. With Qualified, a right qualified to anything else does not count: a
+// statutory calendar item of tax reaches those who record every item, never the Company secretary, whose right is to
+// the corporate items (rev 0.285).
 type Audience struct {
 	Users      []uuid.UUID `json:"users,omitempty"`
 	Capability string      `json:"capability,omitempty"`
-	Need       string      `json:"need,omitempty"` // the rights, any of which will do: "A", "CA", "P"…
+	Need       string      `json:"need,omitempty"`      // the rights, any of which will do: "A", "CA", "P"…
+	Qualified  []string    `json:"qualified,omitempty"` // the qualifiers that count besides an unqualified right; unset, any does
 	Except     []uuid.UUID `json:"except,omitempty"`
 }
 
@@ -244,7 +248,11 @@ func Recipients(a Audience, members []storage.Member) []uuid.UUID {
 				roles = append(roles, authz.Role(r.Role))
 			}
 			for i := range len(a.Need) {
-				in = in || authz.Decide(authz.Policy{Operation: "notify", Capability: authz.Capability(a.Capability), Need: authz.Right(a.Need[i])}, roles, false).Allowed
+				p := authz.Policy{Operation: "notify", Capability: authz.Capability(a.Capability), Need: authz.Right(a.Need[i])}
+				if a.Qualified != nil {
+					p.Unqualified, p.Qualified = true, a.Qualified
+				}
+				in = in || authz.Decide(p, roles, false).Allowed
 			}
 		}
 		if in {

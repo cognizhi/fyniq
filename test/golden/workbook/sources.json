@@ -1,0 +1,64 @@
+{
+ "repository": "cognizhi/zh-sheet-accounting",
+ "commit": "a705fd1446639eed84a764b49d8a6472e3808d8b",
+ "sets": {
+  "posting": {
+   "sources": {
+    "tests/edge_posting.py": "4bc9122f9d2966608198f9bb5ab8b0e3833e7c897ce29282ddf99703d858ab20",
+    "tests/test_edge_posting.py": "f811a70645e688a0db03e9623cb719c7421d3fd5348322af7623453443cf7118",
+    "src/cfh/coa.py": "6fb21d273796af6b4f9e3b9153b77dc43c5442246a0f71585e477f0d5c9e71d7"
+   },
+   "fixtures": {
+    "posting/expected.json": "b1e20f7a6fd7af2bb2e8f155a47045ac52aa9475596dc938251517ab99e61a02",
+    "posting/mapping.json": "e61869632d16129b4e8a2aae69ca69c6f31f73f6c72477aac2a1e367eb859d34",
+    "posting/scenario.json": "a94f1c5f8c49387abc33d303ad4b16d84867d53ce0e24a9d0ed8915f15fe9f4a"
+   }
+  },
+  "document-numbers": {
+   "sources": {
+    "tests/test_edge_docnumbers.py": "1ff48ac465f305ea8b806701799d1f06fcdc811251f3f2683a969d9bbcbb71ff",
+    "src/cfh/coa.py": "6fb21d273796af6b4f9e3b9153b77dc43c5442246a0f71585e477f0d5c9e71d7"
+   },
+   "fixtures": {
+    "document-numbers/expected.json": "a2ba1b2136132b31426b6d4d42af177f0bd284b77254993b44550020295385a0",
+    "document-numbers/mapping.json": "4665c6d0d0a221ba9e27201ed11f2161f266420c6e5709c8fa62d5053670df58",
+    "document-numbers/scenario.json": "5027038c058f79060560d22b6ac0c540670f2f11f3a70809463b42b09c4a278a"
+   }
+  },
+  "regressions": {
+   "sources": {
+    "tests/test_regressions.py": "4bc25eb24bf1b92ec75f8f4b69c0860fd80c77fdf8d0f7454d420aea155f999b",
+    "src/cfh/coa.py": "6fb21d273796af6b4f9e3b9153b77dc43c5442246a0f71585e477f0d5c9e71d7"
+   },
+   "fixtures": {
+    "regressions/expected.json": "0885ef9f350310ca477ceda75b2091f34037befc522ca161295d9156ed2cf2ca",
+    "regressions/mapping.json": "1c362e52fd232561f7e277972feb748cf09ba65d8e6ebd95e162dd5d968c2826",
+    "regressions/scenario.json": "ca94ac6d1c79bf61cf4727e8be921e706feb2f36d7d71150ca84867ef73d1cfa"
+   }
+  },
+  "non-posting": {
+   "sources": {
+    "tests/edge_nonposting.py": "9a8ef66f44bd7eac92f31be27ddaec46254655066479d69e8d503721e48cb578",
+    "tests/test_edge_nonposting.py": "fe38ee9c69986faf4c81612f01ad2ea535dfb48d4985f1882d023c4a5185254a",
+    "src/cfh/coa.py": "6fb21d273796af6b4f9e3b9153b77dc43c5442246a0f71585e477f0d5c9e71d7"
+   },
+   "fixtures": {
+    "non-posting/mapping.json": "a7b6aae2a99bab0e4d14116db6ed42bd086fb1a898070f64e0c08f5c8033d8ed",
+    "non-posting/statuses.json": "d561c0ce8af8a9e5d14ec515ea029ca2df581dbfb2e0847bcd17b655efc1a03a"
+   }
+  },
+  "miscellaneous": {
+   "sources": {
+    "tests/test_edge_misc.py": "fa941182ce9a7dc6d37bb77f027e375b1199c6a7f5ed75b5c309de92aa668cc5",
+    "src/cfh/coa.py": "6fb21d273796af6b4f9e3b9153b77dc43c5442246a0f71585e477f0d5c9e71d7"
+   },
+   "fixtures": {
+    "miscellaneous/cases.json": "066a24334ef1894c8df17692b381a3fa5ffc615d72ee339e7c3d1aafdf8c4425",
+    "miscellaneous/expected.json": "267187e0395bc1acd4f06b5e6a4d622791b031d2ff65925d818c9046b2187762",
+    "miscellaneous/functions.json": "ee43b953a74ecf5806eef9845c6a7291850eb64e8d560f2167913f1742f57e6e",
+    "miscellaneous/mapping.json": "45dc261e6ffa8767bfda338de0466c0c9e7440a96aab53a237818db1d8664925",
+    "miscellaneous/scenario.json": "2aa2eb0edb651af946c018067d1ffd95d44b0fed2eb6be2e182024558e0c47e9"
+   }
+  }
+ }
+}

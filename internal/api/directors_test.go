@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"encoding/base64"
+	"math/big"
 	"net/http"
 	"strings"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/pdftext"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -96,6 +98,7 @@ func (e *env) postFounderJournal(date string, lines ...map[string]any) response 
 // req: QA-RPT-01
 // req: equity/founders-money Statement per person
 // req: equity/founders-money Every line carries the person
+// req: QA-RPT-03
 func TestDirectorAccountsAndTheirStatements(t *testing.T) {
 	e := newEnv(t)
 	loan, _ := e.directorChart()
@@ -182,6 +185,62 @@ func TestDirectorAccountsAndTheirStatements(t *testing.T) {
 		!strings.Contains(string(csv), "-1500.00") || !strings.HasSuffix(x.str("file_name"), ".csv") {
 		t.Errorf("exportDirectorStatement = %d: %s / %s", x.Status, x.Raw, csv)
 	}
+	// QA-RPT-03: the statement exported for October says what the API says. Each movement is a row of the CSV, and each
+	// account's rows add up to its closing balance less its opening. The PDF, for a balance confirmation, shows each
+	// account's opening, origins and closing signed as owed to the person (the API's negated), and says so.
+	month := e.call(http.MethodGet, "/v1/director-accounts/"+mei+"/statement?from=2026-10-01&to=2026-10-31", e.as(authz.Controller), nil)
+	codes := map[string]string{}
+	for _, a := range month.Body["accounts"].([]any) {
+		codes[a.(map[string]any)["account_id"].(string)] = a.(map[string]any)["code"].(string)
+	}
+	moved := map[string]*big.Rat{}
+	for _, m := range month.Body["movements"].([]any) {
+		mv := m.(map[string]any)
+		amount := mv["amount"].(map[string]any)["amount"].(string)
+		row := `"` + mv["date"].(string) + `","` + codes[mv["account_id"].(string)] + `","` + mv["origin"].(string) + `","` + mv["source_type"].(string) +
+			`","` + mv["number"].(string) + `","` + mv["memo"].(string) + `",` + amount + "\r\n"
+		if !strings.Contains(string(csv), row) {
+			t.Errorf("the CSV lacks the movement %q:\n%s", row, csv)
+		}
+		v, _ := rat(amount)
+		code := codes[mv["account_id"].(string)]
+		if moved[code] == nil {
+			moved[code] = new(big.Rat)
+		}
+		moved[code].Add(moved[code], v)
+	}
+	for _, a := range month.Body["accounts"].([]any) {
+		acc := a.(map[string]any)
+		opening, _ := rat(acc["opening"].(map[string]any)["amount"].(string))
+		closing, _ := rat(acc["closing"].(map[string]any)["amount"].(string))
+		got := moved[acc["code"].(string)]
+		if got == nil {
+			got = new(big.Rat)
+		}
+		if new(big.Rat).Sub(closing, opening).Cmp(got) != 0 {
+			t.Errorf("%s: the CSV's movements add up to %s; the statement moves it from %s to %s", acc["code"], got.FloatString(2),
+				opening.FloatString(2), closing.FloatString(2))
+		}
+	}
+	paper := e.call(http.MethodGet, "/v1/director-accounts/"+mei+"/statement/export?from=2026-10-01&to=2026-10-31&format=pdf", e.as(authz.Controller), nil)
+	pdf, _ := base64.StdEncoding.DecodeString(paper.str("content_base64"))
+	text, err := pdftext.Text(pdf)
+	if paper.Status != http.StatusOK || err != nil {
+		t.Fatalf("the statement as a PDF: %d %v %.300s", paper.Status, err, paper.Raw)
+	}
+	if !strings.Contains(text, "Owed to Mei Lin Tan is shown positive") {
+		t.Errorf("the PDF does not say how it signs:\n%s", text)
+	}
+	for _, a := range month.Body["accounts"].([]any) {
+		acc := a.(map[string]any)
+		for _, m := range amounts(map[string]any{"opening": acc["opening"], "by_origin": acc["by_origin"], "closing": acc["closing"]}) {
+			v, _ := rat(m)
+			owed := new(big.Rat).Neg(v).FloatString(2)
+			if !strings.Contains(text, asPrinted(owed)) {
+				t.Errorf("%s: the PDF lacks %s owed (printed %s):\n%s", acc["code"], owed, asPrinted(owed), text)
+			}
+		}
+	}
 
 	people := e.call(http.MethodGet, "/v1/contacts?role=director", e.as(authz.Accountant), nil)
 	if n := len(people.Body["items"].([]any)); n != 2 || strings.Contains(people.Raw, "Matrix") {
@@ -253,9 +312,13 @@ func TestLinkingAMemberNeedsAnotherFounder(t *testing.T) {
 // matrixDirector returns the ID of a director and shareholder of e's organisation, adding one first if needed: also a
 // customer and a vendor, so a row that takes the first contact still finds one it can use.
 func matrixDirector(e *env) string {
+	// role=director lists shareholders too (a nominee shareholder of the corporate profile's fixture, say): take a director.
 	l := e.call(http.MethodGet, "/v1/contacts?role=director", e.as(authz.Accountant), nil)
-	if items, _ := l.Body["items"].([]any); len(items) > 0 {
-		return items[0].(map[string]any)["id"].(string)
+	items, _ := l.Body["items"].([]any)
+	for _, it := range items {
+		if c := it.(map[string]any); c["director"] == true {
+			return c["id"].(string)
+		}
 	}
 	return e.call(http.MethodPost, "/v1/contacts", e.as(authz.Accountant), map[string]any{"legal_name": "Matrix director", "director": true,
 		"shareholder": true, "customer": true, "vendor": true}).str("id")

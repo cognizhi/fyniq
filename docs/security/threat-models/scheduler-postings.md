@@ -80,3 +80,16 @@ under the usual approvals: nothing recurring posts by itself, the founders' deci
   close checks for recurring bills follow with their board, `p1-purchases` 7.2).
 - A release that waits (no open period) is audited but not yet a close check: the reconciliation of open spreads with
   1210 and a check for releases not posted follow (INV-07).
+
+## 5. Unusual items (FM-6, rev 0.287; 18 Nov 2026)
+
+Nightly, `review.unusual` (as `scheduler:review.unusual`, with `fyniq_worker`) reads the last week's posted manual
+journals and supplier payments and logs, in Founder mode, those that rules find unusual into the weekly review (FM-3),
+each once a rule with its reason. It posts, holds, approves and changes nothing.
+
+| Threat | What we do |
+|---|---|
+| A forged run hides a posting by logging it as reviewed, or blames a founder | The worker's fence (FY201, `scheduled_issue_fence`) lets it insert an `unusual` entry only for a posted journal or bill payment of the organisation, with no approval and an actor who is the document's poster or nobody; it can never insert a review (no grant). `TestUnusualItemsEnterTheWeeklyReview` forges each case |
+| The poster clears their own item | The review log's guard (FY151) refuses a review by the entry's actor; the poster is named whenever they are a member |
+| The run floods the review | Each journal or payment is logged once for each rule; a run again logs nothing new |
+| The rules miss a pattern | They are advisory and listed in the user guide; the AI's explanation of each item follows after go-live as a scheduled agent with its evals (rev 0.287) |

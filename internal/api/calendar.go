@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -32,7 +33,7 @@ var CalendarCodes = []string{deadlines.CodeFiling, deadlines.CodeRecorded, deadl
 // StatutoryItem is one deadline of the calendar.
 type StatutoryItem struct {
 	Key        string               `json:"key" doc:"The item: its obligation and its anchor day. Record it with this key." example:"eci:2026-12-31"`
-	Obligation string               `json:"obligation" enum:"gst_f5,cpf,ir8a_ais,eci,form_cs,annual_return,agm,statements_to_members,gst_register_retrospective,gst_register_prospective,register_controller_entry,register_controller_central,register_controller_notice,register_share_lodgement,financial_year,sg-deadlines" doc:"What is due: the register_ ones are a register's own, done and checked on their record." example:"eci"`
+	Obligation string               `json:"obligation" enum:"gst_f5,cpf,ir8a_ais,eci,form_cs,annual_return,agm,statements_to_members,gst_register_retrospective,gst_register_prospective,register_controller_entry,register_controller_central,register_controller_notice,register_share_lodgement,register_officer_appointment,register_officer_cessation,register_detail_change,register_nominee_informs,register_nominee_entry,register_nominee_central,financial_year,sg-deadlines,sg-acra" doc:"What is due: the register_ ones are a register's own, done and checked on their record: the corporate profile's lodgements are done once a version with the day lodged is recorded." example:"eci"`
 	Area       string               `json:"area,omitempty" enum:"tax,payroll,corporate" doc:"Its area, to filter by." example:"tax"`
 	Title      string               `json:"title" doc:"What is due, in plain words." example:"Estimated chargeable income for the year ended 31 Dec 2026"`
 	Anchor     string               `json:"anchor,omitempty" format:"date" doc:"The day it counts from: a period's or a year's end, or a forecast's day." example:"2026-12-31"`
@@ -273,6 +274,48 @@ func (a *API) itemOut(ctx context.Context, u storage.UnitOfWork, it deadlines.It
 	return out, nil
 }
 
+// mayRecord refuses a write on an item outside the caller's right on the calendar. A right qualified to an area, as the
+// Company secretary's to the corporate items (Appendix D's note, rev 0.285), records that area's items alone; the
+// operation's gate lets it through so this can read the item first.
+func mayRecord(ctx context.Context, p authz.Policy, key string) error {
+	area, err := deadlines.AreaOf(key)
+	if err != nil {
+		return err
+	}
+	need := authz.Policy{Operation: p.Operation, Capability: p.Capability, Need: p.Need, Unqualified: true}
+	if area != "" {
+		need.Qualified = []string{area}
+	}
+	who, _ := authn.From(ctx)
+	if authz.Decide(need, who.Roles, who.AI()).Allowed {
+		return nil
+	}
+	what := fmt.Sprintf("%s is a %s item", key, area)
+	if area == "" {
+		what = fmt.Sprintf("%s names no item of the calendar's rules", key)
+	}
+	return problem(CodeForbidden, "Your roles record only the calendar's corporate items (the annual return, the AGM and the financial statements to members), and "+what+".",
+		"Ask the Owner, the Controller, the Accountant or the Tax agent to record it")
+}
+
+// mayRecordFiling is mayRecord for a record's own item, read before a write that names only the record.
+func (a *API) mayRecordFiling(ctx context.Context, p authz.Policy, filingID string) error {
+	id, err := parseID("filing_id", filingID)
+	if err != nil {
+		return err
+	}
+	who, _ := authn.From(ctx)
+	var key string
+	if err := a.deps.Store.Do(ctx, who.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		v, err := a.shownFiling(ctx, u, id)
+		key = v.Key
+		return err
+	}); err != nil {
+		return err
+	}
+	return mayRecord(ctx, p, key)
+}
+
 func registerCalendar(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
 	writes := append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid}, locks...)
@@ -386,6 +429,9 @@ func registerCalendar(a *API) {
 			if err != nil {
 				return StatutoryFilingView{}, err
 			}
+			if err := mayRecord(ctx, authz.CreateStatutoryFiling, f.Key); err != nil {
+				return StatutoryFilingView{}, err
+			}
 			today, err := orgToday(ctx, a, u)
 			if err != nil {
 				return StatutoryFilingView{}, err
@@ -447,6 +493,15 @@ func registerCalendar(a *API) {
 				if err != nil {
 					return StatutoryFilingView{}, err
 				}
+				was, err := deadlines.ReadFiling(doc)
+				if err != nil {
+					return StatutoryFilingView{}, err
+				}
+				for _, key := range []string{was.Key, f.Key} { // the item it was for, and the one it is for now
+					if err := mayRecord(ctx, authz.ReplaceStatutoryFiling, key); err != nil {
+						return StatutoryFilingView{}, err
+					}
+				}
 				today, err := orgToday(ctx, a, u)
 				if err != nil {
 					return StatutoryFilingView{}, err
@@ -490,6 +545,9 @@ func registerCalendar(a *API) {
 				if err != nil {
 					return StatutoryFilingView{}, err
 				}
+				if err := mayRecord(ctx, authz.RecordStatutoryFiling, f.Key); err != nil {
+					return StatutoryFilingView{}, err
+				}
 				if f.Outcome == deadlines.OutcomeFiled {
 					if err := a.requireEvidence(ctx, u, evidence.StatutoryFiling, id); err != nil {
 						return StatutoryFilingView{}, err
@@ -508,6 +566,10 @@ func registerCalendar(a *API) {
 						Kind: EvidenceCommitKind, Payload: []byte(`{}`)}); err != nil {
 						return StatutoryFilingView{}, err
 					}
+				}
+				p, _ := authn.From(ctx)
+				if err := a.agentEvent(ctx, u, p.Organisation, EventFilingRecorded, id.String()); err != nil { // AI-62
+					return StatutoryFilingView{}, err
 				}
 				return a.shownFiling(ctx, u, id)
 			})
@@ -540,6 +602,9 @@ func registerCalendar(a *API) {
 				if err := checkIfMatch(in.IfMatch, filingETag(cur)); err != nil {
 					return StatutoryFilingView{}, err
 				}
+				if err := mayRecord(ctx, authz.WithdrawStatutoryFiling, cur.Key); err != nil {
+					return StatutoryFilingView{}, err
+				}
 				today, err := orgToday(ctx, a, u)
 				if err != nil {
 					return StatutoryFilingView{}, err
@@ -568,6 +633,9 @@ func registerCalendar(a *API) {
 			"its audit event; once recorded its files are committed to the retention-locked store (FR-DOC-13). Needs If-Match with the " +
 			"record's ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.",
 	}, addCodes, func(ctx context.Context, in *addFilingEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		if err := a.mayRecordFiling(ctx, authz.AddStatutoryFilingEvidence, in.FilingID); err != nil {
+			return nil, err
+		}
 		return a.attachEquityEvidence(ctx, storage.DocumentStatutoryFiling, "/v1/compliance/filings", in.FilingID, in.IdempotencyKey, in.IfMatch, in.Prefer, in.RawBody.Data())
 	})
 	register(a, authz.ListStatutoryFilingEvidence, huma.Operation{
@@ -591,6 +659,9 @@ func registerCalendar(a *API) {
 			"refuses. The row stays, marked removed, for the audit trail. Side effects: the removal and its audit event. Needs If-Match " +
 			"with the file's ETag; Prefer: return=preview saves nothing.",
 	}, removeCodes, func(ctx context.Context, in *removeFilingEvidenceInput) (*equityEvidenceWriteOutput, error) {
+		if err := a.mayRecordFiling(ctx, authz.RemoveStatutoryFilingEvidence, in.FilingID); err != nil {
+			return nil, err
+		}
 		return a.removeEquityEvidence(ctx, storage.DocumentStatutoryFiling, "filing_id", in.FilingID, in.EvidenceID, in.IfMatch, in.Prefer, in)
 	})
 	if op := a.OpenAPI().Paths["/v1/compliance/filings/{filing_id}/evidence"].Post; op != nil && op.RequestBody != nil {

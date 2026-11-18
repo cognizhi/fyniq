@@ -93,6 +93,8 @@ type UnitOfWork interface {
 	CaptureAddresses() CaptureAddresses
 	InboundMessages() InboundMessages
 	Notifications() Notifications
+	// Help is each person's first-run tour state (FR-UX-34).
+	Help() HelpStates
 	// Announcements are the banners and their dismissals (FR-NTF-03).
 	Announcements() Announcements
 	Outbox() Outbox
@@ -152,6 +154,18 @@ type UnitOfWork interface {
 	AICalls() AICalls
 	AIBudgets() AIBudgets
 	AIQualifications() AIQualifications
+	// APIClients are the organisation's integration clients and personal access tokens (FR-INT-02, SEC-07).
+	APIClients() APIClients
+	// AIGrants are the assistant's delegated read grants, one per turn (AI-01, AI-36).
+	AIGrants() AIGrants
+	// AIConversations are the assistant's conversations, turns, tool calls and feedback (AI-12, AI-P8).
+	AIConversations() AIConversations
+	// AIProposals are the AI's proposals, the one way an AI changes anything (§9.5, AI-P3 to AI-P5).
+	AIProposals() AIProposals
+	// AgentRuns are the scheduled agents' runs and their reports (§9.12, AI-65).
+	AgentRuns() AgentRuns
+	// ComplianceTasks are the tasks the agents' findings and proposals raise, one open per finding (AI-65).
+	ComplianceTasks() ComplianceTasks
 	// TenantData reads the organisation whole, for the full tenant export (FR-MIG-04).
 	TenantData() TenantData
 	// KPIInputs are the months' customer counts and headcount a person enters (FR-KPI-02, rev 0.161).
@@ -313,6 +327,9 @@ type Ledger interface {
 	// EntriesOfPeriod are a period's entries posted after a ledger revision, in revision order, with their lines, at most
 	// limit: a month's cash flow reads its month alone, not the whole ledger (NFR-PERF-02, INV-11).
 	EntriesOfPeriod(ctx context.Context, period uuid.UUID, afterRevision int64, limit int) ([]Entry, error)
+	// RecordedSince are the entries of the source types recorded since a time, after a ledger revision, in revision
+	// order, at most limit, with their lines: a review of the last days' postings reads them without the whole ledger.
+	RecordedSince(ctx context.Context, sourceTypes []string, since time.Time, afterRevision int64, limit int) ([]Entry, error)
 	// ByIdentity returns the entry posted with a posting identity. When the purge after retention removed it (AUD-10),
 	// it returns its document's carry-forward instead, marked by Carries.
 	ByIdentity(ctx context.Context, postingIdentity string) (Entry, error)
@@ -707,6 +724,25 @@ const (
 	// design D10): the grounds, the register days and the yearly notices, or the reason they are not one, recorded on
 	// another person's approval with the company secretary's confirmation attached.
 	DocumentControllerEntry DocumentType = "controller_entry"
+	// DocumentCorporateDetail is the company's name, registered office and SSIC code from a day (FR-CS-01,
+	// p1-company-secretary design D2), recorded on another person's approval with its evidence; the one in force on a day
+	// is the latest recorded to take effect by then.
+	DocumentCorporateDetail DocumentType = "corporate_detail"
+	// DocumentCorporateOfficer is one appointment of a director, the secretary, an auditor or the CEO (FR-CS-01,
+	// FR-CS-06, design D2), with its days and lodgements, recorded on another person's approval with its evidence; a
+	// later version names the first, and the last recorded is in force.
+	DocumentCorporateOfficer DocumentType = "corporate_officer"
+	// DocumentNomineeEntry is one entry of the register of nominee directors or nominee shareholders (s386AL; FR-CS-01,
+	// design D2): who acts or holds for whom, since when, and the days the company was told, its register entered it
+	// and ACRA's central register was told; recorded on another person's approval with its evidence.
+	DocumentNomineeEntry DocumentType = "nominee_entry"
+	// DocumentStatementsApproval is the directors' approval of a financial year's statements (FR-CS-03, C.2 #33, design
+	// D4): the year's end, the day approved and the day sent to the members, recorded with its evidence.
+	DocumentStatementsApproval DocumentType = "statements_approval"
+	// DocumentCorporateDocument is a resolution, a notice or minutes drafted from one of Fyniq's templates and filled
+	// from the records on its day (FR-CS-05, design D6): a draft to review and have signed, never signed or filed by
+	// Fyniq; recorded with its signed copy on another person's approval, it is an entry of the minute book.
+	DocumentCorporateDocument DocumentType = "corporate_document"
 	// DocumentAcraExtract is ACRA's register of members as a business profile gives it (FR-EQ-26, design D11): its day
 	// and its holdings typed in, recorded with the PDF attached by whoever may post on the cap table; a newer one
 	// supersedes it.
@@ -1004,6 +1040,22 @@ const (
 	// CodeControllerEntry: a controller entry keeps its own keys, a holder marked shareholder or investor, grounds for a
 	// controller and a reason for one who is not, and its days in order (FY296).
 	CodeControllerEntry = "STORAGE-SHARE-10"
+	// CodeCorporateDetail: a corporate detail keeps its own keys, a day, a name, an office, a five-digit SSIC code, its
+	// lodgement on or after it, and no NRIC or FIN in full (FY352).
+	CodeCorporateDetail = "STORAGE-CORP-01"
+	// CodeCorporateOfficer: an officer keeps their own keys, a known role, a natural person unless an auditor, an
+	// identifier as its last 4 characters, the days in order, a nominee only as a director, a member of the organisation,
+	// and no NRIC or FIN in full (FY353).
+	CodeCorporateOfficer = "STORAGE-CORP-02"
+	// CodeNomineeEntry: a nominee entry keeps its own keys, a director among the officers or a contact marked shareholder
+	// or investor, whom they act for, and its days in order (FY354).
+	CodeNomineeEntry = "STORAGE-CORP-03"
+	// CodeStatementsApproval: a statements approval keeps its own keys, a year's end, and the days approved and sent after
+	// it, in order (FY355).
+	CodeStatementsApproval = "STORAGE-CORP-04"
+	// CodeCorporateDocument: a corporate document keeps its own keys, a known kind, its template's kind and version, its
+	// fields and its paper, and no NRIC or FIN in full (FY356).
+	CodeCorporateDocument = "STORAGE-CORP-05"
 	// CodeAcraExtract: an ACRA extract keeps its own keys, its day and a list of holdings, each a holder marked
 	// shareholder or investor, an active share-capital class and whole shares above zero (FY297).
 	CodeAcraExtract = "STORAGE-SHARE-11"

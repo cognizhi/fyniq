@@ -13,8 +13,10 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
+	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/packs"
 )
 
 // The calendar's codes.
@@ -42,6 +44,28 @@ const (
 // Obligations are the obligations a record may name: the sg-deadlines pack's.
 var Obligations = []string{"gst_f5", "cpf", "ir8a_ais", "eci", "form_cs", "annual_return", "agm", "statements_to_members",
 	"gst_register_retrospective", "gst_register_prospective"}
+
+// AreaOf is the area of the item a key names (tax, payroll or corporate) as the sg-deadlines pack's rules give it, in
+// any version this release carries: an area is the obligation's, whatever its dates. A key no rule names has none. The
+// Company secretary records the corporate items alone (Appendix D's note, rev 0.285).
+func AreaOf(key string) (string, error) {
+	obligation, _, _ := ParseKey(key)
+	all, err := pack.LoadAll(packs.FS)
+	if err != nil {
+		return "", err
+	}
+	for _, v := range all {
+		if v.Pack != "sg-deadlines" {
+			continue
+		}
+		for _, r := range pack.DeadlineRules(v) {
+			if r.Obligation == obligation {
+				return r.Area, nil
+			}
+		}
+	}
+	return "", nil
+}
 
 var keyFormat = regexp.MustCompile(`^[a-z][a-z0-9_]{1,40}:[0-9]{4}-[0-9]{2}-[0-9]{2}$`)
 

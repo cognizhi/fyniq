@@ -1,0 +1,19 @@
+{
+  "kind": "agm.dispensation",
+  "version": 1,
+  "title": "Notice to members: financial statements sent without an annual general meeting",
+  "summary": "Tells the members the financial statements were sent and no annual general meeting is held, and how a member may still require one.",
+  "signers": "secretary",
+  "fields": [
+    {"name": "fy_end", "type": "date", "label": "The financial year's last day"},
+    {"name": "sent_on", "type": "date", "label": "The day the statements were sent to the members"}
+  ],
+  "sections": [
+    {"paragraphs": [
+      "The financial statements of {{.Company.Name}} for the financial year ended {{.F.fy_end}} were sent to the members on {{.F.sent_on}}.",
+      "Under section 175A of the Companies Act 1967, a private company that sends its financial statements to its members within 5 months after the end of its financial year need not hold an annual general meeting.",
+      "A member may still require the company to hold an annual general meeting by notice to the company within 14 days after the financial statements were sent.",
+      "By order of the board."
+    ]}
+  ]
+}

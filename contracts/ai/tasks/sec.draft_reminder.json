@@ -1,0 +1,41 @@
+{
+  "id": "sec.draft_reminder",
+  "version": 1,
+  "name": "Draft a reminder about an obligation",
+  "description": "Drafts an email reminding the members who hold a role, such as the company secretary or the accountant, about an obligation: a filing, a deadline or a step the company must take. It is sent only after a person approves it, once, to the members of that role with a sign-in email, and ends by saying the AI drafted it and a person approved it. It files, approves or marks nothing as met.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["to_role", "subject", "message", "obligation"],
+    "properties": {
+      "to_role": {
+        "type": "string",
+        "enum": ["owner", "administrator", "controller", "accountant", "company_secretary", "board_viewer"],
+        "description": "The role whose members it reminds."
+      },
+      "subject": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 150,
+        "description": "The email's subject, in plain words."
+      },
+      "message": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 4000,
+        "description": "The reminder: what is due, by when, why, and what to do next, in plain words with no figures you did not read."
+      },
+      "obligation": {
+        "type": "string",
+        "pattern": "^[a-z][a-z_]{1,40}:[A-Za-z0-9:._#-]{1,160}$",
+        "maxLength": 201,
+        "description": "The finding or statutory calendar item it concerns, by its key, such as calendar:annual_return:2027-07-31."
+      }
+    }
+  },
+  "command": "DraftReminder",
+  "tier": 1,
+  "limits": { "items": 1 },
+  "approvers": ["owner", "company_secretary"],
+  "expiry_hours": 72
+}

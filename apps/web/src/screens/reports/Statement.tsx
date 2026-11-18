@@ -17,6 +17,7 @@ import { Chart } from "../../components/chart/Chart";
 import { listPeriods, type Period } from "../accounting/data";
 import { useDimensions, valueCodes } from "../accounting/lines";
 import { ExportDialog } from "./ExportDialog";
+import { AskAboutThis } from "../../components/ai/AskAboutThis";
 
 type Statement = components["schemas"]["FinancialStatement"];
 type Block = components["schemas"]["FinancialBlock"];
@@ -354,6 +355,7 @@ export function FinancialStatement() {
         </div>
         {s && run && (
           <div className="fy-pagehead__actions">
+            <AskAboutThis context={{ kind: "report", label: `${name}, ${date(s.from)} to ${date(s.to)}`.slice(0, 200) }} />
             <Button variant="primary" onClick={() => setExporting(true)} title={exp.tooltip}>
               <Icon of={Download} />
               {exp.label}

@@ -1,0 +1,23 @@
+{
+  "id": "proposals-fixture",
+  "agent": "chat",
+  "version": 1,
+  "kind": "proposal",
+  "description": "The harness's own proposal cases, on the tests' task type test.annotate_note: they check a right proposal passes and a turn that proposes nothing fails (QA-AI-02, design D11). No model is asked them; each task type of the release adds its own suite.",
+  "company": {"seed": 1, "journals": 24},
+  "task_types": ["test.annotate_note"],
+  "cases": [
+    {
+      "id": "note-the-room",
+      "question": "Make a note to book the room for the AGM.",
+      "expect": {"proposal": {"task_type": "test.annotate_note", "payload": {"note": "Book the room for the AGM"}}},
+      "solution": []
+    },
+    {
+      "id": "note-after-a-read",
+      "question": "Look at revenue for January 2026, then note that the board should review it.",
+      "expect": {"proposal": {"task_type": "test.annotate_note", "payload": {"note": "The board should review the month's revenue"}}},
+      "solution": [{"tool": "metrics.query", "input": {"from": "2026-01", "measure": "revenue", "to": "2026-01"}}]
+    }
+  ]
+}

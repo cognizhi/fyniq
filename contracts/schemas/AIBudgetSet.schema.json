@@ -3,7 +3,7 @@
   "additionalProperties": false,
   "properties": {
     "amount": {
-      "description": "Per calendar month in the base currency, above zero with at most four decimal places; null removes the budget.",
+      "description": "Per calendar month: in the base currency, above zero with at most four decimal places, or for a token budget a whole number of tokens above zero; null removes the budget.",
       "examples": [
         "50.00"
       ],

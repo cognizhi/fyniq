@@ -8,6 +8,7 @@ import { ApprovalPage } from "./ApprovalPage";
 import { Inbox } from "./Inbox";
 import { ReviewLog } from "./ReviewLog";
 import type { Approval, ReviewEntry } from "./words";
+import { invalid } from "../../test/invalid";
 
 const hash = "ab".repeat(32);
 const other = "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d99";
@@ -208,7 +209,7 @@ describe("an approval request", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Reject…" }));
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Reject" }));
-    expect(await within(dialog).findByText(/Say why you reject it/)).toBeTruthy();
+    await invalid(dialog, /Why you reject it/, "Say why you reject it, in up to 500 characters: the person who asked sees it.");
     expect(calls()).not.toContain("POST /v1/approvals/a-1/reject");
     fireEvent.change(within(dialog).getByLabelText(/Why you reject it/), { target: { value: "Not this month" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Reject" }));
@@ -361,6 +362,28 @@ describe("the review log", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Mark as reviewed" }));
     expect(await screen.findByText("1 action marked as reviewed.")).toBeTruthy();
     expect(seen.find((s) => s.method === "POST")?.body).toEqual({ entry_ids: ["e-1"], note: "Agreed on Monday" });
+    await noViolations(document.body);
+  });
+
+  // req: FM-6
+  it("marks an unusual item with its reason, opens its journal, and leaves deciding to a founder", async () => {
+    const unusual = {
+      ...entry,
+      id: "e-3",
+      kind: "unusual",
+      object_type: "journal",
+      object_key: "j-9",
+      summary: "Back-dated: Journal JNL-0007 is dated 5 Oct 2026 and was posted 44 days later, on 18 Nov 2026",
+      overdue: false,
+    };
+    answer({ "GET /v1/review-log": { status: 200, body: { items: [unusual], unreviewed: 1, overdue: 0 } } });
+    renderPage(ReviewLog, { path: "/review-log" });
+    const item = (await screen.findByText(unusual.summary)).closest("li")!;
+    expect(item.textContent).toContain("Unusual item the rules found, for another founder to look at");
+    expect(within(item).getByText("Unusual")).toBeTruthy();
+    expect(within(item).getByRole("link", { name: "Open the journal" }).getAttribute("href")).toBe("/accounting/journals/j-9");
+    expect(within(item).getByRole("checkbox", { name: `Pick ${unusual.summary}` })).toBeTruthy();
+    expect(within(item).queryByRole("button", { name: /Approve/ })).toBeNull();
     await noViolations(document.body);
   });
 });

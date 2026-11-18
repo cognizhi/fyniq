@@ -196,7 +196,7 @@ export function PeriodClose() {
           </nav>
           <div className="fy-row fy-row--wrap gap-2">
             <h1 className="fy-h1">{open ? `Close ${month}` : month}</h1>
-            {s && (open ? <span className="fy-chip fy-chip--good">Open</span> : <span className="fy-chip fy-chip--neutral"><Icon of={Lock} />Closed</span>)}
+            {s && (open ? <span className="fy-chip fy-chip--good"><Icon of={LockOpen} />Open</span> : <span className="fy-chip fy-chip--neutral"><Icon of={Lock} />Closed</span>)}
           </div>
           {checks && (
             <p className="fy-secondary">

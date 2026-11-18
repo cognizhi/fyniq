@@ -1,0 +1,18 @@
+{
+  "kind": "directors.remove_officer",
+  "version": 1,
+  "title": "Directors' resolution in writing",
+  "summary": "The directors end the appointment of the secretary or the chief executive officer, and authorise the lodgement with ACRA. A director is removed by the members.",
+  "signers": "directors",
+  "fields": [
+    {"name": "officer_id", "type": "officer", "label": "The officer", "roles": ["secretary", "ceo"]},
+    {"name": "on", "type": "date", "label": "The day the appointment ends"}
+  ],
+  "sections": [
+    {"paragraphs": ["We, being all the directors of {{.Company.Name}}, pass the following resolutions in writing, as the company's constitution allows."]},
+    {"heading": "Resolved", "items": [
+      "That {{.F.officer_id}} cease to be the company's {{.F.officer_id_role}} with effect from {{.F.on}}.",
+      "That any one director or the secretary be authorised to lodge the cessation with ACRA."
+    ]}
+  ]
+}

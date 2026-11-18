@@ -1,0 +1,184 @@
+[
+ {
+  "sheet": "Transactions",
+  "row": 1,
+  "status": "",
+  "workbook": "Pays INV-9*",
+  "document": "RC-INV-9-star",
+  "read": "its number 'INV-9*' is the scenario's INV-9-star: the format's IDs take no such character; the bank matcher's test names the number itself"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 2,
+  "status": "",
+  "workbook": "Part-pays INV-90",
+  "document": "RC-INV-90"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 3,
+  "status": "",
+  "workbook": "Pays 1001",
+  "document": "RC-1001"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 4,
+  "status": "",
+  "workbook": "Pays 1002",
+  "document": "RC-1002"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 5,
+  "status": "",
+  "workbook": "Pays ~A",
+  "document": "RC-tilde-A",
+  "read": "its number '~A' is the scenario's tilde-A: the format's IDs take no such character; the bank matcher's test names the number itself"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 6,
+  "status": "",
+  "workbook": "Quotes a number that does not exist",
+  "not_ported": "its reference names no document: the line waits for its match (FR-BNK-07)"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 7,
+  "status": "",
+  "workbook": "Pays <B1>",
+  "document": "PY-lt-B1-gt",
+  "read": "its number '<B1>' is the scenario's lt-B1-gt: the format's IDs take no such character; the bank matcher's test names the number itself"
+ },
+ {
+  "sheet": "Transactions",
+  "row": 8,
+  "status": "",
+  "workbook": "Pays A-7",
+  "document": "PY-A-7"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 1,
+  "status": "",
+  "workbook": "INV-9*",
+  "document": "INV-9-star",
+  "read": "its number 'INV-9*' is the scenario's INV-9-star: the format's IDs take no such character; the bank matcher's test names the number itself"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 2,
+  "status": "",
+  "workbook": "INV-90",
+  "document": "INV-90"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 3,
+  "status": "",
+  "workbook": "INV-91",
+  "document": "INV-91"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 4,
+  "status": "",
+  "workbook": "1001",
+  "document": "1001"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 5,
+  "status": "",
+  "workbook": "1002",
+  "document": "1002"
+ },
+ {
+  "sheet": "Invoices",
+  "row": 6,
+  "status": "",
+  "workbook": "~A",
+  "document": "tilde-A",
+  "read": "its number '~A' is the scenario's tilde-A: the format's IDs take no such character; the bank matcher's test names the number itself"
+ },
+ {
+  "sheet": "Bills",
+  "row": 1,
+  "status": "",
+  "workbook": "<B1>",
+  "document": "lt-B1-gt",
+  "read": "its number '<B1>' is the scenario's lt-B1-gt: the format's IDs take no such character; the bank matcher's test names the number itself"
+ },
+ {
+  "sheet": "Bills",
+  "row": 2,
+  "status": "",
+  "workbook": "A-7",
+  "document": "A-7"
+ },
+ {
+  "sheet": "Journal",
+  "row": 1,
+  "status": "",
+  "workbook": "J*",
+  "document": "J-star",
+  "read": "its number 'J*' is the scenario's J-star: the format's IDs take no such character; the bank matcher's test names the number itself"
+ },
+ {
+  "sheet": "Journal",
+  "row": 2,
+  "status": "",
+  "workbook": "J*",
+  "document": "J-star",
+  "read": "its number 'J*' is the scenario's J-star: the format's IDs take no such character; the bank matcher's test names the number itself"
+ },
+ {
+  "sheet": "Journal",
+  "row": 3,
+  "status": "",
+  "workbook": "J1",
+  "document": "J1"
+ },
+ {
+  "sheet": "Journal",
+  "row": 4,
+  "status": "",
+  "workbook": "J1",
+  "document": "J1"
+ },
+ {
+  "sheet": "Journal",
+  "row": 5,
+  "status": "",
+  "workbook": "J2",
+  "document": "J2"
+ },
+ {
+  "sheet": "Journal",
+  "row": 6,
+  "status": "",
+  "workbook": "J2",
+  "document": "J2"
+ },
+ {
+  "sheet": "Timesheets",
+  "row": 1,
+  "status": "",
+  "not_ported": "projects and timesheets are not in the launch: these cases come with them"
+ },
+ {
+  "sheet": "Quotes & Orders",
+  "row": 1,
+  "status": "",
+  "workbook": "Q-12",
+  "not_ported": "a quote or an order posts nothing; its statuses are the non-posting set's"
+ },
+ {
+  "sheet": "Quotes & Orders",
+  "row": 2,
+  "status": "",
+  "workbook": "Q-1?",
+  "not_ported": "a quote or an order posts nothing; its statuses are the non-posting set's"
+ }
+]

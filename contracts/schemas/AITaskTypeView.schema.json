@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approvers": {
+      "description": "The roles that approve it.",
+      "items": {
+        "description": "A role, as Appendix D names it.",
+        "examples": [
+          "owner"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "built": {
+      "description": "Whether this release can run it: its command is built.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "currency": {
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "examples": [
+        "Create a compliance task with an owner and a due date from a finding."
+      ],
+      "type": "string"
+    },
+    "expiry_hours": {
+      "examples": [
+        72
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "examples": [
+        "sec.create_task"
+      ],
+      "type": "string"
+    },
+    "max_amount_per_item": {
+      "description": "The most one item may move, in currency.",
+      "examples": [
+        "5000.00"
+      ],
+      "type": "string"
+    },
+    "max_amount_total": {
+      "description": "The most one proposal may move, in currency.",
+      "examples": [
+        "20000.00"
+      ],
+      "type": "string"
+    },
+    "max_items": {
+      "description": "The most items one proposal holds.",
+      "examples": [
+        5
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "name": {
+      "examples": [
+        "Create a compliance task"
+      ],
+      "type": "string"
+    },
+    "on": {
+      "description": "Whether the organisation has turned it on (ai.task_types).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "tier": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "maximum": 3,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "version": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "name",
+    "description",
+    "tier",
+    "max_items",
+    "approvers",
+    "expiry_hours",
+    "on",
+    "built"
+  ],
+  "title": "AITaskTypeView",
+  "type": "object"
+}

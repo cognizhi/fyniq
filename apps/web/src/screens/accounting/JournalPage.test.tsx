@@ -7,6 +7,7 @@ import { answer, ownerSession, problem, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { balances, check, firstOfNextMonth, JournalPage, type Form } from "./JournalPage";
+import { invalid } from "../../test/invalid";
 
 type Account = components["schemas"]["Account"];
 type Journal = components["schemas"]["Journal"];
@@ -88,6 +89,14 @@ describe("what a journal's form sends", () => {
       "4.fx_rate": "Enter the rate as SGD for 1 USD, such as 1.3472, or leave it blank to take the day's rate.",
     });
     expect(check({ date: "2026-10-31", memo: "", reverse_on: "", lines: [] }, "SGD").errors.lines).toBe("Add a line.");
+    // A line with no amount, one in a currency that is no code, and one on a director's account that names no one.
+    const loan = new Map([["a-dir", { id: "a-dir", role: "director-loan" } as Account]]);
+    expect(check({ date: "2026-10-31", memo: "", reverse_on: "", lines: [line("6"), line("7", { debit: "10", currency: "US$" }), line("8", { account_id: "a-dir", credit: "10" })] }, "SGD", loan).errors).toEqual({
+      "6.debit": "Enter a debit or a credit.",
+      "7.currency": "Enter a currency code, such as USD.",
+      "8.party": "Choose whose account it is.",
+      "8.origin": "Choose where the amount came from.",
+    });
   });
 
   // req: FR-GL-02
@@ -95,7 +104,7 @@ describe("what a journal's form sends", () => {
     expect(firstOfNextMonth("2026-10-31")).toBe("2026-11-01");
     expect(firstOfNextMonth("2026-12-15")).toBe("2027-01-01");
     const lines = [line("1", { debit: "100" }), line("2", { credit: "100" })];
-    expect(check({ date: "2026-10-31", memo: "", reverse_on: "2026-10-31", lines }, "SGD").errors.reverse_on).toMatch(/after the journal's date/);
+    expect(check({ date: "2026-10-31", memo: "", reverse_on: "2026-10-31", lines }, "SGD").errors.reverse_on).toBe("Date the reversal after the journal's date, such as the first day of the next month.");
     expect(check({ date: "2026-10-31", memo: "", reverse_on: "2026-11-01", lines }, "SGD").draft?.reverse_on).toBe("2026-11-01");
   });
 

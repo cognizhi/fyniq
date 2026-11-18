@@ -4,25 +4,29 @@ type: task
 title: Record a filing, or that it is not required
 summary: Record an item of the statutory calendar as filed with its acknowledgement, as not required with the reason, or withdraw a wrong record
 sources:
-  - docs/user-guide/statutory-calendar.md sha256:972540eb8d4b12a16fa7f7ef0e6164c6063c5de28fdb16c3409234b9da29b006
+  - docs/user-guide/statutory-calendar.md sha256:e0fc949205ca546e3587b42a37919801e1d83fe99857e48997e08d8be0fb2172
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-07
+compiled_at: 2026-11-17
 aliases:
   - mark as filed
   - I filed the ECI
   - acknowledgement
   - ECI waiver
   - undo a filing
+  - who records a filing
+  - company secretary annual return
 ---
 
 # Record a filing, or that it is not required
 
 ## Steps
+
+- Who records: the Owner, the Controller, the Accountant and the Tax agent record every item; the Company secretary records the corporate items (the annual return, the AGM and the financial statements to members).
 
 1. On the item in **Compliance › Calendar** ([[compliance.calendar]]), select **Record as filed**.
 2. Enter the day you filed or paid, and the acknowledgement or transaction number.

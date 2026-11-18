@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "on": {
+      "description": "The day.",
+      "examples": [
+        "2026-11-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "pack": {
+      "examples": [
+        "sg-gst"
+      ],
+      "type": "string"
+    },
+    "sources": {
+      "description": "The official sources the rows cite.",
+      "items": {
+        "$ref": "PackSource.schema.json"
+      },
+      "type": "array"
+    },
+    "tables": {
+      "description": "Its tables, each with its rows in force on the day.",
+      "items": {
+        "$ref": "StatutoryTable.schema.json"
+      },
+      "type": "array"
+    },
+    "version": {
+      "description": "The version in force: the organisation's active one, else the one this release carries (ENG-31).",
+      "examples": [
+        "sg-gst@2026.3"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "pack",
+    "version",
+    "on",
+    "tables",
+    "sources"
+  ],
+  "title": "StatutoryValues",
+  "type": "object"
+}

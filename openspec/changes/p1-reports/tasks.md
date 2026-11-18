@@ -209,6 +209,10 @@
   keys, and has a table view, a text summary and PNG and CSV downloads. Tests: `chart.test.tsx` with axe, the table's
   figures read back equal to the plotted ones. MASTER.md §10 names it the one way to draw a chart. Status colours:
   the component takes none (FR-VIZ-05 is the chips'.))
+  (17 Nov 2026, for the launch gate: ten chips in a status tone showed their label alone (Home's set-up steps, Join's
+  requests, the journal evidence, the period, an integration's upgrade, a statutory pack, the access review's
+  connections, an equity transaction's findings, an option pool's resolution and the AI tasks' proposals): each has its
+  icon now, and `statusColours.test.ts` fails on any status chip without one. `// req: FR-VIZ-05`)
 - [x] 5.3 First uses: the P&L's monthly trend and the top expenses.
   (29 Oct 2026: on the P&L with a column per month (Expert), the trend of revenue, gross profit and net profit a line
   each, in fixed slots, from the same statement the table shows; on Top expenses, horizontal bars with their amounts.

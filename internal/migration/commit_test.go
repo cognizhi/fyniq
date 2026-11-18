@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cockroachdb/apd/v3"
+
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -124,5 +126,22 @@ func TestCountriesReadAsCodes(t *testing.T) {
 		if got := countryOf(in); got != want {
 			t.Errorf("%q: %q, want %q", in, got, want)
 		}
+	}
+}
+
+// The workbook budgets discounts as positive figures that reduce revenue (its golden sets, p1-launch-readiness task 3.1:
+// test_edge_misc.py's test_discount_budget_reduces_revenue_budget): September's 1,000 of subscription revenue and 100 of
+// discounts budget 900 of revenue. Fyniq budgets each account as the P&L shows it, so the migration negates a discount
+// line's amount: 1,000 and -100.
+// req: FR-PLN-01
+func TestADiscountBudgetReducesRevenue(t *testing.T) {
+	revenue, discount := apd.New(1000, 0), apd.New(100, 0)
+	a, b := budgetSigned("Subscription revenue", revenue), budgetSigned("Discounts & refunds", discount)
+	total := new(apd.Decimal)
+	if _, err := apd.BaseContext.WithPrecision(20).Add(total, a, b); err != nil {
+		t.Fatal(err)
+	}
+	if a.Text('f') != "1000" || b.Text('f') != "-100" || total.Text('f') != "900" || discount.Text('f') != "100" {
+		t.Errorf("subscriptions %s, discounts %s, revenue %s (the sheet's discount %s)", a.Text('f'), b.Text('f'), total.Text('f'), discount.Text('f'))
 	}
 }

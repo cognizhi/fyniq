@@ -32,6 +32,8 @@ FLAVOURS ?= release local
 PLATFORM ?=
 # make images also checks that every pinned image has both platforms, which reads the registries; make up skips it
 PIN_CHECK ?= yes
+# The pinned container the visual snapshots draw in (p1-launch-readiness design D5): Playwright's own, both platforms.
+PLAYWRIGHT_IMAGE := mcr.microsoft.com/playwright:v1.64.0-noble@sha256:06a9939e57531807f8d5fd76ce44b53165ffb7d7501d87ab10e285c20b1e971f
 # Docker in a VM on a Mac (Colima, OrbStack, Docker Desktop) is reached through the docker CLI's context,
 # which Testcontainers does not read: give it the context's socket as DOCKER_HOST, and the socket's path
 # inside the VM for the containers it starts that mount it
@@ -47,7 +49,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: script-tests trace trace-gate help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype
+.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys test-visual
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -90,6 +92,11 @@ seed: ## Write the sample company (DEV-04) to .data/seed/company.json
 seed-load: ## Load the sample company (DEV-04) into an organisation of the local database: ORG=<organisation id>; checks its trial balance against the seed
 	@test -n "$(ORG)" || { echo 'usage: make seed-load ORG=<organisation id> (organisation_id in GET /api/v1/session)'; exit 2; }
 	@$(MISE) go run -tags local ./cmd/seed --load "$(ORG)"
+
+uat-organisation: ## A UAT script's organisation in the local database (docs/uat/): NAME="<name>" PEOPLE="<name>:<role>,<role>;…", the sample company loaded; AI=routed routes its chat agent to the scripted model (the AI scripts); prints its ID and a one-time invitation code per person
+	@test -n "$(NAME)" -a -n "$(PEOPLE)" || { echo 'usage: make uat-organisation NAME="UAT Sell Pte Ltd" PEOPLE="Bea Bookkeeper:bookkeeper;Ann Owner:owner,controller"'; exit 2; }
+	@people='$(PEOPLE)'; set --; IFS=';'; for p in $$people; do set -- "$$@" --invite "$$p"; done; unset IFS; \
+	$(MISE) go run -tags local ./cmd/seed --new-organisation "$(NAME)" $(if $(AI),--scripted-ai $(AI)) "$$@"
 
 perf: ## The performance harness against the running stack (QA-PERF-01): grows the installation's organisation by LINES ledger lines (default 1 M) through the engine, times NFR-PERF's budgets through the API, writes .data/perf/report.md; fails on a missed budget
 	@$(MISE) go run -tags local ./cmd/perf --lines $(or $(LINES),1000000) --api http://localhost:$${FYNIQ_HTTP_PORT:-8080}/api $(if $(ORG),--org $(ORG))
@@ -136,8 +143,8 @@ oracle-test: ## Run the independent oracle's own tests: hand-worked journals, th
 sqlc: ## Regenerate the PostgreSQL adapter's typed queries from db/migrations and its queries/
 	@cd internal/adapters/postgres && $(MISE) sqlc generate && echo "✔ internal/adapters/postgres/sqlcdb regenerated"
 
-openapi: ## Regenerate the API contract contracts/openapi/fyniq.v1.yaml, its JSON Schemas, the API reference and llms.txt from the code, and the web app's client; review the diff
-	@$(MISE) go test ./internal/api -run 'TestTheContractIsTheCode|TestTheReferenceIsTheContract' -count=1 -args -update && echo "✔ contracts/openapi/fyniq.v1.yaml, contracts/schemas/ and docs/api/ regenerated"
+openapi: ## Regenerate the API contract contracts/openapi/fyniq.v1.yaml and the internal one (fyniq-internal.v1.yaml), its JSON Schemas, the API reference and llms.txt from the code, and the web app's client; review the diff
+	@$(MISE) go test ./internal/api -run 'TestTheContractIsTheCode|TestTheInternalContractIsTheCode|TestTheReferenceIsTheContract' -count=1 -args -update && echo "✔ contracts/openapi/fyniq.v1.yaml, contracts/schemas/ and docs/api/ regenerated"
 	@$(MISE) pnpm --filter @fyniq/web -s gen:api >/dev/null && echo "✔ apps/web/src/api/schema.d.ts regenerated"
 
 api-check: ## The API contract: Spectral lint (NFR-API-01) and the web app's generated client is current (FR-INT-17); oasdiff runs in the Go tests (QA-API-02)
@@ -149,8 +156,26 @@ api-check: ## The API contract: Spectral lint (NFR-API-01) and the web app's gen
 test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 	@$(MISE) pnpm --filter @fyniq/web test:e2e
 
-evals: ## Run the AI eval suites (CTL-AI-05): replay each model's recorded answers, check each suite judges soundly, report in .data/evals/report.json; FYNIQ_AI_LIVE=1 MODEL=<id> runs one model live on synthetic text and records it
+test-journeys: ## The browser journeys (QA-E2E-01; p1-launch-readiness design D6): against the local stack, started when none answers (its tick every 20 s, so the executor runs an approved proposal soon), each in an organisation of its own with the sample company, in Chrome; KEEP=1 leaves a stack it started running
+	@port=$${FYNIQ_HTTP_PORT:-8080}; started=0; \
+	if ! curl -fsS -o /dev/null "http://localhost:$$port/api/version"; then FYNIQ_TICK_INTERVAL=$${FYNIQ_TICK_INTERVAL:-20s} $(MAKE) --no-print-directory up || exit 1; started=1; fi; \
+	$(MISE) pnpm --filter @fyniq/web test:journeys; s=$$?; \
+	if [ $$started = 1 ] && [ "$${KEEP:-0}" != 1 ]; then $(MAKE) --no-print-directory down; fi; exit $$s
+
+test-visual: ## The visual snapshots (QA-UI-07, QA-RPT-04; design D5): a stack of their own on a fixed business date, Playwright in its pinned container, each key page at the five frames in light and dark against apps/web/visual/baselines.json; VISUAL_ALL=1 every route (nightly, before a release), KEEP=1 leaves the stack
+	@PLAYWRIGHT_IMAGE=$(PLAYWRIGHT_IMAGE) scripts/visual.sh
+
+storybook: ## Storybook (QA-UI-02): build it, run every shared component's stories in Chrome with axe in the four themes, and check a planted axe violation fails the run
+	@$(MISE) pnpm --filter @fyniq/web build:storybook
+	@for t in light dark contrast contrast-dark; do echo "stories in the $$t theme"; VITE_STORY_THEME=$$t $(MISE) pnpm --filter @fyniq/web test:stories || exit 1; done
+	@if FYNIQ_STORY_PLANTED=1 $(MISE) pnpm --filter @fyniq/web test:stories > /dev/null 2>&1; then echo "✖ the planted axe violation passed the Storybook run"; exit 1; fi
+	@echo "✔ Storybook: every shared component's stories pass axe in four themes, and the planted violation fails"
+
+evals: ## Run the AI eval suites (CTL-AI-05): the assistant's golden, red-team and proposal suites and the scheduled agents' suites through the real orchestrator (Docker), then each suite judged soundly and each model's recorded answers replayed, report in .data/evals/report.json; FYNIQ_EVALS_RELEASE=1 fails a missing recording; FYNIQ_AI_LIVE=1 MODEL=<id> records one model on synthetic text
 	@scripts/evals.sh $(if $(MODEL),--model $(MODEL))
+
+golden-set: ## Rewrite the assistant's golden questions (evals/golden/assistant.json) from the oracle on the sample company (Docker, uv); make evals then checks each against the oracle, the seed and the API
+	@FYNIQ_GOLDEN_WRITE=1 $(MISE) go test -tags local ./internal/api/ -run '^TestWriteTheGoldenSet$$' -count=1
 
 images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the engine's own by default) and check them: budgets, non-root, no shell, no local adapter in release, the platform (§12.9)
 	@for svc in $(GO_IMAGES); do for f in $(FLAVOURS); do \
@@ -277,6 +302,9 @@ hooks: ## Install the git hooks (Conventional Commit check on every commit)
 
 lint-commits: ## Check commit messages in RANGE (default: origin/main..HEAD)
 	@scripts/check-commits.sh "$${RANGE:-origin/main..HEAD}"
+
+release-policy: ## A fix that changes calculation code carries its regression test (QA-REL-01), for the commits in RANGE (default: origin/main..HEAD)
+	@python3 scripts/release_policy.py "$${RANGE:-origin/main..HEAD}"
 
 deps-up: ## Start local dependencies: PostgreSQL 18, Mailpit, fake GCS
 	@$(COMPOSE) up -d --wait

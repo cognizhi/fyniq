@@ -20,6 +20,7 @@ import { CheckChip, preparers, StatusChip, who, type Check } from "./Journals";
 import { accountLabel, balances, checkLines, LineEditor, newLine, toLines, useDimensions, valueCodes, type Errors, type Line } from "./lines";
 import { attachers, JournalEvidence } from "./JournalEvidence";
 import { auditReaders, PurgedPostings } from "../compliance/PurgedPostings";
+import { AskAboutThis } from "../../components/ai/AskAboutThis";
 
 export { balances, type Balance, type Errors, type Line } from "./lines";
 
@@ -611,6 +612,7 @@ export function JournalPage() {
           )}
         </div>
         <div className="fy-pagehead__actions fy-from-medium">
+          {j && journalId && <AskAboutThis context={{ kind: "journal", id: journalId, label: title.slice(0, 200) }} />}
           {actions}
           {editActions}
           {reverseButton}
@@ -688,7 +690,7 @@ export function JournalPage() {
       {isNew && !mayPrepare && <p className="fy-secondary">An Accountant or a Tax agent prepares journals.</p>}
 
       {f && (editable || editingPosted) && (
-        <form id={`${id}-form`} className="fy-stack fy-stack--6" onSubmit={editingPosted ? (e) => e.preventDefault() : onSave} noValidate>
+        <form id={`${id}-form`} className="fy-stack fy-stack--6" data-enter="next" onSubmit={editingPosted ? (e) => e.preventDefault() : onSave} noValidate>
           {editingPosted && (
             <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby={`${id}-why`}>
               <h2 className="fy-h3" id={`${id}-why`}>

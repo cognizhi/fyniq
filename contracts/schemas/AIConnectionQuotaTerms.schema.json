@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checked_on": {
+      "description": "The day they were read.",
+      "examples": [
+        "2026-11-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "title": {
+      "description": "The page's title.",
+      "examples": [
+        "Pricing"
+      ],
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    },
+    "url": {
+      "description": "The plan's published terms.",
+      "examples": [
+        "https://platform.moonshot.ai/docs/pricing"
+      ],
+      "maxLength": 2000,
+      "pattern": "^https://",
+      "type": "string"
+    }
+  },
+  "required": [
+    "url",
+    "title",
+    "checked_on"
+  ],
+  "title": "AIConnectionQuotaTerms",
+  "type": "object"
+}

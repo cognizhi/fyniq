@@ -30,8 +30,11 @@
   appears, and a test keeps it so. Tests: `appearance.test.ts`, `styles/visual-design.test.ts` (12 of the 13 titles),
   `format/amount.test.ts`, `shell/AppFrame.test.tsx`, `components/ai/AiBadge.test.tsx`. Provisional: the appearance
   choice is kept in the browser until the preferences operation exists (4.1). **Left:** "Illustration and signature
-  moments" (the Home pulse card and teaching empty states, 3.2 and 6.1); reading the organisation's motion switch
-  from its settings (the session does not carry it; it is On); Basic mode forcing Comfortable density (4.1).)
+  moments" (the Home pulse card and teaching empty states, 3.2 and 6.1); Basic mode forcing Comfortable density (4.1).
+  17 Nov 2026: the organisation's motion switch is the setting `appearance.motion` (On by default; an Administrator
+  turns it off, audited), carried by `GET /v1/session` to everyone and applied before any page is drawn;
+  `e2e/motion.spec.ts` finds no animation or transition with it Off, with Reduce motion or with
+  `prefers-reduced-motion`, and finds some with it On (`// req: QA-UI-07`, `// req: FR-UX-38`).)
 
 ## 2. Navigation and workspaces
 
@@ -49,7 +52,25 @@
   person, the organisation, the mode and the "Confirm it's you" dialog (`stepup.tsx`: a passkey, or signing in again;
   an action the API refuses with API-AUTHZ-05 runs once more after it, with the same Idempotency-Key). Settings sits at
   the sidebar's foot; the Settings page lists its pages from the registry's `settingsNav`, cut by role and mode, and in
-  Basic says how many more Expert mode shows (FR-UX-26). An unknown address says so, with a link to Home.)
+  Basic says how many more Expert mode shows (FR-UX-26). An unknown address says so, with a link to Home.
+  17 Nov 2026, with p1-launch-readiness 5.3: the sidebar follows §7.1's table of what each role sees (FR-UX-40: an
+  area for a right in one of its capabilities; a right that only approves, or reads one reference list, gives none).
+  A person with personal rights only gets the personal workspace (FR-UX-39), and lands on My claims; the
+  Administrator lands on Settings, the Auditor and the Board viewer on Reports, the Company secretary and the DPO on
+  Compliance (`landingOf`). A page outside the person's areas shows "This page isn't part of your access"
+  (`shell/NotPartOfAccess.tsx`, `mayOpen`) with a way back, never part of the page. Tests `navigation.test.ts` (each
+  role's areas, the union of two, landings) and the browser walkthroughs `journeys/walkthroughs.spec.ts`, which also
+  read the hidden area's list through the API and expect 403. **Left:** badges, the record page anatomy, the
+  organisation switcher, the Finance | People switch; the Approver's "Home: My department" and the Auditor's
+  workspace.)
+  17 Nov 2026, later: Home's **Your work** (`screens/HomeWork.tsx`) holds the rest of §7.1's "Home shows" for the
+  Bookkeeper, the AR and AP specialists and the payment releaser: each row counts a list the role works through and
+  opens it (bank lines to categorise, drafts to finish, overdue invoices and bills, receipts to apply, quotes waiting,
+  bills to pay, batches being prepared or waiting for release, claims to pay, bank-detail changes waiting, payments
+  the bank rejected) and the releaser's bank balances; a read the API refuses leaves its row out. **Upcoming
+  deadlines** lists the calendar's next five, overdue and due soon first, for whoever may read it. Tests
+  `HomeWork.test.tsx` and the walkthroughs' rows per role. The payroll administrator's rows (next pay run, salary
+  batches, payroll postings) wait for payroll (after go-live); CPF shows under Upcoming deadlines.
 - [ ] 2.2 The command palette, global search in PostgreSQL under row-level security, and Inbox triage whose approve shortcut opens the confirmation. Tests `// req: FR-UX-01`, `// req: FR-UX-02` and `// req: FR-UX-03`
   (20 Oct 2026, in part: the Inbox lists the approval requests and the weekly review; a request opens on its own page,
   and only its confirmation decides (FR-UX-03). The command palette leaves out pages of one record. **Left:** global
@@ -79,6 +100,18 @@
   `TestALedgerEntryTracesToItsSource`, `TestTheGeneralLedgerAsAtARevision`, the matrix's row, `Trace.test.tsx`,
   `statements.test.tsx`. **Left:** the Trace panel from Home's tiles and the other reports; side peeks over lists and
   the split view for matching; keyboard-first entry and the shortcut sheet.)
+  (17 Nov 2026, for the launch gate: keyboard-first entry (FR-UX-06; docs/design/screens Shortcuts). `shortcuts.ts`:
+  "G then" a letter to each sidebar area the person sees and "C then" a letter for every create page their access
+  opens (a test fails a create page without keys), Expert mode only; ? opens the shortcut sheet in both modes, as do the
+  command palette and Settings › Profile and security › Keyboard. None fires while focus is in a field or a dialog is
+  open, or on a key the page handled (the Inbox's own). Each person turns the single-character shortcuts off or changes
+  their keys, in the sheet and on the profile page, with clashes refused field by field (SC 2.1.4); kept in this
+  browser under the person's user ID until task 4.1's preferences operation stores it with the mode. Enter moves to the
+  next field and Ctrl+Enter saves in the invoice, quote, bill, purchase order, journal, recurring and claim editors
+  (`data-enter="next"`). A page's actions on its selected rows join the command palette (`shell/bulk.ts`; Categorise's
+  grid offers "Accept the selected suggestions"). Guide `keyboard-shortcuts.md` compiled into `shell.shortcuts`, and
+  `profile-and-security.md`'s Keyboard section. Tests `shell/keyboard.test.tsx`, `categorise.test.tsx`. **Left:** the
+  shortcut stored server-side with the mode (task 4.1); the mode-toggle shortcut (FR-UX-23).)
 
 ## 3. Grids, records and correctness
 
@@ -90,7 +123,20 @@
   Teaching empty states on the chart, contacts, items and review log. Test `Home.test.tsx`. **Left:** the sample
   company to explore, the checklist's later steps (opening balances, bank feeds, employees, the workbook import), the
   Plain and Accountant views.)
+  (17 Nov 2026, for the launch gate: the Plain and Accountant views (FR-UX-08). `src/view.ts` keeps each person's
+  choice (in this browser until task 4.1 stores preferences on the server) and gives Basic mode Plain view always;
+  `components/LedgerViewToggle.tsx` offers it in Expert mode on the bank categorise grid, whose money shows as Money in
+  / Money out / Suggested category or, as the money account's ledger has it, Debit / Credit / Suggested account, the
+  same figures, and under Settings › Profile and security. Guide `banking.md`, compiled. Tests
+  `LedgerViewToggle.test.tsx`, `categorise.test.tsx`. **Left:** the view on the grids still to come (journal lines,
+  budgets, opening balances) as each is built.)
 - [ ] 3.3 Favourites, recents and saved views shareable by link, comments with mentions, and no hard delete. Tests `// req: FR-UX-12`, `// req: FR-UX-13` and `// req: FR-UX-14`
+  (17 Nov 2026, in part, for the launch gate: no hard delete (FR-UX-14). `TestEachRoleHoldsExactlyItsGrants` refuses a
+  DELETE grant to any application role but on five tables named with why (housekeeping swept on its schedule, and an
+  item's price list replaced with its audited version); TRUNCATE was refused already. Every DELETE operation of the API
+  withdraws or marks (removed evidence is kept, a deleted conversation is marked until the purge). The screen half:
+  a void is asked in a confirmation that needs its reason (`bills.test.tsx`). Bulk voids, with their typed
+  confirmation, come with a bulk void. **Left:** favourites, recents, saved views and comments.)
 - [ ] 3.4 The live-update feed with `If-Match` conflicts, clipboard fidelity, the polite status region, no optimistic money (lint rule) and no re-rounding. Tests `// req: FR-UX-19`, `// req: FR-UX-20`, `// req: FR-UX-21`, `// req: FR-UX-22` and `// req: RND-DISPLAY`, plus the in-app notification entry `// req: FR-UX-15` (P1 part)
   (6 Nov 2026, PRD-001 rev 0.193, clipboard fidelity: `installClipboard` (started with the app) rewrites a copy of text on
   screen so each displayed amount is a plain decimal with an ASCII minus (`clipboardText`), and reads a paste into any
@@ -102,6 +148,11 @@
   sources and fails on a query-cache write that does not name the server's answer it stores ("the server's answer
   (FR-UX-22)" on its line) and on an `onMutate` that writes the cache. **Left:** the live-update feed (FR-UX-19) and one
   polite status region for the shell's counts (FR-UX-21).)
+  (18 Nov 2026, G4-077 for the launch gate: `src/freshness.ts`, started with the app: a page back after being hidden,
+  offline or asleep (its timers stopped) for longer than the feed window, 5 minutes [proposed], reloads its state
+  once: every query re-reads through the API, which lists only what the person may still see, and each list is
+  replaced, so nothing shows twice. Test `freshness.test.tsx`. **Left:** FR-UX-19's change feed itself (S), with
+  its resume cursor, which this reload stands in for until it is built.)
 
 ## 4. Modes and help
 
@@ -113,18 +164,74 @@
   preferences operation exists. **Left:** storing it on the server, the Administrator's default per role, the
   disclosure of hidden fields and the mode-parity test.)
 
+  (17 Nov 2026, for the launch gate: nothing silently hidden on records (FR-UX-25). `components/AdvancedDetails.tsx`:
+  in Basic mode, "Has advanced details (N)" lists read-only the values a record has in fields only Expert shows, with
+  "Open in Expert mode"; nothing in Expert mode. The invoice, credit note and recurring invoice lines (discount, spread,
+  dimension values), the bill lines (spread, dimension values) and the claim's receipts (dimension values) use it: such
+  a field is Expert's in Basic now even with a value, unless its account or category requires it or it carries an
+  error to fix. Guides `invoices.md`, `bills.md`, `claims-my-claims.md`, compiled. Tests `AdvancedDetails.test.tsx`,
+  `invoices.test.tsx`.)
 - [ ] 4.2 Tooltips, `/help` built from `docs/user-guide/`, context-aware help, the first-run tour, practice in the sample company, and the FR-UX-41 banner from the review register. Tests `// req: FR-UX-30`, `// req: FR-UX-32`, `// req: FR-UX-33` (guide half), `// req: FR-UX-34`, `// req: FR-UX-36` and `// req: FR-UX-41`
   (20 Oct 2026, in part: the FR-UX-41 banner, `components/ReviewBanner.tsx`, reads the review register at build time
   and shows on each Settings page whose screen it lists while the area is pending. Test `ReviewBanner.test.tsx`.
   **Left:** the banner on the other screens as they are built, `/help`, context-aware help, the tour and practice.)
+  (17 Nov 2026, the tour's server half, for the launch gate: `user_help_state` (migration 000441), append-only and
+  audited, under row-level security and with the members' foreign key; `GET /v1/help-state` (offered until answered,
+  offered again to resume where it stopped) and `PUT /v1/help-state/tour` (started at a step, finished or skipped;
+  If-Match, Idempotency-Key, preview), each person's own (`HLP-01` for a caller that is not a person). Test
+  `TestTheTourSavesOnlyItsOwnState`: every save writes the state and its audit event and nothing else (G4-104).
+  **Left:** the tour itself in the web app and its end-to-end test per role (QA-UI-06).)
+  (18 Nov 2026, the tour in the web app: `tour/Tour.tsx` is MASTER.md §12's walkthrough (a non-modal spotlight and
+  caption card on the real interface, focus to its title, → and ← and the buttons, Esc ends it, each step announced,
+  focus back where it was; no movement with reduced motion); `tour/steps.ts` a variant per role group (founder,
+  accountant, employee, approver, board viewer), at most seven steps on elements marked `data-tour`, a hidden one
+  skipped; `tour/TourHost.tsx` offers it where the person lands until they answer, offers to resume one left part-way,
+  runs it on Home for those who have it, and saves each step, finished or skipped, its only write. Help › Take the tour
+  again replays it. Guide `help.md` (Take the tour), compiled. Tests `tour.test.tsx`, `e2e/tour.spec.ts`.)
+  (17 Nov 2026, the user guide, for the launch gate: `/help` builds every page of `docs/user-guide/` into the web app
+  (`help/guide.ts`, at build time; the web image copies the guide and the release notes), lists those the person's
+  roles call for, Basic ones in Basic mode with how many Expert adds, and searches them as they type; `/help/$key`
+  renders a page's Markdown as elements (`help/markdown.tsx`: headings with their anchors, nested lists, tables,
+  notes, code; a link to another page opens it, one to an outside site a new tab, any other its words), with its
+  sections in a sticky contents column and a print without the shell; `/help/whats-new` is the release notes. Help ›
+  User guide opens the page of the screen the person is on, from the registry's guide keys (FR-UX-33's guide half;
+  `help/links.ts`, kept apart so the shell does not load the pages). Guide `help.md`, compiled into `help.guide`.
+  Tests `help.test.tsx` (`// req: FR-UX-32`, `// req: FR-UX-33`). **Left:** the glossary and the keyboard shortcuts'
+  pages, which wait for their sources; screenshots from the end-to-end tests; "Try it in the sample company"; the
+  tour and practice.)
 
 ## 5. Devices, accessibility and budgets
 
-- [ ] 5.1 The three device classes and layouts from 320 px, portrait and landscape, with no horizontal scroll. Tests `// req: FR-UX-37` and `// req: experience/devices-and-motion <class> device class` at the five frames (QA-UI-07)
+- [x] 5.1 The three device classes and layouts from 320 px, portrait and landscape, with no horizontal scroll. Tests `// req: FR-UX-37` and `// req: experience/devices-and-motion <class> device class` at the five frames (QA-UI-07)
+  (17 Nov 2026: `e2e/devices.spec.ts` opens each shell screen at the five reference frames, the 320 px small phone and
+  four landscapes: no sideways page scroll, the class's own navigation (sidebar, rail, or the bottom bar of four and
+  More) and the same safety information in every class; on a touch screen every control's hit area is 44 × 44 px;
+  folding, unfolding and rotating keep the page, its filters, the scroll position and an unsaved draft; and on a screen
+  that spans a hinge a list and its detail split at it (`shell/hinge.ts`, from the Viewport Segments API). Built for it:
+  the compact header's mode pill, More always in the bottom bar with the account (appearance, About, sign out) the
+  compact header has no room for, scroll padding that keeps a focused field clear of the header and the bottom bar,
+  and 44 px targets on coarse pointers (app.css); twelve radios and checkboxes had the 18 px box's class as their
+  label, now a row whose whole label is the target. **Left:** visual snapshots (QA-UI-07's hashes, p1-launch-readiness
+  5.4); devices without the Viewport Segments API split by CSS alone.)
 - [ ] 5.2 WCAG 2.2 AA with axe on every shell screen, keyboard and focus tests, focus not obscured, dragging alternatives and accessible authentication. Tests `// req: NFR-A11Y-01` through `// req: NFR-A11Y-05`
+  (17 Nov 2026, in part, for the launch gate: NFR-A11Y-03 to 05. `e2e/focus.spec.ts` tabs through Home, the invoices,
+  a statement and Settings at the desktop and phone frames, and through Home with the AI panel open: no focused control
+  is hidden by the sticky header, the bottom bar or the AI panel (by what is drawn at its centre, so stacking counts)
+  or by a toast (by covering it entirely); a planted toast must be caught. `draggingAlternatives.test.ts`: nothing is
+  done only by dragging (a drop zone offers the file chooser; a drag that moves or resizes names its alternative, none
+  yet). `accessibleAuthentication.test.tsx`: the way in leaves paste and password managers alone and asks no
+  cognitive test, the step-up offers a passkey and a new sign-in, a pasted recovery code is taken, and a refused
+  submit's summary takes focus. **Left:** NFR-A11Y-01 and 02's axe pass on every shell screen and keyboard tests; the
+  sticky first column's scrolling when the grid is built.)
 - [ ] 5.3 Externalised strings with per-user formats and the organisation's time zone, and the page-load, interaction and bundle budgets measured in CI. Tests `// req: NFR-L10N-01`, `// req: NFR-PERF-UI-01` and `// req: NFR-PERF-UI-03`
 
 ## 6. Screens
 
+  (18 Nov 2026, the page-load and interaction budgets, for the launch gate (NFR-PERF-UI-01): `e2e/performance.spec.ts`,
+  in Chrome over an emulated 4G link (9 Mbps down, 1.5 Mbps up, 85 ms) on the built app with fixture answers: the
+  75th percentile Largest Contentful Paint of eight cold loads of Home, the invoices, the Inbox and Settings under 1.5 s,
+  the slowest interaction's next paint under 200 ms (the mode switch, the palette, the Help menu), and a change of route
+  whose data is cached under 300 ms; it logs what it measured (locally, at half the CPU: 1.3 s, 48 ms, 35 ms). **Left:**
+  NFR-L10N-01's externalised strings and per-user formats.)
 - [ ] 6.1 Build the 18 shell screens as designed. Each has help keys, a `docs/user-guide/` page compiled into `kb/`, and a tour step where it is on the first-run path
 - [ ] 6.2 Finish with `make check`, `make test` and `make test-e2e`

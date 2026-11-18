@@ -1,6 +1,6 @@
 // Command executor carries out approved AI proposals (§9.3) under its own service identity and
 // database role: POST /tasks accepts only the executor class's tasks (Proposal executor queue
-// isolation), and runs only work it finds approved in the database. The proposal kinds arrive in P1.
+// isolation), and runs only work it finds approved in the database (AI-11, AI-P5).
 package main
 
 import (
@@ -12,6 +12,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/proposal"
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
 
@@ -24,7 +25,10 @@ func main() {
 		}
 		s.AddReadiness("database", kit.Store.Ping)
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassExecutor, Store: kit.Store, Tokens: kit.Tokens,
-			Clock: deps.Clock, Holder: app.Holder("executor"), Kinds: map[string]outbox.Work{}})
+			Clock: deps.Clock, Holder: app.Holder("executor"), Kinds: map[string]outbox.Work{
+				proposal.ExecutorKind: proposal.Executor{Store: kit.Store, Catalogue: proposal.Default(), Commands: proposal.Release, Clock: deps.Clock,
+					Outbox: outbox.Dispatcher{Store: kit.Store, Queue: kit.Queue, Clock: deps.Clock}}.Work,
+			}})
 		return nil
 	}))
 }

@@ -7,9 +7,11 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"math/big"
 	"net/http"
 	"strings"
 	"testing"
@@ -57,6 +59,7 @@ func (e *env) prepareTenantExports() {
 // req: FR-MIG-04
 // req: AUD-05
 // req: FM-1
+// req: QA-RPT-03
 // asvs: V8.2.1, V14.2.1
 func TestTheFullExportIsDualControlledAndSavedByItsRequester(t *testing.T) {
 	e := newEnv(t)
@@ -140,6 +143,50 @@ func TestTheFullExportIsDualControlledAndSavedByItsRequester(t *testing.T) {
 		if hex.EncodeToString(s[:]) != mf.SHA256 {
 			t.Errorf("%s does not match the manifest", mf.Path)
 		}
+	}
+	// QA-RPT-03: the export's ledger reconciles on its own. Each entry's lines, in the base currency, add up to nothing;
+	// every line's entry is in journal_entry.csv; and the bill's 109.00 to pay is there.
+	table := func(name string) (map[string]int, [][]string) {
+		t.Helper()
+		records, err := csv.NewReader(strings.NewReader(files["tables/"+name+".csv"])).ReadAll()
+		if err != nil || len(records) < 2 {
+			t.Fatalf("tables/%s.csv: %v, %d rows", name, err, len(records))
+		}
+		col := map[string]int{}
+		for i, h := range records[0] {
+			col[h] = i
+		}
+		return col, records[1:]
+	}
+	ecol, entries := table("journal_entry")
+	known := map[string]bool{}
+	for _, r := range entries {
+		known[r[ecol["id"]]] = true
+	}
+	lcol, lines := table("journal_line")
+	perEntry, bill := map[string]*big.Rat{}, false
+	for _, r := range lines {
+		v, ok := rat(r[lcol["base_amount"]])
+		if !ok {
+			t.Fatalf("a line's base amount is not a decimal: %v", r)
+		}
+		id := r[lcol["entry_id"]]
+		if !known[id] {
+			t.Errorf("a line's entry %s is not in journal_entry.csv", id)
+		}
+		if perEntry[id] == nil {
+			perEntry[id] = new(big.Rat)
+		}
+		perEntry[id].Add(perEntry[id], v)
+		bill = bill || new(big.Rat).Abs(v).Cmp(big.NewRat(109, 1)) == 0
+	}
+	for id, s := range perEntry {
+		if s.Sign() != 0 {
+			t.Errorf("entry %s's lines add up to %s in the export", id, s.FloatString(4))
+		}
+	}
+	if len(perEntry) != len(entries) || !bill {
+		t.Errorf("the export holds %d entries with lines and %d entries; the bill's 109.00 found: %v", len(perEntry), len(entries), bill)
 	}
 	if !strings.Contains(files["tables/payee_bank_account.csv"], `"0123456789"`) {
 		t.Errorf("the vendor's bank account number in clear: %s", files["tables/payee_bank_account.csv"])

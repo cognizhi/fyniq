@@ -43,6 +43,7 @@ type SessionInfo struct {
 	StepUpMethod    string     `json:"step_up_method,omitempty" enum:"sign_in,passkey,recovery" doc:"How your session last passed a second factor: at sign-in (your authenticator app), with a passkey, or by recovering your account (SEC-35); absent when it passed none, which leaves it only reading itself, stepping up and recovering (SEC-01, rev 0.43)." example:"sign_in"`
 	CoolingOffUntil *time.Time `json:"cooling_off_until,omitempty" doc:"Until when your account cools off after its recovery (SEC-35): approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait until then. Absent when it does not." example:"2026-11-08T09:00:00Z"`
 	Features        *Features  `json:"features,omitempty" doc:"The organisation's feature switches today (FR-ORG-06); absent when you are a member of none."`
+	Motion          string     `json:"motion,omitempty" enum:"on,off" doc:"The organisation's motion (FR-UX-38): off shows every screen's final state at once for everyone, whatever each person chose; absent when you are a member of none." example:"on"`
 }
 
 // Features are the organisation's feature switches on a day (FR-ORG-06): the web app shows only what is on.
@@ -70,6 +71,23 @@ func featuresOn(ctx context.Context, a *API, u storage.UnitOfWork) (*Features, e
 	}
 	return &Features{MultiCurrency: on("features.multi_currency"), Payroll: on("features.payroll"), Projects: on("features.projects"),
 		Portals: on("features.portals"), AIAssistant: on("features.ai_assistant")}, nil
+}
+
+// motionOn is the organisation's motion today (FR-UX-38): on unless an Administrator turned it off.
+func motionOn(ctx context.Context, a *API, u storage.UnitOfWork) (string, error) {
+	today, err := orgToday(ctx, a, u)
+	if err != nil {
+		return "", err
+	}
+	changes, err := u.Settings().Changes(ctx, "appearance.motion")
+	if err != nil {
+		return "", err
+	}
+	d, _ := settings.Lookup("appearance.motion")
+	if settings.On(d, changes, today).Value == "false" {
+		return "off", nil
+	}
+	return "on", nil
 }
 
 // RoleName is a role of PRD-001 §7.1, as the API names it.
@@ -136,7 +154,10 @@ func registerSession(a *API) {
 			out.OrganisationID = p.Organisation.String()
 			err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 				var err error
-				out.Features, err = featuresOn(ctx, a, u)
+				if out.Features, err = featuresOn(ctx, a, u); err != nil {
+					return err
+				}
+				out.Motion, err = motionOn(ctx, a, u)
 				return err
 			})
 			if err != nil {

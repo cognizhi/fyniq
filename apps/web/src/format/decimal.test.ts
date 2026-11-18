@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isZero, minus, negate, sign, sum, typed } from "./decimal";
+import { isZero, minus, negate, percent, sign, sum, typed } from "./decimal";
 
 // req: FR-UX-20
 describe("amounts as typed", () => {
@@ -40,5 +40,17 @@ describe("exact sums", () => {
     expect(isZero("-0.0")).toBe(true);
     expect(negate("0.00")).toBe("0.00");
     expect(negate("-5")).toBe("5");
+  });
+});
+
+// req: AI-77
+describe("a share of a budget", () => {
+  it("is the whole percentage, rounded down, exactly", () => {
+    expect(percent("120.86", "300.00")).toBe(40);
+    expect(percent("27278100", "60000000")).toBe(45);
+    expect(percent("0.0081", "0.01")).toBe(81);
+    expect(percent("8", "10.0000")).toBe(80);
+    expect(percent("12", "10")).toBe(120);
+    expect(percent("5", "0")).toBe(0);
   });
 });
