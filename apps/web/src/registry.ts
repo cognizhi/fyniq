@@ -580,6 +580,8 @@ export const actions = [
   { kind: "action", id: "batch.release", mode: "basic", help: "batch.release", guide: "purchases.payment-batches#release-a-batch" },
   { kind: "action", id: "batch.release-break-glass", mode: "basic", help: "batch.release-break-glass", guide: "settings.team-mode#release-a-batch-under-break-glass" },
   { kind: "action", id: "batch.download", mode: "basic", help: "batch.download", guide: "purchases.payment-batches#pay-it-in-the-bank" },
+  { kind: "action", id: "batch.download-wise", mode: "basic", help: "batch.download-wise", guide: "purchases.payment-batches#pay-it-in-the-bank" },
+  { kind: "action", id: "batch.download-dbs", mode: "basic", help: "batch.download-dbs", guide: "purchases.payment-batches#pay-it-in-the-bank" },
   { kind: "action", id: "batch.cancel", mode: "basic", help: "batch.cancel", guide: "purchases.payment-batches#cancel-a-batch" },
   { kind: "action", id: "batch.remittance-again", mode: "basic", help: "batch.remittance-again", guide: "purchases.payment-batches#paid-and-remittance-advice" },
   { kind: "action", id: "order.save", mode: "basic", help: "order.save", guide: "purchases.orders#raise-an-order" },
@@ -645,6 +647,7 @@ export const actions = [
   // Tracking and paying bills (FR-AP-13): the board, the calendar, planning and the reminders are Basic.
   // The categorise queue (FR-BNK-06…09; p1-bank-import-reconcile task 10.3): one line at a time is Basic; the grid view,
   // splitting a line, transfers, matching to chosen documents and suspense are Expert (§7.8).
+  { kind: "action", id: "bank-account.payment-file", mode: "basic", help: "bank-account.payment-file", guide: "banking.accounts#the-file-its-payment-batches-give" },
   { kind: "action", id: "banking.categorise-grid", mode: "expert", help: "banking.categorise-grid", guide: "banking.accounts#categorise-the-waiting-lines" },
   { kind: "action", id: "bank-line.split", mode: "expert", help: "bank-line.split", guide: "banking.accounts#categorise-the-waiting-lines" },
   { kind: "action", id: "bank-line.transfer", mode: "expert", help: "bank-line.transfer", guide: "banking.accounts#categorise-the-waiting-lines" },
