@@ -3190,6 +3190,13 @@ components:
           examples:
             - this figure
           type: string
+        sources:
+          description: "With words that explain how Fyniq works: the guide pages they come from, which you can open (AI-51)."
+          items:
+            $ref: "#/components/schemas/AISource"
+          type:
+            - array
+            - "null"
         text:
           description: Words, in Fyniq's Markdown subset.
           examples:
@@ -3208,6 +3215,40 @@ components:
       required:
         - switch
         - budgets
+      type: object
+    AISource:
+      additionalProperties: false
+      properties:
+        anchor:
+          description: The heading it comes from.
+          examples:
+            - who-approves
+          type: string
+        draft:
+          description: true when the guide page is still awaiting review (the guide shows it with its banner, FR-UX-41).
+          examples:
+            - false
+          type: boolean
+        guide:
+          description: The guide page's key.
+          examples:
+            - claims.approve-team
+          type: string
+        href:
+          description: Where it opens in the web app.
+          examples:
+            - /help/claims.approve-team#who-approves
+          type: string
+        title:
+          description: Its title.
+          examples:
+            - Approving your team's claims
+          type: string
+      required:
+        - guide
+        - title
+        - anchor
+        - href
       type: object
     AITaskTypeList:
       additionalProperties: false
@@ -3372,6 +3413,11 @@ components:
           items:
             $ref: "#/components/schemas/AISegment"
           type: array
+        sources:
+          description: The guide pages the answer's explanations come from (AI-51), which you can open.
+          items:
+            $ref: "#/components/schemas/AISource"
+          type: array
         status:
           description: answering until it ends; refused with the code of what stopped it; failed when the AI service did not finish.
           enum:
@@ -3394,6 +3440,7 @@ components:
         - status
         - segments
         - cited
+        - sources
         - regenerated
         - withheld
         - asked_at

@@ -153,7 +153,7 @@ func TestTheToolLoopReadsThroughTheAPI(t *testing.T) {
 	if len(out.Facts) != 3 || calc == nil || calc.Value != "25000.00" || !slices.Equal(calc.Inputs, []string{revenue.ID, costs.ID}) {
 		t.Errorf("the facts: %+v", out.Facts)
 	}
-	if out.Prompt != "chat@3" || out.PromptSHA256 != p.SHA256 || len(out.ToolCalls) != 3 || out.ToolCalls[2].Tool != "calc" || out.ToolCalls[0].Facts != 2 {
+	if out.Prompt != "chat@4" || out.PromptSHA256 != p.SHA256 || len(out.ToolCalls) != 3 || out.ToolCalls[2].Tool != "calc" || out.ToolCalls[0].Facts != 2 {
 		t.Errorf("the record: %+v", out)
 	}
 
@@ -334,12 +334,12 @@ func TestRejectionsAreReadAsData(t *testing.T) {
 // told, named and hashed as its file is; a file not named <agent>@<version>.md is refused.
 // req: AI-24
 func TestThePromptIsTheLatestVersionHashed(t *testing.T) {
-	b, err := os.ReadFile("../../contracts/ai/prompts/chat@3.md")
+	b, err := os.ReadFile("../../contracts/ai/prompts/chat@4.md")
 	if err != nil {
 		t.Fatal(err)
 	}
 	sum := sha256.Sum256(b)
-	if p := prompt(t); p.Version != 3 || p.Text != string(b) || p.SHA256 != hex.EncodeToString(sum[:]) || p.Name() != "chat@3" {
+	if p := prompt(t); p.Version != 4 || p.Text != string(b) || p.SHA256 != hex.EncodeToString(sum[:]) || p.Name() != "chat@4" {
 		t.Errorf("chat's prompt: %s %d", p.Name(), len(p.Text))
 	}
 	fsys := fstest.MapFS{"prompts/chat@1.md": {Data: []byte("one")}, "prompts/chat@12.md": {Data: []byte("twelve")}, "prompts/other@3.md": {Data: []byte("x")}}

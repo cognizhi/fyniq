@@ -645,3 +645,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-18] compile | docs/user-guide/approvals.md → approvals.decide (FM-6: unusual items in the weekly review, rev 0.287)
 
 ## [2026-11-18] compile | docs/user-guide/ai-activity.md -> settings.ai-activity (an answer's know-how page versions in the activity log, AI-12, AI-51)
+
+## [2026-11-18] compile | docs/user-guide/ai-assistant.md -> ai.assistant (ask how something works: know-how answers with chips to guide pages, AI-51, AI-53)

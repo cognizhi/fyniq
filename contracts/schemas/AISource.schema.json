@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "anchor": {
+      "description": "The heading it comes from.",
+      "examples": [
+        "who-approves"
+      ],
+      "type": "string"
+    },
+    "draft": {
+      "description": "true when the guide page is still awaiting review (the guide shows it with its banner, FR-UX-41).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "guide": {
+      "description": "The guide page's key.",
+      "examples": [
+        "claims.approve-team"
+      ],
+      "type": "string"
+    },
+    "href": {
+      "description": "Where it opens in the web app.",
+      "examples": [
+        "/help/claims.approve-team#who-approves"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "Its title.",
+      "examples": [
+        "Approving your team's claims"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "guide",
+    "title",
+    "anchor",
+    "href"
+  ],
+  "title": "AISource",
+  "type": "object"
+}

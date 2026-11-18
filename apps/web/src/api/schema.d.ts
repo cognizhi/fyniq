@@ -17630,6 +17630,8 @@ export interface components {
              * @example this figure
              */
             missing?: string;
+            /** @description With words that explain how Fyniq works: the guide pages they come from, which you can open (AI-51). */
+            sources?: components["schemas"]["AISource"][] | null;
             /**
              * @description Words, in Fyniq's Markdown subset.
              * @example Cash lasts
@@ -17641,6 +17643,33 @@ export interface components {
             budgets: components["schemas"]["AIBudgetList"];
             /** @description The AI switch, the setting features.ai_assistant: switched on only with a second approver; switched off at once (AI-13). */
             switch: components["schemas"]["Setting"];
+        };
+        AISource: {
+            /**
+             * @description The heading it comes from.
+             * @example who-approves
+             */
+            anchor: string;
+            /**
+             * @description true when the guide page is still awaiting review (the guide shows it with its banner, FR-UX-41).
+             * @example false
+             */
+            draft?: boolean;
+            /**
+             * @description The guide page's key.
+             * @example claims.approve-team
+             */
+            guide: string;
+            /**
+             * @description Where it opens in the web app.
+             * @example /help/claims.approve-team#who-approves
+             */
+            href: string;
+            /**
+             * @description Its title.
+             * @example Approving your team's claims
+             */
+            title: string;
         };
         AITaskTypeList: {
             /** @description Every task type of the release, a small fixed set: not a paged list. */
@@ -17751,6 +17780,8 @@ export interface components {
              */
             regenerated: boolean;
             segments: components["schemas"]["AISegment"][];
+            /** @description The guide pages the answer's explanations come from (AI-51), which you can open. */
+            sources: components["schemas"]["AISource"][];
             /**
              * @description answering until it ends; refused with the code of what stopped it; failed when the AI service did not finish.
              * @example answered
