@@ -26,7 +26,7 @@ import (
 // access tokens of an hour (AI-38) for the API's audience. It acts for the member who made it, never beyond that member's
 // roles, narrowed to its scopes and networks; it expires within 90 days; and because a token may be pasted into an AI
 // tool, its class is `agent` until the Owner reclasses it as `integration` with a second approver: an agent only reads
-// and proposes (AI-34), whatever its scopes. A member makes, lists and revokes their own; an Administrator lists and
+// (and proposes, once the proposal operations arrive: AI-34), whatever its scopes. A member makes, lists and revokes their own; an Administrator lists and
 // revokes any, and asks to reclass one. Only a person signed in to Fyniq and stepped up makes one: no token, integration
 // or AI makes another credential. Revoking is never held back, and the worker deletes the client from the OAuth server.
 
@@ -39,7 +39,7 @@ type PersonalAccessToken struct {
 	ID              string          `json:"id" format:"uuid" example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d50"`
 	ClientID        string          `json:"client_id" doc:"The OAuth client ID: the client_id of its token requests (client_credentials grant)." example:"6f1c2b9e-3d4a-4c5b-8e7f-0a1b2c3d4e5f"`
 	Name            string          `json:"name" doc:"Its name, for its owner." example:"Claude Code on my laptop"`
-	Class           string          `json:"class" enum:"agent,integration" doc:"Its client class (AI-34): agent until the Owner reclasses it as integration with a second approver. An agent only reads and proposes." example:"agent"`
+	Class           string          `json:"class" enum:"agent,integration" doc:"Its client class (AI-34): agent until the Owner reclasses it as integration with a second approver. An agent only reads (and proposes, once the proposal operations arrive)." example:"agent"`
 	OwnerID         string          `json:"owner_id" format:"uuid" doc:"The member it acts for: it never does more than this member may do now." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
 	Scopes          []ClientScope   `json:"scopes" nullable:"false" doc:"Its narrow scopes: fyniq.read.<area> views an area, fyniq.write.<area> also prepares and posts in it once it is an integration. No scope approves or releases."`
 	Networks        []ClientNetwork `json:"networks" nullable:"false" doc:"The networks it may call from, as CIDR prefixes; none: anywhere."`
@@ -206,7 +206,7 @@ func registerPersonalTokens(a *API) {
 			"server's token endpoint for access tokens (grant_type=client_credentials, the client_id and secret as HTTP Basic credentials, and " +
 			"the audience returned here); each lives an hour. It acts for you and never does more than you may now; its scopes narrow that to " +
 			"whole areas, and no scope approves or releases. It expires within 90 days (30 when you name no expiry), and give its networks where " +
-			"you can. Its class is `agent` because a token may be pasted into an AI tool: an agent reads and proposes and cannot write, " +
+			"you can. Its class is `agent` because a token may be pasted into an AI tool: an agent reads (and, once the proposal operations arrive, proposes) and cannot write, " +
 			"whatever its scopes, until the Owner reclasses it as an integration with a second approver (requestPersonalAccessTokenReclass). " +
 			"Every field is checked at once. Side effects: the OAuth client and its record, and the audit event api_client.registered (never " +
 			"the secret). Needs a person signed in to Fyniq with step-up: an OAuth client, a token or the AI is refused, so no credential " +

@@ -29,8 +29,8 @@ arrive in P1's wave 6 (`p1-mcp-first-party`, `p1-ai-proposals`). Until then an a
   `createPersonalAccessToken` and gets a `client_id` and a `client_secret`, shown once. Exchange them at the OAuth
   server's token endpoint (client-credentials grant, the two as HTTP Basic credentials, the `audience` the answer names)
   for access tokens of an hour. It acts for that person, within its scopes, its networks and an expiry of at most 90
-  days. **A personal access token is an agent**, because it may be pasted into an AI tool: it reads and proposes, and
-  every other write is refused, whatever its scopes. Only the Owner, with a second approver, may reclass one as an
+  days. **A personal access token is an agent**, because it may be pasted into an AI tool: it reads (and proposes, once the
+  proposal operations arrive), and every other write is refused, whatever its scopes. Only the Owner, with a second approver, may reclass one as an
   integration (`requestPersonalAccessTokenReclass`). It cannot make another credential.
 - **Read with the `GET` operations** in the [reference](reference.md):
   - lists come a page at a time: send `next_cursor` back as `cursor` until it is absent;

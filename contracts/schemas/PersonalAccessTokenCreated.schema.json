@@ -18,7 +18,7 @@
       "type": "string"
     },
     "class": {
-      "description": "Its client class (AI-34): agent until the Owner reclasses it as integration with a second approver. An agent only reads and proposes.",
+      "description": "Its client class (AI-34): agent until the Owner reclasses it as integration with a second approver. An agent only reads (and proposes, once the proposal operations arrive).",
       "enum": [
         "agent",
         "integration"

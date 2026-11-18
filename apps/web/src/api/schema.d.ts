@@ -13220,7 +13220,7 @@ export interface paths {
         put?: never;
         /**
          * Create a personal access token
-         * @description Creates your own personal access token (FR-INT-02, AI-34): a client of Fyniq's OAuth server whose secret is generated there, shown to you once in this answer and kept only as a hash; Fyniq never holds it. With the client_id and the secret you ask the OAuth server's token endpoint for access tokens (grant_type=client_credentials, the client_id and secret as HTTP Basic credentials, and the audience returned here); each lives an hour. It acts for you and never does more than you may now; its scopes narrow that to whole areas, and no scope approves or releases. It expires within 90 days (30 when you name no expiry), and give its networks where you can. Its class is `agent` because a token may be pasted into an AI tool: an agent reads and proposes and cannot write, whatever its scopes, until the Owner reclasses it as an integration with a second approver (requestPersonalAccessTokenReclass). Every field is checked at once. Side effects: the OAuth client and its record, and the audit event api_client.registered (never the secret). Needs a person signed in to Fyniq with step-up: an OAuth client, a token or the AI is refused, so no credential makes another. It takes no Idempotency-Key and no preview: a stored answer would keep the secret at rest. On the never-list for the AI and MCP (§9.6).
+         * @description Creates your own personal access token (FR-INT-02, AI-34): a client of Fyniq's OAuth server whose secret is generated there, shown to you once in this answer and kept only as a hash; Fyniq never holds it. With the client_id and the secret you ask the OAuth server's token endpoint for access tokens (grant_type=client_credentials, the client_id and secret as HTTP Basic credentials, and the audience returned here); each lives an hour. It acts for you and never does more than you may now; its scopes narrow that to whole areas, and no scope approves or releases. It expires within 90 days (30 when you name no expiry), and give its networks where you can. Its class is `agent` because a token may be pasted into an AI tool: an agent reads (and, once the proposal operations arrive, proposes) and cannot write, whatever its scopes, until the Owner reclasses it as an integration with a second approver (requestPersonalAccessTokenReclass). Every field is checked at once. Side effects: the OAuth client and its record, and the audit event api_client.registered (never the secret). Needs a person signed in to Fyniq with step-up: an OAuth client, a token or the AI is refused, so no credential makes another. It takes no Idempotency-Key and no preview: a stored answer would keep the secret at rest. On the never-list for the AI and MCP (§9.6).
          */
         post: operations["createPersonalAccessToken"];
         delete?: never;
@@ -42976,7 +42976,7 @@ export interface components {
         };
         PersonalAccessToken: {
             /**
-             * @description Its client class (AI-34): agent until the Owner reclasses it as integration with a second approver. An agent only reads and proposes.
+             * @description Its client class (AI-34): agent until the Owner reclasses it as integration with a second approver. An agent only reads (and proposes, once the proposal operations arrive).
              * @example agent
              * @enum {string}
              */
@@ -43092,7 +43092,7 @@ export interface components {
              */
             audience: string;
             /**
-             * @description Its client class (AI-34): agent until the Owner reclasses it as integration with a second approver. An agent only reads and proposes.
+             * @description Its client class (AI-34): agent until the Owner reclasses it as integration with a second approver. An agent only reads (and proposes, once the proposal operations arrive).
              * @example agent
              * @enum {string}
              */

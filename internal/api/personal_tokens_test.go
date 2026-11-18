@@ -18,6 +18,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/apiclient"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	revoke "github.com/cognizhi/fyniq/internal/tokens"
 )
@@ -262,6 +263,53 @@ func TestPersonalAccessTokens(t *testing.T) {
 	}
 	if status, _ := tokenOf(secret, "fyniq.read.accounting", apiAudience); status == http.StatusOK {
 		t.Error("Hydra still issues tokens to a removed client")
+	}
+}
+
+// A personal access token never does more than its member: the same token and scopes read the chart for a member who may
+// view it and are refused for an Employee, who may not, although the AI column of Appendix D allows the view (AI-34, the
+// intersection of the member's roles and the AI's).
+// req: AI-34
+// req: FR-INT-02
+// asvs: V8.2.1, V8.3.1
+func TestAPersonalAccessTokenNeverExceedsItsMember(t *testing.T) {
+	s := startOAuth(t, 0)
+	e := s.e
+	e.api.deps.OAuthClients, e.api.deps.APIAudience = s.admin, apiAudience
+	api := tokenAPI(t, s)
+	member := matrixMemberUser(e) // an Employee, who may not view the chart
+	read := func(user uuid.UUID) response {
+		t.Helper()
+		id, secret, err := s.admin.RegisterPersonal(context.Background(), ports.PersonalRegistration{Name: "Member's", Class: authn.ClassAgent, Audience: apiAudience,
+			Scopes: []string{"fyniq.read.accounting"}, TokenLifespan: time.Hour})
+		if err != nil {
+			t.Fatal(err)
+		}
+		e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.APIClients().Create(ctx, storage.APIClient{Kind: storage.APIClientPersonal, ClientID: id, Name: "Member's", Class: authn.ClassAgent, OwnerID: user,
+				Scopes: []string{"fyniq.read.accounting"}, ExpiresAt: e.clock.Now().AddDate(0, 0, 30), CreatedBy: "user:" + user.String(), CreatedAt: e.clock.Now()})
+			return err
+		})
+		status, out := patToken(t, s, id, secret, "fyniq.read.accounting", apiAudience)
+		tok, _ := out["access_token"].(string)
+		if status != http.StatusOK || tok == "" {
+			t.Fatalf("the token: %d", status)
+		}
+		return api.call(http.MethodGet, "/v1/accounts", tok, nil)
+	}
+	if r := read(member); r.Status != http.StatusForbidden || r.problemCode() != CodeForbidden {
+		t.Fatalf("a token of an Employee, who may not view the chart: %d %s", r.Status, r.Raw)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error { // the member is given a role that may view it
+		m, err := u.Members().Membership(ctx, member)
+		if err != nil {
+			return err
+		}
+		_, err = u.Members().Assign(ctx, m.ID, "accountant", nil)
+		return err
+	})
+	if r := read(member); r.Status != http.StatusOK {
+		t.Errorf("a token of the same member once they may view the chart: %d %s", r.Status, r.Raw)
 	}
 }
 
