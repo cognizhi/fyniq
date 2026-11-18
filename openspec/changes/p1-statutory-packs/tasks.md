@@ -28,7 +28,8 @@
   differential now reaches both through `cmd/scenario-run`'s `sales`, `bank`, `purchases`, `claims` and `assets` shapes:
   the oracle draws `gst.per_line` (`strategies_p1.py`), the engine side reads it (`internal/differential/p1_sales.go`), and a run of 500 scenarios on the fixed seed 20261118
   (`FYNIQ_DIFFERENTIAL_EXAMPLES=500`, `--hypothesis-seed=20261118`, sources `bank,purchases,sales,claims,assets,statements`)
-  found no disagreement between the engine and the oracle.)
+  and a run of 300 on the Makefile's default sources on the same seed found none either; 51 of 150 drawn bank and sales scenarios
+  set `per_line`.)
 
 ## 3. Activation
 
