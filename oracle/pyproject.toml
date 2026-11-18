@@ -17,14 +17,14 @@ dependencies = [
 dev = ["pytest==9.1.1"]
 
 [build-system]
-requires = ["hatchling==1.32.4"]
+requires = ["hatchling==1.33.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/oracle"]
 
 [tool.uv]
-exclude-newer = "2026-10-01T00:00:00Z"
+exclude-newer = "2026-11-04T00:00:00Z"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
