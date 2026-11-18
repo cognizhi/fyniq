@@ -4,14 +4,14 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, AI, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:a31445d3c111689fb367f92bd788f988517bc4431584471854c661b80f71b77c
+  - docs/user-guide/organisation-settings.md sha256:9782f69f31c06a27a5dfad93d535af8875bd9872bd15bfae5ccd63de2b999df2
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-17
+compiled_at: 2026-11-18
 aliases:
   - company secretary assistant
   - scheduled agent
@@ -28,6 +28,8 @@ aliases:
   - turn off animations
   - motion
   - data protection officer
+  - personal access token
+  - API token
   - DPO contact
   - GST registration
   - GST registration number
@@ -348,6 +350,14 @@ The calendar itself: [[compliance.calendar]].
 - Changing the cap needs a second approver.
 
 (src: docs/user-guide/organisation-settings.md#break-glass-payment-cap)
+
+## Personal access tokens
+
+- A personal access token is a developer's own credential for Fyniq's API: it acts for the member who made it, never does more than that member may, and expires within 90 days. Because it may be pasted into an AI tool, it only reads until an Owner, with a second approver, makes it an integration.
+- **Personal access tokens**: off unless changed. While it is off, no member can make a token: asking for one is refused with the code `API-CLIENT-09`, which says to ask an Owner. Turning it on needs a second approver; turning it off takes effect at once and stops anyone making another. Tokens already made keep working until they expire or are revoked.
+- A token is made through the API by a person signed in to Fyniq who has just confirmed it is them; its secret is shown once.
+
+(src: docs/user-guide/organisation-settings.md#personal-access-tokens)
 
 ## Evidence rules
 

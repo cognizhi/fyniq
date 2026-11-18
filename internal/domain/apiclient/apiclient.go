@@ -24,14 +24,15 @@ import (
 
 // The refusals of an API client's definition and steps.
 const (
-	CodeName    = "API-CLIENT-01" // the name is empty, too long or has spaces at either end
-	CodeScope   = "API-CLIENT-02" // a scope is not one an API client may be granted, or none is given
-	CodeNetwork = "API-CLIENT-03" // a network is not a CIDR prefix, or too many are given
-	CodeLimit   = "API-CLIENT-04" // a rate limit is above the platform's or below one
-	CodeExpiry  = "API-CLIENT-05" // the expiry is not in the future, or too far
-	CodeKey     = "API-CLIENT-06" // the public key is not an EC P-256 or RSA (2048 bits or more) public key
-	CodeOwner   = "API-CLIENT-07" // the member behind it is not an active member of the organisation
-	CodeState   = "API-CLIENT-08" // the client is revoked already
+	CodeName     = "API-CLIENT-01" // the name is empty, too long or has spaces at either end
+	CodeScope    = "API-CLIENT-02" // a scope is not one an API client may be granted, or none is given
+	CodeNetwork  = "API-CLIENT-03" // a network is not a CIDR prefix, or too many are given
+	CodeLimit    = "API-CLIENT-04" // a rate limit is above the platform's or below one
+	CodeExpiry   = "API-CLIENT-05" // the expiry is not in the future, or too far
+	CodeKey      = "API-CLIENT-06" // the public key is not an EC P-256 or RSA (2048 bits or more) public key
+	CodeOwner    = "API-CLIENT-07" // the member behind it is not an active member of the organisation
+	CodeState    = "API-CLIENT-08" // the client is revoked already
+	CodeDisabled = "API-CLIENT-09" // personal access tokens are off for the organisation (security.personal_access_tokens)
 )
 
 // The limits of an integration client (SEC-07, FR-INT-16).

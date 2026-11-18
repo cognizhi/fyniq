@@ -43,6 +43,16 @@ Source: PRD-001 §8.18 · Priority M · Phase P2 / P1 (client classes)
 - **THEN** its class is `agent` by default, because a token may be pasted into an AI tool
 - **AND** the Owner may reclass it as `integration` with dual control
 
+#### Scenario: Personal access tokens are off until an Owner turns them on
+- **GIVEN** the organisation's setting `security.personal_access_tokens`, which is off by default
+- **WHEN** a member asks for a personal access token while it is off
+- **THEN** it is refused with the code `API-CLIENT-09` and a fix that names the Owner
+- **AND** an Owner turns it on with a second approver, and turning it off takes effect at once
+
+#### Scenario: A reclassed personal token keeps its shared secret
+- **WHEN** the Owner, with a second approver, reclasses a personal access token as `integration`
+- **THEN** it keeps authenticating with its secret and one-hour tokens, not `private_key_jwt`, as the one exception to SEC-07's rule for integration clients
+
 #### Scenario: Rate limits and audit per client
 - **WHEN** a client calls the API
 - **THEN** rate limits apply per client and per organisation

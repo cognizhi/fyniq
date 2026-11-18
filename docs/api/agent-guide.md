@@ -25,7 +25,7 @@ arrive in P1's wave 6 (`p1-mcp-first-party`, `p1-ai-proposals`). Until then an a
   assertion with its own key, and calls only from its networks, within its own limits, until it expires
   or is revoked. Its narrow scopes (`fyniq.read.<area>`, `fyniq.write.<area>`) never approve or release,
   and it never does more than the member it acts for may do now.
-- **A developer's own credential is a personal access token** (FR-INT-02). A person signed in to Fyniq makes one with
+- **A developer's own credential is a personal access token** (FR-INT-02). Once an Owner has turned on the organisation's **Personal access tokens** setting (off by default; until then a request is refused with `API-CLIENT-09`), a person signed in to Fyniq makes one with
   `createPersonalAccessToken` and gets a `client_id` and a `client_secret`, shown once. Exchange them at the OAuth
   server's token endpoint (client-credentials grant, the two as HTTP Basic credentials, the `audience` the answer names)
   for access tokens of an hour. It acts for that person, within its scopes, its networks and an expiry of at most 90

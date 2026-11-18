@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/apiclient"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -29,6 +30,10 @@ import (
 // (and proposes, once the proposal operations arrive: AI-34), whatever its scopes. A member makes, lists and revokes their own; an Administrator lists and
 // revokes any, and asks to reclass one. Only a person signed in to Fyniq and stepped up makes one: no token, integration
 // or AI makes another credential. Revoking is never held back, and the worker deletes the client from the OAuth server.
+
+// PersonalAccessTokensSetting is the organisation's switch for personal access tokens: off until an Owner turns it on with a
+// second approver, as MCP and integration clients are (golden rule 6); off, no member can make one.
+const PersonalAccessTokensSetting = "security.personal_access_tokens"
 
 // DefaultPersonalAccessTokenDays is how long a personal access token lives when its request names no expiry: shorter than
 // the 90 days FR-INT-02 allows, since less is safer.
@@ -121,13 +126,35 @@ type (
 )
 
 // PersonalAccessTokenCodes are the refusals of a personal access token's definition and steps.
-var PersonalAccessTokenCodes = []string{apiclient.CodeName, apiclient.CodeScope, apiclient.CodeNetwork, apiclient.CodeLimit, apiclient.CodeExpiry,
+var PersonalAccessTokenCodes = []string{apiclient.CodeDisabled, apiclient.CodeName, apiclient.CodeScope, apiclient.CodeNetwork, apiclient.CodeLimit, apiclient.CodeExpiry,
 	apiclient.CodeOwner, storage.CodeAPIClient}
 
 func personalAccessTokenOut(c storage.APIClient, now time.Time) PersonalAccessToken {
 	return PersonalAccessToken{ID: c.ID.String(), ClientID: c.ClientID, Name: c.Name, Class: c.Class, OwnerID: c.OwnerID.String(), Scopes: clientScopes(c.Scopes),
 		Networks: clientNetworks(c.IPAllow), ReadsPerMinute: c.ReadsPerMinute, WritesPerMinute: c.WritesPerMinute, ExpiresAt: c.ExpiresAt,
 		Status: clientStatus(c, now), Version: c.Version, CreatedAt: c.CreatedAt, RevokedAt: c.RevokedAt, RevokedBy: c.RevokedBy, RevokeReason: c.RevokeReason}
+}
+
+// personalTokensOn refuses while the organisation's switch for personal access tokens is off, as it is until an Owner turns it
+// on with a second approver (golden rule 6): no member can make one.
+func (a *API) personalTokensOn(ctx context.Context, u storage.UnitOfWork) error {
+	today, err := orgToday(ctx, a, u)
+	if err != nil {
+		return err
+	}
+	d, ok := settings.Lookup(PersonalAccessTokensSetting)
+	if !ok {
+		return errors.New("api: no setting " + PersonalAccessTokensSetting)
+	}
+	changes, err := u.Settings().Changes(ctx, d.Key)
+	if err != nil {
+		return err
+	}
+	if settings.On(d, changes, today).Value != "true" {
+		return problem(apiclient.CodeDisabled, "Personal access tokens are off for this organisation.",
+			"Ask an Owner to turn on \"Personal access tokens\" in Settings → Organisation; it needs a second approver.")
+	}
+	return nil
 }
 
 // personalToken reads a personal access token by its ID in the request; not found for any other kind of client, or, when
@@ -208,7 +235,7 @@ func registerPersonalTokens(a *API) {
 			"whole areas, and no scope approves or releases. It expires within 90 days (30 when you name no expiry), and give its networks where " +
 			"you can. Its class is `agent` because a token may be pasted into an AI tool: an agent reads (and, once the proposal operations arrive, proposes) and cannot write, " +
 			"whatever its scopes, until the Owner reclasses it as an integration with a second approver (requestPersonalAccessTokenReclass). " +
-			"Every field is checked at once. Side effects: the OAuth client and its record, and the audit event api_client.registered (never " +
+			"Every field is checked at once. Refused (API-CLIENT-09) while the organisation's \"Personal access tokens\" setting is off, as it is until an Owner turns it on with a second approver (golden rule 6). Side effects: the OAuth client and its record, and the audit event api_client.registered (never " +
 			"the secret). Needs a person signed in to Fyniq with step-up: an OAuth client, a token or the AI is refused, so no credential " +
 			"makes another. It takes no Idempotency-Key and no preview: a stored answer would keep the secret at rest. On the never-list " +
 			"for the AI and MCP (§9.6).",
@@ -238,6 +265,9 @@ func registerPersonalTokens(a *API) {
 			}
 			var out PersonalAccessTokenCreated
 			err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+				if err := a.personalTokensOn(ctx, u); err != nil {
+					return err
+				}
 				if err := clientOwner(ctx, u, p.UserID, now); err != nil { // the member's roles now: a token never exceeds them
 					return clientProblem(err)
 				}

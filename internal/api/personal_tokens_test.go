@@ -99,6 +99,22 @@ func TestPersonalAccessTokens(t *testing.T) {
 		t.Errorf("want 4 field problems at once (name, scope, network, expiry), got %s", bad.Raw)
 	}
 
+	// Off until an Owner turns it on with a second approver (golden rule 6): a refusal in plain words with its code.
+	const setting = "/v1/organisation/settings/" + PersonalAccessTokensSetting
+	off := e.call(http.MethodPost, "/v1/personal-access-tokens", mine, body("While off", nil))
+	e.problemIs(off, "createPersonalAccessToken", 403, apiclient.CodeDisabled)
+	if !strings.Contains(off.Raw, "Ask an Owner") {
+		t.Errorf("the refusal does not say how to fix it: %s", off.Raw)
+	}
+	enable := e.call(http.MethodPatch, setting, mine, map[string]any{"value": "true"}, "If-Match", e.call(http.MethodGet, setting, mine, nil).Header.Get("ETag"))
+	if enable.Status != http.StatusAccepted {
+		t.Fatalf("asking to turn personal access tokens on: %d %s", enable.Status, enable.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/personal-access-tokens", mine, body("Asked only", nil)), "createPersonalAccessToken", 403, apiclient.CodeDisabled)
+	if d := f.decide(other, enable.str("id"), "approve", hashOf(enable)); d.Status != http.StatusOK {
+		t.Fatalf("approving it: %d %s", d.Status, d.Raw)
+	}
+
 	create := func(who string, b map[string]any) response {
 		t.Helper()
 		r := e.call(http.MethodPost, "/v1/personal-access-tokens", who, b)
@@ -264,6 +280,11 @@ func TestPersonalAccessTokens(t *testing.T) {
 	if status, _ := tokenOf(secret, "fyniq.read.accounting", apiAudience); status == http.StatusOK {
 		t.Error("Hydra still issues tokens to a removed client")
 	}
+	// Turning it off takes effect at once, with no second approver, and stops anyone making another.
+	if r := e.call(http.MethodPatch, setting, mine, map[string]any{"value": "false"}, "If-Match", e.call(http.MethodGet, setting, mine, nil).Header.Get("ETag")); r.Status != http.StatusOK {
+		t.Fatalf("turning it off: %d %s", r.Status, r.Raw)
+	}
+	e.problemIs(e.call(http.MethodPost, "/v1/personal-access-tokens", mine, body("After off", nil)), "createPersonalAccessToken", 403, apiclient.CodeDisabled)
 }
 
 // A personal access token never does more than its member: the same token and scopes read the chart for a member who may
@@ -340,6 +361,7 @@ var matrixPersonalTokens = map[string]func(e *env, tok string) (response, func()
 		was, aud := e.api.deps.OAuthClients, e.api.deps.APIAudience
 		defer func() { e.api.deps.OAuthClients, e.api.deps.APIAudience = was, aud }()
 		e.api.deps.OAuthClients, e.api.deps.APIAudience = fakeOAuthClients{}, apiAudience
+		// The matrix's organisation never turns the setting on, so an allowed role is refused by it, past the policy (pastPolicy).
 		return e.call(http.MethodPost, "/v1/personal-access-tokens", steppedUp(e, tok), map[string]any{"name": "Matrix new " + uuid.NewString()[:8],
 			"scopes": []string{"fyniq.read.reports"}}), nil
 	},

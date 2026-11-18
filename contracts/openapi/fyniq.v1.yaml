@@ -190491,7 +190491,7 @@ paths:
         capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
         right: V
     post:
-      description: "Creates your own personal access token (FR-INT-02, AI-34): a client of Fyniq's OAuth server whose secret is generated there, shown to you once in this answer and kept only as a hash; Fyniq never holds it. With the client_id and the secret you ask the OAuth server's token endpoint for access tokens (grant_type=client_credentials, the client_id and secret as HTTP Basic credentials, and the audience returned here); each lives an hour. It acts for you and never does more than you may now; its scopes narrow that to whole areas, and no scope approves or releases. It expires within 90 days (30 when you name no expiry), and give its networks where you can. Its class is `agent` because a token may be pasted into an AI tool: an agent reads (and, once the proposal operations arrive, proposes) and cannot write, whatever its scopes, until the Owner reclasses it as an integration with a second approver (requestPersonalAccessTokenReclass). Every field is checked at once. Side effects: the OAuth client and its record, and the audit event api_client.registered (never the secret). Needs a person signed in to Fyniq with step-up: an OAuth client, a token or the AI is refused, so no credential makes another. It takes no Idempotency-Key and no preview: a stored answer would keep the secret at rest. On the never-list for the AI and MCP (§9.6)."
+      description: "Creates your own personal access token (FR-INT-02, AI-34): a client of Fyniq's OAuth server whose secret is generated there, shown to you once in this answer and kept only as a hash; Fyniq never holds it. With the client_id and the secret you ask the OAuth server's token endpoint for access tokens (grant_type=client_credentials, the client_id and secret as HTTP Basic credentials, and the audience returned here); each lives an hour. It acts for you and never does more than you may now; its scopes narrow that to whole areas, and no scope approves or releases. It expires within 90 days (30 when you name no expiry), and give its networks where you can. Its class is `agent` because a token may be pasted into an AI tool: an agent reads (and, once the proposal operations arrive, proposes) and cannot write, whatever its scopes, until the Owner reclasses it as an integration with a second approver (requestPersonalAccessTokenReclass). Every field is checked at once. Refused (API-CLIENT-09) while the organisation's \"Personal access tokens\" setting is off, as it is until an Owner turns it on with a second approver (golden rule 6). Side effects: the OAuth client and its record, and the audit event api_client.registered (never the secret). Needs a person signed in to Fyniq with step-up: an OAuth client, a token or the AI is refused, so no credential makes another. It takes no Idempotency-Key and no preview: a stored answer would keep the secret at rest. On the never-list for the AI and MCP (§9.6)."
       operationId: createPersonalAccessToken
       requestBody:
         content:
@@ -190540,7 +190540,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required; `API-CLIENT-09` Personal access tokens are off for this organisation."
         "409":
           content:
             application/problem+json:
@@ -190620,6 +190620,7 @@ paths:
         - API-CLIENT-04
         - API-CLIENT-05
         - API-CLIENT-07
+        - API-CLIENT-09
         - API-FAILURE-01
         - API-INPUT-01
         - API-INPUT-02

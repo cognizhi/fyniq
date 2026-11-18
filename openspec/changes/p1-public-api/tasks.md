@@ -68,7 +68,7 @@
   (`client_secret_basic`, client credentials, the API's audience); Fyniq never holds it. The developer exchanges client ID
   and secret for access tokens of an hour (AI-38). Decision recorded, the recommended default: that secret is the
   shown-once credential rather than a 90-day bearer token, which would break AI-38. A signed-in, stepped-up member makes
-  their own (`createPersonalAccessToken`, Appendix D's "Own MCP connection", expiry within 90 days, 30 by default, no
+  their own once the setting is on (`createPersonalAccessToken`, Appendix D's "Own MCP connection", expiry within 90 days, 30 by default, no
   Idempotency-Key and no preview: a one-time secret), lists and revokes them (`listMyPersonalAccessTokens`,
   `revokeMyPersonalAccessToken`); an Administrator lists and revokes any (`listPersonalAccessTokens`,
   `revokePersonalAccessToken`, "Connected apps") and asks to reclass one (`requestPersonalAccessTokenReclass`: the Owner
@@ -76,7 +76,7 @@
   port). Class `agent` takes the AI column intersected with the member's roles: reads only today (proposals when `p1-ai-proposals` lands), no write whatever its scopes, until reclassed. No
   migration was needed (000432 already held them). Tests `TestPersonalAccessTokens` (against Hydra),
   `TestAPersonalAccessTokenIsCheckedWhole`, `TestAttackAnAPIClientKeepsItsRules` (the reclass) and the matrix rows; threat
-  model section 5. **Left:** a sweep of expired personal clients from Hydra by the worker [live-verify]; the access review lists no API clients yet (Connected apps, AI-46). **Open for the owner:** who may make a token (self-service as built, or only once the Owner turns it on with dual control: golden rule 6), and whether a reclassed token's shared secret is acceptable for an integration (SEC-07).)
+  model section 5. **Left:** a sweep of expired personal clients from Hydra by the worker [live-verify]; the access review lists no API clients yet (Connected apps, AI-46). **Owner's decisions (18 Nov 2026, PRD-001 rev 0.291):** a token can be made only once the organisation's setting `security.personal_access_tokens` is on (off by default; an Owner turns it on with a second approver; off at once; refused with `API-CLIENT-09` meanwhile; guide `organisation-settings.md`, kb recompiled), and a reclassed token may keep its shared secret (the recorded SEC-07 exception).)
 - [x] 3.2 JSON Schema for every resource, the published API reference, `llms.txt` and the agent guide, all generated from the contract. Test `// req: FR-INT-13`
   (19 Oct 2026: `make openapi` also writes a JSON Schema 2020-12 per resource to `contracts/schemas/`, and
   `docs/api/reference.md` and `docs/api/llms.txt`, from the same document as the contract;
