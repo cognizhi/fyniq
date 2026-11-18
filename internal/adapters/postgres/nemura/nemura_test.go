@@ -150,7 +150,7 @@ SELECT c.relname || ' | ' || k.conname || ' | ' || pg_get_constraintdef(k.oid)
 	section("indexes", lines(t, conn, `SELECT indexdef FROM pg_indexes WHERE schemaname = 'nemura' ORDER BY indexname`))
 	section("triggers", lines(t, conn, `
 SELECT pg_get_triggerdef(t.oid) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid JOIN pg_namespace n ON n.oid = c.relnamespace
- WHERE n.nspname = 'nemura' AND NOT t.tgisinternal ORDER BY t.tgname`))
+ WHERE n.nspname = 'nemura' AND NOT t.tgisinternal ORDER BY c.relname, t.tgname`))
 	section("policies (table | name | using | with check)", lines(t, conn, `
 SELECT tablename || ' | ' || policyname || ' | ' || coalesce(qual, '') || ' | ' || coalesce(with_check, '')
   FROM pg_policies WHERE schemaname = 'nemura' ORDER BY tablename, policyname`))
