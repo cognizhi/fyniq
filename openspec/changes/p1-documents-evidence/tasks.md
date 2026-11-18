@@ -77,4 +77,7 @@
   acknowledgement opens from its panel; **Only files I attached** filters by uploader; **Show more** pages; a filing
   missing its acknowledgement is listed as one. Tests `TestAFilingsAcknowledgementIsFoundAndOpens`,
   `EvidenceSearch.test.tsx`; guide `evidence-search.md`, compiled. **Left:** PDF previews rendered to images, with 1.3)
+  (18 Nov 2026: the panel takes the date a file relates to (`relates_on`, which the API had), sends a pasted screenshot as
+  source `paste`, and each file has **Details**: its SHA-256 as stored and as received, how it arrived, its data class
+  and who added it. Tests `JournalEvidence.test.tsx`; fragment `EvidencePanel.html`; guide `journals.md`, compiled.)
 - [ ] 4.3 Finish with `make check` and `make test`

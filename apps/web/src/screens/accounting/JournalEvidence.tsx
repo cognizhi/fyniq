@@ -7,6 +7,7 @@ import { Refusal } from "../../components/Refusal";
 import { Button } from "../../components/ui/button";
 import { date, dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
+import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 
@@ -238,6 +239,50 @@ function sizeOf(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// sources name how a file arrived (FR-DOC-07).
+const sources: Record<string, string> = { upload: "Uploaded", paste: "Pasted from the clipboard", email: "Forwarded by email", api: "Through the API", generated: "Made by Fyniq" };
+const dataClasses: Record<string, string> = { general: "No personal data", personal: "Personal data", bank: "Bank details", payroll: "Payroll", identity: "Identity document" };
+
+// shortHash shows the start and end of a SHA-256, the whole of it in the details.
+const shortHash = (h: string) => (h.length > 12 ? `${h.slice(0, 6)}…${h.slice(-4)}` : h);
+
+// FileDetails is what keeps a file provable: its hashes, source, data class and uploader (FR-DOC-07, FR-DOC-09), in a
+// disclosure so the list stays short. The hash as received is shown when metadata stripping changed the stored file.
+function FileDetails({ e, you }: { e: Evidence; you: string }) {
+  const who = e.uploaded_by === you ? "you" : e.uploaded_by;
+  return (
+    <details className="fy-small fy-muted">
+      <summary>
+        Details · SHA-256 <span className="fy-mono">{shortHash(e.sha256)}</span>
+      </summary>
+      <dl className="fy-stack fy-stack--1">
+        <div>
+          <dt className="fy-strong">SHA-256 as stored</dt>
+          <dd className="fy-mono break-all">{e.sha256}</dd>
+        </div>
+        {e.original_sha256 !== e.sha256 && (
+          <div>
+            <dt className="fy-strong">SHA-256 as received (before image metadata was stripped)</dt>
+            <dd className="fy-mono break-all">{e.original_sha256}</dd>
+          </div>
+        )}
+        <div>
+          <dt className="fy-strong">How it arrived</dt>
+          <dd>{sources[e.source] ?? e.source}</dd>
+        </div>
+        <div>
+          <dt className="fy-strong">Personal data in it</dt>
+          <dd>{dataClasses[e.data_class] ?? e.data_class}</dd>
+        </div>
+        <div>
+          <dt className="fy-strong">Added by</dt>
+          <dd>{who}</dd>
+        </div>
+      </dl>
+    </details>
+  );
+}
+
 function State({ e }: { e: Evidence }) {
   if (e.state === "final") {
     return (
@@ -273,6 +318,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
 }) {
   const noun = nouns[record.kind];
   const kinds = kindsOf[record.kind];
+  const me = useSignedIn().session.user_id;
   const queries = useQueryClient();
   const confirm = useConfirm();
   const id = useId();
@@ -282,6 +328,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
   const firstKind = record.kind === "bank-change" ? "bank_letter" : record.kind === "my-bank-change" ? "bank_app_screenshot" : "";
   const [kind, setKind] = useState(firstKind);
   const [note, setNote] = useState("");
+  const [relatesOn, setRelatesOn] = useState(""); // the date the file relates to (FR-DOC-05), optional
+  const [via, setVia] = useState<"upload" | "paste">("upload"); // how it arrived: a pasted screenshot is its own source (FR-DOC-07)
   const [dataClass, setDataClass] = useState<DataClass>("general");
   const [missing, setMissing] = useState<{ file?: boolean; kind?: boolean }>({});
   const [busy, setBusy] = useState(false);
@@ -307,8 +355,9 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
   const refresh = () => queries.invalidateQueries({ queryKey: [`${record.kind}-evidence`, record.id] });
 
   // choose takes a file dropped or pasted; a receipt's kind is said for it when none is.
-  const choose = (f: File) => {
+  const choose = (f: File, how: "upload" | "paste" = "upload") => {
     setFile(f);
+    setVia(how);
     setMissing({ ...missing, file: false });
     if (!kind.trim() && (record.kind === "claim" || record.kind === "card-line" || record.kind === "pre-incorporation-cost")) setKind("receipt");
     if (input.current) input.current.value = "";
@@ -322,14 +371,15 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
     setProblem(null);
     const key = newKey();
     // The generated body names the form's fields; the request sends them as multipart/form-data with the file itself.
-    const body = { file: file.name, evidence_type: kind.trim(), note: note.trim() || undefined, data_class: dataClass, source: "upload" as const };
+    const body = { file: file.name, evidence_type: kind.trim(), note: note.trim() || undefined, relates_on: relatesOn || undefined, data_class: dataClass, source: via };
     const bodySerializer = () => {
       const form = new FormData();
       form.append("file", file, file.name);
       form.append("evidence_type", kind.trim());
       if (note.trim()) form.append("note", note.trim());
+      if (relatesOn) form.append("relates_on", relatesOn);
       form.append("data_class", dataClass);
-      form.append("source", "upload");
+      form.append("source", via);
       return form;
     };
     const header = { "If-Match": record.etag, "Idempotency-Key": key };
@@ -402,6 +452,8 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
     setFile(null);
     setKind(firstKind);
     setNote("");
+    setRelatesOn("");
+    setVia("upload");
     setDataClass("general");
     if (input.current) input.current.value = "";
     await refresh();
@@ -620,8 +672,9 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
               <span className="fy-list__main">
                 <span className={`fy-list__title whitespace-normal${e.state === "removed" ? " fy-muted" : ""}`}>{e.file_name}</span>
                 <span className="fy-list__meta whitespace-normal">
-                  {[e.evidence_type, sizeOf(e.size_bytes), `added ${dateTime(e.uploaded_at)}`, e.note].filter(Boolean).join(" · ")}
+                  {[e.evidence_type, sizeOf(e.size_bytes), e.relates_on ? `relates to ${date(e.relates_on)}` : "", `added ${dateTime(e.uploaded_at)}`, e.note].filter(Boolean).join(" · ")}
                 </span>
+                <FileDetails e={e} you={me ? `user:${me}` : ""} />
               </span>
               <State e={e} />
               {e.unmasked_nric && (
@@ -677,7 +730,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
               const f = e.clipboardData.files[0];
               if (f) {
                 e.preventDefault();
-                choose(f);
+                choose(f, "paste");
               }
             }}
           >
@@ -696,6 +749,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
               accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.csv,.xlsx,.docx,.eml,.msg"
               onChange={(e) => {
                 setFile(e.target.files?.[0] ?? null);
+                setVia("upload");
                 setMissing({ ...missing, file: false });
               }}
               aria-invalid={missing.file || undefined}
@@ -743,6 +797,15 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
               Note (optional)
             </label>
             <input className="fy-input" id={`${id}-note`} value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} />
+          </div>
+          <div className="fy-field">
+            <label className="fy-label" htmlFor={`${id}-relates`}>
+              Date it relates to (optional)
+            </label>
+            <input className="fy-input" id={`${id}-relates`} type="date" value={relatesOn} onChange={(e) => setRelatesOn(e.target.value)} aria-describedby={`${id}-relates-help`} />
+            <span className="fy-help" id={`${id}-relates-help`}>
+              The day on the document, such as the invoice date or the day of the call, so the file is found by it.
+            </span>
           </div>
           {record.kind !== "bank-change" && record.kind !== "my-bank-change" && (
             <div className="fy-field">
