@@ -690,7 +690,7 @@ export function JournalPage() {
       {isNew && !mayPrepare && <p className="fy-secondary">An Accountant or a Tax agent prepares journals.</p>}
 
       {f && (editable || editingPosted) && (
-        <form id={`${id}-form`} className="fy-stack fy-stack--6" onSubmit={editingPosted ? (e) => e.preventDefault() : onSave} noValidate>
+        <form id={`${id}-form`} className="fy-stack fy-stack--6" data-enter="next" onSubmit={editingPosted ? (e) => e.preventDefault() : onSave} noValidate>
           {editingPosted && (
             <section className="fy-card fy-card--pad fy-stack fy-stack--3" aria-labelledby={`${id}-why`}>
               <h2 className="fy-h3" id={`${id}-why`}>

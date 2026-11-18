@@ -240,6 +240,11 @@ export const actions = [
   { kind: "action", id: "home.what-happened", mode: "basic", help: "home.what-happened", guide: "home.overview#what-happened-where-to-record-it" },
   // Books health on Home's pulse card, explained behind its ⓘ (FR-UX-30).
   { kind: "action", id: "home.books-health", mode: "basic", help: "home.books-health", guide: "checks.overview" },
+  // Keyboard-first entry (FR-UX-06): the shortcut sheet on ?, the switch and keys of the single-character shortcuts, and
+  // the command palette's actions on selected rows.
+  { kind: "action", id: "shell.shortcuts", mode: "basic", help: "shell.shortcuts", guide: "shell.shortcuts" },
+  { kind: "action", id: "shortcuts.settings", mode: "basic", help: "shortcuts.settings", guide: "shell.shortcuts#turn-them-off-or-change-the-keys" },
+  { kind: "action", id: "shortcuts.bulk", mode: "basic", help: "shortcuts.bulk", guide: "shell.shortcuts#act-on-selected-rows" },
   // The first-run tour (FR-UX-34): offered at first, and from Help and the command palette any time.
   { kind: "action", id: "shell.tour", mode: "basic", help: "shell.tour", guide: "help.guide#take-the-tour" },
   // Plain view or Accountant view of money in and out (FR-UX-08): Expert's; Basic always uses Plain view.
