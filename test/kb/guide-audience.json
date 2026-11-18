@@ -627,6 +627,16 @@
     "status": "published"
   },
   {
+    "file": "knowledge-base.md",
+    "key": "settings.ai-knowledge-base",
+    "roles": [
+      "owner",
+      "administrator",
+      "auditor"
+    ],
+    "status": "published"
+  },
+  {
     "file": "kpis.md",
     "key": "reports.kpis",
     "roles": [
