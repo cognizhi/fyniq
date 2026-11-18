@@ -38,9 +38,12 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 - [ ] 2.2 Migration 000580 `mcp_user_optin` (FORCE RLS, the API's grants only, the export catalogue, goldens, `make db-lint`),
   the storage port and adapter, and `PUT /v1/me/mcp` and `GET /v1/me/mcp` for a person's own opt-in, audited. Tests
   `// req: AI-35`, an attack test that another person's opt-in cannot be set (`// asvs:`).
-- [ ] 2.3 The deployment switch (design D1): `cmd/mcp` serves `mcpshell` unless `FYNIQ_MCP_SERVER=on`, in every flavour and in
+- [x] 2.3 The deployment switch (design D1): `cmd/mcp` serves `mcpshell` unless `FYNIQ_MCP_SERVER=on`, in every flavour and in
   the Compose profile; with it off the new package is not reached, and the shell's test and image budget are unchanged.
   Tests `// req: QA-MCP-01`, `// req: AI-35`.
+  Built: `FYNIQ_MCP_SERVER` (`mcpserver.Enabled`: unset or `off` is the shell, `on` is the server, any other value stops the
+  service from starting); `cmd/mcp`'s `routes` chooses, and its test shows the shell answers (and the server's metadata is
+  not even routed) for unset, off and an empty value. The Compose profile passes it through, off.
 
 ## 3. OAuth for MCP (AI-36, AI-37, AI-38)
 
@@ -62,16 +65,31 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 
 ## 4. The server core (AI-15, AI-39), behind the deployment switch
 
-- [ ] 4.1 `internal/mcpserver`: Streamable HTTP by the revision in force (design D6): one POST per message, the protocol and
+- [x] 4.1 `internal/mcpserver`: Streamable HTTP by the revision in force (design D6): one POST per message, the protocol and
   mirrored headers validated with `-32020`, `server/discover`, `tools/list`, `tools/call`, `ping`, GET and DELETE 405,
   `Mcp-Session-Id` ignored, `Origin` validated, request size and time limits, no stdio and no HTTP+SSE mounted, no elicitation
   or sampling capability. Tests `// req: AI-39`, `// req: AI-42`, `// asvs: V13.4.1`; red-team rows for a bad `Origin`, a
   header-body mismatch, an oversized body and a stale session ID.
-- [ ] 4.2 The resource server (design D7): RFC 9728 metadata at the well-known path, 401 and 403 `WWW-Authenticate`
+  Built: `internal/mcpserver` speaks revision 2026-07-28 only: POST with one message each, `server/discover`, `tools/list`
+  (the manifest's tools that the token's scopes allow), `tools/call` (to a `Backend`), `ping`; `initialize` is answered with
+  the revision served (`-32022`); the headers are checked against the body (`-32020`, with the Base64 sentinel decoded); a
+  present, unlisted `Origin` is 403 before the token is looked at; GET, DELETE and the rest are 405; a session ID is ignored
+  and never minted; a batch, an oversized body, a non-JSON type and a token in the URL are refused; and no log line holds a
+  token or arguments. `internal/neverlist` now holds the never-list that `internal/proposal` and the tool surface share, so
+  `cmd/mcp` links no domain command (`TestTheMCPServiceCarriesNoDatabaseCode`, in both flavours). **Left:** the tool call's
+  data path is `Unavailable` (503) until task 6.2.
+- [x] 4.2 The resource server (design D7): RFC 9728 metadata at the well-known path, 401 and 403 `WWW-Authenticate`
   challenges with the needed scope, token validation by introspection for the MCP audience only (an API-audience token, an
   expired, revoked or unknown one, and the delegated token itself are refused), the Caddy route for the well-known path, and a
   `cmd/mcp` that has no DSN. Tests `// req: AI-36`, `// req: AI-39`; red-team rows for the wrong audience, an expired token, a
   revoked token and the MCP token sent to the API directly (401).
+  Built: RFC 9728 metadata at both well-known paths (resource, issuer, `scopes_supported` the default grant only), the 401
+  and `insufficient_scope` 403 challenges, `OAuthVerifier` (introspection on every call; audience exactly the MCP resource,
+  so a token that is also good for the API is refused; class `agent`; consent within 90 days), the Caddy route for the
+  well-known path, and `TestTheMCPServerChecksATokenHydraIssued` against the pinned Hydra (a real token lists its tools; an
+  API-audience, integration-class, both-audience and revoked token do not). **Left:** the MCP-to-API token (task 6.1) and
+  the cloud route that lets this service introspect and do nothing else with Hydra's admin API (`[live-verify]`; design
+  Risks).
 - [ ] 4.3 (Only if task 1.2 shows an installed client still needs it.) The earlier revisions' compatibility layer: `initialize`,
   a random `Mcp-Session-Id` bound to the token's subject and client, a session refused with another token. Tests `// req:
   AI-39`; the red-team session-fixation row.

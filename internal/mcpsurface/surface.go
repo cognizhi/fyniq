@@ -23,7 +23,7 @@ import (
 
 	contracts "github.com/cognizhi/fyniq/contracts/ai"
 	"github.com/cognizhi/fyniq/internal/aitool"
-	"github.com/cognizhi/fyniq/internal/proposal"
+	"github.com/cognizhi/fyniq/internal/neverlist"
 )
 
 // ReadScope is the scope shape of a read tool over MCP: fyniq.read.<area>, for the areas P1 has a tool for. Payroll and
@@ -214,7 +214,7 @@ func mayExpose(t aitool.Tool) error {
 	if err := aitool.ReadName(t.Name); err != nil {
 		return err
 	}
-	if what := proposal.Refuse(verb, ""); what != "" {
+	if what := neverlist.Refuse(verb, ""); what != "" {
 		return fmt.Errorf("its verb %q is on the never-list: %s", verb, what)
 	}
 	return nil
@@ -297,18 +297,27 @@ func Verify(m Manifest, tools []aitool.Tool, s Scopes) error {
 	return nil
 }
 
-// Default is the manifest the release ships, verified against the registry and the scope map: it panics when it is not,
-// as a build that never passed.
-func Default() (Manifest, Scopes) {
+// Load is the manifest the release ships, verified against the registry and the scope map, or why it is not.
+func Load() (Manifest, Scopes, error) {
 	s, err := LoadScopes(contracts.MCPScopes)
 	if err != nil {
-		panic("the MCP scope map: " + err.Error())
+		return Manifest{}, Scopes{}, err
 	}
 	var m Manifest
 	if err := json.Unmarshal(contracts.MCPManifest, &m); err != nil {
-		panic("the MCP manifest: " + err.Error())
+		return Manifest{}, Scopes{}, fmt.Errorf("mcp-manifest.json: %w", err)
 	}
 	if err := Verify(m, aitool.Default().Tools(), s); err != nil {
+		return Manifest{}, Scopes{}, err
+	}
+	return m, s, nil
+}
+
+// Default is Load, panicking when the manifest does not verify, as a build that never passed: the tests use it. The server
+// uses Load and refuses to start instead.
+func Default() (Manifest, Scopes) {
+	m, s, err := Load()
+	if err != nil {
 		panic("the MCP manifest: " + err.Error())
 	}
 	return m, s

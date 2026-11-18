@@ -835,6 +835,41 @@ func TestTheAIServiceCarriesNoDatabaseCode(t *testing.T) {
 	}
 }
 
+// The MCP service holds no database role and no write credential (PRD-001 §9.3, §12.3; golden rule 5;
+// p1-mcp-first-party design D2), so its binary carries no database adapter or driver, none of the services' wiring, not the
+// API, no domain command and no model connector, in either flavour, and whichever of the shell and the server runs: it
+// reaches data only through the API.
+// req: AI-16
+// req: CTL-MCP-01
+// req: QA-MCP-01
+// asvs: V13.1.1
+func TestTheMCPServiceCarriesNoDatabaseCode(t *testing.T) {
+	forbidden := []string{"github.com/cognizhi/fyniq/internal/adapters/postgres", "github.com/jackc/pgx", "github.com/cognizhi/fyniq/internal/wiring",
+		"github.com/cognizhi/fyniq/internal/api", "github.com/cognizhi/fyniq/internal/domain/journal", "github.com/cognizhi/fyniq/internal/domain/ledger",
+		"github.com/cognizhi/fyniq/internal/proposal", "github.com/cognizhi/fyniq/internal/ai", "github.com/cognizhi/fyniq/connectors", "github.com/cognizhi/fyniq/internal/connector"}
+	for _, tags := range []string{"", "local"} {
+		cmd := exec.Command("go", "list", "-deps", "-tags", tags, "./cmd/mcp")
+		cmd.Dir = repoRoot(t)
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatalf("go list: %v", err)
+		}
+		deps := strings.Fields(string(out))
+		for _, must := range []string{"github.com/cognizhi/fyniq/internal/mcpserver", "github.com/cognizhi/fyniq/internal/mcpshell"} {
+			if !slices.Contains(deps, must) {
+				t.Fatalf("tags %q: cmd/mcp does not carry %s", tags, must)
+			}
+		}
+		for _, dep := range deps {
+			for _, f := range forbidden {
+				if dep == f || strings.HasPrefix(dep, f+"/") {
+					t.Errorf("tags %q: cmd/mcp depends on %s", tags, dep)
+				}
+			}
+		}
+	}
+}
+
 // goSources calls fn with each non-test Go file under internal/ and cmd/, by its path from the repository's root.
 func goSources(t *testing.T, fn func(rel string, src []byte)) {
 	t.Helper()

@@ -8,7 +8,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -17,6 +20,9 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/authn"
+	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/mcpserver"
+	"github.com/cognizhi/fyniq/internal/mcpsurface"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
 
@@ -177,5 +183,87 @@ func TestHydraAndTheParametersAnMCPClientSends(t *testing.T) {
 	_ = resp.Body.Close()
 	if resp.StatusCode < 400 {
 		t.Errorf("dynamic client registration answered %d: it must be off (AI-35)", resp.StatusCode)
+	}
+}
+
+// The MCP server accepts what the pinned Hydra issues to an allowlisted agent-class client for the MCP audience, and nothing
+// else: the consent app's claims (class, organisation, granted_at) are what its verifier reads; an API-audience token, an
+// expired or revoked one, and a client of another class are refused; and the token lists the tools its scopes allow. The
+// server answers in the revision's shape end to end (task 4.2 of p1-mcp-first-party).
+// req: AI-36
+// req: AI-37
+// req: AI-39
+// req: QA-MCP-01
+// asvs: V10.3.1, V10.4.6, V13.1.1
+func TestTheMCPServerChecksATokenHydraIssued(t *testing.T) {
+	s := startOAuth(t, 0)
+	ctx := context.Background()
+	newClient := func(class string, audiences []string) string {
+		c, err := s.admin.CreateClient(ctx, hydra.NewClient{Name: "Test " + class, Class: class, Audiences: audiences, RedirectURIs: []string{callback},
+			Scopes: []string{"openid", "fyniq.read.reports", "fyniq.read.sales"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return c.ID
+	}
+	agent := newClient(authn.ClassAgent, []string{mcpAudience, apiAudience})
+	integration := newClient(authn.ClassIntegration, []string{mcpAudience})
+	manifest, _ := mcpsurface.Default()
+	srv, err := mcpserver.New(mcpserver.Config{Resource: mcpAudience, Issuer: "http://hydra.test/", Manifest: manifest, Calls: mcpserver.Unavailable{},
+		Verify: mcpserver.OAuthVerifier{OAuth: s.admin, Resource: mcpAudience, Clock: clock.System{}}, Log: slog.New(slog.DiscardHandler)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mcp := httptest.NewServer(srv.Handler())
+	t.Cleanup(mcp.Close)
+	list := func(token string) (int, string) {
+		body := `{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"` + mcpserver.ProtocolVersion + `"}}}`
+		req, _ := http.NewRequest(http.MethodPost, mcp.URL+"/mcp", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("MCP-Protocol-Version", mcpserver.ProtocolVersion)
+		req.Header.Set("Mcp-Method", "tools/list")
+		req.Header.Set("Authorization", "Bearer "+token)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		raw, _ := io.ReadAll(resp.Body)
+		return resp.StatusCode, string(raw)
+	}
+
+	tok, refused := s.authorize(agent, mcpAudience, "openid fyniq.read.reports", true, "accept")
+	if refused != "" {
+		t.Fatalf("the agent's flow was refused: %s", refused)
+	}
+	mcpToken := tok["access_token"].(string)
+	status, body := list(mcpToken)
+	if status != http.StatusOK || !strings.Contains(body, `"metrics.query"`) || strings.Contains(body, `"records.get"`) {
+		t.Fatalf("a reports token lists: %d %s", status, body)
+	}
+	if status, _ := list("not-a-token"); status != http.StatusUnauthorized {
+		t.Errorf("a made-up token: %d", status)
+	}
+	api, _ := s.authorize(agent, apiAudience, "openid fyniq.read.reports", true, "accept")
+	if status, _ := list(api["access_token"].(string)); status != http.StatusUnauthorized {
+		t.Errorf("an API-audience token at the MCP server: %d", status)
+	}
+	// A token for both audiences could be passed through to the API: the verifier refuses it, whatever consent granted.
+	if both, refused := s.authorize(agent, mcpAudience+" "+apiAudience, "openid fyniq.read.reports", true, "accept"); refused != "" {
+		t.Logf("a request for both audiences is refused at consent: %s", refused)
+	} else if status, _ := list(both["access_token"].(string)); status != http.StatusUnauthorized {
+		t.Errorf("a token for the MCP server and the API: %d", status)
+	}
+	user, _ := s.authorize(integration, mcpAudience, "openid fyniq.read.reports", true, "accept")
+	if status, _ := list(user["access_token"].(string)); status != http.StatusUnauthorized {
+		t.Errorf("an integration-class client's MCP token: %d", status)
+	}
+	resp, err := s.browser().PostForm("http://hydra.test/oauth2/revoke", url.Values{"token": {mcpToken}, "client_id": {agent}})
+	if err != nil || resp.StatusCode != http.StatusOK {
+		t.Fatalf("revoke: %v %v", resp, err)
+	}
+	_ = resp.Body.Close()
+	if status, _ := list(mcpToken); status != http.StatusUnauthorized {
+		t.Errorf("a revoked token: %d", status)
 	}
 }

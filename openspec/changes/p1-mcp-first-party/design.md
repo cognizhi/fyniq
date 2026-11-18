@@ -318,6 +318,12 @@ asserts while the deployment switch is off.
   a test lists every registry tool and says whether it is mapped, and a reviewer reads the diff.
 - **Data leaves to the client's model.** Controlled by consent, scopes and the enabling decision, not by Fyniq's router
   (D10); the owner decides how far (Decisions needed 4).
+- **The MCP service reaches Hydra's admin API.** Introspection is an admin operation in Hydra, so the service that checks
+  tokens needs the admin address, and a compromised MCP process could otherwise create clients or trust relationships. The
+  code narrows it (the server takes an `Introspector`, not the whole `OAuthServer`; the egress guard allows that host only);
+  the network must narrow it too: locally the Compose network, in the cloud a route to `/admin/oauth2/introspect` alone
+  `[live-verify]`. Alternative if that route cannot be made: validate the token through an internal API operation that
+  introspects, which sends the MCP token to the API for that one check and no other.
 - **Per-call API cost.** Each tool call is an introspection, a delegation (about 20 ms), one internal operation and one write
   of `mcp_call`. Well inside the assistant's budget; measured in 10.1.
 - **Time to proof.** The suite needs Hydra in Testcontainers or the in-memory server the P0 tests use. The matrix of
