@@ -70,7 +70,7 @@ fyniq_api       SELECT    ai_route
 fyniq_api       INSERT    ai_route_step (cache, connection_id, effort, model, position, route_id)
 fyniq_api       SELECT    ai_route_step
 fyniq_api       EXECUTE   ai_settle()
-fyniq_api       INSERT    ai_tool_call (code, duration_ms, facts, input, n, omitted, outcome, output_sha256, tool, turn_id, version, withheld)
+fyniq_api       INSERT    ai_tool_call (code, duration_ms, facts, input, kb_pages, n, omitted, outcome, output_sha256, tool, turn_id, version, withheld)
 fyniq_api       SELECT    ai_tool_call
 fyniq_api       INSERT    ai_turn (asked_at, context, conversation_id, question, user_id)
 fyniq_api       SELECT    ai_turn

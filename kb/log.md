@@ -643,3 +643,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-18] compile | docs/user-guide/home.md → home.overview (the Administrator's, Company secretary's and DPO's work on their landing pages, the Auditor's engagement; QA-UI-08)
 
 ## [2026-11-18] compile | docs/user-guide/approvals.md → approvals.decide (FM-6: unusual items in the weekly review, rev 0.287)
+
+## [2026-11-18] compile | docs/user-guide/ai-activity.md -> settings.ai-activity (an answer's know-how page versions in the activity log, AI-12, AI-51)

@@ -514,7 +514,8 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 		}
 		for _, c := range answer.ToolCalls {
 			calls = append(calls, storage.AIToolCall{Tool: c.Tool, Version: c.Version, Input: c.Input, OutputSHA256: c.OutputSHA256, Outcome: c.Outcome,
-				Code: c.Code, Facts: c.Facts, Omitted: c.Omitted, Withheld: c.Withheld, DurationMS: int(c.Duration / time.Millisecond)})
+				Code: c.Code, Facts: c.Facts, Omitted: c.Omitted, Withheld: c.Withheld, DurationMS: int(c.Duration / time.Millisecond),
+				KBPages: kbPagesOf(c.KBPages)})
 		}
 	case errors.As(err, &pr):
 		turn.Status, turn.Code = storage.TurnRefused, pr.Code

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/cognizhi/fyniq/internal/aitool"
+	"github.com/cognizhi/fyniq/internal/assistant"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/knowledge"
@@ -300,4 +301,22 @@ func kbSearchContent(hits []storage.KBHit, terms []string) map[string]any {
 		c["note"] = "Nothing you may read matches. Try other words a person would use, or say the guide does not cover it."
 	}
 	return c
+}
+
+// kbPagesOf are the page versions the AI service reports a call read, as the turn's record keeps them.
+func kbPagesOf(in []assistant.KBPage) []storage.KBPageVersion {
+	var out []storage.KBPageVersion
+	for _, p := range in {
+		out = append(out, storage.KBPageVersion{Key: p.Key, Version: p.Version})
+	}
+	return out
+}
+
+// kbPagesOut are a call's recorded page versions as the activity log lists them: an empty list for most calls.
+func kbPagesOut(in []storage.KBPageVersion) []AIKBPage {
+	out := make([]AIKBPage, 0, len(in))
+	for _, p := range in {
+		out = append(out, AIKBPage{Key: p.Key, Version: p.Version})
+	}
+	return out
 }

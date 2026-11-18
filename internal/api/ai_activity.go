@@ -226,15 +226,16 @@ func aiActivityOut(c storage.AICall, connection string) AIActivityEntry {
 
 // AITurnToolCall is a read a turn made, as it ran (design D11): never its input or what it read, only a hash of that.
 type AITurnToolCall struct {
-	Tool         string `json:"tool" example:"metrics.query"`
-	Version      int    `json:"version" example:"1"`
-	Outcome      string `json:"outcome" enum:"read,refused" example:"read"`
-	Code         string `json:"code,omitempty" doc:"Why it was refused." example:"AI-TOOL-03"`
-	Facts        int    `json:"facts" doc:"How many facts it read." example:"3"`
-	Omitted      int    `json:"omitted" doc:"How many lists its limits cut." example:"0"`
-	Withheld     bool   `json:"withheld" doc:"Screening withheld its free text (AI-18)." example:"false"`
-	DurationMS   int    `json:"duration_ms" example:"120"`
-	OutputSHA256 string `json:"output_sha256,omitempty" doc:"The hash of what the model read of it." example:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
+	Tool         string     `json:"tool" example:"metrics.query"`
+	Version      int        `json:"version" example:"1"`
+	Outcome      string     `json:"outcome" enum:"read,refused" example:"read"`
+	Code         string     `json:"code,omitempty" doc:"Why it was refused." example:"AI-TOOL-03"`
+	Facts        int        `json:"facts" doc:"How many facts it read." example:"3"`
+	Omitted      int        `json:"omitted" doc:"How many lists its limits cut." example:"0"`
+	Withheld     bool       `json:"withheld" doc:"Screening withheld its free text (AI-18)." example:"false"`
+	DurationMS   int        `json:"duration_ms" example:"120"`
+	OutputSHA256 string     `json:"output_sha256,omitempty" doc:"The hash of what the model read of it." example:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
+	KBPages      []AIKBPage `json:"kb_pages" nullable:"false" doc:"The knowledge-base page versions it read (AI-12, AI-51): each page and the release or version it came from."`
 }
 
 // AITurnActivity is one turn of the assistant in the AI activity log (AI-12): who asked, what, how it ended, the
@@ -426,7 +427,7 @@ func turnActivityOf(t storage.AITurn, calls []storage.AIToolCall) AITurnActivity
 	}
 	for _, c := range calls {
 		e.ToolCalls = append(e.ToolCalls, AITurnToolCall{Tool: c.Tool, Version: c.Version, Outcome: c.Outcome, Code: c.Code, Facts: c.Facts,
-			Omitted: c.Omitted, Withheld: c.Withheld, DurationMS: c.DurationMS, OutputSHA256: c.OutputSHA256})
+			Omitted: c.Omitted, Withheld: c.Withheld, DurationMS: c.DurationMS, OutputSHA256: c.OutputSHA256, KBPages: kbPagesOut(c.KBPages)})
 		if c.Outcome != "read" {
 			e.ToolErrors++
 		}

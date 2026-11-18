@@ -83,6 +83,15 @@ type AIToolCall struct {
 	Omitted      int
 	Withheld     bool
 	DurationMS   int
+	// KBPages are the knowledge-base page versions the call read (AI-12, AI-51).
+	KBPages []KBPageVersion
+}
+
+// KBPageVersion is a knowledge-base page and the version of it a read used: for a platform page the release that shipped it and
+// the page file's digest, for an organisation page its number.
+type KBPageVersion struct {
+	Key     string `json:"key"`
+	Version string `json:"version"`
 }
 
 // AIFeedback is a person's thumbs up or down on a turn's answer, with a reason, and its review (QA-AI-05).

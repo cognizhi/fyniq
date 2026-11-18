@@ -520,6 +520,7 @@ type FyniqAiToolCall struct {
 	Omitted        int32
 	Withheld       bool
 	DurationMs     int32
+	KbPages        []byte
 }
 
 type FyniqAiTurn struct {

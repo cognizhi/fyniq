@@ -41,6 +41,8 @@ Every attempt is kept, whether it was served or not.
   books it made and how many figures it read, and its tokens.
 - Beside each, its reads refused, what screening stopped or withheld, and its cost in the base currency.
 - What a read returned is never shown here, only how it went. **Its model calls** shows the calls the question made.
+- When a read was of the knowledge base, the entry names the know-how page it read and that page's version, so the exact
+  text behind an answer can be found again. The page's text is not shown here, only which page and which version.
 - Someone else's question that read payroll is masked for a reader who may not see payroll unmasked.
 
 ## Feedback on answers

@@ -74,6 +74,14 @@ type ToolResult struct {
 	Omitted  []aitool.Omission `json:"omitted"`
 	Revision int64             `json:"ledger_revision"`
 	Withheld string            `json:"withheld,omitempty"`
+	// KBPages are the knowledge-base page versions a kb tool read (AI-12, AI-51).
+	KBPages []KBPage `json:"kb_pages,omitempty"`
+}
+
+// KBPage is a knowledge-base page and the version of it a read used.
+type KBPage struct {
+	Key     string `json:"key"`
+	Version string `json:"version"`
 }
 
 // Problem is the API's refusal, in its words: its status, code, what went wrong and how to fix it.
@@ -187,6 +195,8 @@ type ToolCall struct {
 	Duration time.Duration   `json:"duration_ns"`
 	// OutputSHA256 is the hash of what the model read of it.
 	OutputSHA256 string `json:"output_sha256,omitempty"`
+	// KBPages are the knowledge-base page versions it read, which the activity log shows (AI-12, AI-51).
+	KBPages []KBPage `json:"kb_pages,omitempty"`
 }
 
 // How a turn or a run ends.
@@ -426,6 +436,7 @@ func (a *Assistant) runTool(ctx context.Context, token string, tools *aitool.Reg
 		}
 	}
 	record.Facts, record.Omitted, record.Withheld, record.Duration = len(result.Facts), len(result.Omitted), result.Withheld != "", a.now().Sub(start)
+	record.KBPages = result.KBPages
 	text, err := resultText(result)
 	if err != nil {
 		return failed("AI-TOOL", "The read's result could not be read.")

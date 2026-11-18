@@ -16654,6 +16654,15 @@ export interface components {
             /** @example 14 */
             version: string;
         };
+        AIKBPage: {
+            /** @example claims.approve-team-claims */
+            key: string;
+            /**
+             * @description The platform release and the page file's SHA-256 (first 12 characters).
+             * @example v0.1.0#7c1ea9b4f2d3
+             */
+            version: string;
+        };
         AIModel: {
             /**
              * @description The model an alias points at, when the list says (AI-78).
@@ -17942,6 +17951,8 @@ export interface components {
              * @example 3
              */
             facts: number;
+            /** @description The knowledge-base page versions it read (AI-12, AI-51): each page and the release or version it came from. */
+            kb_pages: components["schemas"]["AIKBPage"][];
             /**
              * Format: int64
              * @description How many lists its limits cut.

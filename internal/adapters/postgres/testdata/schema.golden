@@ -418,6 +418,7 @@ ai_tool_call | facts | integer | not null | 0
 ai_tool_call | omitted | integer | not null | 0
 ai_tool_call | withheld | boolean | not null | false
 ai_tool_call | duration_ms | integer | not null | 0
+ai_tool_call | kb_pages | jsonb | not null | '[]'::jsonb
 ai_turn | organisation_id | uuid | not null | current_org()
 ai_turn | id | uuid | not null | uuidv7()
 ai_turn | conversation_id | uuid | not null | 
@@ -3031,6 +3032,8 @@ ai_tool_call | ai_tool_call_facts_not_null | NOT NULL facts
 ai_tool_call | ai_tool_call_id_not_null | NOT NULL id
 ai_tool_call | ai_tool_call_input_not_null | NOT NULL input
 ai_tool_call | ai_tool_call_input_size | CHECK ((pg_column_size(input) <= 16384))
+ai_tool_call | ai_tool_call_kb_pages | CHECK (((jsonb_typeof(kb_pages) = 'array'::text) AND (jsonb_array_length(kb_pages) <= 20) AND (pg_column_size(kb_pages) <= 4096)))
+ai_tool_call | ai_tool_call_kb_pages_not_null | NOT NULL kb_pages
 ai_tool_call | ai_tool_call_n | CHECK (((n >= 1) AND (n <= 100)))
 ai_tool_call | ai_tool_call_n_not_null | NOT NULL n
 ai_tool_call | ai_tool_call_omitted_not_null | NOT NULL omitted

@@ -495,3 +495,28 @@ func TestTheAnswerIsRenderedInFyniqsWords(t *testing.T) {
 		}
 	}
 }
+
+// A read of the knowledge base is recorded with the page versions it read, so the activity log can say which pages an answer
+// used (AI-12, AI-51): the turn's tool call keeps what the API reported, and a read of the books lists none.
+// req: AI-12
+// req: AI-51
+func TestAKnowledgeBaseReadIsRecordedWithThePageVersionsItRead(t *testing.T) {
+	b := &api{
+		answers: []ports.ModelResponse{
+			{Parts: []ports.ModelPart{toolCall("c1", "kb_read", `{"key":"claims.approve-team-claims"}`)}},
+			answer(words("A team member's claim goes to the approver named in its approval policy.")),
+		},
+		results: map[string]assistant.ToolResult{"kb.read": {Tool: "kb.read", Version: 1, Facts: []aitool.Fact{}, Omitted: []aitool.Omission{},
+			Content: json.RawMessage(`{"key":"claims.approve-team-claims"}`),
+			KBPages: []assistant.KBPage{{Key: "claims.approve-team-claims", Version: "v0.1.0#7c1ea9b4f2d3"}}}},
+	}
+	a := &assistant.Assistant{Backend: b, Prompt: prompt(t)}
+	out, err := a.Answer(context.Background(), assistant.Question{Token: "fyai_turn", Text: "How do I approve a team claim?"}, func(assistant.Event) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.ToolCalls) != 1 || out.ToolCalls[0].Tool != "kb.read" || len(out.ToolCalls[0].KBPages) != 1 ||
+		out.ToolCalls[0].KBPages[0] != (assistant.KBPage{Key: "claims.approve-team-claims", Version: "v0.1.0#7c1ea9b4f2d3"}) {
+		t.Errorf("the tool calls: %+v", out.ToolCalls)
+	}
+}

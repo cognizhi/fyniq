@@ -1684,6 +1684,22 @@ components:
         - name
         - version
       type: object
+    AIKBPage:
+      additionalProperties: false
+      properties:
+        key:
+          examples:
+            - claims.approve-team-claims
+          type: string
+        version:
+          description: The platform release and the page file's SHA-256 (first 12 characters).
+          examples:
+            - v0.1.0#7c1ea9b4f2d3
+          type: string
+      required:
+        - key
+        - version
+      type: object
     AIModel:
       additionalProperties: false
       properties:
@@ -3679,6 +3695,11 @@ components:
             - 3
           format: int64
           type: integer
+        kb_pages:
+          description: "The knowledge-base page versions it read (AI-12, AI-51): each page and the release or version it came from."
+          items:
+            $ref: "#/components/schemas/AIKBPage"
+          type: array
         omitted:
           description: How many lists its limits cut.
           examples:
@@ -3719,6 +3740,7 @@ components:
         - omitted
         - withheld
         - duration_ms
+        - kb_pages
       type: object
     AIUsage:
       additionalProperties: false
