@@ -5,8 +5,8 @@ id = "sg-shg@2026.1"
 title = "Singapore self-help group funds: the monthly contribution to CDAC, ECF, MBMF and SINDA by monthly total wages, and who contributes"
 effective_from = "2026-01-01"
 review_date = "2027-01-31"
-verifier = "Claude Code against the CPF Board's page on 18 Nov 2026 (p1-statutory-packs) and its copies of 31 Jan 2023, 19 Jan 2024 and 22 Jan 2025; the accountant's review is pending (FR-UX-41)"
-conditions = "Employees working in Singapore who belong to the fund's community, as the funds table states: the fund follows the race on the NRIC (the first race listed for two races), and the MBMF follows religion; the amount is the one of the band the employee's monthly total wages fall in, a band 'up to' an amount including it and a band '>' an amount starting a cent above it. The CPF Board's page states no effective date: the amounts are the same on its page last updated 22 Sep 2026 and on its copies of Jan 2023, Jan 2024 and Jan 2025, so the version starts with the 2026 calendar year as sg-sdl@2026.1 does. An employee who does not wish to contribute, or wishes to contribute a different amount, contacts the fund: the page gives no opt-out rule, so none is held here"
+verifier = "Claude Code against the CPF Board's page on 18 Nov 2026 (p1-statutory-packs) and its copies of 31 Jan 2023, 19 Jan 2024, 22 Jan 2025, 18 Sep 2025 and 23 Jan 2026; the accountant's review is pending (FR-UX-41)"
+conditions = "Employees working in Singapore who belong to the fund's community, as the funds table states: the fund follows the race on the NRIC (the first race listed for two races), and the MBMF follows religion; the amount is the one of the band the employee's monthly total wages fall in, a band 'up to' an amount including it and a band '>' an amount starting a cent above it. The CPF Board's page states no effective date: the amounts are the same on its page last updated 22 Sep 2026 and on its copies of 31 Jan 2023, 19 Jan 2024, 22 Jan 2025, 18 Sep 2025 and 23 Jan 2026, so they were in force on 1 Jan 2026 and the version starts with the 2026 calendar year as sg-sdl@2026.1 does; the date they began is earlier and not stated. An employee who does not wish to contribute, or wishes to contribute a different amount, contacts the fund: the page gives no opt-out rule, so none is held here"
 
 [[sources]]
 id = "cpf-shg"
@@ -24,7 +24,16 @@ url = "https://web.archive.org/web/20250122185048/https://www.cpf.gov.sg/employe
 section = "SHG contribution rates"
 kind = "official guidance"
 retrieved = "2026-11-18"
-quote = "CDAC: $2,000 or less $0.50; > $2,000 to $3,500 $1; > $3,500 to $5,000 $1.50; > $5,000 to $7,500 $2; > $7,500 $3. The same amounts, band for band and fund for fund, as the page of 22 Sep 2026 and its copies of 31 Jan 2023 and 19 Jan 2024."
+quote = "CDAC contribution rates Monthly Total Wages Monthly contribution $2,000 or less $0.50 > $2,000 to $3,500 $1 > $3,500 to $5,000 $1.50 > $5,000 to $7,500 $2 > $7,500 $3 ECF contribution rates Monthly Total Wages Monthly contribution $1,000 or less $2 > $1,000 to $1,500 $4"
+
+[[sources]]
+id = "cpf-shg-2026"
+title = "CPF Board: Contributions to self-help groups, the page as archived on 23 Jan 2026 (Internet Archive)"
+url = "https://web.archive.org/web/20260123142750/https://www.cpf.gov.sg/employer/employer-obligations/contributions-to-self-help-groups"
+section = "SHG contribution rates"
+kind = "official guidance"
+retrieved = "2026-11-18"
+quote = "SINDA contribution rates Monthly Total Wages Monthly contribution $1,000 or less $1 > $1,000 to $1,500 $3 > $1,500 to $2,500 $5 > $2,500 to $4,500 $7 > $4,500 to $7,500 $9 > $7,500 to $10,000 $12 > $10,000 to $15,000 $18 > $15,000 $30"
 
 [[tables]]
 name = "funds"

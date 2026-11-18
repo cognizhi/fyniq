@@ -11,7 +11,6 @@ import (
 
 // req: ENG-30
 // req: QA-ENG-08
-// req: FR-PLN-02
 // The self-help group contributions are chosen by the fund, the month and the wage band, "up to" including its top and
 // "above" starting a cent over it; no wages, an unlisted fund and a month before the version are not guessed.
 func TestTheSHGPack(t *testing.T) {

@@ -30,7 +30,7 @@
   (18 Nov 2026, p1-statutory-packs, shg: `sg-shg@2026.1` holds the four self-help group funds' monthly contributions
   by wage band and who contributes (`funds`, `bands`; `pack.SHGOn`), from the CPF Board's page, with a pinned case on
   both sides of every band's edge. The page states no effective date: the amounts are the same on its page of 22 Sep
-  2026 and on its copies of 31 Jan 2023, 19 Jan 2024 and 22 Jan 2025, so the version starts on 1 Jan 2026 as
+  2026 and on its copies of 31 Jan 2023, 19 Jan 2024, 22 Jan 2025, 18 Sep 2025 and 23 Jan 2026 (the amounts were in force on 1 Jan 2026), so the version starts on 1 Jan 2026 as
   `sg-sdl@2026.1` does [accountant to confirm]. `packs.get` offers it (version 3 of the tool).)
 
 ## 5. Home rows
