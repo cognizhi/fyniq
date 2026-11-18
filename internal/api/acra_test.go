@@ -218,3 +218,53 @@ var matrixAcraRows = map[string]func(e *env, tok string) (response, func() bool)
 		return e.call(http.MethodGet, "/v1/cap-table/acra-reconciliation", tok, nil), nil
 	},
 }
+
+// G4-103: C.2 #26 compares the register with the latest ACRA business profile on that profile's day, which cannot show
+// a later change of shares: once the register changes after it, the check is not assessed, not an all clear, until a
+// newer profile is recorded.
+// req: G4-103
+// req: C.2 #26
+func TestAnExtractOlderThanTheLastShareChangeIsNotAssessed(t *testing.T) {
+	c := newClaimants(t)
+	e := c.e
+	weiling := c.as(c.weiling, authz.Owner, authz.Controller)
+	prep := c.as(c.weiling, authz.Accountant)
+	start, end := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		o, err := u.Organisation(ctx)
+		if err != nil {
+			return err
+		}
+		pr := o.Profile
+		pr.FYStartMonth, pr.BooksStart, pr.FirstYearEnd = 1, &start, &end
+		_, err = u.UpdateOrganisation(ctx, o.Version, pr)
+		return err
+	})
+	founder := e.directorContact("Ah Kow")
+	lion := e.call(http.MethodPost, "/v1/contacts", weiling, map[string]any{"legal_name": "Lion Rock Ventures Pte. Ltd.", "investor": true, "shareholder": true}).str("id")
+	ordinary := e.shareCapitalIn(e.books.Org)
+	issue := func(holder, shares, on string) {
+		t.Helper()
+		if r := e.call(http.MethodPost, "/v1/share-issues", weiling, map[string]any{"holder_id": holder, "class_account_id": ordinary, "shares": shares,
+			"price": "0.01", "consideration": "cash", "resolution_refs": "Allotment resolution", "effective_on": on}); r.Status != http.StatusCreated {
+			t.Fatalf("the shares of %s: %d %s", holder, r.Status, r.Raw)
+		}
+	}
+	issue(founder, "700000", "2025-01-02")
+	x := e.call(http.MethodPost, "/v1/acra-extracts", prep, map[string]any{"profile_on": "2025-02-01",
+		"holdings": []map[string]any{{"holder_id": founder, "class_account_id": ordinary, "shares": "700000"}}})
+	path := "/v1/acra-extracts/" + x.str("id")
+	e.upload(path+"/evidence", prep, map[string]string{"evidence_type": "ACRA business profile"}, "bizfile.pdf", []byte("%PDF-1.7 bizfile"), "If-Match", x.Header.Get("ETag"))
+	cur := e.call(http.MethodGet, path, prep, nil)
+	if r := e.call(http.MethodPost, path+"/record", prep, nil, "If-Match", cur.Header.Get("ETag")); r.Status != http.StatusOK {
+		t.Fatalf("recording the extract: %d %s", r.Status, r.Raw)
+	}
+	wantStatus(t, e.checked("equity.acra-register"), "ok")
+
+	issue(lion, "300000", "2025-03-14")
+	later := e.checked("equity.acra-register")
+	wantStatus(t, later, "not_assessed")
+	if d, _ := later.Body["detail"].(string); !strings.Contains(d, "the latest, of 1 Feb 2025, is older than the register's last change of shares") {
+		t.Errorf("C.2 #26 after a later issue: %s", later.Raw)
+	}
+}

@@ -37,6 +37,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/retention"
 	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
+	"github.com/cognizhi/fyniq/internal/domain/unusual"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/logging"
 	"github.com/cognizhi/fyniq/internal/migration"
@@ -255,6 +256,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		"bank.review-sample": func(ctx context.Context) error { // FR-BNK-14, FM-3: the week's sample into the review
 			return banking.SampleAll(ctx, k.Store, clock.Now())
+		},
+		unusual.Job: func(ctx context.Context) error { // FM-6 (rev 0.287): unusual journals and payments into the review
+			_, err := unusual.ReviewAll(ctx, k.Store, clock.Now())
+			return err
 		},
 		"bank.signals-expiry": func(ctx context.Context) error { // FR-BNK-16: alerts no statement line closed in time
 			_, err := banking.ExpireSignalsAll(ctx, k.Store, clock.Now())

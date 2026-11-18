@@ -175,13 +175,14 @@ Built behaviour that no test asserted in full:
 
 ## The exceptions
 
-- **After go-live (15):**
+- **After go-live (16):**
   - the GST F5's part of `p1-gst`, at registration: FR-TAX-01 to FR-TAX-04, FR-TAX-12, C.2 #46, C.2 #47, G4-011,
     G4-021 (the input-tax claim date) and G4-035, G4-036 (the 2200 roll-forward against the boxes);
   - SOD-4, with payroll;
   - QA-API-04, with Nemura;
   - G4-046, contracted MRR, with P2's subscription schedules (rev 0.8).
   - G4-058, self-approving an AI-drafted tier-2 journal, with the first tier-2 task types (rev 0.286).
+  - G4-052, a board pack re-run as at its revision, with P2's board pack (rev 0.287).
   The others rest on rev 0.25.
 - **Proved in the dev cloud (24):**
   - the controls whose checks run in the cloud (CTL-IAM-03, CTL-IAM-04, CTL-DP-01, CTL-RES-01, CTL-AUD-04, CTL-RES-03,

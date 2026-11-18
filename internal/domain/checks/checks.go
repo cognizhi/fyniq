@@ -156,6 +156,9 @@ type Definition struct {
 	// ReviewedIn is where its items are reviewed, such as the review log, when that is the control itself: they are
 	// never marked reviewed on Checks (rev 0.165, the owner's decision of 2 Nov 2026). "" for none.
 	ReviewedIn string
+	// Packs are the statutory packs its figures read, such as sg-gst: while one has an update the organisation has not
+	// accepted, it is not assessed, based on the version in force (ENG-33, G4-103).
+	Packs []string
 	// Run works it out. An error records the check as failed; the error goes to the server's log, never the result.
 	Run func(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error)
 }
