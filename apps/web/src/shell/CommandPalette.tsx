@@ -1,12 +1,13 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { useNavigate } from "@tanstack/react-router";
 import { Command } from "cmdk";
-import { Contrast, House, Keyboard, ListChecks, Monitor, Moon, Rows3, Search, Sun } from "lucide-react";
+import { Compass, Contrast, House, Keyboard, ListChecks, Monitor, Moon, Rows3, Search, Sun } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { setAppearance, type Appearance } from "../appearance";
 import { helpText } from "../i18n";
 import { routes, type Mode } from "../registry";
 import { openShortcutSheet } from "../shortcuts";
+import { startTour } from "../tour/state";
 import { Icon } from "../ui";
 import { useSelectedRowActions } from "./bulk";
 
@@ -15,7 +16,7 @@ import { useSelectedRowActions } from "./bulk";
 // Themes: "from the header and the command palette"). Loaded on demand, so cmdk is not in the
 // initial bundle (NFR-PERF-UI-03). What is typed can also be searched for across the records (FR-UX-02, rev 0.190); create,
 // reports and Ask AI arrive with p1-app-shell 2.2. When a page has rows selected, their bulk actions come first, and the
-// keyboard shortcuts open from here too (FR-UX-06).
+// keyboard shortcuts open from here too (FR-UX-06), and the first-run tour starts again (FR-UX-34).
 
 const item =
   "flex min-h-9 cursor-default items-center gap-2 rounded-sm px-2 text-base text-foreground outline-none select-none data-[selected=true]:bg-surface-3 pointer-coarse:min-h-(--touch-target)";
@@ -85,6 +86,7 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
               </Command.Group>
               <Command.Group heading="Help" className={group}>
                 {action(helpText("shell.shortcuts").label, <Icon of={Keyboard} />, run(openShortcutSheet))}
+                {action(helpText("shell.tour").label, <Icon of={Compass} />, run(() => startTour()))}
               </Command.Group>
               {typed.trim() !== "" && (
                 <Command.Group heading={helpText("shell.search").label} className={group} forceMount>

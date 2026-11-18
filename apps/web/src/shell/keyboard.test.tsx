@@ -10,6 +10,7 @@ import type { Mode } from "../registry";
 import { routes } from "../registry";
 import { createKeys, defaultSettings, matcher, normalise, problems, setShortcutSettings, shortcutSettings, usual, wait, type Shortcut } from "../shortcuts";
 import { noViolations } from "../test/axe";
+import { onTourStart } from "../tour/state";
 import { AppFrame } from "./AppFrame";
 import { useBulkActions } from "./bulk";
 
@@ -156,6 +157,20 @@ describe("keyboard-first entry", () => {
       expect(term.nextElementSibling?.textContent).toBe(keys);
     }
     await noViolations(document.body);
+  });
+
+  // req: FR-UX-34
+  it("starts the first-run tour again from the command palette", async () => {
+    const started = vi.fn();
+    const off = onTourStart(started);
+    renderFrame("basic", <h1>Home page</h1>);
+    await screen.findByRole("heading", { name: "Home page" });
+    act(() => {
+      fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    });
+    fireEvent.click(await screen.findByRole("option", { name: "Take the tour again" }));
+    expect(started).toHaveBeenCalledWith(0);
+    off();
   });
 
   // req: experience/navigation FR-UX-06 Keyboard-first entry: Single-character shortcuts can be turned off and remapped
