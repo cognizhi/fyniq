@@ -44,6 +44,18 @@
       "label": "Sign out",
       "tooltip": "Ends your session in this browser."
     },
+    "shell.shortcuts": {
+      "label": "Keyboard shortcuts",
+      "tooltip": "Every keyboard shortcut you can use, and where to turn single-character shortcuts off or change their keys. Shortcut: ?"
+    },
+    "shortcuts.settings": {
+      "label": "Single-character shortcuts",
+      "tooltip": "Keys such as G then B, which go to Banking. Turn them off if you use speech input or press keys by accident: Ctrl+K and Ctrl+J still work."
+    },
+    "shortcuts.bulk": {
+      "label": "Selected rows",
+      "tooltip": "What you can do to the rows you selected on this page, the same as its buttons."
+    },
     "shell.tour": {
       "label": "Take the tour again",
       "tooltip": "A short tour of the pages you use, step by step. It changes nothing; Esc ends it."

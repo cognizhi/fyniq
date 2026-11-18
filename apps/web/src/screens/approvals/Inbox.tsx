@@ -13,6 +13,7 @@ import { PoliciesToAcknowledge } from "../compliance/Policies";
 import { TasksToDo } from "../compliance/ComplianceTasks";
 import { DeadlinesSoon } from "../compliance/DeadlinesSoon";
 import { recorders } from "../compliance/StatutoryCalendar";
+import { inboxKeys } from "../../shortcuts";
 import { BillsToPay } from "../purchases/BillsBoard";
 import { operationLabel, StatusChip, type Approval } from "./words";
 
@@ -78,15 +79,6 @@ function Group({ id, title, items, empty, mine }: { id: string; title: string; i
 // The triage keys (FR-UX-03), active only while a request in the list has focus, so they never fire in a text field and
 // need no switch to turn them off (WCAG 2.2 SC 2.1.4): J or ↓ and K or ↑ move, E opens, A and R open the request with its
 // approve or reject confirmation showing, which alone decides; ? shows them.
-const triageKeys = [
-  ["J or ↓", "Next request"],
-  ["K or ↑", "Previous request"],
-  ["E or Enter", "Open it"],
-  ["A", "Open its approval to confirm"],
-  ["R", "Open its rejection to confirm"],
-  ["?", "Show or hide these keys"],
-] as const;
-
 // Inbox (docs/design/screens Inbox; FR-UX-03, FR-APR-01, FM-3): what waits for you. Today its
 // groups are the approval requests (yours to decide, yours waiting, others') and the weekly review
 // of high-risk actions; AI proposals, checks, mentions and deadlines join with their modules. A
@@ -175,7 +167,7 @@ export function Inbox() {
           </button>
           {keys && (
             <dl className="fy-small fy-grid fy-grid--2 gap-1" aria-label="Inbox keys">
-              {triageKeys.map(([key, what]) => (
+              {inboxKeys.map(([key, what]) => (
                 <div key={key} className="fy-row gap-2">
                   <dt className="fy-mono">{key}</dt>
                   <dd>{what}</dd>
