@@ -120,6 +120,13 @@
       "$ref": "Money.schema.json",
       "description": "A posted bill: what is still to pay of it, in its currency: its total less what payments settle (FR-AR-18)."
     },
+    "opening_item": {
+      "description": "Whether it is an opening item: received before the books start and unpaid then, posted at the books start against 3900 Opening balance clearing (FR-GL-06).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "payable": {
       "$ref": "Money.schema.json",
       "description": "What it adds to accounts payable in the base currency (a vendor credit: what it takes off): as posted, or as posting would post it; absent while it cannot post."
@@ -214,6 +221,7 @@
     "currency",
     "lines",
     "input_tax",
+    "opening_item",
     "input_tax_decisions",
     "total",
     "payments",

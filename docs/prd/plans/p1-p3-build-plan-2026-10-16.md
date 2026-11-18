@@ -11,9 +11,9 @@ behind the specs or the screens.
 
 <!-- roadmap:summary -->
 
-That is all 1,378 requirements:
-- 113 belong to the P0 changes, which built them or hold them for the cloud gate;
-- the other 1,265 are spread over 65 changes below;
+That is all 1,388 requirements:
+- 114 belong to the P0 changes, which built them or hold them for the cloud gate;
+- the other 1,274 are spread over 66 changes below;
 - all 202 designed screens after P0 sit with the change that owns most of their requirements.
 
 <!-- /roadmap -->
@@ -82,7 +82,7 @@ Everything in the P0 plan's "Rules for building P0" still holds. In addition:
 | Criterion | Today |
 |---|---|
 | 1 · Every question needed by P1 planning or build has a recorded decision | Met on 16 Oct 2026: PRD-001 §20 and PRD-002 §23 record every decision (rev 0.25 and rev 0.7) |
-| 2 · The launch subset is frozen (open question 25) | The founders accepted the proposal below. Four changes it leaves to decide are decided before their wave starts. The first task of `p1-launch-readiness`, done early in wave 1, records the subset in the repository and makes the trace gate (QA-TRACE-01) check it |
+| 2 · The launch subset is frozen (open question 25) | The founders accepted the proposal below. Four changes it leaves to decide are decided before their wave starts. All four are decided: expense claims and payment files join it and the payment providers follow go-live (26 Oct 2026, rev 0.146); the company secretary joins it in full, with the AI changes it needs (13 Nov 2026, rev 0.274). The first task of `p1-launch-readiness`, done early in wave 1, records the subset in the repository and makes the trace gate (QA-TRACE-01) check it |
 | 3 · Accountant and tax agent reviews | No longer a gate (rev 0.22): pages under review show the FR-UX-41 banner |
 
 Question 26 adds one condition: the P1 build starts once the one-page comparison of build, hybrid and
@@ -311,6 +311,257 @@ By the owner's decisions of the same day (PRD-001 rev 0.246):
 
 Its cloud parts are code with module tests, verified in the dev cloud later.
 
+It was built on 10 and 11 Nov 2026, in #543 to #555 and #557, one pull request per slice, stacked on #540. The parts:
+- the release workflow: keyless signatures, the SBOM and SLSA provenance verified before the Binary Authorization
+  attestation, made as an attester only a version tag reaches;
+- reproducible images, checked daily;
+- one egress client, and registered private endpoints with pinned keys and dual control;
+- the edge with Cloud Armor, the client's headers trusted only from the load balancer, and per-IP limits;
+- 5-minute signed downloads of evidence, and ClamAV in the cloud as a private scanner service: an HTTP front with clamd
+  as its sidecar, since a Cloud Run service takes no raw TCP (the owner's decision of 11 Nov 2026, rev 0.247), its clamd
+  image Debian's packages on distroless/cc, and the image scan blocking only what a patch exists for (rev 0.248);
+- SEC-31's security alerts;
+- the central log store, cloud posture (the SLA of 7 days for a Critical finding and 30 for a High one, the owner's
+  decision of 11 Nov 2026, rev 0.247), the daily log scan and staging's weekly scan for production data;
+- DAST on every pull request against the signed-in local stack, nightly on staging once it exists;
+- Dependabot for Go, npm and the oracle, govulncheck and pnpm audit, Go 1.27.3 and then 1.27.4 for the vulnerabilities
+  they found, and gosec 2.30.0, which reads their export data;
+- the auto-approval's archtest and CODEOWNERS;
+- the platform version, the About dialog, and the version and commit in every export;
+- the incident runbook and register;
+- the threat model `docs/security/threat-models/security-hardening.md`.
+
+One thing waits: `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists.
+
+`p1-operations-dr` was proposed on 11 Nov 2026 (#558), next in wave 7, to build backups and restore drills, the
+evidence buckets, traces, SLOs and the heartbeat's alerts, the performance budgets, the browsers, the idle-cost alert
+and the operations tray.
+
+By the owner's decisions of the same day (PRD-001 rev 0.249):
+- the monthly restore clones the database in production's own project, and the quarterly drill restores into an
+  isolated one;
+- traces are sampled at 10%, every error kept;
+- the performance harness runs weekly at 1 M lines and at 10 M before each minor release;
+- the scanner's warm instance is a fixed fee billed while idle.
+
+It was built on 11 Nov 2026, in #559 to #573, one pull request per slice, stacked on #558. The parts:
+- the weekly export into a locked bucket in `fyniq-audit` with its own key, the first of each month copied and kept a
+  year, and production's database required to be regional;
+- the evidence buckets, each committed file locked under its retention, and a daily check of every file's lock;
+- the monthly restore drill: a clone of production as it was an hour ago, its ledger and audit chain verified, then
+  removed, under roles that reach only the drill's copies; the quarterly drill by runbook; the DPO's register of both;
+- pgAudit's entries in the security log sink;
+- OpenTelemetry traces to Cloud Trace, with only allow-listed attributes;
+- SLOs with fast and slow burn-rate alerts for each public service;
+- a heartbeat from every job, absence alerts to the platform owner and then the founders, an hourly check of the job
+  slots, the scheduler's configuration checked, and the heartbeat drill's register;
+- the performance harness (`make perf`) and its weekly and release workflow;
+- the supported browsers, built for and tested in Chromium, Firefox and WebKit;
+- the idle-compute alert and the cost review's runbook;
+- the operations tray;
+- the threat model `docs/security/threat-models/operations-dr.md`.
+
+The first larger local run of the harness, at about 200,000 lines, found three things:
+- the general ledger export stops at 5,000 lines an account, so NFR-PERF-05's export at 1 M lines cannot pass;
+- the reports' time grows with the ledger (about 1.2 s at that size), so NFR-PERF-02 may not hold at 1 M;
+- the edge's compression changes the API's ETags, which `If-Match` then refuses.
+
+By the owner's decisions of the same day, once it was built (PRD-001 rev 0.250 to 0.252), its task 13 was built in
+#574 to #578:
+- the evidence buckets and the sealed fields' key ring moved to `fyniq-audit`;
+- production sends traces only once Cloud Trace keeps them in Singapore (a switch, off);
+- `If-Match` accepts the API's own tag as a compressing proxy changes it (Caddy names its encoding in it, rev 0.251);
+- the 10 M-line run gates from the first release, so what the harness found was fixed first, and the harness gates on
+  100 people pausing between reads (rev 0.252): the general ledger export streams, the reports read the balances cache
+  when nothing later is in a period, search and lists use trigram and date indexes, the bank import's matching reads
+  only lines of the same amount, the balance sheet's movement in equity no longer walks every entry, and the checks
+  refresh at most once a minute through a burst. The local 1 M-line run met every gated budget: reads 54 ms, reports
+  116 ms, posting 40 ms, a 10,000-line import 29 s and a 1 M-line export 2m57s.
+- Building also found that the local stack's services shared no data directory (each its own tmpfs and keys): they
+  share one volume now. The local restore drill runs only when asked, since its copy stops the database's connections.
+- At 10 M lines the checks' refreshes stacked up and each walked the ledger, a search for a common word read every
+  document, and a bank line's match read a busy account's fortnight: one refresh runs at a time, a month's cash flow
+  and the evidence check read their pages, a search reads the newest documents first, and the match its amount's
+  lines (migration 000323). The local 10 M-line run met every gated budget: reads 14 ms, reports 150 ms, posting 30 ms,
+  a 10,000-line import 24 s and a 1 M-line export 38 s; the 1 M-line run again, reads 11 ms and the import 12 s.
+
+One thing waits beyond it: `[live-verify]` of every cloud part in the dev cloud, which `p1-launch-readiness` lists, with
+whether GitHub's runners hold the 10 M-line run `[verify]`.
+
+`p1-workbook-migration` was proposed on 12 Nov 2026, next in wave 7, to move the books from the workbook and prove the
+move (FR-MIG-01 to FR-MIG-04, §17.1's M1 to M6). The owner decided three things first (PRD-001 rev 0.254):
+- payroll history comes as one posted summary journal a month, keeping the amounts paid and reported to the CPF Board;
+- an import goes only into an organisation with no posted entries;
+- projects become the project dimension's values, with timesheets kept in the archived workbook.
+
+It reads the workbook sheet by sheet into a validation report before anything is written, commits as one approved
+operation through the commands a person's entry takes, and reconciles with the workbook's own Trial Balance by account
+and month to the cent. It also builds FR-GL-06's opening open items through a clearing account [accountant to confirm],
+the generic import with the workbook's sheets as templates, and the full tenant export. The whole path is rehearsed on
+the synthetic sample workbook.
+
+It was built on 12 and 13 Nov 2026, in #584, #586 to #596, #603 to #614 and #615 to #618, one pull request per slice,
+stacked on #583 (PRD-001 rev 0.255 to 0.273). The parts:
+- the named-sheet reader, the pinned sample fixture, `RND-IMPORT` and the typed model, and the validation report by
+  sheet, row and column (M1);
+- the mapping onto Fyniq's chart, GST codes, dimensions, people and plans, versioned and signed by the Accountant (M2);
+- the commit as one approval by an Owner who did not ask, then resumable batches through the commands a person's entry
+  takes, each record naming its row: the set-up, the year's history or a clean start from Carry Forward, the opening
+  open items through 3900 Opening balance clearing [accountant to confirm], payroll as a summary journal a month,
+  funding, the recurring rows, the budget and the forecast (M3);
+- the parity report by account and month to the cent, with the open items and the payroll totals, and the difference
+  register decided a, b or c and signed by the Accountant (M4); then the parallel month the same way (M5);
+- go-live: the migration's files copied to the retention-locked store with their hashes, and the migration closed (M6);
+- the generic import of the ten entities of design D9, from templates laid out as the workbook's sheets, with a dry run;
+- the full tenant export: every table catalogued as exported or excluded, one ZIP with a manifest of hashes, asked for
+  by one person, approved by another and saved by its requester within 24 hours [counsel to confirm the sealed values
+  in clear];
+- the screens `workbook-import` and `data-export`, with their guides compiled into `kb/`;
+- the threat model `docs/security/threat-models/migration-and-export.md`, and the rehearsal of M1 to M6 on the sample.
+
+The F5 comparison moved to `p1-gst`'s task 7.2, which builds the F5 return it compares. Two things wait beyond it: the
+cloud parts' `[live-verify]` (the staging bucket's signed links, and the worker's key to open the sealed values), and
+the founders' own migration on the real workbook, which `p1-launch-readiness` lists.
+
+`p1-ai-providers` was proposed on 13 Nov 2026, in wave 6 and now in the launch subset (PRD-001 rev 0.274), so that the
+company secretary's agent and the assistant run on models the organisation chose, within its data rules and its budget.
+With it, the owner moved the AI activity log (AI-12) and the switch with token budgets (AI-13) here from
+`p1-ai-proposals` (rev 0.275), and set who reads the log as a new row of Appendix D (rev 0.276).
+
+It was built on 14 Nov 2026, in #624 to #647 and #649 to #658, one pull request per slice, stacked on #623; #657 and
+#658 close what `/opsx:verify` found (AI-84's stale limit and AI-73's per-model quota rates). The parts:
+- one provider-neutral model port, replayed offline, with a developer's own command-line agent for local runs only
+  (DEV-09), and the screening adapters for p1-ai-assistant's guardrails;
+- model-provider connectors over plain HTTP for Anthropic (its API and Agent Platform), OpenAI, Gemini and any
+  OpenAI-compatible endpoint, each proved by a conformance suite against its fake;
+- connections, dual controlled and off by default, with keys in the secret store, one https host each through the
+  egress guard, and the data-class policy with each connection's data handling and evidence;
+- model lists from each provider, the allow-list after a probe and a second approver, and prices from the provider's
+  list, Google's billing catalogue or LiteLLM's catalogue, or an Owner with a second approver;
+- routes per agent with presets A to C, the router's failover only to eligible steps, budgets in the base currency and
+  in tokens reserved in the database, the AI switch, and qualification by each agent's evals (`make evals`, CTL-AI-05);
+- the AI activity log, the AI inventory (CMP-AI-02) and the AI routes check (C.2 #55);
+- the screens `ai-settings`, `ai-usage`, `ai-providers`, `ai-provider-connection`, `ai-model-routes`,
+  `ai-route-editor`, `ai-activity-log` and `my-ai-plan`, with their guides compiled into `kb/`;
+- the threat model `docs/security/threat-models/ai-providers.md` for security review #4.
+
+Two things wait beyond it: the live providers, Agent Platform in Singapore and Model Armor, `[live-verify]` in the dev
+cloud with real keys; and ADR-T2's revisit at enablement, which preset the founders' routes start on `[verify]`. The owner decided
+on 14 Nov 2026 that the AI service meters its agents' calls through the API (design D11 (a)), so CMP-AI-01 is
+unchanged; `p1-ai-assistant` builds the internal operation.
+
+`p1-ai-assistant` was proposed on 14 Nov 2026 (PRD-001 rev 0.277) and built on 14 and 15 Nov 2026 in the pull requests
+from #661 onwards, one per slice, stacked on #660; the owner decided on 15 Nov 2026 that an AI cell of "Proposal" includes
+the view (rev 0.278). The parts:
+- the AI service (`cmd/ai`), with no database code, reaching the platform only through the API's internal operations
+  on internal ingress, with its own token and a delegated read token for each turn alone, refused at the edge;
+- the read tools as a registry of bounded, read-only, hash-pinned definitions, run as the person through the public
+  read operations, with the AI exclusions after any masking; typed facts from the semantic layer, within row and token
+  limits; the calculator; untrusted text quoted and screened, failing closed;
+- grounded answers: a strict structure binding each figure to a fact, asked again once and then withheld, rendered by
+  Fyniq, in a fixed Markdown subset;
+- conversations append-only under FORCE RLS, admitted by the AI switch and the limits, relayed as server-sent events,
+  in the activity log with their classes and masks, purged after their retention; feedback, reviewed by an Owner or an
+  Administrator;
+- CTL-AI-06 running in CI and daily; the eval harness, with 243 golden questions checked against the oracle, the seed
+  and the API, and a red team planted in the sample company; the monitoring in AI usage, the activity log and the
+  traces;
+- the panel (`ai-assistant-panel`) with Ask about this, Explain, Simulate and ratings; the go-live check for preset A;
+- the threat model `docs/security/threat-models/ai-assistant.md` for security review #4.
+
+Building it found and fixed three things: earlier questions went back to the model unfiltered; the sample company's other
+income loaded as expenses; and the spend measures cited the profit and loss where they are the KPIs'. Three things
+wait beyond it:
+- each model's recordings and the release gate on them, Model Armor and Agent Platform in Singapore, `[live-verify]`
+  in the dev cloud;
+- whether the location policy refuses the global endpoint `[verify]`;
+- a read tool for pay records, when payroll arrives.
+
+`p1-ai-proposals-core` was proposed on 15 Nov 2026 (PRD-001 rev 0.279: the owner's decision that a minimal slice of
+the proposals joins the launch) and built that day. The pull requests run from #688 onwards, one per slice, stacked on
+#687. The owner decided the same day (rev 0.280, AI-89) two things:
+- an AI proposal is an approval request as it becomes Pending, its requester authenticated by their live turn, who may
+  sign their own tier-1 proposal;
+- the Company secretary approves every `sec.*` proposal.
+The parts:
+- the catalogue as versioned data, pinned by hash, with §9.6's never-list in code, and the task types turned on per
+  organisation (`ai.task_types`) only with a second approver;
+- the proposal store under its guard, each step by its own role; a turn proposes only the types that are on, through
+  the AI service, checked, screened and dry-run as the person, Pending or Invalid;
+- the approval request signing the payload's hash, with the task type's approver roles and the command's right as a
+  person; approving some items of a batch; a rejection's reason fed back, screened;
+- the executor, running an approved proposal once as its approver, or saying why not; expiry after 72 hours and the
+  check for one waiting over 48 (C.2 #19);
+- the screens `ai-proposal-review` and `ai-tasks`, with their guide compiled into `kb/`;
+- the proposal evals' harness with a fixture suite; CTL-AI-02 nightly, CTL-AI-03 and CTL-AI-04 in CI; a red team
+  against the write path;
+- the threat model `docs/security/threat-models/ai-proposals.md` for security review #4.
+
+Building it found and fixed two things:
+- the never-list in code lacked rev 0.3's and rev 0.6's items: equity, a director's balance, officers, registers and an
+  obligation marked met;
+- the expiry job's test expired other organisations' proposals in the shared test database.
+
+The release's own task types wait beyond it, each with its command, its suite and its red-team cases. The company
+secretary's three come first, with `p1-scheduled-agents` and `p1-company-secretary`. Approval quality, tier 3 and undo
+come with `p1-ai-proposals` after go-live.
+
+`p1-scheduled-agents` was proposed on 15 Nov 2026 and built on 15 and 16 Nov 2026, one pull request per slice from #705
+onwards. The owner decided two things that day (rev 0.281, AI-89):
+- a run's model step goes through one internal API operation that the worker calls with its own service token;
+- a run's proposals are requested for the Owner who turned the agent on, as `ai_run`, and that Owner may sign them at
+  tier 1.
+The parts:
+- skills pinned per release (`agents/agents.lock.json`), checked against their profile and the never-list as they load;
+- the agent's settings, off until a second approver turns it on; schedules queued from the database at their time,
+  event triggers, Run now, and the watchdog (C.2 #36);
+- the run job: deterministic findings first, one open task per finding, a report never "all clear" with anything open,
+  the recipients told; the model asked only when an input changed;
+- the run's grant, within its skill's tools and task types, and the model step through the API and the AI service's
+  `/runs`, with the agent's rejected proposals fed back;
+- `sec.create_task` and `sec.draft_reminder`, which the Owner or the Company secretary approves;
+- the screens `company-secretary` and `agent-run-report`, and the Inbox's tasks;
+- the `agent` eval suite kind with the launch's cases, CTL-AI-09 nightly and in CI, and the threat model
+  `docs/security/threat-models/scheduled-agents.md` for security review #4.
+
+Building it found and fixed three things:
+- the push queue held a scheduled task on the wall clock rather than the clock that set it;
+- the C.2 #19 check's test proposed from a run that did not exist, which the run's guard now refuses;
+- the delivery log's purposes lacked the remittance advice's.
+
+Two things wait beyond it: each model's recordings of the agent suites, and the worker's cloud path to the API with
+Model Armor, `[live-verify]` in the dev cloud. The secretary's own checks and documents come with
+`p1-company-secretary`.
+
+`p1-company-secretary` was proposed and built on 16 Nov 2026, one pull request per slice from #724 onwards. The owner
+decided three things that day:
+- the corporate profile has its own row in Appendix D (rev 0.282): the Accountant and the Company secretary record
+  changes, and the Owner and the Controller approve them;
+- a run whose AI step cannot run keeps its findings and tasks and says why (rev 0.283);
+- the templates and `sec.draft_document` are built now, and the Act-only rules wait for a person to read SSO.
+
+The parts:
+- `sg-acra@2026.1`, ACRA's guidance kept apart from the Act's sections, with its periods counted in days, business days
+  and months;
+- the corporate profile: the company's details, officers, nominee registers and the directors' approvals of the
+  statements, each recorded on another person's approval with its evidence;
+- the lodgements in the statutory calendar, and the profile against ACRA's business profile;
+- the checks C.2 #32 to #35, each Not assessed with its missing input named, and the skill's version 2 reading them;
+- the Company secretary role's own cells, and the screen `corporate-profile` with its papers and minute book;
+- nine templates rendered to PDF by the render service's new paper layout, the minute book, and `sec.draft_document`,
+  whose text approved is its base;
+- the launch suite's G4-102 and G4-110 cases, and the threat model's T11 and T12.
+
+Building it found and fixed three things:
+- the agent evals never ran the checks before the monitor, so their check findings all said "has not run yet";
+- a paper with no UEN or office broke the PDF layout;
+- the executor could not read the register of members it needs for a members' resolution.
+
+Several things wait beyond it:
+- the Act-only rules (s177, s184A–G, s188) in `sg-acra@2026.2`, for a person to read SSO;
+- the accountant's review of the pack and the checks, and a lawyer's of the templates (the review register, #734);
+- the annual return pack (FR-CS-07) in P2.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |
@@ -318,7 +569,7 @@ Its cloud parts are code with module tests, verified in the dev cloud later.
 | 1 | `p1-organisation-chart` | Organisation profile, financial year, GST status, defaults, feature switches, logo and brand; the chart of accounts and dimensions; contacts with vendor bank details as high-risk data; items; the logical data model | 34 | 6 | P0 | — | — | Accountant (chart) | Launch |
 | 1 | `p1-public-api` | The /v1 conventions claimed as requirements (versioning, problem details, idempotency, concurrency, lists, long and bulk operations, preview before commit, rate limits), machine-readable contracts and the TypeScript SDK; every later change adds its operations here first | 13 | 0 | P0 | — | — | — | Launch |
 | 1 | `p1-statutory-packs` | Effective-dated statutory packs with source URLs and pinned tests (GST rates and codes, CPF, SDL, SHG, FWL, deadlines), the tax point, GST rounding, dual approval before activation, and the §14.2 obligations they serve | 25 | 1 | `p1-organisation-chart` | — | — | Tax agent and accountant (#5) | Launch |
-| 1 | `p1-users-roles` | Invitations, the finance roles and combinations of Appendix D, MFA with TOTP and passkey step-up, sessions, external users, OAuth clients, Super admin scope and succession, account recovery; the permission matrix of Appendix D, closed row by row as each module arrives | 96 | 5 | P0 | Local sign-in page; Identity Platform through its fake | — | Security (#4), co-founder (#6) | Launch |
+| 1 | `p1-users-roles` | Invitations, the finance roles and combinations of Appendix D, MFA with TOTP and passkey step-up, sessions, external users, OAuth clients, Super admin scope and succession, account recovery; the permission matrix of Appendix D, closed row by row as each module arrives | 100 | 5 | P0 | Local sign-in page; Identity Platform through its fake | — | Security (#4), co-founder (#6) | Launch |
 | 1 | `p1-approval-engine` | Approval policies per object type, signed approval records, step-up, expiry, approval-gated policy changes; the team modes and the founder-mode rules FM-1…9 with thresholds and break-glass | 22 | 6 | `p1-users-roles` | — | — | Co-founder (#6) | Launch |
 | 1 | `p1-app-shell` | Sidebar and workspaces by role, command palette, global search, Inbox, drill-down, side peeks, grids, record pages, comments, live updates, the clipboard rules, help registry, tooltips, user guide, first-run walkthrough, the FR-UX-41 banner, Basic and Expert modes with the feature registry, themes, accessibility, devices and motion | 83 | 18 | `p1-users-roles` | — | — | — | Launch |
 | 1 | `p1-documents-evidence` | Attachments on any record, retention-locked storage, issued documents kept with their versions, evidence rules and defaults, evidence integrity, safe files, two-phase upload, evidence search and export, evidence through the API | 17 | 2 | `p1-organisation-chart` | Local blob directory and fake GCS; the retention lock itself is proved at the cloud gate | — | — | Launch |
@@ -345,17 +596,18 @@ Its cloud parts are code with module tests, verified in the dev cloud later.
 | 5 | `p1-audit-explorer` | Sensitive values in the trail, period-close snapshots, logged sensitive reads and exports, audit retention, the audit explorer and export, purge and restore that keep the chain, the ledger's purge with carried-forward balances | 10 | 1 | `p1-general-ledger-close` | — | — | Security (#4) | Launch |
 | 5 | `p1-compliance-center` | The control dashboard, attestations, the risk register and the policy library; the control rows of Appendix F whose modules are built, each closed when its check runs; the AI write-grant control test | 52 | 3 | `p1-checks` | Evidence from local runs; cloud evidence at the cloud gate | — | Security (#4) | Launch |
 | 5 | `p1-pdpa-retention` | The DPO, data inventory, notices and consent, access and correction requests, breach timers, transfers, NRIC handling, DPIAs; encryption, application-level encryption, residency, minimisation; retention per data class with crypto-shredding | 22 | 2 | `p1-documents-evidence`, `p1-audit-explorer` | — | Counsel confirms before payroll data is loaded (Q39) | Security (#4) | Launch (before payroll data) |
-| 6 | `p1-ai-providers` | One model port, provider connectors and capabilities, routes per agent, data handling per provider, failover, usage and budgets, qualification, model lists and prices from their sources | 29 | 8 | `p1-connector-framework` | Replay mode offline; live local tests through DEV-09's adapters or an API key | A developer's own Claude or ChatGPT plan, or an API key, for live local tests (DEV-09) | Security (#4) | After go-live |
-| 6 | `p1-ai-assistant` | On-behalf-of read tools, exclusions, the semantic layer, result limits, typed facts, guardrails against the OWASP LLM risks, the eval suites, Ask, explain and simulate | 26 | 1 | `p1-ai-providers`, `p1-reports` | Evals in replay; live runs with the local AI provider | — | Security (#4) | After go-live |
-| 6 | `p1-knowledge-base` | The organisation knowledge base from trusted sources, context assembly, compile, index and lint, trust, versioning and publishing | 16 | 1 | `p1-ai-assistant` | — | — | Security (#4) | After go-live |
-| 6 | `p1-ai-proposals` | The proposal principles, the task catalogue of Appendix E, approval of AI work, numeric grounding, idempotent execution through the executor, undo, kill switches and budgets, the red-team cases | 58 | 2 | `p1-ai-assistant`, `p1-approval-engine` | — | — | Security (#4) | After go-live |
-| 6 | `p1-mcp-first-party` | The MCP server for first-party clients: client classes, off by default, audience-bound tokens with option (b), consent and scopes, transport, the tool surface, limits, audit and detection; the local MCP endpoint; QA-MCP-01 | 23 | 2 | `p1-ai-proposals` | Option (b) with a local key; Cloud KMS at the cloud gate | Security review #4 | Security (#4) | After go-live |
-| 6 | `p1-scheduled-agents` | Agent skills, schedules and triggers, identity and permissions, deterministic first, outputs, the never-list, budgets and failure | 11 | 2 | `p1-ai-assistant` | — | — | Security (#4) | After go-live |
-| 6 | `p1-company-secretary` | The corporate profile, ACRA pack, cross-checks, the company secretary workspace and role, document drafts, the named human secretary, and the AI secretary's scheduled checks | 12 | 1 | `p1-scheduled-agents`, `p1-equity-register` | — | A corporate secretarial firm appointed (Q19) | Accountant | Decide (Q25) |
+| 6 | `p1-ai-providers` | One model port, provider connectors and capabilities, routes per agent, data handling per provider, failover, usage and budgets, qualification, model lists and prices from their sources | 31 | 8 | `p1-connector-framework` | Replay mode offline; live local tests through DEV-09's adapters or an API key | A developer's own Claude or ChatGPT plan, or an API key, for live local tests (DEV-09) | Security (#4) | Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs) |
+| 6 | `p1-ai-assistant` | On-behalf-of read tools, exclusions, the semantic layer, result limits, typed facts, numeric grounding and the calculator, guardrails against the OWASP LLM risks, the eval harness with the golden questions and the red team, Ask, explain and simulate | 29 | 1 | `p1-ai-providers`, `p1-reports` | Evals in replay; live runs with the local AI provider | — | Security (#4) | Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs) |
+| 6 | `p1-knowledge-base` | The organisation knowledge base from trusted sources, context assembly, compile, index and lint, trust, versioning and publishing | 17 | 1 | `p1-ai-assistant` | — | — | Security (#4) | After go-live |
+| 6 | `p1-ai-proposals-core` | The proposal principles and store, the catalogue as dual-controlled data with its tiers and never-list, approval of AI work in the Inbox with rejection reasons fed back, idempotent execution through the executor as the approving human, the proposal evals' harness and the controls | 27 | 2 | `p1-ai-assistant`, `p1-approval-engine` | — | — | Security (#4) | Launch (owner, 15 Nov 2026: the proposals the company secretary's agent needs) |
+| 6 | `p1-ai-proposals` | The rest of the task catalogue of Appendix E (bank, sales, purchases, journals, contacts, planning, reports, knowledge pages), two approvers for tier 3, undo, approval-quality metrics | 21 | 0 | `p1-ai-proposals-core` | — | — | Security (#4) | After go-live |
+| 6 | `p1-mcp-first-party` | The MCP server for first-party clients: client classes, off by default, audience-bound tokens with option (b), consent and scopes, transport, the tool surface, limits, audit and detection; the local MCP endpoint; QA-MCP-01 | 24 | 2 | `p1-ai-proposals` | Option (b) with a local key; Cloud KMS at the cloud gate | Security review #4 | Security (#4) | After go-live |
+| 6 | `p1-scheduled-agents` | Agent skills, schedules and triggers, identity and permissions, deterministic first, outputs with their Inbox tasks and the sec.create_task and sec.draft_reminder proposals, the never-list, budgets and failure | 14 | 2 | `p1-ai-assistant`, `p1-ai-proposals-core` | — | — | Security (#4) | Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs) |
+| 6 | `p1-company-secretary` | The corporate profile, ACRA pack, cross-checks, the company secretary workspace and role, document drafts, the named human secretary, and the AI secretary's scheduled checks | 13 | 1 | `p1-scheduled-agents`, `p1-equity-register` | — | A corporate secretarial firm appointed (Q19) | Accountant | Launch (owner, 13 Nov 2026: in full, with the AI secretary's scheduled checks) |
 | 6 | `p1-document-capture` | Smart document capture (upload, paste, email-in), bill capture and automated bill entry, as drafts a person confirms | 3 | 1 | `p1-ai-providers`, `p1-purchases`, `p1-templates-email` | Inbound email through Mailpit | — | Security (#4) | After go-live |
 | 7 | `p1-security-hardening` | Web protections, uploads, outbound requests to configured hosts, registered private endpoints, dependency hygiene, SLSA provenance and reproducible builds, security monitoring, alerting and the incident runbook, release review and recorded versions | 19 | 0 | P0 | Local logs and alerts; Binary Authorization and cloud posture at the cloud gate | — | Security (#4) | Launch |
 | 7 | `p1-operations-dr` | Observability and the scheduler heartbeat, the performance budgets, volume, availability and browsers, cost targets and limits, backup, PITR, DR copy, restore drills and attachment storage | 31 | 1 | P0 | Performance budgets locally; backups, restores and observability at the cloud gate | — | — | Launch |
-| 7 | `p1-workbook-migration` | Workbook import, import reconciliation, generic import and full tenant export; the M1…M6 migration steps rehearsed on the synthetic sample workbook | 8 | 2 | `p1-sales`, `p1-purchases`, `p1-bank-import-reconcile`, `p1-founders-money` | The synthetic sample workbook only: real company data never comes to a laptop (DEV-08) | The accountant confirms the framework (Q31) and the founders' balances (Q15) | Accountant | Launch |
+| 7 | `p1-workbook-migration` | Workbook import, import reconciliation, generic import and full tenant export; the M1…M6 migration steps rehearsed on the synthetic sample workbook | 10 | 2 | `p1-sales`, `p1-purchases`, `p1-bank-import-reconcile`, `p1-founders-money` | The synthetic sample workbook only: real company data never comes to a laptop (DEV-08) | The accountant confirms the framework (Q31) and the founders' balances (Q15) | Accountant | Launch |
 | 7 | `p1-launch-readiness` | The quality gates as requirements (calculation correctness, test gates), the trace gate against the frozen launch subset, the acceptance scenarios of Appendix G and the UAT scripts | 50 | 0 | `p1-workbook-migration` | — | The launch rows left to decide (Q25) | — | Launch |
 
 <!-- /roadmap -->
@@ -436,12 +688,12 @@ Each change is planned against its sandbox, like the P1 connectors.
 | 1 | `p2-bank-feeds-payments` | Bank feeds, bank APIs and host-to-host, DBS RAPID or IDEAL Connect, card feeds, payment links (Model A), online payment, corporate cards | 4 | 0 | `p1-bank-import-reconcile`, `p1-payment-providers` | Against sandboxes | Q24; a licensed feed provider; HitPay | Co-founder | — |
 | 1 | `p2-tax-filings` | Corporate income tax support, F7 and F8, IRAS API filing, published pack updates, bad-debt relief with GST | 3 | 2 | `p1-gst` | Against IRAS's sandbox | IRAS API access | Tax agent | — |
 | 1 | `p2-payroll-outputs` | Payslip documents, the CPF submission file, IR8A and the Auto-Inclusion Scheme (in Nemura where it runs payroll) | 3 | 1 | `p1-nemura-payroll` | — | CPF Board and IRAS formats | Payroll administrator | — |
-| 2 | `p2-reporting-planning` | Report builder, board pack, scheduled reports, deferral roll-forward, configurable dashboards, customer counts, anomaly alerts, industry benchmarks, rolling forecast, the funding plan, investor updates, access, obligations and the exit waterfall, shares for services, allocation rules, asset reports | 18 | 7 | `p1-reports`, `p1-planning`, `p1-equity-register` | — | — | Accountant | — |
+| 2 | `p2-reporting-planning` | Report builder, board pack, scheduled reports, deferral roll-forward, configurable dashboards, customer counts, anomaly alerts, industry benchmarks, rolling forecast, the funding plan, investor updates, access, obligations and the exit waterfall, shares for services, allocation rules, asset reports; the auditor's engagement | 19 | 7 | `p1-reports`, `p1-planning`, `p1-equity-register` | — | — | Accountant | — |
 | 2 | `p2-customer-portal-subscriptions` | The customer portal, subscription revenue schedules, disputes and promise-to-pay, revenue over time for fixed-fee projects | 3 | 1 | `p1-sales`, `p1-projects` | — | — | — | — |
 | 2 | `p2-api-third-parties` | Third-party API clients, webhooks and events, the semantic metrics endpoint, the sandbox, Go and Python SDKs, third-party MCP clients, ticketing connectors, Slack and Zoho Cliq | 8 | 2 | `p1-public-api`, `p1-mcp-first-party` | — | Q22 | Security | — |
 | 2 | `p2-mobile-approvals-automation` | The PWA with offline reads and camera capture, approval delegation, escalation, approvals by email and PWA, workflow rules without code, outbound webhooks, soft locks, vendor statements, supplier contracts, the usage view, pinned Basic mode, tours, code-mode templates and the template editor's layout, column chooser, conditional blocks and visual diff (the P2 halves of FR-TPL-01, 02 and 04), the annual-return pack, evidence export | 16 | 1 | `p1-app-shell`, `p1-approval-engine` | — | — | Co-founder | — |
 | 3 | `p2-ai-expansion` | Approval-quality metrics and more task types, knowledge pages from documents, document AI drafts | 2 | 0 | `p1-ai-proposals`, `p1-knowledge-base` | — | — | Security | — |
-| 3 | `p2-security-certification` | Penetration testing and DAST; Cyber Trust or ISO 27001 readiness | 1 | 0 | `p1-security-hardening` | — | Q8 | Security | — |
+| 3 | `p2-security-certification` | Penetration testing and DAST; Cyber Trust or ISO 27001 readiness; retention and legal holds | 2 | 0 | `p1-security-hardening` | — | Q8 | Security | — |
 
 <!-- /roadmap -->
 
@@ -481,7 +733,7 @@ as a posting rule or a use case; `openspec show <capability> --type spec` lists 
 | `p1-organisation-chart` | `data/data-model`: 14 unnumbered; `ledger/chart-of-accounts`: FR-COA-01, FR-COA-02, FR-COA-03, FR-COA-04, FR-COA-05, FR-DIM-01, FR-DIM-02; `master-data/contacts`: FR-CT-01, FR-CT-02, FR-CT-03, FR-CT-04; `master-data/items`: FR-ITM-01; `organisation/settings`: FR-ORG-01, FR-ORG-02, FR-ORG-03, FR-ORG-04, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-ORG-09<br>Screens: chart-of-accounts, contact-record, contacts-list, items, logo-brand, organisation-settings |
 | `p1-public-api` | `integrations/public-api`: FR-INT-01, FR-INT-02, FR-INT-06, FR-INT-07, FR-INT-08, FR-INT-09, FR-INT-10, FR-INT-11, FR-INT-13, FR-INT-14, FR-INT-16, FR-INT-17; `platform/release-and-versioning`: 1 unnumbered |
 | `p1-statutory-packs` | `compliance/singapore-statutory`: 17 unnumbered; `ledger/money-and-rounding`: RND-GST-EXCL, RND-GST-INCL; `organisation/settings`: FR-ORG-05; `platform/release-and-versioning`: 1 unnumbered; `tax/statutory-parameters`: ENG-30, ENG-31, ENG-32, ENG-45<br>Screens: statutory-packs |
-| `p1-users-roles` | `access/roles-and-segregation`: SOD-1, SOD-2, SOD-3, SOD-4, SOD-5, SOD-6, SOD-7, SOD-8, SOD-9, SOD-10, 72 unnumbered; `access/users-and-sign-in`: FR-ADM-01, FR-ADM-02, FR-ADM-03, FR-ADM-04, FR-ADM-07, FR-ADM-08, FR-ADM-09; `security/identity-and-access`: SEC-01, SEC-34, SEC-05, SEC-06, SEC-07, SEC-08, SEC-35<br>Screens: account-recovery, auditor-workspace, mfa-enrolment, super-admin-console, users-roles |
+| `p1-users-roles` | `access/roles-and-segregation`: SOD-1, SOD-2, SOD-3, SOD-4, SOD-5, SOD-6, SOD-7, SOD-8, SOD-9, SOD-10, 76 unnumbered; `access/users-and-sign-in`: FR-ADM-01, FR-ADM-02, FR-ADM-03, FR-ADM-04, FR-ADM-07, FR-ADM-08, FR-ADM-09; `security/identity-and-access`: SEC-01, SEC-34, SEC-05, SEC-06, SEC-07, SEC-08, SEC-35<br>Screens: account-recovery, auditor-workspace, mfa-enrolment, super-admin-console, users-roles |
 | `p1-approval-engine` | `access/approvals`: FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-09, FR-APR-10; `access/team-modes`: FM-1, FM-2, FM-3, FM-4, FM-5, FM-6, FM-7, FM-8, FM-9, 4 unnumbered; `controls/checks`: FR-CTL-04; `controls/platform-checks`: C.2 #53<br>Screens: accountant-review, approval-confirmation, approval-policies, bank-details-change, personal-approvals, team-mode |
 | `p1-app-shell` | `experience/accessibility-and-performance`: NFR-A11Y-01 WCAG 2.2 level AA, NFR-A11Y-02 Keyboard, focus and screen-reader labels, NFR-A11Y-03 Focus not obscured, NFR-A11Y-04 Dragging alternatives, NFR-A11Y-05 Accessible authentication, NFR-L10N-01 Localisation, NFR-PERF-UI-01, NFR-PERF-UI-02, NFR-PERF-UI-03; `experience/devices-and-motion`: FR-UX-37, FR-UX-38, 3 unnumbered; `experience/help`: FR-UX-30, FR-UX-31, FR-UX-32, FR-UX-33, FR-UX-34, FR-UX-36, FR-UX-41; `experience/modes`: FR-UX-23, FR-UX-24, FR-UX-25, FR-UX-26, FR-UX-27, FR-UX-29, 13 unnumbered; `experience/navigation`: FR-UX-01, FR-UX-02, FR-UX-03, FR-UX-04, FR-UX-05, FR-UX-06, FR-UX-07, FR-UX-08, FR-UX-09, FR-UX-10, FR-UX-11, FR-UX-12, FR-UX-13, FR-UX-14, FR-UX-15, FR-UX-19, FR-UX-20, FR-UX-21, FR-UX-22, FR-UX-39, FR-UX-40, 8 unnumbered; `experience/visual-design`: 13 unnumbered; `ledger/money-and-rounding`: RND-DISPLAY<br>Screens: app-shell, appearance-motion, command-palette, department-home, edit-conflict, first-run-tour, global-search, guided-setup, help-guide, inbox, invoices-list, journal-editor, my-shares, not-part-of-access, profile-preferences, shortcut-sheet, trace-panel, void-confirmation |
 | `p1-documents-evidence` | `controls/platform-checks`: C.2 #30; `documents/attachments-and-evidence`: FR-DOC-01, FR-DOC-02, FR-DOC-04, FR-DOC-05, FR-DOC-06, FR-DOC-07, FR-DOC-08, FR-DOC-13, FR-DOC-09, FR-DOC-10, FR-DOC-11, 5 unnumbered<br>Screens: evidence-panel, evidence-search |
@@ -508,17 +760,18 @@ as a posting rule or a use case; `openspec show <capability> --type spec` lists 
 | `p1-audit-explorer` | `controls/checks`: FR-CTL-03; `data/audit-trail`: AUD-02, AUD-03, AUD-04, AUD-05, AUD-06, AUD-07, AUD-09, AUD-10, 1 unnumbered<br>Screens: audit-trail |
 | `p1-compliance-center` | `compliance/ai-and-api-controls`: CTL-AI-01, CTL-API-01; `compliance/ai-governance`: CMP-AI-01; `compliance/compliance-center`: CMP-01, CMP-03, CMP-06, CMP-07, 5 unnumbered; `compliance/financial-controls`: CTL-FIN-01, CTL-FIN-02, CTL-FIN-03, CTL-FIN-04, CTL-FIN-05, CTL-FIN-06, CTL-FIN-07, CTL-FIN-08, CTL-FIN-09, CTL-FIN-10, CTL-FIN-11, CTL-FIN-12, CTL-AUD-01, CTL-AUD-02, CTL-AUD-05, CTL-AUD-06, CTL-STAT-01, CTL-STAT-02, CTL-STAT-03, CTL-STAT-04; `compliance/technology-controls`: CTL-IAM-01, CTL-IAM-02, CTL-IAM-03, CTL-IAM-04, CTL-IAM-05, CTL-IAM-06, CTL-IAM-07, CTL-CHG-01, CTL-CHG-02, CTL-CHG-03, CTL-CHG-06, CTL-CHG-08, CTL-CHG-09, CTL-CHG-10, CTL-CHG-11, CTL-DP-01, CTL-DP-02, CTL-DP-04, CTL-DP-07, CTL-RES-01<br>Screens: attestations, compliance-center, risk-policies |
 | `p1-pdpa-retention` | `compliance/compliance-center`: CMP-05; `compliance/pdpa`: CMP-PD-01, CMP-PD-02, CMP-PD-03, CMP-PD-04, CMP-PD-05, CMP-PD-06, CMP-PD-07, CMP-PD-08, CMP-PD-09; `compliance/technology-controls`: CTL-DP-05, CTL-DP-06; `data/backup-and-recovery`: 6 unnumbered; `security/data-protection`: SEC-10, SEC-11, SEC-13, SEC-14<br>Screens: data-protection, privacy-notices |
-| `p1-ai-providers` | `ai/model-and-provider`: AI-26, AI-27, AI-28; `ai/model-providers`: AI-70, AI-71, AI-72, AI-73, AI-74, AI-75, AI-76, AI-77, AI-78, AI-79, AI-80, AI-81, AI-82, AI-83, AI-84, AI-85, AI-86, AI-87, AI-88; `compliance/ai-and-api-controls`: CTL-AI-05; `compliance/ai-governance`: CMP-AI-02, CMP-AI-03; `controls/platform-checks`: C.2 #55; `platform/local-mode`: DEV-09, 1 unnumbered; `platform/portability-and-cost`: 1 unnumbered<br>Screens: ai-activity-log, ai-model-routes, ai-provider-connection, ai-providers, ai-route-editor, ai-settings, ai-usage, my-ai-plan |
-| `p1-ai-assistant` | `ai/data-access`: AI-01, AI-02, AI-03, AI-04, AI-68, AI-05; `ai/evaluation`: QA-AI-01, QA-AI-02, QA-AI-03, QA-AI-04, QA-AI-05, QA-AI-06, QA-AI-07; `ai/guardrails`: AI-18, AI-19, AI-20, AI-21, AI-22, AI-23, AI-24, AI-25, AI-69, 1 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-06; `data/backup-and-recovery`: 1 unnumbered; `experience/navigation`: FR-UX-17<br>Screens: ai-assistant-panel |
-| `p1-knowledge-base` | `ai/knowledge-base`: AI-48, AI-49, AI-50, AI-51, AI-52, AI-53, AI-54, AI-55, AI-56, AI-57, AI-58, AI-60, 2 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-08; `platform/release-and-versioning`: 1 unnumbered<br>Screens: knowledge-base |
-| `p1-ai-proposals` | `ai/proposals`: AI-P1, AI-P2, AI-P3, AI-P4, AI-P5, AI-P6, AI-P7, AI-P8, AI-06, AI-07, AI-08, AI-09, AI-10, AI-11, AI-12, AI-13, AI-14, AI-30, AI-31, AI-32, 6 unnumbered; `ai/task-catalogue`: 26 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-02, CTL-AI-03, CTL-AI-04, CTL-AI-07; `controls/platform-checks`: C.2 #19; `platform/release-and-versioning`: 1 unnumbered<br>Screens: ai-proposal-review, ai-tasks |
-| `p1-mcp-first-party` | `ai/mcp-and-agents`: AI-15, AI-16, AI-17, AI-34, AI-35, AI-36, AI-37, AI-38, AI-39, AI-40, AI-41, AI-42, AI-43, AI-44, AI-45, 1 unnumbered; `compliance/ai-and-api-controls`: CTL-API-02, CTL-MCP-01, CTL-MCP-02, CTL-MCP-03, CTL-MCP-04; `integrations/public-api`: FR-INT-03; `platform/local-mode`: DEV-06<br>Screens: connected-apps, oauth-consent |
-| `p1-scheduled-agents` | `ai/scheduled-agents`: AI-61, AI-62, AI-63, AI-64, AI-65, AI-66, AI-67, 2 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-09; `controls/platform-checks`: C.2 #36<br>Screens: agent-run-report, company-secretary |
-| `p1-company-secretary` | `controls/platform-checks`: C.2 #32, C.2 #33, C.2 #34, C.2 #35, C.2 #54; `governance/company-secretary`: FR-CS-01, FR-CS-02, FR-CS-03, FR-CS-04, FR-CS-05, FR-CS-06, FR-CS-08<br>Screens: corporate-profile |
+| `p1-ai-providers` | `ai/model-and-provider`: AI-26, AI-27, AI-28; `ai/model-providers`: AI-70, AI-71, AI-72, AI-73, AI-74, AI-75, AI-76, AI-77, AI-78, AI-79, AI-80, AI-81, AI-82, AI-83, AI-84, AI-85, AI-86, AI-87, AI-88; `ai/proposals`: AI-12, AI-13; `compliance/ai-and-api-controls`: CTL-AI-05; `compliance/ai-governance`: CMP-AI-02, CMP-AI-03; `controls/platform-checks`: C.2 #55; `platform/local-mode`: DEV-09, 1 unnumbered; `platform/portability-and-cost`: 1 unnumbered<br>Screens: ai-activity-log, ai-model-routes, ai-provider-connection, ai-providers, ai-route-editor, ai-settings, ai-usage, my-ai-plan |
+| `p1-ai-assistant` | `ai/data-access`: AI-01, AI-02, AI-03, AI-04, AI-68, AI-05; `ai/evaluation`: QA-AI-01, QA-AI-03, QA-AI-04, QA-AI-05; `ai/guardrails`: AI-18, AI-19, AI-20, AI-21, AI-22, AI-23, AI-24, AI-25, AI-69; `ai/proposals`: AI-P1, AI-P2, AI-P6, AI-P7, AI-P8, AI-08, 1 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-06; `data/backup-and-recovery`: 1 unnumbered; `experience/navigation`: FR-UX-17<br>Screens: ai-assistant-panel |
+| `p1-knowledge-base` | `ai/evaluation`: QA-AI-06; `ai/knowledge-base`: AI-48, AI-49, AI-50, AI-51, AI-52, AI-53, AI-54, AI-55, AI-56, AI-57, AI-58, AI-60, 2 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-08; `platform/release-and-versioning`: 1 unnumbered<br>Screens: knowledge-base |
+| `p1-ai-proposals-core` | `ai/evaluation`: QA-AI-02; `ai/proposals`: AI-P3, AI-P4, AI-P5, AI-06, AI-07, AI-10, AI-11, AI-14, AI-30, AI-32, AI-89, 5 unnumbered; `ai/task-catalogue`: 5 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-02, CTL-AI-03, CTL-AI-04; `controls/platform-checks`: C.2 #19; `platform/release-and-versioning`: 1 unnumbered<br>Screens: ai-proposal-review, ai-tasks |
+| `p1-ai-proposals` | `ai/proposals`: AI-09, AI-31; `ai/task-catalogue`: 18 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-07 |
+| `p1-mcp-first-party` | `ai/guardrails`: 1 unnumbered; `ai/mcp-and-agents`: AI-15, AI-16, AI-17, AI-34, AI-35, AI-36, AI-37, AI-38, AI-39, AI-40, AI-41, AI-42, AI-43, AI-44, AI-45, 1 unnumbered; `compliance/ai-and-api-controls`: CTL-API-02, CTL-MCP-01, CTL-MCP-02, CTL-MCP-03, CTL-MCP-04; `integrations/public-api`: FR-INT-03; `platform/local-mode`: DEV-06<br>Screens: connected-apps, oauth-consent |
+| `p1-scheduled-agents` | `ai/evaluation`: QA-AI-07; `ai/scheduled-agents`: AI-61, AI-62, AI-63, AI-64, AI-65, AI-66, AI-67, 2 unnumbered; `ai/task-catalogue`: 2 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-09; `controls/platform-checks`: C.2 #36<br>Screens: agent-run-report, company-secretary |
+| `p1-company-secretary` | `ai/task-catalogue`: 1 unnumbered; `controls/platform-checks`: C.2 #32, C.2 #33, C.2 #34, C.2 #35, C.2 #54; `governance/company-secretary`: FR-CS-01, FR-CS-02, FR-CS-03, FR-CS-04, FR-CS-05, FR-CS-06, FR-CS-08<br>Screens: corporate-profile |
 | `p1-document-capture` | `documents/attachments-and-evidence`: FR-DOC-12; `purchases/payables`: FR-AP-04, FR-AP-12<br>Screens: document-inbox |
 | `p1-security-hardening` | `compliance/technology-controls`: CTL-CHG-04, CTL-CHG-05, CTL-CHG-07, CTL-DP-03, CTL-RES-04; `platform/container-images`: NFR-IMG-05, NFR-IMG-07; `platform/release-and-versioning`: REL-04, REL-05; `security/application-security`: SEC-22, SEC-23, SEC-24, SEC-36, SEC-37, SEC-26; `security/detection-and-response`: SEC-30, SEC-31, SEC-32, SEC-33 |
 | `p1-operations-dr` | `compliance/financial-controls`: CTL-AUD-03, CTL-AUD-04; `compliance/technology-controls`: CTL-RES-02, CTL-RES-03, CTL-RES-05; `data/audit-trail`: 1 unnumbered; `data/backup-and-recovery`: DR-01, DR-02, DR-03, DR-04, DR-06, DR-07; `platform/operations`: NFR-DR-01, NFR-DR-02, NFR-DR-03, NFR-RET-01, NFR-OBS-01, NFR-OBS-02; `platform/performance-and-scale`: NFR-PERF-01, NFR-PERF-06, NFR-PERF-02, NFR-PERF-03, NFR-PERF-04, NFR-PERF-05, NFR-SCALE-01, NFR-AVAIL-01, NFR-BROWSER-01; `platform/portability-and-cost`: NFR-COST-02, NFR-COST-01, NFR-COST-03, NFR-COST-04<br>Screens: operations-tray |
-| `p1-workbook-migration` | `data/migration`: FR-MIG-01, FR-MIG-02, FR-MIG-03, FR-MIG-04, 4 unnumbered<br>Screens: data-export, workbook-import |
+| `p1-workbook-migration` | `controls/platform-checks`: C.2 #63; `data/migration`: FR-MIG-01, FR-MIG-02, FR-MIG-03, FR-MIG-04, 4 unnumbered; `ledger/money-and-rounding`: RND-IMPORT<br>Screens: data-export, workbook-import |
 | `p1-launch-readiness` | `quality/calculation-correctness`: QA-ENG-01, QA-ENG-02, QA-ENG-03, QA-ENG-04, QA-ENG-05, QA-ENG-06, QA-ENG-07, QA-ENG-08, QA-RPT-01, QA-RPT-02, QA-RPT-03, QA-RPT-04, QA-MIG-01, QA-PROD-01, QA-REL-01, 13 unnumbered; `quality/test-gates`: QA-API-01, QA-API-02, QA-API-03, QA-API-04, QA-MCP-01, QA-LOCAL-01, QA-IMG-01, QA-UI-01, QA-UI-02, QA-UI-03, QA-UI-04, QA-UI-05, QA-UI-06, QA-UI-07, QA-UI-08, QA-UI-09, QA-TRACE-01, QA-SEC-03, QA-SEC-04, QA-SEC-05, QA-E2E-01 End-to-end journeys, QA-PERF-01 |
 | `cloud-first-deployment` | — |
 | `p1-go-live` | `data/migration`: 2 unnumbered |
@@ -533,12 +786,12 @@ as a posting rule or a use case; `openspec show <capability> --type spec` lists 
 | `p2-bank-feeds-payments` | `banking/bank-transactions`: FR-BNK-03; `banking/payment-providers`: FR-PSP-02; `purchases/expense-claims`: FR-AP-08; `sales/receivables`: FR-AR-13 |
 | `p2-tax-filings` | `sales/receivables`: FR-AR-11; `tax/gst-and-filings`: FR-TAX-06; `tax/statutory-parameters`: ENG-33<br>Screens: bad-debt-relief, filing-packs |
 | `p2-payroll-outputs` | `payroll/pay-runs`: FR-PAY-08, FR-PAY-09, FR-PAY-10<br>Screens: ir21-clearance |
-| `p2-reporting-planning` | `equity/cap-table-and-investors`: FR-EQ-28, FR-EQ-23, FR-EQ-24, FR-EQ-29; `equity/founders-money`: FR-EQ-13; `experience/visualisation`: FR-VIZ-09; `ledger/chart-of-accounts`: FR-DIM-03; `ledger/fixed-assets`: FR-FA-04; `planning/budgets-and-forecasts`: FR-PLN-04, FR-PLN-07; `reporting/dashboards-and-kpis`: FR-KPI-04, FR-KPI-05, FR-KPI-06, FR-KPI-07; `reporting/reports`: FR-RPT-04, FR-RPT-06, FR-RPT-07, FR-RPT-13<br>Screens: board-pack, board-portal, dashboards, exit-waterfall, investor-updates, management-report, report-builder |
+| `p2-reporting-planning` | `equity/cap-table-and-investors`: FR-EQ-28, FR-EQ-23, FR-EQ-24, FR-EQ-29; `equity/founders-money`: FR-EQ-13; `experience/navigation`: FR-UX-42; `experience/visualisation`: FR-VIZ-09; `ledger/chart-of-accounts`: FR-DIM-03; `ledger/fixed-assets`: FR-FA-04; `planning/budgets-and-forecasts`: FR-PLN-04, FR-PLN-07; `reporting/dashboards-and-kpis`: FR-KPI-04, FR-KPI-05, FR-KPI-06, FR-KPI-07; `reporting/reports`: FR-RPT-04, FR-RPT-06, FR-RPT-07, FR-RPT-13<br>Screens: board-pack, board-portal, dashboards, exit-waterfall, investor-updates, management-report, report-builder |
 | `p2-customer-portal-subscriptions` | `projects/time-and-costs`: FR-PRJ-11; `sales/receivables`: FR-AR-14, FR-AR-15<br>Screens: customer-portal |
 | `p2-api-third-parties` | `ai/mcp-and-agents`: AI-46; `communication/email-and-notifications`: FR-NTF-04; `integrations/connectors`: FR-INT-23, FR-INT-24; `integrations/public-api`: FR-INT-04, FR-INT-12, FR-INT-15, FR-INT-18<br>Screens: routing-rules, webhooks |
 | `p2-mobile-approvals-automation` | `access/approvals`: FR-APR-06, FR-APR-07, FR-APR-08; `access/users-and-sign-in`: FR-ADM-05; `automation/rules-and-schedules`: FR-AUT-03, FR-AUT-04; `compliance/compliance-center`: CMP-04; `controls/platform-checks`: C.2 #52; `documents/templates`: FR-TPL-06; `experience/help`: FR-UX-35; `experience/modes`: FR-UX-28; `experience/navigation`: FR-UX-16; `governance/company-secretary`: FR-CS-07; `ledger/general-ledger`: FR-GL-09; `purchases/payables`: FR-AP-10, FR-AP-21<br>Screens: supplier-contracts |
 | `p2-ai-expansion` | `ai/knowledge-base`: AI-59; `ai/proposals`: AI-33 |
-| `p2-security-certification` | `security/application-security`: SEC-25 |
+| `p2-security-certification` | `data/audit-trail`: AUD-11; `security/application-security`: SEC-25 |
 | `p2-nemura-people` | `people/assistant`: NM-AI-05, people.draft_job_post, people.draft_interview_kit, people.draft_review_summary; `people/external-systems`: NM-EXT-04, NM-EXT-05; `people/letters`: NM-LTR-05; `people/onboarding`: NM-ONB-01; `people/performance`: NM-PRF-01, NM-PRF-02, NM-PRF-03, NM-PRF-04, NM-PRF-05; `people/recruitment`: NM-REC-01, NM-REC-02, NM-REC-03, NM-REC-04, NM-REC-05, NM-REC-06; `people/security`: NM-SEC-06<br>Screens: nm-goals, nm-hiring, nm-verify-letter |
 | `p3-multi-entity` | `experience/navigation`: FR-UX-18; `ledger/general-ledger`: FR-GL-13; `organisation/multi-entity`: FR-ENT-01, FR-ENT-02, FR-ENT-03; `reporting/reports`: FR-RPT-12<br>Screens: consolidation, entity-setup, practice-dashboard |
 | `p3-saas-platform` | `ai/mcp-and-agents`: AI-47; `communication/email-and-notifications`: FR-NTF-06; `data/backup-and-recovery`: DR-05; `integrations/connectors`: FR-INT-28; `integrations/public-api`: FR-INT-05, FR-INT-19; `master-data/items`: FR-ITM-02; `platform/performance-and-scale`: NFR-SCALE-02; `platform/portability-and-cost`: NFR-PORT-06; `reporting/dashboards-and-kpis`: FR-KPI-08 |

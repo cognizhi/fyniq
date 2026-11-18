@@ -82,6 +82,7 @@ type Report struct {
 	Explained      int // anchors of an earlier epoch past the head its recovery restored (design D8)
 	Recoveries     int // the trail's recoveries from restores behind its anchors; Unacknowledged of them still waiting
 	Unacknowledged int
+	Ahead          int    // anchors past a restored copy's head, written after its point in time (the restore drill)
 	Unchecked      bool   // the details could not be checked: this service holds no fingerprint key
 	Problem        string // empty when the chain, every anchor and every detail agree
 }
@@ -98,6 +99,17 @@ func (r Report) OK() bool { return r.Problem == "" }
 // (AUD-06), recording the outcome in each trail. It returns an error when any trail fails, so the job exits non-zero
 // and alerts.
 func VerifyAll(ctx context.Context, store storage.Store, blobs ports.BlobStore, signer ports.Signer, keyed Keyed) ([]Report, error) {
+	return verifyAll(ctx, store, blobs, signer, keyed, false)
+}
+
+// VerifyRestored verifies every organisation's trail on a restored copy of the database, as the restore drill does (DR-06,
+// NFR-DR-03): as VerifyAll, except that an anchor or close anchor past the copy's head, written after its point in time,
+// is expected and counted, not failed. Every one at or before the head must agree. It records each outcome in the copy.
+func VerifyRestored(ctx context.Context, store storage.Store, blobs ports.BlobStore, signer ports.Signer, keyed Keyed) ([]Report, error) {
+	return verifyAll(ctx, store, blobs, signer, keyed, true)
+}
+
+func verifyAll(ctx context.Context, store storage.Store, blobs ports.BlobStore, signer ports.Signer, keyed Keyed, restored bool) ([]Report, error) {
 	orgs, err := store.Organisations(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list the organisations: %w", err)
@@ -105,7 +117,7 @@ func VerifyAll(ctx context.Context, store storage.Store, blobs ports.BlobStore, 
 	var reports []Report
 	failed := 0
 	for _, org := range orgs {
-		r, err := verify(ctx, store, blobs, signer, keyed, org)
+		r, err := verify(ctx, store, blobs, signer, keyed, org, restored)
 		if err != nil {
 			return reports, err
 		}
@@ -135,7 +147,7 @@ func Nightly(ctx context.Context, store storage.Store, blobs ports.BlobStore, si
 	return recs, reports, err
 }
 
-func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, signer ports.Signer, keyed Keyed, org uuid.UUID) (Report, error) {
+func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, signer ports.Signer, keyed Keyed, org uuid.UUID, restored bool) (Report, error) {
 	r := Report{Organisation: org}
 	err := store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 		var events []Stored
@@ -153,6 +165,10 @@ func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, sig
 			after = batch[len(batch)-1].Seq
 		}
 		r.Events = len(events)
+		var head int64
+		if len(events) > 0 {
+			head = events[len(events)-1].Seq
+		}
 		// From the latest purge boundary, whose signed copy agrees, when the trail was purged (AUD-09).
 		prev, first, problem, err := fromBoundary(ctx, u, blobs, signer, org)
 		if err != nil {
@@ -185,6 +201,10 @@ func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, sig
 			if a.seq < first {
 				continue // behind the boundary: its events were purged
 			}
+			if restored && a.seq > head {
+				r.Ahead++ // written after the restored copy's point in time
+				continue
+			}
 			r.Anchors++
 			signed, err := readAnchor(ctx, blobs, a.key)
 			if err != nil {
@@ -203,7 +223,11 @@ func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, sig
 			}
 		}
 		if r.Problem == "" {
-			if r.Closes, r.Problem, err = checkCloses(ctx, u, blobs, signer, org, hashes, nil); err != nil {
+			var in func(int64) bool
+			if restored { // a close after the copy's point in time is not in it
+				in = func(seq int64) bool { return seq <= head }
+			}
+			if r.Closes, r.Problem, err = checkCloses(ctx, u, blobs, signer, org, hashes, in); err != nil {
 				return err
 			}
 		}
@@ -211,10 +235,13 @@ func verify(ctx context.Context, store storage.Store, blobs ports.BlobStore, sig
 		if r.Problem != "" {
 			status = "failed"
 		}
-		return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionVerified, ObjectType: "audit_chain", ObjectID: org,
-			Changes: map[string][2]any{"status": {nil, status}, "events": {nil, r.Events}, "anchors": {nil, r.Anchors}, "details": {nil, r.Details}, "closes": {nil, r.Closes},
-				"details_unchecked": {nil, r.Unchecked}, "problem": {nil, r.Problem}, "explained_anchors": {nil, r.Explained},
-				"recoveries": {nil, r.Recoveries}, "unacknowledged_recoveries": {nil, r.Unacknowledged}}})
+		changes := map[string][2]any{"status": {nil, status}, "events": {nil, r.Events}, "anchors": {nil, r.Anchors}, "details": {nil, r.Details}, "closes": {nil, r.Closes},
+			"details_unchecked": {nil, r.Unchecked}, "problem": {nil, r.Problem}, "explained_anchors": {nil, r.Explained},
+			"recoveries": {nil, r.Recoveries}, "unacknowledged_recoveries": {nil, r.Unacknowledged}}
+		if restored {
+			changes["restored"], changes["ahead"] = [2]any{nil, true}, [2]any{nil, r.Ahead}
+		}
+		return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionVerified, ObjectType: "audit_chain", ObjectID: org, Changes: changes})
 	})
 	return r, err
 }

@@ -3,7 +3,8 @@
 # and image reports, the SBOMs, the CTL-CHG-01 report and each run's logs) with controls-evidence.json, which names each
 # CI check's asset. The Compliance Center of a build stamped with that release shows those checks as passed and links
 # to them. It refuses unless the commit's runs succeeded, so no release carries the evidence of a failing gate.
-# Its own job in its own workflow: it waits for CI on the release commit, about an hour, without holding release-please.
+# Its own job in its own workflow: it waits for CI on the release commit, about an hour, and the performance run at 10 M
+# lines, up to six (perf.yml), without holding release-please.
 name: release-evidence
 
 on:
@@ -25,7 +26,7 @@ jobs:
   release-evidence:
     name: Release evidence (CMP-01)
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 360   # it waits for perf.yml's 10 M run on the release commit (QA-PERF-01)
     permissions:
       contents: write   # attach the assets to the release
       actions: read     # read the runs, their artefacts and their logs

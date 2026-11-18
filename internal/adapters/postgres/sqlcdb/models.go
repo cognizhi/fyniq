@@ -123,6 +123,430 @@ type FyniqAccountingPolicy struct {
 	ApprovedAt     *time.Time
 }
 
+type FyniqAgentRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Agent          string
+	SkillVersion   int32
+	SkillSha256    string
+	Trigger        string
+	SlotAt         time.Time
+	ActsFor        uuid.UUID
+	RequestedBy    *uuid.UUID
+	Status         string
+	Reason         string
+	QueuedAt       time.Time
+	StartedAt      *time.Time
+	FinishedAt     *time.Time
+	Fingerprint    *string
+	LedgerRevision *int64
+	PackVersions   []byte
+	KbSnapshot     *string
+	Findings       []byte
+	Summary        *string
+	ModelUsed      *bool
+	Model          *string
+	ModelText      *string
+	Tokens         *int32
+	ToolCalls      *int32
+	Version        int32
+	Tools          []string
+	ModelMissed    *string
+}
+
+type FyniqAiAgent struct {
+	ID          string
+	Name        string
+	Description string
+	Classes     []string
+	Line        string
+	Position    int32
+}
+
+type FyniqAiAgents struct {
+	ID          string
+	Name        string
+	Description string
+	Classes     []string
+	Line        string
+	Position    int32
+}
+
+type FyniqAiBudget struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Scope          string
+	Subject        string
+	Amount         *string
+	Version        int32
+	Alerted        *string
+	SetBy          string
+	SetAt          time.Time
+}
+
+type FyniqAiCall struct {
+	OrganisationID   uuid.UUID
+	ID               uuid.UUID
+	RunID            uuid.UUID
+	Agent            string
+	RouteVersion     int32
+	Step             int32
+	FellBackFrom     *int32
+	ConnectionID     uuid.UUID
+	ModelRequested   string
+	ModelReported    *string
+	VersionReported  *string
+	Actor            string
+	Classes          []string
+	Outcome          string
+	Detail           *string
+	InputTokens      int64
+	OutputTokens     int64
+	CacheReadTokens  int64
+	CacheWriteTokens int64
+	ReasoningTokens  int64
+	Cost             *string
+	Currency         *string
+	PriceID          *uuid.UUID
+	LatencyMs        int32
+	StartedAt        time.Time
+	RecordedAt       time.Time
+	CostBase         *string
+}
+
+type FyniqAiConnection struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Name            string
+	Connector       string
+	Preset          *string
+	Auth            string
+	Configuration   []byte
+	Host            string
+	SelfHosted      bool
+	CredentialRef   *string
+	CredentialSetAt *time.Time
+	BillingMode     string
+	Quota           []byte
+	State           string
+	Version         int32
+	CreatedBy       string
+	CreatedAt       time.Time
+	ChangedBy       string
+	ChangedAt       time.Time
+	DataHandling    []byte
+	AutoQualify     bool
+}
+
+type FyniqAiConnectionVersion struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectionID   uuid.UUID
+	Version        int32
+	Step           string
+	Snapshot       []byte
+	ApprovalID     *uuid.UUID
+	MadeBy         string
+	MadeAt         time.Time
+}
+
+type FyniqAiConversation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Title          string
+	CreatedAt      time.Time
+	DeletedAt      *time.Time
+}
+
+type FyniqAiDataPolicy struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Version        int32
+	Policy         []byte
+	ApprovalID     uuid.UUID
+	MadeBy         string
+	MadeAt         time.Time
+}
+
+type FyniqAiFeedback struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	TurnID         uuid.UUID
+	UserID         uuid.UUID
+	Rating         string
+	Reason         string
+	GivenAt        time.Time
+	ReviewedBy     *uuid.UUID
+	ReviewedAt     *time.Time
+	Decision       *string
+}
+
+type FyniqAiGrant struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	TokenHash      []byte
+	UserID         uuid.UUID
+	TurnID         *uuid.UUID
+	IssuedAt       time.Time
+	ExpiresAt      time.Time
+	EndedAt        *time.Time
+	Classes        []string
+	Propose        bool
+	RunID          *uuid.UUID
+	Tools          []string
+	TaskTypes      []string
+}
+
+type FyniqAiModel struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	ConnectionID    uuid.UUID
+	Model           string
+	Name            *string
+	AliasOf         *string
+	ProviderCreated *time.Time
+	ShutdownAt      *time.Time
+	ContextWindow   *int32
+	MaxOutput       *int32
+	Reports         []string
+	FirstListedAt   time.Time
+	LastListedAt    time.Time
+	Listed          bool
+	NotCallableAt   *time.Time
+	Allowed         bool
+	ProbedAt        *time.Time
+	ProbeOk         *bool
+	ProbeDetail     *string
+	PriceCheckedAt  *time.Time
+	Unpriced        *string
+	ListedPrice     []byte
+}
+
+type FyniqAiModelListRead struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectionID   uuid.UUID
+	Trigger        string
+	Outcome        string
+	Pages          int32
+	Added          int32
+	Removed        int32
+	Failure        *string
+	ReadBy         string
+	ReadAt         time.Time
+}
+
+type FyniqAiPrice struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectionID   uuid.UUID
+	Model          string
+	Number         int32
+	Source         string
+	CatalogueID    *uuid.UUID
+	CatalogueKey   *string
+	Match          string
+	Currency       string
+	Ignored        []string
+	Status         string
+	Review         *string
+	ReviewDetail   *string
+	RecordedBy     string
+	RecordedAt     time.Time
+	CreatedXact    int64
+	ApprovalID     *uuid.UUID
+	DecidedBy      *string
+	DecidedAt      *time.Time
+}
+
+type FyniqAiPriceCatalogue struct {
+	ID            uuid.UUID
+	Source        string
+	Url           string
+	FetchedAt     time.Time
+	Sha256        string
+	Size          int64
+	Licence       *string
+	LicenceUrl    string
+	LicenceSha256 string
+	Outcome       string
+	Failure       *string
+	Entries       int32
+	Document      string
+	RecordedAt    time.Time
+}
+
+type FyniqAiPriceCatalogues struct {
+	ID            uuid.UUID
+	Source        string
+	Url           string
+	FetchedAt     time.Time
+	Sha256        string
+	Size          int64
+	Licence       *string
+	LicenceUrl    string
+	LicenceSha256 string
+	Outcome       string
+	Failure       *string
+	Entries       int32
+	Document      string
+	RecordedAt    time.Time
+}
+
+type FyniqAiPriceRate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	PriceID        uuid.UUID
+	Kind           string
+	Above          int64
+	Unit           string
+	Amount         string
+}
+
+type FyniqAiProposal struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	TaskType          string
+	TaskVersion       int32
+	TaskSha256        string
+	Payload           string
+	PayloadSha256     string
+	ItemCount         int32
+	Rationale         string
+	Evidence          []byte
+	Impact            []byte
+	BaseVersions      []byte
+	RiskTier          int16
+	RequiredApprovals int16
+	Agent             string
+	RequestedBy       uuid.UUID
+	TurnID            *uuid.UUID
+	RunID             *uuid.UUID
+	Model             string
+	Prompt            string
+	ToolsSha256       string
+	Status            string
+	Reason            string
+	ApprovalRequestID *uuid.UUID
+	DecidedBy         *uuid.UUID
+	DecidedAt         *time.Time
+	ApprovedItems     []int32
+	ApprovedPayload   *string
+	ApprovedSha256    *string
+	SupersededBy      *uuid.UUID
+	Execution         []byte
+	StartedAt         *time.Time
+	FinishedAt        *time.Time
+	ProposedAt        time.Time
+	ExpiresAt         time.Time
+	Version           int32
+}
+
+type FyniqAiQualification struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Agent          string
+	ConnectionID   uuid.UUID
+	Model          string
+	Version        string
+	Suite          string
+	SuiteVersion   int32
+	Threshold      string
+	Cases          int32
+	Passed         int32
+	Result         string
+	RunID          uuid.UUID
+	RanBy          string
+	RanAt          time.Time
+	OutOfDateAt    *time.Time
+	OutOfDateWhy   *string
+}
+
+type FyniqAiReservation struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	Step           int32
+	Agent          string
+	ConnectionID   uuid.UUID
+	Person         string
+	Month          string
+	Amount         *string
+	Actual         *string
+	State          string
+	ReservedAt     time.Time
+	SettledAt      *time.Time
+	Tokens         *int64
+	ActualTokens   *int64
+}
+
+type FyniqAiRoute struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Agent          string
+	Version        int32
+	Classes        []string
+	Preset         *string
+	ApprovalID     *uuid.UUID
+	MadeBy         string
+	MadeAt         time.Time
+	CreatedXact    int64
+}
+
+type FyniqAiRouteStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RouteID        uuid.UUID
+	Position       int32
+	ConnectionID   uuid.UUID
+	Model          string
+	Effort         string
+	Cache          bool
+}
+
+type FyniqAiToolCall struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	TurnID         uuid.UUID
+	N              int32
+	Tool           string
+	Version        int32
+	Input          []byte
+	OutputSha256   string
+	Outcome        string
+	Code           string
+	Facts          int32
+	Omitted        int32
+	Withheld       bool
+	DurationMs     int32
+}
+
+type FyniqAiTurn struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConversationID uuid.UUID
+	UserID         uuid.UUID
+	Question       string
+	Context        []byte
+	Status         string
+	Code           string
+	Answer         string
+	Segments       []byte
+	Cited          []string
+	Facts          []byte
+	Prompt         string
+	PromptSha256   string
+	Runs           []uuid.UUID
+	InputTokens    int64
+	OutputTokens   int64
+	Regenerated    bool
+	Withheld       int32
+	AskedAt        time.Time
+	AnsweredAt     *time.Time
+	Classes        []string
+}
+
 type FyniqAllocation struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -167,6 +591,35 @@ type FyniqAnnouncementDismissal struct {
 	Installation   bool
 	UserID         uuid.UUID
 	DismissedAt    time.Time
+}
+
+type FyniqApiClient struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	Kind            string
+	ClientID        string
+	Name            string
+	Class           string
+	OwnerID         uuid.UUID
+	Scopes          []string
+	IpAllow         []string
+	ReadsPerMinute  *int32
+	WritesPerMinute *int32
+	KeyThumbprint   *string
+	ExpiresAt       time.Time
+	ApprovalID      *uuid.UUID
+	Version         int32
+	CreatedBy       string
+	CreatedAt       time.Time
+	RevokedAt       *time.Time
+	RevokedBy       *string
+	RevokeReason    *string
+}
+
+type FyniqApiClientRoute struct {
+	ClientID string
+	Owner    uuid.UUID
+	ID       uuid.UUID
 }
 
 type FyniqAppUser struct {
@@ -230,6 +683,7 @@ type FyniqApprovalSignature struct {
 	AuthenticatorData  []byte
 	ClientData         []byte
 	AssertionSignature []byte
+	SelectionSha256    *string
 }
 
 type FyniqAuditBoundary struct {
@@ -682,6 +1136,27 @@ type FyniqCloseChecklistTemplate struct {
 	WrittenAt      time.Time
 }
 
+type FyniqComplianceTask struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	FindingKey     string
+	Title          string
+	Detail         string
+	OwnerRole      *string
+	OwnerUser      *uuid.UUID
+	DueOn          pgtype.Date
+	Escalated      bool
+	Source         string
+	RunID          *uuid.UUID
+	ProposalID     *uuid.UUID
+	Status         string
+	Reason         string
+	CreatedAt      time.Time
+	ClosedAt       *time.Time
+	ClosedBy       *uuid.UUID
+	Version        int32
+}
+
 type FyniqConnectorRoute struct {
 	ConnectorID uuid.UUID
 	Owner       uuid.UUID
@@ -981,6 +1456,8 @@ type FyniqDocumentVersion struct {
 	Payload        []byte
 	CreatedAt      time.Time
 	CreatedBy      *string
+	DocDate        *string
+	SearchText     *string
 }
 
 type FyniqDpiaApproval struct {
@@ -1483,6 +1960,126 @@ type FyniqMemberInvitation struct {
 	WithdrawnAt    *time.Time
 }
 
+type FyniqMigrationArchive struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	FileID         uuid.UUID
+	LockedKey      string
+	Sha256         string
+	RetainUntil    time.Time
+	ArchivedBy     string
+	ArchivedAt     time.Time
+}
+
+type FyniqMigrationCommit struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	ApprovalID     uuid.UUID
+	Path           string
+	StepID         uuid.UUID
+	MappingID      uuid.UUID
+	Records        int32
+	Status         string
+	ApprovedBy     string
+	ApprovedAt     time.Time
+	CommittedAt    *time.Time
+}
+
+type FyniqMigrationDifference struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	LineKey        string
+	Class          string
+	Note           string
+	FyniqFigure    string
+	WorkbookFigure string
+	Version        int32
+	DecidedBy      string
+	DecidedAt      time.Time
+}
+
+type FyniqMigrationFile struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	Kind           string
+	FileName       string
+	MediaType      string
+	SizeBytes      int64
+	Sha256         string
+	OriginalSha256 string
+	StorageKey     string
+	DataClass      string
+	AddedBy        string
+	AddedAt        time.Time
+}
+
+type FyniqMigrationMapping struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	Version        int32
+	StepID         uuid.UUID
+	Mapping        []byte
+	MappingSha256  string
+	MadeBy         string
+	MadeAt         time.Time
+}
+
+type FyniqMigrationRecord struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	CommitID       uuid.UUID
+	Key            string
+	Kind           string
+	Sheet          string
+	RowNumber      int32
+	RecordType     string
+	RecordID       uuid.UUID
+	ImportedBy     string
+	ImportedAt     time.Time
+}
+
+type FyniqMigrationRun struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Status         string
+	StartedBy      string
+	StartedAt      time.Time
+}
+
+type FyniqMigrationSignoff struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	Subject        string
+	MappingID      *uuid.UUID
+	SubjectSha256  string
+	SignedBy       string
+	SignedAt       time.Time
+}
+
+type FyniqMigrationStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RunID          uuid.UUID
+	Step           string
+	State          string
+	WorkbookFileID uuid.UUID
+	ChecksFileID   *uuid.UUID
+	Report         []byte
+	ReportSha256   *string
+	Errors         *int32
+	Warnings       *int32
+	StartedBy      string
+	StartedAt      time.Time
+	ValidatedAt    *time.Time
+}
+
 type FyniqMoneyAccount struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -1500,6 +2097,7 @@ type FyniqMoneyAccount struct {
 	ChangedAt      time.Time
 	Version        int32
 	CardholderID   *uuid.UUID
+	PaymentFile    string
 }
 
 type FyniqMoneyAccountSource struct {
@@ -2104,6 +2702,26 @@ type FyniqReportExport struct {
 	Failure        *string
 }
 
+type FyniqRestoreDrill struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	HeldOn          time.Time
+	Scenario        string
+	RestoredFrom    string
+	DataLostMinutes int32
+	TookMinutes     int32
+	Ledger          bool
+	AuditChain      bool
+	Documents       bool
+	Keys            bool
+	SignIn          bool
+	Tick            bool
+	Outbox          bool
+	Findings        string
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
 type FyniqReviewLogEntry struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2181,6 +2799,28 @@ type FyniqSalesReminder struct {
 	Reason         *string
 	DecidedBy      string
 	DecidedAt      time.Time
+}
+
+type FyniqSecurityIncident struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Title          string
+	Summary        string
+	Severity       string
+	DetectedAt     time.Time
+	OpenedBy       string
+	OpenedAt       time.Time
+}
+
+type FyniqSecurityIncidentStep struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	IncidentID     uuid.UUID
+	Step           string
+	At             time.Time
+	ByActor        string
+	Note           string
+	BreachID       *uuid.UUID
 }
 
 type FyniqShareIssue struct {
@@ -2336,6 +2976,28 @@ type FyniqTenantDirectory struct {
 type FyniqTenants struct {
 	OrganisationID uuid.UUID
 	CreatedAt      time.Time
+}
+
+type FyniqTickDrill struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	HeldOn            time.Time
+	Environment       string
+	PausedMinutes     int32
+	FirstAlertMinutes *int32
+	EscalationMinutes *int32
+	Findings          string
+	RecordedBy        string
+	RecordedAt        time.Time
+}
+
+type FyniqUserHelpState struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Tour           string
+	Step           int16
+	SetAt          time.Time
 }
 
 type FyniqUserIdentity struct {

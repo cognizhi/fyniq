@@ -37,6 +37,41 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/acra-extracts/{extract_id}/evidence/{evidence_id}` (getAcraExtractEvidence): Get an ACRA extract's file
 - `DELETE /v1/acra-extracts/{extract_id}/evidence/{evidence_id}` (removeAcraExtractEvidence): Remove a file from a drafted ACRA extract
 - `POST /v1/acra-extracts/{extract_id}/record` (recordAcraExtract): Record an ACRA register extract
+- `GET /v1/ai/activity` (listAIActivity): List the AI activity log
+- `GET /v1/ai/activity/turns` (listAITurnActivity): List the assistant's turns in the AI activity log
+- `GET /v1/ai/budgets` (getAIBudgets): Get the AI budgets
+- `PUT /v1/ai/budgets/{budget}` (setAIBudget): Set an AI budget
+- `GET /v1/ai/connections` (listAIConnections): List the organisation's AI connections
+- `POST /v1/ai/connections` (createAIConnection): Ask to connect an AI model provider
+- `GET /v1/ai/connections/{connection_id}` (getAIConnection): Get an AI connection
+- `PUT /v1/ai/connections/{connection_id}` (changeAIConnection): Ask to change an AI connection
+- `PUT /v1/ai/connections/{connection_id}/credential` (setAIConnectionCredential): Ask to replace an AI connection's API key
+- `POST /v1/ai/connections/{connection_id}/disable` (disableAIConnection): Switch an AI connection off
+- `POST /v1/ai/connections/{connection_id}/enable` (enableAIConnection): Ask to switch an AI connection on
+- `GET /v1/ai/connections/{connection_id}/models` (getAIConnectionModels): List the models an AI connection's provider lists
+- `POST /v1/ai/connections/{connection_id}/models/allow` (allowAIConnectionModel): Ask to put a model on an AI connection's allow-list
+- `POST /v1/ai/connections/{connection_id}/models/price` (priceAIConnectionModel): Ask to put an Owner's price on a model
+- `POST /v1/ai/connections/{connection_id}/models/probe` (probeAIConnectionModel): Probe a listed model on an AI connection
+- `POST /v1/ai/connections/{connection_id}/models/qualify` (qualifyAIConnectionModel): Qualify a listed model for an agent
+- `POST /v1/ai/connections/{connection_id}/models/refresh` (refreshAIConnectionModels): Read an AI connection's model list from its provider now
+- `POST /v1/ai/connections/{connection_id}/models/remove` (removeAIConnectionModel): Take a model off an AI connection's allow-list
+- `GET /v1/ai/data-policy` (getAIDataPolicy): Get the AI's data-class policy
+- `PUT /v1/ai/data-policy` (changeAIDataPolicy): Ask to change the AI's data-class policy
+- `GET /v1/ai/feedback` (listAIFeedback): List feedback on the assistant's answers
+- `POST /v1/ai/feedback/{feedback_id}/review` (reviewAIFeedback): Review feedback on an answer of the assistant
+- `GET /v1/ai/presets` (getAIPresets): Get the route presets
+- `GET /v1/ai/price-catalogues` (listAIPriceCatalogues): List the price catalogue's downloads
+- `POST /v1/ai/prices/{price_id}/review` (reviewAIPrice): Review a model's price waiting for the Owner
+- `POST /v1/ai/prices/{price_id}/withdraw` (withdrawAIPrice): Withdraw an Owner's price
+- `GET /v1/ai/proposals` (listAIProposals): List the AI's proposals
+- `GET /v1/ai/proposals/{proposal_id}` (getAIProposal): Read an AI proposal
+- `GET /v1/ai/routes` (getAIRoutes): Get every agent's route
+- `GET /v1/ai/routes/{agent}` (getAIRoute): Get an agent's route and its versions
+- `PUT /v1/ai/routes/{agent}` (setAIRoute): Set an agent's route
+- `GET /v1/ai/settings` (getAISettings): Get the AI's switch and budgets
+- `POST /v1/ai/settings/switch-off` (switchOffAI): Switch the AI off at once
+- `GET /v1/ai/task-types` (listAITaskTypes): List the AI's task types
+- `GET /v1/ai/usage` (getAIUsage): Get the AI usage of a month
 - `GET /v1/announcements` (listAnnouncements): List the organisation's announcements
 - `POST /v1/announcements` (publishAnnouncement): Publish a banner to the organisation
 - `POST /v1/announcements/{announcement_id}/withdraw` (withdrawAnnouncement): Withdraw an announcement
@@ -53,6 +88,12 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/asset-disposals/{disposal_id}` (getAssetDisposal): Get a disposal of a fixed asset
 - `POST /v1/asset-disposals/{disposal_id}/void` (voidAssetDisposal): Void a disposal of a fixed asset
 - `POST /v1/asset-disposals/{disposal_id}/void-approval` (requestAssetDisposalVoid): Ask for approval to void a disposal of a fixed asset
+- `GET /v1/assistant/conversations` (listAIConversations): List your conversations with the assistant
+- `POST /v1/assistant/conversations` (createAIConversation): Start a conversation with the assistant
+- `GET /v1/assistant/conversations/{conversation_id}` (getAIConversation): Get a conversation with the assistant
+- `DELETE /v1/assistant/conversations/{conversation_id}` (deleteAIConversation): Delete a conversation with the assistant
+- `POST /v1/assistant/conversations/{conversation_id}/turns` (askAIConversation): Ask the assistant
+- `POST /v1/assistant/conversations/{conversation_id}/turns/{turn_id}/feedback` (giveAIFeedback): Rate an answer of the assistant
 - `GET /v1/audit/events` (listAuditEvents): List the audit trail's events
 - `GET /v1/audit/events/{event_id}` (getAuditEvent): Get an audit event
 - `POST /v1/audit/exports` (requestAuditTrailExport): Ask for the audit trail's export
@@ -61,6 +102,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/audit/recoveries/{recovery_id}/acknowledge` (acknowledgeAuditRecovery): Acknowledge a recovery of the audit trail
 - `GET /v1/audit/verification` (getAuditVerification): Verify the audit trail's integrity for a range of days
 - `GET /v1/auto-reconciliations` (listAutoReconciliations): List what the system reconciled
+- `POST /v1/background-work/{work_id}/replay` (replayBackgroundWork): Replay a background task that stopped
 - `POST /v1/bank-changes` (createPayeeBankChange): Prepare a change of a vendor's bank details
 - `GET /v1/bank-changes/{change_id}` (getPayeeBankChange): Get a change of a vendor's bank details
 - `PUT /v1/bank-changes/{change_id}` (replacePayeeBankChange): Change a draft change of bank details
@@ -173,6 +215,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/claimant-bank-changes/{change_id}/reveal` (revealClaimantBankAccount): Reveal a person's account's full number
 - `GET /v1/close-checklist-template` (getCloseChecklistTemplate): Get the close checklist template
 - `PUT /v1/close-checklist-template` (replaceCloseChecklistTemplate): Change the close checklist template
+- `GET /v1/compliance/ai-inventory` (getAIInventory): Get the AI inventory
 - `GET /v1/compliance/anonymisations` (listAnonymisations): List the anonymised contacts
 - `POST /v1/compliance/anonymisations` (anonymiseContact): Anonymise a contact
 - `GET /v1/compliance/breach-exercises` (listBreachExercises): List the tabletop exercises
@@ -207,6 +250,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/compliance/filings/{filing_id}/record` (recordStatutoryFiling): Record a filing record
 - `POST /v1/compliance/filings/{filing_id}/withdraw` (withdrawStatutoryFiling): Withdraw a filing record
 - `GET /v1/compliance/gst-monitor` (getGSTMonitor): Get the GST registration monitor
+- `GET /v1/compliance/heartbeat-drills` (listHeartbeatDrills): List the heartbeat drills
+- `POST /v1/compliance/heartbeat-drills` (recordHeartbeatDrill): Record a heartbeat drill
+- `GET /v1/compliance/incidents` (listIncidents): List the security incidents
+- `POST /v1/compliance/incidents` (openIncident): Open a security incident
+- `POST /v1/compliance/incidents/{incident_id}/steps` (stepIncident): Add an incident's next step
 - `GET /v1/compliance/personal-data-requests` (listPersonalDataRequests): List the access and correction requests
 - `POST /v1/compliance/personal-data-requests` (createPersonalDataRequest): Record an access or correction request
 - `GET /v1/compliance/personal-data-requests/{request_id}/report` (getPersonalDataReport): Report the personal data held about a request's subject
@@ -216,13 +264,23 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/compliance/policies/{key}/draft` (savePolicyDraft): Save a policy's draft
 - `POST /v1/compliance/policies/{key}/versions` (publishPolicyVersion): Publish a policy's next version
 - `POST /v1/compliance/policies/{key}/versions/{version}/acknowledgements` (acknowledgePolicyVersion): Acknowledge a policy
+- `GET /v1/compliance/restore-drills` (listRestoreDrills): List the restore drills
+- `POST /v1/compliance/restore-drills` (recordRestoreDrill): Record a restore drill
 - `GET /v1/compliance/reviews` (listComplianceReviews): List the recurring reviews and attestations
 - `GET /v1/compliance/risks` (listRisks): List the risk register
 - `POST /v1/compliance/risks` (createRisk): Add a risk to the register
 - `PUT /v1/compliance/risks/{risk_id}` (reviseRisk): Change a risk
 - `POST /v1/compliance/risks/{risk_id}/reviews` (reviewRisk): Review a risk
+- `GET /v1/compliance/secretary` (getCompanySecretary): Get the AI company secretary assistant
+- `GET /v1/compliance/secretary/runs` (listAgentRuns): List the assistant's runs
+- `POST /v1/compliance/secretary/runs` (runCompanySecretary): Run the assistant now
+- `GET /v1/compliance/secretary/runs/{run_id}` (getAgentRun): Get a run's report
 - `GET /v1/compliance/shredding-runs` (listShreddingRuns): List the shredding runs
 - `POST /v1/compliance/shredding-runs/{run_id}/approval` (approveShreddingRun): Approve a shredding run
+- `GET /v1/compliance/tasks` (listComplianceTasks): List the compliance tasks
+- `GET /v1/compliance/tasks/{task_id}` (getComplianceTask): Read a compliance task
+- `POST /v1/compliance/tasks/{task_id}/dismiss` (dismissComplianceTask): Dismiss a compliance task
+- `POST /v1/compliance/tasks/{task_id}/done` (completeComplianceTask): Mark a compliance task done
 - `GET /v1/compliance/transfers` (getTransfers): Get the overseas transfers of personal data
 - `POST /v1/compliance/transfers` (createTransfer): Record an overseas transfer's assessment
 - `PUT /v1/compliance/transfers/{transfer_id}` (reviseTransfer): Change an overseas transfer
@@ -247,6 +305,50 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/controller-entries/{entry_id}/evidence` (addControllerEntryEvidence): Attach the company secretary's confirmation of a controller entry
 - `GET /v1/controller-entries/{entry_id}/evidence/{evidence_id}` (getControllerEntryEvidence): Get a controller entry's file
 - `DELETE /v1/controller-entries/{entry_id}/evidence/{evidence_id}` (removeControllerEntryEvidence): Remove a file from a drafted controller entry
+- `GET /v1/corporate-profile` (getCorporateProfile): Get the corporate profile
+- `POST /v1/corporate-profile/details` (createCorporateDetail): Draft the company's name, registered office and SSIC code
+- `GET /v1/corporate-profile/details/{detail_id}` (getCorporateDetail): Get a corporate detail
+- `PUT /v1/corporate-profile/details/{detail_id}` (replaceCorporateDetail): Change a drafted corporate detail
+- `POST /v1/corporate-profile/details/{detail_id}/approval` (requestCorporateDetailApproval): Ask for approval to record a corporate detail
+- `GET /v1/corporate-profile/details/{detail_id}/evidence` (listCorporateDetailEvidence): List a corporate detail's files
+- `POST /v1/corporate-profile/details/{detail_id}/evidence` (addCorporateDetailEvidence): Attach a corporate detail's evidence
+- `GET /v1/corporate-profile/details/{detail_id}/evidence/{evidence_id}` (getCorporateDetailEvidence): Get a corporate detail's file
+- `DELETE /v1/corporate-profile/details/{detail_id}/evidence/{evidence_id}` (removeCorporateDetailEvidence): Remove a file from a drafted corporate detail
+- `POST /v1/corporate-profile/documents` (createCorporateDocument): Draft a corporate document
+- `GET /v1/corporate-profile/documents/{document_id}` (getCorporateDocument): Get a corporate document
+- `PUT /v1/corporate-profile/documents/{document_id}` (replaceCorporateDocument): Draft a corporate document again
+- `POST /v1/corporate-profile/documents/{document_id}/approval` (requestCorporateDocumentApproval): Ask to record a signed corporate document in the minute book
+- `GET /v1/corporate-profile/documents/{document_id}/evidence` (listCorporateDocumentEvidence): List a corporate document's files
+- `POST /v1/corporate-profile/documents/{document_id}/evidence` (addCorporateDocumentEvidence): Attach a corporate document's signed copy
+- `GET /v1/corporate-profile/documents/{document_id}/evidence/{evidence_id}` (getCorporateDocumentEvidence): Get a corporate document's file
+- `DELETE /v1/corporate-profile/documents/{document_id}/evidence/{evidence_id}` (removeCorporateDocumentEvidence): Remove a file from a drafted corporate document
+- `GET /v1/corporate-profile/documents/{document_id}/pdf` (getCorporateDocumentPDF): Get a corporate document as PDF
+- `POST /v1/corporate-profile/nominees` (createNomineeEntry): Draft a nominee entry, or a later version of one
+- `GET /v1/corporate-profile/nominees/{nominee_id}` (getNomineeEntry): Get a nominee entry's version
+- `PUT /v1/corporate-profile/nominees/{nominee_id}` (replaceNomineeEntry): Change a drafted nominee entry
+- `POST /v1/corporate-profile/nominees/{nominee_id}/approval` (requestNomineeEntryApproval): Ask for approval to record a nominee entry
+- `GET /v1/corporate-profile/nominees/{nominee_id}/evidence` (listNomineeEntryEvidence): List a nominee entry's files
+- `POST /v1/corporate-profile/nominees/{nominee_id}/evidence` (addNomineeEntryEvidence): Attach a nominee entry's evidence
+- `GET /v1/corporate-profile/nominees/{nominee_id}/evidence/{evidence_id}` (getNomineeEntryEvidence): Get a nominee entry's file
+- `DELETE /v1/corporate-profile/nominees/{nominee_id}/evidence/{evidence_id}` (removeNomineeEntryEvidence): Remove a file from a drafted nominee entry
+- `POST /v1/corporate-profile/officers` (createCorporateOfficer): Draft an officer's appointment, or a later version of it
+- `GET /v1/corporate-profile/officers/{version_id}` (getCorporateOfficer): Get an officer's version
+- `PUT /v1/corporate-profile/officers/{version_id}` (replaceCorporateOfficer): Change a drafted officer's version
+- `POST /v1/corporate-profile/officers/{version_id}/approval` (requestCorporateOfficerApproval): Ask for approval to record an officer's version
+- `GET /v1/corporate-profile/officers/{version_id}/evidence` (listCorporateOfficerEvidence): List an officer's version's files
+- `POST /v1/corporate-profile/officers/{version_id}/evidence` (addCorporateOfficerEvidence): Attach an officer's evidence
+- `GET /v1/corporate-profile/officers/{version_id}/evidence/{evidence_id}` (getCorporateOfficerEvidence): Get an officer's version's file
+- `DELETE /v1/corporate-profile/officers/{version_id}/evidence/{evidence_id}` (removeCorporateOfficerEvidence): Remove a file from a drafted officer's version
+- `GET /v1/corporate-profile/reconciliation` (getCorporateReconciliation): Reconcile the corporate profile with ACRA's business profile
+- `POST /v1/corporate-profile/statements-approvals` (createStatementsApproval): Draft the directors' approval of a year's financial statements
+- `GET /v1/corporate-profile/statements-approvals/{statements_approval_id}` (getStatementsApproval): Get a statements approval
+- `PUT /v1/corporate-profile/statements-approvals/{statements_approval_id}` (replaceStatementsApproval): Change a drafted statements approval
+- `POST /v1/corporate-profile/statements-approvals/{statements_approval_id}/approval` (requestStatementsApprovalApproval): Ask for approval to record a statements approval
+- `GET /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence` (listStatementsApprovalEvidence): List a statements approval's files
+- `POST /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence` (addStatementsApprovalEvidence): Attach the directors' resolution or statement
+- `GET /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}` (getStatementsApprovalEvidence): Get a statements approval's file
+- `DELETE /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}` (removeStatementsApprovalEvidence): Remove a file from a drafted statements approval
+- `GET /v1/corporate-profile/templates` (getCorporateTemplates): Get the corporate document templates
 - `POST /v1/credit-applications` (applyCredit): Apply a supplier credit to a bill
 - `GET /v1/credit-applications/{application_id}` (getCreditApplication): Get a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void` (voidCreditApplication): Void a credit applied to a bill
@@ -407,6 +509,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/gst-forecasts/{forecast_id}/evidence/{evidence_id}` (getGSTForecastEvidence): Get a GST forecast's file
 - `DELETE /v1/gst-forecasts/{forecast_id}/evidence/{evidence_id}` (removeGSTForecastEvidence): Remove a file from a drafted GST forecast
 - `POST /v1/gst-forecasts/{forecast_id}/record` (recordGSTForecast): Record a GST forecast
+- `GET /v1/help-state` (getHelpState): Get your first-run tour state
+- `PUT /v1/help-state/tour` (setTourState): Save where you are with the first-run tour
 - `POST /v1/holder-records` (createHolderRecord): Draft a holder record
 - `GET /v1/holder-records/{record_id}` (getHolderRecord): Get a holder record
 - `PUT /v1/holder-records/{record_id}` (replaceHolderRecord): Change a drafted holder record
@@ -417,6 +521,26 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/holder-records/{record_id}/evidence/{evidence_id}` (removeHolderRecordEvidence): Remove a file from a drafted holder record
 - `GET /v1/holders` (listHolders): List the holders
 - `GET /v1/holders/{contact_id}` (getHolder): Get a holder
+- `POST /v1/imports/accounts` (importAccounts): Import accounts of the chart
+- `GET /v1/imports/accounts/template` (getAccountsTemplate): Get the template for accounts of the chart
+- `POST /v1/imports/bank-rules` (importBankRules): Import bank rules
+- `GET /v1/imports/bank-rules/template` (getBankRulesTemplate): Get the template for bank rules
+- `POST /v1/imports/bills` (importBills): Import bills and vendor credits, as drafts
+- `GET /v1/imports/bills/template` (getBillsTemplate): Get the template for bills and vendor credits, as drafts
+- `POST /v1/imports/budgets` (importBudgets): Import budgets, as drafts
+- `GET /v1/imports/budgets/template` (getBudgetsTemplate): Get the template for budgets, as drafts
+- `POST /v1/imports/contacts` (importContacts): Import contacts
+- `GET /v1/imports/contacts/template` (getContactsTemplate): Get the template for contacts
+- `POST /v1/imports/fx-rates` (importFxRates): Import monthly FX rates
+- `GET /v1/imports/fx-rates/template` (getFxRatesTemplate): Get the template for monthly FX rates
+- `POST /v1/imports/invoices` (importInvoices): Import invoices and credit notes, as drafts
+- `GET /v1/imports/invoices/template` (getInvoicesTemplate): Get the template for invoices and credit notes, as drafts
+- `POST /v1/imports/items` (importItems): Import items
+- `GET /v1/imports/items/template` (getItemsTemplate): Get the template for items
+- `POST /v1/imports/journals` (importJournals): Import journals, as drafts
+- `GET /v1/imports/journals/template` (getJournalsTemplate): Get the template for journals, as drafts
+- `POST /v1/imports/opening-balances` (importOpeningBalances): Import opening balances, as a draft
+- `GET /v1/imports/opening-balances/template` (getOpeningBalancesTemplate): Get the template for opening balances, as a draft
 - `GET /v1/installation/announcements` (listInstallationAnnouncements): List the announcements to everyone
 - `POST /v1/installation/announcements` (publishInstallationAnnouncement): Publish a banner to everyone
 - `POST /v1/installation/announcements/{announcement_id}/withdraw` (withdrawInstallationAnnouncement): Withdraw an announcement to everyone
@@ -451,6 +575,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/instruments/{instrument_id}/evidence` (addInstrumentEvidence): Attach a SAFE's or note's documents
 - `GET /v1/instruments/{instrument_id}/evidence/{evidence_id}` (getInstrumentEvidence): Get a SAFE's or note's file
 - `DELETE /v1/instruments/{instrument_id}/evidence/{evidence_id}` (removeInstrumentEvidence): Remove a file from a drafted SAFE or note
+- `GET /v1/integration-clients` (listIntegrationClients): List the organisation's integration clients
+- `POST /v1/integration-clients` (createIntegrationClient): Ask to register an integration client
+- `GET /v1/integration-clients/{integration_client_id}` (getIntegrationClient): Get an integration client
+- `POST /v1/integration-clients/{integration_client_id}/revoke` (revokeIntegrationClient): Revoke an integration client
 - `POST /v1/investor-rights` (createInvestorRights): Draft a holder's rights from the agreements
 - `GET /v1/investor-rights/{rights_id}` (getInvestorRights): Get a holder's rights from the agreements
 - `PUT /v1/investor-rights/{rights_id}` (replaceInvestorRights): Change a holder's drafted rights
@@ -498,6 +626,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/kpi-inputs` (listKpiInputs): List the KPIs' entered counts
 - `PUT /v1/kpi-inputs/{month}` (setKpiInput): Enter a month's KPI counts
 - `GET /v1/kpis` (getKpis): Get the KPIs of a month
+- `GET /v1/ledger/entries/{entry_id}` (getLedgerEntry): Get a ledger entry and its source
 - `POST /v1/me/bank-changes` (createMyBankChange): Prepare a change of your bank account for reimbursements
 - `GET /v1/me/bank-changes/{change_id}` (getMyBankChange): Get a change of your bank account
 - `PUT /v1/me/bank-changes/{change_id}` (replaceMyBankChange): Change a draft change of your bank account
@@ -528,6 +657,29 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/members/{member_id}/roles` (assignRole): Give a member a role
 - `DELETE /v1/members/{member_id}/roles/{role}` (revokeRole): End a member's role
 - `POST /v1/members/{member_id}/succession` (startOwnerSuccession): Start the succession of an Owner who is permanently unavailable
+- `POST /v1/metrics:query` (queryMetrics): Query the semantic layer
+- `GET /v1/migrations` (listMigrations): List the migrations
+- `POST /v1/migrations` (startMigration): Start the migration from the workbook
+- `GET /v1/migrations/{migration_id}` (getMigration): Get the migration
+- `GET /v1/migrations/{migration_id}/archive` (getMigrationArchive): Get the archive
+- `POST /v1/migrations/{migration_id}/archive` (archiveMigration): Archive the workbook and close the migration
+- `POST /v1/migrations/{migration_id}/archive/pdfs` (uploadMigrationArchivePDF): Add a PDF of the workbook's reports
+- `GET /v1/migrations/{migration_id}/commit` (getMigrationCommit): Get the commit
+- `POST /v1/migrations/{migration_id}/commit` (requestMigrationCommit): Ask to commit the import
+- `POST /v1/migrations/{migration_id}/commit:run` (runMigrationCommit): Import the next batch
+- `GET /v1/migrations/{migration_id}/mapping` (getMigrationMapping): Get the mapping
+- `PATCH /v1/migrations/{migration_id}/mapping` (changeMigrationMapping): Change the mapping
+- `POST /v1/migrations/{migration_id}/mapping/sign-off` (signMigrationMapping): Sign the mapping
+- `GET /v1/migrations/{migration_id}/parallel` (getMigrationParallel): Get the parallel month's reconciliation
+- `PATCH /v1/migrations/{migration_id}/parallel/register/{line}` (decideMigrationParallelDifference): Decide a line of the parallel month's register
+- `GET /v1/migrations/{migration_id}/parallel/report` (getMigrationParallelReport): Get the parallel month's validation report
+- `POST /v1/migrations/{migration_id}/parallel/sign-off` (signMigrationParallel): Sign the parallel month
+- `POST /v1/migrations/{migration_id}/parallel/workbook` (uploadMigrationParallelWorkbook): Upload the parallel month's workbook
+- `GET /v1/migrations/{migration_id}/reconciliation` (getMigrationReconciliation): Get the reconciliation
+- `PATCH /v1/migrations/{migration_id}/reconciliation/register/{line}` (decideMigrationDifference): Decide a line of the register
+- `POST /v1/migrations/{migration_id}/reconciliation/sign-off` (signMigrationReconciliation): Sign the reconciliation
+- `GET /v1/migrations/{migration_id}/report` (getMigrationReport): Get the validation report
+- `POST /v1/migrations/{migration_id}/workbook` (uploadMigrationWorkbook): Upload the frozen workbook
 - `GET /v1/money-accounts` (listMoneyAccounts): List the money accounts
 - `POST /v1/money-accounts` (createMoneyAccount): Set up a money account
 - `GET /v1/money-accounts/{money_account_id}` (getMoneyAccount): Get a money account
@@ -553,6 +705,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/opening-balances` (replaceOpeningBalances): Save the opening balances as a draft
 - `POST /v1/opening-balances/edit-approval` (requestOpeningBalancesEdit): Ask for approval to change the posted opening balances
 - `POST /v1/opening-balances/post` (postOpeningBalances): Post the opening balances
+- `GET /v1/operations` (listMyOperations): List my long operations
 - `GET /v1/operations/{operation_id}` (getOperation): Poll a long operation
 - `GET /v1/option-events/{event_id}` (getOptionEvent): Get a forfeiture or expiry of a grant's options
 - `PUT /v1/option-events/{event_id}` (replaceOptionEvent): Change a drafted forfeiture or expiry
@@ -645,7 +798,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/payment-batches/{batch_id}/approval` (requestPaymentBatchApproval): Ask for approval of a payment batch
 - `POST /v1/payment-batches/{batch_id}/break-glass-release` (releasePaymentBatchUnderBreakGlass): Release a payment batch under break-glass
 - `POST /v1/payment-batches/{batch_id}/cancel` (cancelPaymentBatch): Cancel an approved payment batch
-- `GET /v1/payment-batches/{batch_id}/file` (getPaymentBatchFile): Download a released batch's payment list
+- `GET /v1/payment-batches/{batch_id}/file` (getPaymentBatchFile): Download a released batch's payment file
 - `POST /v1/payment-batches/{batch_id}/payments/{payment_id}/remittance-again` (sendRemittanceAgain): Send a failed remittance advice again
 - `POST /v1/payment-batches/{batch_id}/reapproval` (requestPaymentBatchReapproval): Ask for a payment batch's approval again
 - `POST /v1/payment-batches/{batch_id}/release` (releasePaymentBatch): Release a payment batch
@@ -665,6 +818,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/periods/{period_id}/year-end` (getYearEnd): Get the year end of a period's financial year
 - `POST /v1/periods:open-year` (openFinancialYear): Open the next financial year
 - `GET /v1/planning/summary` (getPlanningSummary): Get the planning summary for Home
+- `GET /v1/platform/version` (getPlatformVersion): Get the platform version
 - `GET /v1/pre-incorporation-costs` (listPreIncorporationCosts): List costs paid before the books start
 - `POST /v1/pre-incorporation-costs` (recordPreIncorporationCost): Record a cost paid before the books start
 - `GET /v1/pre-incorporation-costs/{cost_id}` (getPreIncorporationCost): Get a cost paid before the books start
@@ -785,6 +939,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/statutory-packs` (listStatutoryPacks): List the statutory pack versions
 - `GET /v1/statutory-packs/{version_id}` (getStatutoryPack): Get a statutory pack version
 - `POST /v1/statutory-packs/{version_id}/activate` (activateStatutoryPack): Ask to activate a statutory pack version
+- `GET /v1/statutory-values` (getStatutoryValues): Get the statutory values in force on a day
 - `POST /v1/super-admins` (acceptSuperAdminInvitation): Become a Super admin with an invitation
 - `POST /v1/super-admins/invitations` (createSuperAdminInvitation): Invite the second Super admin
 - `POST /v1/super-admins/recovery` (recoverSuperAdmin): Recover your Super admin access
@@ -796,6 +951,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/supplier-refunds/{refund_id}/void-approval` (requestSupplierRefundVoid): Ask for approval to void a refund from a supplier
 - `GET /v1/team-mode` (getTeamMode): Get the team mode
 - `PATCH /v1/team-mode` (switchTeamMode): Ask to switch the team mode
+- `GET /v1/tenant-export-downloads/{token}` (getTenantExportDownload): Save the full export through its link
+- `GET /v1/tenant-exports` (listTenantExports): List the organisation's full exports
+- `POST /v1/tenant-exports` (requestTenantExport): Ask for the organisation's full export
+- `POST /v1/tenant-exports/{export_id}/download` (createTenantExportDownload): Get a link that saves the full export
 - `GET /v1/write-offs` (listWriteOffs): List the write-offs
 - `POST /v1/write-offs` (createWriteOff): Save a draft write-off
 - `GET /v1/write-offs/{write_off_id}` (getWriteOff): Get a write-off

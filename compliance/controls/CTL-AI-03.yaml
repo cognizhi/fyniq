@@ -10,5 +10,6 @@ evidence: "Test report"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-ai-proposals"
+    status: running
+    how: "test TestAProposalWaitsForAPersonsApproval"
+    evidence: "an AI proposal's approval policy is fixed: changing it is refused in every team mode (approval.CodeFixed), and each proposal waits for a person who holds its command's right; CI artefact test-report (90 days)"

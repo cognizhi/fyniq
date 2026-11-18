@@ -5,6 +5,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { Organisation, valueText } from "./Organisation";
 import { StatutoryPacks } from "./StatutoryPacks";
+import { invalid } from "../../test/invalid";
 
 const terms = {
   key: "sales.payment_terms_days", group: "Defaults", label: "Payment terms for invoices", kind: "days", value: "30", recommended_value: "30", status: "recommended",
@@ -39,11 +40,25 @@ describe("Organisation settings", () => {
     expect(valueText("switch", "true")).toBe("On");
     expect(valueText("days", "1")).toBe("1 day");
     expect(valueText("minutes", "30")).toBe("30 minutes");
+    expect(valueText("hours", "24")).toBe("24 hours");
     expect(valueText("years", "7")).toBe("7 years");
     expect(valueText("months", "6")).toBe("6 months");
     expect(valueText("months", "1")).toBe("1 month");
+    expect(valueText("count", "5")).toBe("5 times");
+    expect(valueText("count", "1")).toBe("1 time");
     expect(valueText("amount_sgd", "1000.00")).toBe("S$1,000.00");
+    expect(valueText("fields", "memo,notes")).toBe("memo, notes");
+    expect(valueText("fields", "")).toBe("None");
+    expect(valueText("task_types", "sec.create_task,sec.draft_reminder")).toBe("sec.create_task, sec.draft_reminder");
+    expect(valueText("task_types", "")).toBe("None");
     expect(valueText("percent", "3")).toBe("3%");
+    expect(valueText("cron", "0 7 * * *")).toBe("Daily at 07:00, Singapore time");
+    expect(valueText("cron", "0 8 * * 1")).toBe("Mondays at 08:00, Singapore time");
+    expect(valueText("cron", "*/15 9-17 * * 1-5")).toBe("*/15 9-17 * * 1-5 (cron, Singapore time)");
+    expect(valueText("cron", "off")).toBe("Off");
+    expect(valueText("time_range", "22:00-07:00")).toBe("22:00 to 07:00, Singapore time");
+    expect(valueText("choices", "period_closed,filing_recorded")).toBe("Period closed, Filing recorded");
+    expect(valueText("tokens", "200000")).toBe("200000 tokens");
   });
 
   it("shows the profile and each setting with its status, and axe finds nothing", async () => {
@@ -86,7 +101,7 @@ describe("Organisation settings", () => {
     const input = await within(dialog).findByLabelText("New value");
     fireEvent.change(input, { target: { value: "S$1,500" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Ask for approval" }));
-    expect(await within(dialog).findByText(/without the S\$ or commas/)).toBeTruthy();
+    await invalid(dialog, "New value", "Enter an amount in Singapore dollars, such as 1000.00, without the S$ or commas.");
     expect(calls()).not.toContain("PATCH /v1/organisation/settings/assets.capitalisation_threshold");
   });
 

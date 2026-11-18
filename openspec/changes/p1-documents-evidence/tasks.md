@@ -5,6 +5,14 @@
 - [x] 1.1 Extend `BlobStore` with `SetRetainUntil`, which only extends, and `SetLegalHold`, and make `Delete` refuse a key under retention. Implement both adapters and extend the conformance suite. Test `// req: FR-DOC-02` (G4-068) (20 Oct 2026: `SetRetainUntil`, `SetLegalHold`, `ErrRetained` on `Delete` and `Put`; the local directory enforces them in code, the Cloud Storage adapter sends Locked retention and a temporary hold and checks them first; `porttest.BlobRetention` runs on the directory, and the emulator test covers all but extension, which fake-gcs-server refuses for a locked retention. **Left:** extension and the bucket's Object Retention Lock itself are proved at the cloud gate, §17.5 item 1)
 - [x] 1.2 Add the `Scanner` port with a ClamAV adapter, an EICAR-flagging fake and the scanner service in the local stack as an optional profile. Test `// req: FR-DOC-01` (scan on upload) (20 Oct 2026: `ports.Scanner`, `local.EICARScanner`, `internal/adapters/clamav` on clamd's INSTREAM, `porttest.Scanner`, and the `scanner` profile in the local stack with `FYNIQ_CLAMD_ADDR`; a failing or missing scanner refuses the file. **Left:** clamd beside the API in the cloud, as a Cloud Run sidecar [verify], and its signature updates)
 - [ ] 1.3 Safe-file handling: type from content, 25 MB limit, HEIC conversion, metadata stripping, macro, ZIP and XML checks, safe previews, file names as data. Test `// req: FR-DOC-08` with a fuzz corpus per type (20 Oct 2026, part: the type from the content for PDF, PNG, JPEG, WebP, CSV, text, XLSX, DOCX, EML and MSG; 25 MB; metadata stripped from JPEG, PNG and WebP; macros, ActiveX and legacy OLE refused; the archive limits read from the ZIP directory; file names kept as data; `FuzzStripMetadata` with a seed corpus. **Left:** HEIC conversion (refused until then, rev 0.38), safe PDF previews, the safe name in download headers (no download yet), XML parsing rules once a part is parsed, and a fuzz corpus per type)
+  (17 Nov 2026, part: a HEIC photo is refused with its own message, to export it as JPEG (`IsHEIC`, by its file-type
+  box); a file name loses its control, line-separating and invisible format characters too (a right-to-left override),
+  and a safe name is its own safe name; the safe name is what the download headers carry (`createEvidenceDownload`, from
+  the stored name); no part is parsed as XML (the NRIC reader takes the tags out without a parser, so no DTD or entity
+  is read; the corpus holds a DOCX declaring an external entity); the fuzz corpus per type: `FuzzCheck`,
+  `FuzzCheckArchive`, `FuzzUnmaskedNRIC` and `FuzzSafeName`, seeded with a file of each accepted type and each refused
+  one, made in code. Tests `TestHEICIsRefusedWithItsOwnMessage` and the fuzz targets. **Left:** HEIC's conversion and
+  safe PDF previews, which wait for the owner's choice of a converter and a renderer)
 
 ## 2. Upload, attach, finalise
 
@@ -55,4 +63,10 @@
   `safeName`. Guide `evidence-search.md` (Open a file), `journals.md`. Tests `TestAnEvidenceFileOpensForWhoeverSeesItsRecord`,
   `JournalEvidence.test.tsx`. **Left:** PDF previews rendered to images (FR-DOC-08), the evidence-search screen's link
   to each file.)
+  (17 Nov 2026: the evidence-search screen opens each file from its row, a picture shown below the list and any other
+  file saved under a safe name (`openEvidence`, shared with the panel); it searches the equity register's, the
+  statutory filings' and the GST forecasts' files too, which the contract's filters now name, so a filing's
+  acknowledgement opens from its panel; **Only files I attached** filters by uploader; **Show more** pages; a filing
+  missing its acknowledgement is listed as one. Tests `TestAFilingsAcknowledgementIsFoundAndOpens`,
+  `EvidenceSearch.test.tsx`; guide `evidence-search.md`, compiled. **Left:** PDF previews rendered to images, with 1.3)
 - [ ] 4.3 Finish with `make check` and `make test`

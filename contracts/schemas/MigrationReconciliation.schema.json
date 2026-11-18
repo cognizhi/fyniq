@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accounts": {
+      "description": "The Fyniq accounts compared.",
+      "examples": [
+        64
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "books_start": {
+      "description": "The books start.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "checks": {
+      "description": "The workbook's Checks rows against Fyniq's.",
+      "items": {
+        "$ref": "MigrationCheckParity.schema.json"
+      },
+      "type": "array"
+    },
+    "checks_differ": {
+      "description": "The workbook's checks whose status Fyniq's do not share.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "checks_run_at": {
+      "description": "When Fyniq's checks last ran; absent when they never did.",
+      "examples": [
+        "2026-11-13T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "differences": {
+      "description": "The figures that differ, by account, month and figure: the difference register's lines.",
+      "items": {
+        "$ref": "MigrationDifference.schema.json"
+      },
+      "type": "array"
+    },
+    "figures": {
+      "description": "The figures compared.",
+      "examples": [
+        1216
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision Fyniq's figures were read at (ENG-46).",
+      "examples": [
+        4211
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "not_compared": {
+      "description": "What M4's parity asks for that the report does not compare yet.",
+      "items": {
+        "description": "gst_f5: the last GST F5 return against the workbook's GST Return sheet, until Fyniq makes the F5 return (p1-gst).",
+        "enum": [
+          "gst_f5"
+        ],
+        "examples": [
+          "gst_f5"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "path": {
+      "description": "The path imported: history compares the opening and each month's movement and closing; clean_start the opening against the workbook's closing at its as-of.",
+      "enum": [
+        "history",
+        "clean_start"
+      ],
+      "examples": [
+        "history"
+      ],
+      "type": "string"
+    },
+    "sha256": {
+      "description": "The SHA-256 of the report's figures, checks and decisions (not its status, revision, run time or sign-off): what the Accountant's sign-off names, and the ETag (design D8).",
+      "examples": [
+        "5d1e…"
+      ],
+      "type": "string"
+    },
+    "sign_off": {
+      "$ref": "MigrationReconciliationSignOff.schema.json",
+      "description": "The latest sign-off of the report and its register; absent before the first."
+    },
+    "status": {
+      "description": "not_committed: the import is not committed yet, so there is nothing to reconcile and the report holds no figures; not_started: the parallel month has no valid workbook yet, so its report holds no figures (M5); ready: the report of the books as they stand; signed: the Accountant signed this report and its register (M4).",
+      "enum": [
+        "not_committed",
+        "not_started",
+        "ready",
+        "signed"
+      ],
+      "examples": [
+        "ready"
+      ],
+      "type": "string"
+    },
+    "through": {
+      "description": "The last month compared: the workbook's as-of.",
+      "examples": [
+        "2026-09"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "undecided": {
+      "description": "The register's lines without a decision that counts: the differences, and the checks whose status differs. The sign-off needs none.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "status",
+    "path",
+    "books_start",
+    "through",
+    "ledger_revision",
+    "accounts",
+    "figures",
+    "differences",
+    "checks",
+    "checks_differ",
+    "not_compared",
+    "undecided",
+    "sha256"
+  ],
+  "title": "MigrationReconciliation",
+  "type": "object"
+}

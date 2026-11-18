@@ -64,11 +64,11 @@ export function MyPersonalData() {
         <form className="fy-stack fy-stack--3" onSubmit={submit} noValidate>
           <fieldset className="fy-field">
             <legend className="fy-label">I want to</legend>
-            <label className="fy-check">
+            <label className="fy-row gap-2">
               <input type="radio" name={`${id}-kind`} checked={kind === "access"} onChange={() => setKind("access")} />
               See the personal data the company holds about me
             </label>
-            <label className="fy-check">
+            <label className="fy-row gap-2">
               <input type="radio" name={`${id}-kind`} checked={kind === "correction"} onChange={() => setKind("correction")} />
               Correct it
             </label>

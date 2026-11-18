@@ -56,3 +56,21 @@ func (l LogDir) Read(_ context.Context, since time.Time, limit int) ([]string, e
 	}
 	return out, nil
 }
+
+// Scheduling is local mode's stand-in for Cloud Scheduler and Cloud Monitoring (NFR-OBS-02): the stack's own tick (the
+// worker's loop) runs, and stands in for the heartbeat's alerts, which only the cloud has.
+type Scheduling struct{}
+
+var _ ports.Scheduling = Scheduling{}
+
+// SchedulerJobs implements ports.Scheduling.
+func (Scheduling) SchedulerJobs(context.Context) ([]ports.SchedulerJob, error) {
+	return []ports.SchedulerJob{{Name: "tick", Enabled: true, Schedule: "the worker's loop"}}, nil
+}
+
+// AlertPolicies implements ports.Scheduling.
+func (Scheduling) AlertPolicies(context.Context) ([]ports.AlertPolicy, error) {
+	return []ports.AlertPolicy{{Name: "local: heartbeat tick absent 30 minutes", Enabled: true, Channels: 1},
+		{Name: "local: heartbeat tick absent 60 minutes", Enabled: true, Channels: 1},
+		{Name: "local: a platform job's heartbeat is late", Enabled: true, Channels: 1}}, nil
+}

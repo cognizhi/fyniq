@@ -11,5 +11,5 @@ owner: Owner
 checks:
   - frequency: D
     status: cloud
-    how: "tofu environment/the_data_is_encrypted_and_recoverable"
-    evidence: "backups and 7 days of point-in-time recovery in Singapore, deletion protection, zonal by the cost decision; read in the cloud [live-verify]"
+    how: "tofu environment/production_is_highly_available_and_recoverable"
+    evidence: "production's database regional HA (a zonal one is refused), point-in-time recovery with 7 days of logs, 35 daily backups kept in Singapore, deletion protection; the weekly export locked in fyniq-audit (tofu db-export/production_exports_outlive_the_production_project); read in the cloud [live-verify]"

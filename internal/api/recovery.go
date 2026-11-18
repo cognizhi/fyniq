@@ -23,10 +23,12 @@ import (
 // On the owner's decisions of 6 Nov 2026: each person keeps ten one-time recovery codes of 10 characters, kept only as
 // keyed hashes; one who lost every authenticator recovers with one of them and a confirmation an Owner or Administrator
 // gives after speaking to them; the recovery gives the session a second factor, ends the person's other sessions and
-// tokens, replaces their codes and starts a 24-hour cooling-off (authz.HeldInCoolingOff). A person whose provider failed
+// tokens, replaces their codes and starts a cooling-off (authz.HeldInCoolingOff): the organisation's "Hold after an account
+// recovery", 24 to 72 hours, the longest of the person's organisations (rev 0.253). A person whose provider failed
 // signs in with another one they linked (FR-ADM-08); one with an authenticator left confirms it's them with it.
 
-// CoolingOff is how long an account cools off after its recovery (SEC-35's default).
+// CoolingOff is how long an account cools off after its recovery when none of its organisations set longer (SEC-35's
+// default): the database keeps the longest of their security.recovery_cooling_off_hours (000324).
 const CoolingOff = 24 * time.Hour
 
 // recoveryCodeScope is the keyed hash's scope for a person's recovery codes.
@@ -240,7 +242,8 @@ func registerRecovery(a *API) {
 		Summary: "Recover your account",
 		Description: "Gives your account back after you lost every authenticator, with two proofs (SEC-35): one of your recovery codes and " +
 			"the confirmation an Owner or Administrator gave you. Your session passes its second factor by recovery, so you can add a new " +
-			"passkey; your other sessions and tokens end; your recovery codes are replaced; and for 24 hours approving, releasing payments, " +
+			"passkey; your other sessions and tokens end; your recovery codes are replaced; and while your account cools off (24 hours, or up to " +
+			"72 as an organisation of yours set its hold after a recovery, the longest of them) approving, releasing payments, " +
 			"changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait. Email alone or a support request " +
 			"never recovers an account. " + authz.RecoverAccount.Note + " Side effects: the recovery, ten new codes (shown once), the " +
 			"revocation of your tokens (AI-38), events in the installation's trail, an entry in the weekly review and a security notice " +
@@ -294,7 +297,8 @@ func registerRecovery(a *API) {
 					by := done.UserID
 					_, err := u.ReviewLog().Log(ctx, storage.NewReviewLogEntry{Kind: storage.ReviewAccountRecovery, ObjectType: "membership",
 						ObjectKey: m.ID.String(), Summary: m.DisplayName + " recovered their account on " + singapore(now) +
-							" Singapore time, with a recovery code and a confirmation; it cools off for 24 hours", Actor: &by, LoggedAt: now})
+							" Singapore time, with a recovery code and a confirmation; it cools off until " + singapore(done.CoolingOffUntil) + " Singapore time",
+						Actor: &by, LoggedAt: now})
 					return err
 				}
 				return nil

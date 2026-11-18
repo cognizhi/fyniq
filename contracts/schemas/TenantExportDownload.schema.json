@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expires_at": {
+      "description": "When the link stops working: 5 minutes after it was made.",
+      "examples": [
+        "2026-11-13T09:10:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "file_name": {
+      "description": "The ZIP's name.",
+      "examples": [
+        "fyniq-export-2026-11-13.zip"
+      ],
+      "type": "string"
+    },
+    "sha256": {
+      "description": "The ZIP's SHA-256, in hexadecimal.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "url": {
+      "description": "Open it within expires_at: the ZIP is served as an attachment named file_name. A path starting /api/ is on the web app's own origin.",
+      "examples": [
+        "https://storage.googleapis.com/fyniq-prod-staging/exports/01928f6e/fyniq-export-2026-11-13.zip?X-Goog-Algorithm=GOOG4-RSA-SHA256\u0026X-Goog-Expires=300\u0026X-Goog-Signature=ab12"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "url",
+    "expires_at",
+    "file_name",
+    "sha256"
+  ],
+  "title": "TenantExportDownload",
+  "type": "object"
+}

@@ -11,7 +11,9 @@ and D7). Today a package variable chooses the writer. This change chooses it fro
 ### D1 The setting lives on the money account
 
 `money_account.payment_file`: text, `payment-list` by default, CHECK against the formats that have been built.
-Release reads it when it writes the file, so a batch released before a change keeps its file. The setting is changed
+Release reads it when it writes the file, so a batch released before a change keeps its file. (Decided in task 1.1:
+the check names the three files of rev 0.157, and the API takes one only once its writer is built, while release
+refuses any other, so a writer arrives without a migration.) The setting is changed
 by whoever may change the money account, with an audit event recording the old and new value. Alternatives were a
 setting per batch, which invites the wrong file for the account, and one setting for the whole organisation, which
 breaks for an organisation with both DBS and Wise.
@@ -20,7 +22,10 @@ breaks for an organisation with both DBS and Wise.
 
 The API refuses a format the account's provider doesn't take. The provider is known from the account's statement
 connector when it has one (Wise, Airwallex; FR-BNK-15). Otherwise it is the institution, picked from a list for a
-bank account rather than typed. How existing free-text institutions map to that list is decided in task 1.1.
+bank account rather than typed. How existing free-text institutions map to that list is decided in task 1.1. (Decided: the institution stays text,
+and Fyniq recognises a listed bank by its name or another name it goes by, in any case and without "Bank", "Ltd" or
+"Singapore"; a picked bank is stored by its listed name, so existing text maps as a picked name does, and a name on no
+list is another bank, which gives the payment list.)
 
 ### D3 Wise's batch payment file (`wise-batch@1`)
 

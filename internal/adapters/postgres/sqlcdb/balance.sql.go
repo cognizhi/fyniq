@@ -63,6 +63,56 @@ func (q *Queries) BalanceDifferences(ctx context.Context) ([]BalanceDifferencesR
 	return items, nil
 }
 
+const balanceLinesForPeriodAt = `-- name: BalanceLinesForPeriodAt :many
+SELECT account_id::uuid AS account_id, period_id::uuid AS period_id, currency::text AS currency,
+       amount::numeric(20, 4) AS amount, base_amount::numeric(20, 4) AS base_amount, line_count::bigint AS line_count
+FROM fyniq.balance_lines_at($1::uuid, $2::bigint) AS b
+ORDER BY account_id, currency
+`
+
+type BalanceLinesForPeriodAtParams struct {
+	PeriodID       uuid.UUID
+	LedgerRevision int64
+}
+
+type BalanceLinesForPeriodAtRow struct {
+	AccountID  uuid.UUID
+	PeriodID   uuid.UUID
+	Currency   string
+	Amount     string
+	BaseAmount string
+	LineCount  int64
+}
+
+// A period's balances as at a ledger revision summed from the lines alone, never the cache (storage.WithLines): the
+// checks read the statements so (INV-08). The balance service alone reads it.
+func (q *Queries) BalanceLinesForPeriodAt(ctx context.Context, arg BalanceLinesForPeriodAtParams) ([]BalanceLinesForPeriodAtRow, error) {
+	rows, err := q.db.Query(ctx, balanceLinesForPeriodAt, arg.PeriodID, arg.LedgerRevision)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []BalanceLinesForPeriodAtRow
+	for rows.Next() {
+		var i BalanceLinesForPeriodAtRow
+		if err := rows.Scan(
+			&i.AccountID,
+			&i.PeriodID,
+			&i.Currency,
+			&i.Amount,
+			&i.BaseAmount,
+			&i.LineCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const balancesForPeriod = `-- name: BalancesForPeriod :many
 SELECT account_id, period_id, currency, sum(amount)::numeric(20, 4) AS amount,
        sum(base_amount)::numeric(20, 4) AS base_amount, sum(line_count)::bigint AS line_count

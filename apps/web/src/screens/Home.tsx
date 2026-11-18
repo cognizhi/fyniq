@@ -3,9 +3,11 @@ import { Link, Navigate } from "@tanstack/react-router";
 import { ChevronRight, Circle, CircleCheck, ClipboardCheck, ClockAlert, Stamp, TriangleAlert } from "lucide-react";
 import { api } from "../api/client";
 import { useSignedIn } from "../session";
+import { landingOf } from "../shell/navigation";
 import { Icon } from "../ui";
 import { PoliciesToAcknowledge } from "./compliance/Policies";
 import { Dashboard } from "./Dashboard";
+import { Deadlines, YourWork } from "./HomeWork";
 
 // Each read answers null when the person's roles may not read it: the step it feeds is left out
 // rather than shown as not done (the API decides who sees what).
@@ -159,7 +161,10 @@ function SetUp({ steps }: { steps: Step[] }) {
                 <span className="fy-list__title whitespace-normal">{s.title}</span>
                 <span className="fy-list__meta whitespace-normal">{s.why}</span>
               </span>
-              <span className={s.done ? "fy-chip fy-chip--good" : "fy-chip fy-chip--neutral"}>{s.done ? "Done" : "To do"}</span>
+              <span className={s.done ? "fy-chip fy-chip--good" : "fy-chip fy-chip--neutral"}>
+                <Icon of={s.done ? CircleCheck : Circle} />
+                {s.done ? "Done" : "To do"}
+              </span>
             </Link>
           </li>
         ))}
@@ -169,19 +174,15 @@ function SetUp({ steps }: { steps: Step[] }) {
 }
 
 // Home is the first signed-in page (docs/design/screens Home): the money's pulse, tiles and charts
-// (FR-KPI-01), what waits for the person, and while the company is new, the set-up checklist.
-// Deadlines arrive with their modules.
-// personalRoles are the roles whose rights are a person's own items only (FR-UX-39): someone who holds no other lands
-// on My claims, with nothing of the company's finances.
-export const personalRoles = ["employee"];
-
-export function personalOnly(roles: readonly string[] | null | undefined): boolean {
-  return (roles ?? []).length > 0 && (roles ?? []).every((r) => personalRoles.includes(r));
-}
-
+// (FR-KPI-01), what waits for the person, their roles' work (§7.1), the upcoming statutory deadlines, and while the
+// company is new, the set-up checklist.
+// Home is where a person lands unless their roles land elsewhere (§7.1): My claims with personal rights only
+// (FR-UX-39), Settings for an Administrator, Compliance for the Company secretary or the DPO, Reports for a Board viewer
+// or an Auditor.
 export function Home() {
   const { session } = useSignedIn();
-  return personalOnly(session.roles) ? <Navigate to="/me/claims" replace /> : <Workspace />;
+  const to = landingOf(session.roles);
+  return to ? <Navigate to={to} replace /> : <Workspace />;
 }
 
 function Workspace() {
@@ -210,7 +211,7 @@ function Workspace() {
   return (
     <div className="fy-page fy-enter">
       <div className="fy-pagehead">
-        <div className="fy-pagehead__text">
+        <div className="fy-pagehead__text" data-tour="home">
           <h1 className="fy-h1">{organisation ? organisation.name : "Fyniq"}</h1>
           <p className="fy-secondary">
             {organisation ? `Books in ${organisation.base_currency}. ${organisation.team_mode === "standard" ? "Standard" : "Founder"} mode.` : "Intelligence behind every number."}
@@ -225,6 +226,8 @@ function Workspace() {
         <>
           <Dashboard />
           <Waiting toApprove={c.toApprove.data ?? null} review={c.review.data ?? null} reversals={c.reversals.data ?? null} />
+          <YourWork />
+          <Deadlines />
           <PoliciesToAcknowledge />
           {!allDone && <SetUp steps={steps} />}
         </>

@@ -3,7 +3,7 @@ key: home.overview
 title: The Home page and finding your way around
 mode: basic
 roles: [all]
-requirements: [FR-UX-01, FR-UX-29, FR-UX-31, FR-UX-40, FR-KPI-01, FR-KPI-03, FR-PLN-03]
+requirements: [FR-UX-01, FR-UX-29, FR-UX-31, FR-UX-40, FR-KPI-01, FR-KPI-03, FR-PLN-03, REL-05, FR-INT-11]
 status: draft            # written with the app shell's first slice (P1); reviewed when the shell's screens are built
 ---
 
@@ -33,6 +33,8 @@ each module arrives; you only ever see the pages your roles allow.
 - **Waiting for you** counts the requests waiting for your approval and the high-risk actions you
   can review, with any that are overdue. Select one to open the Inbox or the review log. It also
   counts the automatic reversals waiting for a month to be opened; select it to open **Journals**.
+- **Your work** counts what waits in your areas, by your roles: see [Your work](#your-work).
+- **Upcoming deadlines** lists the next statutory deadlines: see [Upcoming deadlines](#upcoming-deadlines).
 - **Set up the company** lists the first steps, each marked **Done** or **To do**, with progress.
   It goes once every step is done.
 
@@ -65,6 +67,28 @@ Work down the list. Each step opens the page where you do it:
 A step your roles cannot see is left out. Opening balances, bank feeds, employees and importing
 from the workbook join the list as they arrive.
 
+### Your work
+
+**Your work** shows what your roles work through, each row counting a list and opening it:
+
+- **Bookkeeper**: bank lines to categorise, and draft invoices and bills to finish.
+- **AR specialist**: draft invoices to finish, invoices overdue, receipts to apply (the customer statements show each
+  one) and quotes waiting for an answer.
+- **AP specialist**: draft bills to finish, bills overdue, bills to pay, payment batches being prepared, approved
+  claims to pay and bank-detail changes waiting for a second person.
+- **Payment releaser**: batches waiting for release and payments the bank rejected, then each bank account's balance.
+
+A row whose list your roles cannot read is left out rather than shown as nothing to do. With several roles you see
+each row once. The Owner, the Controller, the Accountant and the Tax agent read the same work from the pulse card, the
+tiles and the Inbox, so the card does not show for them alone.
+
+### Upcoming deadlines
+
+- **Upcoming deadlines** lists the next five statutory deadlines from the calendar, those **Overdue** or **Due soon**
+  first, each with its date: GST, CPF, the annual return and the rest.
+- **The statutory calendar** opens the calendar when Compliance is one of your areas
+  ([Keep to the statutory calendar](statutory-calendar.md)).
+
 ### Read the plans on Home
 
 - **Cash ahead** is the lowest bank balance of the next 60 days and its day, and says when it falls below the buffer.
@@ -94,6 +118,22 @@ Results marked **Expert** belong to Expert mode.
 To find a record, such as an invoice by its number or a document by its amount, choose **Search the
 records for …** at the end of the list: see [Search the records](search.md).
 
+### Follow long work
+
+Some work runs in the background so you can keep working, such as an accountant export or **Run now** on **Checks**.
+Select **Operations** (the hourglass in the header) to follow it; the header counts the work still running.
+
+- **Running** work shows a moving bar. Fyniq does not yet know how far along it is, so the bar does not fill. The list
+  is read again every 5 seconds while anything runs.
+- **Done** work links to what it made: **Download** for an export, for 24 hours after it is ready, and **See the
+  checks** for a run of the checks.
+- **Failed** work says why when it knows, and how to ask again.
+
+You see only the work you asked for. An export also sends you a notification when it is ready.
+
+On a phone, **Operations** is not in the header yet: the export's notification says when it is ready, and **Reports**
+lists your exports under **Accountant exports**.
+
 ### Copy and paste amounts
 
 Amounts copied from a page, a table or a report reach the clipboard as plain numbers, ready for a
@@ -106,8 +146,8 @@ read, such as -1234.56, so you can check it before you save.
 
 ### Change how Fyniq looks
 
-Select **Appearance** in the header to change the theme, high contrast, density and motion. See
-[Change how Fyniq looks](appearance.md).
+Select **Appearance** in the header (on a phone, under **More**) to change the theme, high contrast, density and
+motion. See [Change how Fyniq looks](appearance.md).
 
 ### Settings
 
@@ -116,10 +156,19 @@ settings first, such as [Your profile and security](profile-and-security.md), th
 organisation's settings your roles let you see. Most of the organisation's settings are in Expert
 mode: in Basic mode, Settings says how many more there are and offers to switch.
 
+### See which version you are on
+
+Select **Help** (the question mark in the header; on a phone, under **More**), then **About Fyniq**. It shows the version, the commit (the git
+SHA the services were built from), when they were built and, for a published release, its tag. Quote the version and
+the commit when you report a problem. Every exported report names the same version and commit in its footer: the last
+line of a CSV or a spreadsheet, and the footer of a PDF.
+
+The same **Help** menu opens the **User guide**, this guide, in Fyniq ([Read the user guide](help.md)).
+
 ### Sign out
 
-Select **Sign out** in the header. Fyniq ends your session in this browser and returns you to the
-sign-in page.
+Select **Sign out** in the header (on a phone, under **More**). Fyniq ends your session in this browser and returns
+you to the sign-in page.
 
 ## Common problems
 

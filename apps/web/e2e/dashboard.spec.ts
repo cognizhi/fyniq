@@ -110,6 +110,7 @@ async function serve(page: Page) {
       case "GET /v1/approvals":
       case "GET /v1/notifications":
       case "GET /v1/banners":
+      case "GET /v1/operations": // the header's operations tray (FR-INT-11)
       case "GET /v1/journals/waiting-reversals":
         return json(200, { items: [] });
       case "GET /v1/review-log":
@@ -173,6 +174,12 @@ test("Home shows the pulse card and tiles, and Expert draws the three charts", a
   await shot(page, "home-phone");
   await expect(await inside("About Net burn")).toBeVisible();
   await shot(page, "home-phone-definition");
+
+  // nor on the folded foldable, the narrowest target (FR-UX-37), with the top bar's assistant in it
+  await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 344, height: 882 });
+  await expect(page.getByRole("button", { name: "Assistant" })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(344);
 });
 
 test("the KPI page lists the month's KPIs, and an Owner enters the month's counts", async ({ page }) => {

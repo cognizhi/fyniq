@@ -283,7 +283,7 @@ export function RecurringBillPage() {
       {isNew && !mayPrepare && <p className="fy-secondary">A Bookkeeper, an AP specialist or an Accountant sets up recurring bills.</p>}
 
       {f && (
-        <form id={`${id}-form`} className="fy-stack fy-stack--6" onSubmit={(e) => void send(false, e)} noValidate>
+        <form id={`${id}-form`} className="fy-stack fy-stack--6" data-enter="next" onSubmit={(e) => void send(false, e)} noValidate>
           <fieldset className="fy-stack fy-stack--6 m-0 min-w-0 border-0 p-0" disabled={!mayPrepare}>
             <section className="fy-card" aria-labelledby={`${id}-head`}>
               <div className="fy-card__head">

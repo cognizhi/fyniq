@@ -5,14 +5,9 @@ package local
 import (
 	"context"
 	"crypto/ed25519"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
 
 	"github.com/cognizhi/fyniq/internal/ports"
 )
@@ -38,19 +33,8 @@ func NewEd25519(seed []byte) (*Ed25519, error) {
 
 // LoadOrCreateEd25519 reads the seed at path, creating it (0600) on first use. Never commit it.
 func LoadOrCreateEd25519(path string) (*Ed25519, error) {
-	seed, err := os.ReadFile(path)
-	if errors.Is(err, fs.ErrNotExist) {
-		seed = make([]byte, ed25519.SeedSize)
-		if _, err := rand.Read(seed); err != nil {
-			return nil, err
-		}
-		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-			return nil, err
-		}
-		if err := os.WriteFile(path, seed, 0o600); err != nil {
-			return nil, err
-		}
-	} else if err != nil {
+	seed, err := loadOrCreateSeed(path, ed25519.SeedSize)
+	if err != nil {
 		return nil, err
 	}
 	return NewEd25519(seed)

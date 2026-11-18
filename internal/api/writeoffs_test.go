@@ -71,6 +71,7 @@ func (e *env) postedWriteOff() (id, etag string) {
 // req: FR-AR-17
 // req: SOD-9
 // req: FM-1
+// req: C.2 #49
 func TestWriteOffsThroughTheAPI(t *testing.T) {
 	f := newFounders(t)
 	e := f.e
@@ -140,4 +141,22 @@ func TestWriteOffsThroughTheAPI(t *testing.T) {
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/write-offs/"+r.str("id")+"/post-approval", ahkow, nil, "If-Match", r.Header.Get("ETag")),
 		"requestWriteOffPost", 422, writeoff.CodeAccount)
+
+	// C.2 #49's SOD-9 item: Wei Ling approves the write-off of S$100.00 of a fourth invoice, then records the receipt of
+	// the S$400.00 left of it. Nothing refuses the receipt, so the settlements check names the write-off for review.
+	fourth, _ := e.issuedInvoice("1", "500.00")
+	d4 := e.call(http.MethodPost, "/v1/write-offs", ahkow, e.writeOffDraft(fourth, "100.00"))
+	asked = e.call(http.MethodPost, "/v1/write-offs/"+d4.str("id")+"/post-approval", ahkow, nil, "If-Match", d4.Header.Get("ETag"))
+	if a := f.decide(weiling, asked.str("id"), "approve", hashOf(asked)); a.Status != 200 {
+		t.Fatalf("approving the fourth invoice's write-off: %d %s", a.Status, a.Raw)
+	}
+	if rc := e.call(http.MethodPost, "/v1/customer-receipts", weiling, e.receiptOf(fourth, "400.00")); rc.Status != 201 {
+		t.Fatalf("the fourth invoice's receipt: %d %s", rc.Status, rc.Raw)
+	}
+	check := e.checked("bank.settlements")
+	wantStatus(t, check, "warning")
+	if it := itemNamed(check, d4.str("id")); it == nil || !strings.Contains(it["detail"].(string), "Posted by the person who recorded receipt") ||
+		!strings.Contains(it["detail"].(string), "(SOD-9)") {
+		t.Errorf("C.2 #49's SOD-9 item: %s", check.Raw)
+	}
 }

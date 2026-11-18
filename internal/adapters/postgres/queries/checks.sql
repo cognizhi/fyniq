@@ -60,6 +60,16 @@ SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attem
 FROM fyniq.outbox WHERE kind = sqlc.arg(kind) AND state IN ('pending', 'dispatched')
 ORDER BY created_at, id LIMIT 1;
 
+-- name: OutboxAhead :many
+-- A row of a kind running under a lease not yet expired that took it before the asking row (its lease ends first, or
+-- with it and a lower ID): the checks' refresh runs one at a time, the first of those delivered together (NFR-PERF-01).
+SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
+       lease_holder, lease_expires_at, deadline_at, last_error
+FROM fyniq.outbox
+WHERE kind = sqlc.arg(kind) AND state = 'running' AND lease_expires_at > sqlc.arg(now)
+  AND (lease_expires_at, id) < (sqlc.arg(lease_until)::timestamptz, sqlc.arg(row_id)::uuid)
+ORDER BY lease_expires_at, id LIMIT 1;
+
 -- name: ListCheckReviews :many
 SELECT * FROM fyniq.check_review ORDER BY key, reviewed_at;
 

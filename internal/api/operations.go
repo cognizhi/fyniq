@@ -18,7 +18,7 @@ import (
 // Operation is long work the caller asked for, which runs in the background: poll it until it is done.
 type Operation struct {
 	ID          string `json:"id" format:"uuid" doc:"The operation." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"`
-	Kind        string `json:"kind" enum:"report_export,checks_run" doc:"What the work is: report_export prepares an accountant export (requestReportExport); checks_run runs every check (runChecks)." example:"report_export"`
+	Kind        string `json:"kind" enum:"report_export,checks_run,migration_validation" doc:"What the work is: report_export prepares an accountant export (requestReportExport); checks_run runs every check (runChecks); migration_validation validates an uploaded workbook (uploadMigrationWorkbook)." example:"report_export"`
 	Status      string `json:"status" enum:"running,succeeded,failed" doc:"running: waiting or under way, and retried after a failure; succeeded: done, so read the resource; failed: it gave up after its attempts, so ask again." example:"succeeded"`
 	Resource    string `json:"resource" doc:"The path of what the work makes or changes: read it for the outcome, such as the export's file or the checks' last run." example:"/v1/report-exports/01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d90"`
 	RequestedAt string `json:"requested_at" format:"date-time" doc:"When it was asked for." example:"2026-11-07T09:00:00Z"`
@@ -29,6 +29,17 @@ type Operation struct {
 type OperationPath struct {
 	OperationID string `path:"operation_id" format:"uuid" doc:"The operation, from the Location of the answer that started it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"`
 }
+
+// OperationList is a page of the caller's operations.
+type OperationList struct {
+	Items      []Operation `json:"items" nullable:"false" doc:"The caller's operations, newest first."`
+	NextCursor string      `json:"next_cursor,omitempty" doc:"The cursor of the next page; none on the last." example:"eyJhZnRlciI6IjEwMDAifQ"`
+}
+
+type operationListOutput struct{ Body OperationList }
+
+// maxOperationsListed is the most of a person's operations the list pages through: the latest.
+const maxOperationsListed = 1000
 
 type operationOutput struct {
 	RetryAfter string `header:"Retry-After" doc:"While it runs: the seconds to wait before polling again."`
@@ -60,6 +71,30 @@ func startOperation(ctx context.Context, u storage.UnitOfWork, kind string, job 
 func operationPath(id string) string { return "/v1/operations/" + id }
 
 func registerOperations(a *API) {
+	register(a, authz.ListMyOperations, huma.Operation{
+		OperationID: "listMyOperations", Method: http.MethodGet, Path: "/v1/operations", Tags: []string{"Operations"},
+		Summary: "List my long operations",
+		Description: "The long work the caller asked for, newest first, a page at a time (FR-INT-10, FR-INT-11): each with its kind, its " +
+			"status and its resource, as getOperation shows it. The web app's operations tray reads it, polling while any runs. Only the " +
+			"caller's own: nobody lists another person's. Read-only; no side effects.",
+	}, []string{CodeCursor, storage.CodeRetry, storage.CodeLockTimeout}, func(ctx context.Context, in *PageQuery) (*operationListOutput, error) {
+		out := OperationList{Items: []Operation{}}
+		p, _ := authn.From(ctx)
+		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			xs, err := u.Operations().Mine(ctx, uploader(ctx), maxOperationsListed)
+			if err != nil {
+				return err
+			}
+			page, next, err := pageOf(xs, func(x storage.Operation) string { return x.ID.String() }, *in)
+			for _, x := range page {
+				out.Items = append(out.Items, operationOf(x))
+			}
+			out.NextCursor = next
+			return err
+		})
+		return &operationListOutput{Body: out}, err
+	})
+
 	register(a, authz.GetOperation, huma.Operation{
 		OperationID: "getOperation", Method: http.MethodGet, Path: "/v1/operations/{operation_id}", Tags: []string{"Operations"},
 		Summary: "Poll a long operation",

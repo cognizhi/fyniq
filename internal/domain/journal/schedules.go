@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/balance"
+	"github.com/cognizhi/fyniq/internal/domain/bill"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/subledger"
@@ -97,7 +98,7 @@ func spreadDocument(source string) (storage.DocumentType, bool) {
 func deferralIdentity(doc storage.Document) string {
 	switch doc.Type {
 	case storage.DocumentBill:
-		return ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleBill)
+		return bill.IdentityOf(doc)
 	case storage.DocumentInvoice:
 		return InvoiceIdentityOf(doc)
 	}

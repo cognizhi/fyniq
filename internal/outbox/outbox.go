@@ -48,12 +48,32 @@ func (d Dispatcher) deadline() time.Duration {
 // Enqueue writes work in u (Transactional outbox) and dispatches it once u commits; if u rolls back
 // there is neither a row nor a task.
 func (d Dispatcher) Enqueue(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, item storage.NewOutboxItem) (storage.OutboxRow, error) {
+	return d.EnqueueAt(ctx, u, org, item, time.Time{})
+}
+
+// EnqueueAt is Enqueue of work due at at, such as a scheduled agent's slot (AI-62): its task is delivered no earlier
+// than at. A row the sweep sends again is delivered at once; work that finds itself early holds until its time.
+func (d Dispatcher) EnqueueAt(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, item storage.NewOutboxItem, at time.Time) (storage.OutboxRow, error) {
 	row, err := u.Outbox().Enqueue(ctx, item)
 	if err != nil {
 		return storage.OutboxRow{}, err
 	}
 	u.AfterCommit(func(ctx context.Context) {
 		// Best effort: a row that is not dispatched now stays pending, and the tick sends it.
+		_ = d.DispatchAt(context.WithoutCancel(ctx), org, row, at)
+	})
+	return row, nil
+}
+
+// Replay sends a dead row back to pending in u, with its attempts counted afresh, and dispatches it once u commits
+// (C.2 #12, G4-073); ports.ErrNotFound when no dead row has that ID. The caller records who replayed it.
+func (d Dispatcher) Replay(ctx context.Context, u storage.UnitOfWork, org, id uuid.UUID) (storage.OutboxRow, error) {
+	row, err := u.Outbox().Replay(ctx, id)
+	if err != nil {
+		return storage.OutboxRow{}, err
+	}
+	u.AfterCommit(func(ctx context.Context) {
+		// Best effort, as Enqueue's: a row not dispatched now stays pending, and the tick sends it.
 		_ = d.Dispatch(context.WithoutCancel(ctx), org, row)
 	})
 	return row, nil
@@ -63,9 +83,18 @@ func (d Dispatcher) Enqueue(ctx context.Context, u storage.UnitOfWork, org uuid.
 // never finds its row still pending; if the enqueue then fails, the row is overdue at its deadline
 // and the sweep sends it again.
 func (d Dispatcher) Dispatch(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
+	return d.DispatchAt(ctx, org, row, time.Time{})
+}
+
+// DispatchAt is Dispatch of a task delivered no earlier than at; its deadline runs from at.
+func (d Dispatcher) DispatchAt(ctx context.Context, org uuid.UUID, row storage.OutboxRow, at time.Time) error {
 	name := TaskName(row.ID, row.Dispatches+1)
+	from := d.Clock.Now()
+	if at.After(from) {
+		from = at
+	}
 	if err := d.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		return u.Outbox().MarkDispatched(ctx, row.ID, name, d.Clock.Now().Add(d.deadline()))
+		return u.Outbox().MarkDispatched(ctx, row.ID, name, from.Add(d.deadline()))
 	}); err != nil {
 		return err
 	}
@@ -73,7 +102,7 @@ func (d Dispatcher) Dispatch(ctx context.Context, org uuid.UUID, row storage.Out
 	if err != nil {
 		return err
 	}
-	return d.Queue.Enqueue(ctx, ports.Task{Queue: string(row.Class), Name: name, Payload: payload})
+	return d.Queue.Enqueue(ctx, ports.Task{Queue: string(row.Class), Name: name, Payload: payload, At: at})
 }
 
 // ErrUnknownOutcome is what work returns when it cannot know whether an outside call took effect (a
@@ -86,6 +115,18 @@ var ErrHeld = errors.New("held: every connector this work needs is paused or dis
 
 // HoldFor is how long a held row waits before it is delivered again.
 const HoldFor = 10 * time.Minute
+
+// Held is ErrHeld with a wait of its own: work that cannot start now for a reason of its own, such as another run of it
+// still going (the checks' refresh, NFR-PERF-01), is delivered again after For, and the attempt is given back.
+type Held struct {
+	For    time.Duration
+	Reason string
+}
+
+func (e Held) Error() string { return "held: " + e.Reason }
+
+// Is makes a Held an ErrHeld.
+func (e Held) Is(target error) bool { return target == ErrHeld }
 
 // Work does one row's work, in its own unit of work. It must be idempotent on the row: a posting
 // uses a posting identity derived from the row, so a second run cannot post twice.
@@ -170,12 +211,16 @@ func (h *Handler) run(ctx context.Context, m Message) (int, string) {
 		h.finish(ctx, m.OrganisationID, row, storage.OutboxUnknownOutcome, err.Error())
 		return http.StatusOK, "unknown outcome: reconcile before any retry"
 	case errors.Is(err, ErrHeld):
+		wait := HoldFor
+		if held := (Held{}); errors.As(err, &held) && held.For > 0 {
+			wait = held.For
+		}
 		if herr := h.Store.Do(ctx, m.OrganisationID, func(ctx context.Context, u storage.UnitOfWork) error {
-			return u.Outbox().Hold(ctx, row.ID, h.Holder, h.Clock.Now().Add(HoldFor), err.Error())
+			return u.Outbox().Hold(ctx, row.ID, h.Holder, h.Clock.Now().Add(wait), err.Error())
 		}); herr != nil {
 			return http.StatusInternalServerError, herr.Error()
 		}
-		return http.StatusOK, "held: delivered again in " + HoldFor.String()
+		return http.StatusOK, "held: delivered again in " + wait.String()
 	case row.Attempts >= row.MaxAttempts:
 		h.finish(ctx, m.OrganisationID, row, storage.OutboxDead, err.Error())
 		return http.StatusOK, "dead after " + fmt.Sprint(row.Attempts) + " attempts"

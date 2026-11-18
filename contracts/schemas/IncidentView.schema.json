@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "breach_id": {
+      "description": "The breach register's breach, when the assessment found personal data involved (CMP-PD-05).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "detected_at": {
+      "description": "When it was first seen.",
+      "examples": [
+        "2026-11-11T02:14:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "description": "The incident.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "opened_at": {
+      "description": "When it was opened.",
+      "examples": [
+        "2026-11-11T02:20:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "opened_by": {
+      "description": "Who opened it, as records name actors.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "severity": {
+      "description": "How bad it is: critical when money, personal data, access or the ledger's integrity is lost or at once at risk; high for a credible attempt stopped or exposure without evidence of access; medium for a failing control; low for a false alarm worth keeping.",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ],
+      "examples": [
+        "high"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "Its latest step; reviewed closes it.",
+      "enum": [
+        "open",
+        "contained",
+        "assessed",
+        "notified",
+        "recovered",
+        "reviewed"
+      ],
+      "examples": [
+        "contained"
+      ],
+      "type": "string"
+    },
+    "steps": {
+      "description": "Its steps, oldest first.",
+      "items": {
+        "$ref": "IncidentStepView.schema.json"
+      },
+      "type": "array"
+    },
+    "summary": {
+      "description": "What is known, as it was when the incident was opened.",
+      "examples": [
+        "The security alert impossible_travel fired for an Owner at 02:14."
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "What happened, in a few words.",
+      "examples": [
+        "An admin signed in from a new device in another country"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "summary",
+    "severity",
+    "detected_at",
+    "opened_by",
+    "opened_at",
+    "status",
+    "steps"
+  ],
+  "title": "IncidentView",
+  "type": "object"
+}

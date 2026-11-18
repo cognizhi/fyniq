@@ -878,6 +878,9 @@ a.fy-list__item:hover, button.fy-list__item:hover { background: var(--surface-2)
 .fy-progress--good > span { background: var(--status-good); }
 .fy-progress--warning > span { background: var(--status-warning); }
 .fy-progress--critical > span { background: var(--status-critical); }
+/* Indeterminate: work under way whose share done is unknown (the operations tray, FR-INT-11). A still segment when motion
+   is off; with motion on it moves with the skeleton's sheen. The text beside it says "Running". */
+.fy-progress--indeterminate > span { width: 100%; background: linear-gradient(90deg, transparent 0, var(--primary) 25%, var(--primary) 75%, transparent 100%) no-repeat 50% 0 / 40% 100%; }
 
 /* Empty state */
 .fy-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-8) var(--space-4); }
@@ -1036,6 +1039,7 @@ a.fy-board__card:hover { border-color: var(--border-strong); }
   .fy-device[data-motion="on"] .fy-skel { background: linear-gradient(90deg, var(--surface-3) 0, var(--surface-2) 120px, var(--surface-3) 240px) no-repeat var(--surface-3);
                                           background-size: 240px 100%; animation: fy-sheen 1.2s linear infinite; }
   .fy-device[data-motion="on"] .fy-progress > span { transform-origin: left; animation: fy-grow-x var(--duration-slow) var(--ease-out) both; }
+  .fy-device[data-motion="on"] .fy-progress--indeterminate > span { animation: fy-sheen 1.2s linear infinite; }
   .fy-device[data-motion="on"] .fy-chart .fy-bar { transform-box: fill-box; transform-origin: bottom; animation: fy-grow-y var(--duration-slow) var(--ease-out) both; }
   .fy-device[data-motion="on"] .fy-draw { stroke-dasharray: 48; animation: fy-draw 420ms var(--ease-out) 120ms both; }
   @container device (max-width: 599px) {

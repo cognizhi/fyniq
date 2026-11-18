@@ -1,0 +1,89 @@
+{
+ "schema": "fyniq-workbook-golden@1",
+ "set": "regressions",
+ "scenario": "scenario.json",
+ "rejected": [],
+ "checks": [
+  {
+   "test": "test_customer_payment_with_spaces_around_reference_settles_invoice",
+   "what": "INV-1 paid by a reference with a trailing space: nothing outstanding",
+   "documents": [
+    "INV-1",
+    "RC-INV-1"
+   ],
+   "account": "1100",
+   "base": "0.00"
+  },
+  {
+   "test": "test_customer_payment_with_spaces_around_reference_settles_invoice",
+   "what": "INV-2 paid by a reference with leading spaces, 0.40 short within tolerance: nothing outstanding",
+   "documents": [
+    "INV-2",
+    "RC-INV-2"
+   ],
+   "account": "1100",
+   "base": "0.00"
+  },
+  {
+   "test": "test_supplier_payment_with_spaces_around_reference_settles_bill",
+   "what": "B-7 paid by a reference with a trailing space",
+   "documents": [
+    "B-7",
+    "PY-B-7"
+   ],
+   "account": "2010",
+   "base": "0.00"
+  },
+  {
+   "test": "test_supplier_payment_with_spaces_around_reference_settles_bill",
+   "what": "SUP 42 , its number and its payment's reference pasted with the same trailing space",
+   "documents": [
+    "SUP-42",
+    "PY-SUP-42"
+   ],
+   "account": "2010",
+   "base": "0.00"
+  },
+  {
+   "test": "test_spaced_reference_settlement_is_booked_like_the_reference_ledger",
+   "what": "1100 at the end of February: 1,500 invoiced - 1,499.60 received - 0.40 cleared",
+   "months": [
+    "2026-01",
+    "2026-02"
+   ],
+   "account": "1100",
+   "base": "0.00"
+  },
+  {
+   "test": "test_spaced_reference_settlement_is_booked_like_the_reference_ledger",
+   "what": "7030 February: the 0.40 short payment, in the month of the last payment",
+   "month": "2026-02",
+   "account": "7030",
+   "base": "0.40"
+  },
+  {
+   "test": "test_reference_of_only_spaces_asks_for_the_invoice_number",
+   "what": "the deposit whose reference is only spaces counts for Acme, on account",
+   "month": "2026-03",
+   "account": "1100",
+   "base": "-50.00"
+  },
+  {
+   "test": "test_entry_with_two_dates_is_flagged_and_not_posted",
+   "what": "J-2 posts; J-1, with two dates, is not a journal Fyniq can hold",
+   "month": "2026-05",
+   "account": "6900",
+   "base": "70.00"
+  },
+  {
+   "test": "test_entry_with_two_dates_is_flagged_and_not_posted",
+   "what": "nothing posts in March or April from J-1",
+   "months": [
+    "2026-03",
+    "2026-04"
+   ],
+   "account": "2020",
+   "base": "0.00"
+  }
+ ]
+}

@@ -406,7 +406,9 @@ func RecordedFor(ctx context.Context, u storage.UnitOfWork, line storage.BankLin
 		return nil, err
 	}
 	kinds := recordedTypes[amount.Sign() > 0]
-	lines, err := u.Ledger().AccountLines(ctx, acct.AccountID, line.BookingDate.AddDate(0, 0, -RecordedWindow), line.BookingDate.AddDate(0, 0, RecordedWindow), 1000)
+	// Only the lines of the line's amount, so a busy account's other lines are neither read nor crowd these out (NFR-PERF-04).
+	lines, err := u.Ledger().AccountLinesWithAmount(ctx, acct.AccountID, line.BookingDate.AddDate(0, 0, -RecordedWindow),
+		line.BookingDate.AddDate(0, 0, RecordedWindow), line.Currency, line.Amount, 1000)
 	if err != nil {
 		return nil, err
 	}

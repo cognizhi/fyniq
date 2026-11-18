@@ -1,0 +1,58 @@
+# The performance runs (QA-PERF-01; PRD-001 rev 0.249, the owner's decision of 11 Nov 2026; p1-operations-dr design D7):
+# the harness (make perf) on the local stack started from the local images, as the local smoke test starts it:
+#   - weekly, growing the sample company by 1 M ledger lines;
+#   - on each release commit (release-please's "chore(release)"), by 10 M lines, whose report the release keeps as its
+#     evidence (compliance/release-assets.json): the release's evidence is refused when a budget is missed;
+#   - by hand, with the lines to grow.
+# Staging's numbers are checked in the cloud [live-verify]. [verify] that a 10 M run fits GitHub's six hours: about
+# 1,600 lines a second locally.
+name: perf
+
+on:
+  schedule:
+    - cron: "0 18 * * 6"   # Sunday 02:00 Singapore time
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      lines:
+        description: How many ledger lines to grow before measuring
+        required: false
+        default: "1000000"
+
+permissions: {}
+
+concurrency:
+  group: perf-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  perf:
+    name: Performance (make perf, QA-PERF-01)
+    # On main, the release commit only: every other push skips it.
+    if: github.event_name != 'push' || startsWith(github.event.head_commit.message, 'chore(release)')
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    permissions:
+      contents: read
+    env:
+      LINES: ${{ inputs.lines || (github.event_name == 'push' && '10000000') || '1000000' }}
+      # Below the kernel's ephemeral range, as the image job's smoke test keeps it.
+      FYNIQ_PG_PORT: "25432"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: scripts/local-smoke.sh   # the stack from the local images, set up, the sample company loaded (QA-LOCAL-01)
+        env:
+          KEEP: "1"   # left running for the harness
+      - run: make perf LINES="$LINES"   # grows the sample company, then times NFR-PERF-01 to NFR-PERF-05 through the API
+      - if: always()
+        run: make down
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: perf-report   # report.json and report.md: QA-PERF-01's evidence
+          path: .data/perf/
+          retention-days: 90

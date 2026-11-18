@@ -28,3 +28,7 @@ INSERT INTO fyniq.document_number (id, document_type, number) VALUES (sqlc.arg(i
 
 -- name: GetDocumentNumber :one
 SELECT number FROM fyniq.document_number WHERE id = sqlc.arg(id);
+
+-- name: AdvanceSequencePast :exec
+-- The next number moved past a number kept from elsewhere; it never goes back.
+UPDATE fyniq.document_sequence SET next_number = GREATEST(next_number, sqlc.arg(past)::bigint + 1) WHERE id = sqlc.arg(id);

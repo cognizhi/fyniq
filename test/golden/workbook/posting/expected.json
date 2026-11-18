@@ -1,0 +1,608 @@
+{
+ "schema": "fyniq-workbook-golden@1",
+ "set": "posting",
+ "scenario": "scenario.json",
+ "rejected": [
+  "FA-06",
+  "BT-07",
+  "BT-09",
+  "BT-10",
+  "INV-E08",
+  "SB-E08",
+  "J-E05",
+  "J-E08"
+ ],
+ "checks": [
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "INV-E01 total: 10,000 + 9 % GST",
+   "documents": [
+    "INV-E01"
+   ],
+   "account": "1100",
+   "base": "10900.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "INV-E20 total: USD 10,000 x its own rate 1.35, zero-rated",
+   "documents": [
+    "INV-E20"
+   ],
+   "account": "1100",
+   "base": "13500.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "INV-E21 total: USD 5,000 x July's rate 1.34 (Lists)",
+   "documents": [
+    "INV-E21"
+   ],
+   "account": "1100",
+   "base": "6700.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "INV-E26 total: lines 990 + 2,000 + 0 + 150 = 3,140 + 9 % GST",
+   "documents": [
+    "INV-E26"
+   ],
+   "account": "1100",
+   "base": "3422.60"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "CN-E15 total: a credit note",
+   "documents": [
+    "CN-E15"
+   ],
+   "account": "1100",
+   "base": "-1090.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "INV-E28 total: 1,000 + 9 % GST",
+   "documents": [
+    "INV-E28"
+   ],
+   "account": "1100",
+   "base": "1090.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "INV-E29 total: 1,000 + 9 % GST, paid 1,200",
+   "documents": [
+    "INV-E29"
+   ],
+   "account": "1100",
+   "base": "1090.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "INV-E31 total: 4 x SVC-CONS at 250 SGD = 200 USD each, 800 USD x 1.25",
+   "documents": [
+    "INV-E31"
+   ],
+   "account": "1100",
+   "base": "1000.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "INV-E32 total: USD 1,000 x the average of August's two rates",
+   "documents": [
+    "INV-E32"
+   ],
+   "account": "1100",
+   "base": "1340.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "SB-E21 total: USD 2,000 x 1.36, out of scope",
+   "documents": [
+    "SB-E21"
+   ],
+   "account": "2010",
+   "base": "-2720.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "SB-E22 total: 2,400 + 9 % GST",
+   "documents": [
+    "SB-E22"
+   ],
+   "account": "2010",
+   "base": "-2616.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "SB-E23 total: equipment 3,000 + 9 % GST",
+   "documents": [
+    "SB-E23"
+   ],
+   "account": "2010",
+   "base": "-3270.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "Doc Lines amount: INV-E14's 18 x SVC-CONS",
+   "documents": [
+    "INV-E14"
+   ],
+   "account": "4020",
+   "base": "-4500.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "Doc Lines amounts: INV-E26's 990 + 2,000 + 0 + 150, on the invoice's category",
+   "documents": [
+    "INV-E26"
+   ],
+   "account": "4020",
+   "base": "-3140.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "Doc Lines amount: INV-E31's 4 x 200.00 USD",
+   "documents": [
+    "INV-E31"
+   ],
+   "account": "4020",
+   "amount": "-800.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "INV-E29 overpaid: outstanding -110",
+   "documents": [
+    "INV-E29",
+    "RC-INV-E29"
+   ],
+   "account": "1100",
+   "base": "-110.00"
+  },
+  {
+   "test": "test_hand_calculated_documents",
+   "what": "INV-E30 paid later: 545 still owed on 30 Sep",
+   "documents": [
+    "INV-E30",
+    "RC-INV-E30"
+   ],
+   "account": "1100",
+   "base": "545.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_settlement_differences_go_to_fx",
+   "what": "7030 2026-01: no settlement difference",
+   "month": "2026-01",
+   "account": "7030",
+   "base": "0.00"
+  },
+  {
+   "test": "test_settlement_differences_go_to_fx",
+   "what": "7030 2026-02: no settlement difference",
+   "month": "2026-02",
+   "account": "7030",
+   "base": "0.00"
+  },
+  {
+   "test": "test_settlement_differences_go_to_fx",
+   "what": "7030 2026-03: no settlement difference",
+   "month": "2026-03",
+   "account": "7030",
+   "base": "0.00"
+  },
+  {
+   "test": "test_settlement_differences_go_to_fx",
+   "what": "7030 2026-04: no settlement difference",
+   "month": "2026-04",
+   "account": "7030",
+   "base": "0.00"
+  },
+  {
+   "test": "test_settlement_differences_go_to_fx",
+   "what": "7030 2026-05: no settlement difference",
+   "month": "2026-05",
+   "account": "7030",
+   "base": "0.00"
+  },
+  {
+   "test": "test_settlement_differences_go_to_fx",
+   "what": "7030 2026-06: INV-E28 short by 0.60, and SB-E21 forced paid 120.00 below its bill (a gain)",
+   "month": "2026-06",
+   "account": "7030",
+   "base": "-119.40"
+  },
+  {
+   "test": "test_settlement_differences_go_to_fx",
+   "what": "7030 2026-07: no settlement difference",
+   "month": "2026-07",
+   "account": "7030",
+   "base": "0.00"
+  },
+  {
+   "test": "test_settlement_differences_go_to_fx",
+   "what": "7030 2026-08: INV-E20 short by 20.00 (realised FX)",
+   "month": "2026-08",
+   "account": "7030",
+   "base": "20.00"
+  },
+  {
+   "test": "test_settlement_differences_go_to_fx",
+   "what": "7030 2026-09: no settlement difference",
+   "month": "2026-09",
+   "account": "7030",
+   "base": "0.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "4010 March: the SR sale's 1,000",
+   "month": "2026-03",
+   "account": "4010",
+   "base": "-1000.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "4010 2026-04: 1,000 of the annual plan and 1,000 of the six-month plan",
+   "month": "2026-04",
+   "account": "4010",
+   "base": "-2000.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "4010 2026-05: 1,000 of the annual plan and 1,000 of the six-month plan",
+   "month": "2026-05",
+   "account": "4010",
+   "base": "-2000.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "4010 2026-06: 1,000 of the annual plan and 1,000 of the six-month plan",
+   "month": "2026-06",
+   "account": "4010",
+   "base": "-2000.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "4010 2026-07: 1,000 of the annual plan and 1,000 of the six-month plan",
+   "month": "2026-07",
+   "account": "4010",
+   "base": "-2000.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "4010 2026-08: 1,000 of the annual plan and 1,000 of the six-month plan",
+   "month": "2026-08",
+   "account": "4010",
+   "base": "-2000.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "4010 2026-09: 1,000 of the annual plan and 1,000 of the six-month plan",
+   "month": "2026-09",
+   "account": "4010",
+   "base": "-2000.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6450 2026-03: 1,100.92 / 6 of the insurance",
+   "month": "2026-03",
+   "account": "6450",
+   "base": "183.4867",
+   "tolerance": "0.011"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6450 2026-04: 1,100.92 / 6 of the insurance",
+   "month": "2026-04",
+   "account": "6450",
+   "base": "183.4867",
+   "tolerance": "0.011"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6450 2026-05: 1,100.92 / 6 of the insurance",
+   "month": "2026-05",
+   "account": "6450",
+   "base": "183.4867",
+   "tolerance": "0.011"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6450 2026-06: 1,100.92 / 6 of the insurance",
+   "month": "2026-06",
+   "account": "6450",
+   "base": "183.4867",
+   "tolerance": "0.011"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6450 2026-07: 1,100.92 / 6 of the insurance",
+   "month": "2026-07",
+   "account": "6450",
+   "base": "183.4867",
+   "tolerance": "0.011"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6450 2026-08: 1,100.92 / 6 of the insurance",
+   "month": "2026-08",
+   "account": "6450",
+   "base": "183.4867",
+   "tolerance": "0.011"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6450 September: the insurance is released",
+   "month": "2026-09",
+   "account": "6450",
+   "base": "0.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6450 March to August: the insurance's 1,100.92 net, in full",
+   "months": [
+    "2026-03",
+    "2026-08"
+   ],
+   "account": "6450",
+   "base": "1100.92"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6210 2026-03: the card's software",
+   "month": "2026-03",
+   "account": "6210",
+   "base": "500.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6210 2026-04: nothing",
+   "month": "2026-04",
+   "account": "6210",
+   "base": "0.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6210 2026-05: the licence",
+   "month": "2026-05",
+   "account": "6210",
+   "base": "200.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6210 2026-06: the licence and the OP bill's 2,720",
+   "month": "2026-06",
+   "account": "6210",
+   "base": "2920.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6210 2026-07: the licence and the overseas SaaS's 60",
+   "month": "2026-07",
+   "account": "6210",
+   "base": "260.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6210 2026-08: the licence",
+   "month": "2026-08",
+   "account": "6210",
+   "base": "200.00"
+  },
+  {
+   "test": "test_spreads",
+   "what": "6210 2026-09: the licence",
+   "month": "2026-09",
+   "account": "6210",
+   "base": "200.00"
+  },
+  {
+   "test": "test_assets",
+   "what": "Laptop: 3,600 / 36, March to September, a month",
+   "documents": [
+    "FA-01"
+   ],
+   "kind": "depreciation",
+   "account": "6610",
+   "each": "100.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_assets",
+   "what": "Laptop: 3,600 / 36, March to September, accumulated on 30 Sep",
+   "documents": [
+    "FA-01"
+   ],
+   "kind": "depreciation",
+   "account": "6610",
+   "base": "700.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_assets",
+   "what": "Old phone: disposed 30 Jun, January to May, a month",
+   "documents": [
+    "FA-08"
+   ],
+   "kind": "depreciation",
+   "account": "6610",
+   "each": "50.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_assets",
+   "what": "Old phone: disposed 30 Jun, January to May, accumulated on 30 Sep",
+   "documents": [
+    "FA-08"
+   ],
+   "kind": "depreciation",
+   "account": "6610",
+   "base": "250.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_assets",
+   "what": "Short-lived licence: January to March, a month",
+   "documents": [
+    "FA-09"
+   ],
+   "kind": "depreciation",
+   "account": "6610",
+   "each": "300.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_assets",
+   "what": "Short-lived licence: January to March, accumulated on 30 Sep",
+   "documents": [
+    "FA-09"
+   ],
+   "kind": "depreciation",
+   "account": "6610",
+   "base": "900.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_assets",
+   "what": "Office fit-out: (6,000 - 600) / 24 from May, a month",
+   "documents": [
+    "FA-10"
+   ],
+   "kind": "depreciation",
+   "account": "6610",
+   "each": "225.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_assets",
+   "what": "Office fit-out: (6,000 - 600) / 24 from May, accumulated on 30 Sep",
+   "documents": [
+    "FA-10"
+   ],
+   "kind": "depreciation",
+   "account": "6610",
+   "base": "1125.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_assets",
+   "what": "The asset with no name: 1,200 / 12 from April, a month",
+   "documents": [
+    "FA-07"
+   ],
+   "kind": "depreciation",
+   "account": "6610",
+   "each": "100.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_assets",
+   "what": "The asset with no name: 1,200 / 12 from April, accumulated on 30 Sep",
+   "documents": [
+    "FA-07"
+   ],
+   "kind": "depreciation",
+   "account": "6610",
+   "base": "600.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_assets",
+   "what": "Server bought before the books start: 12,000 / 60, a month",
+   "documents": [
+    "FA-11"
+   ],
+   "kind": "depreciation",
+   "account": "6610",
+   "each": "200.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_assets",
+   "what": "Server bought before the books start: 3,200 accumulated on 30 Sep, less the 1,400 of June to December 2025 that the register opens with (FR-FA-01)",
+   "documents": [
+    "FA-11"
+   ],
+   "kind": "depreciation",
+   "account": "6610",
+   "base": "1800.00",
+   "on_or_before": "2026-09-30"
+  },
+  {
+   "test": "test_assets",
+   "what": "6610 September: 100 + 100 + 225 + 200",
+   "month": "2026-09",
+   "account": "6610",
+   "base": "625.00"
+  },
+  {
+   "test": "test_assets",
+   "what": "6610 January: 50 + 300 + 200",
+   "month": "2026-01",
+   "account": "6610",
+   "base": "550.00"
+  },
+  {
+   "test": "test_gst_return",
+   "what": "4020 July: SR 2,000 and ZR 3,000",
+   "month": "2026-07",
+   "account": "4020",
+   "base": "-5000.00"
+  },
+  {
+   "test": "test_gst_return",
+   "what": "4030 July: INV-E21, zero-rated",
+   "month": "2026-07",
+   "account": "4030",
+   "base": "-6700.00"
+  },
+  {
+   "test": "test_gst_return",
+   "what": "7020 July: ES 40",
+   "month": "2026-07",
+   "account": "7020",
+   "base": "-40.00"
+  },
+  {
+   "test": "test_gst_return",
+   "what": "4090 July: OS 500, not reported",
+   "month": "2026-07",
+   "account": "4090",
+   "base": "-500.00"
+  },
+  {
+   "test": "test_gst_return",
+   "what": "2200 July: output tax 180 less input tax 90 + 18",
+   "month": "2026-07",
+   "account": "2200",
+   "base": "-72.00"
+  },
+  {
+   "test": "test_gst_return",
+   "what": "6310 July: TX 1,000",
+   "month": "2026-07",
+   "account": "6310",
+   "base": "1000.00"
+  },
+  {
+   "test": "test_gst_return",
+   "what": "5090 July: IM 200",
+   "month": "2026-07",
+   "account": "5090",
+   "base": "200.00"
+  },
+  {
+   "test": "test_gst_return",
+   "what": "6520 July: ZP 900",
+   "month": "2026-07",
+   "account": "6520",
+   "base": "900.00"
+  },
+  {
+   "test": "test_gst_return",
+   "what": "6040 July: BL 109, its GST not claimed",
+   "month": "2026-07",
+   "account": "6040",
+   "base": "109.00"
+  }
+ ]
+}

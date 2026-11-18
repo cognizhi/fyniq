@@ -18,10 +18,14 @@ Infrastructure workflow does nothing.
 | `gcp/modules/anchors/` | The audit anchors: a retention-locked bucket and the EC P-256 key that signs them (§11.5 L3) |
 | `gcp/modules/binauthz/` | Binary Authorization (SEC-22, CTL-CHG-04): the `fyniq-release` attestor and its Cloud KMS key in `fyniq-ci`, and each running environment's policy requiring its attestation for every Cloud Run service and job, which must use that policy. The release workflow attests an image only after it verified its signature, SBOM and SLSA provenance |
 | `gcp/modules/edge/` | The edge (SEC-23): a global external Application Load Balancer on the public origin's host (managed certificate, TLS 1.2+, HTTP redirected), with the local stack's paths to the public services' serverless NEGs, and Cloud Armor: the OWASP rules (in preview first), Log4Shell denied, a per-IP rate-based ban on sign-in and the routes that need no session, adaptive protection; the client's address, country and region as request headers. The public services take traffic from it and from inside Google Cloud only |
-| `gcp/modules/security-logs/` | The central log store (SEC-30): data-access audit logs for Cloud SQL, Secret Manager, KMS, IAM and Cloud Storage, and a sink of Cloud Audit Logs and the platform's security alerts to a Cloud Logging bucket beside the anchors (`fyniq-audit` in production), kept 400 days and locked in production |
+| `gcp/modules/db-export/` | The weekly export of the database (DR-02, DR-04): two buckets beside the anchors (`fyniq-audit` in production) under their own CMEK key, in Singapore: each Sunday's export kept 35 days and each month's first kept a year, both locked in production. The instance's own account writes the exports; the jobs' account may only start an export and read it (the platform job `db.export`) |
+| `gcp/modules/evidence/` | The records' and attachments' buckets (DR-07, CTL-AUD-03), in the environment's project, in Singapore, under their own CMEK key: staging (what is not yet a record; the app deletes each file in its time, and a backstop deletes report exports after 7 days) and evidence, with Object Retention Lock on, so the API sets each committed file's retain-until in Locked mode. The api reads committed files; the worker and the jobs commit them with a role that may never delete one |
+| `gcp/modules/security-logs/` | The central log store (SEC-30): data-access audit logs for Cloud SQL, Secret Manager, KMS, IAM and Cloud Storage, and a sink of Cloud Audit Logs, the database's pgAudit entries and the platform's security alerts to a Cloud Logging bucket beside the anchors (`fyniq-audit` in production), kept 400 days and locked in production |
 | `gcp/modules/nonprod-scan/` | Staging only (CTL-CHG-05 W): each Monday the database is exported to a bucket of its own, kept a week, and a Sensitive Data Protection job inspects it each week for NRIC and FIN numbers, passports, card and bank numbers, reporting to Security Command Center and by email |
+| `gcp/modules/slo/` | Service levels (NFR-AVAIL-01, NFR-PERF-01, CTL-RES-03): for each public service, 99.9% of requests without a server error each month and 95% within 300 ms over 28 days, from Cloud Run's metrics; burn-rate alerts to the founders (fast: 14.4 times over an hour; slow: 6 times over six hours); a dashboard. Idle cost (NFR-COST-02): an alert when a service is billed for compute through an hour with no request, production's warm scanner excepted |
+| `gcp/modules/heartbeat/` | The heartbeat's alerts (NFR-OBS-02, CTL-RES-05): log-based metrics of the `fyniq.heartbeat` lines the tick and the platform jobs log; the tick absent 30 minutes tells the named platform owner (`platform_owner_emails`, else the Owners), 60 minutes the Owners too; the hourly jobs absent 3 hours; a late daily job, as `heartbeats.check` logs it, at once |
 | `gcp/modules/budget/` | The monthly budget: alerts at 50%, 80% and 100% by email, never a cap |
-| `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors, security logs, the edge, the budget and, in staging, the non-production scan |
+| `gcp/modules/stack/` | Staging or production, whole: spec, environment, anchors, the weekly export, the evidence buckets, security logs, the service levels, the heartbeat's alerts, the edge, the budget and, in staging, the non-production scan |
 | `gcp/bootstrap/` | The state bucket (local state, applied once) |
 | `gcp/shared/` | The organisation policies, CI's identity and Binary Authorization |
 | `gcp/envs/{dev,staging,production}/` | One root per environment, each in its own project (CTL-CHG-05). `dev` is a sandbox with a budget and no platform: the release build refuses `FYNIQ_ENV=dev` (RUNTIME-FLAVOUR-01) |
@@ -47,6 +51,10 @@ The tests check the controls on the planned configuration:
 | CTL-IAM-03 | No grant to a person or group. Break-glass needs another person's approval |
 | SEC-12 | The api's account holds `roles/secretmanager.admin` on the secrets project only (a rule of `make infra-check`), the worker reads there, and its Secret Manager encrypts under the environment's secrets key |
 | CTL-AUD-02 | Production's anchors are retention-locked. Staging's are not |
+| DR-01, DR-02, DR-03, CTL-RES-01 | Production's database is regional HA, and a zonal one is refused. Point-in-time recovery keeps 7 days of logs, and 35 daily backups are kept in Singapore |
+| DR-07, CTL-AUD-03, FR-DOC-02 | The evidence bucket locks each object until its own retain-until, deletes nothing by age and is never public; no account may delete a committed file or shorten its retention |
+| DR-06, CTL-RES-02 | The jobs' account may clone the instance, and read, update and delete only its drill copies (`<instance>-drill-<time>`), by IAM conditions |
+| DR-02, DR-04 | The weekly export is kept 35 days and each month's first a year, in `fyniq-audit` for production, locked there; only the instance writes it, and the jobs' account may only start it |
 | NFR-COST-01 | Budgets are variables, with alerts at 50%, 80% and 100% and no Pub/Sub cap |
 
 ## First apply (the founder)
@@ -138,7 +146,7 @@ show which resources change and how, never their values, because this repository
 - **Database access.** Each service's `FYNIQ_DATABASE_URL` is a secret, with a password for its own
   role, over the private IP and TLS. The value is added out of band, never in state.
 - **The anchors' lock** is irreversible, so only production sets it. Its retention is a variable
-  with no default.
+  with no default. The weekly export's buckets are locked with it.
 
 ## Not verified yet (needs the cloud)
 
@@ -158,6 +166,32 @@ assumptions, not facts.
 - `[verify in staging]` That Direct VPC egress counts as internal traffic for Hydra's admin port.
 - `[verify in staging]` That Cloud Tasks queues and the Scheduler's OIDC tokens work without an App
   Engine app or an explicit token-creator grant.
+- `[live-verify]` That the instance's account writes the weekly export into `fyniq-audit`'s bucket
+  (a write across projects under that project's key), that `db.export` succeeds with the custom role
+  alone, and how long an export of production takes.
+- `[live-verify]` The heartbeat (NFR-OBS-02): `[verify the alerting limits]` that a metric-absence condition waits at
+  most 24 hours (so the daily jobs alert through `heartbeats.check`'s lines instead), that the log-based metric
+  counts the `fyniq.heartbeat` lines by job, and the quarterly drill: pausing staging's tick alerts within 30 minutes.
+- `[live-verify]` The idle-compute alert: that Cloud Monitoring's PromQL reads Cloud Run's billable instance time and
+  request count by service as written (docs/runbooks/cost-review.md).
+- `[live-verify]` The service levels: that Cloud Monitoring reads the objectives from Cloud Run's request metrics as
+  written, and that a burn-rate alert reaches the founders.
+- `[live-verify]` Traces (NFR-OBS-01): that the Telemetry API takes OTLP/JSON at `telemetry.googleapis.com/v1/traces`
+  with the resource attribute `gcp.project_id`, that `roles/telemetry.tracesWriter` is its role (`[verify]`), and
+  where Cloud Trace keeps the traces (`[verify]`: CTL-DP-07 allows Singapore only; a trace holds no personal data).
+  Until it is shown that they stay in `asia-southeast1`, the stack's `traces` stays `false` and no service sends any
+  (the owner's decision of 11 Nov 2026, PRD-001 rev 0.250); set it `true` once it is.
+- `[live-verify]` That Cloud SQL writes pgAudit's entries to its `postgres.log` with `AUDIT:`, so the security
+  sink's filter keeps them (CTL-AUD-04).
+- `[live-verify]` The restore drill: that the clone's permissions are enough (`[verify]` whether Cloud SQL
+  also asks for `cloudsql.instances.create`), that the IAM conditions match Cloud SQL's resource names, that
+  the jobs reach the copy's private address as their own database role (and its TLS), and how long a
+  clone of production takes against NFR-DR-02's 4 hours.
+- `[live-verify]` That the evidence bucket refuses to delete a committed file or shorten its Locked
+  retention, and that the committer's custom role is enough to commit one and set its retention.
+- `[live-verify]` The evidence buckets and the field keys in `fyniq-audit` (rev 0.250): that the api and the worker,
+  accounts of the production project, write to the buckets and the api seals with the keys through the grants on them
+  alone, and that the weekly export's sealed fields open with the keys after a restore elsewhere.
 - `[verify]` The billing account's currency. A budget must use it; USD is assumed.
 - `[verify]` The production anchor retention, with the accountant (§14, AUD-06).
 - `[verify]` The project IDs.
@@ -178,6 +212,9 @@ assumptions, not facts.
   days are confirmed).
 - `[live-verify]` The posture: Security Command Center's Standard tier on the projects, and the jobs' account listing
   findings (`roles/securitycenter.findingsViewer`) and reading the services' logs (`roles/logging.viewer`).
+- `[live-verify]` The scanner service (rev 0.247): Cloud Run's sidecar start order and the front's readiness waiting for
+  clamd's signatures (up to 5 minutes), clamd's memory while it reloads them (3 GiB given), freshclam reaching
+  database.clamav.net through Cloud NAT within ClamAV's rate limits, and the warm instance's cost.
 - `[live-verify]` The non-production scan in staging: the Scheduler's export as `scan-export` with only
   `cloudsql.instances.export`, the instance's account writing to the export bucket, the Sensitive Data Protection
   infoType names, and its summary reaching Security Command Center.

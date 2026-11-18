@@ -336,6 +336,9 @@ func lines(ctx context.Context, u storage.UnitOfWork, base money.Currency, ar []
 				customerOfInvoice[doc.ID] = who
 			}
 			identity := src.identity(doc.ID, doc.Version, src.rule)
+			if t == storage.DocumentInvoice {
+				identity = invoice.IdentityOf(doc) // an opening item posts under opening_invoice@1 (FR-GL-06)
+			}
 			e, err := u.Ledger().ByIdentity(ctx, identity)
 			if err != nil {
 				return err

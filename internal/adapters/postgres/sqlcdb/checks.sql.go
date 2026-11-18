@@ -379,6 +379,81 @@ func (q *Queries) ListCheckStates(ctx context.Context) ([]FyniqCheckState, error
 	return items, nil
 }
 
+const outboxAhead = `-- name: OutboxAhead :many
+SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
+       lease_holder, lease_expires_at, deadline_at, last_error
+FROM fyniq.outbox
+WHERE kind = $1 AND state = 'running' AND lease_expires_at > $2
+  AND (lease_expires_at, id) < ($3::timestamptz, $4::uuid)
+ORDER BY lease_expires_at, id LIMIT 1
+`
+
+type OutboxAheadParams struct {
+	Kind       string
+	Now        *time.Time
+	LeaseUntil time.Time
+	RowID      uuid.UUID
+}
+
+type OutboxAheadRow struct {
+	ID             uuid.UUID
+	WorkerClass    string
+	Kind           string
+	Payload        []byte
+	BusinessKey    *string
+	State          string
+	Attempts       int32
+	MaxAttempts    int32
+	Dispatches     int32
+	TaskName       *string
+	LeaseHolder    *string
+	LeaseExpiresAt *time.Time
+	DeadlineAt     *time.Time
+	LastError      *string
+}
+
+// A row of a kind running under a lease not yet expired that took it before the asking row (its lease ends first, or
+// with it and a lower ID): the checks' refresh runs one at a time, the first of those delivered together (NFR-PERF-01).
+func (q *Queries) OutboxAhead(ctx context.Context, arg OutboxAheadParams) ([]OutboxAheadRow, error) {
+	rows, err := q.db.Query(ctx, outboxAhead,
+		arg.Kind,
+		arg.Now,
+		arg.LeaseUntil,
+		arg.RowID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OutboxAheadRow
+	for rows.Next() {
+		var i OutboxAheadRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkerClass,
+			&i.Kind,
+			&i.Payload,
+			&i.BusinessKey,
+			&i.State,
+			&i.Attempts,
+			&i.MaxAttempts,
+			&i.Dispatches,
+			&i.TaskName,
+			&i.LeaseHolder,
+			&i.LeaseExpiresAt,
+			&i.DeadlineAt,
+			&i.LastError,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const outboxWaiting = `-- name: OutboxWaiting :many
 SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
        lease_holder, lease_expires_at, deadline_at, last_error

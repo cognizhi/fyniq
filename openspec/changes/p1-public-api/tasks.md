@@ -53,6 +53,18 @@
 ## 3. Clients and contracts
 
 - [ ] 3.1 Client classes for integration clients and personal access tokens, issued by Hydra, with per-client limits and audit; personal access tokens are agent-class by default. Test `// req: FR-INT-02` (P1 part)
+  (17 Nov 2026, in part: integration clients. `fyniq.api_client` (migrations 000432 and 000433) keeps what a client is
+  to the organisation: its class, the member it acts for, its narrow scopes, networks, limits, key thumbprint and
+  expiry; Hydra keeps the OAuth client and its tokens. An Administrator asks with `createIntegrationClient`; the Owner
+  approves with a second approver (the approval object `api_client`), and only then is it registered with Hydra
+  (`private_key_jwt`, client credentials, one-hour tokens). The introspector accepts a client's token only while the
+  record says it is live, takes its rights from its member's roles now, cuts its scopes to the record's, and the gate
+  refuses what the scopes do not cover (`authz.ScopeAllows`: never an approval or a release) and a call from outside
+  its networks; its own limits apply (FR-INT-16). `revokeIntegrationClient` is never held back, and the worker deletes
+  the client from Hydra. Tests `TestIntegrationClients` (against Hydra), `TestTheIntrospectorTakesAnAPIClientFromItsRecord`,
+  `TestScopesNarrowAClientToWholeAreas`, `TestAnIntegrationClientIsCheckedWhole`, `TestAttackAnAPIClientKeepsItsRules`
+  and the authorisation matrix; threat model `docs/security/threat-models/integration-clients.md`. **Left:** personal
+  access tokens (the table holds them already), the Connected apps screen, and Hydra in the dev cloud [live-verify].)
 - [x] 3.2 JSON Schema for every resource, the published API reference, `llms.txt` and the agent guide, all generated from the contract. Test `// req: FR-INT-13`
   (19 Oct 2026: `make openapi` also writes a JSON Schema 2020-12 per resource to `contracts/schemas/`, and
   `docs/api/reference.md` and `docs/api/llms.txt`, from the same document as the contract;

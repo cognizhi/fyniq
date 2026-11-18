@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "signed_on": {
+      "description": "The day it was signed outside Fyniq: on or after the day it was drafted, and not after today.",
+      "examples": [
+        "2027-01-10"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "signed_on"
+  ],
+  "title": "CorporateDocumentSigned",
+  "type": "object"
+}

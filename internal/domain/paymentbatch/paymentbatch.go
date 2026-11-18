@@ -609,3 +609,9 @@ func all(ctx context.Context, u storage.UnitOfWork, t storage.DocumentType) ([]s
 	slices.SortStableFunc(out, func(x, y storage.Document) int { return strings.Compare(x.Date, y.Date) })
 	return out, nil
 }
+
+// ReleaseAAD binds a release's sealed payment file to its batch in the organisation (SEC-11): copied to another, it
+// does not open.
+func ReleaseAAD(org, batch uuid.UUID) []byte {
+	return []byte("payment_batch_release:" + org.String() + ":" + batch.String())
+}

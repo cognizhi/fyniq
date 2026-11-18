@@ -1,5 +1,5 @@
 # Staging or production, whole: the cloud-neutral spec, the environment on Google Cloud, its audit
-# anchors (in fyniq-audit for production, §12.4) and its budget. The roots in infra/gcp/envs/ only choose
+# anchors and weekly export (in fyniq-audit for production, §12.4), its evidence buckets and its budget. The roots in infra/gcp/envs/ only choose
 # the values.
 
 terraform {
@@ -25,8 +25,14 @@ variable "secrets_project" {
   type        = string
 }
 
+variable "traces" {
+  description = "Whether the services send traces to Cloud Trace: off until the dev cloud shows Cloud Trace keeps them in Singapore (CTL-DP-07, rev 0.250) [live-verify]."
+  type        = bool
+  default     = false
+}
+
 variable "audit_project" {
-  description = "Where the audit anchors live: fyniq-audit for production (§12.4), the environment's own project for staging."
+  description = "Where the audit anchors, the weekly export, the evidence buckets and the field keys live: fyniq-audit for production (§12.4, rev 0.250), the environment's own project for staging."
   type        = string
 }
 
@@ -58,6 +64,12 @@ variable "budget" {
     amount_usd = number
     emails     = list(string)
   })
+}
+
+variable "platform_owner_emails" {
+  description = "The named platform owner, whom the heartbeat's alerts tell first (NFR-OBS-02); empty: the Owners."
+  type        = list(string)
+  default     = []
 }
 
 variable "public_origin" {
@@ -115,12 +127,46 @@ module "anchors" {
   writers        = [module.environment.members["jobs"]]
 }
 
+# The weekly export of the database beside the anchors (DR-02, DR-04): in fyniq-audit for production, locked where the
+# anchors are.
+module "db_export" {
+  source         = "../db-export"
+  project        = var.project
+  audit_project  = var.audit_project
+  environment    = var.environment
+  database_agent = module.environment.database_agent
+  jobs_member    = module.environment.members["jobs"]
+  lock           = module.spec.spec.anchors.lock
+}
+
+# The records' and attachments' buckets (DR-07, CTL-AUD-03): staging, and the evidence bucket that locks each object. In
+# fyniq-audit for production, beside the export, so documents outlive the production project (rev 0.250).
+module "evidence" {
+  source      = "../evidence"
+  project     = var.audit_project
+  environment = var.environment
+  members     = { api = module.environment.members["api"], worker = module.environment.members["worker"], jobs = module.environment.members["jobs"] }
+}
+
+# The keys of the sealed fields (SEC-11), beside the export, so its sealed fields open without the production project
+# (rev 0.250).
+module "field_keys" {
+  source      = "../field-keys"
+  project     = var.audit_project
+  environment = var.environment
+  api_member  = module.environment.members["api"]
+}
+
 module "environment" {
   source            = "../environment"
   spec              = module.spec.spec
   project           = var.project
   secrets_project   = var.secrets_project
   anchors           = { bucket = module.anchors.bucket, key_version = module.anchors.key_version }
+  exports           = module.db_export.buckets
+  evidence          = module.evidence.buckets
+  field_keys        = module.field_keys.config
+  traces            = var.traces
   public_origin     = var.public_origin
   signin_providers  = var.signin_providers
   artifact_registry = var.artifact_registry
@@ -164,6 +210,27 @@ module "edge" {
   name     = "fyniq-${var.environment}"
   domain   = trimprefix(var.public_origin, "https://")
   services = { for name, s in module.spec.spec.services : name => local.edge_paths[name] if s.public }
+}
+
+# The public services' objectives and their burn-rate alerts to the founders (NFR-AVAIL-01, NFR-PERF-01, CTL-RES-03).
+module "slo" {
+  source      = "../slo"
+  project     = var.project
+  environment = var.environment
+  services    = [for name, s in module.spec.spec.services : name if s.public]
+  channels    = module.environment.alert_channels
+  # NFR-COST-02: every service is idle when nobody uses Fyniq, but production's warm scanner, a listed fixed fee.
+  idle_services = keys(module.spec.spec.services)
+  warm_services = var.environment == "production" ? ["scanner"] : []
+}
+
+# The heartbeat's absence alerts: the platform owner first, the Owners by escalation (NFR-OBS-02, CTL-RES-05).
+module "heartbeat" {
+  source                = "../heartbeat"
+  project               = var.project
+  environment           = var.environment
+  platform_owner_emails = var.platform_owner_emails
+  owner_channels        = module.environment.alert_channels
 }
 
 module "budget" {

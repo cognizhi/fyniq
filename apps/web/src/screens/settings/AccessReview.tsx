@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CircleCheck, ClockAlert, Download, Plug, ShieldCheck, TriangleAlert, UserRound, Users } from "lucide-react";
+import { CircleCheck, CircleDashed, CircleX, ClockAlert, Download, Plug, ShieldCheck, TriangleAlert, UserRound, Users } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -345,6 +345,7 @@ export function AccessReview() {
                       </span>
                     </span>
                     <span className={`fy-chip ${c.health === "ok" ? "fy-chip--good" : c.health === "failing" ? "fy-chip--critical" : "fy-chip--neutral"}`}>
+                      <Icon of={c.health === "ok" ? CircleCheck : c.health === "failing" ? CircleX : CircleDashed} />
                       {c.health === "ok" ? "Healthy" : c.health === "failing" ? "Failing" : "Not tested"}
                     </span>
                   </li>

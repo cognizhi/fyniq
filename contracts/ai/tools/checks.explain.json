@@ -1,0 +1,23 @@
+{
+  "name": "checks.explain",
+  "title": "Explain a check",
+  "version": 1,
+  "description": "Explains one check: what it checks and why, the rule it applies, its latest status and the items it found, each with what is wrong, as the person asking may see them. The items come back only when the person may open them; otherwise only their count.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["key"],
+    "properties": {
+      "key": {
+        "type": "string",
+        "description": "The check's key, as checks.list gives it.",
+        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z0-9-]+)+$",
+        "maxLength": 100
+      }
+    }
+  },
+  "annotations": {"readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false},
+  "runs": "api",
+  "scope": "ai.read",
+  "limits": {"rows": 50, "timeout_ms": 5000, "result_tokens": 4000}
+}

@@ -43,7 +43,8 @@ Controller for the ledger, or a person named instead.
 
 The checks run by themselves:
 
-- within about a minute of a change they read, such as a posting or a new account;
+- within about a minute of a change they read, such as a posting or a new account; while changes keep coming, such
+  as during a large bank import, at most once a minute, each run reading every change since the last;
 - every night, when every check runs, after the night's verification of the ledger;
 - when you ask, with **Run all checks now**.
 
@@ -72,6 +73,16 @@ mark items reviewed, and each review is kept in the audit trail.
 Two checks are reviewed only where their control lives, so the people they watch cannot hide them
 with a click: a logged action is reviewed in the **review log**, and the quarter's access review is
 attested on **Settings → Access review**.
+
+## Run a stopped task again
+
+Fyniq does some work in the background, such as sending an email or making a recurring document.
+A task that fails is tried again by itself; one that fails every time stops, and **Every scheduled
+job ran on time** lists it with when it stopped and why. Once what stopped it is fixed (a provider
+that was down, a setting that was missing), an Owner or an Administrator selects **Run it again**
+beside it and confirms: it goes back in the queue with its attempts counted afresh, and its last
+error stays on record. Each run again is kept in the audit trail, and the task leaves the check once
+the checks run again.
 
 ## Name a check's owner
 
@@ -119,5 +130,10 @@ trail.
   sends, from the sending domains' records and, over 30 days, hard bounces at 2% or complaints at
   0.1% with 50 or more sent, or any complaint with fewer; and an integration whose last test failed,
   or whose key expires within 14 days.
+- **AI**: an AI agent's route that fell back more often in a day than the organisation's setting
+  allows (5 unless changed); a moving model alias on a route not re-qualified this week; an AI budget,
+  or a subscription's quota, within 20% of its limit; a model on a route retiring within 30 days, or
+  that its provider no longer lists or refuses; and a connection with a stored key whose model list
+  has not been read successfully for 3 days.
 
 The checks of each module still to come, such as payroll, join as that module is built.

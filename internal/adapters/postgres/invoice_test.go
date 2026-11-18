@@ -79,6 +79,44 @@ func invoiceLine(t *testing.T, b salesBooks, q, price, discount, code, cur strin
 	return invoice.Line{Description: "Consulting", Quantity: qty, UnitPrice: p, Discount: discount, AccountID: b.Sales.ID, GSTCode: code}
 }
 
+// G4-020 (ENG-45, FR-ORG-03): the company registers for GST from 16 October, recorded on the 14th. Invoices dated the
+// 14th and the 15th, posted once the registration is recorded, charge no GST; those dated the 16th and the 20th charge
+// 9%. Whether a document bears GST follows its own date, the tax point, never the day it is posted.
+// req: G4-020
+// req: ENG-45
+func TestGSTFollowsTheTaxPointAcrossTheRegistration(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ar-specialist"}})
+	s := store(t, "fyniq_api")
+	b := newSalesBooks(t, ctx, s, "Registering Pte Ltd")
+	invoices := journal.Invoices{Store: s}
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.GSTRegistrations().Create(ctx, storage.NewGSTRegistration{RegisteredFrom: porttest.Day(10, 16), GSTNumber: "202612345K",
+			ReturnFrequency: "quarterly", QuarterStartMonth: 1, AccountingBasis: "invoice", RecordedAt: porttest.Day(10, 14)})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		day  int
+		want string
+	}{
+		{14, "1100 1000 SGD = 1000; 4000 -1000 SGD = -1000"},
+		{15, "1100 1000 SGD = 1000; 4000 -1000 SGD = -1000"},
+		{16, "1100 1090 SGD = 1090; 4000 -1000 SGD = -1000; 2200 -90 SGD = -90"},
+		{20, "1100 1090 SGD = 1090; 4000 -1000 SGD = -1000; 2200 -90 SGD = -90"},
+	} {
+		doc, err := invoices.Create(ctx, b.Org, invoice.Draft{CustomerID: b.Customer.ID, Date: porttest.Day(10, c.day), Currency: money.MustLookup("SGD"),
+			Lines: []invoice.Line{invoiceLine(t, b, "1", "1000.00", "", "SR", "SGD")}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		e, err := invoices.Post(ctx, b.Org, doc.ID)
+		if err != nil || legsOf(t, s, b.Org, e) != c.want {
+			t.Errorf("the invoice of %d October: %s %v; want %s", c.day, legsOf(t, s, b.Org, e), err, c.want)
+		}
+	}
+}
+
 // FR-AR-03 and the posting rules "Posting an invoice" and "Amounts of a posted invoice" (p1-sales tasks 1.1 to 1.3): an
 // invoice is drafted, checked, issued with its number, voided and edited through the posting service, each in one
 // transaction with its entry. Its lines are quantities at a price less a discount (RND-LINE); it bears GST only once
@@ -91,6 +129,7 @@ func invoiceLine(t *testing.T, b salesBooks, q, price, discount, code, cur strin
 // req: ENG-42
 // req: ENG-40
 // req: FR-GL-12
+// req: G4-025
 func TestInvoicesPostThroughThePostingService(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ar-specialist"}})
 	s := store(t, "fyniq_api")

@@ -20,13 +20,19 @@ import (
 // Module is this repository's Go module path.
 const Module = "github.com/cognizhi/fyniq"
 
-// CloudSDKs are import-path prefixes of cloud provider SDKs.
+// CloudSDKs are import-path prefixes of cloud provider SDKs, and of model providers' SDKs, which likewise stay in their
+// adapters (AI-70).
 var CloudSDKs = []string{
 	"cloud.google.com/go",
 	"google.golang.org/api",
 	"firebase.google.com/",
 	"github.com/aws/",
 	"github.com/Azure/",
+	"github.com/anthropics/",
+	"github.com/openai/",
+	"google.golang.org/genai",
+	"github.com/sashabaranov/go-openai",
+	"github.com/liushuangls/go-anthropic",
 }
 
 // Pkg is the part of `go list -deps -json` the rules read.
@@ -100,6 +106,32 @@ func ImportViolations(pkgs []Pkg) []string {
 				if under(dep, "internal/adapters") || isCloudSDK(dep) {
 					out = append(out, fmt.Sprintf("%s depends on %s: the domain and the ports must not depend on an adapter or a cloud SDK (ADR-T8)", p.ImportPath, dep))
 				}
+			}
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// Subprocesses are the packages that may start a program (os/exec): the local adapters, which alone run a developer's
+// own command-line agent (DEV-09) and the local backup's tools, the Typst renderer and the ClamAV daemon's wrapper.
+// Anywhere else a subprocess could carry a model call or a shell out of the release build's reach.
+var Subprocesses = []string{"internal/adapters/local", "internal/render/typst", "cmd/clamd"}
+
+// SubprocessViolations lists the module's packages outside Subprocesses that import os/exec.
+func SubprocessViolations(pkgs []Pkg) []string {
+	var out []string
+	for _, p := range pkgs {
+		if !strings.HasPrefix(p.ImportPath, Module) {
+			continue
+		}
+		allowed := false
+		for _, dir := range Subprocesses {
+			allowed = allowed || under(p.ImportPath, dir)
+		}
+		for _, imp := range p.Imports {
+			if imp == "os/exec" && !allowed {
+				out = append(out, fmt.Sprintf("%s imports os/exec: only %s may start a program (DEV-09)", p.ImportPath, strings.Join(Subprocesses, ", ")))
 			}
 		}
 	}

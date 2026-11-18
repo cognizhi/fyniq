@@ -19,10 +19,11 @@
       "type": "string"
     },
     "kind": {
-      "description": "What the work is: report_export prepares an accountant export (requestReportExport); checks_run runs every check (runChecks).",
+      "description": "What the work is: report_export prepares an accountant export (requestReportExport); checks_run runs every check (runChecks); migration_validation validates an uploaded workbook (uploadMigrationWorkbook).",
       "enum": [
         "report_export",
-        "checks_run"
+        "checks_run",
+        "migration_validation"
       ],
       "examples": [
         "report_export"

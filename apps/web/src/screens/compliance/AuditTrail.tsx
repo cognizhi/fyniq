@@ -12,6 +12,7 @@ import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { MyExports } from "../reports/AccountantExports";
+import { useHingeSplit } from "../../shell/hinge";
 
 type Summary = components["schemas"]["AuditEventSummary"];
 type Actor = components["schemas"]["AuditActor"];
@@ -243,6 +244,7 @@ function Recoveries() {
 
 // Explorer searches the events (FR-CTL-03), newest first, and opens one in the detail beside the list.
 function Explorer({ id }: { id: string }) {
+  const hinge = useHingeSplit<HTMLDivElement>();
   const [filters, setFilters] = useState<Filters>(none);
   const [applied, setApplied] = useState<Filters>(none);
   const [open, setOpen] = useState<string | null>(null);
@@ -336,7 +338,7 @@ function Explorer({ id }: { id: string }) {
       {events.isError && <Refusal problem={problemOf(events.error)} title="The audit trail could not be searched" />}
       {events.data && items.length === 0 && <p className="fy-card__body fy-small fy-secondary">No event matches.</p>}
       {items.length > 0 && (
-        <div className="fy-listdetail" data-show={open ? "detail" : "list"}>
+        <div className="fy-listdetail" data-show={open ? "detail" : "list"} ref={hinge}>
           <div className="fy-listdetail__list">
             <ul className="fy-list" aria-label="Audit events">
               {items.map((e) => (

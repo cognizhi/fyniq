@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "path": {
+      "description": "history: the current financial year's history from the books start; clean_start: Carry Forward's balances and open items at the cut-over, the day after the workbook's as-of date (§17.1 M3).",
+      "enum": [
+        "history",
+        "clean_start"
+      ],
+      "examples": [
+        "history"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "path"
+  ],
+  "title": "MigrationCommitRequest",
+  "type": "object"
+}

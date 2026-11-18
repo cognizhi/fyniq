@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "mode": {
+      "description": "usage: charged per token from the provider's own usage fields; subscription: a fixed fee with a quota. A person's own plan is not offered (AI-73 (c), P2).",
+      "enum": [
+        "usage",
+        "subscription"
+      ],
+      "examples": [
+        "usage"
+      ],
+      "type": "string"
+    },
+    "quota": {
+      "$ref": "AIConnectionQuota.schema.json",
+      "description": "A subscription's quota; none for usage-based billing."
+    }
+  },
+  "required": [
+    "mode"
+  ],
+  "title": "AIConnectionBilling",
+  "type": "object"
+}

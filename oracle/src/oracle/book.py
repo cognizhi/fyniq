@@ -61,6 +61,8 @@ class Posting:
     scheduled: list[Scheduled] = field(default_factory=list)
     facts: Any = None
     effects: list[Callable[[], None]] = field(default_factory=list)
+    # The day the entry posts, when it is not the document's: an opening item posts at the books' start (FR-GL-06).
+    on: date | None = None
 
 
 class Rejected(Exception):

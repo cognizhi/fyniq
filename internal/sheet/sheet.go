@@ -3,16 +3,16 @@
 // with an ASCII minus, unquoted; in XLSX a number cell with the currency's decimals. No text ever becomes a formula: in
 // CSV every text cell is quoted, inner quotes doubled, and one that starts with =, +, -, @, a tab, CR or LF is prefixed
 // with an apostrophe (OWASP CSV injection guidance); in XLSX text is an inline string, which a spreadsheet never
-// evaluates. The platform writes no formula from text. Numbers past 15 significant digits lose precision in a
-// spreadsheet that reads them as binary floating point (ENG-10's precision boundary); the CSV keeps them exact.
+// evaluates. The platform writes no formula from text. A spreadsheet reads a number cell as binary floating point,
+// which keeps 15 significant digits (ENG-10's precision boundary): in XLSX a figure past them is written as text, with a
+// note in the sheet's footer; the CSV keeps every figure exact.
 package sheet
 
 import (
-	"archive/zip"
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 )
@@ -44,39 +44,57 @@ type Sheet struct {
 	Name   string
 	Header []string
 	Rows   []Row
+	// Footer follows the rows after a blank row, each line in the first column: the platform and build that prepared
+	// the report, as every exported report names them (REL-05).
+	Footer []string
+}
+
+// Stamp names the platform version and the build's commit, as every exported report does (REL-05), such as
+// "0.12.0 (3f2c1a9d)"; the version alone when the commit is not known.
+func Stamp(version, commit string) string {
+	commit = commit[:min(len(commit), 12)]
+	if commit == "" || commit == "unknown" {
+		return version
+	}
+	return version + " (" + commit + ")"
+}
+
+// Prepared is an exported report's footer line: the platform and build that prepared it, and when.
+func Prepared(stamp string, at time.Time) string {
+	if stamp != "" {
+		stamp = " " + stamp
+	}
+	return "Prepared by Fyniq" + stamp + " on " + at.UTC().Format("2006-01-02 15:04") + " UTC"
+}
+
+// Footed is sheets, each with footer: the footer every exported report carries (REL-05).
+func Footed(sheets []Sheet, footer ...string) []Sheet {
+	out := make([]Sheet, len(sheets))
+	for i, s := range sheets {
+		s.Footer = append(slices.Clone(s.Footer), footer...)
+		out[i] = s
+	}
+	return out
 }
 
 // decimal is a number as a cell takes it: an optional minus, digits, and optional decimals (FR-UX-20's strict
 // pattern). Anything else is written as text.
 var decimal = regexp.MustCompile(`^-?[0-9]+(\.[0-9]+)?$`)
 
+// LongNumbers is the footer's note on a sheet that holds a number past 15 significant digits (ENG-10).
+const LongNumbers = "A figure with more than 15 significant digits is written as text, so that the spreadsheet keeps every digit."
+
+// exact reports whether a spreadsheet keeps a plain decimal exactly as a number: at most 15 significant digits, from
+// its first non-zero digit to its last, a fraction's trailing zeros left out (ENG-10). A longer one is written as text.
+func exact(d string) bool {
+	whole, frac, _ := strings.Cut(strings.TrimPrefix(d, "-"), ".")
+	return len(strings.TrimLeft(whole+strings.TrimRight(frac, "0"), "0")) <= 15
+}
+
 // CSV is the first sheet as CSV: UTF-8 with CRLF line ends, the header first.
 func CSV(s Sheet) []byte {
 	var b bytes.Buffer
-	line := func(cells []Cell) {
-		for i, c := range cells {
-			if i > 0 {
-				b.WriteByte(',')
-			}
-			switch {
-			case c.IsNumber && decimal.MatchString(c.Number):
-				b.WriteString(c.Number)
-			case c.IsNumber:
-				b.WriteString(csvText(c.Number)) // not a plain decimal: kept, as text
-			default:
-				b.WriteString(csvText(c.Text))
-			}
-		}
-		b.WriteString("\r\n")
-	}
-	header := make([]Cell, len(s.Header))
-	for i, h := range s.Header {
-		header[i] = Text(h)
-	}
-	line(header)
-	for _, r := range s.Rows {
-		line(r.Cells)
-	}
+	_ = Write(NewCSV(&b), []Sheet{s}) // into a buffer, which never fails
 	return b.Bytes()
 }
 
@@ -91,51 +109,11 @@ func csvText(s string) string {
 // XLSX is the sheets as an Office Open XML workbook, the first sheet open. created is the workbook's creation time,
 // so that the same report gives the same bytes.
 func XLSX(sheets []Sheet, created time.Time) ([]byte, error) {
-	var buf bytes.Buffer
-	z := zip.NewWriter(&buf)
-	put := func(name, body string) error {
-		w, err := z.CreateHeader(&zip.FileHeader{Name: name, Method: zip.Deflate, Modified: created.UTC()})
-		if err != nil {
-			return err
-		}
-		_, err = w.Write([]byte(xml.Header + body))
-		return err
-	}
-	var types, sheetsXML, rels strings.Builder
-	for i, s := range sheets {
-		n := i + 1
-		fmt.Fprintf(&types, `<Override PartName="/xl/worksheets/sheet%d.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`, n)
-		fmt.Fprintf(&sheetsXML, `<sheet name="%s" sheetId="%d" r:id="rId%d"/>`, escape(sheetName(s.Name)), n, n)
-		fmt.Fprintf(&rels, `<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet%d.xml"/>`, n, n)
-	}
-	styles := len(sheets) + 1
-	fmt.Fprintf(&rels, `<Relationship Id="rId%d" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`, styles)
-	parts := []struct{ name, body string }{
-		{"[Content_Types].xml", `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
-			`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
-			`<Default Extension="xml" ContentType="application/xml"/>` +
-			`<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>` +
-			`<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` +
-			types.String() + `</Types>`},
-		{"_rels/.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
-			`<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
-		{"xl/workbook.xml", `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
-			`<sheets>` + sheetsXML.String() + `</sheets></workbook>`},
-		{"xl/_rels/workbook.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` + rels.String() + `</Relationships>`},
-		{"xl/styles.xml", stylesXML},
-	}
-	for i, s := range sheets {
-		parts = append(parts, struct{ name, body string }{fmt.Sprintf("xl/worksheets/sheet%d.xml", i+1), worksheet(s)})
-	}
-	for _, p := range parts {
-		if err := put(p.name, p.body); err != nil {
-			return nil, err
-		}
-	}
-	if err := z.Close(); err != nil {
+	var b bytes.Buffer
+	if err := Write(NewXLSX(&b, created), sheets); err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), nil
+	return b.Bytes(), nil
 }
 
 // The styles: 0 plain; 1 bold; 2 a number with 2 decimals and a thousands separator; 3 the same, bold; 4 a whole
@@ -155,52 +133,6 @@ const stylesXML = `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsh
 	`<xf numFmtId="165" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/>` +
 	`<xf numFmtId="166" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>` +
 	`<xf numFmtId="166" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/></cellXfs></styleSheet>`
-
-// worksheet is one sheet's XML: the header row bold, then the rows, a strong row bold.
-func worksheet(s Sheet) string {
-	var b strings.Builder
-	b.WriteString(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>`)
-	row := func(n int, cells []Cell, strong bool) {
-		fmt.Fprintf(&b, `<row r="%d">`, n)
-		for i, c := range cells {
-			ref := column(i) + fmt.Sprint(n)
-			if c.IsNumber && decimal.MatchString(c.Number) {
-				style := 2
-				switch c.Decimals {
-				case 0:
-					style = 4
-				case 1:
-					style = 6
-				}
-				if strong {
-					style++
-				}
-				fmt.Fprintf(&b, `<c r="%s" s="%d"><v>%s</v></c>`, ref, style, c.Number)
-				continue
-			}
-			text := c.Text
-			if c.IsNumber {
-				text = c.Number // not a plain decimal: kept, as text
-			}
-			style := 0
-			if strong {
-				style = 1
-			}
-			fmt.Fprintf(&b, `<c r="%s" s="%d" t="inlineStr"><is><t xml:space="preserve">%s</t></is></c>`, ref, style, escape(text))
-		}
-		b.WriteString(`</row>`)
-	}
-	header := make([]Cell, len(s.Header))
-	for i, h := range s.Header {
-		header[i] = Text(h)
-	}
-	row(1, header, true)
-	for i, r := range s.Rows {
-		row(i+2, r.Cells, r.Strong)
-	}
-	b.WriteString(`</sheetData></worksheet>`)
-	return b.String()
-}
 
 // column is a column's letters: 0 is A, 25 Z, 26 AA.
 func column(i int) string {

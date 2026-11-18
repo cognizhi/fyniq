@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -39,12 +42,28 @@ var PlatformSchedules = []Schedule{
 	{Job: "audit.erase", Every: 24 * time.Hour, Offset: 17*time.Hour + 30*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
 	// The purge after retention, weekly, where an organisation switched it on (AUD-09, AUD-10).
 	{Job: "retention.purge", Every: 7 * 24 * time.Hour, Offset: 17*time.Hour + 45*time.Minute, Lease: 2 * time.Hour, Stale: 8 * 24 * time.Hour},
+	// Daily at 01:55 Singapore time, the assistant's conversations past their retention, and those their people deleted
+	// (§11.9; p1-ai-assistant design D11).
+	{Job: "ai.conversations.purge", Every: 24 * time.Hour, Offset: 17*time.Hour + 55*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
+	// Every 15 minutes, the AI's proposals that waited past their expiry undecided (§9.5; p1-ai-proposals-core design D9).
+	{Job: "ai.proposals.expire", Every: 15 * time.Minute, Offset: 7 * time.Minute, Lease: 10 * time.Minute, Stale: time.Hour},
+	// Every tick, the scheduled agents' slots due before the next one, each delivered at its time (AI-62; p1-scheduled-agents
+	// design D4).
+	{Job: "agents.schedule", Every: TickInterval, Lease: 4 * time.Minute, Stale: 30 * time.Minute},
 	// Daily at 01:50 Singapore time, the person keys of years past their retention listed for the DPO, and the runs they
 	// approved shredded, register first (§11.8, rev 0.244).
 	{Job: "pdpa.shred", Every: 24 * time.Hour, Offset: 17*time.Hour + 50*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
 	{Job: "idempotency.purge", Every: time.Hour, Offset: 30 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	{Job: "ratelimit.purge", Every: time.Hour, Offset: 45 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Each hour, the heartbeats of every job checked: a missing or late one is logged for the alert (NFR-OBS-02).
+	{Job: "heartbeats.check", Every: time.Hour, Offset: 55 * time.Minute, Lease: 15 * time.Minute, Stale: 3 * time.Hour},
 	{Job: "ledger.verify", Every: 24 * time.Hour, Offset: 18*time.Hour + 30*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
+	// Weekly on Sundays at 03:00 Singapore time (Saturday 19:00 UTC; the epoch was a Thursday), the database's export into
+	// the audit project's locked bucket, and in a month's first week its monthly copy (DR-02, DR-04; rev 0.249).
+	{Job: "db.export", Every: 7 * 24 * time.Hour, Offset: 67 * time.Hour, Lease: 3 * time.Hour, Stale: 8 * 24 * time.Hour},
+	// Every fourth Sunday at 04:00 Singapore time (Saturday 20:00 UTC), so never more than 28 days apart, the restore drill:
+	// a copy of the database an hour back, verified and removed (DR-06, CTL-RES-02 M; rev 0.249).
+	{Job: "restore.drill", Every: 28 * 24 * time.Hour, Offset: 68 * time.Hour, Lease: 5 * time.Hour, Stale: 30 * 24 * time.Hour},
 	// Nightly at 02:45, every stored entry posted again under the rule version that posted it (ENG-06, QA-ENG-06; rev 0.67).
 	{Job: "ledger.replay", Every: 24 * time.Hour, Offset: 18*time.Hour + 45*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
 	{Job: "superadmins.verify", Every: 24 * time.Hour, Offset: 19 * time.Hour, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
@@ -58,11 +77,20 @@ var PlatformSchedules = []Schedule{
 	// Daily at 04:35, after the checks, each organisation's verifications of the Compliance Center (CTL-FIN-08,
 	// CTL-IAM-01, CTL-AUD-05; p1-compliance-center D4).
 	{Job: "compliance.run", Every: 24 * time.Hour, Offset: 20*time.Hour + 35*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
+	// Nightly at 04:50, in Founder mode, the last week's unusual journals and payments into the weekly review (FM-6, rev 0.287).
+	{Job: "review.unusual", Every: 24 * time.Hour, Offset: 20*time.Hour + 50*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
 	// Nightly at 04:30, the sending domains' DNS records and DMARC policy (FR-INT-21, rev 0.104).
 	{Job: "email.domains", Every: 24 * time.Hour, Offset: 20*time.Hour + 30*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Hourly at :50, the connectors' clean-up: replaced keys past their overlap, an uninstalled connector's keys, a refused
 	// change's key, and the installation changes nobody decided in time (FR-INT-26, rev 0.139).
 	{Job: "connectors.cleanup", Every: time.Hour, Offset: 50 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Daily at 06:00 Singapore time (22:00 UTC), every AI connection's model list read from its provider (AI-80, AI-84).
+	{Job: "ai.models.read", Every: 24 * time.Hour, Offset: 22 * time.Hour, Lease: time.Hour, Stale: 26 * time.Hour},
+	// Daily at 06:15 Singapore time, LiteLLM's model price catalogue read and every model priced from it (AI-82, AI-85).
+	{Job: "ai.prices.read", Every: 24 * time.Hour, Offset: 22*time.Hour + 15*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
+	// Daily at 06:30 Singapore time, after the lists and prices, the qualifications due again: a moving alias's before its
+	// week ends, and every one another version put out of date (AI-78, AI-87).
+	{Job: "ai.qualify", Every: 24 * time.Hour, Offset: 22*time.Hour + 30*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
 	// Nightly at 04:45, quarantined mail whose days have passed ends and its files go (FR-INT-22, rev 0.106).
 	{Job: "inbound.expire", Every: 24 * time.Hour, Offset: 20*time.Hour + 45*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Daily at 07:30 Singapore time, before the daily digest, each organisation's bills to pay (FR-NTF-01, FR-AP-13; rev 0.110).
@@ -121,6 +149,9 @@ var PlatformSchedules = []Schedule{
 	// Hourly, the draft invoices of the recurring invoices due by each organisation's own today (FR-AR-07, FR-AUT-01;
 	// rev 0.135).
 	{Job: "invoices.recurring", Every: time.Hour, Offset: 20 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
+	// Nightly at 01:55 Singapore time, the canary's synthetic transactions through the public API (QA-PROD-01), before the
+	// audit-chain and ledger verifications, which then cover what it posted.
+	{Job: "canary.run", Every: 24 * time.Hour, Offset: 17*time.Hour + 55*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 }
 
 // TickInterval is how often Cloud Scheduler (locally the API's own loop) calls the tick; a setting.
@@ -174,7 +205,7 @@ func (t Ticker) Tick(ctx context.Context) (TickReport, error) {
 	if len(r.Errors) > 0 {
 		return r, errors.New(fmt.Sprint(r.Errors))
 	}
-	return r, t.Platform.Beat(ctx, "tick", now, fmt.Sprintf("%d started, %d dispatched", len(r.Started), r.Dispatched))
+	return r, Beat(ctx, t.Platform, "tick", now, fmt.Sprintf("%d started, %d dispatched", len(r.Started), r.Dispatched))
 }
 
 // schedule runs a job's latest slot once, after recording the slots a gap made it miss
@@ -280,6 +311,31 @@ func (t Ticker) sweep(ctx context.Context, now time.Time, r *TickReport) error {
 	return errors.Join(errs...)
 }
 
+// HeartbeatEvent is the structured log entry of a heartbeat, which a log-based metric and Cloud Monitoring's absence alerts
+// watch (NFR-OBS-02; p1-operations-dr design D6): it reaches Cloud Logging whatever the database's state, so the alert
+// depends on neither the database, the API nor the Scheduler.
+const HeartbeatEvent = "fyniq.heartbeat"
+
+// MissingEvent is the structured log entry of a heartbeat that is missing or late, which heartbeats.check logs each hour
+// for the jobs whose schedule is longer than an absence alert can wait (NFR-OBS-02).
+const MissingEvent = "fyniq.heartbeat_missing"
+
+// CheckJob is the hourly platform job that logs every missing or late heartbeat.
+const CheckJob = "heartbeats.check"
+
+// HeartbeatLog is where heartbeats are logged: the service's standard error, which Cloud Run sends to Cloud Logging. A
+// heartbeat names only its job and when, so it needs no redaction.
+var HeartbeatLog = slog.New(slog.NewJSONHandler(os.Stderr, nil))
+
+// Beat records name's heartbeat in the database and, once it is recorded, logs it as HeartbeatEvent.
+func Beat(ctx context.Context, p storage.Platform, name string, at time.Time, detail string) error {
+	if err := p.Beat(ctx, name, at, detail); err != nil {
+		return err
+	}
+	HeartbeatLog.InfoContext(ctx, HeartbeatEvent, "event", HeartbeatEvent, "job", name, "at", at.UTC().Format(time.RFC3339))
+	return nil
+}
+
 // RunSlot runs a platform job's slot where the job executes, then records how it ended and beats on
 // success. A failed run does not beat, so the absence alert notices repeated failures too.
 func RunSlot(ctx context.Context, p storage.Platform, clock ports.Clock, job string, slot time.Time, run func(ctx context.Context) error) error {
@@ -292,9 +348,24 @@ func RunSlot(ctx context.Context, p storage.Platform, clock ports.Clock, job str
 		err = ferr
 	}
 	if err == nil {
-		err = p.Beat(ctx, job, clock.Now(), slot.Format(time.RFC3339))
+		err = Beat(ctx, p, job, clock.Now(), slot.Format(time.RFC3339))
 	}
 	return err
+}
+
+// CheckHeartbeats logs each heartbeat that is missing or late as MissingEvent, and fails when there is one (NFR-OBS-02).
+func CheckHeartbeats(ctx context.Context, p storage.Platform, now time.Time, schedules []Schedule) error {
+	missing, err := Absences(ctx, p, now, schedules)
+	if err != nil {
+		return err
+	}
+	for _, m := range missing {
+		HeartbeatLog.WarnContext(ctx, MissingEvent, "event", MissingEvent, "missing", m)
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("heartbeats missing: %s", strings.Join(missing, "; "))
+	}
+	return nil
 }
 
 // Absences returns the heartbeats that are missing or older than their limit: the tick (three tick

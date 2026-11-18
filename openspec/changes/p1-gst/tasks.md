@@ -182,7 +182,9 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
 - [ ] 7.1 FR-TAX-01: the reverse-charge codes and the setting (question 29, the tax agent's decision).
 - [ ] 7.2 FR-TAX-02 and FR-TAX-03: the F5 return with every box, the roll-forward to the GST control (INV-07) and the
   filing record and lock. These complete the calendar's F5 items, and `recordStatutoryFiling` then refuses an F5 key.
-  Screen `gst-return`.
+  Screen `gst-return`. With it, the workbook migration's F5 comparison (moved from `p1-workbook-migration` task 5.2 on
+  13 Nov 2026; `data/migration` Parity check (M4)): the last return's F5 boxes against the workbook's GST Return sheet,
+  each difference a register line of its own key, and `gst_f5` no longer listed as not compared.
 - [ ] 7.3 FR-TAX-04: the IRAS audit listings.
 - [ ] 7.4 FR-TAX-12, C.2 #46 and C.2 #47: the adjustment queue. Screen `gst-adjustments`.
 

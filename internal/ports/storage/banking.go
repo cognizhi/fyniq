@@ -20,6 +20,15 @@ const (
 	MoneyCash           = "cash"
 )
 
+// The payment files a money account's batches may give (FR-BNK-12, rev 0.157), as the database's check names them: the
+// payment list, Wise's batch payment file and DBS IDEAL's UFF. Which of them are built, and which bank takes each, is
+// paymentfile's to say.
+const (
+	PaymentFileList = "payment-list"
+	PaymentFileWise = "wise-batch"
+	PaymentFileDBS  = "dbs-uff"
+)
+
 // The kinds of source a money account's data comes from (FR-BNK-15).
 const (
 	MoneySourceFile      = "file"
@@ -64,10 +73,13 @@ type MoneyAccount struct {
 	ClosedOn    *time.Time
 	// CardholderID is a card's holder, a member's user ID, whose My claims shows its lines (FR-AP-18); nil for none.
 	CardholderID *uuid.UUID
-	CreatedBy    string
-	CreatedAt    time.Time
-	ChangedAt    time.Time
-	Version      int
+	// PaymentFile is the file a payment batch paying from it gives when released (FR-BNK-12, rev 0.157): payment-list,
+	// wise-batch or dbs-uff.
+	PaymentFile string
+	CreatedBy   string
+	CreatedAt   time.Time
+	ChangedAt   time.Time
+	Version     int
 }
 
 // NewMoneyAccount opens a money account on a chart account.
@@ -81,7 +93,9 @@ type NewMoneyAccount struct {
 	OpenedOn    *time.Time
 	// CardholderID is a card's holder, a member's user ID (FR-AP-18); nil for none.
 	CardholderID *uuid.UUID
-	At           time.Time
+	// PaymentFile is the file its batches give (FR-BNK-12, rev 0.157); "" for the payment list.
+	PaymentFile string
+	At          time.Time
 }
 
 // MoneyAccountChange is what may change on a money account: everything but its chart account and currency.
@@ -94,7 +108,9 @@ type MoneyAccountChange struct {
 	ClosedOn    *time.Time
 	// CardholderID is a card's holder, a member's user ID (FR-AP-18); nil for none.
 	CardholderID *uuid.UUID
-	At           time.Time
+	// PaymentFile is the file its batches give from now (FR-BNK-12, rev 0.157); "" keeps the one it has.
+	PaymentFile string
+	At          time.Time
 }
 
 // MoneyAccountSource is where a money account's data comes from, from a date (UC-BNK-03 keeps the history).

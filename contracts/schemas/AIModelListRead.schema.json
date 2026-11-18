@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "added": {
+      "description": "Models it listed for the first time, or again.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "failure": {
+      "description": "Why it was not complete.",
+      "examples": [
+        "the provider answered 401 (authentication_error): the provider refused the credential"
+      ],
+      "type": "string"
+    },
+    "outcome": {
+      "description": "complete: every page to the provider's end; partial: the page cap or a later page stopped it; failed: the first page did.",
+      "enum": [
+        "complete",
+        "partial",
+        "failed"
+      ],
+      "examples": [
+        "complete"
+      ],
+      "type": "string"
+    },
+    "pages": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "read_at": {
+      "examples": [
+        "2026-11-14T06:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "read_by": {
+      "examples": [
+        "system:ai.models.read"
+      ],
+      "type": "string"
+    },
+    "removed": {
+      "description": "Models it no longer listed: a complete read only.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "trigger": {
+      "description": "Why it was read.",
+      "enum": [
+        "credential",
+        "test",
+        "enable",
+        "daily",
+        "not_found",
+        "refresh"
+      ],
+      "examples": [
+        "daily"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "trigger",
+    "outcome",
+    "pages",
+    "added",
+    "removed",
+    "read_by",
+    "read_at"
+  ],
+  "title": "AIModelListRead",
+  "type": "object"
+}

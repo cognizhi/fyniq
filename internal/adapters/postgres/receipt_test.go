@@ -49,6 +49,7 @@ func hasReceiptCode(err error, field, code string) bool {
 // req: ENG-41
 // req: INV-07
 // req: ledger/posting-rules Customer and supplier payments
+// req: G4-045
 func TestCustomerReceiptsSettleInvoices(t *testing.T) {
 	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ar-specialist"}})
 	s := store(t, "fyniq_api")
@@ -181,5 +182,78 @@ VALUES ($1, 1, $2, '2026-10-24', 'SGD', 2, 1.00, 'SGD', 2, 1.00, 0, 'user:attack
 		return nil
 	}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// G4-054: two receipts of S$1,000.00 for one S$1,000.00 invoice, recorded at the same time on two connections. A
+// receipt locks its invoices first, so the second waits for the first: one settles the invoice, the other is refused
+// for more than it has open (RECEIPT-05), and its money is then recorded unapplied, a credit with the customer. The
+// invoice is never settled twice, and the AR sub-ledger agrees with 1100 (INV-07).
+// req: G4-054
+// req: FR-AR-18
+// req: ENG-47
+// req: INV-07
+func TestRaceTwoReceiptsForOneInvoice(t *testing.T) {
+	ctx := storage.WithAudit(context.Background(), storage.AuditContext{Actor: &storage.Actor{Type: "user", ID: "ar-specialist"}})
+	s := store(t, "fyniq_api")
+	b := newSalesBooks(t, ctx, s, "Receipt Race Pte Ltd")
+	invoices, receipts := journal.Invoices{Store: s}, journal.CustomerReceipts{Store: s}
+	sgd := money.MustLookup("SGD")
+	var dbs storage.Account
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		dbs, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1010", Name: "DBS current", Type: storage.Asset,
+			AccountAttributes: storage.AccountAttributes{MoneyAccount: true, Currency: "SGD"}})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	inv, err := invoices.Create(ctx, b.Org, invoice.Draft{CustomerID: b.Customer.ID, Date: porttest.Day(10, 14), Currency: sgd,
+		Lines: []invoice.Line{invoiceLine(t, b, "1", "1000.00", "", "SR", "SGD")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := invoices.Post(ctx, b.Org, inv.ID); err != nil {
+		t.Fatal(err)
+	}
+	thousand, _ := money.Parse("1000.00", sgd)
+	nothing, _ := money.Parse("0", sgd)
+	paying := receipt.Draft{CustomerID: b.Customer.ID, Date: porttest.Day(10, 20), AccountID: dbs.ID, Currency: sgd, Reference: "FAST",
+		Invoices: []receipt.Part{{InvoiceID: inv.ID, Amount: thousand}}, Unapplied: nothing}
+	record := func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := receipts.RecordIn(ctx, u, paying)
+		return err
+	}
+
+	started, release, first := held(s, b.Org, record)
+	if err := <-started; err != nil {
+		t.Fatal(err)
+	}
+	second := async(s, b.Org, record)
+	stillBlocked(t, "the second receipt", second)
+	close(release)
+	if err := <-first; err != nil {
+		t.Fatalf("the first receipt: %v", err)
+	}
+	if err := <-second; !hasReceiptCode(err, "", receipt.CodeOverpaid) {
+		t.Fatalf("the second receipt: %v; want %s", err, receipt.CodeOverpaid)
+	}
+
+	// The second's money stays the customer's: recorded unapplied, a credit with them.
+	credit := paying
+	credit.Invoices, credit.Unapplied = nil, thousand
+	if _, err := receipts.Record(ctx, b.Org, credit); err != nil {
+		t.Fatal(err)
+	}
+	var r receivables.Reconciliation
+	var l receivables.Ledger
+	if err := s.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		r, l, err = receivables.Reconcile(ctx, u, sgd, b.AR.ID, porttest.Day(10, 31))
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if r.Unexplained() || r.Base.SubLedger.String() != "-1000.00" || r.Base.Control.String() != "-1000.00" || len(l.Customers) != 1 ||
+		len(l.Customers[0].Items) != 1 || l.Customers[0].Items[0].Kind != receivables.KindCredit || l.Customers[0].Items[0].Open.String() != "-1000.00" {
+		t.Fatalf("the sub-ledger: %+v %+v", r, l)
 	}
 }

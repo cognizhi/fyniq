@@ -1,5 +1,6 @@
 # The central log store (SEC-30; p1-security-hardening task 9.1, design D8) [live-verify]: data-access audit logs for the
-# sensitive services, and a sink that sends Cloud Audit Logs and the platform's security alerts to a Cloud Logging
+# sensitive services, and a sink that sends Cloud Audit Logs, the database's pgAudit entries (CTL-AUD-04) and the platform's
+# security alerts to a Cloud Logging
 # bucket in the audit project, kept 400 days (the security events' retention, AUD-06) and locked in production. The
 # alert policies on them are the environment module's (alerts.tf).
 
@@ -48,9 +49,15 @@ locals {
   services = concat(["sqladmin.googleapis.com", "secretmanager.googleapis.com", "cloudkms.googleapis.com", "iam.googleapis.com"],
   var.project == var.audit_project ? [] : ["storage.googleapis.com"])
   bucket = "fyniq-${var.environment}-security"
-  # Cloud Audit Logs (admin activity, data access, policy denials) and the security alerts the platform logs
-  # (internal/domain/security: "event":"fyniq.security_alert").
-  filter = "logName:\"cloudaudit.googleapis.com\" OR jsonPayload.event=\"fyniq.security_alert\""
+  # Cloud Audit Logs (admin activity, data access, policy denials), the security alerts the platform logs
+  # (internal/domain/security: "event":"fyniq.security_alert"), and the database's pgAudit entries: schema and grant
+  # changes (pgaudit.log=ddl,role, environment/database.tf), which Cloud SQL writes to its postgres.log with "AUDIT:"
+  # (CTL-AUD-04, §11.5's database and platform logs; p1-operations-dr design D4) [live-verify the log name].
+  filter = join(" OR ", [
+    "logName:\"cloudaudit.googleapis.com\"",
+    "jsonPayload.event=\"fyniq.security_alert\"",
+    "(resource.type=\"cloudsql_database\" AND logName:\"postgres.log\" AND textPayload:\"AUDIT:\")",
+  ])
 }
 
 resource "google_project_iam_audit_config" "sensitive" {

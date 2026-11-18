@@ -24,7 +24,7 @@ const reports: { report: Report; name: string; range: boolean }[] = [
 
 // The audit trail's export is asked for on Compliance › Audit trail (requestAuditTrailExport), with its filters, so it
 // is not asked for again here.
-const nameOf = (r: string) => reports.find((x) => x.report === r)?.name ?? (r === "audit_trail" ? "Audit trail" : r);
+export const nameOf = (r: string) => reports.find((x) => x.report === r)?.name ?? (r === "audit_trail" ? "Audit trail" : r);
 const askable = (r: string) => reports.some((x) => x.report === r);
 
 function today(): string {
@@ -100,7 +100,7 @@ export function MyExports({ limit, title }: { limit?: number; title?: string }) 
     },
     onMutate: () => setProblem(null),
     onError: (e) => setProblem(problemOf(e)),
-    onSuccess: () => queries.invalidateQueries({ queryKey: ["report-exports"] }),
+    onSuccess: () => Promise.all([queries.invalidateQueries({ queryKey: ["report-exports"] }), queries.invalidateQueries({ queryKey: ["operations"] })]),
   });
   const download = async (x: Export) => {
     setProblem(null);
@@ -166,7 +166,7 @@ export function AccountantExports() {
     },
     onMutate: () => setProblem(null),
     onError: (e) => setProblem(problemOf(e)),
-    onSuccess: () => queries.invalidateQueries({ queryKey: ["report-exports"] }),
+    onSuccess: () => Promise.all([queries.invalidateQueries({ queryKey: ["report-exports"] }), queries.invalidateQueries({ queryKey: ["operations"] })]),
   });
   const h = helpText("reports.accountant-exports");
 

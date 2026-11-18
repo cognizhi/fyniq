@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "attempts": {
+      "description": "Its attempts so far: none again once replayed.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "id": {
+      "description": "The task's ID, as the check C.2 #12 lists it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What the task does.",
+      "examples": [
+        "email.send"
+      ],
+      "type": "string"
+    },
+    "last_error": {
+      "description": "Why its last attempt failed, kept when it is replayed.",
+      "examples": [
+        "the provider refused the connection"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "Where it stands: pending once replayed.",
+      "enum": [
+        "pending",
+        "dispatched",
+        "running",
+        "done",
+        "failed",
+        "unknown_outcome",
+        "dead"
+      ],
+      "examples": [
+        "pending"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "state",
+    "attempts"
+  ],
+  "title": "BackgroundWork",
+  "type": "object"
+}

@@ -14,13 +14,18 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/compliance"
+	"github.com/cognizhi/fyniq/evals"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/agents"
+	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/bankfeed"
 	"github.com/cognizhi/fyniq/internal/bankingest"
+	"github.com/cognizhi/fyniq/internal/canary"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/banking"
 	"github.com/cognizhi/fyniq/internal/domain/checks"
@@ -32,13 +37,16 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/retention"
 	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
+	"github.com/cognizhi/fyniq/internal/domain/unusual"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/logging"
+	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/notify/reminders"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/proposal"
 	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/render"
 	"github.com/cognizhi/fyniq/internal/reportexport"
@@ -68,6 +76,18 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := audit.PurgeAll(ctx, k.Store, k.Blobs, k.Signer, clock)
 			return err
 		},
+		retention.AIConversationsJob: func(ctx context.Context) error { // §11.9: the assistant's conversations past their retention
+			_, err := retention.PurgeAIConversations(ctx, k.Store, clock)
+			return err
+		},
+		agents.ScheduleJob: func(ctx context.Context) error { // AI-62: each enabled agent's slots due before the next tick
+			_, err := agents.Scheduler{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Skills: agents.Default()}.ScheduleAll(ctx)
+			return err
+		},
+		proposal.ExpireJob: func(ctx context.Context) error { // §9.5: the AI's proposals past their expiry, undecided
+			_, err := proposal.ExpireAll(ctx, k.Store, clock)
+			return err
+		},
 		"pdpa.shred": func(ctx context.Context) error { // §11.8: years past their retention listed, approved runs shredded
 			_, err := audit.ShredAll(ctx, k.Store, k.Blobs, k.Signer, k.TellShredding(clock), clock)
 			return err
@@ -79,6 +99,26 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		"ratelimit.purge": func(ctx context.Context) error {
 			_, err := PurgeRateLimitWindows(ctx, k.Store, clock.Now())
 			return err
+		},
+		backup.Job: func(ctx context.Context) error { // DR-02, DR-04: the weekly export, and the month's in its first week
+			if k.Backup == nil {
+				return fmt.Errorf("no database export is configured (FYNIQ_GCP exports)")
+			}
+			done, err := backup.Export(ctx, k.Backup, k.ExportBuckets, clock.Now())
+			for _, d := range done {
+				fmt.Fprintln(os.Stderr, "db.export:", d)
+			}
+			return err
+		},
+		backup.DrillJob: func(ctx context.Context) error { // DR-06, CTL-RES-02: the monthly restore drill
+			if k.DrillOnDemand {
+				return errors.New("the local stack runs the restore drill only when asked (make restore-drill): its copy stops every connection to the database while it is made")
+			}
+			_, err := k.Drill(clock).Run(ctx)
+			return err
+		},
+		outbox.CheckJob: func(ctx context.Context) error { // NFR-OBS-02: a missing or late heartbeat, logged for the alert
+			return outbox.CheckHeartbeats(ctx, k.Store, clock.Now(), outbox.PlatformSchedules)
 		},
 		"ledger.verify": func(ctx context.Context) error {
 			_, err := balance.VerifyAll(ctx, k.Store)
@@ -93,6 +133,9 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			return err
 		},
 		connector.CleanupJob: k.CleanupJob(clock),
+		ai.DailyJob:          k.AIModels(clock).Daily,    // AI-80: every connection's model list, at 06:00 SGT
+		ai.PriceJob:          k.AIPrices(clock).Daily,    // AI-82: the price catalogue, and every model priced from it, at 06:15 SGT
+		ai.QualifyJob:        k.AIQualifier(clock).Daily, // AI-78: moving aliases weekly, and out-of-date qualifications, at 06:30 SGT
 		"superadmins.verify": func(ctx context.Context) error {
 			_, err := superadmin.Verify(ctx, k.Store, k.Store)
 			return err
@@ -137,7 +180,8 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 				return err
 			}
 			_, err = controls.Runner{Store: k.Store, Clock: clock, Controls: registry, Platform: k.Store, Release: k.Release, Assets: assets,
-				Tell: k.TellControl(clock), Installation: k.Store, Posture: k.Posture, Logs: k.Logs, Alert: k.alertPlatform(clock)}.Nightly(ctx)
+				Tell: k.TellControl(clock), Installation: k.Store, Posture: k.Posture, Logs: k.Logs, Alert: k.alertPlatform(clock),
+				Evidence: k.Evidence, Scheduling: k.Scheduling}.Nightly(ctx)
 			return err
 		},
 		controls.SchemaJob: func(ctx context.Context) error { // CTL-FIN-02, CTL-AUD-01, CTL-AI-01: the guards as released
@@ -213,6 +257,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		"bank.review-sample": func(ctx context.Context) error { // FR-BNK-14, FM-3: the week's sample into the review
 			return banking.SampleAll(ctx, k.Store, clock.Now())
 		},
+		unusual.Job: func(ctx context.Context) error { // FM-6 (rev 0.287): unusual journals and payments into the review
+			_, err := unusual.ReviewAll(ctx, k.Store, clock.Now())
+			return err
+		},
 		"bank.signals-expiry": func(ctx context.Context) error { // FR-BNK-16: alerts no statement line closed in time
 			_, err := banking.ExpireSignalsAll(ctx, k.Store, clock.Now())
 			return err
@@ -232,6 +280,16 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 			_, err := k.Exports(clock).Expire(ctx, clock.Now())
 			return err
 		},
+		canary.Job: func(ctx context.Context) error { // QA-PROD-01: the canary's night, before the ledger and audit verifications
+			if k.Canary == nil {
+				fmt.Fprintln(os.Stderr, "canary.run: no canary client is configured (QA-PROD-01; it waits for p1-public-api task 3.1)")
+				return nil
+			}
+			r, err := k.Canary.Run(ctx, clock.Now().In(appclock.Singapore))
+			fmt.Fprintf(os.Stderr, "canary.run: %s: invoice %s, receipt %s, bill %s, payment %s, journal %s\n", r.Day, r.Invoice, r.Receipt,
+				r.Bill, r.Payment, r.Journal)
+			return err
+		},
 		"evidence.sweep": func(ctx context.Context) error {
 			if k.Staging == nil || k.Evidence == nil {
 				return nil
@@ -245,6 +303,16 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 // Fanout fans notification events out and sends their digests (FR-NTF-01, FR-NTF-02, FR-NTF-05).
 func (k *Kit) Fanout(clock ports.Clock) notify.Fanout {
 	return notify.Fanout{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Origin: k.Origin}
+}
+
+// AgentRuns runs the scheduled agents' queued runs (AI-64, AI-65; p1-scheduled-agents design D5), asking the model through
+// the API's internal operation when the kit names it, else deterministic alone.
+func (k *Kit) AgentRuns(clock ports.Clock) agents.Runner {
+	r := agents.Runner{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Skills: agents.Default()}
+	if k.AgentModelURL != "" {
+		r.Model = agents.APIModel{URL: k.AgentModelURL, Token: k.AgentModelToken, HTTP: k.AgentModelHTTP}.Step
+	}
+	return r
 }
 
 // Relays emits the installation's notices, such as a connector paused or a change waiting, in the organisations of the
@@ -351,7 +419,32 @@ func (k *Kit) Remittances(clock ports.Clock) remitmail.Sender {
 
 // Exports prepare the exports that run in the background in the staging store, and expire them (FR-RPT-09).
 func (k *Kit) Exports(clock ports.Clock) reportexport.Preparer {
-	return reportexport.Preparer{Store: k.Store, Files: k.Staging, Outbox: k.dispatcher(clock), Clock: clock}
+	return reportexport.Preparer{Store: k.Store, Files: k.Staging, Outbox: k.dispatcher(clock), Clock: clock, Stamp: k.Stamp,
+		Tenant: reportexport.TenantSources{Evidence: k.Evidence, Staging: k.Staging, Fields: k.Fields}}
+}
+
+// AIPrices read the model price catalogue and price the AI connections' models from it (AI-82, AI-85).
+func (k *Kit) AIPrices(clock ports.Clock) ai.Pricer {
+	return ai.Pricer{Store: k.Store, Catalogues: k.Store, Blobs: k.Blobs, Catalogue: k.Prices, Billing: k.Billing, Connectors: k.Connectors,
+		Clock: clock}
+}
+
+// AIModels read AI connections' model lists from their providers through the connector runtime (AI-80, AI-84).
+func (k *Kit) AIModels(clock ports.Clock) ai.Lister {
+	d := k.dispatcher(clock)
+	return ai.Lister{Store: k.Store, Provider: k.Runtime(clock).Model, Clock: clock, Outbox: &d}
+}
+
+// AIQualifier runs the agents' eval suites against models on their connections, as the eval runner (AI-78).
+func (k *Kit) AIQualifier(clock ports.Clock) ai.Qualifier {
+	d := k.dispatcher(clock)
+	return ai.Qualifier{Router: ai.Router{Store: k.Store, Provider: k.Runtime(clock).Model, Clock: clock, Outbox: &d}, Suites: evals.Suites}
+}
+
+// Migrations validate uploaded workbooks in the background, keeping each report and Checks export in the staging store
+// (FR-MIG-01).
+func (k *Kit) Migrations(clock ports.Clock) migration.Validator {
+	return migration.Validator{Store: k.Store, Files: k.Staging, Clock: clock}
 }
 
 // Fetcher fetches, decides and keeps received mail (FR-INT-22), telling whoever decides of quarantined mail.
@@ -372,6 +465,25 @@ func (k *Kit) BankReports(clock ports.Clock) bankingest.Importer {
 
 // Committer commits attached files of records that are no longer drafts to the locked store (FR-DOC-13);
 // ok is false when the kit has no evidence stores.
+// Drill is the monthly restore drill (DR-06, CTL-RES-02): a copy an hour back, verified and removed, recorded in the
+// installation's trail. Without a clone it fails, which its heartbeat and CTL-RES-02 show.
+func (k *Kit) Drill(clock ports.Clock) backup.Drill {
+	clone, open := k.Clone, k.OpenClone
+	if clone == nil || open == nil {
+		clone = noClone{}
+	}
+	return backup.Drill{Clone: clone, Open: open, Store: k.Store, Installation: k.Store, Blobs: k.Blobs, Signer: k.Signer, Keyed: k.Keyed(), Clock: clock}
+}
+
+// noClone is the drill's clone where the deployment configured none.
+type noClone struct{}
+
+func (noClone) Clone(context.Context, time.Time) (ports.CloneTarget, error) {
+	return ports.CloneTarget{}, errors.New("no database clone is configured for the restore drill (FYNIQ_GCP exports)")
+}
+
+func (noClone) Remove(context.Context, string) error { return nil }
+
 func (k *Kit) Committer(clock ports.Clock) (evidence.Committer, bool) {
 	if k.Staging == nil || k.Evidence == nil {
 		return evidence.Committer{}, false

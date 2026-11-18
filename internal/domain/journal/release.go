@@ -91,7 +91,7 @@ func billSchedule(ctx context.Context, u storage.UnitOfWork, doc storage.Documen
 	if !spread || doc.Type != storage.DocumentBill {
 		return nil, nil
 	}
-	stored, err := u.Ledger().ByIdentity(ctx, ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleBill))
+	stored, err := u.Ledger().ByIdentity(ctx, bill.IdentityOf(doc))
 	if err != nil {
 		return nil, err
 	}

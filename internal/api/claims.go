@@ -16,6 +16,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/claim"
+	"github.com/cognizhi/fyniq/internal/domain/gst"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -558,7 +559,11 @@ func claimDependencies(ctx context.Context, u storage.UnitOfWork, key string) (i
 			}
 		}
 	}
-	return doc.Version, map[string]any{"claim_version": doc.Version, "status": string(doc.Status), "owed": owed}, nil
+	pack, err := gst.PackState(ctx, u) // its receipts' GST is read from it (G4-057)
+	if err != nil {
+		return 0, nil, err
+	}
+	return doc.Version, map[string]any{"claim_version": doc.Version, "status": string(doc.Status), "owed": owed, "gst_pack": pack}, nil
 }
 
 // claimExecutable refuses the claimant's own approval of their claim (FR-AP-17): the request's requester never signs

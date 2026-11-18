@@ -2,9 +2,12 @@ package logging
 
 import (
 	"bytes"
+	"context"
 	"log/slog"
 	"strings"
 	"testing"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 // req: SEC-15
@@ -28,5 +31,28 @@ func TestLogsNeverCarrySecretsNRICOrBankNumbers(t *testing.T) {
 		if !strings.Contains(out, kept) {
 			t.Errorf("the log line lost %q:\n%s", kept, out)
 		}
+	}
+}
+
+// A line logged with a request's context names its trace and span, and in the cloud the fields Cloud Logging links to
+// Cloud Trace by (NFR-OBS-01); a line without one names none.
+// req: NFR-OBS-01
+func TestALineNamesItsTrace(t *testing.T) {
+	t.Setenv("FYNIQ_TRACE_PROJECT", "fyniq-prod")
+	var buf bytes.Buffer
+	log := New(&buf, slog.LevelInfo).With("service", "api")
+	tid, _ := trace.TraceIDFromHex("4bf92f3577b34da6a3ce929d0e0e4736")
+	sid, _ := trace.SpanIDFromHex("00f067aa0ba902b7")
+	ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{TraceID: tid, SpanID: sid, TraceFlags: trace.FlagsSampled}))
+	log.InfoContext(ctx, "api.request")
+	log.Info("startup")
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(lines) != 2 || !strings.Contains(lines[0], `"trace_id":"4bf92f3577b34da6a3ce929d0e0e4736"`) || !strings.Contains(lines[0], `"span_id":"00f067aa0ba902b7"`) ||
+		!strings.Contains(lines[0], `"logging.googleapis.com/trace":"projects/fyniq-prod/traces/4bf92f3577b34da6a3ce929d0e0e4736"`) ||
+		!strings.Contains(lines[0], `"logging.googleapis.com/trace_sampled":true`) || !strings.Contains(lines[0], `"service":"api"`) {
+		t.Errorf("a line with a trace: %s", lines[0])
+	}
+	if strings.Contains(lines[1], "trace") {
+		t.Errorf("a line without one: %s", lines[1])
 	}
 }

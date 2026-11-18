@@ -5,6 +5,10 @@ package connectors
 
 import (
 	"github.com/cognizhi/fyniq/connectors/airwallex"
+	"github.com/cognizhi/fyniq/connectors/anthropic"
+	"github.com/cognizhi/fyniq/connectors/gemini"
+	"github.com/cognizhi/fyniq/connectors/openai"
+	compatible "github.com/cognizhi/fyniq/connectors/openai-compatible"
 	"github.com/cognizhi/fyniq/connectors/resend"
 	"github.com/cognizhi/fyniq/connectors/smtp"
 	"github.com/cognizhi/fyniq/connectors/wise"
@@ -13,12 +17,13 @@ import (
 )
 
 // bindings are the connectors compiled in.
-var bindings = []func() (connector.Binding, error){smtp.Binding, zeptomail.Binding, resend.Binding, wise.Binding, airwallex.Binding}
+var bindings = []func() (connector.Binding, error){smtp.Binding, zeptomail.Binding, resend.Binding, wise.Binding, airwallex.Binding,
+	anthropic.Binding, openai.Binding, gemini.Binding, compatible.Binding}
 
-// Catalogue is the release's catalogue; an error means a manifest or binding is malformed, and the service must not
-// start.
-func Catalogue() (*connector.Catalogue, error) {
-	bs := make([]connector.Binding, 0, len(bindings))
+// Catalogue is the release's catalogue, with local mode's substitutes when the local build passes them (never a
+// release's); an error means a manifest or binding is malformed, and the service must not start.
+func Catalogue(local ...connector.Binding) (*connector.Catalogue, error) {
+	bs := make([]connector.Binding, 0, len(bindings)+len(local))
 	for _, b := range bindings {
 		x, err := b()
 		if err != nil {
@@ -26,5 +31,5 @@ func Catalogue() (*connector.Catalogue, error) {
 		}
 		bs = append(bs, x)
 	}
-	return connector.NewCatalogue(bs...)
+	return connector.NewCatalogue(append(bs, local...)...)
 }

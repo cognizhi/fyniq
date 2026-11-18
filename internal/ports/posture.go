@@ -27,3 +27,25 @@ type Posture interface {
 type LogReader interface {
 	Read(ctx context.Context, since time.Time, limit int) ([]string, error)
 }
+
+// Scheduling reads how the platform's schedule and its heartbeat's alerts are configured (NFR-OBS-02, CTL-RES-05;
+// p1-operations-dr design D6): the Scheduler's jobs, and the alert policies. Production: Cloud Scheduler's and Cloud
+// Monitoring's APIs, as the jobs' account; local: the local stack's own tick and its stand-in alerts.
+type Scheduling interface {
+	SchedulerJobs(ctx context.Context) ([]SchedulerJob, error)
+	AlertPolicies(ctx context.Context) ([]AlertPolicy, error)
+}
+
+// SchedulerJob is one of the Scheduler's jobs: its name (the last part of its resource name) and whether it runs.
+type SchedulerJob struct {
+	Name     string
+	Enabled  bool
+	Schedule string
+}
+
+// AlertPolicy is one of the alert policies: its display name, whether it is on, and how many channels it tells.
+type AlertPolicy struct {
+	Name     string
+	Enabled  bool
+	Channels int
+}
