@@ -228,31 +228,6 @@ What exists (read from the repository on 18 Nov 2026):
   role) and `verify kb` (every published version lints, no human-edited version overwritten); the event check is the
   publish gate's result recorded as evidence.
 
-## As built (18 Nov 2026)
-
-What the first five slices settled, where the build differed from the text above:
-
-- **Citations come from the body, not front matter.** D4 said a page carries a `cite` list resolved at load. The pages
-  already cite `(src: <guide path>#<anchor>)` at each section, which `kb.py` and the Go lint check, so the tool resolves a
-  section's citations from those markers to the guide page's own key, title and anchor; no front-matter field was added and
-  `kb-schema@1` is unchanged. A compiled page and its guide page may share a key (`approvals.policies` is both), so the
-  citation is the guide's file, resolved by the loader, never a lookup by key in the compiled set.
-- **Search terms.** A question is searched by its words, not its sentence: `knowledge.QueryTerms` drops English filler words
-  and one-letter words, keeps any script whole, and passes at most 12 terms ORed, ranked by `ts_rank_cd` with trigram
-  similarity of the title and aliases. Retrieval misses were fixed by aliases (AI-58); the other-language baseline is 1 in 10.
-- **The load is one call.** `kb_platform_load(jsonb)`, run only by the migrator, replaces the whole set, because the
-  architecture test allows only the unit of work to begin a transaction.
-- **The reader's classes.** `kbReader` takes the roles as the guide names them and works the data classes out from Appendix D:
-  personal from Contacts or Users and roles, equity from the cap table, payroll only with AI payroll access and the person's
-  payroll right, identity never.
-- **No operation of its own.** The tools run inside `callAITool`, so the authorisation matrix has no new row; the page
-  versions travel in the tool result and the turn's tool call.
-- **Mode is not an access matter.** The guide's Basic and Expert split is a display preference; the assistant answers from a
-  page whatever mode the reader is in.
-- **Left from this design:** layer 1's cached index (task 2.3), the platform's check against the pack in force (task 3.3),
-  the organisation's tables, rendered pages, the compiler and its role, publishing, the administration surface (tasks 4 to
-  8), the answer-level evals (`[live-verify]`) and CTL-AI-08's nightly and event checks (task 9.3).
-
 ## Migration plan
 
 Range 000560 to 000579, allocated per slice and re-checked against the highest object list on `origin/main` after every merge
