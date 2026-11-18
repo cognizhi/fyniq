@@ -82,13 +82,14 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   and the anchors in a Nemura-prefixed bucket (local blob store; the real bucket is `[live-verify]`). Tests: a
   tampered chain fails the nightly check, an anchor mismatch is reported, a restored copy verifies.
   (Built in part, 19 Nov 2026: `Store.VerifyAudit` recomputes a whole chain from its first event and checks it against the chain head; `TestTheChainDetectsTampering`. **Left:** the anchors in a Nemura-prefixed bucket, the nightly verification job and a restored copy's check, which need the signer and blob ports wired into the worker.)
-- [ ] 3.3 (slice 3b) The outbox and the `worker` role (D6): `outbox` table and its functions, `POST /tasks` with an
+- [x] 3.3 (slice 3b) The outbox and the `worker` role (D6): `outbox` table and its functions, `POST /tasks` with an
   audience-bound task token for `nemura-worker`, retry with backoff, dead-lettering with an alert event, the
   scheduler tick endpoint, and `/jobs` for long work; `nemura_worker` grants. Tests: a task queued while its
   consumer is stopped runs once it is back and exactly once (idempotent on its key); a poisoned task is
   dead-lettered; the worker refuses to start without its own database URL or with another role's (`// req: NM-ARC-06`
   is tagged in 5.3, when the service identities are all proven).
-- [ ] 3.4 Verify each slice: `make check`, `make test`, `make images`.
+  (Built, 19 Nov 2026: migration 000003, `internal/nemura/outbox`, `internal/adapters/postgres/nemura/outbox.go` and `outbox_test.go`, the worker role of `cmd/nemura` (`/tasks`, `/tick`) and the compose service `nemura-worker`. The release flavour's Cloud Tasks wiring is task 10.1 [live-verify] and refuses to start the worker until then. A service refuses another role's database URL (`NEMURA-ROLE-02`), tested in `TestAServiceRefusesAnotherRolesDatabaseURL`.)
+- [x] 3.4 Verify each slice: `make check`, `make test`, `make images`.
 
 ## 4. The API foundation (slice 4; golden rule 4)
 
