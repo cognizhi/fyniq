@@ -9,8 +9,26 @@
 
 - [x] 2.1 Write `pack.At(name, date)` and the tax-point rule as pure functions. Test `// req: ENG-31`: a future rate never changes a past document (20 Oct 2026: `pack.At`, `RateOn`, `GSTRate`, `TaxPoint` and `PaymentTaxPoint` under the rule `sg-gst/earlier-of@1`)
 - [ ] 2.2 Implement the tax point and GST dates under the named `sg-gst` rule. Test `// req: ENG-45` with the pinned cases G4-018…021 (20 Oct 2026: the tax points of G4-018 and G4-019 are pinned. **Left:** the amount taxed at a deposit (G4-018 keeps its [verify]), G4-020 (registration mid-service: `gst.StatusOn` at the tax point; not done here), and, with `p1-gst`, G4-021 (the claim-date policy and the FR-TAX-12 queue) and the GST dates stored on documents)
-- [ ] 2.3 Apply RND-GST-EXCL per subtotal or per line, as the organisation's setting says, and RND-GST-INCL extraction. Tests `// req: RND-GST-EXCL` and `// req: RND-GST-INCL`, with cases worked by hand (**Left:** the rounding package sits under the oracle's differential and mutation gates, so this goes with the oracle's half in `p1-gst`)
+  (18 Nov 2026, p1-statutory-packs, engine: G4-020 is built: `TestGSTFollowsTheTaxPointAcrossTheRegistration`
+  (`internal/adapters/postgres/invoice_test.go`, `// req: G4-020`, `// req: ENG-45`) posts invoices dated before and
+  after a registration recorded between them, and whether a document bears GST follows its own date, the tax point, never
+  the day it is posted. G4-018 and G4-019 are pinned in `pack_test.go` and `ledger/deposit_test.go`. IRAS's page
+  "Deposits and downpayment" (last updated 4 June 2026, read 18 Nov 2026) says that for a deposit that is part payment you
+  "charge and account for GST" when you receive it and may adjust it by a credit note if you refund it, and that a
+  refundable security deposit bears GST when it is used; its "When to report supplies in GST returns" page puts
+  "deposits received as part payment" in Box 1; neither says that the final invoice reports only the balance, so G4-018's
+  [verify] stays for that half in the PRD. **Left:** G4-021 (the claim-date policy and the adjustment queue, FR-TAX-12) is
+  `p1-gst` task 7.4, which the founders left to GST registration (PRD question 29); the stored GST dates go with it.)
+- [x] 2.3 Apply RND-GST-EXCL per subtotal or per line, as the organisation's setting says, and RND-GST-INCL extraction. Tests `// req: RND-GST-EXCL` and `// req: RND-GST-INCL`, with cases worked by hand (**Left:** the rounding package sits under the oracle's differential and mutation gates, so this goes with the oracle's half in `p1-gst`)
   (27 Oct 2026, the oracle session: the oracle's half is written from §10.4, `money.rnd_gst_excl` per GST-code subtotal or per line and `money.rnd_gst_incl` at the base currency's minor units, with hand-worked cases and properties `# req: RND-GST-EXCL`, `# req: RND-GST-INCL` in `oracle/tests/test_gst_rounding.py`. **Left:** the differential reaches them through the bank-line and invoice shapes of `fyniq-scenario@1` once `cmd/scenario-run` reads those (an engine-session task in `p1-bank-import-reconcile` and `p1-sales`))
+  (18 Nov 2026, p1-statutory-packs, engine: the Go half was built with the sales and bank sources and is tagged:
+  `rounding.GSTExcl` per GST code's subtotal or per line (`ledger.Invoice.GSTMethod`, the organisation's setting) and
+  `rounding.GSTIncl` at the base currency's minor units, with the hand-worked cases of `rounding_test.go`
+  (`// req: RND-GST-EXCL`, `// req: RND-GST-INCL`) and the ledger's invoice, bank, deposit and asset tests. The
+  differential now reaches both through `cmd/scenario-run`'s `sales`, `bank`, `purchases`, `claims` and `assets` shapes:
+  the oracle draws `gst.per_line` (`strategies_p1.py`), the engine side reads it (`internal/differential/p1_sales.go`), and a run of 500 scenarios on the fixed seed 20261118
+  (`FYNIQ_DIFFERENTIAL_EXAMPLES=500`, `--hypothesis-seed=20261118`, sources `bank,purchases,sales,claims,assets,statements`)
+  found no disagreement between the engine and the oracle.)
 
 ## 3. Activation
 
