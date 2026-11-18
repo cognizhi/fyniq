@@ -1,3 +1,5 @@
+nemura_api | column nemura.audit_event.body | INSERT
+nemura_api | column nemura.audit_event.id | INSERT
 nemura_api | column nemura.organisation.name | INSERT
 nemura_api | database | CONNECT
 nemura_api | function nemura.current_org | EXECUTE
@@ -6,6 +8,8 @@ nemura_api | table nemura.organisation | SELECT
 nemura_assistant | database | CONNECT
 nemura_assistant | function nemura.current_org | EXECUTE
 nemura_assistant | schema nemura | USAGE
+nemura_executor | column nemura.audit_event.body | INSERT
+nemura_executor | column nemura.audit_event.id | INSERT
 nemura_executor | database | CONNECT
 nemura_executor | function nemura.current_org | EXECUTE
 nemura_executor | schema nemura | USAGE
@@ -13,9 +17,15 @@ nemura_executor | table nemura.organisation | SELECT
 nemura_readonly | database | CONNECT
 nemura_readonly | function nemura.current_org | EXECUTE
 nemura_readonly | schema nemura | USAGE
+nemura_readonly | table nemura.audit_chain | SELECT
+nemura_readonly | table nemura.audit_event | SELECT
 nemura_readonly | table nemura.organisation | SELECT
+nemura_worker | column nemura.audit_event.body | INSERT
+nemura_worker | column nemura.audit_event.id | INSERT
 nemura_worker | database | CONNECT
 nemura_worker | function nemura.current_org | EXECUTE
 nemura_worker | schema nemura | USAGE
+nemura_worker | table nemura.audit_chain | SELECT
+nemura_worker | table nemura.audit_event | SELECT
 nemura_worker | table nemura.organisation | SELECT
 nemura_worker | table nemura.tenants | SELECT
