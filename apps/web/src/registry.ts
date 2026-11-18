@@ -12,7 +12,7 @@
 // The router, the sidebar, the bottom bar and the command palette read it; later the mode filter,
 // the help panel and the tour. registry.test.ts fails when an entry lacks a mode, a help key, its
 // tooltip or its guide page (QA-UI-05), and when the router has a route the registry does not list.
-import { Bell, BookCheck, BookOpen, Bot, Building, CalendarClock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, ScrollText, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Bell, BookCheck, BookOpen, Bot, BriefcaseBusiness, Building, CalendarClock, ChartColumn, ChartLine, ChartPie, ClipboardCheck, Contact, Database, FileSpreadsheet, HandCoins, House, Inbox, KeyRound, Landmark, LayoutTemplate, Megaphone, Palette, Plug, Receipt, ReceiptText, Scale, ScrollText, Settings, ShieldCheck, Stamp, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import type { components } from "./api/schema";
 
 export type Mode = "basic" | "expert";
@@ -72,6 +72,9 @@ export const routes = [
   { kind: "route", id: "review-log", path: "/review-log", mode: "basic", signedIn: true, help: "approvals.review-log", guide: "approvals.decide#review-high-risk-actions" },
   { kind: "route", id: "break-glass", path: "/break-glass", mode: "basic", signedIn: true, help: "approvals.break-glass", guide: "settings.team-mode#break-glass" },
   { kind: "route", id: "contacts", path: "/contacts", mode: "basic", signedIn: true, help: "contacts.overview", guide: "contacts.manage" },
+  // Projects and time (FR-PRJ-01; p1-projects), off until the organisation switches them on (FR-ORG-06).
+  { kind: "route", id: "projects", path: "/projects", mode: "basic", signedIn: true, help: "projects.overview", guide: "projects.projects" },
+  { kind: "route", id: "project-record", path: "/projects/$projectId", mode: "basic", signedIn: true, help: "projects.record", guide: "projects.projects#set-up-a-project" },
   { kind: "route", id: "global-search", path: "/search", mode: "basic", signedIn: true, help: "shell.search", guide: "shell.search" },
   // The user guide, built from docs/user-guide/ (FR-UX-32).
   { kind: "route", id: "help", path: "/help", mode: "basic", signedIn: true, help: "help.guide", guide: "help.guide" },
@@ -312,6 +315,9 @@ export const actions = [
   { kind: "action", id: "member.end-role", mode: "expert", help: "member.end-role", guide: "settings.members#change-someones-roles" },
   { kind: "action", id: "member.withdraw-invitation", mode: "expert", help: "member.withdraw-invitation", guide: "settings.members#invite-someone" },
   { kind: "action", id: "member.remove", mode: "expert", help: "member.remove", guide: "settings.members#remove-someone" },
+  { kind: "action", id: "project.new", mode: "basic", help: "project.new", guide: "projects.projects#add-a-project" },
+  { kind: "action", id: "project.people", mode: "basic", help: "project.people", guide: "projects.projects#say-who-is-on-a-project-and-who-approves-its-time" },
+  { kind: "action", id: "project.task-add", mode: "basic", help: "project.task-add", guide: "projects.projects#add-tasks" },
   { kind: "action", id: "claim.line-dimensions", mode: "basic", help: "claim.line-dimensions", guide: "claims.my-claims#say-which-team-or-project-it-was-for" },
   { kind: "action", id: "claim.keep-as-loan", mode: "basic", help: "claim.keep-as-loan", guide: "claims.my-claims#keep-it-as-a-loan-to-the-company" },
   { kind: "action", id: "access-review.attest", mode: "expert", help: "access-review.attest", guide: "settings.access-review#attest-the-quarter" },
@@ -743,6 +749,7 @@ export const nav = [
   { kind: "nav", id: "nav.money-i-put-in", route: "/me/money-i-put-in", icon: HandCoins, group: "personal", roles: ["owner"], mode: "basic", help: "founders.money-i-put-in", guide: "equity.founders-money#see-what-the-company-owes-you" },
   { kind: "nav", id: "nav.inbox", route: "/inbox", icon: Inbox, group: "main", roles: "all", bottom: true, mode: "basic", help: "inbox.overview", guide: "approvals.decide#approve-or-reject" },
   { kind: "nav", id: "nav.contacts", route: "/contacts", icon: Contact, group: "main", roles: ["bookkeeper", "ar_specialist", "ap_specialist", "accountant", "controller", "owner", "tax_agent"], mode: "basic", help: "contacts.overview", guide: "contacts.manage" },
+  { kind: "nav", id: "nav.projects", route: "/projects", icon: BriefcaseBusiness, group: "main", roles: ["owner", "controller", "accountant", "ar_specialist", "approver", "auditor", "tax_agent"], feature: "projects", mode: "basic", help: "projects.overview", guide: "projects.projects" },
   { kind: "nav", id: "nav.sales", route: "/sales/invoices", icon: Receipt, group: "main", roles: ["bookkeeper", "ar_specialist", "accountant", "controller", "owner", "tax_agent"], mode: "basic", help: "nav.sales", guide: "sales.invoices" },
   // Accounting is Expert (experience/modes "Basic and Expert navigation"); its first page is the chart.
   { kind: "nav", id: "nav.purchases", route: "/purchases/bills", icon: ReceiptText, group: "main", roles: ["bookkeeper", "ap_specialist", "payment_releaser", "accountant", "controller", "owner", "tax_agent"], mode: "basic", help: "nav.purchases", guide: "purchases.bills" },
