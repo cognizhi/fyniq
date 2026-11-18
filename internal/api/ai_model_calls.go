@@ -218,6 +218,7 @@ func registerModelCalls(a *API) {
 			"with its code. The AI switch is checked as the answer streams, and a switched-off AI stops it within seconds (AI-13).",
 	}
 	withCodes(&stream, modelCallCodes)
+	defer eventIDsAreIntegers(a.internal, stream.Path)
 	sse.Register(a.internal, stream, map[string]any{"text": AIModelText{}, "done": AIModelCallResult{}, "error": Problem{}},
 		func(ctx context.Context, in *aiModelCallInput, send sse.Sender) {
 			call, err := a.prepareModelCall(ctx, in.Body)
