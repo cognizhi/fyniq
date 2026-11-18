@@ -228,7 +228,7 @@ What the repository holds today (read on 19 Nov 2026, main at `5823cbf4`):
   choices from the release's client list; adding is DualControl, removing is `OffAtOnce`, so removal is the per-client kill
   switch and `Narrows` learns the kind), `mcp.requests_per_minute` (60), `mcp.tool_calls_per_hour` (600),
   `mcp.tool_calls_per_day` (5,000), `mcp.proposals_per_hour` (30), `mcp.result_rows` (500) and `mcp.result_kb` (256), each
-  with a platform maximum; lowering is immediate, raising within the maximum is an Owner's change and audited.
+  with a platform maximum; as the assistant's limits are, each is dual controlled and audited.
 - Counters come from `mcp_call` itself (window counts per user and client, the way the assistant counts turns), checked in the
   same transaction that writes the row, so any number of MCP instances share one truth. Over a limit: 429 with `Retry-After`,
   recorded as an outcome. The tools' own caps (50 rows, 4,000 tokens) are lower than `mcp.result_rows`; the setting is a

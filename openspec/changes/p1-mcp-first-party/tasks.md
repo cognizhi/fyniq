@@ -25,10 +25,16 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 
 ## 2. Closed by default (AI-35, FR-INT-03)
 
-- [ ] 2.1 The settings (design D9): `features.mcp` (off, dual controlled on, off at once), `mcp.clients` (a new kind;
+- [x] 2.1 The settings (design D9): `features.mcp` (off, dual controlled on, off at once), `mcp.clients` (a new kind;
   choices from `contracts/ai/mcp-clients.json`; adding dual controlled, removing at once, `settings.Narrows` taught the kind),
   and the limit settings with their platform maximums; guide links and reasons. Tests `// req: AI-35`, `// req: AI-43`,
   `// req: CTL-MCP-03` (a second approver is needed to enable and to add a client; removal is immediate).
+  Built: `features.mcp` (off, dual controlled, off at once), `mcp.clients` (a `Choices` setting over `claude-code` and
+  `claude-desktop`, empty, adding dual controlled, removing at once: `Narrows` and the catalogue test learned the kind), six
+  limit settings at AI-43's defaults with platform maxima (dual controlled, like the assistant's limits; a new `Unit` field
+  makes the messages say rows or kilobytes), the guide sections and the compiled knowledge-base pages. `mcp.clients` lists
+  `claude-desktop` only because the release will pre-register it; whether Claude Desktop can connect at all is design
+  "Open questions". Nothing reads the settings yet: the gates that do arrive with tasks 3.2 and 6.2.
 - [ ] 2.2 Migration 000580 `mcp_user_optin` (FORCE RLS, the API's grants only, the export catalogue, goldens, `make db-lint`),
   the storage port and adapter, and `PUT /v1/me/mcp` and `GET /v1/me/mcp` for a person's own opt-in, audited. Tests
   `// req: AI-35`, an attack test that another person's opt-in cannot be set (`// asvs:`).

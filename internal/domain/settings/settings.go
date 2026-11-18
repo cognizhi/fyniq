@@ -71,6 +71,7 @@ type Definition struct {
 	Fixed        bool     // set by the platform: shown, never changed
 	LengthenOnly bool     // a change may only lengthen it
 	Min, Max     string   // the range of a number, inclusive
+	Unit         string   // the word a whole number counts, in messages, when it is not minutes, hours, days, times and so on
 	Choices      []string // a Choice's values
 }
 
@@ -251,6 +252,9 @@ var Catalogue = []Definition{
 	{Key: "features.ai_assistant", Group: "Features", Label: "AI assistant", Kind: Switch, Recommended: "false",
 		Reason: "AI is off until an Owner turns it on with a second approver (closed by default); turning it off takes effect at once",
 		Guide:  guide + "features", Requirement: "FR-ORG-06", DualControl: true, OffAtOnce: true},
+	{Key: "features.mcp", Group: "Features", Label: "AI apps through MCP", Kind: Switch, Recommended: "false",
+		Reason: "No AI app, such as Claude Desktop or Claude Code, reaches your books until an Owner turns this on with a second approver, and then only for the apps you allow and the people who opt in; turning it off takes effect at once",
+		Guide:  guide + "ai-apps-through-mcp", Requirement: "AI-35", DualControl: true, OffAtOnce: true},
 	{Key: "features.multi_currency", Group: "Features", Label: "Multi-currency", Kind: Switch, Recommended: "true",
 		Reason: "Start-ups usually pay some bills in other currencies, such as cloud and software subscriptions in US dollars",
 		Guide:  guide + "features", Requirement: "FR-ORG-06"},
@@ -278,6 +282,34 @@ var Catalogue = []Definition{
 	{Key: "gst.threshold_warning_percent", Group: "GST registration", Label: "Warn when the year's taxable supplies reach", Kind: Percent, Recommended: "80",
 		Reason: "Months of notice before the S$1 million test is met: IRAS gives 30 days to apply once a forecast exceeds it [accountant to confirm]",
 		Guide:  guide + "gst-registration-monitor", Requirement: "FR-TAX-05", Min: "50", Max: "99"},
+	{Key: "mcp.clients", Group: "AI apps (MCP)", Label: "AI apps that may connect", Kind: Choices, Recommended: "",
+		Choices: []string{"claude-code", "claude-desktop"},
+		Reason:  "Only an app you list here can connect, and only the apps this release has pre-registered can be listed; adding one needs a second approver, taking one off takes effect at once and cuts it off",
+		Guide:   guide + "ai-apps-through-mcp", Requirement: "AI-35", DualControl: true, OffAtOnce: true},
+	{Key: "mcp.proposals_per_hour", Group: "AI apps (MCP)", Label: "Proposals an AI app may make for a person in an hour", Kind: Count, Recommended: "30",
+		Min: "1", Max: "1000", Unit: "proposals",
+		Reason: "A person reviews each proposal before anything changes, so thirty an hour is more than anyone approves; more is a runaway app",
+		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
+	{Key: "mcp.requests_per_minute", Group: "AI apps (MCP)", Label: "Requests a person's AI app may make a minute", Kind: Count, Recommended: "60",
+		Min: "1", Max: "600", Unit: "requests",
+		Reason: "One request a second is brisk for an app reading on a person's behalf; more is a script, which this stops before it loads the books",
+		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
+	{Key: "mcp.result_kb", Group: "AI apps (MCP)", Label: "The most one answer to an AI app may hold, in kilobytes", Kind: Count, Recommended: "256",
+		Min: "16", Max: "1024", Unit: "kilobytes",
+		Reason: "A tool's own limits are lower; this is the ceiling no answer to an AI app passes, so a large result is summarised and never sent whole",
+		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
+	{Key: "mcp.result_rows", Group: "AI apps (MCP)", Label: "The most rows one answer to an AI app may hold", Kind: Count, Recommended: "500",
+		Min: "1", Max: "5000", Unit: "rows",
+		Reason: "A tool's own limits are lower; this is the ceiling no answer to an AI app passes, and what is left out is counted and said",
+		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
+	{Key: "mcp.tool_calls_per_day", Group: "AI apps (MCP)", Label: "Reads and proposals a person's AI app may make a day", Kind: Count, Recommended: "5000",
+		Min: "1", Max: "100000", Unit: "calls",
+		Reason: "Enough for a working day of questions put through an AI app; more in 24 hours is a runaway script or a misuse",
+		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
+	{Key: "mcp.tool_calls_per_hour", Group: "AI apps (MCP)", Label: "Reads and proposals a person's AI app may make an hour", Kind: Count, Recommended: "600",
+		Min: "1", Max: "10000", Unit: "calls",
+		Reason: "Ten a minute for an hour covers a long working session; more is a script",
+		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
 	{Key: "notify.email_details", Group: "Notifications", Label: "Details in notification email", Kind: Switch, Recommended: "false",
 		Reason: "Notification email says what kind of thing happened and links to Fyniq; amounts, names and reasons stay in the app, since the email provider keeps mail outside Singapore",
 		Guide:  guide + "notifications", Requirement: "FR-NTF-02", DualControl: true},
@@ -374,6 +406,9 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 		unit := string(d.Kind)
 		if d.Kind == Count {
 			unit = "times"
+		}
+		if d.Unit != "" {
+			unit = d.Unit
 		}
 		if !whole.MatchString(raw) {
 			return bad(fmt.Sprintf("Send a whole number of %s, from %s to %s", unit, d.Min, d.Max))
@@ -549,12 +584,12 @@ func Check(d Definition, value string, from, today time.Time, changes []storage.
 }
 
 // Narrows is whether a change from was to value only takes away, so a kill switch applies it at once (AI-13, AI-32): a
-// switch turned off, or task types removed and none added.
+// switch turned off, or task types or allowed apps removed and none added.
 func Narrows(d Definition, was, value string) bool {
 	switch d.Kind {
 	case Switch:
 		return value == "false"
-	case TaskTypes:
+	case TaskTypes, Choices:
 		before := strings.Split(was, ",")
 		for _, id := range strings.Split(value, ",") {
 			if id != "" && !slices.Contains(before, id) {

@@ -4,14 +4,14 @@ type: task
 title: Change or reset an organisation setting, or edit the profile
 summary: Change a company-wide setting from a date, reset it to recommended, why some need a second approver, and edit the profile
 sources:
-  - docs/user-guide/organisation-settings.md sha256:a31445d3c111689fb367f92bd788f988517bc4431584471854c661b80f71b77c
+  - docs/user-guide/organisation-settings.md sha256:5f465e576d804ddacaf567e1700989e4bf42f3fa801162457394a0b0b15dc26f
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-17
+compiled_at: 2026-11-19
 aliases:
   - reset to recommended
   - change a setting
@@ -34,7 +34,7 @@ aliases:
 
 ## Settings that need a second approver
 
-- Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when incoming-funds alerts expire, the AI assistant, the AI's access to pay, the fields it never reads, its limits and the changes it may propose, details in notification email and the sign-out after inactivity need a second approver.
+- Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when incoming-funds alerts expire, the AI assistant, the AI's access to pay, the fields it never reads, its limits and the changes it may propose, AI apps and the limits on them, details in notification email and the sign-out after inactivity need a second approver.
 - They show **Needs a second approver**, and the button says **Ask for approval** instead of **Save**. Saving a change to one asks for approval: the setting keeps its value until another member who approves settings, such as an Owner, approves it ([[approvals.decide]]).
 - The AI assistant is the exception when it is switched **off**: that takes effect at once, with no second approver, and the AI stops: new requests are refused, and a reply being written stops within seconds. Switching it back on still needs a second approver. AI payroll access turns off at once the same way, and so does taking a change off the changes the AI may propose ([[settings.organisation]]).
 
