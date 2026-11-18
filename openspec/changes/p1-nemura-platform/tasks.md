@@ -157,13 +157,14 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   and bank-account pairs exist (**Left:** `p1-nemura-records-packs` for the bank account, `p1-nemura-payroll` for the
   run, `p1-nemura-fyniq-link` for the run's salary batch in Fyniq).
   (Built, 19 Nov 2026: `approval_request` with the version and digest, `internal/nemura/roles`, `RequestRoleGrant`, `DecideRoleGrant`; `TestNobodyEscalatesTheirOwnRights` and `TestNobodyApprovesTheirOwnRequestAndSetupRunsOnce` carry `// req: NM-ROLE-05`. **Left:** the passkey assertion on a decision (with passkeys, 5.4), the team-of-one rule (with the founders' team modes, `p1-nemura-fyniq-link`), and NM-ROLE-04's pay-run and bank-account pairs; `NM-ROLE-04` stays untagged.)
-- [ ] 6.4 Need to know (NM-SEC-02): the restricted-field framework (masked by default, released only with the right,
+- [x] 6.4 Need to know (NM-SEC-02): the restricted-field framework (masked by default, released only with the right,
   `nemura.restricted.read` on every release), row-level scope predicates reading `app.person_id` and `app.roles`,
   `reporting_line` (effective-dated) as the source for the manager scope, and the platform's own restricted objects
   as the proof (role history, access requests, the audit read). Tests `// req: NM-SEC-02` for the mechanism over
   the platform's objects (the Left: each record type's fields are added by its change, which adds its own test
   to the same suite), `// req: NM-ROLE-03` for the scope (a manager sees only their reports; never pay), and an
   attack test that a missed API check cannot read what the role may not, with ASVS IDs.
+  (Built, 19 Nov 2026: migration 000005 (`reporting_line`, `current_person`, `is_manager_of`, `has_role`), `Store.InOrgAs`, `internal/nemura/access`, `ReadRestricted`; `TestARestrictedFieldIsReleasedByNeedToKnowAndEveryReadIsAudited` (`// req: NM-SEC-02`) and `TestTheLineManagerSeesOnlyTheirReportsThroughRowLevelSecurity` (`// req: NM-ROLE-03`). The scope is proven on a probe table; each record type adds its own fields and policy to the same suite.)
 - [ ] 6.5 Landing by role: the session operation returns the person's landing page and effective rights (the table of
   PRD-002 §3). Tests: each role's landing; no ledger, bank, revenue, cash or company-financial field in any
   Nemura operation's schema (a contract scan), `// req: NM-ROLE-02`, completed with the web app in 7.4.
