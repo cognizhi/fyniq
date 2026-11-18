@@ -110,6 +110,9 @@ var PlatformSchedules = []Schedule{
 	{Job: "evidence.sweep", Every: time.Hour, Offset: 50 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// …and nightly at 03:30, re-hash every committed file (FR-DOC-07, CTL-AUD-06).
 	{Job: "evidence.verify", Every: 24 * time.Hour, Offset: 19*time.Hour + 30*time.Minute, Lease: 2 * time.Hour, Stale: 26 * time.Hour},
+	// …and nightly at 03:50, keep each committed file until its record's transactions complete, as a record that now
+	// completes later moves it (FR-DOC-02, G4-068).
+	{Job: "evidence.extend", Every: 24 * time.Hour, Offset: 19*time.Hour + 50*time.Minute, Lease: time.Hour, Stale: 26 * time.Hour},
 	// Hourly, the automatic reversals due by each organisation's own today (FR-GL-02, FR-AUT-01; rev 0.55).
 	{Job: "journals.auto-reverse", Every: time.Hour, Offset: 20 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
 	// Hourly, the drafts of the recurring journals due by each organisation's own today (FR-GL-02, FR-AUT-01; rev 0.60).

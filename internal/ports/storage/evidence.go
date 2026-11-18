@@ -98,6 +98,9 @@ type EvidenceFiles interface {
 	// Finalise records the file's committed copy in the locked store and its retain-until: CodeEvidence while
 	// its record is a draft.
 	Finalise(ctx context.Context, id uuid.UUID, lockedKey string, retainUntil time.Time) (Evidence, error)
+	// Extend moves a final file's retain-until later, audited, once its locked copy is kept until then (FR-DOC-02): the
+	// database refuses an earlier one (CodeEvidence).
+	Extend(ctx context.Context, id uuid.UUID, retainUntil time.Time) (Evidence, error)
 	// Unfinalised returns at most limit attached files whose record is no longer a draft, oldest first.
 	Unfinalised(ctx context.Context, limit int) ([]Evidence, error)
 	// LiveStagingKeys returns which of keys an attached file still uses: the sweeper keeps those.
