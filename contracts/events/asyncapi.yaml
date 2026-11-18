@@ -1,0 +1,456 @@
+# The event catalogue (PRD-001 §12.10, FR-INT-12): one channel and one message per event type, the data schema of each
+# in schemas/<type>.schema.json. Written by `go test ./internal/notify -run TestTheEventCatalogue -update` from the
+# schemas; edit a schema, then rewrite this file. A breaking change to an event's data is a new version, a new file.
+asyncapi: 3.0.0
+info:
+  title: Fyniq events
+  version: 1.0.0
+  description: Events Fyniq emits from its transactional outbox, as CloudEvents 1.0 whose type is fyniq.<object>.<event>.v<N> and whose data is the schema named here. Delivery to webhook endpoints arrives in P2 (FR-INT-12).
+defaultContentType: application/json
+channels:
+  fyniq.agent.report.v1:
+    address: fyniq.agent.report.v1
+    messages:
+      fyniq.agent.report.v1:
+        $ref: '#/components/messages/fyniq.agent.report.v1'
+  fyniq.ai.budget.v1:
+    address: fyniq.ai.budget.v1
+    messages:
+      fyniq.ai.budget.v1:
+        $ref: '#/components/messages/fyniq.ai.budget.v1'
+  fyniq.approval.decided.v1:
+    address: fyniq.approval.decided.v1
+    messages:
+      fyniq.approval.decided.v1:
+        $ref: '#/components/messages/fyniq.approval.decided.v1'
+  fyniq.approval.requested.v1:
+    address: fyniq.approval.requested.v1
+    messages:
+      fyniq.approval.requested.v1:
+        $ref: '#/components/messages/fyniq.approval.requested.v1'
+  fyniq.bills.due.v1:
+    address: fyniq.bills.due.v1
+    messages:
+      fyniq.bills.due.v1:
+        $ref: '#/components/messages/fyniq.bills.due.v1'
+  fyniq.cash.below_buffer.v1:
+    address: fyniq.cash.below_buffer.v1
+    messages:
+      fyniq.cash.below_buffer.v1:
+        $ref: '#/components/messages/fyniq.cash.below_buffer.v1'
+  fyniq.cash.buffer_recovered.v1:
+    address: fyniq.cash.buffer_recovered.v1
+    messages:
+      fyniq.cash.buffer_recovered.v1:
+        $ref: '#/components/messages/fyniq.cash.buffer_recovered.v1'
+  fyniq.compliance.control_failed.v1:
+    address: fyniq.compliance.control_failed.v1
+    messages:
+      fyniq.compliance.control_failed.v1:
+        $ref: '#/components/messages/fyniq.compliance.control_failed.v1'
+  fyniq.deadline.overdue.v1:
+    address: fyniq.deadline.overdue.v1
+    messages:
+      fyniq.deadline.overdue.v1:
+        $ref: '#/components/messages/fyniq.deadline.overdue.v1'
+  fyniq.deadline.reminder.v1:
+    address: fyniq.deadline.reminder.v1
+    messages:
+      fyniq.deadline.reminder.v1:
+        $ref: '#/components/messages/fyniq.deadline.reminder.v1'
+  fyniq.email.domain_failed.v1:
+    address: fyniq.email.domain_failed.v1
+    messages:
+      fyniq.email.domain_failed.v1:
+        $ref: '#/components/messages/fyniq.email.domain_failed.v1'
+  fyniq.email.quarantined.v1:
+    address: fyniq.email.quarantined.v1
+    messages:
+      fyniq.email.quarantined.v1:
+        $ref: '#/components/messages/fyniq.email.quarantined.v1'
+  fyniq.email.suppressed.v1:
+    address: fyniq.email.suppressed.v1
+    messages:
+      fyniq.email.suppressed.v1:
+        $ref: '#/components/messages/fyniq.email.suppressed.v1'
+  fyniq.jobs.failed.v1:
+    address: fyniq.jobs.failed.v1
+    messages:
+      fyniq.jobs.failed.v1:
+        $ref: '#/components/messages/fyniq.jobs.failed.v1'
+  fyniq.ledger.posted.v1:
+    address: fyniq.ledger.posted.v1
+    messages:
+      fyniq.ledger.posted.v1:
+        $ref: '#/components/messages/fyniq.ledger.posted.v1'
+  fyniq.notification.test.v1:
+    address: fyniq.notification.test.v1
+    messages:
+      fyniq.notification.test.v1:
+        $ref: '#/components/messages/fyniq.notification.test.v1'
+  fyniq.payee.bank_details.v1:
+    address: fyniq.payee.bank_details.v1
+    messages:
+      fyniq.payee.bank_details.v1:
+        $ref: '#/components/messages/fyniq.payee.bank_details.v1'
+  fyniq.pdpa.breach.v1:
+    address: fyniq.pdpa.breach.v1
+    messages:
+      fyniq.pdpa.breach.v1:
+        $ref: '#/components/messages/fyniq.pdpa.breach.v1'
+  fyniq.pdpa.request_received.v1:
+    address: fyniq.pdpa.request_received.v1
+    messages:
+      fyniq.pdpa.request_received.v1:
+        $ref: '#/components/messages/fyniq.pdpa.request_received.v1'
+  fyniq.pdpa.shredding_due.v1:
+    address: fyniq.pdpa.shredding_due.v1
+    messages:
+      fyniq.pdpa.shredding_due.v1:
+        $ref: '#/components/messages/fyniq.pdpa.shredding_due.v1'
+  fyniq.period.closed.v1:
+    address: fyniq.period.closed.v1
+    messages:
+      fyniq.period.closed.v1:
+        $ref: '#/components/messages/fyniq.period.closed.v1'
+  fyniq.period.reopened.v1:
+    address: fyniq.period.reopened.v1
+    messages:
+      fyniq.period.reopened.v1:
+        $ref: '#/components/messages/fyniq.period.reopened.v1'
+  fyniq.recurring.made.v1:
+    address: fyniq.recurring.made.v1
+    messages:
+      fyniq.recurring.made.v1:
+        $ref: '#/components/messages/fyniq.recurring.made.v1'
+  fyniq.reports.export_ready.v1:
+    address: fyniq.reports.export_ready.v1
+    messages:
+      fyniq.reports.export_ready.v1:
+        $ref: '#/components/messages/fyniq.reports.export_ready.v1'
+  fyniq.security.alert.v1:
+    address: fyniq.security.alert.v1
+    messages:
+      fyniq.security.alert.v1:
+        $ref: '#/components/messages/fyniq.security.alert.v1'
+  fyniq.security.audit_recovered.v1:
+    address: fyniq.security.audit_recovered.v1
+    messages:
+      fyniq.security.audit_recovered.v1:
+        $ref: '#/components/messages/fyniq.security.audit_recovered.v1'
+  fyniq.security.break_glass.v1:
+    address: fyniq.security.break_glass.v1
+    messages:
+      fyniq.security.break_glass.v1:
+        $ref: '#/components/messages/fyniq.security.break_glass.v1'
+  fyniq.security.connector.v1:
+    address: fyniq.security.connector.v1
+    messages:
+      fyniq.security.connector.v1:
+        $ref: '#/components/messages/fyniq.security.connector.v1'
+  fyniq.security.join_request.v1:
+    address: fyniq.security.join_request.v1
+    messages:
+      fyniq.security.join_request.v1:
+        $ref: '#/components/messages/fyniq.security.join_request.v1'
+  fyniq.security.owners.v1:
+    address: fyniq.security.owners.v1
+    messages:
+      fyniq.security.owners.v1:
+        $ref: '#/components/messages/fyniq.security.owners.v1'
+  fyniq.security.private_endpoint.v1:
+    address: fyniq.security.private_endpoint.v1
+    messages:
+      fyniq.security.private_endpoint.v1:
+        $ref: '#/components/messages/fyniq.security.private_endpoint.v1'
+  fyniq.security.recovery.v1:
+    address: fyniq.security.recovery.v1
+    messages:
+      fyniq.security.recovery.v1:
+        $ref: '#/components/messages/fyniq.security.recovery.v1'
+  fyniq.security.roles.v1:
+    address: fyniq.security.roles.v1
+    messages:
+      fyniq.security.roles.v1:
+        $ref: '#/components/messages/fyniq.security.roles.v1'
+  fyniq.security.second_factor.v1:
+    address: fyniq.security.second_factor.v1
+    messages:
+      fyniq.security.second_factor.v1:
+        $ref: '#/components/messages/fyniq.security.second_factor.v1'
+  fyniq.security.sign_in.v1:
+    address: fyniq.security.sign_in.v1
+    messages:
+      fyniq.security.sign_in.v1:
+        $ref: '#/components/messages/fyniq.security.sign_in.v1'
+  fyniq.security.sign_in_methods.v1:
+    address: fyniq.security.sign_in_methods.v1
+    messages:
+      fyniq.security.sign_in_methods.v1:
+        $ref: '#/components/messages/fyniq.security.sign_in_methods.v1'
+  fyniq.security.sign_in_provider.v1:
+    address: fyniq.security.sign_in_provider.v1
+    messages:
+      fyniq.security.sign_in_provider.v1:
+        $ref: '#/components/messages/fyniq.security.sign_in_provider.v1'
+components:
+  messages:
+    fyniq.agent.report.v1:
+      name: fyniq.agent.report.v1
+      title: fyniq.agent.report.v1
+      summary: "Fires when: The company secretary assistant found something new"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.agent.report.v1.schema.json'
+    fyniq.ai.budget.v1:
+      name: fyniq.ai.budget.v1
+      title: fyniq.ai.budget.v1
+      summary: "Fires when: An AI budget reached 80% this month"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.ai.budget.v1.schema.json'
+    fyniq.approval.decided.v1:
+      name: fyniq.approval.decided.v1
+      title: fyniq.approval.decided.v1
+      summary: "Fires when: Your request was decided"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.approval.decided.v1.schema.json'
+    fyniq.approval.requested.v1:
+      name: fyniq.approval.requested.v1
+      title: fyniq.approval.requested.v1
+      summary: "Fires when: An approval waits for you"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.approval.requested.v1.schema.json'
+    fyniq.bills.due.v1:
+      name: fyniq.bills.due.v1
+      title: fyniq.bills.due.v1
+      summary: "Fires when: Bills to pay soon"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.bills.due.v1.schema.json'
+    fyniq.cash.below_buffer.v1:
+      name: fyniq.cash.below_buffer.v1
+      title: fyniq.cash.below_buffer.v1
+      summary: "Fires when: Cash is projected to fall below the buffer"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.cash.below_buffer.v1.schema.json'
+    fyniq.cash.buffer_recovered.v1:
+      name: fyniq.cash.buffer_recovered.v1
+      title: fyniq.cash.buffer_recovered.v1
+      summary: "Fires when: Cash is projected back above the buffer"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.cash.buffer_recovered.v1.schema.json'
+    fyniq.compliance.control_failed.v1:
+      name: fyniq.compliance.control_failed.v1
+      title: fyniq.compliance.control_failed.v1
+      summary: "Fires when: A control of the Compliance Center failed or fell overdue"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.compliance.control_failed.v1.schema.json'
+    fyniq.deadline.overdue.v1:
+      name: fyniq.deadline.overdue.v1
+      title: fyniq.deadline.overdue.v1
+      summary: "Fires when: A statutory deadline passed with nothing recorded"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.deadline.overdue.v1.schema.json'
+    fyniq.deadline.reminder.v1:
+      name: fyniq.deadline.reminder.v1
+      title: fyniq.deadline.reminder.v1
+      summary: "Fires when: A statutory deadline is near"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.deadline.reminder.v1.schema.json'
+    fyniq.email.domain_failed.v1:
+      name: fyniq.email.domain_failed.v1
+      title: fyniq.email.domain_failed.v1
+      summary: "Fires when: A sending domain failed its check"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.email.domain_failed.v1.schema.json'
+    fyniq.email.quarantined.v1:
+      name: fyniq.email.quarantined.v1
+      title: fyniq.email.quarantined.v1
+      summary: "Fires when: Mail waits in quarantine"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.email.quarantined.v1.schema.json'
+    fyniq.email.suppressed.v1:
+      name: fyniq.email.suppressed.v1
+      title: fyniq.email.suppressed.v1
+      summary: "Fires when: Email to an address stopped"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.email.suppressed.v1.schema.json'
+    fyniq.jobs.failed.v1:
+      name: fyniq.jobs.failed.v1
+      title: fyniq.jobs.failed.v1
+      summary: "Fires when: A background job failed"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.jobs.failed.v1.schema.json'
+    fyniq.ledger.posted.v1:
+      name: fyniq.ledger.posted.v1
+      title: fyniq.ledger.posted.v1
+      summary: "Fires when: Someone else posted or voided a document"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.ledger.posted.v1.schema.json'
+    fyniq.notification.test.v1:
+      name: fyniq.notification.test.v1
+      title: fyniq.notification.test.v1
+      summary: "Fires when: A test notification you sent"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.notification.test.v1.schema.json'
+    fyniq.payee.bank_details.v1:
+      name: fyniq.payee.bank_details.v1
+      title: fyniq.payee.bank_details.v1
+      summary: "Fires when: Supplier bank details"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.payee.bank_details.v1.schema.json'
+    fyniq.pdpa.breach.v1:
+      name: fyniq.pdpa.breach.v1
+      title: fyniq.pdpa.breach.v1
+      summary: "Fires when: A personal-data breach was recorded, or decided notifiable"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.pdpa.breach.v1.schema.json'
+    fyniq.pdpa.request_received.v1:
+      name: fyniq.pdpa.request_received.v1
+      title: fyniq.pdpa.request_received.v1
+      summary: "Fires when: Someone asked to see or correct their personal data"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.pdpa.request_received.v1.schema.json'
+    fyniq.pdpa.shredding_due.v1:
+      name: fyniq.pdpa.shredding_due.v1
+      title: fyniq.pdpa.shredding_due.v1
+      summary: "Fires when: A year's personal data waits to be shredded"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.pdpa.shredding_due.v1.schema.json'
+    fyniq.period.closed.v1:
+      name: fyniq.period.closed.v1
+      title: fyniq.period.closed.v1
+      summary: "Fires when: A month was closed"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.period.closed.v1.schema.json'
+    fyniq.period.reopened.v1:
+      name: fyniq.period.reopened.v1
+      title: fyniq.period.reopened.v1
+      summary: "Fires when: A closed month was reopened"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.period.reopened.v1.schema.json'
+    fyniq.recurring.made.v1:
+      name: fyniq.recurring.made.v1
+      title: fyniq.recurring.made.v1
+      summary: "Fires when: A recurring journal or bill made a draft"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.recurring.made.v1.schema.json'
+    fyniq.reports.export_ready.v1:
+      name: fyniq.reports.export_ready.v1
+      title: fyniq.reports.export_ready.v1
+      summary: "Fires when: Your export is ready"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.reports.export_ready.v1.schema.json'
+    fyniq.security.alert.v1:
+      name: fyniq.security.alert.v1
+      title: fyniq.security.alert.v1
+      summary: "Fires when: A security alert: an unusual sign-in, export or refusals, a vendor's bank change, an audit-chain failure"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.alert.v1.schema.json'
+    fyniq.security.audit_recovered.v1:
+      name: fyniq.security.audit_recovered.v1
+      title: fyniq.security.audit_recovered.v1
+      summary: "Fires when: The audit trail was restored behind its anchors"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.audit_recovered.v1.schema.json'
+    fyniq.security.break_glass.v1:
+      name: fyniq.security.break_glass.v1
+      title: fyniq.security.break_glass.v1
+      summary: "Fires when: Break-glass"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.break_glass.v1.schema.json'
+    fyniq.security.connector.v1:
+      name: fyniq.security.connector.v1
+      title: fyniq.security.connector.v1
+      summary: "Fires when: A connector was paused"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.connector.v1.schema.json'
+    fyniq.security.join_request.v1:
+      name: fyniq.security.join_request.v1
+      title: fyniq.security.join_request.v1
+      summary: "Fires when: Someone asks to join by their email domain"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.join_request.v1.schema.json'
+    fyniq.security.owners.v1:
+      name: fyniq.security.owners.v1
+      title: fyniq.security.owners.v1
+      summary: "Fires when: An Owner is added, removed or succeeded"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.owners.v1.schema.json'
+    fyniq.security.private_endpoint.v1:
+      name: fyniq.security.private_endpoint.v1
+      title: fyniq.security.private_endpoint.v1
+      summary: "Fires when: A private endpoint was registered, changed or retired"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.private_endpoint.v1.schema.json'
+    fyniq.security.recovery.v1:
+      name: fyniq.security.recovery.v1
+      title: fyniq.security.recovery.v1
+      summary: "Fires when: An account was recovered, or a recovery confirmed"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.recovery.v1.schema.json'
+    fyniq.security.roles.v1:
+      name: fyniq.security.roles.v1
+      title: fyniq.security.roles.v1
+      summary: "Fires when: Your roles changed"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.roles.v1.schema.json'
+    fyniq.security.second_factor.v1:
+      name: fyniq.security.second_factor.v1
+      title: fyniq.security.second_factor.v1
+      summary: "Fires when: A passkey was added or removed"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.second_factor.v1.schema.json'
+    fyniq.security.sign_in.v1:
+      name: fyniq.security.sign_in.v1
+      title: fyniq.security.sign_in.v1
+      summary: "Fires when: You signed in"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.sign_in.v1.schema.json'
+    fyniq.security.sign_in_methods.v1:
+      name: fyniq.security.sign_in_methods.v1
+      title: fyniq.security.sign_in_methods.v1
+      summary: "Fires when: A sign-in was linked or removed"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.sign_in_methods.v1.schema.json'
+    fyniq.security.sign_in_provider.v1:
+      name: fyniq.security.sign_in_provider.v1
+      title: fyniq.security.sign_in_provider.v1
+      summary: "Fires when: A sign-in provider was turned on or off, or its domains changed"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.security.sign_in_provider.v1.schema.json'
