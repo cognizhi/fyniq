@@ -6,7 +6,8 @@ interface Walkthrough {
   landing: string; // the path the person lands on from /
   areas: string[]; // the sidebar's items, in Expert mode, as §7.1's table gives them
   pulse?: boolean; // Home shows the company pulse (cash, runway, books health): "the full Home" of §7.1, and never to a role it leaves out
-  work?: RegExp[]; // the rows of Home's "Your work" (§7.1's "Home shows" beyond the pulse); [] for none
+  work?: RegExp[]; // the rows of Home's "Your work" (§7.1's "Home shows" beyond the pulse), on the page the role lands on; [] for none
+  engagement?: boolean; // the Auditor's engagement on the page it lands on
   outside?: { path: string; read?: string }; // a page outside the person's areas, and the API read behind it
 }
 
@@ -17,9 +18,10 @@ const all = ["Home", "Inbox", "Contacts", "Sales", "Purchases", "Expense claims"
 // Controllers, Owners and Tax agents have every finance area and the full Home; the Approver, AR, AP and payroll roles
 // never see the company's cash. Home's "Your work" holds the rest of each role's Home: the Bookkeeper's bank lines and
 // drafts, the AR and AP specialists' overdue documents and what they work through, the payment releaser's batches,
-// rejected payments and bank balances; the full-Home roles have none of its rows. The Bookkeeper's and the payment
-// releaser's pulse is not checked. The Auditor's workspace hides areas whose records Appendix D still
-// lets it read, so only the page is checked for it.
+// rejected payments and bank balances; the full-Home roles have none of its rows. The Administrator, the Company
+// secretary and the DPO land on Settings or Compliance, which show their rows, and the Auditor on Reports, which shows
+// its engagement. The Bookkeeper's and the payment releaser's pulse is not checked. The Auditor's workspace hides areas
+// whose records Appendix D still lets it read, so only the page is checked for it.
 const walkthroughs: Walkthrough[] = [
   { role: "employee", name: "Eve Employee", landing: "/me/claims", areas: ["My claims", "My shares and options", "Settings"], outside: { path: "/banking", read: "/v1/bank-lines" } },
   { role: "approver", name: "Abe Approver", landing: "/", areas: ["Home", "Inbox", "Reports", "Planning", "Settings"], pulse: false, outside: { path: "/banking", read: "/v1/bank-lines" } },
@@ -32,11 +34,11 @@ const walkthroughs: Walkthrough[] = [
   { role: "controller", name: "Cora Controller", landing: "/", areas: all, pulse: true, work: [] },
   { role: "owner", name: "Ann Owner", landing: "/", areas: ["Money I put in", ...all], pulse: true, work: [] },
   { role: "tax_agent", name: "Tam Tax", landing: "/", areas: all, pulse: true, work: [] },
-  { role: "administrator", name: "Ada Admin", landing: "/settings", areas: ["Home", "Inbox", "Reports", "Compliance", "Settings"], outside: { path: "/sales/invoices", read: "/v1/invoices" } },
-  { role: "auditor", name: "Aud Auditor", landing: "/reports", areas: ["Home", "Inbox", "Reports", "Accounting", "Compliance", "Settings"], outside: { path: "/banking" } },
+  { role: "administrator", name: "Ada Admin", landing: "/settings", areas: ["Home", "Inbox", "Reports", "Compliance", "Settings"], work: [/(person|people) asking to join/, /invitations? waiting to be accepted/, /role changes? waiting for a second approver/, /integrations? failing/], outside: { path: "/sales/invoices", read: "/v1/invoices" } },
+  { role: "auditor", name: "Aud Auditor", landing: "/reports", areas: ["Home", "Inbox", "Reports", "Accounting", "Compliance", "Settings"], engagement: true, outside: { path: "/banking" } },
   { role: "board_viewer", name: "Bo Board", landing: "/reports", areas: ["Home", "Inbox", "Reports", "Equity", "Settings"], outside: { path: "/banking", read: "/v1/bank-lines" } },
-  { role: "company_secretary", name: "Cy Secretary", landing: "/compliance", areas: ["Home", "Inbox", "Equity", "Compliance", "Settings"], outside: { path: "/banking", read: "/v1/bank-lines" } },
-  { role: "dpo", name: "Dee Protection", landing: "/compliance", areas: ["Home", "Inbox", "Compliance", "Settings"], outside: { path: "/banking", read: "/v1/bank-lines" } },
+  { role: "company_secretary", name: "Cy Secretary", landing: "/compliance", areas: ["Home", "Inbox", "Equity", "Compliance", "Settings"], work: [/corporate items? to see to/, /register updates? waiting for approval/], outside: { path: "/banking", read: "/v1/bank-lines" } },
+  { role: "dpo", name: "Dee Protection", landing: "/compliance", areas: ["Home", "Inbox", "Compliance", "Settings"], work: [/data requests? to answer/, /breach(es)? still open/], outside: { path: "/banking", read: "/v1/bank-lines" } },
 ];
 
 // QA-UI-08's walkthroughs: each role of §7.1 alone in an organisation with the sample company, signed in through the
@@ -75,6 +77,12 @@ for (const w of walkthroughs) {
         const cash = await api<{ accounts: unknown[] }>(page, "/v1/cash-position");
         await expect(card.getByRole("heading", { name: /^Bank balances on/ })).toHaveCount(cash.accounts.length > 0 ? 1 : 0);
       }
+    }
+    if (w.engagement) {
+      await page.goto("/");
+      const card = page.getByRole("region", { name: "Your engagement" });
+      await expect(card.getByText(/^Read-only/)).toBeVisible();
+      await expect(card.getByRole("link", { name: /Audit trail/ })).toBeVisible();
     }
     if (w.role !== "employee") {
       await page.goto("/inbox");

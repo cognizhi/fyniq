@@ -88,6 +88,18 @@ first contact**.
   claims to pay and bank-detail changes waiting for a second person.
 - **Payment releaser**: batches waiting for release and payments the bank rejected, then each bank account's balance.
 
+The Administrator lands on **Settings**, and the Company secretary and the DPO on **Compliance**, so their rows come
+first there:
+
+- **Administrator**: people asking to join, invitations waiting to be accepted, role changes waiting for a second
+  approver and integrations failing.
+- **Company secretary**: the company secretary's items to see to, register updates waiting for approval, and the
+  upcoming deadlines.
+- **DPO**: data requests to answer and breaches still open.
+
+The Auditor lands on **Reports**, where **Your engagement** says until when their read-only access lasts and opens the
+journals, the evidence and the audit trail.
+
 A row whose list your roles cannot read is left out rather than shown as nothing to do. With several roles you see
 each row once. The Owner, the Controller, the Accountant and the Tax agent read the same work from the pulse card, the
 tiles and the Inbox, so the card does not show for them alone.
