@@ -538,6 +538,77 @@ func (q *Queries) EntriesOfSources(ctx context.Context, sourceIds []string) ([]E
 	return items, nil
 }
 
+const entriesRecordedSince = `-- name: EntriesRecordedSince :many
+SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
+       source_version, rule_version, reverses_entry_id, memo, recorded_at
+FROM fyniq.journal_entry
+WHERE source_type = ANY($1::text[]) AND recorded_at >= $2 AND ledger_revision > $3
+ORDER BY ledger_revision
+LIMIT $4
+`
+
+type EntriesRecordedSinceParams struct {
+	SourceTypes   []string
+	Since         time.Time
+	AfterRevision int64
+	PageSize      int32
+}
+
+type EntriesRecordedSinceRow struct {
+	ID              uuid.UUID
+	LedgerRevision  int64
+	PostingDate     time.Time
+	PeriodID        uuid.UUID
+	PostingIdentity string
+	SourceType      string
+	SourceID        string
+	SourceVersion   int32
+	RuleVersion     string
+	ReversesEntryID *uuid.UUID
+	Memo            *string
+	RecordedAt      time.Time
+}
+
+// The entries of some kinds of source recorded since a time, after a ledger revision, in revision order, a page at a
+// time, without their lines, on journal_entry_recorded (FM-6's review of unusual items).
+func (q *Queries) EntriesRecordedSince(ctx context.Context, arg EntriesRecordedSinceParams) ([]EntriesRecordedSinceRow, error) {
+	rows, err := q.db.Query(ctx, entriesRecordedSince,
+		arg.SourceTypes,
+		arg.Since,
+		arg.AfterRevision,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EntriesRecordedSinceRow
+	for rows.Next() {
+		var i EntriesRecordedSinceRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LedgerRevision,
+			&i.PostingDate,
+			&i.PeriodID,
+			&i.PostingIdentity,
+			&i.SourceType,
+			&i.SourceID,
+			&i.SourceVersion,
+			&i.RuleVersion,
+			&i.ReversesEntryID,
+			&i.Memo,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const entryIDsOfSource = `-- name: EntryIDsOfSource :many
 SELECT id FROM fyniq.journal_entry
 WHERE source_id = $1::text

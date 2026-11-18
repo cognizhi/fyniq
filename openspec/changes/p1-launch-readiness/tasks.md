@@ -47,7 +47,9 @@ and names the requirement IDs it proves.
   - The exceptions add the rest of the F5 at registration (G4-011, G4-035) and QA-API-04 with Nemura, both rev 0.25.
     They also add 24 cloud-proved items, each naming its runbook or control file.
   - FM-6 launches, by the owner's decision of 16 Nov 2026: a scheduled agent writes advisory findings into the weekly
-    review. It is built in `p1-approval-engine` on the chain's scheduled agents.
+    review. It is built in `p1-approval-engine` on the chain's scheduled agents. (18 Nov 2026, rev 0.287: rule-based
+    at launch instead, the nightly job `review.unusual` in `internal/domain/unusual`, tested by
+    `TestUnusualItemsEnterTheWeeklyReview`; the AI's explanation follows after go-live.)
 
 ## 2. Tags where the tests already prove the requirement (design D3)
 

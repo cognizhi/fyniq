@@ -109,6 +109,16 @@ WHERE ledger_revision > sqlc.arg(after_revision)
 ORDER BY ledger_revision
 LIMIT sqlc.arg(page_size);
 
+-- name: EntriesRecordedSince :many
+-- The entries of some kinds of source recorded since a time, after a ledger revision, in revision order, a page at a
+-- time, without their lines, on journal_entry_recorded (FM-6's review of unusual items).
+SELECT id, ledger_revision, posting_date, period_id, posting_identity, source_type, source_id,
+       source_version, rule_version, reverses_entry_id, memo, recorded_at
+FROM fyniq.journal_entry
+WHERE source_type = ANY(sqlc.arg(source_types)::text[]) AND recorded_at >= sqlc.arg(since) AND ledger_revision > sqlc.arg(after_revision)
+ORDER BY ledger_revision
+LIMIT sqlc.arg(page_size);
+
 -- name: EntriesOfPeriodAfter :many
 -- A period's entries after a ledger revision, in revision order, a page at a time, without their lines (LinesOfEntries
 -- reads them), on journal_entry_period_revision: a month's cash flow reads its month alone (NFR-PERF-02, INV-11).

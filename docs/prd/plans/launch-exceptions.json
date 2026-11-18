@@ -246,6 +246,12 @@
    "kind": "after-go-live",
    "why": "Self-approving an AI-drafted tier-2 journal needs a tier-2 task type; launch's catalogue holds only the company secretary's tier-1 ones, so it is built and proved with the first tier-2 task types, and until then a tier-2 proposal's requester never approves it.",
    "decision": "rev 0.286 (the owner's decision of 17 Nov 2026: G4-058 after go-live, with the first tier-2 task types)"
+  },
+  {
+   "id": "G4-052",
+   "kind": "after-go-live",
+   "why": "Its scenario needs an issued board pack kept with its hash, which only the board pack (P2, p2-reporting-planning) makes; P1 re-runs a statement as at its revision, labels restated presentation when the chart changed after it, and audits every export with its hash.",
+   "decision": "rev 0.287 (the owner's decision of 18 Nov 2026: G4-052 after go-live, with the board pack)"
   }
  ]
 }
