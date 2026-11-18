@@ -1,0 +1,919 @@
+[
+  {
+    "file": "access-review.md",
+    "key": "settings.access-review",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "accountant-review.md",
+    "key": "accounting.reviews",
+    "roles": [
+      "accountant",
+      "owner",
+      "controller",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "accounting-framework.md",
+    "key": "settings.accounting",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "ai-activity.md",
+    "key": "settings.ai-activity",
+    "roles": [
+      "all"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "ai-assistant.md",
+    "key": "ai.assistant",
+    "roles": [
+      "all"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "ai-proposals.md",
+    "key": "ai.proposals",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "company_secretary",
+      "dpo"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "ai-providers.md",
+    "key": "settings.ai-providers",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "ai-routes.md",
+    "key": "settings.ai-routes",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "ai-settings.md",
+    "key": "settings.ai",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "announcements.md",
+    "key": "settings.announcements",
+    "roles": [
+      "owner",
+      "administrator",
+      "auditor"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "appearance.md",
+    "key": "preferences.appearance",
+    "roles": [
+      "all"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "approval-policies.md",
+    "key": "approvals.policies",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "approvals.md",
+    "key": "approvals.decide",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "audit-trail.md",
+    "key": "compliance.audit-trail",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "auditor",
+      "tax_agent",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "banking.md",
+    "key": "banking.accounts",
+    "roles": [
+      "bookkeeper",
+      "accountant",
+      "controller",
+      "owner",
+      "administrator",
+      "ar_specialist",
+      "ap_specialist",
+      "payment_releaser",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "bills.md",
+    "key": "purchases.bills",
+    "roles": [
+      "bookkeeper",
+      "ap_specialist",
+      "accountant",
+      "controller",
+      "approver",
+      "owner",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "budgets.md",
+    "key": "planning.budgets",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "approver",
+      "auditor",
+      "tax_agent",
+      "board_viewer"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "cash-flow.md",
+    "key": "planning.cash",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "approver",
+      "auditor",
+      "tax_agent",
+      "board_viewer"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "chart-of-accounts.md",
+    "key": "accounting.chart",
+    "roles": [
+      "accountant",
+      "tax_agent",
+      "controller",
+      "owner",
+      "auditor"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "checks.md",
+    "key": "checks.overview",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "ar_specialist",
+      "ap_specialist",
+      "payroll_administrator",
+      "payment_releaser",
+      "auditor",
+      "tax_agent",
+      "dpo"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "claims-approve-team.md",
+    "key": "claims.approve-team",
+    "roles": [
+      "approver",
+      "controller"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "claims-my-claims.md",
+    "key": "claims.my-claims",
+    "roles": [
+      "employee",
+      "approver",
+      "owner"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "company-secretary.md",
+    "key": "compliance.secretary",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "auditor",
+      "tax_agent",
+      "board_viewer",
+      "company_secretary"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "compliance-controls.md",
+    "key": "compliance.controls",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "compliance-data-protection.md",
+    "key": "compliance.data-protection",
+    "roles": [
+      "owner",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "compliance-policies.md",
+    "key": "compliance.policies",
+    "roles": [
+      "all"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "compliance-privacy-notices.md",
+    "key": "compliance.privacy-notices",
+    "roles": [
+      "owner",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "compliance-reviews.md",
+    "key": "compliance.reviews",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "compliance-risks-policies.md",
+    "key": "compliance.risks",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "contacts-and-items.md",
+    "key": "contacts.manage",
+    "roles": [
+      "bookkeeper",
+      "ar_specialist",
+      "ap_specialist",
+      "accountant",
+      "controller",
+      "owner",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "corporate-profile.md",
+    "key": "compliance.corporate-profile",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "auditor",
+      "tax_agent",
+      "board_viewer",
+      "company_secretary",
+      "dpo"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "currencies.md",
+    "key": "accounting.currencies",
+    "roles": [
+      "accountant",
+      "controller",
+      "owner",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "data-export.md",
+    "key": "settings.data",
+    "roles": [
+      "owner",
+      "administrator",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "director-accounts.md",
+    "key": "equity.director-accounts",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "document-templates.md",
+    "key": "settings.templates",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "ar_specialist",
+      "ap_specialist",
+      "auditor"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "equity-register.md",
+    "key": "equity.register",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "auditor",
+      "tax_agent",
+      "dpo",
+      "board_viewer",
+      "company_secretary",
+      "employee"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "evidence-search.md",
+    "key": "compliance.evidence",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "ar_specialist",
+      "ap_specialist",
+      "payment_releaser",
+      "approver",
+      "auditor",
+      "tax_agent",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "feasibility.md",
+    "key": "planning.feasibility",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "approver",
+      "auditor",
+      "tax_agent",
+      "board_viewer"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "financial-statements.md",
+    "key": "reports.statements",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "auditor",
+      "tax_agent",
+      "dpo"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "fixed-assets.md",
+    "key": "accounting.fixed-assets",
+    "roles": [
+      "accountant",
+      "controller",
+      "owner",
+      "bookkeeper",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "forecast.md",
+    "key": "planning.forecast",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "approver",
+      "auditor",
+      "tax_agent",
+      "board_viewer"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "founders-money.md",
+    "key": "equity.founders-money",
+    "roles": [
+      "owner",
+      "accountant",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "general-ledger.md",
+    "key": "reports.general-ledger",
+    "roles": [
+      "accountant",
+      "controller",
+      "owner",
+      "bookkeeper",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "glossary.md",
+    "key": "reference.glossary",
+    "roles": [
+      "all"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "gst-registration.md",
+    "key": "compliance.gst",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "help.md",
+    "key": "help.guide",
+    "roles": [
+      "all"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "home.md",
+    "key": "home.overview",
+    "roles": [
+      "all"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "integrations.md",
+    "key": "settings.integrations",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "auditor",
+      "dpo",
+      "super_admin"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "invoices.md",
+    "key": "sales.invoices",
+    "roles": [
+      "bookkeeper",
+      "ar_specialist",
+      "accountant",
+      "controller",
+      "approver",
+      "owner",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "journals.md",
+    "key": "accounting.journals",
+    "roles": [
+      "accountant",
+      "tax_agent",
+      "controller",
+      "owner",
+      "auditor"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "keyboard-shortcuts.md",
+    "key": "shell.shortcuts",
+    "roles": [
+      "all"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "kpis.md",
+    "key": "reports.kpis",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "auditor",
+      "tax_agent",
+      "dpo",
+      "board_viewer"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "logo-and-brand.md",
+    "key": "settings.brand",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "management-reports.md",
+    "key": "reports.management",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "auditor",
+      "tax_agent",
+      "dpo",
+      "ar_specialist",
+      "ap_specialist"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "members-and-roles.md",
+    "key": "settings.members",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "needs-verification.md",
+    "key": "review.awaiting-verification",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "payroll-administrator",
+      "approver"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "notifications.md",
+    "key": "settings.notifications",
+    "roles": [
+      "all"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "opening-balances.md",
+    "key": "accounting.opening-balances",
+    "roles": [
+      "accountant",
+      "tax_agent",
+      "controller",
+      "owner",
+      "auditor"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "organisation-settings.md",
+    "key": "settings.organisation",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "payment-batches.md",
+    "key": "purchases.payment-batches",
+    "roles": [
+      "accountant",
+      "ap_specialist",
+      "controller",
+      "payment_releaser",
+      "owner",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "periods-and-close.md",
+    "key": "accounting.periods",
+    "roles": [
+      "accountant",
+      "controller",
+      "owner",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "pre-incorporation-costs.md",
+    "key": "equity.pre-incorporation-costs",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "profile-and-security.md",
+    "key": "preferences.security",
+    "roles": [
+      "all"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "purchase-orders.md",
+    "key": "purchases.orders",
+    "roles": [
+      "bookkeeper",
+      "ap_specialist",
+      "accountant",
+      "controller",
+      "approver",
+      "owner",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "quotes.md",
+    "key": "sales.quotes",
+    "roles": [
+      "bookkeeper",
+      "ar_specialist",
+      "accountant",
+      "controller",
+      "approver",
+      "owner",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "schedules.md",
+    "key": "accounting.schedules",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "search.md",
+    "key": "shell.search",
+    "roles": [
+      "all"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "setup-first-run.md",
+    "key": "installation.setup",
+    "roles": [
+      "super_admin"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "sign-in-providers.md",
+    "key": "settings.sign-in-providers",
+    "roles": [
+      "super_admin"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "sign-in.md",
+    "key": "auth.sign-in",
+    "roles": [
+      "all"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "statements.md",
+    "key": "sales.statements",
+    "roles": [
+      "bookkeeper",
+      "ar_specialist",
+      "accountant",
+      "controller",
+      "approver",
+      "owner",
+      "auditor",
+      "tax_agent"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "statutory-calendar.md",
+    "key": "compliance.calendar",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "auditor",
+      "tax_agent",
+      "dpo",
+      "company_secretary"
+    ],
+    "status": "draft"
+  },
+  {
+    "file": "statutory-packs.md",
+    "key": "settings.statutory-packs",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "tax_agent",
+      "payroll",
+      "auditor"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "team-mode.md",
+    "key": "settings.team-mode",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "payment_releaser",
+      "auditor",
+      "dpo"
+    ],
+    "status": "published"
+  },
+  {
+    "file": "workbook-import.md",
+    "key": "settings.import",
+    "roles": [
+      "owner",
+      "controller",
+      "accountant",
+      "auditor"
+    ],
+    "status": "published"
+  }
+]

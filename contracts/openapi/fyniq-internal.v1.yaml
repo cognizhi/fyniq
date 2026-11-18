@@ -29,6 +29,22 @@ components:
         - kind
         - id
       type: object
+    AIKBPage:
+      additionalProperties: false
+      properties:
+        key:
+          examples:
+            - claims.approve-team-claims
+          type: string
+        version:
+          description: The platform release and the page file's SHA-256 (first 12 characters).
+          examples:
+            - v0.1.0#7c1ea9b4f2d3
+          type: string
+      required:
+        - key
+        - version
+      type: object
     AIModelCall:
       additionalProperties: false
       properties:
@@ -145,6 +161,9 @@ components:
               - calc
               - checks.explain
               - checks.list
+              - kb.index
+              - kb.read
+              - kb.search
               - lineage.explain
               - metrics.query
               - packs.get
@@ -289,6 +308,9 @@ components:
             - calc
             - checks.explain
             - checks.list
+            - kb.index
+            - kb.read
+            - kb.search
             - lineage.explain
             - metrics.query
             - packs.get
@@ -311,6 +333,13 @@ components:
           items:
             $ref: "#/components/schemas/Fact"
           type: array
+        kb_pages:
+          description: The knowledge-base pages a kb tool read, with the version of each, which the turn records (AI-12, AI-51).
+          items:
+            $ref: "#/components/schemas/AIKBPage"
+          type:
+            - array
+            - "null"
         ledger_revision:
           description: The ledger revision it was read at (ENG-46).
           examples:
@@ -845,7 +874,7 @@ info:
     identifier: MIT
     name: MIT
   title: Fyniq internal API
-  version: 0.0.0 # x-release-please-version
+  version: 0.1.0 # x-release-please-version
 openapi: 3.1.0
 paths:
   /internal/v1/agent-runs/{run_id}/model:

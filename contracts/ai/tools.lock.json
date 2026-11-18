@@ -11,6 +11,18 @@
     "version": 1,
     "sha256": "0002f1cfac7f5e7797d56a7c33dd65dc806c6ebdfb77da4dc08f1b8d3b260414"
   },
+  "kb.index": {
+    "version": 1,
+    "sha256": "8cbce95387c95ad742f8eb7d32ae5e8f58bef7b28d1f08609691b044608d7b9d"
+  },
+  "kb.read": {
+    "version": 1,
+    "sha256": "24499d6d358833138bfe213a602ab6e977cf0424cd4796bd3a95cfff80e81c89"
+  },
+  "kb.search": {
+    "version": 1,
+    "sha256": "8163e7923035b3676916636650562625123befb0290abc8ae7ed0b80abc42e20"
+  },
   "lineage.explain": {
     "version": 2,
     "sha256": "d750bc9596f99fae0c00b87eb2b8c0279456c4844d3793b4862032272962d40e"

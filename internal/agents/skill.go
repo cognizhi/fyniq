@@ -58,8 +58,8 @@ type Skill struct {
 // Agent is the skill's agent as the AI routes and budgets name it: company-secretary → company_secretary (AI-74).
 func (s Skill) Agent() string { return strings.ReplaceAll(s.Name, "-", "_") }
 
-// Offered are the skill's tools that registry has: what a run offers the model. A tool the release lacks (the
-// knowledge base's, until p1-knowledge-base) is not offered.
+// Offered are the skill's tools that registry has: what a run offers the model. A tool the release's
+// registry lacks is not offered.
 func (s Skill) Offered(registry *aitool.Registry) []string {
 	var out []string
 	for _, t := range s.Tools {
