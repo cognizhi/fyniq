@@ -251,9 +251,14 @@ and names the requirement IDs it proves.
   (17 Nov 2026, later: the first baselines are those of the pull request that took them in: its first CI run drew the
   key pages on linux/amd64, `scripts/visual.py approve` took that run's hashes into `baselines.json`, and the label
   `visual-baseline`, created for it, let the change through; its next run compared every picture against them.)
-- [ ] 5.5 QA-UI-06: the first-run tour per role by keyboard alone, reduced and animated, axe at 0. Nothing is written
+- [x] 5.5 QA-UI-06: the first-run tour per role by keyboard alone, reduced and animated, axe at 0. Nothing is written
   but `user_help_state`, and G4-104 resumes it. Waits for `p1-app-shell` task 4.2. Test `// req: QA-UI-06`,
   `// req: G4-104`.
+  (18 Nov 2026: `e2e/tour.spec.ts` completes each role's tour by keyboard alone in Chrome, Firefox and WebKit, with
+  reduced motion (no transition on the spotlight) and with animation, axe at 0 at its first step, and asserts that the
+  only request that is not a read is `PUT /v1/help-state/tour`, ending finished at the last step; a tour left at step 3
+  is offered again, resumes there and ends skipped there with Esc. The server half is
+  `TestTheTourSavesOnlyItsOwnState` (#790).)
 
 ## 6. Security and production gates (QA-SEC-05, QA-PROD-01, QA-MCP-01)
 

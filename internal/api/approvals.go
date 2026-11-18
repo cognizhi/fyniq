@@ -29,6 +29,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/doctemplate"
 	"github.com/cognizhi/fyniq/internal/domain/equity"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
+	"github.com/cognizhi/fyniq/internal/domain/gst"
 	"github.com/cognizhi/fyniq/internal/domain/invoice"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
@@ -504,6 +505,9 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		e.Dependencies["bill_version"] = doc.Version
 		e.Dependencies["status"] = string(doc.Status)
 		e.Dependencies["payable"] = payable
+		if e.Dependencies["gst_pack"], err = gst.PackState(ctx, u); err != nil {
+			return nil, err
+		}
 	case approval.ObjectInvoice:
 		id, err := uuid.Parse(c.ObjectKey)
 		if err != nil {
@@ -525,6 +529,9 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		e.Dependencies["invoice_version"] = doc.Version
 		e.Dependencies["status"] = string(doc.Status)
 		e.Dependencies["receivable"] = receivable
+		if e.Dependencies["gst_pack"], err = gst.PackState(ctx, u); err != nil {
+			return nil, err
+		}
 	case approval.ObjectOrder:
 		id, err := uuid.Parse(c.ObjectKey)
 		if err != nil {
@@ -542,6 +549,9 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		e.Dependencies["order_version"] = doc.Version
 		e.Dependencies["status"] = string(doc.Status)
 		e.Dependencies["total"] = p.TotalBase.String()
+		if e.Dependencies["gst_pack"], err = gst.PackState(ctx, u); err != nil {
+			return nil, err
+		}
 	case approval.ObjectTemplate:
 		id, err := uuid.Parse(c.ObjectKey)
 		if err != nil {
@@ -680,6 +690,9 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		e.ObjectVersion = doc.Version
 		e.Dependencies["status"] = string(doc.Status)
 		e.Dependencies["received"] = x.Amount.Amount + " " + x.Amount.Currency
+		if e.Dependencies["gst_pack"], err = gst.PackState(ctx, u); err != nil {
+			return nil, err
+		}
 	case approval.ObjectReimbursement: // the reimbursement's status, and what it paid back (FR-AP-07)
 		version, deps, err := a.reimbursementDependencies(ctx, u, c.ObjectKey)
 		if err != nil {

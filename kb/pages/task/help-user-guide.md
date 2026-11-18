@@ -4,7 +4,7 @@ type: task
 title: Read the user guide in Fyniq: open a page, search it, print it
 summary: Where the in-app user guide is (Help › User guide), which pages it shows by role and mode, how to search, link and print a page
 sources:
-  - docs/user-guide/help.md sha256:6db941174b4be6bbc8ee17f13d0224b321f144370f9afa308a908ceba737c321
+  - docs/user-guide/help.md sha256:9100f78be6754be5a3065d2fc5cfad232a62ad445914b87d85ffd923aa461759
 data_class: general
 taint: trusted
 status: draft
@@ -13,6 +13,9 @@ compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
 compiled_at: 2026-11-17
 aliases:
+  - tour
+  - take the tour again
+  - first-run walkthrough
   - user guide
   - help pages
   - documentation
@@ -50,6 +53,14 @@ aliases:
 - **Print** on a page prints it without the header, the navigation and the buttons.
 
 (src: docs/user-guide/help.md#print-a-page)
+
+## Take the tour
+
+- At the first sign-in Fyniq offers a short tour of the pages the person will use, up to 7 steps and about 2 minutes: **Start the tour** or **Not now**.
+- Each step points at a part of the page and says what it is for; **Next** and **Back** (or → and ←) move, **Skip tour** or Esc ends it; it clicks and changes nothing.
+- Left part-way, it is offered again to **Resume the tour**; **Help** › **Take the tour again**, or the command palette, replays it; each role sees its own steps.
+
+(src: docs/user-guide/help.md#take-the-tour)
 
 ## Related
 

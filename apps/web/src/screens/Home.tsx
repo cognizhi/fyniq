@@ -211,7 +211,7 @@ function Workspace() {
   return (
     <div className="fy-page fy-enter">
       <div className="fy-pagehead">
-        <div className="fy-pagehead__text">
+        <div className="fy-pagehead__text" data-tour="home">
           <h1 className="fy-h1">{organisation ? organisation.name : "Fyniq"}</h1>
           <p className="fy-secondary">
             {organisation ? `Books in ${organisation.base_currency}. ${organisation.team_mode === "standard" ? "Standard" : "Founder"} mode.` : "Intelligence behind every number."}
