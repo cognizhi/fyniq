@@ -307,7 +307,7 @@ func TestAPersonsTurnProposesThroughTheAIService(t *testing.T) {
 		kept, err = u.AIProposals().List(ctx, storage.AIProposalQuery{Limit: 10})
 		return err
 	})
-	if len(kept) != 1 || kept[0].Status != storage.ProposalPending || kept[0].Prompt != "chat@3" || kept[0].Model != "gpt-6" ||
+	if len(kept) != 1 || kept[0].Status != storage.ProposalPending || kept[0].Prompt != "chat@4" || kept[0].Model != "gpt-6" ||
 		kept[0].RequestedBy.String() != f.ahkow || kept[0].Turn == nil || kept[0].Payload != `{"note":"Book the room"}` {
 		t.Fatalf("the proposal: %+v", kept)
 	}
