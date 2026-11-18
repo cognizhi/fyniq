@@ -18,7 +18,6 @@ var update = flag.Bool("update", false, "rewrite test/kb/guide-audience.json fro
 // knowledge base's reader filter is built on the guide pages' `roles`, which apps/web/src/help/guide.ts parses on its own for
 // what it shows a person. This file is what the Go parser makes of the guide; the web app's Vitest suite
 // (apps/web/src/help/guide-audience.test.ts) checks its parser against the same file, so the two cannot drift.
-// req: AI-54
 func TestTheGuideAudienceIsTheSameInGoAndTheWebApp(t *testing.T) {
 	c, err := knowledge.Load(kb.FS, userguide.FS)
 	if err != nil {

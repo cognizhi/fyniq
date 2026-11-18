@@ -350,6 +350,7 @@ func (a *Assistant) converse(ctx context.Context, c conversation, emit func(Even
 				s, out.Grounding.Withheld = withhold(s, known, kbPages)
 			}
 			for i := range s.Segments { // the guide pages each know-how sentence comes from, by what the page's section cites
+				s.Segments[i].Sources = nil // never the model's own: it has no say in what a chip opens (AI-51)
 				if s.Segments[i].Page != "" {
 					s.Segments[i].Sources = kbPages.sources(s.Segments[i : i+1])
 				}

@@ -7,7 +7,6 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/knowledge"
 )
 
-// req: AI-58
 func TestAQuestionsSearchTermsAreItsWordsWithoutTheFiller(t *testing.T) {
 	for q, want := range map[string][]string{
 		"How do I approve a team claim?":          {"approve", "team", "claim"},

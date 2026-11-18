@@ -49,8 +49,6 @@ type knowledgeCase struct {
 	Live     string   `json:"live,omitempty"`
 }
 
-// req: AI-54
-// req: AI-58
 // asvs: V8.2.1
 // (Not tagged QA-AI-06: it proves the retrieval half only, which the comment above says.)
 func TestTheKnowledgeSuiteRetrievesCitesAndHidesWhatARevokedReaderMayNotOpen(t *testing.T) {

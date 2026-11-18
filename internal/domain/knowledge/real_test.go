@@ -8,7 +8,6 @@ import (
 	"github.com/cognizhi/fyniq/kb"
 )
 
-// req: AI-52
 // The release's own pages and guide, as they ship, lint clean in Go as scripts/kb.py finds them in make check, and the
 // index shipped is the one the pages generate.
 func TestTheShippedKnowledgeBaseLintsClean(t *testing.T) {
