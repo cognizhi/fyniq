@@ -55,7 +55,7 @@ books** (Expert only) · **Common problems** (each ✖ or ⚠ message and its fi
 | Reports | Financial statements · Explain a number · Exports · Board pack |
 | Compliance | ✔ [Activate a statutory pack](statutory-packs.md) · Statutory calendar · GST returns · Evidence: attach screenshots and files · Audit trail |
 | AI and integrations | Ask the AI · AI proposals and approvals · Connected apps and MCP · The API |
-| Reference | Keyboard shortcuts · Status chips (✔ ⚠ ✖ ⏰ ✎ 🔒) · Glossary · What's new |
+| Reference | ✔ [Keyboard shortcuts](keyboard-shortcuts.md) · Status chips (✔ ⚠ ✖ ⏰ ✎ 🔒) · Glossary · What's new |
 
 ## Nemura contents (planned, `nemura/`)
 

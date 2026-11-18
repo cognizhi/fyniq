@@ -116,8 +116,8 @@ html {
 }
 
 /* Touch targets of 44 × 44 px on touch screens (FR-UX-37): the brand's link, a segmented control's options, a chip
-   that is a button, a list row or navigation item that is a link, a filter, a radio or a checkbox's label, and a link
-   that names a list row, whose hit area is the whole row (.fy-stretch). */
+   that is a button, a list row or navigation item that is a link, a filter, a radio or a checkbox's label, a switch, and
+   a link that names a list row, whose hit area is the whole row (.fy-stretch). */
 @media (pointer: coarse) {
   .fy-brand {
     min-width: var(--touch-target);
@@ -144,6 +144,12 @@ html {
   label:has(> input[type="radio"]),
   label:has(> input[type="checkbox"]) {
     min-height: var(--touch-target);
+  }
+  /* a switch, whose 40 × 24 px track takes a touch 44 px across and down (its ::after is the knob) */
+  .fy-switch::before {
+    content: "";
+    position: absolute;
+    inset: calc((100% - var(--touch-target)) / 2);
   }
 }
 .fy-list__item:has(.fy-stretch) {
@@ -236,4 +242,17 @@ html {
   .fy-help-layout__contents {
     display: none;
   }
+}
+
+/* A glossary term (FR-UX-11): its own words, underlined with dots, open its definition on hover, focus or a tap. */
+.fy-term {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: help;
 }

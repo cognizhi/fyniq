@@ -4,7 +4,7 @@ type: task
 title: Your profile and security: Basic or Expert mode, your bank account, passkeys, sign-ins and devices
 summary: Basic or Expert mode, your bank account for reimbursements, confirming it's you, passkeys, linking or removing a sign-in, and signing out devices
 sources:
-  - docs/user-guide/profile-and-security.md sha256:30749625dcf077b18c4f87c8adaf70750fd89e9ff27b3420ea97c9eb06e94848
+  - docs/user-guide/profile-and-security.md sha256:e8f8e54b018a8965727f750c61079cc6faee1a33153517de6e9a4e9adf9f67ec
 data_class: general
 taint: trusted
 status: draft
@@ -38,7 +38,7 @@ aliases:
 
 ## What the page holds
 
-- **Settings › Profile and security** holds what is the person's own: Basic or Expert mode, the bank account their expense claims are paid into, their passkeys, the accounts they sign in with and the devices they are signed in on; nobody else changes them.
+- **Settings › Profile and security** holds what is the person's own: Basic or Expert mode, their keyboard shortcuts, the bank account their expense claims are paid into, their passkeys, the accounts they sign in with and the devices they are signed in on; nobody else changes them.
 - **Settings** is at the foot of the sidebar, under **More** on a phone ([[home.overview]]).
 - Adding or revoking a passkey, and linking or removing a sign-in, needs a confirmation that it's you in the last 5 minutes; Fyniq asks first if there was none.
 
@@ -53,6 +53,12 @@ aliases:
 - For now the choice is kept in the browser.
 
 (src: docs/user-guide/profile-and-security.md#basic-and-expert-mode)
+
+## Keyboard
+
+- Under **Keyboard**, turn the single-character shortcuts off or change their keys; **Keyboard shortcuts** shows every shortcut the person can use ([[shell.shortcuts]]).
+
+(src: docs/user-guide/profile-and-security.md#keyboard)
 
 ## Your bank account for reimbursements
 

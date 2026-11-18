@@ -16,8 +16,8 @@
    "id": "statutory",
    "title": "Statutory values and payroll",
    "reviewer": "an accountant or tax agent",
-   "status": "pending",
-   "pr": null,
+   "status": "reviewed",
+   "pr": 5,
    "short": "Statutory and payroll rules await review by an accountant or tax agent",
    "message": "They follow our best current reading of the official guidance. Check the figures before you rely on them or file them.",
    "sections": [
@@ -131,8 +131,8 @@
    "id": "controls",
    "title": "Roles, approvals and payments",
    "reviewer": "a second director",
-   "status": "pending",
-   "pr": null,
+   "status": "reviewed",
+   "pr": 6,
    "short": "Approval and payment rules await review by a second director",
    "message": "Check each approval and payment before you release it.",
    "sections": [
@@ -185,8 +185,8 @@
    "id": "security",
    "title": "AI and MCP, identity and tenancy",
    "reviewer": "a security reviewer",
-   "status": "pending",
-   "pr": null,
+   "status": "reviewed",
+   "pr": 4,
    "short": "Sign-in, AI and integration settings await review by a security reviewer",
    "message": "Keep access closed unless you need it, and check each setting before you turn it on.",
    "sections": [
@@ -413,6 +413,47 @@
    "screens": [
     "claim-editor",
     "claims-review"
+   ]
+  },
+  {
+   "id": "corporate",
+   "title": "The company secretary's rules read without an accountant",
+   "reviewer": "the accountant",
+   "status": "pending",
+   "pr": null,
+   "short": "The ACRA pack's deadlines and the corporate checks await review by the accountant",
+   "message": "The lodgement deadlines for officers, the registered office and the nominee registers, and the checks of the company secretary, the directors' approval of the financial statements, the profile against ACRA and the lodgements, come from the sg-acra pack, on our best current reading of ACRA's guidance and the Companies Act. Check them before you rely on them.",
+   "sections": [
+    "PRD-001 §9.12",
+    "Appendix C.2"
+   ],
+   "requirements": [
+    "FR-CS-01",
+    "FR-CS-02",
+    "FR-CS-03"
+   ],
+   "screens": [
+    "corporate-profile",
+    "statutory-calendar",
+    "agent-run-report"
+   ]
+  },
+  {
+   "id": "papers",
+   "title": "The company's papers drafted without a lawyer",
+   "reviewer": "a lawyer",
+   "status": "pending",
+   "pr": null,
+   "short": "The templates of the company's resolutions, notices and minutes await review by a lawyer",
+   "message": "Fyniq drafts the company's resolutions, notices and minutes from its own templates, on our best current reading of the Companies Act and the model constitution. Have a lawyer or the company secretary check the wording before anyone signs.",
+   "sections": [
+    "PRD-001 §9.12"
+   ],
+   "requirements": [
+    "FR-CS-05"
+   ],
+   "screens": [
+    "company-secretary"
    ]
   }
  ]

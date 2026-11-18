@@ -45974,11 +45974,11 @@ export interface components {
              */
             id: string;
             /**
-             * @description approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14); release_conflict: in Founder mode, a payment batch released by who prepared or approved it or a payee's account change (SOD-1, SOD-2); break_glass: an Owner's break-glass, reviewed with what it released through reviewBreakGlass once it has ended (FM-8); account_recovery: a member recovered their account with a recovery code and a confirmation (SEC-35).
+             * @description approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14); release_conflict: in Founder mode, a payment batch released by who prepared or approved it or a payee's account change (SOD-1, SOD-2); break_glass: an Owner's break-glass, reviewed with what it released through reviewBreakGlass once it has ended (FM-8); account_recovery: a member recovered their account with a recovery code and a confirmation (SEC-35); unusual: in Founder mode, a journal or payment of the last week that rules found unusual, the summary saying why, for a founder other than who posted it to look at (FM-6, rev 0.287).
              * @example approved_change
              * @enum {string}
              */
-            kind: "approved_change" | "founder_bootstrap" | "self_approved" | "scheduled_issue" | "auto_reconciled" | "release_conflict" | "break_glass" | "account_recovery";
+            kind: "approved_change" | "founder_bootstrap" | "self_approved" | "scheduled_issue" | "auto_reconciled" | "release_conflict" | "break_glass" | "account_recovery" | "unusual";
             /**
              * Format: date-time
              * @description When it executed.

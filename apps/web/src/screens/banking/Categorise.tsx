@@ -10,8 +10,10 @@ import { formatAmount } from "../../format/amount";
 import { date } from "../../format/date";
 import { negate, sign } from "../../format/decimal";
 import { helpText } from "../../i18n";
+import { Term } from "../../help/Term";
 import { LedgerViewToggle } from "../../components/LedgerViewToggle";
 import { useSignedIn } from "../../session";
+import { useBulkActions } from "../../shell/bulk";
 import { useLedgerView, viewWords } from "../../view";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { BankTabs, makers } from "./BankAccounts";
@@ -152,6 +154,11 @@ export function Categorise() {
           <Icon of={PartyPopper} size={24} />
           <h2 className="fy-h3">All caught up</h2>
           <p className="fy-secondary">No line waits{account ? " on this account" : ""}. New lines arrive with each statement, report or sync.</p>
+          {may && (
+            <Link className="fy-btn fy-btn--secondary fy-btn--sm self-center" to="/banking/import">
+              Import a statement
+            </Link>
+          )}
         </div>
       )}
       {lines.length > 0 &&
@@ -250,7 +257,10 @@ function Flags({ line }: { line: Line }) {
         <Icon of={TriangleAlert} size={20} />
         <div className="fy-banner__text">
           <span className="fy-strong">In suspense</span>
-          <span className="fy-small">It is posted to suspense (2999) until you categorise or match it; the close warns while suspense is not nil.</span>
+          <span className="fy-small">
+            It is posted to <Term name="Suspense">suspense</Term> (2999) until you categorise or match it; the <Term name="Close">close</Term> warns while suspense is
+            not nil.
+          </span>
         </div>
       </div>
     );
@@ -460,6 +470,8 @@ function Grid({ lines, names, may, onDialog, onDone }: { lines: Line[]; names: M
     if (ok > 0) onDone(ok);
   };
   const all = lines.length > 0 && selected.length === lines.length;
+  // The same action from the command palette while lines are selected (FR-UX-06).
+  useBulkActions(may && selected.length > 0 && !busy ? [{ label: `Accept the selected suggestions (${selected.length})`, run: () => void run(selected) }] : []);
   return (
     <div className="fy-stack fy-stack--3">
       {problem && <Refusal problem={problem} title="The line was not reconciled" />}

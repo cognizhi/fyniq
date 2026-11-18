@@ -47,7 +47,9 @@ and names the requirement IDs it proves.
   - The exceptions add the rest of the F5 at registration (G4-011, G4-035) and QA-API-04 with Nemura, both rev 0.25.
     They also add 24 cloud-proved items, each naming its runbook or control file.
   - FM-6 launches, by the owner's decision of 16 Nov 2026: a scheduled agent writes advisory findings into the weekly
-    review. It is built in `p1-approval-engine` on the chain's scheduled agents.
+    review. It is built in `p1-approval-engine` on the chain's scheduled agents. (18 Nov 2026, rev 0.287: rule-based
+    at launch instead, the nightly job `review.unusual` in `internal/domain/unusual`, tested by
+    `TestUnusualItemsEnterTheWeeklyReview`; the AI's explanation follows after go-live.)
 
 ## 2. Tags where the tests already prove the requirement (design D3)
 
@@ -225,7 +227,13 @@ and names the requirement IDs it proves.
   17 Nov 2026, later: Home's **Your work** gives the Bookkeeper, the AR and AP specialists and the payment releaser
   their rows of §7.1 (p1-app-shell 2.1), and the walkthroughs check each role's rows, and none for the full-Home
   roles. **Left:** the Approver's "My department", the Administrator's, Company secretary's and DPO's blocks on the
-  pages they land on, the Auditor's workspace, and each role's Inbox items.)
+  pages they land on, the Auditor's workspace, and each role's Inbox items.
+  18 Nov 2026, later: the Administrator's, Company secretary's and DPO's rows show on Settings and Compliance, where they
+  land, and the Auditor's "Your engagement" (read-only until its expiry, with links) on Reports; the walkthroughs assert
+  them (27 journeys pass on the local stack). Owner decisions of 18 Nov (rev 0.288, #806): the Approver's department
+  figures wait for the people projection; the Auditor's requests and samples (FR-UX-42) and retention holds (AUD-11)
+  are after go-live. **Left:** the Approver's approvals with their limits, which needs a read an Approver may make
+  (approval policies are refused to them), and each role's Inbox items.)
 - [ ] 5.4 QA-UI-07 and QA-RPT-04's visual snapshots (design D5; rev 0.284):
   - hash baselines in `apps/web/visual/baselines.json`;
   - the key pages on every pull request, every route nightly and in the release workflow, at the five frames, in light

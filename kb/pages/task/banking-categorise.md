@@ -34,7 +34,7 @@ aliases:
 - **What is this?** lists the suggestions, best first: money already recorded (by hand, or by releasing a payment batch, [[purchases.payment-batches]]), an open invoice or bill whose number the line names, one of the amount the line's counterparty owes, then the first bank rule the line meets.
 - **Accept** posts the line as the chosen suggestion says; **Change the category** posts the whole line to the chosen account with its GST code and, optionally, its contact; **Skip** moves on and comes back later.
 - **Reconcile now** lets Fyniq reconcile the exact matches among the waiting lines by itself, within the organisation's auto-reconcile limits ([[settings.organisation]]), and says how many it left and why; lines that arrive by email or from a connector wait for it.
-- A possible duplicate ⚠ says so (compare it on the account first, [[banking.accounts]]); a line in suspense ⚠ is posted to suspense (2999) until it is categorised or matched.
+- A possible duplicate ⚠ says so (compare it on the account first, [[banking.accounts]]); a line in suspense ⚠ is posted to suspense (2999) until it is categorised or matched ([[reference.glossary]] says what suspense is).
 
 (src: docs/user-guide/banking.md#categorise-the-waiting-lines)
 

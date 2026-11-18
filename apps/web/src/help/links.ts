@@ -24,3 +24,12 @@ export function guideFor(path: string): { to: string; hash?: string } | undefine
   if (path === "/") best = { guide: "home.overview", score: 0 };
   return best ? guideLink(best.guide) : undefined;
 }
+
+// slug turns a heading into its anchor, as GitHub, the registry's guide keys and the knowledge base's citations do.
+export function slug(heading: string): string {
+  return heading
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, "")
+    .replace(/\s/g, "-");
+}

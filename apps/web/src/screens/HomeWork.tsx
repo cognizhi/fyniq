@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
-import { Banknote, ChevronRight, ClockAlert, FilePen, FileText, Landmark, ReceiptText, Send, ShieldAlert, Wallet } from "lucide-react";
+import { Banknote, ChevronRight, ClockAlert, FilePen, FileSearch, FileText, Landmark, Mail, PlugZap, ReceiptText, ScrollText, Send, ShieldAlert, UserCog, UserPlus, Wallet } from "lucide-react";
 import { api } from "../api/client";
 import { formatAmount } from "../format/amount";
 import { date } from "../format/date";
@@ -176,20 +176,111 @@ export const work: Work[] = [
       return t.some((x) => x === null) ? null : { n: t.reduce((s, x) => s + x!.n, 0), more: t.some((x) => x!.more) };
     },
   },
+  {
+    id: "join-requests",
+    roles: ["administrator"],
+    icon: UserPlus,
+    title: (n, one) => `${n} ${one ? "person" : "people"} asking to join`,
+    meta: "Signed in with the company's email domain: let each one in, or refuse",
+    to: "/settings/members",
+    read: () => tally(() => api.GET("/v1/members/join-requests", { params: { query: max } }), (r) => r.status === "pending"),
+  },
+  {
+    id: "invitations-open",
+    roles: ["administrator"],
+    icon: Mail,
+    title: (n, one) => `${n} ${one ? "invitation" : "invitations"} waiting to be accepted`,
+    meta: "Sent and not withdrawn: resend or withdraw one that is no longer needed",
+    to: "/settings/members",
+    read: () => tally(() => api.GET("/v1/members/invitations", { params: { query: max } }), (i) => !i.withdrawn_at),
+  },
+  {
+    id: "role-changes",
+    roles: ["administrator"],
+    icon: UserCog,
+    title: (n, one) => `${n} role ${one ? "change" : "changes"} waiting for a second approver`,
+    meta: "Members' roles and invitations another person must approve (SOD-6)",
+    to: "/inbox",
+    read: () => tally(() => api.GET("/v1/approvals", { params: { query: { status: "pending", ...max } } }), (a) => roleObjects.has(a.object_type)),
+  },
+  {
+    id: "integrations-failing",
+    roles: ["administrator"],
+    icon: PlugZap,
+    tone: "critical",
+    title: (n, one) => `${n} ${one ? "integration" : "integrations"} failing`,
+    meta: "Their last test or sync failed: open each one to see why",
+    to: "/settings/integrations",
+    read: () => tally(() => api.GET("/v1/organisation/connectors", { params: { query: { page_size: 200 } } }), (c) => c.health === "failing"),
+  },
+  {
+    id: "secretary-findings",
+    roles: ["company_secretary"],
+    icon: ScrollText,
+    tone: "serious",
+    title: (n, one) => `${n} corporate ${one ? "item" : "items"} to see to`,
+    meta: "From the company secretary's last run: filings, resolutions and register updates due or to review",
+    to: "/compliance/secretary",
+    read: async () => {
+      const { data, error } = await api.GET("/v1/compliance/secretary", {});
+      return error || !data ? null : { n: (data.findings ?? []).filter((f) => toSee.has(f.status)).length, more: false };
+    },
+  },
+  {
+    id: "register-approvals",
+    roles: ["company_secretary"],
+    icon: FileText,
+    title: (n, one) => `${n} register ${one ? "update" : "updates"} waiting for approval`,
+    meta: "Holder records, share classes and equity transactions another person must approve",
+    to: "/inbox",
+    read: () => tally(() => api.GET("/v1/approvals", { params: { query: { status: "pending", ...max } } }), (a) => registerObjects.has(a.object_type)),
+  },
+  {
+    id: "data-requests",
+    roles: ["dpo"],
+    icon: FileSearch,
+    tone: "serious",
+    title: (n, one) => `${n} data ${one ? "request" : "requests"} to answer`,
+    meta: "Access and correction requests received and not yet answered, each with its due date",
+    to: "/compliance/data-protection",
+    read: () => tally(() => api.GET("/v1/compliance/personal-data-requests", {}), (r) => openRequest.has(r.status)),
+  },
+  {
+    id: "breaches-open",
+    roles: ["dpo"],
+    icon: ShieldAlert,
+    tone: "critical",
+    title: (n, one) => `${n} ${one ? "breach" : "breaches"} still open`,
+    meta: "Recorded and not yet closed: assess each, and notify the PDPC and the people affected when it is notifiable",
+    to: "/compliance/data-protection",
+    read: () => tally(() => api.GET("/v1/compliance/breaches", {}), (b) => b.status !== "closed"),
+  },
 ];
+
+// The approvals an Administrator's and a Company secretary's rows count, by the object each changes.
+const roleObjects = new Set(["membership", "member_invitation"]);
+const registerObjects = new Set(["holder_record", "share_class", "equity_transaction"]);
+// The company secretary's findings that need a person, and the data requests not yet answered.
+const toSee = new Set(["due", "review", "blocked"]);
+const openRequest = new Set(["received", "acknowledged", "extended"]);
 
 // rowsFor are the rows a person's roles call for, each once.
 export function rowsFor(roles: readonly string[]): Work[] {
   return work.filter((w) => w.roles.some((r) => roles.includes(r)));
 }
 
+// The roles that land on a page of their own instead of Home (§7.1, landingOf), whose "Home shows" is drawn there.
+export const landingRoles = { settings: ["administrator"], compliance: ["company_secretary", "dpo"] } as const;
+
 // YourWork is the per-role part of Home (§7.1, FR-UX-40): for the Bookkeeper, the AR and AP specialists and the payment
 // releaser, the work waiting in their areas, each row opening the list it counts, and the releaser's bank balances.
-// A person with several roles sees each row once; a full-Home role (Owner, Controller, Accountant, Tax agent) gets
-// these figures from the pulse, the tiles and the Inbox instead, so none of its rows show for it alone.
-export function YourWork() {
+// The Administrator, the Company secretary and the DPO land on Settings or Compliance instead, which draw their rows
+// there (only: the roles that land on the page). A person with several roles sees each row once; a full-Home role
+// (Owner, Controller, Accountant, Tax agent) gets these figures from the pulse, the tiles and the Inbox instead, so none
+// of its rows show for it alone.
+export function YourWork({ only }: { only?: readonly string[] } = {}) {
   const { session } = useSignedIn();
-  const roles = session.roles ?? [];
+  const roles = (session.roles ?? []).filter((r) => !only || only.includes(r));
   const rows = rowsFor(roles);
   const h = helpText("home.your-work");
   if (rows.length === 0) return null;
@@ -327,3 +418,58 @@ export function Deadlines() {
     </section>
   );
 }
+
+// AuditorAccess is the Auditor's engagement (§7.1): their access is read-only and time-boxed, so it says until when, and
+// opens what an auditor reads: the reports, the journals, the evidence and the audit trail. It reads the person's own
+// membership, as Settings › Members shows it.
+export function AuditorAccess() {
+  const { session } = useSignedIn();
+  const auditor = (session.roles ?? []).includes("auditor");
+  const me = useQuery({
+    queryKey: ["members", "auditor-access"],
+    enabled: auditor && !!session.user_id,
+    retry: false,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await api.GET("/v1/members", { params: { query: max } });
+      return error || !data ? null : ((data.items ?? []).find((m) => m.user_id === session.user_id) ?? null);
+    },
+  });
+  if (!auditor) return null;
+  const ends = me.data?.roles?.find((r) => r.role === "auditor")?.expires_at;
+  const h = helpText("home.auditor-access");
+  return (
+    <section className="fy-card" aria-labelledby="auditor-access-title">
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id="auditor-access-title" title={h.tooltip}>
+          {h.label}
+        </h2>
+      </div>
+      <div className="fy-card__body fy-stack fy-stack--2">
+        <p>{ends ? `Read-only, until ${date(ends)}. Nothing you open here can be changed.` : "Read-only: nothing you open here can be changed."}</p>
+        <ul className="fy-list" aria-labelledby="auditor-access-title">
+          {auditorPages.map((p) => (
+            <li key={p.to}>
+              <Link className="fy-list__item" to={p.to}>
+                <span className="fy-list__icon">
+                  <Icon of={p.icon} size={20} />
+                </span>
+                <span className="fy-list__main">
+                  <span className="fy-list__title">{p.title}</span>
+                  <span className="fy-list__meta whitespace-normal">{p.meta}</span>
+                </span>
+                <Icon of={ChevronRight} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+const auditorPages: { to: string; icon: LucideIcon; title: string; meta: string }[] = [
+  { to: "/accounting/journals", icon: FileText, title: "Journals", meta: "Every journal, with its lines, evidence and history" },
+  { to: "/compliance/evidence", icon: FileSearch, title: "Evidence", meta: "The files kept for each record, searchable and exportable" },
+  { to: "/compliance/audit-trail", icon: ScrollText, title: "Audit trail", meta: "Who changed what, when and why, with each change's before and after" },
+];
