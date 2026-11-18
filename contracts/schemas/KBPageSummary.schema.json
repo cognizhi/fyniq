@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "data_class": {
+      "examples": [
+        "general"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "examples": [
+        "org.expense-policy"
+      ],
+      "type": "string"
+    },
+    "newest_version": {
+      "description": "Its newest version; 0 for a platform page.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "open_findings": {
+      "description": "Lint findings open on it.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "origin": {
+      "description": "How its newest version was made: rendered, compiled, human_edited, overlay or rollback; empty for a platform page.",
+      "examples": [
+        "compiled"
+      ],
+      "type": "string"
+    },
+    "overlaid": {
+      "description": "A platform page this organisation has an overlay of.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "published_version": {
+      "description": "The live snapshot's version; 0 when none.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "source": {
+      "description": "organisation for the organisation's own page, platform for Fyniq's.",
+      "enum": [
+        "organisation",
+        "platform"
+      ],
+      "examples": [
+        "organisation"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "published when the live snapshot lists it; draft when a newer version waits for a person; unpublished when it has no published version yet; platform for Fyniq's own pages.",
+      "enum": [
+        "published",
+        "draft",
+        "unpublished",
+        "platform"
+      ],
+      "examples": [
+        "published"
+      ],
+      "type": "string"
+    },
+    "summary": {
+      "examples": [
+        "How claims are made here."
+      ],
+      "type": "string"
+    },
+    "title": {
+      "examples": [
+        "Expense policy"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "examples": [
+        "policy"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "source",
+    "type",
+    "title",
+    "summary",
+    "data_class",
+    "state",
+    "published_version",
+    "newest_version",
+    "origin",
+    "open_findings"
+  ],
+  "title": "KBPageSummary",
+  "type": "object"
+}

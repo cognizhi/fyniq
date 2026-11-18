@@ -107,6 +107,21 @@ var matrixKnowledgeBase = map[string]func(e *env, tok string) (response, func() 
 	"requestKBPublication": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/knowledge-base/publications/approval", tok, map[string]any{"pages": []any{map[string]any{"key": "org.matrix", "version": 1}}}, "Prefer", "return=preview"), nil
 	},
+	"listKBPages": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/knowledge-base/pages", tok, nil), nil
+	},
+	"listKBPageVersions": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/knowledge-base/pages/org.matrix/versions", tok, nil), nil
+	},
+	"listKBSnapshots": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/knowledge-base/snapshots", tok, nil), nil
+	},
+	"listKBFindings": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/knowledge-base/findings", tok, nil), nil
+	},
+	"resolveKBFinding": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/knowledge-base/findings/0193a3f2-7c1e-7a2b-9c4d-5e6f70819a30/resolve", tok, map[string]any{"resolution": "x"}, "Prefer", "return=preview"), nil
+	},
 	"reviseKBNote": func(e *env, tok string) (response, func() bool) {
 		r := e.call(http.MethodPut, "/v1/knowledge-base/notes/matrix-note", tok, map[string]any{"kind": "note", "title": "t", "body": "b"}, "If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixNotesNone(e) }

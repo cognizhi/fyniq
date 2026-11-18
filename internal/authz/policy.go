@@ -1820,7 +1820,13 @@ var (
 	PublishKBPages = Policy{Operation: "publishKBPages", Capability: KnowledgeBase, Need: Approve,
 		Note: "In Founder mode an Owner publishes alone, listed for the weekly review (FM-3); in Team mode another Owner signs a request (AI-56, open question 18)."}
 	RequestKBPublication = Policy{Operation: "requestKBPublication", Capability: KnowledgeBase, Need: Create}
-	ReviewRisk           = Policy{Operation: "reviewRisk", Capability: ComplianceCenter, Need: Approve}
+	ListKBPages          = Policy{Operation: "listKBPages", Capability: KnowledgeBase, Need: View}
+	ListKBPageVersions   = Policy{Operation: "listKBPageVersions", Capability: KnowledgeBase, Need: View}
+	ListKBSnapshots      = Policy{Operation: "listKBSnapshots", Capability: KnowledgeBase, Need: View}
+	ListKBFindings       = Policy{Operation: "listKBFindings", Capability: KnowledgeBase, Need: View}
+	ResolveKBFinding     = Policy{Operation: "resolveKBFinding", Capability: KnowledgeBase, Need: Create,
+		Note: "Closes a lint finding with what was done about it; an open finding stops its page's publication (AI-56)."}
+	ReviewRisk = Policy{Operation: "reviewRisk", Capability: ComplianceCenter, Need: Approve}
 	// The policy library (CMP-07; Appendix D "Policy library"): the Owner and the Compliance officer draft and publish;
 	// every member reads and acknowledges their own.
 	ListPolicies             = Policy{Operation: "listPolicies", Capability: PolicyLibrary, Need: View}
