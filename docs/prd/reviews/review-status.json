@@ -185,8 +185,8 @@
    "id": "security",
    "title": "AI and MCP, identity and tenancy",
    "reviewer": "a security reviewer",
-   "status": "pending",
-   "pr": null,
+   "status": "reviewed",
+   "pr": 4,
    "short": "Sign-in, AI and integration settings await review by a security reviewer",
    "message": "Keep access closed unless you need it, and check each setting before you turn it on.",
    "sections": [
