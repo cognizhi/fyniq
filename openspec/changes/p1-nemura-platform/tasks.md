@@ -14,51 +14,60 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 1. The service, its image and local mode (slice 1)
 
-- [ ] 1.1 `cmd/nemura`: one binary that runs the role in `NEMURA_ROLE` (`api`; `migrate` joins in slice 2; `worker`,
+- [x] 1.1 `cmd/nemura`: one binary that runs the role in `NEMURA_ROLE` (`api`; `migrate` joins in slice 2; `worker`,
   `executor` and `assistant` refuse until the slice that builds them), through `internal/app`, so `/healthz`,
   `/readyz`, `/version`, `healthcheck` and `--version` behave as every image's. An unset, unknown or not-yet-built
   role refuses to start with `NEMURA-ROLE-01` and a plain fix; `/version` names the service `nemura-<role>`; the
   release flavour refuses outside staging and production as the others do. Tests `// req: NFR-IMG-06` (the three
   endpoints and the probe), and the role refusals (no tag: they prove part of NM-ARC-06, which is tagged in 5.3).
-- [ ] 1.2 The image and its gates (D2, D14): `nemura` joins `GO_IMAGES` and `deploy/docker/budgets.json` at 30 MB;
+  (Built, 18 Nov 2026, #823: `cmd/nemura` and `internal/nemura/role`; `cmd/nemura/main_test.go` and `serve_test.go`. `FYNIQ_ENV`, `FYNIQ_BUSINESS_DATE` and `PORT` keep their Fyniq names; Nemura's settings are `NEMURA_*`.)
+- [x] 1.2 The image and its gates (D2, D14): `nemura` joins `GO_IMAGES` and `deploy/docker/budgets.json` at 30 MB;
   PRD-001 §12.9 gains its row in a new revision (`(rev 0.N)`, a row in the revision history), with the
   `platform/container-images` spec, `python3 scripts/prdspec.py stamp`, and `make roadmap`; `.dockerignore` and the
   Dockerfile stay as they are for this slice (the service copies nothing new). Tests: `TestImageBudgetsAreThePRDs`
   `// req: NFR-IMG-04`, `make images` in both flavours and both platforms (budget, non-root, no shell, no local
   adapter in release), and the scan, signing and reproducibility runs pick it up from the budget file.
-- [ ] 1.3 The boundaries of D3 as `archtest` rules, written first: Nemura's allow-list of shared packages, nothing
+  (Built, 18 Nov 2026, #823: PRD-001 rev 0.290; image 4.4 MB of 30 MB at the time.)
+- [x] 1.3 The boundaries of D3 as `archtest` rules, written first: Nemura's allow-list of shared packages, nothing
   outside it importing `internal/nemura`, and the money rule on its packages, each with a planted violation that the
   rule catches. Test `TestNemuraStaysInItsLane`, with no
   requirement tag: it proves one clause of NM-ARC-05, which stays untagged until payroll (see Coverage).
-- [ ] 1.4 Local mode (D14): compose services under the profile `people` (`nemura-api`, hardened as ours, no shared
+  (Built, 18 Nov 2026, #823: `internal/archtest/nemura.go`; the money rule joins with Nemura's first money package, in payroll.)
+- [x] 1.4 Local mode (D14): compose services under the profile `people` (`nemura-api`, hardened as ours, no shared
   volume, own port `NEMURA_API_PORT`, default 8087), `PEOPLE=yes make up` and `make dev`, `scripts/dev.sh`, the row for
   `nemura` in `cmd/README.md`, and AGENTS.md's table (the `PEOPLE` variable on `make up`). Tests: a Go test that
   every Nemura service in the compose file is in the `people` profile and hardened (`TestComposeHardensOurServices`
   already covers the second), `scripts/local-smoke.sh` unchanged and still green.
-- [ ] 1.5 Verify: `make check`, `make test`, `make images`. Tick 1.1 to 1.4 with a "Built:" note.
+  (Built, 18 Nov 2026, #823: `PEOPLE=yes make up` and `make dev`; `make down` and `make reset` stop both profiles.)
+- [x] 1.5 Verify: `make check`, `make test`, `make images`. Tick 1.1 to 1.4 with a "Built:" note.
+  (Done for #823: `make check`, `make images` and the compose service healthy.)
 
 ## 2. Its own database and migrations (slice 2)
 
-- [ ] 2.1 The runner is a shared `internal/adapters/postgres/gooserun` package that takes a migration set (embedded files, directory, goose table), so Nemura's binary links none of Fyniq's store; `db/nemura/embed.go` and
+- [x] 2.1 The runner is a shared `internal/adapters/postgres/gooserun` package that takes a migration set (embedded files, directory, goose table), so Nemura's binary links none of Fyniq's store; `db/nemura/embed.go` and
   `db/nemura/migrations/`; `NEMURA_ROLE=migrate` with `up` and `status` under `nemura_migrator`; `.dockerignore` lines
   for `db/nemura/`; `make db-lint` lints both streams; the local bootstrap creates `nemura_migrator`, the `nemura`
   database and `nemura_hydra` with its role. Fyniq's `migrate` is unchanged and its tests still pass. Tests: the
   runner applies Nemura's stream to an empty database and is idempotent; Fyniq's `TestSchemaSnapshot` and grants
   golden files do not change.
-- [ ] 2.2 Migration 000001 (roles, schema, tenancy): group roles `nemura_api`, `nemura_worker`, `nemura_executor`,
+  (Built, 19 Nov 2026: `internal/adapters/postgres/gooserun`, `db/nemura/`, `cmd/nemura` migrate role, `.squawk.toml` and `make db-lint`. `nemura_hydra` and its role are created with the issuer, in the identity slice, not now.)
+- [x] 2.2 Migration 000001 (roles, schema, tenancy): group roles `nemura_api`, `nemura_worker`, `nemura_executor`,
   `nemura_assistant` (no grant yet) and `nemura_readonly`; schema `nemura`; `nemura.current_org()` and
   `nemura.require_org()` reading `app.org_id`; `organisation` and the global `tenant_directory` with its view;
   `ENABLE` and `FORCE ROW LEVEL SECURITY`. Squawk clean; a CHECK widening is `NOT VALID` then validated in the
   next migration. Tests `// req: SEC-03` for the roles' exact grants (`grants.golden`, an extra privilege fails),
   `// req: INV-06` for tenant isolation, each with `// asvs:` IDs from `docs/security/asvs-5.0.tsv`; the schema
   golden file; `CONNECT` on Nemura's database refused to a login that holds no Nemura role (the reverse is infra's, `[live-verify]`).
-- [ ] 2.3 `internal/adapters/postgres/nemura`: the unit of work (`store.go`) that sets `app.org_id` first in every
+  (Built, 19 Nov 2026: migration 000001, `internal/adapters/postgres/nemura/nemura_test.go` and its golden files. The tests carry no Fyniq requirement tags (SEC-03, INV-06 are Fyniq's rows); NM-SEC-01 is tagged in 10.2. `ALL` is revoked from `PUBLIC` on the database.)
+- [x] 2.3 `internal/adapters/postgres/nemura`: the unit of work (`store.go`) that sets `app.org_id` first in every
   transaction and the `Ping` behind `/readyz`'s `database` check (sqlc joins when the first query is worth generating); the archtest
   exception for `nemura/store.go` only, so no other file begins or ends a transaction. Compose gains
   `nemura-migrate` and `nemura-api` waits for it; `nemura-api` connects as `nemura_api`. Tests: the unit of work
   refuses a query with no organisation set and cannot read another organisation's row; a planted transaction call
   outside `store.go` is caught.
-- [ ] 2.4 Verify: `make check`, `make test`, `make images`, `make up PEOPLE=yes` brings `nemura-api` ready.
+  (Built, 19 Nov 2026: `internal/adapters/postgres/nemura/store.go`, `bootstrap_local.go`, `nemuratest`, the compose services `nemura-migrate` and `nemura-api`, and the archtest exception.)
+- [x] 2.4 Verify: `make check`, `make test`, `make images`, `make up PEOPLE=yes` brings `nemura-api` ready.
+  (Done: `make check`, `make db-lint`, gosec, semgrep and the compose stack ready.)
 
 ## 3. Audit chain, outbox and worker (two slices)
 
