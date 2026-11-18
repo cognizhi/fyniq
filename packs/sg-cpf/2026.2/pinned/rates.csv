@@ -1,0 +1,40 @@
+case,month,group,age,wage,want_employer,want_employee,why,source
+CPF-01,2026-03,sc_spr3,30,7600.00,0.17,0.20,"55 and below: 17% by the employer and 20% by the employee",cpf-rates-2026
+CPF-02,2026-12,sc_spr3,55,8000.00,0.17,0.20,"55 itself is in 55 and below",cpf-rates-2026
+CPF-03,2026-06,sc_spr3,56,5000.00,0.16,0.18,"above 55 to 60 in 2026",cpf-rates-2026
+CPF-04,2026-06,sc_spr3,62,4000.00,0.125,0.125,"above 60 to 65 in 2026",cpf-rates-2026
+CPF-05,2026-06,sc_spr3,68,3000.00,0.09,0.075,"above 65 to 70",cpf-rates-2026
+CPF-06,2026-06,sc_spr3,71,2500.00,0.075,0.05,"above 70",cpf-rates-2026
+CPF-07,2027-01,sc_spr3,58,5000.00,0.165,0.19,"above 55 to 60 from 1 January 2027: 35.5% in all",cpf-rates-2027
+CPF-08,2027-01,sc_spr3,63,5000.00,0.13,0.13,"above 60 to 65 from 1 January 2027: 26% in all",cpf-rates-2027
+CPF-09,2027-01,sc_spr3,40,9000.00,0.17,0.20,"55 and below is unchanged in 2027",cpf-rates-2027
+CPF-10,2026-06,sc_spr3,30,750.00,none,none,"a wage of $750 is in the graduated range, not held by this version",cpf-rates-2026
+CPF-11,2025-12,sc_spr3,30,7600.00,none,none,"wages earned before 2026 are not held by this version",cpf-rates-2026
+CPF-12,2026-03,sc_spr3,30,12000.00,0.17,0.20,"above the Ordinary Wage ceiling the rate is the same; the ceiling limits the wages it applies to",cpf-rates-2026 iras-cpf-ceilings
+CPF-13,2026-06,spr1_gg,30,5000.00,0.04,0.05,"first-year permanent resident at graduated rates of both, age 30: 9% in all, 5% by the employee",cpf-table-2-2026
+CPF-14,2026-06,spr1_gg,57,5000.00,0.04,0.05,"first-year permanent resident at graduated rates of both, age 57: 9% in all, 5% by the employee",cpf-table-2-2026
+CPF-15,2026-06,spr1_gg,62,5000.00,0.035,0.05,"first-year permanent resident at graduated rates of both, age 62: 8.5% in all, 5% by the employee",cpf-table-2-2026
+CPF-16,2026-06,spr1_gg,66,5000.00,0.035,0.05,"first-year permanent resident at graduated rates of both, age 66: 8.5% in all, 5% by the employee",cpf-table-2-2026
+CPF-17,2027-02,spr1_gg,62,5000.00,0.035,0.05,"first-year permanent resident at graduated rates of both, age 62: 8.5% in all, 5% by the employee",cpf-table-2-2027
+CPF-18,2026-06,spr2_gg,30,5000.00,0.09,0.15,"second-year permanent resident at graduated rates of both, age 30: 24% in all, 15% by the employee",cpf-table-3-2026
+CPF-19,2026-06,spr2_gg,57,5000.00,0.06,0.125,"second-year permanent resident at graduated rates of both, age 57: 18.5% in all, 12.5% by the employee",cpf-table-3-2026
+CPF-20,2026-06,spr2_gg,62,5000.00,0.035,0.075,"second-year permanent resident at graduated rates of both, age 62: 11% in all, 7.5% by the employee",cpf-table-3-2026
+CPF-21,2026-06,spr2_gg,66,5000.00,0.035,0.05,"second-year permanent resident at graduated rates of both, age 66: 8.5% in all, 5% by the employee",cpf-table-3-2026
+CPF-22,2027-02,spr2_gg,57,5000.00,0.06,0.125,"second-year permanent resident at graduated rates of both, age 57: 18.5% in all, 12.5% by the employee",cpf-table-3-2027
+CPF-23,2026-06,spr1_fg,30,5000.00,0.17,0.05,"first-year permanent resident at full employer and graduated employee rates, age 30: 22% in all, 5% by the employee",cpf-table-4-2026
+CPF-24,2026-06,spr1_fg,57,5000.00,0.16,0.05,"first-year permanent resident at full employer and graduated employee rates, age 57: 21% in all, 5% by the employee",cpf-table-4-2026
+CPF-25,2026-06,spr1_fg,62,5000.00,0.125,0.05,"first-year permanent resident at full employer and graduated employee rates, age 62: 17.5% in all, 5% by the employee",cpf-table-4-2026
+CPF-26,2026-06,spr1_fg,68,5000.00,0.09,0.05,"first-year permanent resident at full employer and graduated employee rates, age 68: 14% in all, 5% by the employee",cpf-table-4-2026
+CPF-27,2026-06,spr1_fg,72,5000.00,0.075,0.05,"first-year permanent resident at full employer and graduated employee rates, age 72: 12.5% in all, 5% by the employee",cpf-table-4-2026
+CPF-28,2027-02,spr1_fg,57,5000.00,0.165,0.05,"first-year permanent resident at full employer and graduated employee rates, age 57: 21.5% in all, 5% by the employee",cpf-table-4-2027
+CPF-29,2027-02,spr1_fg,62,5000.00,0.13,0.05,"first-year permanent resident at full employer and graduated employee rates, age 62: 18% in all, 5% by the employee",cpf-table-4-2027
+CPF-30,2026-06,spr2_fg,30,5000.00,0.17,0.15,"second-year permanent resident at full employer and graduated employee rates, age 30: 32% in all, 15% by the employee",cpf-table-5-2026
+CPF-31,2026-06,spr2_fg,57,5000.00,0.16,0.125,"second-year permanent resident at full employer and graduated employee rates, age 57: 28.5% in all, 12.5% by the employee",cpf-table-5-2026
+CPF-32,2026-06,spr2_fg,62,5000.00,0.125,0.075,"second-year permanent resident at full employer and graduated employee rates, age 62: 20% in all, 7.5% by the employee",cpf-table-5-2026
+CPF-33,2026-06,spr2_fg,68,5000.00,0.09,0.05,"second-year permanent resident at full employer and graduated employee rates, age 68: 14% in all, 5% by the employee",cpf-table-5-2026
+CPF-34,2026-06,spr2_fg,72,5000.00,0.075,0.05,"second-year permanent resident at full employer and graduated employee rates, age 72: 12.5% in all, 5% by the employee",cpf-table-5-2026
+CPF-35,2027-02,spr2_fg,57,5000.00,0.165,0.125,"second-year permanent resident at full employer and graduated employee rates, age 57: 29% in all, 12.5% by the employee",cpf-table-5-2027
+CPF-36,2027-02,spr2_fg,62,5000.00,0.13,0.075,"second-year permanent resident at full employer and graduated employee rates, age 62: 20.5% in all, 7.5% by the employee",cpf-table-5-2027
+CPF-37,2026-06,spr1_gg,30,750.00,none,none,"a wage of $750 is in the graduated range, read with low_wages",cpf-table-2-2026
+CPF-38,2025-12,spr1_gg,30,5000.00,none,none,"wages earned before 2026 are not held by this version",cpf-table-2-2026
+CPF-39,2026-06,spr3,30,5000.00,none,none,"a group the pack does not hold",cpf-table-1-2026

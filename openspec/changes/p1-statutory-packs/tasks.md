@@ -27,6 +27,17 @@
 
 - [ ] 4.1 Write `sg-gst`, `sg-deadlines`, `sg-cpf`, `sg-sdl` and `sg-shg` from the official pages, each value with its source URL and a pinned test (`fyniq-sg-statutory` skill). Any value without a primary source keeps `[verify]`, and its pack stays inactive (20 Oct 2026: `sg-gst@2026.1` holds the rate history and the twelve B.6 codes with their F5 boxes, each from IRAS, and 22 pinned cases; BL corrected to "not reported", rev 0.37. 7 Nov 2026, with `p1-gst`: `sg-gst@2026.3` adds the registration threshold, and `sg-deadlines@2026.1` is written. 8 Nov 2026, with `p1-planning`: `sg-cpf@2026.1` holds only the rates for citizens and third-year permanent residents above $750 a month, by age band, and the wage ceilings; `sg-sdl@2026.1` holds the levy. **Left:** the reverse-charge codes in `sg-gst`; in `sg-cpf`, the first- and second-year permanent residents' rates and the graduated rates up to $750, which the pay run needs; and `sg-shg`)
 
+  (18 Nov 2026, p1-statutory-packs, cpf: `sg-cpf@2026.2` adds, from the CPF Board's rate tables for 1 January 2026 and
+  2027 (Tables 1 to 5), the first- and second-year permanent residents at graduated rates of both the employer and the
+  employee (`spr1_gg`, `spr2_gg`) and at full employer and graduated employee rates (`spr1_fg`, `spr2_fg`), the
+  graduated range of monthly total wages from $50 to $750 (`low_wages`; `pack.CPFLowWagesOn`: the flat rate of the
+  wages, plus the slope of the wages above $500, the slope being the employee's share), and the Ordinary Wage maximum
+  of each band (`pack.CPFOWMax`, pinned against the printed "Max." figures). The loader holds each band's formula to its
+  full rate at $750. The 2027 tables change the ages above 55 up to 65 for citizens, third-year permanent residents
+  and the F/G groups, and leave the G/G groups as they were. **Left:** the pay run's rounding (the total to the nearest
+  dollar, the employee's share down, the employer's the difference) and the Additional Wage ceiling across a year,
+  which are `p1-payroll-link`'s calculator; the birthday-month transition is the age the calculator passes.)
+
 ## 5. Home rows
 
 - [ ] 5.1 (**Left**) Map each §14.2 row of `compliance/singapore-statutory` to the change that closes it, recorded in this change's `design.md`. Close the rows no module owns with tests (`// req: compliance/singapore-statutory <title>`): retention defaults and MAS guidelines as reference only. The electronic-signature conditions close with `p1-approval-engine`, which tags their test
