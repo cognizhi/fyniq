@@ -313,6 +313,12 @@ fyniq_api       INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_api       SELECT    journal_entry
 fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_api       SELECT    journal_line
+fyniq_api       EXECUTE   kb_platform_index()
+fyniq_api       EXECUTE   kb_platform_info()
+fyniq_api       EXECUTE   kb_platform_page_get()
+fyniq_api       EXECUTE   kb_platform_page_guides()
+fyniq_api       EXECUTE   kb_platform_readable()
+fyniq_api       EXECUTE   kb_platform_search()
 fyniq_api       INSERT    kpi_input (entered_at, entered_by, headcount, lost_customers, month, new_customers, paying_customers)
 fyniq_api       SELECT    kpi_input
 fyniq_api       UPDATE    kpi_input (entered_at, entered_by, headcount, lost_customers, new_customers, paying_customers, version)
