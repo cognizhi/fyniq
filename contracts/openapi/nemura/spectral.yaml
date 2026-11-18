@@ -1,0 +1,31 @@
+# NM-ARC-03 as Spectral rules over Nemura's contract (`make api-check`, part of `make test`): Fyniq's conventions (PRD-001
+# NFR-API-01, FR-INT-07) for a second API. The Go tests of internal/nemura/api check the same on the code, plus the
+# Idempotency-Key on every write and a row in the authorisation matrix for every operation.
+extends: [["spectral:oas", "recommended"]]
+rules:
+  nemura-operation-described:
+    description: Every operation states its purpose and its side effects.
+    severity: error
+    given: "$.paths[*][get,put,post,patch,delete]"
+    then:
+      - field: summary
+        function: truthy
+      - field: description
+        function: length
+        functionOptions: { min: 40 }
+  nemura-errors-are-problem-details:
+    description: Every error response is RFC 9457 problem details.
+    severity: error
+    given: "$.paths[*][*].responses[?(@property.match(/^[45][0-9][0-9]$/))].content"
+    then:
+      field: application/problem+json
+      function: truthy
+  nemura-parameter-example:
+    description: Every parameter has a description and an example.
+    severity: error
+    given: "$.paths[*][*].parameters[*]"
+    then:
+      - field: description
+        function: truthy
+      - field: schema.examples
+        function: truthy

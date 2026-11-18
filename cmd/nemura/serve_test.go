@@ -107,6 +107,15 @@ func TestTheMigrateRolePreparesTheDatabaseAndTheAPIServesOverIt(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil || v.Service != "nemura-api" || v.Version == "" || v.Commit == "" || v.Flavour != "local" {
 		t.Errorf("/version: %+v, %v", v, err)
 	}
+	// The public API under /v1 answers, from the contract's operations (NM-ARC-03).
+	if r, err := http.Get(base + "/v1/info"); err != nil || r.StatusCode != http.StatusOK {
+		t.Errorf("GET /v1/info: %v %v", r, err)
+	} else {
+		_ = r.Body.Close()
+	}
+	if r, err := http.Get(base + "/v1/errors/NM_NOPE"); err != nil || r.StatusCode != http.StatusNotFound || !strings.HasPrefix(r.Header.Get("Content-Type"), "application/problem+json") {
+		t.Errorf("GET /v1/errors/NM_NOPE: %v %v", r, err)
+	}
 	probe := exec.Command(bin, "healthcheck")
 	probe.Env = env("PORT=" + port) // no role: the probe answers for any container of the image
 	if out, err := probe.CombinedOutput(); err != nil {

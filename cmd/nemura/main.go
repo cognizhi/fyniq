@@ -26,6 +26,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/httpserver"
+	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/outbox"
 	"github.com/cognizhi/fyniq/internal/nemura/role"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -102,6 +103,7 @@ func routes(r role.Role, s *httpserver.Server, deps app.Deps, getenv func(string
 	if r == role.Worker {
 		return workerRoutes(s, deps, getenv, store)
 	}
+	api.New(s) // the public API under /v1 (NM-ARC-03)
 	return nil
 }
 
