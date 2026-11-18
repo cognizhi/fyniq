@@ -105,8 +105,8 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		for _, r := range rep.Runs {
 			out[r.Control+" "+r.Check] = r
 		}
-		if len(out) != 6 {
-			t.Fatalf("want the 6 verifications' runs, got %v", out)
+		if len(out) != 7 {
+			t.Fatalf("want the 7 verifications' runs, got %v", out)
 		}
 		return out
 	}
@@ -267,7 +267,8 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if len(latest) != 6 || slices.ContainsFunc(latest, func(r storage.ControlRun) bool { return r.OK }) {
+		// CTL-AI-08 verify kb.pages finds nothing here: no page is published, so it is the one run that is ok.
+		if len(latest) != 7 || slices.ContainsFunc(latest, func(r storage.ControlRun) bool { return r.OK && r.Check != "verify kb.pages" }) {
 			t.Errorf("the latest runs: %+v", latest)
 		}
 		return nil
