@@ -75,7 +75,7 @@
   (18 Nov 2026: `sdk/typescript` is the workspace package `@fyniq/sdk`. It owns the one file generated from the
   contract, `src/schema.d.ts` (moved from the web app; `make openapi` regenerates it, `make api-check` fails while it is
   stale), and `createFyniqClient` on `openapi-fetch`: the token, an `Idempotency-Key` on every write kept across retries,
-  a retry of 429 and 503 after `Retry-After`, `unwrap` throwing a `FyniqError` with the problem's code, fix and fields,
+  a retry of 429 (and of a read's 503) after `Retry-After`, `unwrap` throwing a `FyniqError` with the problem's code, fix and fields,
   `etagOf`, `previewHeaders` and `wasPreview`, `rateLimitOf` and `paginate` over `next_cursor`. The web app takes its
   types from it (`apps/web/src/api/schema.ts` re-exports them); `Dockerfile.web` and `.dockerignore` carry the new
   directory. `pnpm pack` makes the tarball (`publishConfig` points `exports` at the compiled `dist/`); the test

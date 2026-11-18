@@ -91,7 +91,16 @@ describe("the TypeScript SDK", () => {
     expect(f.seen).toHaveLength(1);
   });
 
-  it("never retries a refusal that is not 429 or 503", async () => {
+  it("retries a read's 503 but never a write's, whose outcome is unknown and which may take no Idempotency-Key", async () => {
+    const reads = fake(json(503, {}, { "Retry-After": "1" }), json(200, { items: [] }));
+    const r = await createFyniqClient({ baseUrl: "https://app.example", fetch: reads.fetch, sleep: async () => {} }).GET("/v1/integration-clients", {});
+    expect([r.response.status, reads.seen.length]).toEqual([200, 2]);
+    const writes = fake(json(503, {}, { "Retry-After": "1" }), json(202, {}));
+    const w = await createFyniqClient({ baseUrl: "https://app.example", fetch: writes.fetch, sleep: async () => {} }).POST("/v1/integration-clients", { body: create as never });
+    expect([w.response.status, writes.seen.length]).toEqual([503, 1]);
+  });
+
+  it("never retries a refusal that is not 429 or a read's 503", async () => {
     const f = fake(problem(422, { code: "X-01" }));
     await createFyniqClient({ baseUrl: "https://app.example", fetch: f.fetch }).GET("/v1/integration-clients", {});
     expect(f.seen).toHaveLength(1);

@@ -3,7 +3,8 @@
 // fails while it is out of date) with the conventions of §8.18.1 built in:
 //
 //   - an Idempotency-Key on every state-changing call, kept across retries (FR-INT-08);
-//   - a retry of a 429 or 503 after the Retry-After the API names, when that is short (FR-INT-16);
+//   - a retry of a 429 (any call: a refused request saved nothing) or of a 503 (a read only) after the Retry-After the API
+//     names, when that is short (FR-INT-16);
 //   - the RFC 9457 problem of a refusal as a FyniqError with its stable code and its fix (FR-INT-07);
 //   - the ETag of a read to send back in If-Match (FR-INT-09), and Prefer: return=preview (FR-INT-14);
 //   - cursor-paginated lists as one async iterator (FR-INT-10).
@@ -34,7 +35,7 @@ export interface FyniqOptions {
   token?: string | (() => string | Promise<string>);
   /** The fetch to use: the platform's by default. */
   fetch?: (request: Request) => Promise<Response>;
-  /** How many times a 429 or 503 is retried: 2 by default; 0 never retries. */
+  /** How many times a 429, or a read's 503, is retried: 2 by default; 0 never retries. A write is never retried after a 503: not every write takes an Idempotency-Key, and its outcome is unknown. */
   maxRetries?: number;
   /** The longest the client waits to retry, in milliseconds: 10 seconds by default. A longer Retry-After is returned to the caller. */
   maxWaitMs?: number;
@@ -74,7 +75,8 @@ export function createFyniqClient(options: FyniqOptions): Client<paths> {
     const request = new Request(input, { headers });
     for (let attempt = 0; ; attempt++) {
       const response = await base(request.clone());
-      if ((response.status !== 429 && response.status !== 503) || attempt >= maxRetries) return response;
+      const retryable = response.status === 429 || (response.status === 503 && safe.has(input.method));
+      if (!retryable || attempt >= maxRetries) return response;
       const wait = retryAfterMs(response) ?? Math.min(500 * 2 ** attempt, maxWait);
       if (wait > maxWait) return response;
       await sleep(wait);

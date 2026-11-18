@@ -27,7 +27,7 @@ What it does for you:
 | Rule | Built in |
 |---|---|
 | FR-INT-08 | an `Idempotency-Key` on every write that has none, kept across retries |
-| FR-INT-16 | a 429 or 503 is retried after its `Retry-After` (up to `maxRetries`, 2; a wait over `maxWaitMs`, 10 s, is returned to you); `rateLimitOf(response)` reads `RateLimit` |
+| FR-INT-16 | a 429, or a read's 503, is retried after its `Retry-After` (up to `maxRetries`, 2; a wait over `maxWaitMs`, 10 s, is returned to you); `rateLimitOf(response)` reads `RateLimit` |
 | FR-INT-07 | `unwrap(result)` throws a `FyniqError` (`status`, `code`, `fix`, `fields`) |
 | FR-INT-09 | `etagOf(response)` for `If-Match` |
 | FR-INT-14 | `previewHeaders` (`Prefer: return=preview`) and `wasPreview(response)` |
