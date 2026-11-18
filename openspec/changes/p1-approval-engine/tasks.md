@@ -150,7 +150,7 @@
   Accountant reviews (`/accounting/reviews`, `/accounting/reviews/$reviewId`); guide `accountant-review.md`, compiled.
   Tests `TestTheAccountantReviewsAClosedMonth` (G4-109), `TestAttackAnAccountantReviewKeepsItsRules`,
   `TestAQuarterWithoutTheAccountantsReviewWarns`, `accountantreview_test.go`, `AccountantReviews.test.tsx`. FM-6 arrives
-  with wave 6. **Left:** notices to management when a query is raised, with the notification types.)
+  with wave 6 (built 18 Nov 2026, rule-based by rev 0.287: `internal/domain/unusual`, `TestUnusualItemsEnterTheWeeklyReview`). **Left:** notices to management when a query is raised, with the notification types.)
 - [ ] 3.5 The control check: period lock, approvals, segregation of duties and team mode together. Test `// req: FR-CTL-04`
   **Left.**
 
