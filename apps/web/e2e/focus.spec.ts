@@ -11,7 +11,8 @@ import { open, screens } from "./shell";
 // order counts (the skip link is drawn above the header); a toast, which lets clicks through and so is not hit-tested,
 // by whether it covers the control entirely.
 async function obscured(page: Page): Promise<string | null> {
-  return page.evaluate(() => {
+  return page.evaluate(async () => {
+    await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))); // the frame the person sees
     const el = document.activeElement as HTMLElement | null;
     if (!el || el === document.body) return null;
     const r = el.getBoundingClientRect();

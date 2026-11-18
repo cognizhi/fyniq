@@ -24,7 +24,7 @@ build-backend = "hatchling.build"
 packages = ["src/oracle"]
 
 [tool.uv]
-exclude-newer = "2026-10-01T00:00:00Z"
+exclude-newer = "2026-11-04T00:00:00Z"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

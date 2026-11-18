@@ -67,6 +67,16 @@ Work down the list. Each step opens the page where you do it:
 A step your roles cannot see is left out. Opening balances, bank feeds, employees and importing
 from the workbook join the list as they arrive.
 
+### What happened? Where to record it
+
+Not sure where something goes? Under **What happened? Where to record it**, choose what happened,
+such as "A customer paid us" or "I paid a company cost with my own money". Fyniq says where to
+record it and what to do there, with a link to that page and to the guide's page about it. It lists
+only what your access lets you record.
+
+Every list that is empty says what goes there, and offers the first thing to do, such as **Add your
+first contact**.
+
 ### Your work
 
 **Your work** shows what your roles work through, each row counting a list and opening it:
@@ -77,6 +87,18 @@ from the workbook join the list as they arrive.
 - **AP specialist**: draft bills to finish, bills overdue, bills to pay, payment batches being prepared, approved
   claims to pay and bank-detail changes waiting for a second person.
 - **Payment releaser**: batches waiting for release and payments the bank rejected, then each bank account's balance.
+
+The Administrator lands on **Settings**, and the Company secretary and the DPO on **Compliance**, so their rows come
+first there:
+
+- **Administrator**: people asking to join, invitations waiting to be accepted, role changes waiting for a second
+  approver and integrations failing.
+- **Company secretary**: the company secretary's items to see to, register updates waiting for approval, and the
+  upcoming deadlines.
+- **DPO**: data requests to answer and breaches still open.
+
+The Auditor lands on **Reports**, where **Your engagement** says until when their read-only access lasts and opens the
+journals, the evidence and the audit trail.
 
 A row whose list your roles cannot read is left out rather than shown as nothing to do. With several roles you see
 each row once. The Owner, the Controller, the Accountant and the Tax agent read the same work from the pulse card, the

@@ -243,3 +243,16 @@ html {
     display: none;
   }
 }
+
+/* A glossary term (FR-UX-11): its own words, underlined with dots, open its definition on hover, focus or a tap. */
+.fy-term {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: help;
+}
