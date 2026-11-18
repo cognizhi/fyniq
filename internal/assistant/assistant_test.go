@@ -499,7 +499,6 @@ func TestTheAnswerIsRenderedInFyniqsWords(t *testing.T) {
 // A read of the knowledge base is recorded with the page versions it read, so the activity log can say which pages an answer
 // used (AI-12, AI-51): the turn's tool call keeps what the API reported, and a read of the books lists none.
 // req: AI-12
-// req: AI-51
 func TestAKnowledgeBaseReadIsRecordedWithThePageVersionsItRead(t *testing.T) {
 	b := &api{
 		answers: []ports.ModelResponse{

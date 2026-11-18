@@ -46,10 +46,6 @@ func shippedKB(t *testing.T) knowledge.Corpus {
 // and the guide pages each cites, never the compiled page; a long page as its outline and the section asked for; search finds
 // by the words people use. A page the person may not open is not in their index, their search or their reads, and its
 // refusal reads as a page that is not there. The result holds no figures, and names the page version it used.
-// req: AI-49
-// req: AI-51
-// req: AI-54
-// req: AI-58
 // asvs: V8.2.1, V8.2.2
 func TestTheKnowledgeBaseToolsReadThroughTheReaderFilter(t *testing.T) {
 	e := newEnv(t)

@@ -71,7 +71,7 @@ def findings(case):
 
 
 class TheLintsAgree(unittest.TestCase):
-    """# req: AI-52"""
+    """The Go lint (internal/domain/knowledge) gives the same findings. (Not tagged with a requirement: it proves the lint half of AI-52 only.)"""
 
     def test_every_fixture_gives_its_expected_findings(self):
         cases = sorted(p for p in FIXTURES.iterdir() if p.is_dir())
