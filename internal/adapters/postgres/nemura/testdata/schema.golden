@@ -2,6 +2,7 @@
 audit_chain | nemura_migrator | true | true
 audit_event | nemura_migrator | true | true
 organisation | nemura_migrator | true | true
+outbox | nemura_migrator | true | true
 tenant_directory | nemura_migrator | false | false
 tenants | nemura_migrator | false | false
 
@@ -22,6 +23,23 @@ audit_event | object_id | uuid | false | ((((body)::jsonb -> 'object'::text) ->>
 organisation | organisation_id | uuid | true | nemura.current_org()
 organisation | name | text | true | 
 organisation | created_at | timestamp with time zone | true | now()
+outbox | organisation_id | uuid | true | nemura.current_org()
+outbox | id | uuid | true | uuidv7()
+outbox | worker_class | text | true | 
+outbox | kind | text | true | 
+outbox | payload | jsonb | true | '{}'::jsonb
+outbox | business_key | text | false | 
+outbox | state | text | true | 'pending'::text
+outbox | attempts | integer | true | 0
+outbox | max_attempts | integer | true | 5
+outbox | dispatches | integer | true | 0
+outbox | task_name | text | false | 
+outbox | lease_holder | text | false | 
+outbox | lease_expires_at | timestamp with time zone | false | 
+outbox | deadline_at | timestamp with time zone | false | 
+outbox | last_error | text | false | 
+outbox | created_at | timestamp with time zone | true | now()
+outbox | updated_at | timestamp with time zone | true | now()
 tenant_directory | organisation_id | uuid | true | 
 tenant_directory | created_at | timestamp with time zone | true | now()
 
@@ -55,6 +73,30 @@ organisation | organisation_name_not_null | NOT NULL name
 organisation | organisation_organisation_id_not_null | NOT NULL organisation_id
 organisation | organisation_pkey | PRIMARY KEY (organisation_id)
 organisation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+outbox | outbox_attempts_not_null | NOT NULL attempts
+outbox | outbox_attempts_range | CHECK (((attempts >= 0) AND ((max_attempts >= 1) AND (max_attempts <= 100))))
+outbox | outbox_business_key | UNIQUE (organisation_id, kind, business_key)
+outbox | outbox_business_key_length | CHECK (((length(business_key) >= 1) AND (length(business_key) <= 500)))
+outbox | outbox_created_at_not_null | NOT NULL created_at
+outbox | outbox_dispatches_not_negative | CHECK ((dispatches >= 0))
+outbox | outbox_dispatches_not_null | NOT NULL dispatches
+outbox | outbox_id_not_null | NOT NULL id
+outbox | outbox_kind_format | CHECK (((kind ~ '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$'::text) AND (length(kind) <= 100)))
+outbox | outbox_kind_not_null | NOT NULL kind
+outbox | outbox_last_error_length | CHECK ((length(last_error) <= 2000))
+outbox | outbox_lease_whole | CHECK (((lease_holder IS NULL) = (lease_expires_at IS NULL)))
+outbox | outbox_max_attempts_not_null | NOT NULL max_attempts
+outbox | outbox_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+outbox | outbox_organisation_id_not_null | NOT NULL organisation_id
+outbox | outbox_payload_not_null | NOT NULL payload
+outbox | outbox_payload_object | CHECK (((jsonb_typeof(payload) = 'object'::text) AND (octet_length((payload)::text) <= 262144)))
+outbox | outbox_pkey | PRIMARY KEY (organisation_id, id)
+outbox | outbox_state_known | CHECK ((state = ANY (ARRAY['pending'::text, 'dispatched'::text, 'running'::text, 'done'::text, 'failed'::text, 'dead'::text])))
+outbox | outbox_state_not_null | NOT NULL state
+outbox | outbox_task_name_length | CHECK ((length(task_name) <= 500))
+outbox | outbox_updated_at_not_null | NOT NULL updated_at
+outbox | outbox_worker_class_known | CHECK ((worker_class = ANY (ARRAY['worker'::text, 'executor'::text])))
+outbox | outbox_worker_class_not_null | NOT NULL worker_class
 tenant_directory | tenant_directory_created_at_not_null | NOT NULL created_at
 tenant_directory | tenant_directory_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
 tenant_directory | tenant_directory_organisation_id_not_null | NOT NULL organisation_id
@@ -66,6 +108,9 @@ CREATE INDEX audit_event_object_idx ON nemura.audit_event USING btree (organisat
 CREATE UNIQUE INDEX audit_event_pkey ON nemura.audit_event USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_event_seq_key ON nemura.audit_event USING btree (organisation_id, seq)
 CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organisation_id)
+CREATE UNIQUE INDEX outbox_business_key ON nemura.outbox USING btree (organisation_id, kind, business_key)
+CREATE UNIQUE INDEX outbox_pkey ON nemura.outbox USING btree (organisation_id, id)
+CREATE INDEX outbox_state_idx ON nemura.outbox USING btree (organisation_id, state, deadline_at)
 CREATE UNIQUE INDEX tenant_directory_pkey ON nemura.tenant_directory USING btree (organisation_id)
 
 ## triggers
@@ -75,12 +120,16 @@ CREATE TRIGGER audit_event_append BEFORE INSERT ON nemura.audit_event FOR EACH R
 CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON nemura.audit_event FOR EACH ROW EXECUTE FUNCTION nemura.audit_immutable()
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON nemura.audit_event FOR EACH STATEMENT EXECUTE FUNCTION nemura.audit_immutable()
 CREATE TRIGGER organisation_registered AFTER INSERT ON nemura.organisation FOR EACH ROW EXECUTE FUNCTION nemura.organisation_registered()
+CREATE TRIGGER outbox_guard BEFORE UPDATE ON nemura.outbox FOR EACH ROW EXECUTE FUNCTION nemura.outbox_guard()
+CREATE TRIGGER outbox_no_delete BEFORE DELETE ON nemura.outbox FOR EACH ROW EXECUTE FUNCTION nemura.outbox_no_delete()
+CREATE TRIGGER outbox_no_truncate BEFORE TRUNCATE ON nemura.outbox FOR EACH STATEMENT EXECUTE FUNCTION nemura.outbox_no_delete()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('organisation', 'organisation_id')
 
 ## policies (table | name | using | with check)
 audit_chain | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 audit_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+outbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 
 ## functions (definition)
 CREATE OR REPLACE FUNCTION nemura.audit_chain_guard()
@@ -149,6 +198,44 @@ BEGIN
   INSERT INTO nemura.audit_chain (organisation_id) VALUES (NEW.organisation_id);
   INSERT INTO nemura.tenant_directory (organisation_id) VALUES (NEW.organisation_id);
   RETURN NULL;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.outbox_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF NEW.worker_class IS DISTINCT FROM OLD.worker_class OR NEW.kind IS DISTINCT FROM OLD.kind
+     OR NEW.payload IS DISTINCT FROM OLD.payload OR NEW.business_key IS DISTINCT FROM OLD.business_key
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'Outbox row % cannot change what it is', OLD.id USING ERRCODE = 'NM070';
+  END IF;
+  IF NEW.state IS DISTINCT FROM OLD.state AND NOT (
+       (OLD.state = 'pending'    AND NEW.state IN ('dispatched', 'dead')) OR
+       (OLD.state = 'dispatched' AND NEW.state IN ('running', 'dead')) OR
+       (OLD.state = 'running'    AND NEW.state IN ('done', 'failed', 'dispatched', 'dead')) OR
+       (OLD.state = 'failed'     AND NEW.state IN ('running', 'dispatched', 'dead')) OR
+       (OLD.state = 'dead'       AND NEW.state IN ('pending'))) THEN
+    RAISE EXCEPTION 'Outbox row % cannot go from % to %', OLD.id, OLD.state, NEW.state
+      USING ERRCODE = 'NM071', HINT = 'pending -> dispatched -> running -> done | failed | dead (§12.11).';
+  END IF;
+  IF NEW.attempts < OLD.attempts OR NEW.dispatches < OLD.dispatches THEN
+    RAISE EXCEPTION 'Outbox row % cannot count attempts or dispatches backwards', OLD.id USING ERRCODE = 'NM070';
+  END IF;
+  NEW.updated_at := now();
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.outbox_no_delete()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  RAISE EXCEPTION 'Outbox rows are kept (% on %)', TG_OP, TG_TABLE_NAME USING ERRCODE = 'NM070';
 END
 $function$
 

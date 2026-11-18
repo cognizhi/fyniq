@@ -19,12 +19,16 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"net/url"
 	"os"
+	"time"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/httpserver"
+	"github.com/cognizhi/fyniq/internal/nemura/outbox"
 	"github.com/cognizhi/fyniq/internal/nemura/role"
+	"github.com/cognizhi/fyniq/internal/ports"
 )
 
 // The local build sets these (local.go): the database URL of a role when NEMURA_DATABASE_URL is unset, what the migrate
@@ -35,6 +39,13 @@ var (
 	before             func(ctx context.Context) error
 	after              func(ctx context.Context, migratorURL string) error
 )
+
+// taskWiring builds what the worker class needs to send and receive tasks: the credentials a task carries and the queue that
+// delivers it. The local build (local.go) wires the local substitutes; the release build's, Cloud Tasks with OIDC tokens, is
+// the cloud code of p1-nemura-platform task 10.1 [live-verify], and until then refuses to start the worker.
+var taskWiring = func(app.Deps, func(string) string) (ports.TaskTokens, ports.Queue, error) {
+	return nil, nil, fmt.Errorf("the release flavour's task queue and credentials arrive with the cloud code (p1-nemura-platform task 10.1)")
+}
 
 func main() { os.Exit(run(os.Args[1:], os.Getenv)) }
 
@@ -52,32 +63,60 @@ func run(args []string, getenv func(string) string) int {
 	if r == role.Migrate {
 		return app.Run(r.Service(), func(ctx context.Context, _ app.Deps, args []string) error { return migrate(ctx, getenv, args) })
 	}
-	return app.Serve(r.Service(), func(s *httpserver.Server, _ app.Deps) error { return routes(r, s, getenv) })
+	return app.Serve(r.Service(), func(s *httpserver.Server, deps app.Deps) error { return routes(r, s, deps, getenv) })
 }
 
 func databaseURL(r role.Role, getenv func(string) string) (string, error) {
-	url := cmp.Or(getenv("NEMURA_DATABASE_URL"), defaultDatabaseURL(r))
-	if url == "" {
+	raw := cmp.Or(getenv("NEMURA_DATABASE_URL"), defaultDatabaseURL(r))
+	if raw == "" {
 		return "", fmt.Errorf("NEMURA_DATABASE_URL is not set: give the URL of the %s database role", r.DatabaseRole())
 	}
-	return url, nil
+	// A service holds its own database role and no other (NM-ARC-06, SEC-03): a URL for another role is refused, so a
+	// service started with another service's environment cannot borrow its grants.
+	if u, err := url.Parse(raw); err != nil || u.User == nil || u.User.Username() != r.DatabaseRole() {
+		return "", &runtimeError{fmt.Sprintf("NEMURA_DATABASE_URL is not the %s role's: the %s service connects as %s and no other role", r.DatabaseRole(), r, r.DatabaseRole())}
+	}
+	return raw, nil
 }
+
+// runtimeError is a start-up refusal with Nemura's stable code.
+type runtimeError struct{ msg string }
+
+func (e *runtimeError) Error() string { return "NEMURA-ROLE-02: " + e.msg }
 
 // routes adds the role's own handlers. Every role answers /healthz, /readyz and /version from the shell; the API's
 // operations arrive with the API foundation (p1-nemura-platform, task 4).
-func routes(r role.Role, s *httpserver.Server, getenv func(string) string) error {
-	if r != role.API {
+func routes(r role.Role, s *httpserver.Server, deps app.Deps, getenv func(string) string) error {
+	if r != role.API && r != role.Worker {
 		return fmt.Errorf("the %s role has no routes", r)
 	}
-	url, err := databaseURL(r, getenv)
+	dbURL, err := databaseURL(r, getenv)
 	if err != nil {
 		return err
 	}
-	store, err := nemura.Open(context.Background(), url)
+	store, err := nemura.Open(context.Background(), dbURL)
 	if err != nil {
 		return err
 	}
 	s.AddReadiness("database", store.Ping)
+	if r == role.Worker {
+		return workerRoutes(s, deps, getenv, store)
+	}
+	return nil
+}
+
+// workerRoutes is the worker class (ADR-T7): POST /tasks delivers one outbox row's work, POST /tick sweeps the rows that never
+// left or overran. Both need the worker class's credential. No work kind is registered yet: each Nemura change registers its
+// own as it adds work.
+func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, store *nemura.Store) error {
+	tokens, queue, err := taskWiring(deps, getenv)
+	if err != nil {
+		return err
+	}
+	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock}
+	s.Handle("POST /tasks", &outbox.Handler{Class: outbox.ClassWorker, Store: store, Tokens: tokens, Clock: deps.Clock,
+		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: map[string]outbox.Work{}})
+	s.Handle("POST /tick", outbox.Tick{Dispatcher: disp, Tokens: tokens, Class: outbox.ClassWorker})
 	return nil
 }
 
