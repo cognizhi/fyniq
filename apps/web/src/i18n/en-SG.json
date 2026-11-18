@@ -55,6 +55,10 @@
       "label": "What happened? Where to record it",
       "tooltip": "Pick what happened, such as a customer paid you, and Fyniq says where to record it and what to do there."
     },
+    "shell.tour": {
+      "label": "Take the tour again",
+      "tooltip": "A short tour of the pages you use, step by step. It changes nothing; Esc ends it."
+    },
     "ledger.view": {
       "label": "Plain or Accountant view",
       "tooltip": "Plain view: Money in, Money out and Category. Accountant view: Debit, Credit and Account. The figures are the same."
@@ -1614,6 +1618,10 @@
     "checks.run": {
       "label": "Run all checks now",
       "tooltip": "Run every check now instead of waiting for the next change or the night's run. At most once a minute."
+    },
+    "checks.replay": {
+      "label": "Run it again",
+      "tooltip": "A background task that stopped after its attempts ran out goes back in the queue, its attempts counted afresh. Run it again once what stopped it is fixed. An Owner or an Administrator does."
     },
     "checks.review": {
       "label": "Mark reviewed",

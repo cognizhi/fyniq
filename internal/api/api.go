@@ -362,6 +362,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerKPIs(a)
 	registerMetrics(a)
 	registerChecks(a)
+	registerBackgroundWork(a)
 	registerReportExports(a)
 	registerSchedules(a)
 	registerAccountMerges(a)
