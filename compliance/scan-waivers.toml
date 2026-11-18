@@ -231,3 +231,12 @@ rule = "G703"
 path = "cmd/scenario-run/main.go"
 reason = "A developer tool of the differential tests (local build only) that reads the scenario files its caller names; it serves no requests."
 expires = 2027-04-15
+
+# ---------------------------------------------------------------- grype (dependencies)
+
+[[waiver]]
+tool = "grype"
+rule = "GHSA-fc5q-39xc-vjpf"
+path = "picomatch"
+reason = "A ReDoS in picomatch <= 4.0.7 through repeated extglobs (published 19 Oct 2026, no fixed release yet). picomatch is reached only through the web app's build and test tooling (Vite, Vitest and their file watchers), which match the repository's own glob patterns; it is in no image and no runtime path, and no request or user input reaches a pattern. Renew only if no fixed release exists by the expiry, otherwise upgrade."
+expires = 2026-12-31

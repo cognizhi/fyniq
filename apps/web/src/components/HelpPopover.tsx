@@ -49,6 +49,17 @@ export function HelpPopover({ title, term, children, learnMore }: {
     document.addEventListener("pointerdown", outside);
     return () => document.removeEventListener("pointerdown", outside);
   }, [pinned]);
+  // Safari does not focus a button when it is clicked, so Esc there comes from the page, not from the popover: it
+  // closes the open one from the document too (WCAG 1.4.13 dismissible). Esc pressed inside is handled, and stopped,
+  // by keys() first.
+  useEffect(() => {
+    if (!open) return;
+    const esc = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") close(true);
+    };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  });
   const keys = (e: KeyboardEvent) => {
     if (e.key === "Escape" && open) {
       e.stopPropagation();
