@@ -803,3 +803,22 @@ Source: PRD-001 §7.2 · Priority M · Phase P1
 #### Scenario: Rights change
 - **WHEN** a person gains or loses a right
 - **THEN** what they see changes at their next page load, and the server enforces the right either way
+
+### Requirement: FR-UX-42 The Auditor's engagement
+Beside the read-only access and its expiry that the Auditor's landing page shows, an engagement SHALL hold the auditor's requests, each answered by a named person with evidence and with a status, and samples drawn from the ledger by the auditor's rule, each sample's documents opened read-only.
+
+Source: PRD-001 §7.2 · Priority S · Phase P2
+
+#### Scenario: A request answered with evidence
+- **GIVEN** an Auditor with an engagement
+- **WHEN** they ask for an item and a named person answers it with evidence
+- **THEN** the request shows its answer, its evidence and its status
+
+#### Scenario: A sample drawn by a rule
+- **WHEN** the Auditor draws a sample of a period, an account, a threshold and a count
+- **THEN** the sample lists the entries the rule selected, each opening its document read-only
+
+#### Scenario: At launch (rev 0.288)
+- **WHEN** an Auditor lands on Reports at launch
+- **THEN** it shows their read-only access and its expiry, and opens the journals, the evidence and the audit trail
+- **AND** requests and samples follow after go-live
