@@ -4,7 +4,7 @@ type: concept
 title: Bank accounts, their data sources and freshness
 summary: Money accounts and the cash position, where their data comes from, an account's statements and lines, duplicates, alerts and gaps
 sources:
-  - docs/user-guide/banking.md sha256:019de19b09be6ac3fa40b7d3251ca8fa62beba74f7364724e67a934f577efdd8
+  - docs/user-guide/banking.md sha256:1fd6c0da3a4734ae8481580fe09a6b4f1464c01af923abc8ae8dfbd54e829fef
 data_class: general
 taint: trusted
 status: draft
@@ -23,6 +23,7 @@ aliases:
   - bank reports by email
   - statement gap
   - complete to
+  - payment file
   - read-only connection
   - possible duplicate
   - statement lines
@@ -48,6 +49,16 @@ aliases:
 - Setting the source and naming the bank-ingest address is for an Administrator. A source starts on a day and never changes the days before it, so switching from emailed reports to a connector leaves no gap.
 
 (src: docs/user-guide/banking.md#where-its-data-comes-from)
+
+## The file its payment batches give
+
+- A payment batch paying from a bank or wallet account gives a file when released; the account's **Payment file** says which, on its card under **Banking** and on step 2 of **Add account**.
+- **The payment list** (the default) is a CSV keyed into the bank's bulk payment screen, for any bank; **Wise's batch payment file** is a CSV in Wise's batch template, uploaded to Wise, only for an account at Wise; **DBS IDEAL's UFF** is uploaded to DBS IDEAL to pay by FAST or GIRO, only for an account at DBS.
+- A bank's own file can be chosen only once Fyniq writes it: until then it is listed with the reason and the account keeps the payment list. Airwallex has no file of its own yet, so an Airwallex account gives the payment list.
+- A Bookkeeper or an Accountant selects **Payment file** on the card, chooses a file and selects **Save the payment file**; the change is audited with the old and new file. A batch already released keeps its file, so a change never alters a file you may have uploaded; others see the file and cannot change it.
+- A change of the account's bank to one that does not take its file is refused, saying which file to choose first.
+
+(src: docs/user-guide/banking.md#the-file-its-payment-batches-give)
 
 ## An account's statements and lines
 
