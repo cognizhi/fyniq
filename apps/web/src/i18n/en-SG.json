@@ -1155,6 +1155,14 @@
       "label": "Download payment list",
       "tooltip": "The list to key into your bank, with full account numbers, once you confirm it's you. Each download is recorded."
     },
+    "batch.download-wise": {
+      "label": "Download Wise batch file",
+      "tooltip": "Wise's batch payment file, with full account numbers, once you confirm it's you. Upload it to Wise. Each download is recorded."
+    },
+    "batch.download-dbs": {
+      "label": "Download DBS UFF file",
+      "tooltip": "DBS IDEAL's UFF, with full account numbers, once you confirm it's you. Upload it in DBS IDEAL. Each download is recorded."
+    },
     "batch.remittance-again": {
       "label": "Send again",
       "tooltip": "A supplier's remittance advice that gave up after several tries is sent once more, with a reason. It is still sent at most once."
@@ -1218,6 +1226,10 @@
     "banking.cash-position": {
       "label": "Cash position",
       "tooltip": "The cash in every open money account, other currencies at the day's rate; an account with no rate is left out and listed."
+    },
+    "bank-account.payment-file": {
+      "label": "Payment file",
+      "tooltip": "The file a payment batch paying from this account gives when released: the payment list for any bank, or the bank's own file once Fyniq writes it. A batch already released keeps its file."
     },
     "bank-account.complete-to": {
       "label": "Complete to",
