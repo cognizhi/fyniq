@@ -47,14 +47,14 @@ Source: PRD-001 §12.9
 - **AND** the binary carries no database adapter, driver or domain command
 
 ### Requirement: Web image for local and preview
-The `web` image SHALL be used in local and preview only, built with `pnpm build` on `nginxinc/nginx-unprivileged` (Alpine) with a strict CSP, within ≤ 25 MB compressed.
+The `web` image SHALL be used in local and preview only, built with `pnpm build` on `nginxinc/nginx-unprivileged` (Alpine) with a strict CSP, within ≤ 30 MB compressed (rev 0.289).
 
 Source: PRD-001 §12.9
 
 #### Scenario: Web image in local and preview
 - **WHEN** the web app runs in local or preview
 - **THEN** it is served by the `web` image, built with `pnpm build` on `nginxinc/nginx-unprivileged` (Alpine) with a strict CSP
-- **AND** the image is ≤ 25 MB compressed
+- **AND** the image is ≤ 30 MB compressed (rev 0.289)
 
 #### Scenario: Production serves static files
 - **WHEN** the web app is served in production

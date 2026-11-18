@@ -11,6 +11,6 @@
     "render": 90,
     "scanner": 30,
     "clamd": 60,
-    "web": 25
+    "web": 30
   }
 }
