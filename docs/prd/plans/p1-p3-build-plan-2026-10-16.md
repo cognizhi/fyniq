@@ -533,6 +533,39 @@ Two things wait beyond it: each model's recordings of the agent suites, and the 
 Model Armor, `[live-verify]` in the dev cloud. The secretary's own checks and documents come with
 `p1-company-secretary`.
 
+`p1-knowledge-base` was proposed on 18 Nov 2026 (#824) and built on 18 and 19 Nov 2026, one pull request per slice from #826
+onwards, and its owner decisions were taken by defaults the founder may change (design.md "Decisions needed"): the
+compiler holds no database role, only a service-token class and four API operations that open nothing else; the Owner
+holds the approval right on the knowledge-base row of Appendix D (rev 0.293) and the Administrator edits and asks;
+a publication is checked deterministically (lint, no invented number, no contradiction with a setting); pages rendered
+from settings publish with the setting's own change; a draft is never read by the assistant; and a page's audience is
+the strictest of its guide sources'.
+The parts:
+- the platform's pages loaded by the migrator into global tables, read through a filter in the database (roles from the
+  guide's `roles`, data classes from the reader's rights, identity never), with full-text and trigram search and no
+  embeddings (AI-58);
+- the tools `kb.index`, `kb.read` and `kb.search`, the `know_how` segment of an answer with its number check and its
+  citations resolved by Fyniq to guide pages, and `chat@4`;
+- the organisation's notes, page versions (rendered, compiled, human-edited, overlay, rollback), numbered snapshots and
+  lint findings, each audited, with the pages rendered from settings;
+- the compiler job (`make kb-compile`), which writes drafts and findings only;
+- publication as an approval object, self-approved in Founder mode and listed in the weekly review, signed by another
+  Owner in Team mode;
+- the screen `knowledge-base` under Settings → AI, its guide page compiled into `kb/`, the `knowledge` eval suite with
+  103 questions, CTL-AI-08's nightly `verify kb.pages`, and the threat model
+  `docs/security/threat-models/knowledge-base.md` for security review #4.
+
+Building it found and fixed three things:
+- a new approval object widens the contract's response enums, which oasdiff reports as a break of /v1; the object types
+  and operations are now declared extensible;
+- a rendered page of a group with many settings cited more sources than a page could list, so a page may cite 200;
+- a model-named source on a know-how answer is cleared: Fyniq resolves it from the section's own markers.
+
+Several things wait beyond it, `[live-verify]` in the dev cloud: the cloud identity and schedule of the compiler job, the
+recompile trigger on the screen, each model's recordings of the knowledge suite, and the per-role reader filter's
+nightly run against the live database. The layer-1 index cached in the prompt and the platform's pack-newer-than-page
+check remain (tasks 2.3, 3.3), and the overlays flagged when a platform page changes (task 7.2).
+
 `p1-company-secretary` was proposed and built on 16 Nov 2026, one pull request per slice from #724 onwards. The owner
 decided three things that day:
 - the corporate profile has its own row in Appendix D (rev 0.282): the Accountant and the Company secretary record
