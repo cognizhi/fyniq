@@ -2,6 +2,9 @@
 
 Each slice is its own pull request; each passes `make check` and its own tests. Migration numbers are in design.md.
 
+No test is tagged `// req:` with a requirement it proves only in part: AI-49 to AI-58 and QA-AI-06 are each half organisation, half
+platform, or half model. Their tags are added when the rest is built, so the trace gate shows them untested until then.
+
 - [x] 1.1 The `kb` package (embeds `kb/pages`, `kb/index.md`, `kb/schema.md`) and the guide's raw sources; a Go reader of
   pages (front matter, sections, headings' anchors) and a Go lint of the same rules as `scripts/kb.py`, with the shared
   fixture set `test/kb/fixtures/` that both run (design D1). Tests `// req: AI-52`, `// req: AI-53`.
