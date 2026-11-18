@@ -27,6 +27,12 @@
 
 - [ ] 4.1 Write `sg-gst`, `sg-deadlines`, `sg-cpf`, `sg-sdl` and `sg-shg` from the official pages, each value with its source URL and a pinned test (`fyniq-sg-statutory` skill). Any value without a primary source keeps `[verify]`, and its pack stays inactive (20 Oct 2026: `sg-gst@2026.1` holds the rate history and the twelve B.6 codes with their F5 boxes, each from IRAS, and 22 pinned cases; BL corrected to "not reported", rev 0.37. 7 Nov 2026, with `p1-gst`: `sg-gst@2026.3` adds the registration threshold, and `sg-deadlines@2026.1` is written. 8 Nov 2026, with `p1-planning`: `sg-cpf@2026.1` holds only the rates for citizens and third-year permanent residents above $750 a month, by age band, and the wage ceilings; `sg-sdl@2026.1` holds the levy. **Left:** the reverse-charge codes in `sg-gst`; in `sg-cpf`, the first- and second-year permanent residents' rates and the graduated rates up to $750, which the pay run needs; and `sg-shg`)
 
+  (18 Nov 2026, p1-statutory-packs, shg: `sg-shg@2026.1` holds the four self-help group funds' monthly contributions
+  by wage band and who contributes (`funds`, `bands`; `pack.SHGOn`), from the CPF Board's page, with a pinned case on
+  both sides of every band's edge. The page states no effective date: the amounts are the same on its page of 22 Sep
+  2026 and on its copies of 31 Jan 2023, 19 Jan 2024, 22 Jan 2025, 18 Sep 2025 and 23 Jan 2026 (the amounts were in force on 1 Jan 2026), so the version starts on 1 Jan 2026 as
+  `sg-sdl@2026.1` does [accountant to confirm]. `packs.get` offers it (version 3 of the tool).)
+
 ## 5. Home rows
 
 - [ ] 5.1 (**Left**) Map each §14.2 row of `compliance/singapore-statutory` to the change that closes it, recorded in this change's `design.md`. Close the rows no module owns with tests (`// req: compliance/singapore-statutory <title>`): retention defaults and MAS guidelines as reference only. The electronic-signature conditions close with `p1-approval-engine`, which tags their test
