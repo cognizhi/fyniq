@@ -1283,3 +1283,46 @@ func TestImportPinnedCases(t *testing.T) {
 		}
 	}
 }
+
+// RND-TIME (PRD-001 §10.4; FR-PRJ-02, FR-PRJ-06): minutes × the hourly rate ÷ 60 to the cent, half away from zero, per entry; a
+// reversing entry costs exactly the negative of what it reverses.
+// req: RND-TIME
+// req: FR-PRJ-02
+func TestTimeCostIsTheMinutesAtTheHourlyRateRoundedOnce(t *testing.T) {
+	sgd := money.MustLookup("SGD")
+	rate := func(s string) money.UnitPrice {
+		r, err := money.ParseUnitPrice(s, sgd, "rate")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return r
+	}
+	for _, c := range []struct {
+		minutes int
+		rate    string
+		want    string
+	}{
+		{135, "90", "202.50"}, // 2 h 15 min at S$90 an hour
+		{1, "100", "1.67"},    // 1.666… rounds up
+		{7, "55.55", "6.48"},  // 6.4808…
+		{3, "1.50", "0.08"},   // 0.075 is a tie: half away from zero
+		{-3, "1.50", "-0.08"}, // and the same, negated, for its reversal
+		{60, "0", "0.00"},
+		{450, "123.456789", "925.93"}, // an hourly rate with six decimals, worked exactly
+	} {
+		got, err := Time(c.minutes, rate(c.rate))
+		if err != nil || got.String() != c.want {
+			t.Errorf("%d min at %s: %v %v, want %s", c.minutes, c.rate, got, err, c.want)
+		}
+	}
+	for m := 1; m <= 1440; m += 7 {
+		a, _ := Time(m, rate("87.65"))
+		b, _ := Time(-m, rate("87.65"))
+		if sum, _ := a.Add(b); !sum.IsZero() {
+			t.Fatalf("a reversal of %d minutes does not net out: %v + %v", m, a, b)
+		}
+	}
+	if _, err := Time(60, rate("1")); err != nil {
+		t.Fatal(err)
+	}
+}

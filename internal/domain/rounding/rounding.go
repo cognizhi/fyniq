@@ -33,6 +33,7 @@ const (
 	GSTInclName      = "RND-GST-INCL"
 	DepositName      = "RND-DEPOSIT"
 	MileageName      = "RND-MILEAGE"
+	TimeName         = "RND-TIME"
 	ShareName        = "RND-SHARE"
 	OwnershipName    = "RND-DISPLAY"
 	PlanName         = "RND-PLAN"
@@ -671,6 +672,24 @@ func Mileage(distance money.Quantity, rate money.Money) (money.Quantity, money.M
 	}
 	amount, err := money.FromRounded(halfAwayFromZero(&product, rate.Currency().MinorUnits), rate.Currency())
 	return km, amount, err
+}
+
+// Time is RND-TIME (PRD-001 §10.4; FR-PRJ-02, FR-PRJ-06): the cost or value of a time entry = round(minutes × the hourly rate
+// ÷ 60, the rate currency's minor units), half away from zero, per entry, computed exactly before its one rounding. A
+// reversing entry has the opposite minutes, so it costs exactly the negative of what it reverses and the pair sums to zero.
+// Time is a management view and posts nothing.
+func Time(minutes int, rate money.UnitPrice) (money.Money, error) {
+	if rate.Sign() < 0 {
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "rate", Message: fmt.Sprintf("the hourly rate is %s %s", rate, rate.Currency()), Fix: "An hourly rate is zero or more"}
+	}
+	var product, hourly apd.Decimal
+	if _, err := work.Mul(&product, apd.New(int64(minutes), 0), rate.Decimal()); err != nil {
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "minutes", Message: err.Error()}
+	}
+	if _, err := work.Quo(&hourly, &product, apd.New(60, 0)); err != nil {
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "minutes", Message: err.Error()}
+	}
+	return money.FromRounded(halfAwayFromZero(&hourly, rate.Currency().MinorUnits), rate.Currency())
 }
 
 // Shares are what RND-SHARE allots for an amount at a price per share: a whole number of shares, the amount they

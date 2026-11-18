@@ -2706,6 +2706,303 @@ What time on the project is logged against (FR-PRJ-05): by name, those out of us
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`
 
+### `POST /v1/time-entries/{entry_id}/reverse`
+
+**Reverse an approved entry of the caller's** (`reverseTimeEntry`)
+
+Corrects an approved entry the way posted history is corrected (FR-PRJ-05, UC-PRJ-01): a draft reversing entry with the opposite minutes, once, which the caller submits with the week; they then enter the right time as a new entry, and the manager approves both again. The approved entry never changes. TIME-10 when the entry is not the caller's, not approved, itself a reversal, or already reversed. Side effects: the entry and its audit event. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Timesheets and project time (rev 0.7)
+- **Parameters:**
+  - `entry_id` (path, required): The approved entry's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`TimeEntry`](../../contracts/schemas/TimeEntry.schema.json)
+  - `201` Created [`TimeEntry`](../../contracts/schemas/TimeEntry.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CLAIM-09`, `PRJ-09`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-TIME-01`, `TIME-01`, `TIME-02`, `TIME-03`, `TIME-04`, `TIME-05`, `TIME-06`, `TIME-07`, `TIME-08`, `TIME-09`, `TIME-10`
+
+### `GET /v1/timer`
+
+**Read the caller's running timer** (`getTimer`)
+
+Whether the caller's timer runs, on what, since when and for how many whole minutes (FR-PRJ-05). Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+
+- **Permission:** View on Timesheets and project time (rev 0.7)
+- **Responses:**
+  - `200` OK [`TimerState`](../../contracts/schemas/TimerState.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `CLAIM-09`, `PRJ-09`
+
+### `POST /v1/timer/drop`
+
+**Drop the caller's timer without an entry** (`dropTimer`)
+
+Ends the timer and keeps nothing of it (FR-PRJ-05). Side effects: the audit event. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Timesheets and project time (rev 0.7)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`TimerState`](../../contracts/schemas/TimerState.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CLAIM-09`, `PRJ-09`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-TIME-01`, `TIME-01`, `TIME-02`, `TIME-03`, `TIME-04`, `TIME-05`, `TIME-06`, `TIME-07`, `TIME-08`, `TIME-09`, `TIME-10`
+
+### `POST /v1/timer/start`
+
+**Start the caller's timer** (`startTimer`)
+
+Starts a timer on a project the caller is on and one of its tasks in use, at the app's clock (FR-PRJ-05); one runs at a time. Side effects: the timer and its audit event. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Timesheets and project time (rev 0.7)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`TimerStart`](../../contracts/schemas/TimerStart.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`TimerState`](../../contracts/schemas/TimerState.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `CLAIM-09`, `PRJ-09`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-TIME-01`, `TIME-01`, `TIME-02`, `TIME-03`, `TIME-04`, `TIME-05`, `TIME-06`, `TIME-07`, `TIME-08`, `TIME-09`, `TIME-10`
+
+### `POST /v1/timer/stop`
+
+**Stop the caller's timer into a draft entry** (`stopTimer`)
+
+Stops the timer and adds its time as a draft entry on the day it started: the nearest whole minute, half up, at least one (RND-TIME), at most a day (TIME-07 beyond that: drop the timer and enter the time by hand). Side effects: the entry, and the audit events. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Timesheets and project time (rev 0.7)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`TimerState`](../../contracts/schemas/TimerState.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CLAIM-09`, `PRJ-09`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-TIME-01`, `TIME-01`, `TIME-02`, `TIME-03`, `TIME-04`, `TIME-05`, `TIME-06`, `TIME-07`, `TIME-08`, `TIME-09`, `TIME-10`
+
+### `GET /v1/timesheet-submissions`
+
+**List submitted weeks** (`listTimesheetSubmissions`)
+
+Each person's week on a project that was sent for approval (FR-PRJ-07), newest week first, a page at a time: the caller's own (the default), those the caller may decide now (waiting_for_me), or everyone's. A person who reads only their own and their projects' weeks (an Employee, the Approver) is answered those whatever they ask for. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+
+- **Permission:** View on Timesheets and project time (rev 0.7)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `whose` (query): mine: the caller's own weeks; waiting_for_me: submitted weeks the caller may decide; all: every week, for those who see them all.
+  - `project_id` (query): Only this project's.
+  - `status` (query): Only weeks in this status.
+- **Responses:**
+  - `200` OK [`TimesheetSubmissionPage`](../../contracts/schemas/TimesheetSubmissionPage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `CLAIM-09`, `PRJ-09`
+
+### `GET /v1/timesheet-submissions/{submission_id}`
+
+**Read a submitted week with its entries** (`getTimesheetSubmission`)
+
+A submission and the entries in it, with its ETag and whether the caller may decide it now (FR-PRJ-07). A person who may not see it is answered not found. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+
+- **Permission:** View on Timesheets and project time (rev 0.7)
+- **Parameters:**
+  - `submission_id` (path, required): The submission's ID.
+- **Responses:**
+  - `200` OK [`TimesheetSubmissionDetail`](../../contracts/schemas/TimesheetSubmissionDetail.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`
+
+### `POST /v1/timesheet-submissions/{submission_id}/approve`
+
+**Approve a submitted week** (`approveTimesheetSubmission`)
+
+Approves a person's week on a project (FR-PRJ-07), which locks its entries (FR-PRJ-05). The caller holds A on "Timesheets and project time" (the Approver or the Controller), manages the project or is the Controller, and is not the person: TIME-08 otherwise, and the database refuses it too. Needs If-Match with the submission's ETag. Side effects: the submission and its entries approved, and an audit event for the week. Time posts nothing. Refused with PRJ-09 while Projects and time are switched off. Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Timesheets and project time (rev 0.7)
+- **Parameters:**
+  - `submission_id` (path, required): The submission's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`TimesheetDecision`](../../contracts/schemas/TimesheetDecision.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`TimesheetSubmissionDetail`](../../contracts/schemas/TimesheetSubmissionDetail.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-TIME-01`, `STORAGE-VERSION-01`, `TIME-01`, `TIME-02`, `TIME-03`, `TIME-04`, `TIME-05`, `TIME-06`, `TIME-07`, `TIME-08`, `TIME-09`, `TIME-10`
+
+### `POST /v1/timesheet-submissions/{submission_id}/return`
+
+**Return a submitted week with a comment** (`returnTimesheetSubmission`)
+
+Sends a person's week back (FR-PRJ-07) with what to fix; its entries are theirs to change again and to submit anew, and each version is kept. The same rules as approving it. Needs If-Match with the submission's ETag. Side effects: the submission and its entries returned, and an audit event for the week. Refused with PRJ-09 while Projects and time are switched off. Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Approve on Timesheets and project time (rev 0.7)
+- **Parameters:**
+  - `submission_id` (path, required): The submission's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`TimesheetDecision`](../../contracts/schemas/TimesheetDecision.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`TimesheetSubmissionDetail`](../../contracts/schemas/TimesheetSubmissionDetail.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-TIME-01`, `STORAGE-VERSION-01`, `TIME-01`, `TIME-02`, `TIME-03`, `TIME-04`, `TIME-05`, `TIME-06`, `TIME-07`, `TIME-08`, `TIME-09`, `TIME-10`
+
+### `GET /v1/timesheet/{week_start}`
+
+**Read the caller's own week of time** (`getTimesheet`)
+
+The caller's entries of the week from the Monday given (FR-PRJ-05), the days with the public holidays and the working days nobody entered time on, the projects the caller is on with their tasks in use, what was submitted for the week, and the running timer. It is always the caller's own week. The ETag changes with any change to it. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+
+- **Permission:** View on Timesheets and project time (rev 0.7)
+- **Parameters:**
+  - `week_start` (path, required): The Monday of the week.
+- **Responses:**
+  - `200` OK [`Timesheet`](../../contracts/schemas/Timesheet.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `TIME-02` The day does not fit.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `CLAIM-09`, `PRJ-09`, `TIME-02`
+
+### `PUT /v1/timesheet/{week_start}`
+
+**Save the caller's week of time** (`saveTimesheet`)
+
+Saves the draft and returned entries of the caller's week (FR-PRJ-05): an entry with an ID changes that entry, one without is new, and an open entry left out is removed. Time is whole minutes, 1 to 1,440, on a project the caller is on and one of its tasks in use; time on an internal project is not billable; an entry stays on its project. Submitted and approved entries never change: correct an approved one with reverseTimeEntry. Every problem comes back together. Needs If-Match with the week's ETag, so what is saved is what the caller saw. Side effects: the entries, and one audit event for the week. Refused with PRJ-09 while Projects and time are switched off. Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Timesheets and project time (rev 0.7)
+- **Parameters:**
+  - `week_start` (path, required): The Monday of the week.
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`TimesheetSave`](../../contracts/schemas/TimesheetSave.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Timesheet`](../../contracts/schemas/Timesheet.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CLAIM-09`, `PRJ-09`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-TIME-01`, `STORAGE-VERSION-01`, `TIME-01`, `TIME-02`, `TIME-03`, `TIME-04`, `TIME-05`, `TIME-06`, `TIME-07`, `TIME-08`, `TIME-09`, `TIME-10`
+
+### `POST /v1/timesheet/{week_start}/submit`
+
+**Submit the caller's week for approval** (`submitTimesheet`)
+
+Sends the caller's draft and returned entries of the week, each project's part as one submission to that project's managers (FR-PRJ-07); the projects to send can be named. TIME-09 when there is nothing to send. Needs If-Match with the week's ETag. Side effects: a submission for each project, its entries marked submitted and locked, and an audit event for the week. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Timesheets and project time (rev 0.7)
+- **Parameters:**
+  - `week_start` (path, required): The Monday of the week.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`TimesheetSubmit`](../../contracts/schemas/TimesheetSubmit.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Timesheet`](../../contracts/schemas/Timesheet.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `CLAIM-09`, `PRJ-09`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-TIME-01`, `STORAGE-VERSION-01`, `TIME-01`, `TIME-02`, `TIME-03`, `TIME-04`, `TIME-05`, `TIME-06`, `TIME-07`, `TIME-08`, `TIME-09`, `TIME-10`
+
 ## Journals
 
 Manual journals: drafted, posted and reversed; posted history never changes (FR-GL-12).

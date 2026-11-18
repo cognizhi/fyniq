@@ -50443,6 +50443,661 @@ components:
         - title
         - email
       type: object
+    TimeEntry:
+      additionalProperties: false
+      properties:
+        billable:
+          description: Whether it is billed.
+          examples:
+            - true
+          type: boolean
+        id:
+          description: The entry's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5001
+          format: uuid
+          type: string
+        minutes:
+          description: Whole minutes, 1 to 1,440; a reversing entry has the opposite of the entry it reverses (below zero).
+          examples:
+            - 135
+          format: int64
+          type: integer
+        note:
+          description: What was done.
+          examples:
+            - Migrated the customer tables
+          type: string
+        project_id:
+          description: The project.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+          format: uuid
+          type: string
+        reverses_id:
+          description: For a reversing entry, the approved entry it reverses.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5002
+          format: uuid
+          type: string
+        status:
+          description: draft and returned entries can be changed; submitted and approved ones cannot.
+          enum:
+            - draft
+            - submitted
+            - approved
+            - returned
+          examples:
+            - draft
+          type: string
+        submission_id:
+          description: The submission it was sent in.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5101
+          format: uuid
+          type: string
+        task_id:
+          description: The task.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e51
+          format: uuid
+          type: string
+        version:
+          description: Its version.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        work_date:
+          description: The day the work was done.
+          examples:
+            - "2026-11-17"
+          format: date
+          type: string
+      required:
+        - id
+        - project_id
+        - task_id
+        - work_date
+        - minutes
+        - billable
+        - status
+        - version
+      type: object
+    TimerStart:
+      additionalProperties: false
+      properties:
+        billable:
+          description: Left out, as the task is.
+          examples:
+            - true
+          type: boolean
+        note:
+          description: What is being done.
+          examples:
+            - Data migration
+          maxLength: 500
+          type: string
+        project_id:
+          description: A project the person is on.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+          format: uuid
+          type: string
+        task_id:
+          description: One of its tasks in use.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e51
+          format: uuid
+          type: string
+      required:
+        - project_id
+        - task_id
+      type: object
+    TimerState:
+      additionalProperties: false
+      properties:
+        entry:
+          $ref: "#/components/schemas/TimeEntry"
+          description: The draft entry a stopped timer made.
+        running:
+          description: true while a timer runs.
+          examples:
+            - true
+          type: boolean
+        timer:
+          $ref: "#/components/schemas/TimerView"
+          description: The running timer.
+      required:
+        - running
+      type: object
+    TimerView:
+      additionalProperties: false
+      properties:
+        billable:
+          description: Whether the entry will be billable.
+          examples:
+            - true
+          type: boolean
+        elapsed_minutes:
+          description: The whole minutes it has run, now.
+          examples:
+            - 135
+          format: int64
+          type: integer
+        note:
+          description: The note the entry will carry.
+          examples:
+            - Data migration
+          type: string
+        project_id:
+          description: The project.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+          format: uuid
+          type: string
+        started_at:
+          description: When it started, by the app's clock.
+          examples:
+            - "2026-11-17T09:00:00+08:00"
+          format: date-time
+          type: string
+        task_id:
+          description: The task.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e51
+          format: uuid
+          type: string
+      required:
+        - project_id
+        - task_id
+        - billable
+        - started_at
+        - elapsed_minutes
+      type: object
+    Timesheet:
+      additionalProperties: false
+      properties:
+        days:
+          description: The seven days.
+          items:
+            $ref: "#/components/schemas/TimesheetDay"
+          type: array
+        entries:
+          description: The week's entries, by day.
+          items:
+            $ref: "#/components/schemas/TimeEntry"
+          type: array
+        projects:
+          description: The projects the person is on, with their tasks in use.
+          items:
+            $ref: "#/components/schemas/TimesheetProject"
+          type: array
+        submissions:
+          description: What was submitted for the week, newest first.
+          items:
+            $ref: "#/components/schemas/TimesheetSubmission"
+          type: array
+        timer:
+          $ref: "#/components/schemas/TimerView"
+          description: The running timer, if any.
+        total_minutes:
+          description: The net minutes of the week.
+          examples:
+            - 2250
+          format: int64
+          type: integer
+        week_end:
+          description: The Sunday.
+          examples:
+            - "2026-11-22"
+          format: date
+          type: string
+        week_start:
+          description: The Monday.
+          examples:
+            - "2026-11-16"
+          format: date
+          type: string
+      required:
+        - week_start
+        - week_end
+        - days
+        - entries
+        - submissions
+        - projects
+        - total_minutes
+      type: object
+    TimesheetDay:
+      additionalProperties: false
+      properties:
+        date:
+          description: The day.
+          examples:
+            - "2026-11-17"
+          format: date
+          type: string
+        holiday:
+          description: The public holiday it is, from the statutory calendar's pack.
+          examples:
+            - Deepavali
+          type: string
+        minutes:
+          description: The net minutes entered on it, reversing entries counted.
+          examples:
+            - 480
+          format: int64
+          type: integer
+        missing:
+          description: true for a working day, up to today, with no time entered (FR-PRJ-05).
+          examples:
+            - false
+          type: boolean
+        weekday:
+          description: Its name.
+          enum:
+            - Mon
+            - Tue
+            - Wed
+            - Thu
+            - Fri
+            - Sat
+            - Sun
+          examples:
+            - Tue
+          type: string
+      required:
+        - date
+        - weekday
+        - missing
+        - minutes
+      type: object
+    TimesheetDecision:
+      additionalProperties: false
+      properties:
+        comment:
+          description: "What to fix: required when returning a week, optional when approving."
+          examples:
+            - Add what was done on Wednesday.
+          maxLength: 1000
+          type: string
+      type: object
+    TimesheetEntryDraft:
+      additionalProperties: false
+      properties:
+        billable:
+          description: Left out, as the task is.
+          examples:
+            - true
+          type: boolean
+        id:
+          description: The ID of an entry that exists, to change it; left out for a new one.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5001
+          format: uuid
+          type: string
+        minutes:
+          description: Whole minutes.
+          examples:
+            - 135
+          format: int64
+          maximum: 1440
+          minimum: 1
+          type: integer
+        note:
+          description: What was done.
+          examples:
+            - Migrated the customer tables
+          maxLength: 500
+          type: string
+        project_id:
+          description: A project the person is on.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+          format: uuid
+          type: string
+        task_id:
+          description: One of its tasks in use.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e51
+          format: uuid
+          type: string
+        work_date:
+          description: A day of the week.
+          examples:
+            - "2026-11-17"
+          format: date
+          type: string
+      required:
+        - project_id
+        - task_id
+        - work_date
+        - minutes
+      type: object
+    TimesheetProject:
+      additionalProperties: false
+      properties:
+        billing_method:
+          description: How it is billed; time on an internal project is never billable.
+          enum:
+            - time_and_materials
+            - fixed_fee
+            - retainer
+            - internal
+          examples:
+            - time_and_materials
+          type: string
+        code:
+          description: Its code.
+          examples:
+            - ACME-01
+          type: string
+        id:
+          description: The project's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+          format: uuid
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Acme rollout
+          type: string
+        tasks:
+          description: Its tasks in use.
+          items:
+            $ref: "#/components/schemas/TimesheetTask"
+          type: array
+      required:
+        - id
+        - code
+        - name
+        - billing_method
+        - tasks
+      type: object
+    TimesheetSave:
+      additionalProperties: false
+      properties:
+        entries:
+          description: "Every draft or returned entry of the week as it should be: one with an ID changes that entry, one without is new, and a draft or returned entry left out is removed. Submitted and approved entries, and reversing entries, are not part of it."
+          items:
+            $ref: "#/components/schemas/TimesheetEntryDraft"
+          maxItems: 400
+          type:
+            - array
+            - "null"
+      required:
+        - entries
+      type: object
+    TimesheetSubmission:
+      additionalProperties: false
+      properties:
+        can_decide:
+          description: "Whether the caller may approve or return it now: a submitted week of a project they manage, or any for the Controller, never their own."
+          examples:
+            - true
+          type: boolean
+        comment:
+          description: What to fix, when it was returned.
+          examples:
+            - Add what was done on Wednesday.
+          type: string
+        decided_at:
+          description: When.
+          examples:
+            - "2026-11-23T09:10:00+08:00"
+          format: date-time
+          type: string
+        decided_by:
+          description: Who decided it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e62
+          format: uuid
+          type: string
+        decided_by_name:
+          description: Their name.
+          examples:
+            - Wei Lim
+          type: string
+        id:
+          description: The submission's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5101
+          format: uuid
+          type: string
+        minutes:
+          description: The net minutes in it.
+          examples:
+            - 2250
+          format: int64
+          type: integer
+        person_name:
+          description: Their name.
+          examples:
+            - Priya Nair
+          type: string
+        project_id:
+          description: The project.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+          format: uuid
+          type: string
+        project_name:
+          description: Its name.
+          examples:
+            - Acme rollout
+          type: string
+        status:
+          description: submitted waits for a manager; approved locks its entries; returned sends them back with a comment.
+          enum:
+            - submitted
+            - approved
+            - returned
+          examples:
+            - submitted
+          type: string
+        submitted_at:
+          description: When it was sent.
+          examples:
+            - "2026-11-20T17:30:00+08:00"
+          format: date-time
+          type: string
+        user_id:
+          description: The person.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+          format: uuid
+          type: string
+        version:
+          description: Its version, for If-Match.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        week_start:
+          description: The Monday of the week.
+          examples:
+            - "2026-11-16"
+          format: date
+          type: string
+      required:
+        - id
+        - project_id
+        - project_name
+        - user_id
+        - person_name
+        - week_start
+        - status
+        - submitted_at
+        - minutes
+        - can_decide
+        - version
+      type: object
+    TimesheetSubmissionDetail:
+      additionalProperties: false
+      properties:
+        can_decide:
+          description: "Whether the caller may approve or return it now: a submitted week of a project they manage, or any for the Controller, never their own."
+          examples:
+            - true
+          type: boolean
+        comment:
+          description: What to fix, when it was returned.
+          examples:
+            - Add what was done on Wednesday.
+          type: string
+        decided_at:
+          description: When.
+          examples:
+            - "2026-11-23T09:10:00+08:00"
+          format: date-time
+          type: string
+        decided_by:
+          description: Who decided it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e62
+          format: uuid
+          type: string
+        decided_by_name:
+          description: Their name.
+          examples:
+            - Wei Lim
+          type: string
+        entries:
+          description: The entries in it, by day.
+          items:
+            $ref: "#/components/schemas/TimeEntry"
+          type: array
+        id:
+          description: The submission's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5101
+          format: uuid
+          type: string
+        minutes:
+          description: The net minutes in it.
+          examples:
+            - 2250
+          format: int64
+          type: integer
+        person_name:
+          description: Their name.
+          examples:
+            - Priya Nair
+          type: string
+        project_id:
+          description: The project.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+          format: uuid
+          type: string
+        project_name:
+          description: Its name.
+          examples:
+            - Acme rollout
+          type: string
+        status:
+          description: submitted waits for a manager; approved locks its entries; returned sends them back with a comment.
+          enum:
+            - submitted
+            - approved
+            - returned
+          examples:
+            - submitted
+          type: string
+        submitted_at:
+          description: When it was sent.
+          examples:
+            - "2026-11-20T17:30:00+08:00"
+          format: date-time
+          type: string
+        user_id:
+          description: The person.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+          format: uuid
+          type: string
+        version:
+          description: Its version, for If-Match.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        week_start:
+          description: The Monday of the week.
+          examples:
+            - "2026-11-16"
+          format: date
+          type: string
+      required:
+        - entries
+        - id
+        - project_id
+        - project_name
+        - user_id
+        - person_name
+        - week_start
+        - status
+        - submitted_at
+        - minutes
+        - can_decide
+        - version
+      type: object
+    TimesheetSubmissionPage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/TimesheetSubmission"
+          type: array
+        next_cursor:
+          description: Pass it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEwMCJ9
+          type: string
+      required:
+        - items
+      type: object
+    TimesheetSubmit:
+      additionalProperties: false
+      properties:
+        project_ids:
+          description: The projects to submit; left out, every project with open entries.
+          items:
+            description: A project's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+            format: uuid
+            type: string
+          maxItems: 100
+          type:
+            - array
+            - "null"
+      type: object
+    TimesheetTask:
+      additionalProperties: false
+      properties:
+        billable:
+          description: Whether time on it is billable by default.
+          examples:
+            - true
+          type: boolean
+        id:
+          description: The task's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e51
+          format: uuid
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Data migration
+          type: string
+      required:
+        - id
+        - name
+        - billable
+      type: object
     TourChange:
       additionalProperties: false
       properties:
@@ -213145,6 +213800,2083 @@ paths:
       x-fyniq-permission:
         capability: Tenant export
         note: Only the person who asked for the export saves it.
+        right: C
+  /v1/time-entries/{entry_id}/reverse:
+    post:
+      description: "Corrects an approved entry the way posted history is corrected (FR-PRJ-05, UC-PRJ-01): a draft reversing entry with the opposite minutes, once, which the caller submits with the week; they then enter the right time as a new entry, and the manager approves both again. The approved entry never changes. TIME-10 when the entry is not the caller's, not approved, itself a reversal, or already reversed. Side effects: the entry and its audit event. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: reverseTimeEntry
+      parameters:
+        - description: The approved entry's ID.
+          in: path
+          name: entry_id
+          required: true
+          schema:
+            description: The approved entry's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5001
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeEntry"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeEntry"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Reverse an approved entry of the caller's
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CLAIM-09
+        - PRJ-09
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-TIME-01
+        - TIME-01
+        - TIME-02
+        - TIME-03
+        - TIME-04
+        - TIME-05
+        - TIME-06
+        - TIME-07
+        - TIME-08
+        - TIME-09
+        - TIME-10
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
+        right: C
+  /v1/timer:
+    get:
+      description: Whether the caller's timer runs, on what, since when and for how many whole minutes (FR-PRJ-05). Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+      operationId: getTimer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimerState"
+          description: OK
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              schema:
+                description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Read the caller's running timer
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - CLAIM-09
+        - PRJ-09
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
+        right: V
+  /v1/timer/drop:
+    post:
+      description: "Ends the timer and keeps nothing of it (FR-PRJ-05). Side effects: the audit event. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: dropTimer
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimerState"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Drop the caller's timer without an entry
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CLAIM-09
+        - PRJ-09
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-TIME-01
+        - TIME-01
+        - TIME-02
+        - TIME-03
+        - TIME-04
+        - TIME-05
+        - TIME-06
+        - TIME-07
+        - TIME-08
+        - TIME-09
+        - TIME-10
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
+        right: C
+  /v1/timer/start:
+    post:
+      description: "Starts a timer on a project the caller is on and one of its tasks in use, at the app's clock (FR-PRJ-05); one runs at a time. Side effects: the timer and its audit event. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: startTimer
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimerStart"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimerState"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Start the caller's timer
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - CLAIM-09
+        - PRJ-09
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-TIME-01
+        - TIME-01
+        - TIME-02
+        - TIME-03
+        - TIME-04
+        - TIME-05
+        - TIME-06
+        - TIME-07
+        - TIME-08
+        - TIME-09
+        - TIME-10
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
+        right: C
+  /v1/timer/stop:
+    post:
+      description: "Stops the timer and adds its time as a draft entry on the day it started: the nearest whole minute, half up, at least one (RND-TIME), at most a day (TIME-07 beyond that: drop the timer and enter the time by hand). Side effects: the entry, and the audit events. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: stopTimer
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimerState"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Stop the caller's timer into a draft entry
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CLAIM-09
+        - PRJ-09
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-TIME-01
+        - TIME-01
+        - TIME-02
+        - TIME-03
+        - TIME-04
+        - TIME-05
+        - TIME-06
+        - TIME-07
+        - TIME-08
+        - TIME-09
+        - TIME-10
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
+        right: C
+  /v1/timesheet-submissions:
+    get:
+      description: "Each person's week on a project that was sent for approval (FR-PRJ-07), newest week first, a page at a time: the caller's own (the default), those the caller may decide now (waiting_for_me), or everyone's. A person who reads only their own and their projects' weeks (an Employee, the Approver) is answered those whatever they ask for. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects."
+      operationId: listTimesheetSubmissions
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: "mine: the caller's own weeks; waiting_for_me: submitted weeks the caller may decide; all: every week, for those who see them all."
+          explode: false
+          in: query
+          name: whose
+          schema:
+            default: mine
+            description: "mine: the caller's own weeks; waiting_for_me: submitted weeks the caller may decide; all: every week, for those who see them all."
+            enum:
+              - mine
+              - waiting_for_me
+              - all
+            examples:
+              - waiting_for_me
+            type: string
+        - description: Only this project's.
+          explode: false
+          in: query
+          name: project_id
+          schema:
+            description: Only this project's.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+            format: uuid
+            type: string
+        - description: Only weeks in this status.
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: Only weeks in this status.
+            enum:
+              - submitted
+              - approved
+              - returned
+            examples:
+              - submitted
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimesheetSubmissionPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List submitted weeks
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - CLAIM-09
+        - PRJ-09
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
+        right: V
+  /v1/timesheet-submissions/{submission_id}:
+    get:
+      description: A submission and the entries in it, with its ETag and whether the caller may decide it now (FR-PRJ-07). A person who may not see it is answered not found. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+      operationId: getTimesheetSubmission
+      parameters:
+        - description: The submission's ID.
+          in: path
+          name: submission_id
+          required: true
+          schema:
+            description: The submission's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5101
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimesheetSubmissionDetail"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The submission's version, for If-Match.
+                type: string
+            Preference-Applied:
+              schema:
+                description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Read a submitted week with its entries
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PRJ-09
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
+        right: V
+  /v1/timesheet-submissions/{submission_id}/approve:
+    post:
+      description: "Approves a person's week on a project (FR-PRJ-07), which locks its entries (FR-PRJ-05). The caller holds A on \"Timesheets and project time\" (the Approver or the Controller), manages the project or is the Controller, and is not the person: TIME-08 otherwise, and the database refuses it too. Needs If-Match with the submission's ETag. Side effects: the submission and its entries approved, and an audit event for the week. Time posts nothing. Refused with PRJ-09 while Projects and time are switched off. Prefer: return=preview checks it and saves nothing."
+      operationId: approveTimesheetSubmission
+      parameters:
+        - description: The submission's ID.
+          in: path
+          name: submission_id
+          required: true
+          schema:
+            description: The submission's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5101
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimesheetDecision"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimesheetSubmissionDetail"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The submission's version, for If-Match.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Approve a submitted week
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PRJ-09
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-TIME-01
+        - STORAGE-VERSION-01
+        - TIME-01
+        - TIME-02
+        - TIME-03
+        - TIME-04
+        - TIME-05
+        - TIME-06
+        - TIME-07
+        - TIME-08
+        - TIME-09
+        - TIME-10
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
+        right: A
+  /v1/timesheet-submissions/{submission_id}/return:
+    post:
+      description: "Sends a person's week back (FR-PRJ-07) with what to fix; its entries are theirs to change again and to submit anew, and each version is kept. The same rules as approving it. Needs If-Match with the submission's ETag. Side effects: the submission and its entries returned, and an audit event for the week. Refused with PRJ-09 while Projects and time are switched off. Prefer: return=preview checks it and saves nothing."
+      operationId: returnTimesheetSubmission
+      parameters:
+        - description: The submission's ID.
+          in: path
+          name: submission_id
+          required: true
+          schema:
+            description: The submission's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5101
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimesheetDecision"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimesheetSubmissionDetail"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The submission's version, for If-Match.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Return a submitted week with a comment
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PRJ-09
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-TIME-01
+        - STORAGE-VERSION-01
+        - TIME-01
+        - TIME-02
+        - TIME-03
+        - TIME-04
+        - TIME-05
+        - TIME-06
+        - TIME-07
+        - TIME-08
+        - TIME-09
+        - TIME-10
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
+        right: A
+  /v1/timesheet/{week_start}:
+    get:
+      description: The caller's entries of the week from the Monday given (FR-PRJ-05), the days with the public holidays and the working days nobody entered time on, the projects the caller is on with their tasks in use, what was submitted for the week, and the running timer. It is always the caller's own week. The ETag changes with any change to it. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+      operationId: getTimesheet
+      parameters:
+        - description: The Monday of the week.
+          in: path
+          name: week_start
+          required: true
+          schema:
+            description: The Monday of the week.
+            examples:
+              - "2026-11-16"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Timesheet"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: "The week's version, for If-Match: it changes with every change to the person's entries of the week."
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              schema:
+                description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `TIME-02` The day does not fit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Read the caller's own week of time
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CLAIM-09
+        - PRJ-09
+        - TIME-02
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
+        right: V
+    put:
+      description: "Saves the draft and returned entries of the caller's week (FR-PRJ-05): an entry with an ID changes that entry, one without is new, and an open entry left out is removed. Time is whole minutes, 1 to 1,440, on a project the caller is on and one of its tasks in use; time on an internal project is not billable; an entry stays on its project. Submitted and approved entries never change: correct an approved one with reverseTimeEntry. Every problem comes back together. Needs If-Match with the week's ETag, so what is saved is what the caller saw. Side effects: the entries, and one audit event for the week. Refused with PRJ-09 while Projects and time are switched off. Prefer: return=preview checks it and saves nothing."
+      operationId: saveTimesheet
+      parameters:
+        - description: The Monday of the week.
+          in: path
+          name: week_start
+          required: true
+          schema:
+            description: The Monday of the week.
+            examples:
+              - "2026-11-16"
+            format: date
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimesheetSave"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Timesheet"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: "The week's version, for If-Match: it changes with every change to the person's entries of the week."
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Save the caller's week of time
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CLAIM-09
+        - PRJ-09
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-TIME-01
+        - STORAGE-VERSION-01
+        - TIME-01
+        - TIME-02
+        - TIME-03
+        - TIME-04
+        - TIME-05
+        - TIME-06
+        - TIME-07
+        - TIME-08
+        - TIME-09
+        - TIME-10
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
+        right: C
+  /v1/timesheet/{week_start}/submit:
+    post:
+      description: "Sends the caller's draft and returned entries of the week, each project's part as one submission to that project's managers (FR-PRJ-07); the projects to send can be named. TIME-09 when there is nothing to send. Needs If-Match with the week's ETag. Side effects: a submission for each project, its entries marked submitted and locked, and an audit event for the week. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: submitTimesheet
+      parameters:
+        - description: The Monday of the week.
+          in: path
+          name: week_start
+          required: true
+          schema:
+            description: The Monday of the week.
+            examples:
+              - "2026-11-16"
+            format: date
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimesheetSubmit"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Timesheet"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: "The week's version, for If-Match: it changes with every change to the person's entries of the week."
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim; `PRJ-09` Projects and time are switched off; `TIME-08` The week cannot be decided that way."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-TIME-01` The time record does not allow that; `TIME-06` The entry is locked; `TIME-07` The timer does not allow that; `TIME-10` The entry cannot be reversed."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `TIME-01` The time does not fit; `TIME-02` The day does not fit; `TIME-03` The project does not fit; `TIME-04` The task does not fit; `TIME-05` The time cannot be billable; `TIME-09` Nothing to submit."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Submit the caller's week for approval
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CLAIM-09
+        - PRJ-09
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-TIME-01
+        - STORAGE-VERSION-01
+        - TIME-01
+        - TIME-02
+        - TIME-03
+        - TIME-04
+        - TIME-05
+        - TIME-06
+        - TIME-07
+        - TIME-08
+        - TIME-09
+        - TIME-10
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
         right: C
   /v1/write-offs:
     get:

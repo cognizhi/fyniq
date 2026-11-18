@@ -3030,6 +3030,51 @@ type FyniqTickDrill struct {
 	RecordedAt        time.Time
 }
 
+type FyniqTimeEntry struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	ProjectID      uuid.UUID
+	TaskID         uuid.UUID
+	WorkDate       time.Time
+	Minutes        int32
+	Billable       bool
+	Note           string
+	Status         string
+	SubmissionID   *uuid.UUID
+	ReversesID     *uuid.UUID
+	WeekID         *uuid.UUID
+	Version        int32
+	CreatedAt      time.Time
+	ChangedAt      time.Time
+}
+
+type FyniqTimeTimer struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	ProjectID      uuid.UUID
+	TaskID         uuid.UUID
+	Billable       bool
+	Note           string
+	StartedAt      time.Time
+}
+
+type FyniqTimesheetSubmission struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	ProjectID      uuid.UUID
+	WeekStart      time.Time
+	Status         string
+	SubmittedAt    time.Time
+	DecidedBy      *uuid.UUID
+	DecidedAt      *time.Time
+	Comment        string
+	WeekID         *uuid.UUID
+	Version        int32
+}
+
 type FyniqUserHelpState struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

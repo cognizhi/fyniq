@@ -963,6 +963,18 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/tenant-exports` (listTenantExports): List the organisation's full exports
 - `POST /v1/tenant-exports` (requestTenantExport): Ask for the organisation's full export
 - `POST /v1/tenant-exports/{export_id}/download` (createTenantExportDownload): Get a link that saves the full export
+- `POST /v1/time-entries/{entry_id}/reverse` (reverseTimeEntry): Reverse an approved entry of the caller's
+- `GET /v1/timer` (getTimer): Read the caller's running timer
+- `POST /v1/timer/drop` (dropTimer): Drop the caller's timer without an entry
+- `POST /v1/timer/start` (startTimer): Start the caller's timer
+- `POST /v1/timer/stop` (stopTimer): Stop the caller's timer into a draft entry
+- `GET /v1/timesheet-submissions` (listTimesheetSubmissions): List submitted weeks
+- `GET /v1/timesheet-submissions/{submission_id}` (getTimesheetSubmission): Read a submitted week with its entries
+- `POST /v1/timesheet-submissions/{submission_id}/approve` (approveTimesheetSubmission): Approve a submitted week
+- `POST /v1/timesheet-submissions/{submission_id}/return` (returnTimesheetSubmission): Return a submitted week with a comment
+- `GET /v1/timesheet/{week_start}` (getTimesheet): Read the caller's own week of time
+- `PUT /v1/timesheet/{week_start}` (saveTimesheet): Save the caller's week of time
+- `POST /v1/timesheet/{week_start}/submit` (submitTimesheet): Submit the caller's week for approval
 - `GET /v1/write-offs` (listWriteOffs): List the write-offs
 - `POST /v1/write-offs` (createWriteOff): Save a draft write-off
 - `GET /v1/write-offs/{write_off_id}` (getWriteOff): Get a write-off

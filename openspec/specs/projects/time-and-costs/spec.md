@@ -62,6 +62,12 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** it is corrected
 - **THEN** the correction is a reversing entry
 
+#### Scenario: Time is whole minutes, one timer, one week at a time
+- **WHEN** time is entered
+- **THEN** it is whole minutes, 1 to 1,440 an entry, on a task of a project the person is on, and never billable on an internal project
+- **AND** the timer runs one at a time and stops into a draft entry of the nearest whole minute, half up, at least one (RND-TIME)
+- **AND** a week is Monday to Sunday and is saved and audited as one
+
 ### Requirement: FR-PRJ-06 Cost and billing rates
 The system SHALL keep an effective-dated cost rate per person and effective-dated billing rates in the project's currency, and SHALL treat a person's payroll-derived cost rate as payroll data (FR-PAY-13, AUD-05).
 
@@ -108,6 +114,12 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **GIVEN** the organisation is in Standard mode
 - **WHEN** a project manager tries to approve their own time
 - **THEN** the approval is refused
+
+#### Scenario: Naming a manager gives no right
+- **GIVEN** a member named a manager of a project who holds neither the Approver nor the Controller role
+- **WHEN** they try to approve the project's time
+- **THEN** it is refused, and the project warns of the manager
+- **AND** the Controller approves any project's time and the Approver only the projects they manage, never their own
 
 ### Requirement: FR-PRJ-08 Costs on projects
 Bills, claims, mileage, card spend and journals SHALL carry the project dimension, and the system SHALL support billable expenses with an optional markup and purchase orders per project.
