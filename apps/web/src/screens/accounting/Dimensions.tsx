@@ -371,6 +371,12 @@ export function Dimensions({ may, accounts, onSaved }: { may: boolean; accounts:
         <div className="fy-empty fy-card--pad">
           <Icon of={Layers} size={24} />
           <p className="fy-secondary">No dimensions yet. Add Department or Project to see costs and revenue by team or by project, and up to 8 of your own, such as Region.</p>
+          {may && kindsLeft(dims).length > 0 && (
+            <Button variant="secondary" size="sm" className="self-center" onClick={() => setEditing("new")}>
+              <Icon of={Plus} />
+              Add your first dimension
+            </Button>
+          )}
         </div>
       )}
       {dims.length > 0 && (

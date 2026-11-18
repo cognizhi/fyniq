@@ -236,6 +236,10 @@ export const actions = [
   { kind: "action", id: "compliance.heartbeat-drills", mode: "expert", help: "compliance.heartbeat-drills", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "heartbeat-drills.minutes", mode: "expert", help: "heartbeat-drills.minutes", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "shell.help", mode: "basic", help: "shell.help", guide: "home.overview#see-which-version-you-are-on" },
+  // "What happened? Where to record it" on Home (FR-UX-11), from the workbook's Start Here.
+  { kind: "action", id: "home.what-happened", mode: "basic", help: "home.what-happened", guide: "home.overview#what-happened-where-to-record-it" },
+  // Books health on Home's pulse card, explained behind its ⓘ (FR-UX-30).
+  { kind: "action", id: "home.books-health", mode: "basic", help: "home.books-health", guide: "checks.overview" },
   // Keyboard-first entry (FR-UX-06): the shortcut sheet on ?, the switch and keys of the single-character shortcuts, and
   // the command palette's actions on selected rows.
   { kind: "action", id: "shell.shortcuts", mode: "basic", help: "shell.shortcuts", guide: "shell.shortcuts" },
@@ -261,6 +265,8 @@ export const actions = [
   // Home's tiles from the plans (FR-KPI-01, FR-PLN-03): against the budget in Expert; the forecast's cash-out month in both.
   // Home's per-role work and its deadlines (§7.1, FR-UX-40; docs/design/screens Home's upcoming deadlines).
   { kind: "action", id: "home.your-work", mode: "basic", help: "home.your-work", guide: "home.overview#your-work" },
+  // The Auditor's engagement on Reports, where they land (§7.1): until when their read-only access lasts.
+  { kind: "action", id: "home.auditor-access", mode: "basic", help: "home.auditor-access", guide: "home.overview#your-work" },
   { kind: "action", id: "home.deadlines", mode: "basic", help: "home.deadlines", guide: "home.overview#upcoming-deadlines" },
   { kind: "action", id: "home.revenue-vs-budget", mode: "expert", help: "home.revenue-vs-budget", guide: "home.overview#read-the-plans-on-home" },
   { kind: "action", id: "home.costs-vs-budget", mode: "expert", help: "home.costs-vs-budget", guide: "home.overview#read-the-plans-on-home" },

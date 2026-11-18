@@ -6,6 +6,11 @@ import catalogue from "./en-SG.json";
 export interface HelpText {
   label: string;
   tooltip: string;
+  // An info popover's (FR-UX-30): what it is and why it matters in two or three plain sentences, an example, and the
+  // accounting detail Expert mode adds (account, posting, rule ID). The tooltip stands in for a missing detail.
+  detail?: string;
+  example?: string;
+  expert?: string;
 }
 
 const help: Record<string, HelpText | undefined> = catalogue.help;

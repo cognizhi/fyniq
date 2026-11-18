@@ -155,6 +155,28 @@ func (r evidenceFiles) Remove(ctx context.Context, id uuid.UUID, version int) (s
 	return after, nil
 }
 
+func (r evidenceFiles) Extend(ctx context.Context, id uuid.UUID, retainUntil time.Time) (storage.Evidence, error) {
+	if err := r.u.check(); err != nil {
+		return storage.Evidence{}, err
+	}
+	cur, err := r.u.q.LockEvidence(ctx, id)
+	if err != nil {
+		return storage.Evidence{}, mapError(err)
+	}
+	before := toEvidence(evidenceRow(cur))
+	row, err := r.u.q.ExtendEvidenceRetention(ctx, sqlcdb.ExtendEvidenceRetentionParams{ID: id, RetainUntil: &retainUntil})
+	if err != nil {
+		return storage.Evidence{}, mapError(err)
+	}
+	after := toEvidence(evidenceRow(row))
+	changes := evidenceChanges(before, after)
+	changes["version"] = [2]any{before.Version, after.Version}
+	if err := r.u.event(ctx, "evidence.retention_extended", "evidence", id, &after.Version, changes); err != nil {
+		return storage.Evidence{}, err
+	}
+	return after, nil
+}
+
 func (r evidenceFiles) Finalise(ctx context.Context, id uuid.UUID, lockedKey string, retainUntil time.Time) (storage.Evidence, error) {
 	if err := r.u.check(); err != nil {
 		return storage.Evidence{}, err

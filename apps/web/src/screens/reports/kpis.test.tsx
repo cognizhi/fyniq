@@ -112,7 +112,7 @@ describe("the KPI page", () => {
     const about = await screen.findByRole("button", { name: "About Runway" });
     fireEvent.click(about);
     expect(about.getAttribute("aria-expanded")).toBe("true");
-    const note = screen.getByRole("note", { name: "" });
+    const note = screen.getByRole("dialog", { name: "Runway" });
     expect(note.textContent).toContain("How Runway is worked out");
     expect(note.textContent).toContain("Definition runway@1");
     await noViolations(document.body);
