@@ -48,6 +48,18 @@ jobs:
             RANGE="$BASE..$HEAD"
           fi
           scripts/check-commits.sh "$RANGE"
+      - name: Calculation fixes carry their regression test (QA-REL-01)
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            RANGE="$HEAD^!"   # first push: the commit pushed
+          else
+            RANGE="$BASE..$HEAD"
+          fi
+          python3 scripts/release_policy.py "$RANGE" --title "$PR_TITLE"
 
   checks:
     name: Design tokens and configuration
@@ -77,6 +89,10 @@ jobs:
       # status and passed a failing make test (archtest's workflow rules now refuse a pipe without it).
       - run: make test 2>&1 | tee make-test.log
         shell: bash
+        env:
+          # The runner is thrown away after the job and pgtest stops its own containers, so Testcontainers' reaper adds
+          # nothing here; waiting for it timed out in about one run in three on 17 Nov 2026 ("wait for reaper").
+          TESTCONTAINERS_RYUK_DISABLED: "true"
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
@@ -150,10 +166,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      FYNIQ_TICK_INTERVAL: 20s   # the stack's tick: the AI journey's approved proposal reaches the executor in seconds, not 5 minutes
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0   # the pull request's base, to see whether it changes the visual baselines (design D5)
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       - run: make images        # both flavours, linux/amd64: budgets, non-root, no shell, no local adapter in release (§12.9)
       - run: make image-scan    # SBOM and grype per release image (SEC-21)
@@ -165,6 +184,22 @@ jobs:
           FYNIQ_PG_PORT: "25432"
           KEEP: "1"   # left running for the DAST scan
       - run: make dast   # CTL-CHG-07: ZAP's baseline of the stack, signed in; a High alert or a FAIL rule's fails unless waived
+      - run: pnpm install --frozen-lockfile
+      - run: make test-journeys   # QA-E2E-01: the browser journeys on the same stack, in the runner's Chrome (p1-launch-readiness D6)
+        env:
+          FYNIQ_PG_PORT: "25432"   # cmd/seed makes each journey's organisation in the stack's database
+      - run: make down   # the journeys' stack: the visual snapshots start their own
+      - name: A changed visual baseline is approved by its label (p1-launch-readiness design D5)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'visual-baseline') }}
+        run: |
+          if ! python3 scripts/visual.py changed "$BASE" && [ "$LABELLED" != true ]; then
+            echo "✖ a picture's baseline is added, changed or removed: approve it by labelling the pull request visual-baseline (design D5)"
+            exit 1
+          fi
+      - run: make test-visual   # QA-UI-07, QA-RPT-04: the key pages at the five frames in light and dark, in the pinned Playwright container (design D5)
       - if: always()
         run: make down
       - if: always()
@@ -179,6 +214,19 @@ jobs:
           name: dast-report   # ZAP's reports, dast.md and the ASVS coverage: the evidence (CTL-CHG-07)
           path: .data/dast/
           retention-days: 90
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: visual-diffs   # the pictures that differ and every hash the run saw: python3 scripts/visual.py approve <folder>
+          path: apps/web/test-results/visual/
+          if-no-files-found: ignore
+          retention-days: 14
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: journey-traces   # a failed journey's Playwright trace: pnpm exec playwright show-trace <trace.zip>
+          path: apps/web/test-results/journeys/
+          retention-days: 14
 
   images-arm64:
     name: Images and local mode on arm64 (make images, QA-LOCAL-01)
@@ -206,7 +254,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - run: make evals   # replay mode; the suites arrive in P1
+      # jdx/mise-action v5.1.2, pinned by commit (SEC-28): installs the toolchain of mise.toml
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: make evals   # CTL-AI-05: replay mode, offline; a recorded run below its threshold or an unsound suite fails
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: eval-report   # CTL-AI-05's evidence
+          path: .data/evals/report.json
+          retention-days: 90
 
   e2e:
     name: Web smoke test (make test-e2e)
@@ -219,7 +275,24 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       - run: pnpm install --frozen-lockfile
-      - run: make test-e2e   # uses the runner's Google Chrome; no browser download
+      # NFR-BROWSER-01: Firefox and WebKit, the builds of the pinned Playwright (its CDN); Chrome is the runner's own.
+      - run: pnpm --filter @fyniq/web exec playwright install --with-deps firefox webkit
+      - run: make test-e2e   # in Chrome, Firefox and WebKit (apps/web/browsers.ts)
+        env:
+          FYNIQ_E2E_BROWSERS: all
+
+  storybook:
+    name: Storybook (make storybook)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: pnpm install --frozen-lockfile
+      - run: make storybook   # QA-UI-02: in the runner's own Chrome, each story with axe in four themes
 
   local-mode:
     name: Local mode timings (make setup && make dev)

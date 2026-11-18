@@ -4,15 +4,18 @@ type: task
 title: Read books health and the checks, run them now, mark items reviewed and name a check's owner
 summary: Books health and the check statuses, when checks run, nightly verification, Run now, marking items reviewed, and naming owners
 sources:
-  - docs/user-guide/checks.md sha256:f7c709205d3fe7e567e1871bce346f0ac79b33ff871643e9a5c8bbf1de940c7f
+  - docs/user-guide/checks.md sha256:ad8a346f32f926aedcd69f3a7ec3c9792514dd4b90a08cc2b5c35880e7a5fef3
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-02
+compiled_at: 2026-11-17
 aliases:
+  - run it again
+  - background task stopped
+  - replay failed work
   - books health
   - checks
   - checks page
@@ -23,6 +26,7 @@ aliases:
   - mark reviewed
   - close checklist
   - runway warning
+  - AI route needs attention
   - acknowledge a warning
   - nightly verification
   - why can't I close the month
@@ -52,7 +56,7 @@ aliases:
 
 ## When the checks run
 
-- Within about a minute of a change they read, such as a posting or a new account.
+- Within about a minute of a change they read, such as a posting or a new account; while changes keep coming, such as during a large bank import, at most once a minute, each run reading every change since the last.
 - Every night, when every check runs, after the night's verification of the ledger.
 - When someone selects **Run all checks now**.
 
@@ -83,6 +87,15 @@ aliases:
 
 (src: docs/user-guide/checks.md#mark-an-item-reviewed)
 
+## Run a stopped task again
+
+- Fyniq does some work in the background, such as sending an email or making a recurring document; a task that fails is tried again by itself.
+- One that fails every time stops, and **Every scheduled job ran on time** lists it with when it stopped and why.
+- Once what stopped it is fixed, an Owner or an Administrator selects **Run it again** beside it and confirms: it goes back in the queue with its attempts counted afresh, and its last error stays on record.
+- Each run again is kept in the audit trail; the task leaves the check once the checks run again.
+
+(src: docs/user-guide/checks.md#run-a-stopped-task-again)
+
 ## Name a check's owner
 
 - An Owner or a Controller selects the pencil beside a check's owner, picks a person and saves; the first choice gives the check back to its role.
@@ -105,6 +118,7 @@ aliases:
 - **Controls**: in Founder mode, a logged action not reviewed by another founder within 14 days; a person whose roles conflict with nothing to cover it; an external person still a member after their roles ended ([[members.remove]]); and an access review not attested 14 days after its quarter ended.
 - **Payments**: a supplier whose bank details were added or changed in the last 30 days with a bill still to pay (confirm the new account on a number already known before paying), and a cash advance open past the claim deadline.
 - **The platform**: a scheduled job (recurring documents, depreciation, the month-end revaluation) that has not run in its time; a statutory pack past its review date or with a later version not activated; an evidence file that no longer matches its fingerprint; the email sent, from the sending domains' records and, over 30 days, 2% hard bounces or 0.1% complaints with 50 or more sent, or any complaint with fewer; and an integration whose last test failed or whose key expires within 14 days ([[settings.integrations]]).
+- **AI**: an AI agent's route that fell back more often in a day than the organisation's setting allows (5 unless changed, [[settings.organisation]]); a moving model alias on a route not re-qualified this week; an AI budget, or a subscription's quota, within 20% of its limit; a model on a route retiring within 30 days, or that its provider no longer lists or refuses; and a connection with a stored key whose model list has not been read successfully for 3 days.
 - The checks of each module still to come, such as payroll, join as that module is built.
 
 (src: docs/user-guide/checks.md#the-checks-so-far)

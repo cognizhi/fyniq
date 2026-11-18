@@ -5,6 +5,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import type { Session } from "../../api/client";
 import { checkCost, PreIncorporationCosts } from "./PreIncorporationCosts";
+import { invalid } from "../../test/invalid";
 
 const sgd = (amount: string) => ({ amount, currency: "SGD" });
 const waiting = {
@@ -69,9 +70,35 @@ describe("Costs before incorporation", () => {
     const f = { date: "2026-01-01", supplier: "", description: "Lawyer", contact_id: "", gross: "-5", gst: "abc" };
     const { draft, errors } = checkCost(f, "SGD", "2026-01-01");
     expect(draft).toBeUndefined();
-    expect(Object.keys(errors).sort()).toEqual(["contact_id", "date", "gross", "gst", "supplier"]);
+    expect(errors).toEqual({
+      contact_id: "Choose the director or shareholder who paid it.",
+      date: "The date is not before the books start, 1 Jan 2026. Record a later cost as a claim or a bill.",
+      gross: "Enter what they paid in SGD, more than zero.",
+      gst: "Enter the GST the receipt shows, or leave it empty.",
+      supplier: "Enter who it was paid to.",
+    });
+    expect(checkCost({ ...f, date: "", description: " " }, "SGD").errors).toMatchObject({ date: "Enter the date on the receipt.", description: "Enter what it was for." });
     const ok = checkCost({ date: "2025-08-28", supplier: "Lawyer", description: "Agreement", contact_id: "c-mei", gross: "S$2,180.00", gst: "180" }, "SGD", "2026-01-01");
     expect(ok.draft).toEqual({ date: "2025-08-28", supplier: "Lawyer", description: "Agreement", contact_id: "c-mei", gross: sgd("2180.00"), gst: sgd("180") });
+  });
+
+  // QA-UI-01: each field it cannot read is marked, with what it needs beside it, before anything is sent.
+  it("marks each field of a cost it cannot read, before anything is sent", async () => {
+    const seen = answer({ "GET /v1/pre-incorporation-costs": { status: 200, body: page } });
+    renderPage(PreIncorporationCosts, { path: "/accounting/pre-incorporation" });
+    fireEvent.click(await screen.findByRole("button", { name: "Add a cost" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Date on the receipt"), { target: { value: "" } });
+    fireEvent.change(within(dialog).getByLabelText("Amount paid (SGD)"), { target: { value: "-5" } });
+    fireEvent.change(within(dialog).getByLabelText("GST shown (SGD)"), { target: { value: "abc" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add the cost" }));
+    await invalid(dialog, "Date on the receipt", "Enter the date on the receipt.");
+    await invalid(dialog, "Paid by", "Choose the director or shareholder who paid it.");
+    await invalid(dialog, "Paid to", "Enter who it was paid to.");
+    await invalid(dialog, "What it was for", "Enter what it was for.");
+    await invalid(dialog, "Amount paid (SGD)", "Enter what they paid in SGD, more than zero.");
+    await invalid(dialog, "GST shown (SGD)", "Enter the GST the receipt shows, or leave it empty.");
+    expect(seen.filter((s) => s.method === "POST")).toEqual([]);
   });
 
   it("lets the accountant decide a cost over its version, and offers no Add to them", async () => {
@@ -87,6 +114,9 @@ describe("Costs before incorporation", () => {
     expect(screen.queryByRole("button", { name: "Add a cost" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Incorporation: ACRA fee and constitution" }));
     fireEvent.click(await screen.findByRole("button", { name: "Decide" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Decide and post" }));
+    await invalid(document.body, "Income-tax treatment", "Choose the income-tax treatment.");
+    await invalid(document.body, "Account", "Choose the account the cost posts to.");
     fireEvent.change(await screen.findByLabelText("Income-tax treatment"), { target: { value: "capital" } });
     await screen.findByRole("option", { name: "6910 Incorporation costs" });
     fireEvent.change(screen.getByLabelText("Account"), { target: { value: "acc-6910" } });

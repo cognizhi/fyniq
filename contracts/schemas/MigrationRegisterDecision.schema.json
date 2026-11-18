@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "class": {
+      "description": "a: a cent allocation of spreads and depreciation; b: a deliberate rule change; c: a defect of the workbook found during the migration.",
+      "enum": [
+        "a",
+        "b",
+        "c"
+      ],
+      "examples": [
+        "a"
+      ],
+      "type": "string"
+    },
+    "decided_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-13T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "decided_by": {
+      "description": "Who decided it.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a11"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "Why, as the Accountant wrote it; a workbook defect says what it is.",
+      "examples": [
+        "ALLOC-EVEN puts the quarter's cent in its last month"
+      ],
+      "type": "string"
+    },
+    "stale": {
+      "description": "true: it was decided on other figures than the report's, so it no longer counts: decide the line again.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "version": {
+      "description": "The decision's version: deciding the line again takes the next.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "class",
+    "version",
+    "decided_by",
+    "decided_at",
+    "stale"
+  ],
+  "title": "MigrationRegisterDecision",
+  "type": "object"
+}

@@ -23,19 +23,21 @@ var taxChecks = []Definition{
 			"forecast). The check warns when a test is met, and earlier, once the year's taxable supplies so far reach the warning " +
 			"percentage of the threshold (80% unless changed).",
 		Rules: "FR-TAX-05", Owner: "accountant", View: viewGST,
-		Triggers: []string{"document", "journal_entry", "gst_registration", "organisation_setting"}, Run: registrationThreshold},
+		Triggers: []string{"document", "journal_entry", "gst_registration", "organisation_setting"}, Packs: []string{"sg-gst", "sg-deadlines"},
+		Run: registrationThreshold},
 	{Key: "gst.return-due", Ref: "C.2 #13", Area: "Tax", Worst: Due, Title: "Every GST return is filed by its due day",
 		Explain: "A GST F5 return and its payment are due one month after the end of the accounting period (IRAS). Each period that " +
 			"has ended without a filing recorded on the statutory calendar, due within 7 days or past, is listed. Record the " +
 			"filing with IRAS's acknowledgement on the calendar.",
 		Rules: "FR-TAX-07, CMP-02", Owner: "accountant", View: viewCalendar,
-		Triggers: []string{"document", "gst_registration", "organisation_setting"}, Run: returnsDue},
+		Triggers: []string{"document", "gst_registration", "organisation_setting"}, Packs: []string{"sg-deadlines"}, Run: returnsDue},
 	{Key: "compliance.deadlines", Ref: "C.2 #15", Area: "Compliance", Worst: Due, Title: "No statutory deadline is missed",
 		Explain: "ECI, Form C-S/C, the annual return, the AGM or the statements to members, employment income (IR8A, AIS), CPF and " +
 			"applying for GST registration, from the statutory calendar: each due within 14 days or past, with nothing recorded, is " +
 			"listed. The registers' own deadlines are on C.2 #22 and C.2 #27, and GST returns on C.2 #13.",
 		Rules: "FR-TAX-07, CMP-02", Owner: "accountant", View: viewCalendar,
-		Triggers: []string{"document", "gst_registration", "organisation_setting", "organisation"}, Run: deadlinesDue},
+		Triggers: []string{"document", "gst_registration", "organisation_setting", "organisation"}, Packs: []string{"sg-deadlines", "sg-acra"},
+		Run: deadlinesDue},
 }
 
 // The Appendix D row whose view opens the calendar's items.

@@ -131,6 +131,74 @@ func (q *Queries) DualControlReleases(ctx context.Context, since time.Time) ([]D
 	return items, nil
 }
 
+const executedProposals = `-- name: ExecutedProposals :many
+SELECT p.id, p.finished_at::timestamptz AS finished_at, p.payload_sha256, coalesce(p.approved_payload, '')::text AS approved_payload,
+       coalesce(p.approved_sha256, '')::text AS approved_sha256, p.decided_by, r.id AS request_id,
+       coalesce(r.object_type || ':' || r.object_key, '')::text AS request_object, coalesce(r.status, '')::text AS request_status,
+       coalesce(r.envelope, '')::text AS envelope,
+       coalesce((SELECT array_agg(s.signer ORDER BY s.signed_at) FROM fyniq.approval_signature s
+                  WHERE s.organisation_id = r.organisation_id AND s.request_id = r.id AND s.decision = 'approve'
+                    AND s.voided_at IS NULL AND s.envelope_hash = r.envelope_hash), '{}')::uuid[] AS signers,
+       (SELECT count(*) FROM fyniq.audit_event e
+         WHERE e.organisation_id = p.organisation_id AND e.object_type = 'approval_request' AND e.object_id = r.id
+           AND e.action = 'approval.given' AND (e.body::jsonb -> 'actor' ->> 'type') IS DISTINCT FROM 'user')::integer AS not_by_a_person
+  FROM fyniq.ai_proposal p
+  LEFT JOIN fyniq.approval_request r ON r.organisation_id = p.organisation_id AND r.id = p.approval_request_id
+ WHERE p.status = 'executed' AND p.finished_at >= $1
+ ORDER BY p.finished_at, p.id
+`
+
+type ExecutedProposalsRow struct {
+	ID              uuid.UUID
+	FinishedAt      time.Time
+	PayloadSha256   string
+	ApprovedPayload string
+	ApprovedSha256  string
+	DecidedBy       *uuid.UUID
+	RequestID       *uuid.UUID
+	RequestObject   string
+	RequestStatus   string
+	Envelope        string
+	Signers         []uuid.UUID
+	NotByAPerson    int32
+}
+
+// CTL-AI-02: each AI proposal executed since the window began, with what was approved, its approval request, the people
+// whose live approvals signed the request's envelope, and the approvals of it the audit trail records for an actor that
+// is not a person.
+func (q *Queries) ExecutedProposals(ctx context.Context, since *time.Time) ([]ExecutedProposalsRow, error) {
+	rows, err := q.db.Query(ctx, executedProposals, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExecutedProposalsRow
+	for rows.Next() {
+		var i ExecutedProposalsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FinishedAt,
+			&i.PayloadSha256,
+			&i.ApprovedPayload,
+			&i.ApprovedSha256,
+			&i.DecidedBy,
+			&i.RequestID,
+			&i.RequestObject,
+			&i.RequestStatus,
+			&i.Envelope,
+			&i.Signers,
+			&i.NotByAPerson,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const exportsWithoutTheirRecords = `-- name: ExportsWithoutTheirRecords :many
 SELECT 'report_export'::text AS kind, e.id::text AS object_key, e.requested_at::timestamptz AS at,
        'asked for, with no audit event'::text AS reason
@@ -735,6 +803,157 @@ func (q *Queries) InsertDataInventoryReview(ctx context.Context, arg InsertDataI
 	return i, err
 }
 
+const insertHeartbeatDrill = `-- name: InsertHeartbeatDrill :one
+INSERT INTO fyniq.tick_drill (held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by,
+                                   recorded_at)
+VALUES ($1, $2, $3, $4, $5,
+        $6, $7, $8)
+RETURNING id, held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by, recorded_at
+`
+
+type InsertHeartbeatDrillParams struct {
+	HeldOn            time.Time
+	Environment       string
+	PausedMinutes     int32
+	FirstAlertMinutes *int32
+	EscalationMinutes *int32
+	Findings          string
+	RecordedBy        string
+	RecordedAt        time.Time
+}
+
+type InsertHeartbeatDrillRow struct {
+	ID                uuid.UUID
+	HeldOn            time.Time
+	Environment       string
+	PausedMinutes     int32
+	FirstAlertMinutes *int32
+	EscalationMinutes *int32
+	Findings          string
+	RecordedBy        string
+	RecordedAt        time.Time
+}
+
+func (q *Queries) InsertHeartbeatDrill(ctx context.Context, arg InsertHeartbeatDrillParams) (InsertHeartbeatDrillRow, error) {
+	row := q.db.QueryRow(ctx, insertHeartbeatDrill,
+		arg.HeldOn,
+		arg.Environment,
+		arg.PausedMinutes,
+		arg.FirstAlertMinutes,
+		arg.EscalationMinutes,
+		arg.Findings,
+		arg.RecordedBy,
+		arg.RecordedAt,
+	)
+	var i InsertHeartbeatDrillRow
+	err := row.Scan(
+		&i.ID,
+		&i.HeldOn,
+		&i.Environment,
+		&i.PausedMinutes,
+		&i.FirstAlertMinutes,
+		&i.EscalationMinutes,
+		&i.Findings,
+		&i.RecordedBy,
+		&i.RecordedAt,
+	)
+	return i, err
+}
+
+const insertIncident = `-- name: InsertIncident :one
+INSERT INTO fyniq.security_incident (title, summary, severity, detected_at, opened_by, opened_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, title, summary, severity, detected_at, opened_by, opened_at
+`
+
+type InsertIncidentParams struct {
+	Title      string
+	Summary    string
+	Severity   string
+	DetectedAt time.Time
+	OpenedBy   string
+	OpenedAt   time.Time
+}
+
+type InsertIncidentRow struct {
+	ID         uuid.UUID
+	Title      string
+	Summary    string
+	Severity   string
+	DetectedAt time.Time
+	OpenedBy   string
+	OpenedAt   time.Time
+}
+
+func (q *Queries) InsertIncident(ctx context.Context, arg InsertIncidentParams) (InsertIncidentRow, error) {
+	row := q.db.QueryRow(ctx, insertIncident,
+		arg.Title,
+		arg.Summary,
+		arg.Severity,
+		arg.DetectedAt,
+		arg.OpenedBy,
+		arg.OpenedAt,
+	)
+	var i InsertIncidentRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Summary,
+		&i.Severity,
+		&i.DetectedAt,
+		&i.OpenedBy,
+		&i.OpenedAt,
+	)
+	return i, err
+}
+
+const insertIncidentStep = `-- name: InsertIncidentStep :one
+INSERT INTO fyniq.security_incident_step (incident_id, step, at, by_actor, note, breach_id)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, incident_id, step, at, by_actor, note, breach_id
+`
+
+type InsertIncidentStepParams struct {
+	IncidentID uuid.UUID
+	Step       string
+	At         time.Time
+	ByActor    string
+	Note       string
+	BreachID   *uuid.UUID
+}
+
+type InsertIncidentStepRow struct {
+	ID         uuid.UUID
+	IncidentID uuid.UUID
+	Step       string
+	At         time.Time
+	ByActor    string
+	Note       string
+	BreachID   *uuid.UUID
+}
+
+func (q *Queries) InsertIncidentStep(ctx context.Context, arg InsertIncidentStepParams) (InsertIncidentStepRow, error) {
+	row := q.db.QueryRow(ctx, insertIncidentStep,
+		arg.IncidentID,
+		arg.Step,
+		arg.At,
+		arg.ByActor,
+		arg.Note,
+		arg.BreachID,
+	)
+	var i InsertIncidentStepRow
+	err := row.Scan(
+		&i.ID,
+		&i.IncidentID,
+		&i.Step,
+		&i.At,
+		&i.ByActor,
+		&i.Note,
+		&i.BreachID,
+	)
+	return i, err
+}
+
 const insertPDRequest = `-- name: InsertPDRequest :one
 INSERT INTO fyniq.pd_request (kind, subject, requester, details, received_on, due_on, created_by, created_at)
 VALUES ($1, $2, $3, $4, $5, $5::date + 30,
@@ -947,6 +1166,93 @@ func (q *Queries) InsertPolicyVersion(ctx context.Context, arg InsertPolicyVersi
 		&i.FromDraft,
 		&i.PublishedBy,
 		&i.PublishedAt,
+	)
+	return i, err
+}
+
+const insertRestoreDrill = `-- name: InsertRestoreDrill :one
+INSERT INTO fyniq.restore_drill (held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys,
+                                 sign_in, tick, outbox, findings, recorded_by, recorded_at)
+VALUES ($1, $2, $3, $4, $5, $6,
+        $7, $8, $9, $10, $11, $12, $13,
+        $14, $15)
+RETURNING id, held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys, sign_in, tick, outbox,
+          findings, recorded_by, recorded_at
+`
+
+type InsertRestoreDrillParams struct {
+	HeldOn          time.Time
+	Scenario        string
+	RestoredFrom    string
+	DataLostMinutes int32
+	TookMinutes     int32
+	Ledger          bool
+	AuditChain      bool
+	Documents       bool
+	Keys            bool
+	SignIn          bool
+	Tick            bool
+	Outbox          bool
+	Findings        string
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
+type InsertRestoreDrillRow struct {
+	ID              uuid.UUID
+	HeldOn          time.Time
+	Scenario        string
+	RestoredFrom    string
+	DataLostMinutes int32
+	TookMinutes     int32
+	Ledger          bool
+	AuditChain      bool
+	Documents       bool
+	Keys            bool
+	SignIn          bool
+	Tick            bool
+	Outbox          bool
+	Findings        string
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
+func (q *Queries) InsertRestoreDrill(ctx context.Context, arg InsertRestoreDrillParams) (InsertRestoreDrillRow, error) {
+	row := q.db.QueryRow(ctx, insertRestoreDrill,
+		arg.HeldOn,
+		arg.Scenario,
+		arg.RestoredFrom,
+		arg.DataLostMinutes,
+		arg.TookMinutes,
+		arg.Ledger,
+		arg.AuditChain,
+		arg.Documents,
+		arg.Keys,
+		arg.SignIn,
+		arg.Tick,
+		arg.Outbox,
+		arg.Findings,
+		arg.RecordedBy,
+		arg.RecordedAt,
+	)
+	var i InsertRestoreDrillRow
+	err := row.Scan(
+		&i.ID,
+		&i.HeldOn,
+		&i.Scenario,
+		&i.RestoredFrom,
+		&i.DataLostMinutes,
+		&i.TookMinutes,
+		&i.Ledger,
+		&i.AuditChain,
+		&i.Documents,
+		&i.Keys,
+		&i.SignIn,
+		&i.Tick,
+		&i.Outbox,
+		&i.Findings,
+		&i.RecordedBy,
+		&i.RecordedAt,
 	)
 	return i, err
 }
@@ -1664,6 +1970,139 @@ func (q *Queries) ListDataInventoryReviews(ctx context.Context) ([]ListDataInven
 	return items, nil
 }
 
+const listHeartbeatDrills = `-- name: ListHeartbeatDrills :many
+SELECT id, held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by, recorded_at
+FROM fyniq.tick_drill ORDER BY held_on, recorded_at, id
+`
+
+type ListHeartbeatDrillsRow struct {
+	ID                uuid.UUID
+	HeldOn            time.Time
+	Environment       string
+	PausedMinutes     int32
+	FirstAlertMinutes *int32
+	EscalationMinutes *int32
+	Findings          string
+	RecordedBy        string
+	RecordedAt        time.Time
+}
+
+// The organisation's heartbeat drills, oldest first (NFR-OBS-02).
+func (q *Queries) ListHeartbeatDrills(ctx context.Context) ([]ListHeartbeatDrillsRow, error) {
+	rows, err := q.db.Query(ctx, listHeartbeatDrills)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListHeartbeatDrillsRow
+	for rows.Next() {
+		var i ListHeartbeatDrillsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.HeldOn,
+			&i.Environment,
+			&i.PausedMinutes,
+			&i.FirstAlertMinutes,
+			&i.EscalationMinutes,
+			&i.Findings,
+			&i.RecordedBy,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIncidentSteps = `-- name: ListIncidentSteps :many
+SELECT id, incident_id, step, at, by_actor, note, breach_id FROM fyniq.security_incident_step ORDER BY at, id
+`
+
+type ListIncidentStepsRow struct {
+	ID         uuid.UUID
+	IncidentID uuid.UUID
+	Step       string
+	At         time.Time
+	ByActor    string
+	Note       string
+	BreachID   *uuid.UUID
+}
+
+func (q *Queries) ListIncidentSteps(ctx context.Context) ([]ListIncidentStepsRow, error) {
+	rows, err := q.db.Query(ctx, listIncidentSteps)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListIncidentStepsRow
+	for rows.Next() {
+		var i ListIncidentStepsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.IncidentID,
+			&i.Step,
+			&i.At,
+			&i.ByActor,
+			&i.Note,
+			&i.BreachID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIncidents = `-- name: ListIncidents :many
+SELECT id, title, summary, severity, detected_at, opened_by, opened_at FROM fyniq.security_incident ORDER BY detected_at, id
+`
+
+type ListIncidentsRow struct {
+	ID         uuid.UUID
+	Title      string
+	Summary    string
+	Severity   string
+	DetectedAt time.Time
+	OpenedBy   string
+	OpenedAt   time.Time
+}
+
+// The organisation's security incidents, oldest first (SEC-32).
+func (q *Queries) ListIncidents(ctx context.Context) ([]ListIncidentsRow, error) {
+	rows, err := q.db.Query(ctx, listIncidents)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListIncidentsRow
+	for rows.Next() {
+		var i ListIncidentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Summary,
+			&i.Severity,
+			&i.DetectedAt,
+			&i.OpenedBy,
+			&i.OpenedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPDRequestSteps = `-- name: ListPDRequestSteps :many
 SELECT id, request_id, step, at, by_actor, note, new_due_on, outcome FROM fyniq.pd_request_step ORDER BY at, id
 `
@@ -1810,6 +2249,69 @@ func (q *Queries) ListPolicyVersions(ctx context.Context) ([]FyniqPolicyVersion,
 			&i.FromDraft,
 			&i.PublishedBy,
 			&i.PublishedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRestoreDrills = `-- name: ListRestoreDrills :many
+SELECT id, held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys, sign_in, tick, outbox,
+       findings, recorded_by, recorded_at
+FROM fyniq.restore_drill ORDER BY held_on, recorded_at, id
+`
+
+type ListRestoreDrillsRow struct {
+	ID              uuid.UUID
+	HeldOn          time.Time
+	Scenario        string
+	RestoredFrom    string
+	DataLostMinutes int32
+	TookMinutes     int32
+	Ledger          bool
+	AuditChain      bool
+	Documents       bool
+	Keys            bool
+	SignIn          bool
+	Tick            bool
+	Outbox          bool
+	Findings        string
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
+// The organisation's restore drills, oldest first (DR-06).
+func (q *Queries) ListRestoreDrills(ctx context.Context) ([]ListRestoreDrillsRow, error) {
+	rows, err := q.db.Query(ctx, listRestoreDrills)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRestoreDrillsRow
+	for rows.Next() {
+		var i ListRestoreDrillsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.HeldOn,
+			&i.Scenario,
+			&i.RestoredFrom,
+			&i.DataLostMinutes,
+			&i.TookMinutes,
+			&i.Ledger,
+			&i.AuditChain,
+			&i.Documents,
+			&i.Keys,
+			&i.SignIn,
+			&i.Tick,
+			&i.Outbox,
+			&i.Findings,
+			&i.RecordedBy,
+			&i.RecordedAt,
 		); err != nil {
 			return nil, err
 		}

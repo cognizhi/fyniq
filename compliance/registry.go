@@ -115,8 +115,13 @@ var Verifications = map[string]string{
 	"members.second-factor":    "No session of the last day was used beyond reading itself without a second factor, and every active member has one registered",
 	"integrations.owned":       "Every integration client has an owner, a class and an unexpired end date, and holds only its class's scopes",
 	"audit.exports-reconciled": "Every report export, evidence opening and reveal of the last day has its audit event",
+	"ai.traces":                "None of the last day's turns of the assistant keeps an NRIC or FIN number or a bank account number in what the model wrote or read, and none read payroll while AI payroll access was off",
+	"ai.proposals-approved":    "Every proposal of the AI executed in the last day ran under its own approval request, approved by a person, whose envelope signs the proposal's payload hash, as one of the people who approved it, and with no approval given by the AI",
+	"ai.agent-runs":            "Every scheduled agent's run that ended in the last day called only the read tools its pinned skill names, and proposed only the task types its skill outputs, under its own agent",
 	"posture.findings":         "No Security Command Center finding of high or critical severity is open past its SLA (the installation's)",
 	"logs.scan":                "None of a sample of the last day's platform logs holds an NRIC or FIN number, a token or an API key (the installation's)",
+	"scheduler.configured":     "The tick's Scheduler job runs, and the heartbeat's alert policies are on and tell someone (the installation's)",
+	"records.retention":        "Every file committed in the last day is locked in the records store until its record's retain-until, and every kept file has its record",
 }
 
 // Attestations are the recurring reviews people sign off, by kind (design D6).
@@ -134,6 +139,8 @@ var Attestations = map[string]string{
 	"breach":                 "Each breach is assessed within 30 days, and a notifiable one reported to the PDPC within 3 calendar days of the decision",
 	"breach-tabletop":        "The breach runbook is rehearsed in a tabletop exercise twice a year",
 	"transfers":              "Each flow of personal data abroad has a current transfer assessment, reviewed by its next review day",
+	"heartbeat-drill":        "The tick paused in staging alerts the platform owner within 30 minutes and the Owners within 60, each quarter (the installation's)",
+	"restore-drill":          "A full restore drill recovers each quarter: the ledger, the audit chain, documents, keys, sign-in, the tick and the outbox work on the restored copy (the installation's)",
 }
 
 // Framework is a framework a control may map to, and the words of Appendix F's Mapping cell that name it.

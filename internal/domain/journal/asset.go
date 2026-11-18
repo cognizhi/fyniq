@@ -119,7 +119,7 @@ func SourceLines(ctx context.Context, u storage.UnitOfWork, doc storage.Document
 		}
 	}
 	if doc.Type == storage.DocumentBill {
-		stored, err := u.Ledger().ByIdentity(ctx, ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleBill))
+		stored, err := u.Ledger().ByIdentity(ctx, bill.IdentityOf(doc))
 		if err != nil {
 			return nil, err
 		}

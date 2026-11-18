@@ -29,7 +29,8 @@ func (e *env) setEvidence(key, was, level string, version int) {
 // The evidence rules as shipped (FR-DOC-06; PRD-001 rev 0.182, the owner's decisions of 6 Nov 2026): a bill posts only
 // with a file attached, and so does a manual journal whose debits are above S$1,000; one of S$1,000.00 posts without.
 // Asking for a post's approval is refused the same way. Once the file is attached, it posts. With the bill's rule
-// recommended, a bill posts without a file, and Checks lists it (C.2 #30); with it optional, nothing is listed.
+// recommended, a bill posts without a file, and Checks lists it (C.2 #30); with it optional, nothing is listed. With the
+// journals' rule recommended, a journal above the threshold posted without a file is listed by its debits.
 // req: FR-DOC-06
 // req: documents/attachments-and-evidence Default evidence for bills and manual journals (rev 0.182)
 // req: C.2 #30
@@ -86,5 +87,19 @@ func TestEvidenceRulesHoldBillsAndJournals(t *testing.T) {
 	e.setEvidence("evidence.bill", "recommended", "optional", 4)
 	if c := e.checked("evidence.missing"); itemNamed(c, bare) != nil {
 		t.Errorf("C.2 #30 lists a bill whose evidence is optional: %s", c.Raw)
+	}
+
+	// With the journals' rule recommended, one above the threshold posts without a file, and Checks lists it by its
+	// debits, read with a page of journals' entries at once (p1-operations-dr task 13.13); the one at the threshold and
+	// the one with its file are not listed.
+	e.setEvidence("evidence.manual_journal", "required", "recommended", 3)
+	over, overTag := e.createDraft("1200.00")
+	if p := e.call(http.MethodPost, "/v1/journals/"+over+"/post", acc, nil, "If-Match", overTag); p.Status != http.StatusOK {
+		t.Fatalf("a journal whose evidence is recommended: %d %s", p.Status, p.Raw)
+	}
+	c = e.checked("evidence.missing")
+	if it := itemNamed(c, over); it == nil || !strings.Contains(it["detail"].(string), "Debits of 1200.00 SGD") || itemNamed(c, j) != nil ||
+		len(itemsOf(c)) != 1 {
+		t.Errorf("C.2 #30 with journals recommended: %s", c.Raw)
 	}
 }

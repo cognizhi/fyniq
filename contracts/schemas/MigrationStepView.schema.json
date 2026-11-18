@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checks_file_id": {
+      "description": "The Checks export made from the workbook, once validated: M1's evidence with the workbook.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "errors": {
+      "description": "The report's errors, once validated: any stops the commit.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "description": "The step.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "report_sha256": {
+      "description": "The SHA-256 of the validation report as kept, once validated: what a sign-off names.",
+      "examples": [
+        "9f2c4e…"
+      ],
+      "type": "string"
+    },
+    "started_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-13T09:05:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "started_by": {
+      "description": "Who uploaded the workbook.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "validating in the background; then valid, or invalid when its report holds an error.",
+      "enum": [
+        "validating",
+        "valid",
+        "invalid"
+      ],
+      "examples": [
+        "valid"
+      ],
+      "type": "string"
+    },
+    "step": {
+      "description": "§17.1's step: M1 is the frozen workbook uploaded and validated.",
+      "enum": [
+        "M1",
+        "M2",
+        "M3",
+        "M4",
+        "M5",
+        "M6"
+      ],
+      "examples": [
+        "M1"
+      ],
+      "type": "string"
+    },
+    "validated_at": {
+      "description": "When it was validated; absent while validating.",
+      "examples": [
+        "2026-11-13T09:05:20Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "warnings": {
+      "description": "The report's warnings, once validated.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "workbook_file_id": {
+      "description": "The workbook it validates.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c6a30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "step",
+    "state",
+    "workbook_file_id",
+    "started_by",
+    "started_at"
+  ],
+  "title": "MigrationStepView",
+  "type": "object"
+}

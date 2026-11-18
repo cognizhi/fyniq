@@ -1,6 +1,7 @@
 package financials
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
@@ -121,6 +122,7 @@ type flow struct {
 	paidOut, paidIn                           money.Money            // investing
 	financed                                  map[string]money.Money // by cash-flow line
 	nonCash                                   []NonCash
+	nonCashRevisions                          []int64         // each non-cash transaction's entry's revision, for sortNonCash
 	others                                    map[string]bool // the accounts behind other
 	cashStart, cashEnd                        money.Money
 	equityStart, equityEnd                    money.Money
@@ -128,6 +130,21 @@ type flow struct {
 	sharesNonCash                             money.Money // shares issued for non-cash consideration (D14)
 	// nonCashIssues are the register's issues for non-cash consideration, by ID: the entries their shares came from.
 	nonCashIssues map[string]bool
+}
+
+// sortNonCash puts the non-cash transactions in their entries' revision order, which a walk month by month loses.
+func (f *flow) sortNonCash() {
+	at := make([]int, len(f.nonCash))
+	for i := range at {
+		at[i] = i
+	}
+	slices.SortStableFunc(at, func(a, b int) int { return cmp.Compare(f.nonCashRevisions[a], f.nonCashRevisions[b]) })
+	sorted := make([]NonCash, len(at))
+	revisions := make([]int64, len(at))
+	for i, j := range at {
+		sorted[i], revisions[i] = f.nonCash[j], f.nonCashRevisions[j]
+	}
+	f.nonCash, f.nonCashRevisions = sorted, revisions
 }
 
 func newFlow(base money.Currency) *flow {
@@ -187,7 +204,18 @@ func flows(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Req
 		out[i] = newFlow(base)
 		out[i].nonCashIssues = nonCash
 	}
-	err = balance.EachEntry(ctx, u, r.Revision, func(e storage.Entry) error {
+	// The columns' months alone, not the whole ledger (p1-operations-dr task 13.13): month by month, so the non-cash
+	// transactions are put back in revision order after.
+	var periods []uuid.UUID
+	for _, p := range r.All {
+		for i := range cols {
+			if inColumn[i][p.ID] {
+				periods = append(periods, p.ID)
+				break
+			}
+		}
+	}
+	err = balance.EachEntryIn(ctx, u, periods, r.Revision, func(e storage.Entry) error {
 		for i := range cols {
 			if !inColumn[i][e.PeriodID] {
 				continue
@@ -203,6 +231,7 @@ func flows(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Req
 	}
 	at := balance.At(r.Revision)
 	for i, c := range cols {
+		out[i].sortNonCash()
 		first := index[c.Periods[0].ID]
 		if first > 0 {
 			start, err := balance.PositionAt(ctx, u, base, at, r.All, r.All[first-1])
@@ -220,6 +249,140 @@ func flows(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Req
 		if err := out[i].position(end, byID, false); err != nil {
 			return nil, err
 		}
+	}
+	return out, nil
+}
+
+// equityFlows is flows' movement in equity alone, which the balance sheet shows (INV-11, BS_EqChk), read without walking
+// every entry, so it keeps its time as the ledger grows (NFR-PERF-02; p1-operations-dr task 13.12): profit from the
+// columns' balances less the opening balances' part, the equity accounts' own lines, the opening balances' entries, and
+// the positions. Each column's start, profit, shares, other movements and end are flows' to the cent; the cash flow
+// statement, which needs every line, still reads every entry.
+func equityFlows(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Request, cols []Column, accounts []storage.Account) ([]*flow, error) {
+	byID := map[uuid.UUID]storage.Account{}
+	for _, a := range accounts {
+		byID[a.ID] = a
+	}
+	index := map[uuid.UUID]int{}
+	for i, p := range r.All {
+		index[p.ID] = i
+	}
+	issues, err := u.ShareIssues().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	nonCash := map[string]bool{}
+	for _, x := range issues {
+		if x.Consideration != storage.ConsiderationCash {
+			nonCash[x.ID.String()] = true
+		}
+	}
+	opening, err := balance.EntriesOfType(ctx, u, ledger.SourceOpeningBalance, r.Revision)
+	if err != nil {
+		return nil, err
+	}
+	at := balance.At(r.Revision)
+	out := make([]*flow, len(cols))
+	for i, c := range cols {
+		f := newFlow(base)
+		f.nonCashIssues = nonCash
+		in := map[uuid.UUID]bool{}
+		for _, p := range c.Periods {
+			in[p.ID] = true
+		}
+		// Where the books start: an opening balance's equity and profit or loss open the run, as flows reads them.
+		openingPL := money.Zero(base)
+		for _, e := range opening {
+			if !in[e.PeriodID] {
+				continue
+			}
+			for _, l := range e.Lines {
+				b, err := money.ParseStored(string(l.BaseAmount), base)
+				if err != nil {
+					return nil, err
+				}
+				a := byID[l.AccountID]
+				switch {
+				case cashRole(a) == cash:
+				case bsSection(a) == KeyEquity || cashRole(a) == profitOrLoss:
+					if err := accrue(&f.equityStart, b.Neg()); err != nil {
+						return nil, err
+					}
+				}
+				if cashRole(a) == profitOrLoss {
+					if err := accrue(&openingPL, b); err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
+		// Profit: every profit or loss line of the column, from its periods' balances, less the opening balances'.
+		ids := make([]uuid.UUID, len(c.Periods))
+		for k, p := range c.Periods {
+			ids[k] = p.ID
+		}
+		moved, err := balance.TrialAt(ctx, u, base, at, ids...)
+		if err != nil {
+			return nil, err
+		}
+		pl := money.Zero(base)
+		for _, row := range moved.Rows {
+			if cashRole(byID[row.AccountID]) != profitOrLoss {
+				continue
+			}
+			if err := accrue(&pl, row.Base); err != nil {
+				return nil, err
+			}
+		}
+		if pl, err = pl.Sub(openingPL); err != nil {
+			return nil, err
+		}
+		f.profit = pl.Neg()
+		// Shares and other movements: the equity accounts' lines in the column, but the opening balances'.
+		from, to := c.Periods[0].StartsOn, c.Periods[len(c.Periods)-1].EndsOn
+		for _, a := range accounts {
+			if bsSection(a) != KeyEquity {
+				continue
+			}
+			err := balance.EachAccountLine(ctx, u, a.ID, from, to, r.Revision, func(l storage.AccountLine) error {
+				if l.Source.Type == ledger.SourceOpeningBalance {
+					return nil
+				}
+				b, err := money.ParseStored(string(l.BaseAmount), base)
+				if err != nil {
+					return err
+				}
+				to := &f.otherEquity
+				switch {
+				case strings.TrimSpace(a.CashFlowLine) != shareCapitalLine:
+				case l.Source.Type == ledger.SourceShareIssue && nonCash[l.Source.ID]: // the register's consideration (D14)
+					to = &f.sharesNonCash
+				default:
+					to = &f.shares
+				}
+				return accrue(to, b.Neg())
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+		if first := index[c.Periods[0].ID]; first > 0 {
+			start, err := balance.PositionAt(ctx, u, base, at, r.All, r.All[first-1])
+			if err != nil {
+				return nil, err
+			}
+			if err := f.position(start, byID, true); err != nil {
+				return nil, err
+			}
+		}
+		end, err := balance.PositionAt(ctx, u, base, at, r.All, c.Periods[len(c.Periods)-1])
+		if err != nil {
+			return nil, err
+		}
+		if err := f.position(end, byID, false); err != nil {
+			return nil, err
+		}
+		out[i] = f
 	}
 	return out, nil
 }
@@ -347,6 +510,7 @@ func (f *flow) read(e storage.Entry, byID map[uuid.UUID]storage.Account, base mo
 		if e.Source.Type == ledger.SourceShareIssue && !f.nonCashIssues[e.Source.ID] { // a cash issue, paid in earlier (rev 0.207)
 			label = "Allotted from share application monies"
 		}
+		f.nonCashRevisions = append(f.nonCashRevisions, e.LedgerRevision)
 		f.nonCash = append(f.nonCash, NonCash{Date: e.PostingDate, Source: e.Source, Memo: e.Memo, Amount: debits, Label: label,
 			Entry: e.ID, Section: section})
 	case act == investing && cashOf.Sign() < 0:

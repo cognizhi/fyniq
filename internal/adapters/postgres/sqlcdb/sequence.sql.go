@@ -20,6 +20,21 @@ func (q *Queries) AdvanceSequence(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const advanceSequencePast = `-- name: AdvanceSequencePast :exec
+UPDATE fyniq.document_sequence SET next_number = GREATEST(next_number, $1::bigint + 1) WHERE id = $2
+`
+
+type AdvanceSequencePastParams struct {
+	Past int64
+	ID   uuid.UUID
+}
+
+// The next number moved past a number kept from elsewhere; it never goes back.
+func (q *Queries) AdvanceSequencePast(ctx context.Context, arg AdvanceSequencePastParams) error {
+	_, err := q.db.Exec(ctx, advanceSequencePast, arg.Past, arg.ID)
+	return err
+}
+
 const findSequence = `-- name: FindSequence :one
 SELECT id, document_type, prefix, next_number, digits, gap_free, version FROM fyniq.document_sequence WHERE document_type = $1
 `

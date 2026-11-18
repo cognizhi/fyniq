@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "account_id": {
+      "description": "The account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "In the line's currency: debit positive, credit negative."
+    },
+    "base": {
+      "$ref": "Money.schema.json",
+      "description": "In the base currency, as posted."
+    },
+    "code": {
+      "description": "The account's code.",
+      "examples": [
+        "6120"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "The line's description.",
+      "examples": [
+        "GitHub Team, September"
+      ],
+      "type": "string"
+    },
+    "dimension_value_ids": {
+      "description": "The line's dimension values (listDimensionValues).",
+      "items": {
+        "description": "A dimension value's ID (listDimensionValues).",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e21"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "line_no": {
+      "description": "Its place in the entry.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "name": {
+      "description": "The account's name.",
+      "examples": [
+        "Software subscriptions"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "line_no",
+    "account_id",
+    "code",
+    "name",
+    "amount",
+    "base"
+  ],
+  "title": "LedgerEntryLine",
+  "type": "object"
+}

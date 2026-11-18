@@ -30,6 +30,7 @@ import (
 // req: FR-KPI-01
 // req: FR-PLN-03
 // req: QA-RPT-01
+// req: G4-108
 func TestBudgetVsActualAndHome(t *testing.T) {
 	f := newFounders(t)
 	e := f.e

@@ -9,3 +9,14 @@ resource "google_project_iam_member" "posture_reader" {
   member     = local.member["jobs"]
   depends_on = [google_service_account.all, google_project_service.apis]
 }
+
+# The Scheduler's and the heartbeat's configuration, read by the jobs' account for scheduler.configured (NFR-OBS-02,
+# CTL-RES-05; p1-operations-dr design D6) [live-verify]: whether the tick's Scheduler job exists and is enabled, and the
+# heartbeat's alert policies are enabled with a channel. Read only.
+resource "google_project_iam_member" "schedule_reader" {
+  for_each   = toset(["roles/cloudscheduler.viewer", "roles/monitoring.viewer"])
+  project    = var.project
+  role       = each.value
+  member     = local.member["jobs"]
+  depends_on = [google_service_account.all, google_project_service.apis]
+}

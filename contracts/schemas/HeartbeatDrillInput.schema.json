@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "environment": {
+      "description": "Where the tick was paused: staging, by the runbook.",
+      "enum": [
+        "staging",
+        "production"
+      ],
+      "examples": [
+        "staging"
+      ],
+      "type": "string"
+    },
+    "escalation_minutes": {
+      "description": "Minutes after the pause the Owners were alerted; leave out when no escalation came.",
+      "examples": [
+        58
+      ],
+      "format": "int64",
+      "maximum": 525600,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "findings": {
+      "description": "What it found and what changed. Never a secret, a token, a full NRIC or a bank number (SEC-15).",
+      "examples": [
+        "Both alerts came on time."
+      ],
+      "maxLength": 8000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "first_alert_minutes": {
+      "description": "Minutes after the pause the platform owner was first alerted; leave out when no alert came.",
+      "examples": [
+        28
+      ],
+      "format": "int64",
+      "maximum": 525600,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "held_on": {
+      "description": "When it was held, today or earlier.",
+      "examples": [
+        "2026-11-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "paused_minutes": {
+      "description": "How long the tick was paused, in minutes: at least 60, to see the escalation.",
+      "examples": [
+        75
+      ],
+      "format": "int64",
+      "maximum": 525600,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "held_on",
+    "environment",
+    "paused_minutes",
+    "findings"
+  ],
+  "title": "HeartbeatDrillInput",
+  "type": "object"
+}

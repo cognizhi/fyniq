@@ -1,5 +1,13 @@
 {
   "help": {
+    "help.guide": {
+      "label": "User guide",
+      "tooltip": "How to do each thing in Fyniq, and what its words mean: every page for your roles and mode, searchable and printable."
+    },
+    "help.page": {
+      "label": "A page of the guide",
+      "tooltip": "One page of the user guide, with a link to each of its sections and a way to print it."
+    },
     "home.overview": {
       "label": "Home",
       "tooltip": "Where you start: the company's cash, runway and the figures that matter this month, what waits for you, and while the company is new, the set-up steps."
@@ -35,6 +43,74 @@
     "auth.sign-out": {
       "label": "Sign out",
       "tooltip": "Ends your session in this browser."
+    },
+    "shell.shortcuts": {
+      "label": "Keyboard shortcuts",
+      "tooltip": "Every keyboard shortcut you can use, and where to turn single-character shortcuts off or change their keys. Shortcut: ?"
+    },
+    "shortcuts.settings": {
+      "label": "Single-character shortcuts",
+      "tooltip": "Keys such as G then B, which go to Banking. Turn them off if you use speech input or press keys by accident: Ctrl+K and Ctrl+J still work."
+    },
+    "shortcuts.bulk": {
+      "label": "Selected rows",
+      "tooltip": "What you can do to the rows you selected on this page, the same as its buttons."
+    },
+    "shell.tour": {
+      "label": "Take the tour again",
+      "tooltip": "A short tour of the pages you use, step by step. It changes nothing; Esc ends it."
+    },
+    "ledger.view": {
+      "label": "Plain or Accountant view",
+      "tooltip": "Plain view: Money in, Money out and Category. Accountant view: Debit, Credit and Account. The figures are the same."
+    },
+    "shell.help": {
+      "label": "Help",
+      "tooltip": "About Fyniq, and the version you are on."
+    },
+    "assistant.ask-about-this": {
+      "label": "Ask about this",
+      "tooltip": "Open the assistant with this record, report or figure as what you are asking about."
+    },
+    "assistant.feedback": {
+      "label": "Rate this answer",
+      "tooltip": "Thumbs up or down with a reason. An Owner or Administrator reviews it, with your question and the answer, before it helps test the assistant."
+    },
+    "ai-proposal.review": {
+      "label": "AI proposal",
+      "tooltip": "A change the AI proposed, waiting for a person: Fyniq's summary of what it does, then the AI's reasons apart."
+    },
+    "ai-proposal.items": {
+      "label": "Items to keep",
+      "tooltip": "Clear any item you disagree with: the approval covers only the items you keep, and nothing else changes."
+    },
+    "ai-proposal.rationale": {
+      "label": "The AI's reasons",
+      "tooltip": "Why the AI proposes it, in its own words. Check them against Fyniq's summary, which says what really happens."
+    },
+    "ai-tasks.page": {
+      "label": "AI tasks",
+      "tooltip": "What the AI may propose for the organisation, with each task type's limits and approvers, and every proposal it has made."
+    },
+    "ai-tasks.turn": {
+      "label": "Turn a task type on or off",
+      "tooltip": "Turning one on waits for a second approver; turning it off takes effect at once. Each starts off."
+    },
+    "assistant.simulate": {
+      "label": "Simulate",
+      "tooltip": "See the lowest cash balance if this invoice or bill is paid on another day, or not at all. Nothing is saved."
+    },
+    "shell.assistant": {
+      "label": "Assistant",
+      "tooltip": "Ask about your books in your own words; every figure comes from Fyniq with its source. Shortcut: Ctrl+J, or ⌘J on a Mac."
+    },
+    "shell.about": {
+      "label": "About Fyniq",
+      "tooltip": "Quote the version and the commit when you report a problem. Every exported report names them in its footer."
+    },
+    "shell.operations": {
+      "label": "Operations",
+      "tooltip": "Long work you asked for, such as exports and check runs, keeps running in the background. Follow it here and open what it made."
     },
     "shell.mode": {
       "label": "Experience mode",
@@ -552,6 +628,26 @@
       "label": "Ask for approval",
       "tooltip": "Send the drafted entry, with the company secretary's confirmation, to another Owner or the Controller to record."
     },
+    "corporate-detail.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the BizFile+ acknowledgement of the change, or the business profile that shows it."
+    },
+    "corporate-officer.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the officer's consent to act or the resolution, the BizFile+ acknowledgement, or the business profile that shows them."
+    },
+    "nominee-entry.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the nominee's notice to the company, the register's extract or ACRA's acknowledgement."
+    },
+    "statements-approval.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the directors' resolution or signed statement approving the financial statements."
+    },
+    "corporate-document.attach-evidence": {
+      "label": "Attach",
+      "tooltip": "Attach the copy as signed outside Fyniq. Once it is attached, the paper's text stays as it was signed."
+    },
     "controller-entry.attach-evidence": {
       "label": "Attach",
       "tooltip": "Attach the company secretary's confirmation, with the register's extract, ACRA's acknowledgement or a notice and its reply."
@@ -675,6 +771,154 @@
     "access-review.export": {
       "label": "Download CSV",
       "tooltip": "The review as a spreadsheet: one row per person, invitation and integration. The download is recorded."
+    },
+    "settings.ai": {
+      "label": "AI",
+      "tooltip": "Turn the AI off at once, and set what it may spend each month, in money and in tokens."
+    },
+    "settings.ai-usage": {
+      "label": "AI usage and budgets",
+      "tooltip": "What the assistant and the agents used and cost each month, by agent, connection and model, and person, against the budgets."
+    },
+    "settings.ai-providers": {
+      "label": "AI providers",
+      "tooltip": "Where the assistant and the agents send their model calls: each connection's sign-in, billing and data rules. Every one starts off."
+    },
+    "ai.connection-add": {
+      "label": "Ask to add it",
+      "tooltip": "The connection is added once a second approver approves it, and starts off; it is turned on separately, also with a second approver."
+    },
+    "ai.data-policy": {
+      "label": "Which data may go where",
+      "tooltip": "The classes of data each connection may receive: know-how and business figures widely, personal data and payroll only where Singapore processing is evidenced."
+    },
+    "settings.ai-connection": {
+      "label": "AI provider connection",
+      "tooltip": "One connection to a model provider: its key and settings, the models its provider lists, and where its prompts are processed."
+    },
+    "ai.connection-enable": {
+      "label": "Ask to turn it on",
+      "tooltip": "Turning a connection on needs a second approver, a complete model list from the provider and its data handling with evidence."
+    },
+    "ai.connection-disable": {
+      "label": "Turn it off",
+      "tooltip": "Takes effect at once: calls stop going to it and each agent moves to the next step of its route."
+    },
+    "ai.connection-key": {
+      "label": "Replace the key",
+      "tooltip": "The new key goes straight to the secret store and is never shown again; it replaces the old one once a second approver approves."
+    },
+    "ai.model-allow": {
+      "label": "Ask to allow it",
+      "tooltip": "Allowing a model the provider lists needs a passing probe and a second approver; it serves an agent only once it passes that agent's evals."
+    },
+    "ai.model-qualify": {
+      "label": "Qualify it for an agent",
+      "tooltip": "Runs the agent's evals against the model on this connection; the model serves that agent only when they pass."
+    },
+    "ai.model-price": {
+      "label": "Enter a price",
+      "tooltip": "The Owner's own price, per million tokens in the provider's currency, for a model no source prices; it applies once a second approver approves it."
+    },
+    "settings.ai-routes": {
+      "label": "Model routes",
+      "tooltip": "Which connection and model each agent runs on, its fallbacks, the data it handles, and whether each step is qualified."
+    },
+    "settings.ai-route": {
+      "label": "Route",
+      "tooltip": "The data this agent may send and the steps it tries in order: each a connection that is on and a model its allow-list holds."
+    },
+    "ai.route-save": {
+      "label": "Save the route",
+      "tooltip": "A change that only narrows where data goes is saved at once; a new connection, model or class waits for the Owner or a second approver."
+    },
+    "settings.ai-activity": {
+      "label": "AI activity",
+      "tooltip": "Every model call the AI made: for whom, on which connection and model, what happened, the tokens and the cost. Yours, or everyone's for the Owner and the DPO."
+    },
+    "settings.ai-plan": {
+      "label": "Use your own AI plan",
+      "tooltip": "Running your own assistant chats on your own provider plan. Not offered yet: the assistant uses the organisation's own connections."
+    },
+    "ai.data-handling": {
+      "label": "Where its prompts go",
+      "tooltip": "Where the provider processes and keeps what it is sent, whether it trains on it, and the evidence; changing it needs a second approver."
+    },
+    "ai.switch-off": {
+      "label": "Turn all AI off now",
+      "tooltip": "New requests stop at once, and a reply being written within seconds. Turning it back on needs a second approver."
+    },
+    "ai.switch-on": {
+      "label": "Ask to turn it on",
+      "tooltip": "Asks another member who approves settings to turn the AI on; nothing is sent to an AI provider until then."
+    },
+    "ai.budgets": {
+      "label": "Budgets",
+      "tooltip": "Monthly limits in money and in tokens, for the organisation, an agent, a connection or a person: an alert at 80%, a stop at 100%."
+    },
+    "ai.budget-set": {
+      "label": "Save the budget",
+      "tooltip": "The amount a month: in the base currency, or a whole number of tokens. It applies from the next call."
+    },
+    "settings.data": {
+      "label": "Data and export",
+      "tooltip": "Where your data lives and how long it is kept, and a full copy of everything, asked for by one person and approved by another."
+    },
+    "tenant-export.request": {
+      "label": "Ask for a full export",
+      "tooltip": "Everything in one ZIP file with a manifest of hashes. An Owner other than you approves it; it holds bank account numbers in clear."
+    },
+    "settings.import": {
+      "label": "Import from the workbook",
+      "tooltip": "Move from the finance workbook step by step, M1 to M6, or import one kind of record from CSV or XLSX."
+    },
+    "workbook-import.start": {
+      "label": "Start the import",
+      "tooltip": "Begin the move from the workbook. Only an organisation that has posted nothing yet can import it."
+    },
+    "workbook-import.upload": {
+      "label": "Upload the workbook",
+      "tooltip": "The frozen workbook, checked sheet by sheet. Nothing goes into the books until the commit."
+    },
+    "workbook-import.sign-mapping": {
+      "label": "Sign the mapping",
+      "tooltip": "The Accountant signs the mapping's latest version, after confirming it's them. The commit needs it."
+    },
+    "workbook-import.commit": {
+      "label": "Ask to commit",
+      "tooltip": "Ask to import the workbook by the signed mapping. An Owner who did not ask approves it first."
+    },
+    "workbook-import.run": {
+      "label": "Run the import",
+      "tooltip": "Enters the approved import's records batch by batch. It can stop and continue where it stopped."
+    },
+    "workbook-import.sign-reconciliation": {
+      "label": "Sign the register",
+      "tooltip": "The Accountant signs the parity report once every difference is decided, after confirming it's them."
+    },
+    "workbook-import.upload-parallel": {
+      "label": "Upload the month's workbook",
+      "tooltip": "The workbook at the parallel month's end, checked as the first was, then compared with Fyniq's books."
+    },
+    "workbook-import.sign-parallel": {
+      "label": "Sign the parallel month",
+      "tooltip": "The Accountant signs the parallel month once every difference is decided, after confirming it's them."
+    },
+    "workbook-import.archive": {
+      "label": "Archive and go live",
+      "tooltip": "Copies each of the import's files, write-once, to the retention-locked store, and closes the import."
+    },
+    "workbook-import.template": {
+      "label": "Download the template",
+      "tooltip": "The columns of the workbook's sheet for these records, as CSV or Excel, ready to fill in."
+    },
+    "workbook-import.dry-run": {
+      "label": "Check the file",
+      "tooltip": "Reads every row and lists each problem with its row and column. Nothing is saved."
+    },
+    "tenant-export.save": {
+      "label": "Save",
+      "tooltip": "A link that saves the ZIP, working for 5 minutes. Only the person who asked gets one, and each link is recorded."
     },
     "settings.team-mode": {
       "label": "Team mode",
@@ -1376,6 +1620,10 @@
       "label": "Run all checks now",
       "tooltip": "Run every check now instead of waiting for the next change or the night's run. At most once a minute."
     },
+    "checks.replay": {
+      "label": "Run it again",
+      "tooltip": "A background task that stopped after its attempts ran out goes back in the queue, its attempts counted afresh. Run it again once what stopped it is fixed. An Owner or an Administrator does."
+    },
     "checks.review": {
       "label": "Mark reviewed",
       "tooltip": "Say you looked at this item: it leaves the check until it changes. Owners, Controllers, Accountants and Bookkeepers only."
@@ -1443,6 +1691,10 @@
     "ledger.by-dimension": {
       "label": "Only the lines of",
       "tooltip": "The lines of a dimension value alone, such as a department's: their opening balance, lines and running balance."
+    },
+    "statement.trace": {
+      "label": "Trace",
+      "tooltip": "Follow this figure to the accounts it is made of, their ledger lines, the document each line came from and that document's history."
     },
     "statement.export": {
       "label": "Export",
@@ -2024,6 +2276,30 @@
       "label": "Controls",
       "tooltip": "Every control that keeps the books and the platform in order, with its status, its checks and their evidence."
     },
+    "compliance.incidents": {
+      "label": "Incidents",
+      "tooltip": "Every security incident, from when it was seen to its review: contained, assessed, notified, recovered and reviewed, as the incident runbook says. The DPO keeps it."
+    },
+    "compliance.restore-drills": {
+      "label": "Restore drills",
+      "tooltip": "Each quarter's full restore drill: the weekly export restored into an isolated project, with the data lost, the time taken and whether the books, documents, keys, sign-in, the tick and the outbox all worked. The DPO keeps it."
+    },
+    "restore-drills.checks": {
+      "label": "What worked on the restored copy",
+      "tooltip": "A drill counts as recovered only when every one passed: the ledger's and the audit chain's verifications, documents, keys, sign-in, the tick and the outbox's reconciliation."
+    },
+    "compliance.heartbeat-drills": {
+      "label": "Heartbeat drills",
+      "tooltip": "Each quarter's drill of the scheduled tick paused in staging: whether the platform owner heard within 30 minutes and the Owners within an hour. The DPO keeps it."
+    },
+    "heartbeat-drills.minutes": {
+      "label": "When the alerts came",
+      "tooltip": "Minutes after the tick was paused: the first alert, to the platform owner, within 30; the escalation, to the Owners, within 60. Leave one empty when it never came."
+    },
+    "incidents.severity": {
+      "label": "Severity",
+      "tooltip": "Critical when money, personal data, access or the books' integrity is lost or at once at risk; High for an attempt that was stopped, or exposure without signs of access; Medium for a failing control; Low for a false alarm worth keeping."
+    },
     "compliance.attestations": {
       "label": "Reviews and attestations",
       "tooltip": "The recurring reviews people sign off: what is due, what is overdue and when each was last signed off, with where to sign it."
@@ -2071,6 +2347,10 @@
     "data-protection.dpias": {
       "label": "Impact assessments",
       "tooltip": "The data protection impact assessments: payroll's and the AI assistant's before they are switched on, and one for each new processing."
+    },
+    "data-protection.ai-inventory": {
+      "label": "AI inventory",
+      "tooltip": "What the AI uses: each connection, where prompts are processed, its models, each agent's route and the data it carries, and whether the AI assistant's assessment was approved after the last change."
     },
     "data-protection.dpia-approve": {
       "label": "Approve the assessment",
@@ -2127,6 +2407,86 @@
     "compliance.calendar": {
       "label": "Statutory calendar",
       "tooltip": "Every filing and payment deadline, worked out from your financial years, GST return periods and settings."
+    },
+    "compliance.corporate-profile": {
+      "label": "Corporate profile and registers",
+      "tooltip": "The company as ACRA's registers hold it: its details, officers, nominees and the directors' approvals, each recorded with its evidence and checked against ACRA."
+    },
+    "corporate-profile.checks": {
+      "label": "Checks",
+      "tooltip": "The company secretary, the statements' approval, the profile against ACRA and the lodgements: each shows its status, or what it needs to be assessed."
+    },
+    "corporate-profile.details": {
+      "label": "The company",
+      "tooltip": "The name, registered office and SSIC code in force, from the day each took effect, with the earlier ones in the history."
+    },
+    "corporate-profile.officers": {
+      "label": "Officers",
+      "tooltip": "The directors, the named company secretary, the CEO and the auditors in office, with the days they were appointed and lodged."
+    },
+    "corporate-profile.nominees": {
+      "label": "Nominee directors and shareholders",
+      "tooltip": "The registers of nominees: whom each acts for, and the days the company's register and ACRA's central register were updated."
+    },
+    "corporate-profile.acra": {
+      "label": "Against ACRA's business profile",
+      "tooltip": "The officers and the registered office compared with the latest business profile typed in, on its day."
+    },
+    "corporate-profile.lodgements": {
+      "label": "Lodgements",
+      "tooltip": "Each change ACRA must be told of, with its deadline: done once the day it was lodged is recorded on its record."
+    },
+    "corporate-profile.approvals": {
+      "label": "Directors' approval of the financial statements",
+      "tooltip": "The day the directors approved each year's statements, and the day they were sent to the members."
+    },
+    "corporate-profile.ask": {
+      "label": "Ask for approval",
+      "tooltip": "Sends the draft, with its evidence, to the Owner or the Controller to record. Nobody records their own change."
+    },
+    "corporate-profile.documents": {
+      "label": "Papers and minute book",
+      "tooltip": "Resolutions, notices and minutes drafted from Fyniq's templates and the company's records, and the signed ones recorded in the minute book."
+    },
+    "corporate-profile.draft-paper": {
+      "label": "Draft a paper",
+      "tooltip": "Fills one of Fyniq's templates from the records on today: a draft to read, download and have signed outside Fyniq."
+    },
+    "corporate-profile.paper-pdf": {
+      "label": "PDF",
+      "tooltip": "Downloads the paper to print and sign, with a line to sign for each signer."
+    },
+    "corporate-profile.record-minute-book": {
+      "label": "Record in the minute book",
+      "tooltip": "Sends the signed copy and the day it was signed to another person to record. Recorded, it never changes."
+    },
+    "compliance.secretary": {
+      "label": "Company secretary assistant",
+      "tooltip": "The AI agent that checks the company's obligations on a schedule, explains what it finds, raises tasks and drafts reminders for a person to approve."
+    },
+    "compliance.secretary-findings": {
+      "label": "What needs you",
+      "tooltip": "The open findings of its latest run: those it could not check first, then what cannot go on, what is due and what to review."
+    },
+    "compliance.secretary-drafts": {
+      "label": "Drafts awaiting approval",
+      "tooltip": "The tasks and reminders it proposed that wait for the Owner or the Company secretary to approve them."
+    },
+    "compliance.secretary-history": {
+      "label": "Its runs",
+      "tooltip": "Each run, newest first, with what started it, what it found and whether that is new since the last run."
+    },
+    "compliance.secretary-schedule": {
+      "label": "Its schedule",
+      "tooltip": "When it runs, the events that start a run, its quiet hours, who it tells and the most one run may read and use."
+    },
+    "compliance.secretary-run": {
+      "label": "A run's report",
+      "tooltip": "One run: what it read, every finding with its rule and source, their tasks, what it proposed and what the AI wrote."
+    },
+    "compliance.secretary-run-now": {
+      "label": "Run now",
+      "tooltip": "Queues a run at once, while the assistant is on. It checks first, and asks the model only if something changed."
     },
     "compliance.gst": {
       "label": "GST",
@@ -2188,6 +2548,10 @@
       "label": "Deadlines",
       "tooltip": "Statutory deadlines overdue or due in the next 30 days, from the statutory calendar."
     },
+    "inbox.tasks": {
+      "label": "Tasks",
+      "tooltip": "The compliance tasks for you or your role, from the company secretary assistant's checks or its approved proposals."
+    },
     "gst.monitor": {
       "label": "Registration monitor",
       "tooltip": "Last calendar year's taxable supplies and the forecast of the next 12 months against IRAS's threshold of $1 million."
@@ -2239,6 +2603,18 @@
     "gst-forecast.attach-evidence": {
       "label": "Attach what it rests on",
       "tooltip": "Attach the signed contracts, confirmed orders or letters of award the forecast rests on, as IRAS asks."
+    },
+    "home.your-work": {
+      "label": "Your work",
+      "tooltip": "What waits in your areas, by your roles: bank lines to categorise, drafts to finish, overdue invoices and bills, receipts to apply, quotes waiting, payment batches and claims to pay or release, people asking to join, data requests and the like. Each opens its list."
+    },
+    "home.auditor-access": {
+      "label": "Your engagement",
+      "tooltip": "Your access as the auditor: read-only, and until when. Opens the journals, the evidence and the audit trail."
+    },
+    "home.deadlines": {
+      "label": "Upcoming deadlines",
+      "tooltip": "The next statutory deadlines from the calendar, those overdue or due soon first: GST, CPF, the annual return and the rest."
     },
     "home.revenue-vs-budget": {
       "label": "Revenue against budget",

@@ -1,0 +1,39 @@
+# Every route's visual snapshots (PRD-001 QA-UI-07, rev 0.284; p1-launch-readiness design D5): each pull request draws the
+# key pages in the images job of ci.yml; every route of the registry, at the five frames in light and dark, is drawn
+# nightly here and before each release (release.yml), where a failure blocks the release. Its pictures and hashes are the
+# artefact visual-diffs-all: `python3 scripts/visual.py approve <folder>` takes them in, in a pull request labelled
+# visual-baseline.
+name: visual
+
+on:
+  schedule:
+    - cron: "43 18 * * *" # 02:43 in Singapore
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual:
+    name: Every route's visual snapshots (make test-visual, QA-UI-07)
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
+      - run: pnpm install --frozen-lockfile
+      - run: VISUAL_ALL=1 make test-visual
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: visual-diffs-all
+          path: apps/web/test-results/visual/
+          if-no-files-found: ignore
+          retention-days: 14

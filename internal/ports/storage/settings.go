@@ -122,4 +122,9 @@ type Sequences interface {
 	// Number gives document id the next number of its type's sequence, under the sequence's lock (ENG-47
 	// step 1a, after the document's own lock), and returns it; a document numbered already keeps its number.
 	Number(ctx context.Context, id uuid.UUID, t DocumentType) (string, error)
+	// Keep gives document id a number it already had elsewhere, such as the workbook's for an imported invoice
+	// (FR-MIG-01, rev 0.259), audited as document.numbered; a number of the sequence's own form moves its next number
+	// past it, so the sequence never issues it again (FR-ORG-04). CodeSequence when another document of its type has
+	// it; a document numbered already keeps its own number.
+	Keep(ctx context.Context, id uuid.UUID, t DocumentType, number string) (string, error)
 }

@@ -20,8 +20,8 @@ export interface Appearance {
   motion: MotionChoice;
 }
 
-// What the operating system asks for, and the organisation's motion switch (Settings › Appearance
-// and motion; On until the organisation setting reaches the session).
+// What the operating system asks for, and the organisation's motion switch (FR-UX-38: the setting
+// appearance.motion, which the session carries; On until a session says otherwise).
 export interface Environment {
   prefersDark: boolean;
   prefersMoreContrast: boolean;
@@ -101,8 +101,19 @@ function environment(): Environment {
     prefersDark: media("(prefers-color-scheme: dark)").matches,
     prefersMoreContrast: media("(prefers-contrast: more)").matches,
     prefersReducedMotion: media("(prefers-reduced-motion: reduce)").matches,
-    organisationMotion: "on",
+    organisationMotion,
   };
+}
+
+let organisationMotion: Environment["organisationMotion"] = "on";
+
+// setOrganisationMotion applies the organisation's motion from the session (FR-UX-38): its Off wins over each
+// person's choice, as prefers-reduced-motion does.
+export function setOrganisationMotion(m: string | undefined): void {
+  const next = m === "off" ? "off" : "on";
+  if (next === organisationMotion) return;
+  organisationMotion = next;
+  render();
 }
 
 function render(): void {

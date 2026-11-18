@@ -6,6 +6,7 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { PaymentBatchPage } from "./PaymentBatchPage";
 import { PaymentBatches } from "./PaymentBatches";
+import { invalid } from "../../test/invalid";
 
 const accountant = { ...ownerSession, roles: ["accountant"] } as Session;
 const releaser = { ...ownerSession, roles: ["payment_releaser"] } as Session;
@@ -191,7 +192,7 @@ describe("payment batches", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Send the remittance advice to Quiet Supplier Pte Ltd again" }));
     const dialog = await screen.findByRole("dialog", { name: "Send again" });
     fireEvent.click(within(dialog).getByRole("button", { name: "Send again" }));
-    expect(within(dialog).getByText(/Say why/)).toBeTruthy();
+    await invalid(dialog, "Why it is sent again", "Say why: the audit trail keeps the reason.");
     await noViolations(document.body);
     fireEvent.change(within(dialog).getByLabelText("Why it is sent again"), { target: { value: "The email service was down" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Send again" }));

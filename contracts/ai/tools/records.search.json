@@ -1,0 +1,28 @@
+{
+  "name": "records.search",
+  "title": "Search the records",
+  "version": 1,
+  "description": "Finds documents, contacts, accounts and items the person asking may see, by text (a reference such as INV-0138, a name, words of a note) or by an amount, exact (1,234.56) or above or below a bound (> 5k). Returns at most 50, newest first, each with its kind, ID, number, party, date and amount, and how many were found in all. Read one with records.get for its detail.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["q"],
+    "properties": {
+      "q": {
+        "type": "string",
+        "description": "What to find: text, or an amount, exact or above or below a bound.",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "kind": {
+        "type": "string",
+        "description": "Only this kind of record; every kind the person may search when left out.",
+        "enum": ["invoices", "bills", "journals", "claims", "quotes", "purchase_orders", "contacts", "accounts", "items"]
+      }
+    }
+  },
+  "annotations": {"readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false},
+  "runs": "api",
+  "scope": "ai.read",
+  "limits": {"rows": 50, "timeout_ms": 5000, "result_tokens": 4000}
+}

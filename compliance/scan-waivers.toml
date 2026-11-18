@@ -33,6 +33,20 @@ path = "internal/app/app.go"
 reason = "The image healthcheck calls its own /readyz on 127.0.0.1 and the PORT of its environment; no request input reaches the URL."
 expires = 2027-04-15
 
+[[waiver]]
+tool = "gosec"
+rule = "G704"
+path = "internal/scanservice/scanservice.go"
+reason = "The scanner service's URL comes from the deployment's FYNIQ_GCP (written by OpenTofu), never from a request, and the client's HTTP goes through the egress guard, which reaches that one host (SEC-36); only the file to scan comes from the caller, as the body."
+expires = 2027-05-31
+
+[[waiver]]
+tool = "gosec"
+rule = "G704"
+path = "internal/assistant/client.go"
+reason = "The AI service calls the API's internal operations at the deployment's URL (FYNIQ_API_INTERNAL_URL locally, FYNIQ_GCP's api entry in the cloud, written by OpenTofu) and one of two fixed paths, never anything a turn sends; its HTTP goes through the egress guard, which reaches that one host (SEC-36)."
+expires = 2027-05-31
+
 # ---------------------------------------------------------------- gitleaks (secrets)
 
 [[waiver]]
@@ -77,6 +91,13 @@ path = "kb/pages/task/access-review.md"
 reason = "The SHA-256 of the guide page the knowledge-base page is compiled from (its sources line); the word access in the file's name makes the generic rule take it for a key."
 expires = 2027-04-15
 
+[[waiver]]
+tool = "gitleaks"
+rule = "generic-api-key"
+path = "kb/pages/task/compliance-secretary.md"
+reason = "The SHA-256 of the guide page the knowledge-base page is compiled from (its sources line); the word secretary in the file's name makes the generic rule take it for a secret."
+expires = 2027-05-31
+
 # ---------------------------------------------------------------- Checkov (container definitions)
 
 [[waiver]]
@@ -91,7 +112,7 @@ expires = 2027-04-15
 [[waiver]]
 tool = "checkov"
 rule = "CKV_GCP_43"
-path = "infra/gcp/modules/environment/fields.tf"
+path = "infra/gcp/modules/field-keys/main.tf"
 reason = "The fingerprint key (fingerprints, HMAC-SHA256) is a MAC key: Cloud KMS rotates only symmetric encryption keys by itself, and this one must not rotate, since a new version would change every fingerprint that finds a duplicate account (FR-CT-04) and proves a change in the audit trail (AUD-02); its version is pinned in FYNIQ_GCP and the key is protected from destruction. The file's wrapping key (fields) rotates every 90 days, which the module's tofu test pins (SEC-11, PRD-001 rev 0.152)."
 expires = 2027-04-15
 
@@ -114,6 +135,27 @@ tool = "checkov"
 rule = "CKV_GCP_62"
 path = "infra/gcp/modules/nonprod-scan/main.tf"
 reason = "No usage-log bucket for staging's weekly database export: data-access audit logs are on for Cloud Storage in staging's project (the anchors module's google_project_iam_audit_config, as staging keeps its anchors there), recording every read and write with the caller; the bucket keeps the latest export for a week only."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "checkov"
+rule = "CKV_GCP_62"
+path = "infra/gcp/modules/db-export/main.tf"
+reason = "No usage-log bucket for the weekly export's buckets: data-access audit logs are on for Cloud Storage in the buckets' project (the anchors module's google_project_iam_audit_config in fyniq-audit, and in staging's own project), recording every read and write with the caller; a usage-log bucket would duplicate them."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "checkov"
+rule = "CKV_GCP_62"
+path = "infra/gcp/modules/evidence/main.tf"
+reason = "No usage-log bucket for the staging and evidence buckets: data-access audit logs are on for Cloud Storage in the environment's project (the security-logs module in production, the anchors module in staging), recording every read and write with the caller; reads of evidence are also audited in the trail (evidence.opened, AUD-05)."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "checkov"
+rule = "CKV_GCP_78"
+path = "infra/gcp/modules/evidence/main.tf"
+reason = "The staging bucket is not versioned: it holds what is not yet a record (uploads of drafts, report exports, outgoing documents), which the app deletes in its time, and a deleted upload or export must be gone, not kept as a noncurrent version (PDPA, FR-DOC-13). The evidence bucket, which keeps the records, is versioned."
 expires = 2027-04-15
 
 [[waiver]]

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checked_on": {
+      "description": "The day it was read.",
+      "examples": [
+        "2026-11-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "evidence_id": {
+      "description": "The contract's evidence file, for a contract term.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d60"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "source: the provider's official page, read on a day; contract: a contract term kept as evidence (FR-DOC-05). A probe never proves geography (AI-88).",
+      "enum": [
+        "source",
+        "contract"
+      ],
+      "examples": [
+        "source"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "The page's title, or the contract and its clause.",
+      "examples": [
+        "Generative AI on Vertex AI locations"
+      ],
+      "maxLength": 300,
+      "minLength": 1,
+      "type": "string"
+    },
+    "url": {
+      "description": "The official page, for a source.",
+      "examples": [
+        "https://cloud.google.com/vertex-ai/generative-ai/docs/learn/locations"
+      ],
+      "pattern": "^https://",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "title",
+    "checked_on"
+  ],
+  "title": "AIDataEvidence",
+  "type": "object"
+}

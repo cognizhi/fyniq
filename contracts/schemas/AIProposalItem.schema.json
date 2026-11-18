@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "item": {
+      "description": "The item, as the task type's schema describes it.",
+      "examples": [
+        {
+          "note": "Book the room"
+        }
+      ]
+    },
+    "n": {
+      "description": "Its number, from 1, as an approval names it.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "n",
+    "item"
+  ],
+  "title": "AIProposalItem",
+  "type": "object"
+}

@@ -36,7 +36,7 @@ never put a real secret in a committed file (SEC-12).
 | Cloud KMS | Tink keysets in `.data/keys/` (git-ignored), created by `make setup` | Same algorithms; key custody differs by design |
 | Cloud Storage | `fake-gcs-server` | Production client library unchanged. **Bucket Lock cannot be emulated**: CTL-AUD-03 checks it in staging and production |
 | Secret Manager | `.env` from `make setup` (git-ignored); `.env.example` committed | Same `Secrets` interface |
-| Claude on Agent Platform | **Replay** (default): recorded cassettes keyed by prompt, tools and model version. **Live** (`FYNIQ_AI_LIVE=1`): the Claude API with a developer key, or a developer's own GCP project, on **synthetic data only** | CI runs the eval gates live before any model or prompt change |
+| Claude on Agent Platform | **Replay** (default): recorded cassettes keyed by prompt, tools and model version. **Live** (`FYNIQ_AI_LIVE=1`): the Claude API with a developer key, a developer's own GCP project, or (DEV-09, local build only) the developer's own `claude` or `codex` command-line agent with `FYNIQ_AI_AGENT=claude` or `codex`, its model named in the agent's own configuration, on **synthetic data only** | CI runs the eval gates live before any model or prompt change |
 | Model Armor | Stub that flags the red-team corpus | Real service tested in staging |
 | Cloud Tasks, Cloud Scheduler → Cloud Run jobs (rev 0.7, ADR-T7) | (rev 0.23) A **push dispatcher** with Cloud Tasks semantics: after commit it POSTs each outbox row's task to its class's handler with that class's token; the local tick calls the same handlers. *Superseded:* **River** as the local adapter of the queue port: the same outbox, an in-process consumer, and periodic jobs that call the same tick and handlers | One schedule definition, the same handlers |
 | Pub/Sub (P2) | Pub/Sub emulator | Same client library |
@@ -112,6 +112,8 @@ Period close, CPF age bands, statutory deadlines and FX revaluation depend on th
   organisation (Settings → Developer, or `FYNIQ_BUSINESS_DATE=2026-12-31` for the whole stack).
   The UI shows a persistent banner whenever it is set.
 - The production build does not contain the override. A start-up check refuses the setting.
+- Traces (NFR-OBS-01): set `FYNIQ_OTLP_ENDPOINT=http://localhost:4318` to send the services' traces to a local OTLP/HTTP
+  collector (Jaeger's all-in-one listens there); unset, nothing is sent, and log lines still carry `trace_id`.
 
 ## Connecting Claude Code to the local MCP server (DEV-06, P1)
 

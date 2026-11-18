@@ -40,6 +40,7 @@ func recordAudit(t *testing.T, e *env, record uuid.UUID, action string, changes 
 // req: FR-CTL-03
 // req: AUD-07
 // req: AUD-02
+// req: REL-05
 // req: AUD-05
 func TestTheAuditTrailExplorer(t *testing.T) {
 	e := newEnv(t)
@@ -140,7 +141,8 @@ func TestTheAuditTrailExplorer(t *testing.T) {
 		t.Fatalf("asking for the export: %d %s", x.Status, x.Raw)
 	}
 	worker := workerStore(t)
-	p := reportexport.Preparer{Store: worker, Files: e.blobs, Outbox: outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: e.clock}, Clock: e.clock}
+	p := reportexport.Preparer{Store: worker, Files: e.blobs, Outbox: outbox.Dispatcher{Store: worker, Queue: local.NewMemory(), Clock: e.clock}, Clock: e.clock,
+		Stamp: "0.0.0-test (3f2c1a9d)"}
 	payload, _ := json.Marshal(map[string]string{"export_id": x.str("id")})
 	if err := p.Work()(context.Background(), e.books.Org, storage.OutboxRow{Kind: reportexport.Kind, Payload: payload}); err != nil {
 		t.Fatal(err)
@@ -148,7 +150,9 @@ func TestTheAuditTrailExplorer(t *testing.T) {
 	f := e.call(http.MethodGet, "/v1/report-exports/"+x.str("id")+"/file", auditor, nil)
 	content, _ := base64.StdEncoding.DecodeString(f.str("content_base64"))
 	lines := strings.Split(strings.TrimSpace(string(content)), "\n")
-	if f.Status != 200 || len(lines) != 5 || !strings.Contains(lines[1], "contact.bank_changed") || !strings.Contains(lines[4], "session.started") ||
+	// The header, four events, a blank line and the footer naming the version and the commit (REL-05).
+	if f.Status != 200 || len(lines) != 7 || !strings.Contains(lines[1], "contact.bank_changed") || !strings.Contains(lines[4], "session.started") ||
+		strings.TrimSpace(lines[5]) != "" || !strings.HasPrefix(lines[6], `"Prepared by Fyniq 0.0.0-test (3f2c1a9d) on `) ||
 		strings.Contains(string(content), "9876543210") {
 		t.Errorf("the export: %d\n%s", f.Status, content)
 	}

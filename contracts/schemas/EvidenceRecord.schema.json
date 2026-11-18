@@ -13,7 +13,11 @@
         "vendor_bank_change",
         "person_bank_change",
         "founders",
-        "owner_succession"
+        "owner_succession",
+        "equity",
+        "filing",
+        "gst_forecast",
+        "corporate"
       ],
       "examples": [
         "bill"

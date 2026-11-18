@@ -210,3 +210,13 @@ type AuditErasure struct {
 	Erased            int64
 	FirstSeq, LastSeq int64
 }
+
+type linesKey struct{}
+
+// WithLines marks reads as at a revision that must sum the ledger's lines, never the balances cache: the checks that
+// compare the statements with the balances (C.1 #1 to #3, INV-08) keep the two sources apart, so a cache that drifted
+// from its lines shows. Reports read the cache when nothing later is in a period (NFR-PERF-02).
+func WithLines(ctx context.Context) context.Context { return context.WithValue(ctx, linesKey{}, true) }
+
+// FromLines says whether reads as at a revision must sum the lines (WithLines).
+func FromLines(ctx context.Context) bool { b, _ := ctx.Value(linesKey{}).(bool); return b }

@@ -131,6 +131,8 @@ type BillDraft struct {
 	Notes       string          `json:"notes,omitempty" maxLength:"2000" doc:"Notes kept with the bill." example:"Annual renewal, 10 seats"`
 	InputTax    *BillInputTax   `json:"input_tax,omitempty" doc:"The facts its input tax is decided from (FR-AP-20). Left out, the usual: a tax invoice from a GST-registered supplier, addressed to the company."`
 	Nature      string          `json:"nature_of_payment,omitempty" enum:"goods,software_use,software_rights,services_in_singapore,services_outside_singapore,interest,movable_rent,other" doc:"For a supplier resident outside Singapore (FR-AP-19): what the payment is for. Required to post such a bill (BILL-16); the tax agent's withholding decision is kept per supplier and nature. software_use is software bought for the company's own use, such as a subscription; movable_rent is rent of movable property." example:"software_use"`
+	// Opening open items (FR-GL-06; rev 0.257).
+	OpeningItem bool `json:"opening_item,omitempty" doc:"A bill only: received before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts payable against 3900 Opening balance clearing, with no cost or GST, which were in the books before; it spreads nothing and withholds no tax (LEDGER-50). Payments then settle it as any bill." example:"false"`
 }
 
 // WithholdingDecision is the tax agent's decision on whether tax is withheld from a non-resident supplier's payments for
@@ -199,6 +201,7 @@ type Bill struct {
 	Notes         string            `json:"notes,omitempty" doc:"Its notes." example:"Annual renewal"`
 	InputTax      BillInputTax      `json:"input_tax" doc:"The facts its input tax is decided from, every one stated (FR-AP-20)."`
 	Nature        string            `json:"nature_of_payment,omitempty" doc:"What the payment is for, for a supplier resident outside Singapore (FR-AP-19)." example:"software_use"`
+	OpeningItem   bool              `json:"opening_item" doc:"Whether it is an opening item: received before the books start and unpaid then, posted at the books start against 3900 Opening balance clearing (FR-GL-06)." example:"false"`
 	Withholding   *BillWithholding  `json:"withholding,omitempty" doc:"getBill only, for a supplier resident outside Singapore: how withholding tax stands (FR-AP-19)."`
 	PlannedOn     string            `json:"planned_payment_on,omitempty" format:"date" doc:"The date its payment is planned for (FR-AP-13): planBillPayment sets it; it posts nothing. A paid bill keeps the date of its last plan." example:"2026-11-10"`
 	Discount      *BillDiscount     `json:"early_payment_discount,omitempty" doc:"The early-payment discount its supplier offers (FR-AP-13): taking it is a supplier credit note for the amount."`
@@ -368,7 +371,7 @@ func billDraftOf(in BillDraft, base money.Currency) (bill.Draft, error) {
 		}
 		d.SupplierID = id
 	}
-	d.SupplierRef, d.Notes, d.Nature = strings.TrimSpace(in.SupplierRef), in.Notes, in.Nature
+	d.SupplierRef, d.Notes, d.Nature, d.OpeningItem = strings.TrimSpace(in.SupplierRef), in.Notes, in.Nature, in.OpeningItem
 	if f := in.InputTax; f != nil {
 		d.InputTax = bill.InputTax{SupplierNotRegistered: f.SupplierRegistered != nil && !*f.SupplierRegistered, Document: f.Document,
 			AddressedTo: f.AddressedTo, Repaid: f.Repaid, TaxAgent: f.TaxAgent}
@@ -543,7 +546,7 @@ func (a *API) billOf(ctx context.Context, u storage.UnitOfWork, v billView, doc 
 		return Bill{}, err
 	}
 	out := Bill{ID: doc.ID.String(), Kind: kindOf(doc), Number: doc.Number, Status: string(doc.Status), Version: doc.Version, SupplierRef: d.SupplierRef,
-		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: []BillLineDraft{}, Checks: []BillCheck{},
+		Date: dayText(d.Date), DueDate: dayText(d.DueDate), Currency: d.Currency.Code, Notes: d.Notes, Lines: []BillLineDraft{}, Checks: []BillCheck{}, OpeningItem: d.OpeningItem,
 		InputTax: billInputTaxOut(d.InputTax), TaxDecisions: []BillTaxDecision{}, Nature: d.Nature,
 		LedgerImpact: []EntryLine{}, Payments: []BillPaidBy{}, Releases: []BillRelease{}, PreparedBy: personOf(doc.SavedBy), PostedBy: personOf(doc.PostedBy),
 		PostedAt: utc(doc.PostedAt)}

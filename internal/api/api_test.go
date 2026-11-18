@@ -227,6 +227,8 @@ func TestIdempotencyKeyReplaysAndRefusesReuse(t *testing.T) {
 	}
 }
 
+// A versioned record answers its ETag, and a command needs If-Match: none is 428, a stale tag 412, and the current
+// one, strong or as a compressing proxy left it, runs it (FR-INT-09, rev 0.250, rev 0.251).
 // req: FR-INT-09
 // req: data/data-model Versioning of records
 func TestETagAndIfMatch(t *testing.T) {
@@ -242,8 +244,11 @@ func TestETagAndIfMatch(t *testing.T) {
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil), "postJournal", 428, CodeIfMatchRequired)
 	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", `"1-posted"`), "postJournal", 412, CodeStale)
-	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", `W/"1-draft"`), "postJournal", 412, CodeStale)
-	r := e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", `"0-draft", `+tag)
+	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", `W/"0-draft"`), "postJournal", 412, CodeStale)
+	// The current tag sent back as a compressing proxy left it, weak or with its encoding named, is the record's own
+	// (rev 0.250, rev 0.251).
+	e.problemIs(e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", `"0-draft-gzip"`), "postJournal", 412, CodeStale)
+	r := e.call(http.MethodPost, "/v1/journals/"+id+"/post", accountant, nil, "If-Match", `"0-draft", W/"1-draft-zstd"`)
 	if r.Status != 200 || r.Header.Get("ETag") != `"1-posted"` || r.str("journal", "status") != "posted" {
 		t.Fatalf("post with a matching If-Match: %d %v %s", r.Status, r.Header, r.Raw)
 	}
@@ -684,7 +689,7 @@ func TestDocumentNumbers(t *testing.T) {
 	}
 }
 
-// The standard chart loads once into an organisation with no account: 89 accounts with every attribute, and the
+// The standard chart loads once into an organisation with no account: 90 accounts with every attribute, and the
 // expense policy's starter claim categories; a second load, or a load into an organisation with accounts, is refused.
 // req: FR-COA-01
 // req: FR-COA-02
@@ -709,15 +714,15 @@ func TestStandardChart(t *testing.T) {
 	}
 
 	if r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil, "Prefer", "return=preview"); r.Status != 200 ||
-		r.Body["accounts"] != float64(89) || r.Body["claim_categories"] != float64(7) || len(list()) != 0 {
+		r.Body["accounts"] != float64(90) || r.Body["claim_categories"] != float64(7) || len(list()) != 0 {
 		t.Fatalf("the preview: %d %s", r.Status, r.Raw)
 	}
 	r := e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil, "Idempotency-Key", uuid.NewString())
-	if r.Status != 201 || r.Body["accounts"] != float64(89) || r.Body["claim_categories"] != float64(7) || r.Header.Get("Location") != "/v1/accounts" {
+	if r.Status != 201 || r.Body["accounts"] != float64(90) || r.Body["claim_categories"] != float64(7) || r.Header.Get("Location") != "/v1/accounts" {
 		t.Fatalf("loading the chart: %d %v %s", r.Status, r.Header, r.Raw)
 	}
 	accounts := list()
-	if len(accounts) != 89 {
+	if len(accounts) != 90 {
 		t.Fatalf("%d accounts after loading", len(accounts))
 	}
 	// The expense policy's starter categories come with it, each on its standard account with no limit (FR-AP-15).
@@ -796,7 +801,7 @@ func TestStandardChart(t *testing.T) {
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", accountant, nil), "loadStandardChart", 409, CodeChartLoaded)
 	e.problemIs(e.call(http.MethodPost, "/v1/accounts:load-standard-chart", e.as(authz.Accountant), nil), "loadStandardChart", 409, CodeChartLoaded)
-	if n := len(list()); n != 89 {
+	if n := len(list()); n != 90 {
 		t.Errorf("a refused load changed the chart: %d accounts", n)
 	}
 }
@@ -1115,6 +1120,26 @@ func TestOrganisationSettings(t *testing.T) {
 	if s := e.call(http.MethodGet, "/v1/session", ctl, nil); !strings.Contains(s.Raw, `"projects":true`) {
 		t.Errorf("projects switched on, the session: %s", s.Raw)
 	}
+}
+
+// The organisation's motion (FR-UX-38): on by default, an Administrator turns it off for everyone, an Employee's session
+// included, though an Employee cannot read the settings; the change is kept in the setting's history.
+// req: FR-UX-38
+func TestTheOrganisationsMotionReachesEveryone(t *testing.T) {
+	e := newEnv(t)
+	admin, employee := e.as(authz.Administrator), e.as(authz.Employee)
+	if s := e.call(http.MethodGet, "/v1/session", employee, nil); s.Status != 200 || s.str("motion") != "on" {
+		t.Fatalf("the session's motion by default: %d %s", s.Status, s.Raw)
+	}
+	r := e.call(http.MethodPatch, "/v1/organisation/settings/appearance.motion", admin, map[string]any{"value": "false"}, "If-Match", `"0"`)
+	if r.Status != 200 || r.str("value") != "false" || r.Body["version"] != float64(1) {
+		t.Fatalf("motion turned off: %d %s", r.Status, r.Raw)
+	}
+	if s := e.call(http.MethodGet, "/v1/session", employee, nil); s.str("motion") != "off" {
+		t.Errorf("the session's motion once off: %s", s.Raw)
+	}
+	e.problemIs(e.call(http.MethodPatch, "/v1/organisation/settings/appearance.motion", employee, map[string]any{"value": "true"}, "If-Match", `"1"`),
+		"updateSetting", 403, CodeForbidden)
 }
 
 // Members: until a second member joins, the Owner invites people with roles and changes roles alone (the

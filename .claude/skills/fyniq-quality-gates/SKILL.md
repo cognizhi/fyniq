@@ -69,7 +69,7 @@ Narrow loops while you work (once the code exists): `go test ./internal/engine/.
 | QA-UI-04 | Experience modes: everything tagged in the registry; identical API requests in Basic and Expert; safety info visible in both | `apps/web/src/ui/modes.test.ts`, `e2e/modes/` | Merge |
 | QA-TRACE-01 | Every `M` requirement of the current phase referenced by a test | `tools/trace` report | Phase gate |
 | QA-E2E-01 | Key journeys: set-up, record, sell, buy, pay, payroll, reconcile, close, GST, AI ask, AI propose → approve → execute | `e2e/` | Release |
-| QA-PERF-01 | Load at NFR-PERF targets on a 10 M-line synthetic tenant | `perf/` | Minor release |
+| QA-PERF-01 | Load at NFR-PERF targets on a 10 M-line synthetic tenant | `make perf` (`cmd/perf`, `internal/perf`) on the local stack | Minor release |
 | QA-MIG-01 | Workbook parity: platform TB = workbook TB except the items in the accountant-signed migration difference register (FR-MIG-02, PRD rev 0.8), Checks status matches | `test/parity/` | P1 release |
 | QA-AI-01…05 | Golden questions (100% numeric), proposal evals, red team (0 successes), monitoring, feedback | `evals/` | Model, prompt or tool change |
 | QA-PROD-01 | Nightly verification, audit chain, canary transactions | Production jobs | Alerts |

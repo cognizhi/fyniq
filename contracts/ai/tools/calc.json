@@ -1,0 +1,50 @@
+{
+  "name": "calc",
+  "title": "Calculate",
+  "version": 1,
+  "description": "Calculates exactly, in decimals, on facts from this conversation and constants: a sum, a difference, a product, a quotient, a percentage change or a share. Returns its result as a new fact naming the facts it used. Use it for every figure no tool gave directly; never calculate in your head.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["op", "operands"],
+    "properties": {
+      "op": {
+        "type": "string",
+        "description": "add and multiply take two or more operands; subtract, divide, percent_change (from the first to the second) and share (the first as a percentage of the second) take two.",
+        "enum": ["add", "subtract", "multiply", "divide", "percent_change", "share"]
+      },
+      "operands": {
+        "type": "array",
+        "description": "The operands, in order: each a fact by its ID or a constant.",
+        "minItems": 2,
+        "maxItems": 20,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fact": {
+              "type": "string",
+              "description": "A fact's ID from this conversation.",
+              "pattern": "^F[0-9a-f]{16}$"
+            },
+            "constant": {
+              "type": "string",
+              "description": "A constant, as decimal text, such as 12 or 0.09.",
+              "pattern": "^-?[0-9]{1,20}(\\.[0-9]{1,10})?$"
+            }
+          }
+        }
+      },
+      "places": {
+        "type": "integer",
+        "description": "Decimal places to round the result to, half up; 2 when left out.",
+        "minimum": 0,
+        "maximum": 10
+      }
+    }
+  },
+  "annotations": {"readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false},
+  "runs": "ai",
+  "scope": "ai.read",
+  "limits": {"rows": 1, "timeout_ms": 1000, "result_tokens": 500}
+}

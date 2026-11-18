@@ -18,6 +18,12 @@ Source: PRD-001 §8.21 · Priority M · Phase P1
 - **WHEN** a user is given roles
 - **THEN** each role can be scoped to an entity and a department
 
+#### Scenario: A role narrowed to departments (rev 0.253)
+- **GIVEN** a member holds a role narrowed to some values of the department dimension
+- **WHEN** they act under a cell qualified by department (Appendix D's "dept", the Approver's)
+- **THEN** it reaches only the records, lines and budgets of those values
+- **AND** a role with no department scope reaches nothing under a dept-qualified cell; entity scopes come with multi-entity (P3)
+
 #### Scenario: External user expires
 - **GIVEN** an external user with an expiry date
 - **WHEN** the expiry date passes

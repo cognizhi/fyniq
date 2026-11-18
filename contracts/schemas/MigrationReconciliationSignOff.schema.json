@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "current": {
+      "description": "Whether it names this report: once the books or a decision change, the report is another, and the step stays signed by the earlier one.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "sha256": {
+      "description": "The report's SHA-256 it signs.",
+      "examples": [
+        "5d1e…"
+      ],
+      "type": "string"
+    },
+    "signed_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-13T10:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "signed_by": {
+      "description": "The Accountant who signed it, stepped up.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a11"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "signed_by",
+    "signed_at",
+    "sha256",
+    "current"
+  ],
+  "title": "MigrationReconciliationSignOff",
+  "type": "object"
+}

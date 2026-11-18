@@ -157,7 +157,53 @@ const (
 	// ObjectBudget is a version of a financial year's budget, to approve and so record and lock (FR-PLN-01, FM-1;
 	// p1-planning design D6): another person who holds A on "Budgets, forecasts" approves; its key is the budget's ID.
 	ObjectBudget = "budget"
+	// ObjectMigrationCommit is the workbook import's commit (FR-MIG-01, §17.1 M3, FM-1; rev 0.258): an Owner who did not
+	// prepare it approves it over the workbook, its validation report and the signed mapping; its key is the migration's ID.
+	ObjectMigrationCommit = "migration_commit"
+	// ObjectTenantExport is the full tenant export (FR-MIG-04, design D10, FM-1; rev 0.273): a person with C on
+	// "Tenant export" asks for it, and another who holds its A approves; its key is the export's ID.
+	ObjectTenantExport = "tenant_export"
+	// ObjectAIConnection is a connection to an AI model provider (AI-72, golden rule 6; p1-ai-providers design D2): a
+	// person with C on "AI providers and model routes" asks to create, change, re-key or enable it, and the Owner, who
+	// holds its A, approves; its key is the connection's ID. Switching one off is never held back.
+	ObjectAIConnection = "ai_connection"
+	// ObjectAIDataPolicy is the organisation's data-class policy for the AI (AI-75, golden rule 6): which connections
+	// each class may go to beyond the defaults; a person with C on "AI providers and model routes" asks, the Owner
+	// approves; its key is AIDataPolicyKey.
+	ObjectAIDataPolicy = "ai_data_policy"
+	// ObjectAIRoute is an agent's route (AI-74, AI-26): a version that widens where the agent's data goes, its first
+	// among them, is asked by the Owner or an Administrator and approved by the Owner or a second approver who holds the
+	// row's A; its key is the agent's ID.
+	ObjectAIRoute = "ai_route"
+	// ObjectAPIClient is an API client of the organisation (FR-INT-02, SEC-07): registering an integration client with its
+	// narrow scopes, and reclassing a personal access token as an integration, are asked by a person with C on "Connected
+	// apps" and approved by the Owner, who holds its A with a second approver; its key is the client's ID. Revoking one is
+	// never held back.
+	ObjectAPIClient = "api_client"
+	// ObjectAIProposal is an AI proposal to execute (AI-89, AI-P4, AI-P5, AI-10; rev 0.280): one step of the task type's
+	// approver roles who could do its command themselves signs the payload's hash; the person who asked may sign their
+	// own tier-1 proposal; no organisation changes its policy. Its key is the proposal's id.
+	ObjectAIProposal = "ai_proposal"
+	// ObjectCorporateDetail is the company's name, registered office and SSIC code from a day, to record (FR-CS-01,
+	// p1-company-secretary design D2): another person who holds A on the corporate profile approves; its key is the
+	// detail's document ID.
+	ObjectCorporateDetail = "corporate_detail"
+	// ObjectCorporateOfficer is an officer's appointment, or a later version of it, to record (FR-CS-01, FR-CS-06, design
+	// D2): another person who holds A on the corporate profile approves; its key is the version's document ID.
+	ObjectCorporateOfficer = "corporate_officer"
+	// ObjectNomineeEntry is an entry of the register of nominee directors or shareholders, to record (s386AL, FR-CS-01):
+	// another person who holds A on the corporate profile approves, never the nominee; its key is the version's ID.
+	ObjectNomineeEntry = "nominee_entry"
+	// ObjectStatementsApproval is the directors' approval of a year's financial statements, to record (FR-CS-03): another
+	// person who holds A on the corporate profile approves; its key is the approval's document ID.
+	ObjectStatementsApproval = "statements_approval"
+	// ObjectCorporateDocument is a corporate document with its signed copy, to record in the minute book (FR-CS-05):
+	// another person who holds A on the corporate profile approves; its key is the document's ID.
+	ObjectCorporateDocument = "corporate_document"
 )
+
+// AIDataPolicyKey is the object key of the data-class policy: the organisation has one.
+const AIDataPolicyKey = "ai-data-policy"
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
 const TeamModeKey = "organisation"
@@ -262,6 +308,43 @@ const (
 	OpControllerEntryRecord = "controller_entry.record"
 	// OpBudgetRecord records a budget as drafted and locks it: the year's budget from then on (FR-PLN-01).
 	OpBudgetRecord = "budget.record"
+	// OpMigrationCommit commits the workbook import: the batches then import its records (FR-MIG-01, rev 0.258).
+	OpMigrationCommit = "migration.commit"
+	// OpTenantExportPrepare queues the full tenant export for its requester (FR-MIG-04, rev 0.273).
+	OpTenantExportPrepare = "tenant_export.prepare"
+	// OpAIConnectionCreate adds the connection, switched off (AI-72).
+	OpAIConnectionCreate = "ai_connection.create"
+	// OpAIConnectionChange changes its name, configuration or billing (AI-72, AI-73).
+	OpAIConnectionChange = "ai_connection.change"
+	// OpAIConnectionCredential makes the credential the request stored its current one (AI-79).
+	OpAIConnectionCredential = "ai_connection.credential"
+	// OpAIConnectionEnable switches it on (AI-72).
+	OpAIConnectionEnable = "ai_connection.enable"
+	// OpAIConnectionAllowModel puts a listed model the connection probed on its allow-list (AI-72, AI-80).
+	OpAIConnectionAllowModel = "ai_connection.allow_model"
+	// OpAIConnectionPrice puts an Owner's price of a listed model in force, which no later read overwrites (AI-82).
+	OpAIConnectionPrice = "ai_connection.price"
+	// OpAIRouteChange makes the asked route its agent's next version (AI-74).
+	OpAIRouteChange = "ai_route.change"
+	// OpAPIClientCreate registers an integration client with the OAuth server and records it (FR-INT-02).
+	OpAPIClientCreate = "api_client.create"
+	// OpAPIClientReclass reclasses a personal access token from agent to integration (FR-INT-02).
+	OpAPIClientReclass = "api_client.reclass"
+	// OpAIDataPolicyChange makes the asked policy the organisation's next version (AI-75).
+	OpAIDataPolicyChange = "ai_data_policy.change"
+	// OpAIProposalExecute marks the proposal Approved and queues it for the executor, which runs it as the approver
+	// (AI-11, AI-P5).
+	OpAIProposalExecute = "ai_proposal.execute"
+	// OpCorporateDetailRecord records a corporate detail as drafted, with its evidence (FR-CS-01).
+	OpCorporateDetailRecord = "corporate_detail.record"
+	// OpCorporateOfficerRecord records an officer's version as drafted, with its evidence (FR-CS-01, FR-CS-06).
+	OpCorporateOfficerRecord = "corporate_officer.record"
+	// OpNomineeEntryRecord records a nominee entry's version as drafted, with its evidence (s386AL).
+	OpNomineeEntryRecord = "nominee_entry.record"
+	// OpStatementsApprovalRecord records the directors' approval of a year's statements, with its evidence (FR-CS-03).
+	OpStatementsApprovalRecord = "statements_approval.record"
+	// OpCorporateDocumentRecord records a corporate document, signed, with its signed copy: an entry of the minute book.
+	OpCorporateDocumentRecord = "corporate_document.record"
 )
 
 // Operations are every operation, with the object type it changes: what the database's approval_request_object_known
@@ -302,6 +385,24 @@ var Operations = map[string]string{
 	OpInvestorRightsRecord:     ObjectInvestorRights,
 	OpControllerEntryRecord:    ObjectControllerEntry,
 	OpBudgetRecord:             ObjectBudget,
+	OpMigrationCommit:          ObjectMigrationCommit,
+	OpTenantExportPrepare:      ObjectTenantExport,
+	OpAIConnectionCreate:       ObjectAIConnection,
+	OpAIConnectionChange:       ObjectAIConnection,
+	OpAIConnectionCredential:   ObjectAIConnection,
+	OpAIConnectionEnable:       ObjectAIConnection,
+	OpAIDataPolicyChange:       ObjectAIDataPolicy,
+	OpAIConnectionAllowModel:   ObjectAIConnection,
+	OpAIConnectionPrice:        ObjectAIConnection,
+	OpAIRouteChange:            ObjectAIRoute,
+	OpAPIClientCreate:          ObjectAPIClient,
+	OpAPIClientReclass:         ObjectAPIClient,
+	OpAIProposalExecute:        ObjectAIProposal,
+	OpCorporateDetailRecord:    ObjectCorporateDetail,
+	OpCorporateOfficerRecord:   ObjectCorporateOfficer,
+	OpNomineeEntryRecord:       ObjectNomineeEntry,
+	OpStatementsApprovalRecord: ObjectStatementsApproval,
+	OpCorporateDocumentRecord:  ObjectCorporateDocument,
 }
 
 // Dependencies are, per object type, the versions and values its envelope holds besides the change: when any
@@ -326,20 +427,22 @@ var Dependencies = map[string][]string{
 	ObjectJournal: {"journal_version", "status", "debits"},
 	// the opening balances' version and status, and their debits in the base currency
 	ObjectOpening: {"opening_version", "status", "debits"},
-	// the bill's version and status, and what it adds to accounts payable in the base currency
-	ObjectBill: {"bill_version", "status", "payable"},
+	// the bill's version and status, what it adds to accounts payable in the base currency, and the GST pack its
+	// codes and rates are read from (G4-057)
+	ObjectBill: {"bill_version", "status", "payable", "gst_pack"},
 	// the payment's status, and what it paid in the base currency
 	ObjectPayment: {"status", "paid"},
 	// the application's status, and the amount it applied
 	ObjectApplication: {"status", "applied"},
 	// the refund's status, and what it settled of the credit
 	ObjectRefund: {"status", "refunded"},
-	// the order's version and status, and its total in the base currency
-	ObjectOrder: {"order_version", "status", "total"},
+	// the order's version and status, its total in the base currency, and the GST pack (G4-057)
+	ObjectOrder: {"order_version", "status", "total", "gst_pack"},
 	// the template's version, the SHA-256 of the content to publish, and the latest version published
 	ObjectTemplate: {"template_version", "content", "published"},
-	// the invoice's version and status, and what it adds to accounts receivable in the base currency
-	ObjectInvoice: {"invoice_version", "status", "receivable"},
+	// the invoice's version and status, what it adds to accounts receivable in the base currency, and the GST pack its
+	// codes and rates are read from (G4-057)
+	ObjectInvoice: {"invoice_version", "status", "receivable", "gst_pack"},
 	// the receipt's status, and what it received
 	ObjectReceipt: {"status", "received"},
 	// the write-off's version and status, and the carrying amount it clears in the base currency
@@ -348,8 +451,8 @@ var Dependencies = map[string][]string{
 	ObjectCustomerApplication: {"status", "applied"},
 	// the refund's status, and what it settled of the credit
 	ObjectCustomerRefund: {"status", "refunded"},
-	// the deposit's status, and what it received
-	ObjectDeposit: {"status", "received"},
+	// the deposit's status, what it received, and the GST pack (G4-057)
+	ObjectDeposit: {"status", "received", "gst_pack"},
 	// the recurring invoice's content version and mode
 	ObjectRecurringInvoice: {"content_version", "mode"},
 	// the installed connector's version and state, or for an install whether the connector is installed already
@@ -357,7 +460,7 @@ var Dependencies = map[string][]string{
 	// the rule's version, and the SHA-256 of its conditions and action: what the back-test was run on
 	ObjectBankRule: {"rule_version", "rule"},
 	// the claim's version and status, and what the company owes for it in the base currency, with what it settles of an advance
-	ObjectClaim: {"claim_version", "status", "owed"},
+	ObjectClaim: {"claim_version", "status", "owed", "gst_pack"},
 	// the reimbursement's status, and what it paid back in the base currency
 	ObjectReimbursement: {"status", "paid"},
 	// the advance's status, and its amount in the base currency
@@ -408,6 +511,30 @@ var Dependencies = map[string][]string{
 	ObjectControllerEntry: {"status", "holder"},
 	// the budget's version and status, and its year: what is recorded
 	ObjectBudget: {"status", "financial_year"},
+	// the migration's status, the workbook with its validation report, and the signed mapping: what is imported
+	ObjectMigrationCommit: {"status", "workbook", "mapping"},
+	// nothing: the export does not exist until it is approved
+	ObjectTenantExport: {},
+	// the connection's version and state ("new" before it exists): what is created, changed, re-keyed or enabled
+	ObjectAIConnection: {"status"},
+	// the policy's version: what it replaces
+	ObjectAIDataPolicy: {"version"},
+	// the route's version: what it replaces
+	ObjectAIRoute: {"version"},
+	// the client's version and whether it is live ("new" before it exists): what is registered or reclassed
+	ObjectAPIClient: {"status"},
+	// the proposal's status and its payload's hash: what executes
+	ObjectAIProposal: {"status", "payload_sha256"},
+	// the detail's version and status, and the day it takes effect: what is recorded
+	ObjectCorporateDetail: {"status", "from"},
+	// the officer's version and status, and the officer it follows: what is recorded
+	ObjectCorporateOfficer: {"status", "officer"},
+	// the entry's version and status, and the entry it follows: what is recorded
+	ObjectNomineeEntry: {"status", "entry"},
+	// the approval's version and status, and its year's end: what is recorded
+	ObjectStatementsApproval: {"status", "fy_end"},
+	// the document's version and status, and the day it was signed: what is recorded
+	ObjectCorporateDocument: {"status", "signed_on"},
 }
 
 // Rows are, per object type, the Appendix D row whose approve right (A) a signer holds and on which any right lets a
@@ -464,6 +591,20 @@ var Rows = map[string]string{
 	ObjectInvestorRights:      "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectControllerEntry:     "Cap table, holders, investors, equity transactions (rev 0.3)",
 	ObjectBudget:              "Budgets, forecasts",
+	ObjectMigrationCommit:     "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)",
+	ObjectTenantExport:        "Tenant export",
+	ObjectAIConnection:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
+	ObjectAIDataPolicy:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
+	ObjectAIRoute:             "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
+	ObjectAPIClient:           "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)",
+	// Who signs a proposal is its task type's (the request names the roles and the command's right); who sees it is the
+	// AI activity log's: each member their own, the Owner and the DPO every one.
+	ObjectAIProposal:         "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)",
+	ObjectCorporateDetail:    "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
+	ObjectCorporateOfficer:   "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
+	ObjectNomineeEntry:       "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
+	ObjectStatementsApproval: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
+	ObjectCorporateDocument:  "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)",
 }
 
 // The limits of a policy.
@@ -550,6 +691,20 @@ var Policies = map[string]Policy{
 	ObjectInvestorRights:      {ObjectType: ObjectInvestorRights, Version: "founder/investor_right@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectControllerEntry:     {ObjectType: ObjectControllerEntry, Version: "founder/controller_entry@2026-11-07.1", Steps: []Step{{Quorum: 1}}},
 	ObjectBudget:              {ObjectType: ObjectBudget, Version: "founder/budget@2026-11-08.1", Steps: []Step{{Quorum: 1}}},
+	ObjectMigrationCommit:     {ObjectType: ObjectMigrationCommit, Version: "founder/migration_commit@2026-11-13.1", Steps: []Step{{Quorum: 1}}},
+	ObjectTenantExport:        {ObjectType: ObjectTenantExport, Version: "founder/tenant_export@2026-11-13.1", Steps: []Step{{Quorum: 1}}},
+	ObjectAIConnection:        {ObjectType: ObjectAIConnection, Version: "founder/ai_connection@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
+	ObjectAIDataPolicy:        {ObjectType: ObjectAIDataPolicy, Version: "founder/ai_data_policy@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
+	ObjectAIRoute:             {ObjectType: ObjectAIRoute, Version: "founder/ai_route@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
+	ObjectAPIClient:           {ObjectType: ObjectAPIClient, Version: "founder/api_client@2026-11-17.1", Steps: []Step{{Quorum: 1}}},
+	// Fixed: no policy removes a proposal's step or automates it, in any team mode (AI-P4, AI-06, CTL-AI-03); the request
+	// narrows its step to the task type's approver roles.
+	ObjectAIProposal:         {ObjectType: ObjectAIProposal, Version: "founder/ai_proposal@2026-11-15.1", Steps: []Step{{Quorum: 1}}, Fixed: true},
+	ObjectCorporateDetail:    {ObjectType: ObjectCorporateDetail, Version: "founder/corporate_detail@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
+	ObjectCorporateOfficer:   {ObjectType: ObjectCorporateOfficer, Version: "founder/corporate_officer@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
+	ObjectNomineeEntry:       {ObjectType: ObjectNomineeEntry, Version: "founder/nominee_entry@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
+	ObjectStatementsApproval: {ObjectType: ObjectStatementsApproval, Version: "founder/statements_approval@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
+	ObjectCorporateDocument:  {ObjectType: ObjectCorporateDocument, Version: "founder/corporate_document@2026-11-16.1", Steps: []Step{{Quorum: 1}}},
 }
 
 // Amount is an amount and its currency in an envelope: a decimal string, never a binary number (ENG-10).
@@ -662,6 +817,8 @@ type Request struct {
 	Status      Status
 	RequestedBy uuid.UUID
 	ExpiresAt   time.Time
+	// SelfSign is whether the person who asked may sign it: a tier-1 AI proposal's alone (AI-10, AI-89).
+	SelfSign bool
 }
 
 // StatusAt is the request's status at now: a pending request past its expiry is expired.
@@ -686,7 +843,7 @@ func CheckSigner(r Request, signer uuid.UUID, now time.Time) *Problem {
 	default:
 		return &Problem{CodeNotPending, fmt.Sprintf("the request is %s already", r.Status), "Nothing to do; ask for the change again if it is still needed"}
 	}
-	if signer == r.RequestedBy {
+	if signer == r.RequestedBy && !r.SelfSign {
 		return &Problem{CodeOwnRequest, "you asked for this change, so another founder approves it (FM-1)",
 			"Ask another member who holds the approval right to approve it"}
 	}

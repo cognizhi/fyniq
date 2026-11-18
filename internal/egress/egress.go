@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/cognizhi/fyniq/internal/telemetry"
 )
 
 // ErrRefused is a destination the guard refuses.
@@ -55,6 +57,9 @@ type Guard struct {
 	// Own are the platform's own networks (its subnet, the peered range of its database): never reached, even as a
 	// registered private endpoint (SEC-37).
 	Own []netip.Prefix
+	// Propagate sends each request's W3C trace context (NFR-OBS-01): the platform's own guard, whose hosts are its own
+	// services and Google's APIs. A guard for third parties traces its requests but never tells them the trace.
+	Propagate bool
 
 	// registered are the private endpoints this guard may also reach (With; SEC-37).
 	registered []Endpoint
@@ -238,7 +243,7 @@ func (g *Guard) client(allow func(host string, port int) bool, notAllowed string
 	}
 	return &http.Client{
 		Timeout:       g.timeout(),
-		Transport:     limited{base: base, max: max},
+		Transport:     telemetry.Transport(limited{base: base, max: max}, g.Propagate),
 		CheckRedirect: func(*http.Request, []*http.Request) error { return ErrRedirect },
 	}
 }

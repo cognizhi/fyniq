@@ -850,3 +850,34 @@ func TestForeignBalancesNotRevaluedAtTheLastMonthEnd(t *testing.T) {
 		t.Errorf("the balance not revalued: %+v", items)
 	}
 }
+
+// A run on a change waits until a minute has passed since the last one finished, then reads every change made
+// meanwhile in one run (task 13.11): the first runs at once, the next waits out the rest of the minute, one later than
+// a minute runs at once, and a wait that is cancelled runs nothing.
+// req: FR-CTL-01
+// req: NFR-PERF-01
+func TestARunOnAChangeRunsAtMostOnceAMinute(t *testing.T) {
+	b := newBooks(t, true)
+	var slept []time.Duration
+	r := b.runner()
+	r.Sleep = func(_ context.Context, d time.Duration) error {
+		slept = append(slept, d)
+		return nil
+	}
+	if _, err := r.Paced(ctx, b.org); err != nil || len(slept) != 0 {
+		t.Fatalf("the first run waited %v: %v", slept, err)
+	}
+	if _, err := r.Paced(ctx, b.org); err != nil || len(slept) != 1 || slept[0] != checks.Pace {
+		t.Fatalf("the next run, at once after: waited %v, want %v: %v", slept, checks.Pace, err)
+	}
+	later := r
+	later.Clock = clock.NewFrozen(now.Add(checks.Pace + 30*time.Second))
+	if _, err := later.Paced(ctx, b.org); err != nil || len(slept) != 1 {
+		t.Fatalf("a run more than a minute after waited %v: %v", slept, err)
+	}
+	stopped := r
+	stopped.Sleep = func(context.Context, time.Duration) error { return context.Canceled }
+	if _, err := stopped.Paced(ctx, b.org); err == nil {
+		t.Error("a cancelled wait ran the checks")
+	}
+}

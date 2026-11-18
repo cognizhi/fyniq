@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft, ClipboardCheck, ClockAlert, CircleCheck } from "lucide-react";
+import { ChevronLeft, ClipboardCheck, ClockAlert, CircleCheck, TriangleAlert } from "lucide-react";
 import { useId, useState } from "react";
 import { api, newKey } from "../../api/client";
 import { Refusal } from "../../components/Refusal";
@@ -28,6 +28,7 @@ const kinds: Record<ReviewEntry["kind"], string> = {
   release_conflict: "Released by someone who prepared or approved it, as Founder mode allows",
   break_glass: "Break-glass: payments released by one founder alone",
   account_recovery: "Account recovered with a recovery code and a confirmation",
+  unusual: "Unusual item the rules found, for another founder to look at",
 };
 
 function MarkReviewed({ ids, open, onClose, onDone }: { ids: string[]; open: boolean; onClose: () => void; onDone: (n: number) => void }) {
@@ -197,7 +198,18 @@ export function ReviewLog() {
                       Open the approved request
                     </Link>
                   )}
+                  {e.kind === "unusual" && e.object_type === "journal" && (
+                    <Link className="fy-small" to="/accounting/journals/$journalId" params={{ journalId: e.object_key }}>
+                      Open the journal
+                    </Link>
+                  )}
                 </span>
+                {e.kind === "unusual" && !e.reviewed_at && (
+                  <span className="fy-chip fy-chip--warning">
+                    <Icon of={TriangleAlert} />
+                    Unusual
+                  </span>
+                )}
                 {e.reviewed_at ? (
                   <span className="fy-chip fy-chip--good">
                     <Icon of={CircleCheck} />

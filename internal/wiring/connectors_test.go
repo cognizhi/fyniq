@@ -216,6 +216,7 @@ func fakeManifest(t *testing.T, id string) connector.Manifest {
 // req: FR-INT-20
 // req: FR-INT-26
 // req: QA-SEC-04
+// req: G4-096
 // asvs: V2.3.2
 func TestEmailGoesThroughTheConnectorsEnabledAtEachSend(t *testing.T) {
 	ctx := context.Background()

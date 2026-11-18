@@ -8,12 +8,13 @@
 package reportexport
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash"
+	"io"
 	"slices"
 	"strings"
 	"time"
@@ -56,17 +57,20 @@ const (
 
 // Reports are the accountant exports and whether each runs over a range of days (else it is as at a day).
 var Reports = map[string]bool{GeneralLedger: true, TrialBalance: false, Journals: true, FixedAssets: false, Receivables: false, Payables: false,
-	AuditTrail: true}
+	AuditTrail: true, Tenant: false}
 
 // Names are the reports' names, as a file and a sheet are titled.
 var Names = map[string]string{GeneralLedger: "General ledger", TrialBalance: "Trial balance", Journals: "Journal entries",
-	FixedAssets: "Fixed asset schedule", Receivables: "Receivables in detail", Payables: "Payables in detail", AuditTrail: "Audit trail"}
+	FixedAssets: "Fixed asset schedule", Receivables: "Receivables in detail", Payables: "Payables in detail", AuditTrail: "Audit trail",
+	Tenant: "Full export"}
 
 // Parameters are an export's: the first day of a range, and its last day or the day it is as at, YYYY-MM-DD.
 type Parameters struct {
 	From  string       `json:"from,omitempty"`
 	To    string       `json:"to"`
 	Audit *AuditFilter `json:"audit,omitempty"` // an audit trail export's filters
+	// Approval is the approval a full tenant export was prepared under (FR-MIG-04).
+	Approval string `json:"approval,omitempty"`
 }
 
 // Refusal is an export the books refuse: it fails with why, and is not tried again.
@@ -74,10 +78,9 @@ type Refusal struct{ Why string }
 
 func (r Refusal) Error() string { return r.Why }
 
-// File is a prepared export.
+// File is a prepared export's file, as Write wrote it: its name and type, its rows and the ledger revision it read.
 type File struct {
 	Name, MediaType string
-	Data            []byte
 	Rows            int
 	Revision        int64
 }
@@ -105,12 +108,38 @@ func Queue(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org u
 // day is a parameter's day.
 func day(s string) (time.Time, error) { return time.Parse(time.DateOnly, s) }
 
-// Build reads the books for an export and writes its file.
-func Build(ctx context.Context, u storage.UnitOfWork, x storage.ReportExport, created time.Time) (File, error) {
+// Plan is the file an export writes, from its parameters: its name and media type. An export whose parameters the books
+// cannot read is refused.
+func Plan(x storage.ReportExport) (File, error) {
 	var p Parameters
 	if err := json.Unmarshal(x.Parameters, &p); err != nil {
 		return File{}, Refusal{"its parameters are not readable"}
 	}
+	if x.Report == Tenant {
+		return File{Name: "fyniq-export-" + p.To + ".zip", MediaType: "application/zip"}, nil
+	}
+	name := strings.ReplaceAll(strings.ToLower(Names[x.Report]), " ", "-")
+	if Reports[x.Report] {
+		name += "-" + p.From + "-to-" + p.To
+	} else {
+		name += "-" + p.To
+	}
+	if x.Format == "csv" {
+		return File{Name: name + ".csv", MediaType: "text/csv; charset=utf-8"}, nil
+	}
+	return File{Name: name + ".xlsx", MediaType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}, nil
+}
+
+// Write reads the books for an export and writes its file to w as it reads (NFR-PERF-05, rev 0.250): the general
+// ledger a page of lines at a time, with no limit, and the other reports whole. stamp is the platform version and build
+// that prepare it, which its footer names (REL-05).
+func Write(ctx context.Context, u storage.UnitOfWork, x storage.ReportExport, created time.Time, stamp string, w io.Writer) (File, error) {
+	f, err := Plan(x)
+	if err != nil {
+		return File{}, err
+	}
+	var p Parameters
+	_ = json.Unmarshal(x.Parameters, &p) // Plan read them
 	to, err := day(p.To)
 	if err != nil {
 		return File{}, Refusal{"its last day is not a date"}
@@ -129,18 +158,22 @@ func Build(ctx context.Context, u storage.UnitOfWork, x storage.ReportExport, cr
 	if err != nil {
 		return File{}, err
 	}
-	revision, err := u.Ledger().Revision(ctx)
-	if err != nil {
+	if f.Revision, err = u.Ledger().Revision(ctx); err != nil {
 		return File{}, err
 	}
+	sw := sheet.NewXLSX(w, created)
+	if x.Format == "csv" {
+		sw = sheet.NewCSV(w)
+	}
+	footer := sheet.Prepared(stamp, created) + ", read at ledger revision " + fmt.Sprint(f.Revision)
 	var sheets []sheet.Sheet
 	switch x.Report {
 	case GeneralLedger:
-		sheets, err = generalLedger(ctx, u, base, from, to)
+		f.Rows, err = generalLedger(ctx, u, base, from, to, sw, footer)
 	case TrialBalance:
-		sheets, err = trialBalance(ctx, u, base, to, revision)
+		sheets, err = trialBalance(ctx, u, base, to, f.Revision)
 	case Journals:
-		sheets, err = journals(ctx, u, base, from, to, revision)
+		sheets, err = journals(ctx, u, base, from, to, f.Revision)
 	case FixedAssets:
 		sheets, err = fixedAssets(ctx, u, base, to)
 	case Receivables, Payables:
@@ -150,44 +183,27 @@ func Build(ctx context.Context, u storage.UnitOfWork, x storage.ReportExport, cr
 		if lerr != nil || org.Profile.TimeZone == "" {
 			loc = time.UTC
 		}
-		f := AuditFilter{}
+		a := AuditFilter{}
 		if p.Audit != nil {
-			f = *p.Audit
+			a = *p.Audit
 		}
-		sheets, err = auditTrail(ctx, u, f, from, to, loc)
+		sheets, err = auditTrail(ctx, u, a, from, to, loc)
 	default:
 		return File{}, Refusal{fmt.Sprintf("%q is not a report that exports", x.Report)}
 	}
+	if err == nil && x.Report != GeneralLedger {
+		for _, s := range sheets {
+			f.Rows += len(s.Rows)
+		}
+		err = sheet.Write(sw, sheet.Footed(sheets, footer))
+	}
 	if err != nil {
-		var tooMany *balance.TooMany
-		var crosses *balance.CrossesYear
-		switch {
-		case errors.As(err, &tooMany):
-			return File{}, Refusal{"an account has more lines in the range than one export holds: export a shorter range"}
-		case errors.As(err, &crosses):
+		if crosses := (*balance.CrossesYear)(nil); errors.As(err, &crosses) {
 			return File{}, Refusal{"the range crosses the start of a financial year: export each year apart"}
 		}
 		return File{}, err
 	}
-	rows := 0
-	for _, s := range sheets {
-		rows += len(s.Rows)
-	}
-	name := strings.ReplaceAll(strings.ToLower(Names[x.Report]), " ", "-")
-	if Reports[x.Report] {
-		name += "-" + p.From + "-to-" + p.To
-	} else {
-		name += "-" + p.To
-	}
-	if x.Format == "csv" {
-		return File{Name: name + ".csv", MediaType: "text/csv; charset=utf-8", Data: sheet.CSV(sheets[0]), Rows: rows, Revision: revision}, nil
-	}
-	data, err := sheet.XLSX(sheets, created)
-	if err != nil {
-		return File{}, err
-	}
-	return File{Name: name + ".xlsx", MediaType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Data: data, Rows: rows,
-		Revision: revision}, nil
+	return f, nil
 }
 
 // num is an amount as a number cell.
@@ -215,35 +231,65 @@ func postable(ctx context.Context, u storage.UnitOfWork) ([]storage.Account, err
 	return out, nil
 }
 
-// generalLedger is every account's lines over the range with the running balance (FR-GL-11), an account with nothing
-// in or before the range left out.
-func generalLedger(ctx context.Context, u storage.UnitOfWork, base money.Currency, from, to time.Time) ([]sheet.Sheet, error) {
+// generalLedger writes every account's lines over the range with the running balance (FR-GL-11) as it reads them, a
+// page at a time (NFR-PERF-05, rev 0.250), an account with nothing in or before the range left out, then closes the
+// file; it is the rows it wrote.
+func generalLedger(ctx context.Context, u storage.UnitOfWork, base money.Currency, from, to time.Time, w sheet.Writer, footer string) (int, error) {
 	accounts, err := postable(ctx, u)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	s := sheet.Sheet{Name: Names[GeneralLedger], Header: []string{"Account", "Name", "Date", "Number", "Source", "Memo", "Description", "Debit",
-		"Credit", "Balance " + base.Code}}
+	if err := w.Begin(Names[GeneralLedger], []string{"Account", "Name", "Date", "Number", "Source", "Memo", "Description", "Debit",
+		"Credit", "Balance " + base.Code}); err != nil {
+		return 0, err
+	}
+	rows := 0
+	row := func(r sheet.Row) error {
+		rows++
+		return w.Row(r)
+	}
 	for _, a := range accounts {
-		gl, err := balance.GeneralLedger(ctx, u, base, a.ID, from, to)
+		gl, err := balance.Opening(ctx, u, base, a.ID, from, to)
 		if err != nil {
-			return nil, err
-		}
-		if len(gl.Lines) == 0 && gl.Opening.IsZero() {
-			continue
+			return rows, err
 		}
 		head := []sheet.Cell{sheet.Text(a.Code), sheet.Text(a.Name)}
-		s.Rows = append(s.Rows, sheet.Row{Cells: append(slices.Clone(head), sheet.Text(from.Format(time.DateOnly)), sheet.Text(""), sheet.Text(""),
-			sheet.Text("Opening balance"), sheet.Text(""), sheet.Text(""), sheet.Text(""), num(gl.Opening))})
-		for _, l := range gl.Lines {
-			dr, cr := debitCredit(l.Base)
-			s.Rows = append(s.Rows, sheet.Row{Cells: append(slices.Clone(head), sheet.Text(l.PostingDate.Format(time.DateOnly)), sheet.Text(l.Number),
-				sheet.Text(l.Source.Type), sheet.Text(l.Memo), sheet.Text(l.Description), dr, cr, num(l.Balance))})
+		opened := false
+		open := func() error { // the opening row, once the account has something to show
+			if opened {
+				return nil
+			}
+			opened = true
+			return row(sheet.Row{Cells: append(slices.Clone(head), sheet.Text(from.Format(time.DateOnly)), sheet.Text(""), sheet.Text(""),
+				sheet.Text("Opening balance"), sheet.Text(""), sheet.Text(""), sheet.Text(""), num(gl.Opening))})
 		}
-		s.Rows = append(s.Rows, sheet.Row{Strong: true, Cells: append(slices.Clone(head), sheet.Text(to.Format(time.DateOnly)), sheet.Text(""),
-			sheet.Text(""), sheet.Text("Closing balance"), sheet.Text(""), num(gl.Debits), num(gl.Credits), num(gl.Closing))})
+		if !gl.Opening.IsZero() {
+			if err := open(); err != nil {
+				return rows, err
+			}
+		}
+		err = gl.Walk(ctx, u, base, from, to, func(l balance.LedgerLine) error {
+			if err := open(); err != nil {
+				return err
+			}
+			dr, cr := debitCredit(l.Base)
+			return row(sheet.Row{Cells: append(slices.Clone(head), sheet.Text(l.PostingDate.Format(time.DateOnly)), sheet.Text(l.Number),
+				sheet.Text(l.Source.Type), sheet.Text(l.Memo), sheet.Text(l.Description), dr, cr, num(l.Balance))})
+		})
+		if err != nil {
+			return rows, err
+		}
+		if opened {
+			if err := row(sheet.Row{Strong: true, Cells: append(slices.Clone(head), sheet.Text(to.Format(time.DateOnly)), sheet.Text(""),
+				sheet.Text(""), sheet.Text("Closing balance"), sheet.Text(""), num(gl.Debits), num(gl.Credits), num(gl.Closing))}); err != nil {
+				return rows, err
+			}
+		}
 	}
-	return []sheet.Sheet{s}, nil
+	if err := w.End(footer); err != nil {
+		return rows, err
+	}
+	return rows, w.Close()
 }
 
 // trialBalance is every account's balance at the end of the month that holds to, debits and credits, read at revision.
@@ -433,6 +479,11 @@ type Preparer struct {
 	Files  ports.BlobStore
 	Outbox outbox.Dispatcher
 	Clock  ports.Clock
+	// Stamp is the platform version and build that prepare the exports, which each one's footer names (REL-05):
+	// sheet.Stamp of the worker's version and commit.
+	Stamp string
+	// Tenant is what the full tenant export reads besides the database (FR-MIG-04).
+	Tenant TenantSources
 }
 
 // Work prepares one export: a pending one is built, its file kept, and it is marked ready and its requester told; one
@@ -449,39 +500,59 @@ func (p Preparer) Work() func(ctx context.Context, org uuid.UUID, row storage.Ou
 		now := p.Clock.Now()
 		var x storage.ReportExport
 		var f File
+		var up *upload
 		var refused error
 		err := p.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
 			if x, err = u.ReportExports().Get(ctx, job.ID); err != nil || x.Status != storage.ExportPending {
 				return err
 			}
-			f, err = Build(ctx, u, x, now)
+			plan, err := Plan(x)
 			if r := (Refusal{}); errors.As(err, &r) {
-				refused, err = r, nil
+				refused = r
+				return nil
 			}
-			return err
+			if err != nil {
+				return err
+			}
+			if p.Files == nil {
+				return errors.New("reportexport: no blob store is configured")
+			}
+			// The file goes into the store as it is written, never held whole (NFR-PERF-05, rev 0.250).
+			up = p.upload(ctx, Key(org, x.ID, plan.Name))
+			if x.Report == Tenant {
+				if f, err = WriteTenant(ctx, u, p.Tenant, now, p.Stamp, up); err == nil {
+					f.Name, f.MediaType = plan.Name, plan.MediaType // the name the store keeps it under
+				}
+			} else {
+				f, err = Write(ctx, u, x, now, p.Stamp, up)
+			}
+			if r := (Refusal{}); errors.As(err, &r) {
+				up.abort(r)
+				refused = r
+				return nil
+			}
+			if err != nil {
+				up.abort(err)
+				return err
+			}
+			return up.finish()
 		})
 		if err != nil || x.Status != storage.ExportPending {
 			return err
 		}
-		if refused == nil {
-			if p.Files == nil {
-				return errors.New("reportexport: no blob store is configured")
-			}
-			if err := p.Files.Put(ctx, Key(org, x.ID, f.Name), bytes.NewReader(f.Data)); err != nil {
-				return err
-			}
-		}
 		return p.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
 			title, link := "Your export is ready: "+f.Name, "/reports"
+			if x.Report == Tenant {
+				link = "/settings/data"
+			}
 			if refused != nil {
 				if _, err := u.ReportExports().Fail(ctx, x.ID, refused.Error()); err != nil {
 					return err
 				}
 				title = "Your export of the " + strings.ToLower(Names[x.Report]) + " could not be made: " + refused.Error()
 			} else {
-				sum := sha256.Sum256(f.Data)
 				if _, err := u.ReportExports().Ready(ctx, x.ID, storage.ReportFileDone{Revision: f.Revision, FileName: f.Name, MediaType: f.MediaType,
-					Size: int64(len(f.Data)), Rows: int64(f.Rows), SHA256: sum[:], ReadyAt: now, ExpiresAt: now.Add(Lifetime)}); err != nil {
+					Size: up.size, Rows: int64(f.Rows), SHA256: up.hash.Sum(nil), ReadyAt: now, ExpiresAt: now.Add(Lifetime)}); err != nil {
 					return err
 				}
 			}
@@ -494,6 +565,45 @@ func (p Preparer) Work() func(ctx context.Context, org uuid.UUID, row storage.Ou
 			return err
 		})
 	}
+}
+
+// upload is a file going into the blob store as it is written: its bytes counted and hashed on the way.
+type upload struct {
+	w    *io.PipeWriter
+	hash hash.Hash
+	size int64
+	done chan error
+}
+
+// upload starts putting key into the blob store from what is written to the upload.
+func (p Preparer) upload(ctx context.Context, key string) *upload {
+	r, w := io.Pipe()
+	up := &upload{w: w, hash: sha256.New(), done: make(chan error, 1)}
+	go func() {
+		err := p.Files.Put(ctx, key, r)
+		_ = r.CloseWithError(err) // a write still under way learns why the store stopped reading
+		up.done <- err
+	}()
+	return up
+}
+
+func (up *upload) Write(b []byte) (int, error) {
+	n, err := up.w.Write(b)
+	_, _ = up.hash.Write(b[:n]) // a hash never fails
+	up.size += int64(n)
+	return n, err
+}
+
+// finish ends the file and waits for the store to keep it.
+func (up *upload) finish() error {
+	_ = up.w.Close()
+	return <-up.done
+}
+
+// abort stops the file: the store keeps none of it.
+func (up *upload) abort(why error) {
+	_ = up.w.CloseWithError(why)
+	<-up.done
 }
 
 // Expire deletes the files of every organisation's exports whose time is up by now and marks them expired, returning

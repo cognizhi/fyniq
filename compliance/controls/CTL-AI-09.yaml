@@ -10,8 +10,10 @@ evidence: "Run reports; pinned hashes"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-scheduled-agents"
+    status: running
+    how: "test TestEveryChangeToASkillIsANewVersion"
+    evidence: "each agent's skill is pinned by version and hash in agents/agents.lock.json, and a skill naming a write tool, an output beyond its report and catalogue task types, or a never-listed task type is refused as it loads (TestASkillBeyondItsBoundsIsRefused); CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
-    arrives: "p1-scheduled-agents"
+    status: running
+    how: "verify ai.agent-runs"
+    evidence: "the latest run in each organisation (fyniq.control_run), nightly: every scheduled agent's run that ended in the last day called only the read tools its pinned skill names and proposed only the task types its skill outputs, under its own agent; its tasks are its findings' by the database's rules, and schedule and enablement changes are dual-controlled settings, audited as such; each exception is listed by run (target 0)"

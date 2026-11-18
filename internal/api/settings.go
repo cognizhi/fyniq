@@ -32,7 +32,7 @@ type Setting struct {
 	Key                 string          `json:"key" doc:"The setting's key." example:"sales.payment_terms_days"`
 	Group               string          `json:"group" doc:"Where settings show it." example:"Defaults"`
 	Label               string          `json:"label" doc:"Its name." example:"Payment terms for invoices"`
-	Kind                string          `json:"kind" enum:"switch,minutes,days,months,years,amount_sgd,percent,text,account_code,choice" doc:"What it holds: switch is \"true\" or \"false\"; minutes, days, months and years whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices." example:"days"`
+	Kind                string          `json:"kind" enum:"switch,minutes,hours,days,months,years,count,tokens,amount_sgd,percent,text,account_code,choice,choices,fields,task_types,cron,time_range" doc:"What it holds: switch is \"true\" or \"false\"; minutes, hours, days, months, years, count and tokens whole numbers; amount_sgd Singapore dollars with cents; percent at most two decimals; text a fixed text; account_code the code of an account in the chart, such as 6460; choice one of choices; fields field names separated by commas, such as notes,memo; task_types the AI task types separated by commas, such as sec.create_task, empty for none; choices several of choices separated by commas, such as inbox,email; cron five cron fields in Singapore time, such as 0 7 * * *, or off; time_range two times of the day, such as 22:00-07:00, or off." example:"days"`
 	Value               string          `json:"value" doc:"Its value on the day asked for, as a string." example:"30"`
 	EffectiveFrom       string          `json:"effective_from,omitempty" format:"date" doc:"The day that value took effect; absent while it has the value it shipped with." example:"2026-11-01"`
 	RecommendedValue    string          `json:"recommended_value" doc:"The value it ships with (FR-ORG-08)." example:"30"`
@@ -41,6 +41,7 @@ type Setting struct {
 	Guide               string          `json:"guide" doc:"The guide section that explains it." example:"/help/organisation-settings#payment-terms"`
 	Requirement         string          `json:"requirement" doc:"The PRD requirement it implements." example:"FR-ORG-04"`
 	NeedsSecondApprover bool            `json:"needs_second_approver" doc:"Under dual control (FM-1): a change waits for another member who holds the approval right to approve it (rev 0.36)." example:"false"`
+	OffAtOnce           bool            `json:"off_at_once" doc:"A kill switch (AI-13): turning it off needs no second approver and takes effect at once; turning it on still needs one." example:"false"`
 	SetByPlatform       bool            `json:"set_by_platform" doc:"Set by the platform: shown, never changed (FR-ORG-07)." example:"false"`
 	LengthenOnly        bool            `json:"lengthen_only" doc:"A change may only lengthen it." example:"false"`
 	Min                 string          `json:"min,omitempty" doc:"The smallest value a number may take." example:"0"`
@@ -61,7 +62,7 @@ func (SettingChoice) Schema(huma.Registry) *huma.Schema {
 
 // SettingUpdate changes a setting: a value or a reset, from a day.
 type SettingUpdate struct {
-	Value         *string `json:"value,omitempty" maxLength:"200" doc:"The new value, as its kind writes it; or send reset." example:"45"`
+	Value         *string `json:"value,omitempty" maxLength:"4000" doc:"The new value, as its kind writes it: at most 200 characters, or 4,000 for a list (fields or task_types); or send reset." example:"45"`
 	Reset         bool    `json:"reset,omitempty" doc:"true records the recommended value as a new change, instead of a value." example:"false"`
 	EffectiveFrom string  `json:"effective_from,omitempty" format:"date" doc:"The day it takes effect: today, in the organisation's time zone, or later; today when left out." example:"2026-11-01"`
 }
@@ -196,7 +197,7 @@ func latest(d settings.Definition, changes []storage.SettingChange) int {
 func settingOf(d settings.Definition, changes []storage.SettingChange, day time.Time, all bool) Setting {
 	v := settings.On(d, changes, day)
 	out := Setting{Key: d.Key, Group: d.Group, Label: d.Label, Kind: string(d.Kind), Value: v.Value, RecommendedValue: d.Recommended,
-		Status: "recommended", Reason: d.Reason, Guide: d.Guide, Requirement: d.Requirement, NeedsSecondApprover: d.DualControl,
+		Status: "recommended", Reason: d.Reason, Guide: d.Guide, Requirement: d.Requirement, NeedsSecondApprover: d.DualControl, OffAtOnce: d.OffAtOnce,
 		SetByPlatform: d.Fixed, LengthenOnly: d.LengthenOnly, Min: d.Min, Max: d.Max, Choices: choicesOf(d.Choices), Scheduled: []SettingChange{}, Version: latest(d, changes)}
 	if v.Value != d.Recommended {
 		out.Status = "changed"
@@ -291,7 +292,8 @@ func registerSettings(a *API) {
 		Summary: "Change an organisation setting",
 		Description: "Records a new value for a setting, or with reset its recommended value, from a day: today in the organisation's time " +
 			"zone or later, never earlier (FR-ORG-08). Earlier values are kept with their dates. A setting set by the platform never " +
-			"changes. One under dual control (FM-1: thresholds, retention, AI) is not changed at once: the answer is 202 with an " +
+			"changes. One under dual control (FM-1: thresholds, retention, AI) is not changed at once, except a kill switch turned " +
+			"off, which is (AI-13: the AI assistant): the answer is 202 with an " +
 			"approval request, which another member who holds the approval right (an Owner) approves; the change is made then, if " +
 			"nothing it depends on changed (rev 0.36). Asking needs a person signed in who passed step-up in the last 5 minutes. Side " +
 			"effects: the setting's next version and its audit event, with the value before and after; or the approval request and its " +
@@ -306,6 +308,9 @@ func registerSettings(a *API) {
 			}
 			if x := settings.Gate(d); x != nil {
 				return nil, problem(x.Code, x.Message+".", x.Fix, FieldProblem{Code: x.Code, Field: "body." + x.Field, Message: x.Message, Fix: x.Fix})
+			}
+			if err := agentSettingRight(ctx, d.Key, in.Body.Value != nil && strings.TrimSpace(*in.Body.Value) == "true"); err != nil {
+				return nil, err
 			}
 			w, err := write(ctx, a, "", in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (any, error) {
 				changes, err := u.Settings().Changes(ctx, d.Key)
@@ -348,10 +353,21 @@ func registerSettings(a *API) {
 				if len(bad) > 0 {
 					return nil, invalid(bad)
 				}
-				if !d.DualControl {
-					return a.recordSetting(ctx, u, d.Key, value, dateOf(from))
+				// A task type the AI may propose is one of the release's catalogue (AI-32).
+				if d.Kind == settings.TaskTypes && value != "" {
+					for _, id := range strings.Split(value, ",") {
+						if _, ok := a.catalogue().Get(id); !ok {
+							return nil, invalid([]FieldProblem{{Code: settings.CodeValue, Field: "body.value", Message: id + " is not a task type of this release",
+								Fix: "Choose task types the AI tasks page lists"}})
+						}
+					}
 				}
 				was := settings.On(d, changes, from).Value
+				// A kill switch turns off, or narrows, at once, with no second approver (AI-13, AI-32); turning it on still
+				// needs one.
+				if !d.DualControl || (d.OffAtOnce && settings.Narrows(d, was, value)) {
+					return a.recordSetting(ctx, u, d.Key, value, dateOf(from))
+				}
 				c := pendingChange{ObjectType: approval.ObjectSetting, ObjectKey: d.Key, Operation: approval.OpSettingChange,
 					Summary: fmt.Sprintf("Change %s from %s to %s from %s", d.Label, was, value, dateOf(from)),
 					Execute: map[string]any{"value": value, "effective_from": dateOf(from)},
@@ -382,4 +398,25 @@ func choicesOf(values []string) []SettingChoice {
 		out[i] = SettingChoice(v)
 	}
 	return out
+}
+
+// agentSettingRight is the right a scheduled agent's settings need besides the settings' own (Appendix D, "AI company
+// secretary: enable, schedule, runs and drafts"; AI-63): turning the agent on is the Owner's, its A, with a second
+// approver as for every AI setting; turning it off, its schedule and the rest are C there, which the Administrator holds
+// and the Owner may use (AI-13: the kill switch is anyone's who looks after it). Any other setting needs nothing more.
+func agentSettingRight(ctx context.Context, key string, turningOn bool) error {
+	if !strings.HasPrefix(key, "agents.company_secretary.") {
+		return nil
+	}
+	p, _ := authn.From(ctx)
+	need := authz.Policy{Operation: "updateSetting", Capability: authz.AICompanySecretary, Need: authz.Create, OwnerMay: true}
+	what := "its schedule and its other settings need C"
+	if key == "agents.company_secretary.enabled" && turningOn {
+		need, what = authz.Policy{Operation: "updateSetting", Capability: authz.AICompanySecretary, Need: authz.Approve}, "turning it on needs A"
+	}
+	if d := authz.Decide(need, p.Roles, p.AI()); !d.Allowed {
+		return problem(CodeForbidden, "The company secretary assistant's settings are its own row's: "+what+" on \"AI company secretary\".",
+			"Ask an Owner to change it")
+	}
+	return nil
 }

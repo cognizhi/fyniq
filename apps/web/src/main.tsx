@@ -7,10 +7,12 @@ import "./styles/globals.css";
 import "./app.css";
 import { startAppearance } from "./appearance";
 import { installClipboard } from "./format/amount";
-import { router } from "./router";
+import { installFreshness } from "./freshness";
+import { queryClient, router } from "./router";
 
 startAppearance();
 installClipboard();
+installFreshness(queryClient);
 
 const root = document.getElementById("root");
 if (!root) throw new Error("index.html has no #root element");

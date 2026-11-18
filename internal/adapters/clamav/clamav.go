@@ -1,6 +1,6 @@
 // Package clamav is the Scanner port on ClamAV's clamd (FR-DOC-01, SEC-24): the file goes to clamd over its
 // INSTREAM protocol in chunks, and clamd answers OK or the signature it found. clamd runs as its own service
-// (a sidecar of the API in the cloud, an optional profile of the local stack), outside the Go images' budgets.
+// (beside the scanner service's HTTP front in the cloud, PRD-001 rev 0.247; an optional profile of the local stack).
 package clamav
 
 import (
@@ -28,6 +28,33 @@ type Scanner struct {
 }
 
 var _ ports.Scanner = Scanner{}
+
+// Ping asks clamd whether it is up, as the scanner service's readiness does (FR-DOC-08).
+func (s Scanner) Ping(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	conn, err := (&net.Dialer{}).DialContext(ctx, "tcp", s.Addr)
+	if err != nil {
+		return fmt.Errorf("clamd did not answer: %w", err)
+	}
+	defer conn.Close()
+	if deadline, ok := ctx.Deadline(); ok {
+		if err := conn.SetDeadline(deadline); err != nil {
+			return err
+		}
+	}
+	if _, err := conn.Write([]byte("zPING\x00")); err != nil {
+		return fmt.Errorf("clamd refused the ping: %w", err)
+	}
+	reply, err := bufio.NewReader(conn).ReadString(0)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return fmt.Errorf("clamd did not answer the ping: %w", err)
+	}
+	if strings.TrimRight(reply, "\x00\n") != "PONG" {
+		return fmt.Errorf("clamd answered the ping with %q", reply)
+	}
+	return nil
+}
 
 // Scan implements ports.Scanner. Anything but clamd's OK or FOUND is an error, so a file is never passed
 // because the scanner could not decide.

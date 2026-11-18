@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "appointed_on": {
+      "description": "The day the business profile says they were appointed.",
+      "examples": [
+        "2026-03-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "name": {
+      "description": "Their name as the business profile lists it.",
+      "examples": [
+        "Tan Mei Lin"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "role": {
+      "description": "Their office.",
+      "enum": [
+        "director",
+        "secretary",
+        "ceo",
+        "auditor"
+      ],
+      "examples": [
+        "director"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "role",
+    "appointed_on"
+  ],
+  "title": "AcraOfficerDraft",
+  "type": "object"
+}

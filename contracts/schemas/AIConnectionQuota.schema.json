@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "The tokens or requests the plan allows each window.",
+      "examples": [
+        5000000
+      ],
+      "format": "int64",
+      "minimum": 1,
+      "type": "integer"
+    },
+    "currency": {
+      "description": "The fee's currency.",
+      "examples": [
+        "USD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "fee": {
+      "description": "The fee for each window, a decimal string.",
+      "examples": [
+        "30.00"
+      ],
+      "pattern": "^[0-9]+(\\.[0-9]{1,4})?$",
+      "type": "string"
+    },
+    "rates": {
+      "description": "The models the plan draws its quota from at another rate, as its published terms say; a model not named draws at 1 (AI-73).",
+      "items": {
+        "$ref": "AIConnectionQuotaRate.schema.json"
+      },
+      "maxItems": 100,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "terms": {
+      "$ref": "AIConnectionQuotaTerms.schema.json",
+      "description": "The plan's published terms the rates come from; required with rates."
+    },
+    "unit": {
+      "description": "What the quota counts.",
+      "enum": [
+        "tokens",
+        "requests"
+      ],
+      "examples": [
+        "tokens"
+      ],
+      "type": "string"
+    },
+    "window": {
+      "description": "When the quota resets.",
+      "enum": [
+        "day",
+        "month"
+      ],
+      "examples": [
+        "month"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "amount",
+    "unit",
+    "window",
+    "fee",
+    "currency"
+  ],
+  "title": "AIConnectionQuota",
+  "type": "object"
+}

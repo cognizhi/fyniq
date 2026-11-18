@@ -128,6 +128,19 @@ resource "google_compute_security_policy" "edge" {
     }
   }
 
+  # The API's internal operations are the AI service's alone, through Cloud Run's internal ingress: never through the
+  # edge (PRD-001 §9.3 rev 0.277; Caddy refuses them locally).
+  rule {
+    priority    = 998
+    action      = "deny(404)"
+    description = "The API's internal operations, for the AI service only"
+    match {
+      expr {
+        expression = "request.path.startsWith('/api/internal/')"
+      }
+    }
+  }
+
   # Log4Shell (CVE-2021-44228) lookups are denied from the start: a known exploit, no false positives to review.
   rule {
     priority    = 999

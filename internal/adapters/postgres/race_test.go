@@ -421,6 +421,7 @@ func TestRandomPostingsKeepTheCacheAndTrialBalanceExact(t *testing.T) {
 // req: FR-GL-07
 // req: ENG-47
 // req: QA-ENG-05
+// req: G4-053
 // asvs: V15.4.2
 func TestRaceBackDatedPostingAgainstTheAttestedClose(t *testing.T) {
 	s := store(t, "fyniq_api")

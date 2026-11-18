@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "copies": {
+      "description": "Each file's copy in the retention-locked store, in the order archived.",
+      "items": {
+        "$ref": "MigrationArchiveCopy.schema.json"
+      },
+      "type": "array"
+    },
+    "status": {
+      "description": "open until M6 archives the workbook and closes the migration; closed: read only.",
+      "enum": [
+        "open",
+        "closed"
+      ],
+      "examples": [
+        "closed"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "copies"
+  ],
+  "title": "MigrationArchiveView",
+  "type": "object"
+}

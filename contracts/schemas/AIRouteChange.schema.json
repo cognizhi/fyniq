@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval": {
+      "$ref": "Approval.schema.json",
+      "description": "The approval request, when it widens where data goes: the Owner or a second approver approves it."
+    },
+    "route": {
+      "$ref": "AIRoute.schema.json",
+      "description": "The route's new version, when it only narrows where data goes."
+    }
+  },
+  "title": "AIRouteChange",
+  "type": "object"
+}

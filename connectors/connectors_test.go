@@ -17,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/oauth2"
+
 	"github.com/cognizhi/fyniq/connectors"
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -227,5 +229,93 @@ func TestTheSMTPConnectorSpeaksPlainTextOnlyInTheLocalFlavour(t *testing.T) {
 	}
 	if _, err := b.OutboundEmail(connector.Config{}); err == nil || !strings.Contains(err.Error(), "SMTP server") {
 		t.Fatalf("without a server: %v", err)
+	}
+}
+
+// The Anthropic connector builds its adapter per connection (AI-71, AI-72): the Anthropic API with its key, or Claude
+// on Agent Platform with the project and the service's own account, in the configured location; each says what is
+// missing.
+// req: AI-71
+// req: AI-72
+func TestTheAnthropicConnectorBuildsEachEndpoint(t *testing.T) {
+	b := get(t, "anthropic")
+	if _, ok := b.Manifest.Capability(connector.ModelProvider); !ok || b.Model == nil {
+		t.Fatalf("anthropic is not a model provider: %+v", b.Manifest.Capabilities)
+	}
+	if _, err := b.Model(connector.Config{Values: map[string]any{"endpoint": "anthropic-api"}}); err == nil || !strings.Contains(err.Error(), "API key is not set") {
+		t.Errorf("the Anthropic API without a key: %v", err)
+	}
+	p, err := b.Model(connector.Config{Values: map[string]any{"endpoint": "anthropic-api"}, Secrets: map[string]string{"api_key": "test-key"}})
+	if err != nil || !p.Capabilities().Tools {
+		t.Errorf("the Anthropic API: %v", err)
+	}
+	if _, err := b.Model(connector.Config{Values: map[string]any{}}); err == nil || !strings.Contains(err.Error(), "project") {
+		t.Errorf("Agent Platform without a project: %v", err)
+	}
+	if _, err := b.Model(connector.Config{Values: map[string]any{"project": "fyniq-dev"}}); err == nil || !strings.Contains(err.Error(), "own account") {
+		t.Errorf("Agent Platform without the service's account: %v", err)
+	}
+	p, err = b.Model(connector.Config{Values: map[string]any{"project": "fyniq-dev", "location": "global"},
+		Tokens: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "t"})})
+	if err != nil || strings.Join(p.Capabilities().Regions, ",") != "global" {
+		t.Errorf("Agent Platform: %v", err)
+	}
+}
+
+// The OpenAI connector builds its adapter per connection with the connection's key, at the API's base or the one the
+// connection names (AI-71, AI-72).
+// req: AI-71
+func TestTheOpenAIConnectorBuildsItsAdapter(t *testing.T) {
+	b := get(t, "openai")
+	if _, err := b.Model(connector.Config{Values: map[string]any{}}); err == nil || !strings.Contains(err.Error(), "API key is not set") {
+		t.Errorf("without a key: %v", err)
+	}
+	p, err := b.Model(connector.Config{Values: map[string]any{}, Secrets: map[string]string{"api_key": "test-key"}})
+	if err != nil || !p.Capabilities().StrictOutput || len(p.Capabilities().Regions) != 0 {
+		t.Errorf("the OpenAI API: %v", err)
+	}
+}
+
+// The Gemini connector builds its adapter per connection, with the project and the service's own account, in the
+// configured location (AI-71, AI-72).
+// req: AI-71
+func TestTheGeminiConnectorBuildsItsAdapter(t *testing.T) {
+	b := get(t, "gemini")
+	if _, err := b.Model(connector.Config{Values: map[string]any{}}); err == nil || !strings.Contains(err.Error(), "project") {
+		t.Errorf("without a project: %v", err)
+	}
+	if _, err := b.Model(connector.Config{Values: map[string]any{"project": "fyniq-dev"}}); err == nil || !strings.Contains(err.Error(), "own account") {
+		t.Errorf("without the service's account: %v", err)
+	}
+	p, err := b.Model(connector.Config{Values: map[string]any{"project": "fyniq-dev"}, Tokens: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "t"})})
+	if err != nil || strings.Join(p.Capabilities().Regions, ",") != "asia-southeast1" || p.Capabilities().Caching {
+		t.Errorf("Gemini: %v", err)
+	}
+}
+
+// The OpenAI-compatible connector builds its adapter per connection (AI-71, AI-72): from a preset's base URL or the
+// connection's own, with a key unless a self-hosted endpoint needs none, claiming only what the connection's probe
+// proved and the adapter can carry.
+// req: AI-71
+// req: AI-72
+func TestTheCompatibleConnectorBuildsItsAdapter(t *testing.T) {
+	b := get(t, "openai-compatible")
+	p, err := b.Model(connector.Config{Values: map[string]any{"preset": "kimi", "proven": []any{"tools", "pdf", "streaming"}},
+		Secrets: map[string]string{"api_key": "test-key"}})
+	if err != nil || !p.Capabilities().Tools || !p.Capabilities().Streaming || p.Capabilities().PDF || p.Capabilities().StrictOutput {
+		t.Errorf("Kimi from its preset: %v %+v", err, p)
+	}
+	if _, err := b.Model(connector.Config{Values: map[string]any{"preset": "grok"}}); err == nil || !strings.Contains(err.Error(), "API key is not set") {
+		t.Errorf("a hosted provider without a key: %v", err)
+	}
+	if _, err := b.Model(connector.Config{Values: map[string]any{"preset": "ollama", "auth": "none"}}); err == nil || !strings.Contains(err.Error(), "base URL") {
+		t.Errorf("a self-hosted server without its address: %v", err)
+	}
+	p, err = b.Model(connector.Config{Values: map[string]any{"preset": "ollama", "auth": "none", "base_url": "https://ollama.internal.example/v1"}})
+	if err != nil || p.Capabilities().Tools {
+		t.Errorf("a self-hosted server with nothing proved: %v %+v", err, p)
+	}
+	if err := b.Manifest.Validate(map[string]any{"preset": "kimi", "proven": []any{"tools"}, "base_url": "http://plain.example"}); err == nil {
+		t.Error("a base URL over plain HTTP was accepted")
 	}
 }

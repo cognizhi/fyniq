@@ -18,8 +18,8 @@ var (
 		"account.recovered", "super_admin.", "report_export."}
 	securitySuffixes = []string{".exported", "_revealed", "_downloaded"}
 	// securityExact are reads of a file whose action says neither (AUD-05): opening an evidence file, or asking for a link
-	// that saves it (SEC-24).
-	securityExact = []string{"evidence.opened", "evidence.download_linked"}
+	// that saves it or the full tenant export (SEC-24, FR-MIG-04).
+	securityExact = []string{"evidence.opened", "evidence.download_linked", "tenant_export.download_linked"}
 )
 
 // IsSecurity reports whether an action is a security event's.

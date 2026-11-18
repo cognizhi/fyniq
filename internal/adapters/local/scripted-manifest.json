@@ -1,0 +1,32 @@
+{
+  "id": "scripted",
+  "name": "Scripted (local journeys)",
+  "publisher": "Fyniq",
+  "version": "1.0.0",
+  "min_platform": "0.1.0",
+  "summary": "Local mode only: a scripted model that answers the browser journeys' questions inside the API, offline. Never in a release.",
+  "scope": "organisation",
+  "capabilities": [
+    {
+      "kind": "model-provider",
+      "trigger": "system-rule",
+      "trigger_rule": "A model call an agent makes through its route in local mode: the journeys' questions to the assistant. AI proposes; it never writes the books.",
+      "on_pause": "hold",
+      "on_disable": "cancel",
+      "in_flight": "finish"
+    }
+  ],
+  "configuration": { "type": "object", "additionalProperties": false, "properties": {} },
+  "secrets": [],
+  "provider_scopes": [],
+  "fyniq_scopes": [],
+  "data_classes": ["know-how", "business-figures", "personal-data"],
+  "regions": ["SG"],
+  "destinations": [{ "host": "scripted.localhost", "port": 443 }],
+  "webhooks": [],
+  "model": { "features": ["tools", "strict-output", "streaming"], "auth": ["workload-identity"], "list_models": "Its one scripted model, scripted-journeys." },
+  "health_check": "None: it answers from its scripts inside the API.",
+  "test_action": "Lists its one model.",
+  "local_substitute": "It is itself local mode's substitute for a model provider in the browser journeys (p1-launch-readiness design D6).",
+  "limits": { "requests_per_minute": 600, "breaker_failures": 5, "breaker_cooldown_seconds": 60 }
+}

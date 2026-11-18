@@ -76,6 +76,11 @@ Source: PRD-001 §15 · Priority M · Phase P1
 - **THEN** the export finishes in ≤ 5 min
 - **AND** it runs asynchronously and is streamed
 
+#### Scenario: Streamed a page at a time, with no limit (rev 0.250)
+- **WHEN** the general ledger is exported
+- **THEN** the worker reads each account's lines a page at a time and writes the file as it reads, with no limit of lines
+- **AND** the on-screen general ledger keeps its limit of 5,000 lines an account
+
 ### Requirement: NFR-SCALE-01 Volume per organisation
 Each organisation SHALL support 10 M ledger lines, 100 concurrent users and 5 years of online history without re-architecture.
 

@@ -110,7 +110,7 @@ func TestTypeFromContent(t *testing.T) {
 }
 
 // office builds a ZIP with the named parts, each holding its text.
-func office(t *testing.T, parts map[string]string) []byte {
+func office(t testing.TB, parts map[string]string) []byte {
 	t.Helper()
 	var b bytes.Buffer
 	w := zip.NewWriter(&b)

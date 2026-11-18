@@ -14,7 +14,15 @@
 # req: SEC-30
 # req: SEC-31
 # req: SEC-33
+# req: FR-DOC-08
 # req: CTL-RES-04
+# req: DR-01
+# req: DR-02
+# req: DR-03
+# req: DR-04
+# req: DR-07
+# req: DR-06
+# req: CTL-RES-02
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -57,6 +65,12 @@ variables {
     bucket      = "fyniq-staging-audit-anchors"
     key_version = "projects/fyniq-staging/locations/asia-southeast1/keyRings/audit-staging/cryptoKeys/anchor/cryptoKeyVersions/1"
   }
+  exports  = { weekly = "fyniq-staging-db-weekly", monthly = "fyniq-staging-db-monthly" }
+  evidence = { staging = "fyniq-staging-evidence-staging", bucket = "fyniq-staging-evidence" }
+  field_keys = {
+    key             = "projects/fyniq-staging/locations/asia-southeast1/keyRings/fields-staging/cryptoKeys/fields"
+    mac_key_version = "projects/fyniq-staging/locations/asia-southeast1/keyRings/fields-staging/cryptoKeys/fingerprints/cryptoKeyVersions/1"
+  }
   break_glass = {
     requesters = ["group:platform-admins@example.com"]
     approvers  = ["group:founders@example.com"]
@@ -80,8 +94,8 @@ run "each_service_is_its_own_identity" {
   command = plan
   variables { spec = run.spec.spec }
   assert {
-    condition     = length(distinct(values(output.accounts))) == length(output.accounts) && length(output.accounts) == 15
-    error_message = "8 services, 3 jobs, 3 invokers and the Scheduler: each its own account (SEC-03)"
+    condition     = length(distinct(values(output.accounts))) == length(output.accounts) && length(output.accounts) == 16
+    error_message = "9 services, 3 jobs, 3 invokers and the Scheduler: each its own account (SEC-03)"
   }
   assert {
     condition     = !anytrue([for a in google_secret_manager_secret_iam_member.access : contains(["serviceAccount:run-mcp@fyniq-staging.iam.gserviceaccount.com", "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"], a.member)])
@@ -118,7 +132,7 @@ run "the_ai_service_account_writes_nothing" {
   variables { spec = run.spec.spec }
   assert {
     condition = !anytrue(concat(
-      [for m in [google_kms_crypto_key_iam_member.fields, google_kms_crypto_key_iam_member.fingerprints, google_project_iam_member.org_secrets_admin] : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
+      [for m in [google_project_iam_member.org_secrets_admin] : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
       [for m in google_project_iam_member.org_secrets_reader : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
       [for m in google_secret_manager_secret_iam_member.access : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
       [for m in google_secret_manager_secret_iam_member.connector_versions : m.member == "serviceAccount:run-ai@fyniq-staging.iam.gserviceaccount.com"],
@@ -183,8 +197,24 @@ run "the_wiring_the_services_read" {
     error_message = "the tick's token is for /internal/tick, as the api checks"
   }
   assert {
+    condition     = jsondecode(output.gcp_config).invokers.ai.audience == "https://api-123456789012.asia-southeast1.run.app/internal/v1" && jsondecode(output.gcp_config).invokers.ai.service_account == "run-ai@fyniq-staging.iam.gserviceaccount.com"
+    error_message = "the AI service's token is for the api's internal API, as its own account (PRD-001 §9.3 rev 0.277)"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).invokers.agent_runs.service_account == "run-worker@fyniq-staging.iam.gserviceaccount.com" && jsondecode(output.gcp_config).invokers.agent_runs.audience == jsondecode(output.gcp_config).api.audience && jsondecode(output.gcp_config).api.url == "https://api-123456789012.asia-southeast1.run.app/internal/v1"
+    error_message = "the worker's model step goes to the api's internal API with a token for agent-runs, as the worker's own account (PRD-001 rev 0.281)"
+  }
+  assert {
     condition     = jsondecode(output.gcp_config).job == "projects/fyniq-staging/locations/asia-southeast1/jobs/jobs" && jsondecode(output.gcp_config).anchors.bucket == "fyniq-staging-audit-anchors"
     error_message = "the jobs image's job and the anchors"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).exports == { instance = "projects/fyniq-staging/instances/fyniq-staging", database = "fyniq", weekly = "fyniq-staging-db-weekly", monthly = "fyniq-staging-db-monthly" }
+    error_message = "the weekly export's instance, database and buckets, as internal/wiring/release.go reads them (DR-02, DR-04)"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).evidence == { staging = "fyniq-staging-evidence-staging", bucket = "fyniq-staging-evidence" }
+    error_message = "the staging and locked evidence buckets, as internal/wiring/release.go reads them (FR-DOC-13, DR-07)"
   }
   assert {
     condition     = local.env["api"]["FYNIQ_PUBLIC_ORIGIN"] == "https://staging.fyniq.example" && local.env["api"]["FYNIQ_SIGNIN"] == "identity-platform" && local.secret_env["api"]["FYNIQ_IDP_API_KEY"] == "idp-api-key"
@@ -274,24 +304,13 @@ run "the_data_is_encrypted_and_recoverable" {
 
 # The field keys (SEC-11): the wrapping key rotates, the fingerprint key is HMAC-SHA256 with its version pinned in the
 # wiring, and only the api may use either.
-run "the_sensitive_fields_are_sealed_by_the_api_only" {
+# The field keys live in the audit project (infra/gcp/modules/field-keys, rev 0.250): the services read the ones given.
+run "the_services_read_the_field_keys_given" {
   command = plan
   variables { spec = run.spec.spec }
   assert {
-    condition     = google_kms_crypto_key.fields.purpose == "ENCRYPT_DECRYPT" && google_kms_crypto_key.fields.rotation_period == "7776000s"
-    error_message = "the wrapping key encrypts and rotates every 90 days"
-  }
-  assert {
-    condition     = google_kms_crypto_key.fingerprints.purpose == "MAC" && google_kms_crypto_key.fingerprints.version_template[0].algorithm == "HMAC_SHA256"
-    error_message = "the fingerprint key is an HMAC-SHA256 key"
-  }
-  assert {
-    condition     = google_kms_crypto_key_iam_member.fields.member == "serviceAccount:run-api@fyniq-staging.iam.gserviceaccount.com" && google_kms_crypto_key_iam_member.fingerprints.member == google_kms_crypto_key_iam_member.fields.member && google_kms_crypto_key_iam_member.fingerprints.role == "roles/cloudkms.signer"
-    error_message = "only the api seals and fingerprints"
-  }
-  assert {
-    condition     = endswith(jsondecode(output.gcp_config).fields.mac_key_version, "/cryptoKeyVersions/1")
-    error_message = "the services read the fingerprint key's pinned version"
+    condition     = jsondecode(output.gcp_config).fields.key == var.field_keys.key && endswith(jsondecode(output.gcp_config).fields.mac_key_version, "/cryptoKeyVersions/1")
+    error_message = "the services read the field keys in the audit project, the fingerprint key's version pinned"
   }
 }
 
@@ -471,4 +490,150 @@ run "the_jobs_read_the_posture" {
     condition     = contains(local.apis, "securitycenter")
     error_message = "Security Command Center's API is on"
   }
+}
+
+# The scanner service (PRD-001 rev 0.247): private, invoked by the api and the worker only, with clamd as its sidecar,
+# its CPU always allocated so the signatures update in the background, ready only once clamd answers; one instance warm in
+# production; its callers find it in FYNIQ_GCP.
+run "only_the_api_and_the_worker_scan" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition = (google_cloud_run_v2_service.services["scanner"].ingress == "INGRESS_TRAFFIC_INTERNAL_ONLY" &&
+      !contains(keys(google_cloud_run_v2_service_iam_member.public), "scanner") &&
+    toset([for m in google_cloud_run_v2_service_iam_member.scanner_invoker : m.member]) == toset(["serviceAccount:run-api@fyniq-staging.iam.gserviceaccount.com", "serviceAccount:run-worker@fyniq-staging.iam.gserviceaccount.com"]))
+    error_message = "the scanner takes internal traffic from the api and the worker only"
+  }
+  assert {
+    condition = (length(google_cloud_run_v2_service.services["scanner"].template[0].containers) == 2 &&
+      google_cloud_run_v2_service.services["scanner"].template[0].containers[1].name == "clamd" &&
+      !google_cloud_run_v2_service.services["scanner"].template[0].containers[1].resources[0].cpu_idle &&
+      google_cloud_run_v2_service.services["scanner"].template[0].containers[0].depends_on == tolist(["clamd"]) &&
+    google_cloud_run_v2_service.services["scanner"].template[0].containers[0].startup_probe[0].http_get[0].path == "/readyz")
+    error_message = "clamd runs beside the scanner's front, which starts after it and is ready only once clamd answers"
+  }
+  assert {
+    condition     = length(google_cloud_run_v2_service.services["api"].template[0].containers) == 1 && google_cloud_run_v2_service.services["scanner"].template[0].scaling[0].min_instance_count == 0
+    error_message = "no other service has a sidecar; staging keeps no scanner warm"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).scanner.audience == jsondecode(output.gcp_config).scanner.url && toset(jsondecode(output.gcp_config).scanner.service_accounts) == toset(["run-api@fyniq-staging.iam.gserviceaccount.com", "run-worker@fyniq-staging.iam.gserviceaccount.com"])
+    error_message = "the scanner accepts the api's and the worker's ID tokens for its own audience"
+  }
+}
+
+# Fyniq's own services trace to Cloud Trace in their own project, each as itself; Hydra does not (NFR-OBS-01). Only once
+# traces are turned on: until Cloud Trace is shown to keep them in Singapore, no service is told a trace project or may
+# write traces (CTL-DP-07, rev 0.250).
+# req: NFR-OBS-01
+# req: CTL-DP-07
+run "no_traces_until_they_stay_in_singapore" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition     = !anytrue([for name, e in local.env : contains(keys(e), "FYNIQ_TRACE_PROJECT")]) && length(google_project_iam_member.traces) == 0
+    error_message = "with traces off, no service is told a trace project or may write traces"
+  }
+}
+
+run "the_services_trace_to_cloud_trace" {
+  command = plan
+  variables {
+    spec   = run.spec.spec
+    traces = true
+  }
+  assert {
+    condition = (local.env["api"]["FYNIQ_TRACE_PROJECT"] == "fyniq-staging" && local.env["jobs"]["FYNIQ_TRACE_PROJECT"] == "fyniq-staging" &&
+    !contains(keys(local.env["oauth"]), "FYNIQ_TRACE_PROJECT"))
+    error_message = "the services name the project their traces go to; Hydra does not trace"
+  }
+  assert {
+    condition = (contains(local.apis, "telemetry") && contains(keys(google_project_iam_member.traces), "scanner") &&
+      !contains(keys(google_project_iam_member.traces), "oauth") &&
+    alltrue([for m in google_project_iam_member.traces : m.role == "roles/telemetry.tracesWriter" && m.project == "fyniq-staging"]))
+    error_message = "the Telemetry API is on, and each traced service may write traces in its own project only"
+  }
+}
+
+# The restore drill: the jobs' account clones the instance and may update and delete only its drill copies, never the
+# instance itself (DR-06, CTL-RES-02).
+run "the_drill_clones_and_removes_only_its_copies" {
+  command = plan
+  variables { spec = run.spec.spec }
+  assert {
+    condition = (google_project_iam_member.drill_clone.member == "serviceAccount:run-jobs@fyniq-staging.iam.gserviceaccount.com" &&
+      google_project_iam_member.drill_clone.condition[0].expression == "resource.name == \"projects/fyniq-staging/instances/fyniq-staging\"" &&
+    google_project_iam_custom_role.drill_clone.permissions == toset(["cloudsql.instances.clone", "cloudsql.instances.get"]))
+    error_message = "the jobs' account clones the environment's instance and nothing else"
+  }
+  assert {
+    condition = (google_project_iam_member.drill_copies.condition[0].expression == "resource.name.startsWith(\"projects/fyniq-staging/instances/fyniq-staging-drill-\")" &&
+    contains(google_project_iam_custom_role.drill_copies.permissions, "cloudsql.instances.delete"))
+    error_message = "the jobs' account deletes only the drill's copies"
+  }
+}
+
+# Production (DR-01, DR-02, DR-03): regional HA, a synchronous standby in a second zone; point-in-time recovery with 7 days
+# of logs; 35 daily backups, kept in Singapore. A zonal production database is refused.
+run "spec_production" {
+  command = apply
+  module {
+    source = "../../../modules/platform-spec"
+  }
+  variables {
+    environment = "production"
+    database    = { tier = "db-custom-1-3840", availability = "REGIONAL", disk_gb = 10 }
+    budget      = { amount_usd = 400, emails = ["founders@example.com"] }
+    anchors     = { retention_days = 2557, lock = true }
+  }
+}
+
+run "production_is_highly_available_and_recoverable" {
+  command = plan
+  variables {
+    spec            = run.spec_production.spec
+    project         = "fyniq-prod"
+    secrets_project = "fyniq-prod-secrets"
+    public_origin   = "https://fyniq.example"
+    exports         = { weekly = "fyniq-production-db-weekly", monthly = "fyniq-production-db-monthly" }
+  }
+  assert {
+    condition     = google_sql_database_instance.main.settings[0].availability_type == "REGIONAL"
+    error_message = "production's database is regional HA (DR-01)"
+  }
+  assert {
+    condition = (google_sql_database_instance.main.settings[0].backup_configuration[0].point_in_time_recovery_enabled &&
+      google_sql_database_instance.main.settings[0].backup_configuration[0].transaction_log_retention_days == 7 &&
+      google_sql_database_instance.main.settings[0].backup_configuration[0].backup_retention_settings[0].retained_backups == 35 &&
+    google_sql_database_instance.main.settings[0].backup_configuration[0].location == "asia-southeast1")
+    error_message = "point-in-time recovery with 7 days of logs, and 35 daily backups kept in Singapore (DR-02, DR-03)"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).exports.weekly == "fyniq-production-db-weekly" && jsondecode(output.gcp_config).exports.instance == "projects/fyniq-prod/instances/fyniq-production"
+    error_message = "production exports its own instance (DR-04)"
+  }
+}
+
+run "spec_production_zonal" {
+  command = apply
+  module {
+    source = "../../../modules/platform-spec"
+  }
+  variables {
+    environment = "production"
+    database    = { tier = "db-custom-1-3840", availability = "ZONAL", disk_gb = 10 }
+    budget      = { amount_usd = 400, emails = ["founders@example.com"] }
+    anchors     = { retention_days = 2557, lock = true }
+  }
+}
+
+run "a_zonal_production_database_is_refused" {
+  command = plan
+  variables {
+    spec            = run.spec_production_zonal.spec
+    project         = "fyniq-prod"
+    secrets_project = "fyniq-prod-secrets"
+    public_origin   = "https://fyniq.example"
+  }
+  expect_failures = [google_sql_database_instance.main]
 }

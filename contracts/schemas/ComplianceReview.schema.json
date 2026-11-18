@@ -70,7 +70,9 @@
         "pd-requests",
         "breach",
         "breach-tabletop",
-        "transfers"
+        "transfers",
+        "restore-drill",
+        "heartbeat-drill"
       ],
       "examples": [
         "access-review"

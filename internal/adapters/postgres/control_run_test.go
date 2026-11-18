@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	registry "github.com/cognizhi/fyniq/compliance"
+	"github.com/cognizhi/fyniq/internal/agents"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -73,11 +74,14 @@ func TestAttackControlRunsAreTheWorkersRecord(t *testing.T) {
 }
 
 // Each verification finds a breach seeded past the database's own guards, with its triggers off as the superuser can,
-// and records it in its run; and finds nothing where nothing breaks it (CTL-FIN-08, CTL-IAM-01, CTL-AUD-05;
-// p1-compliance-center D4).
+// and records it in its run; and finds nothing where nothing breaks it (CTL-FIN-08, CTL-IAM-01, CTL-AUD-05,
+// CTL-AI-06, CTL-AI-02, CTL-AI-09; p1-compliance-center D4, p1-ai-proposals-core D12, p1-scheduled-agents D11).
 // req: CTL-FIN-08
 // req: CTL-IAM-01
 // req: CTL-AUD-05
+// req: CTL-AI-06
+// req: CTL-AI-02
+// req: CTL-AI-09
 // req: CMP-01
 // asvs: V2.3.5, V6.3.3, V16.3.3
 func TestEachVerificationFindsItsBreach(t *testing.T) {
@@ -101,8 +105,8 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		for _, r := range rep.Runs {
 			out[r.Control+" "+r.Check] = r
 		}
-		if len(out) != 3 {
-			t.Fatalf("want the 3 verifications' runs, got %v", out)
+		if len(out) != 6 {
+			t.Fatalf("want the 6 verifications' runs, got %v", out)
 		}
 		return out
 	}
@@ -138,11 +142,17 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 	}
 
 	// The breaches, seeded with the triggers off: a bank change approved by whoever asked for it, a batch released under
-	// that approval, a session without a second factor, an export with no audit event, and an opening with no request.
+	// that approval, a session without a second factor, an export with no audit event, an opening with no request, and
+	// a proposal of the AI executed with no approval request, and an agent's run whose model step called a tool its skill
+	// does not name.
 	asked := uuid.New()
+	skill, ok := agents.Default().Get("company-secretary")
+	if !ok {
+		t.Fatal("the release has no company secretary skill")
+	}
 	envelope := `{"object":{"type":"payee_bank_change"}}`
 	sum := sha256.Sum256([]byte(envelope))
-	var approval, export uuid.UUID
+	var approval, export, stray, run uuid.UUID
 	err = asOrg(ctx, superuser, b.Org, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role = replica`); err != nil {
 			return err
@@ -164,6 +174,21 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 			uuid.New(), approval, requester, now, make([]byte, 40), sum[:]); err != nil {
 			return err
 		}
+		if err := tx.QueryRow(ctx, `INSERT INTO fyniq.ai_proposal (task_type, task_version, task_sha256, payload, payload_sha256, risk_tier,
+			agent, requested_by, turn_id, model, prompt, tools_sha256, status, impact, decided_by, decided_at, approved_payload, approved_sha256,
+			execution, started_at, finished_at, proposed_at, expires_at)
+			VALUES ('test.annotate_note', 1, $1, '{"note":"x"}', encode(sha256(convert_to('{"note":"x"}', 'UTF8')), 'hex'), 1, 'chat', $2, $3,
+			'm', 'chat@3', $1, 'executed', '{}', $4, $5, '{"note":"x"}', encode(sha256(convert_to('{"note":"x"}', 'UTF8')), 'hex'), '{}', $5, $5,
+			$5, $6) RETURNING id`, fmt.Sprintf("%x", sum), requester, uuid.New(), approver, now, now.Add(time.Hour)).Scan(&stray); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, `INSERT INTO fyniq.agent_run (agent, skill_version, skill_sha256, trigger, slot_at, acts_for, status,
+			queued_at, started_at, finished_at, fingerprint, ledger_revision, pack_versions, kb_snapshot, findings, summary, model_used, model,
+			tools) VALUES ($1, $2, $3, 'schedule:monitor', $4, $5, 'done', $4, $4, $4, $6, 0, '{}', '', '[]', 'Nothing is due', true, 'm',
+			'{checks.list,records.delete}') RETURNING id`, skill.Name, skill.Version, skill.SHA256, now, requester,
+			fmt.Sprintf("%x", sum)).Scan(&run); err != nil {
+			return err
+		}
 		return tx.QueryRow(ctx, `INSERT INTO fyniq.report_export (report, format, parameters, requested_by, requested_at, status)
 			VALUES ('trial_balance', 'csv', '{}', $1, $2, 'pending') RETURNING id`, "user:"+requester.String(), now).Scan(&export)
 	})
@@ -181,6 +206,22 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	// A turn of the assistant that kept an NRIC in its answer and read payroll with AI payroll access off.
+	var leaky uuid.UUID
+	if err := api.Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		c, err := u.AIConversations().Create(ctx, storage.AIConversation{UserID: requester, CreatedAt: now})
+		if err != nil {
+			return err
+		}
+		tu, err := u.AIConversations().Ask(ctx, storage.AITurn{Conversation: c.ID, UserID: requester, Question: "Who is it?", AskedAt: now})
+		if err != nil {
+			return err
+		}
+		leaky, tu.Status, tu.Answer, tu.Classes, tu.AnsweredAt = tu.ID, storage.TurnAnswered, "Their NRIC is S1234567D.", []string{"business-figures", "payroll"}, &now
+		return u.AIConversations().Finish(ctx, tu, nil)
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	got := runs()
 	wantFound := map[string][]compliance.Finding{
@@ -194,6 +235,16 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		"CTL-AUD-05 verify audit.exports-reconciled": {
 			{Kind: "report_export", ID: export.String(), Detail: "Asked for, with no audit event"},
 			{Kind: "evidence.opened", Detail: "Recorded without the request it came from"},
+		},
+		"CTL-AI-02 verify ai.proposals-approved": {
+			{Kind: "ai_proposal", ID: stray.String(), Detail: "Executed with no approval request"},
+		},
+		"CTL-AI-09 verify ai.agent-runs": {
+			{Kind: "agent_run", ID: run.String(), Detail: "Its model step called records.delete, which its skill does not name"},
+		},
+		"CTL-AI-06 verify ai.traces": {
+			{Kind: "ai_turn", ID: leaky.String(), Detail: "The turn keeps an NRIC or FIN number in its answer"},
+			{Kind: "ai_turn", ID: leaky.String(), Detail: "The turn read payroll on a day AI payroll access was off"},
 		},
 	}
 	for key, want := range wantFound {
@@ -216,7 +267,7 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if len(latest) != 3 || slices.ContainsFunc(latest, func(r storage.ControlRun) bool { return r.OK }) {
+		if len(latest) != 6 || slices.ContainsFunc(latest, func(r storage.ControlRun) bool { return r.OK }) {
 			t.Errorf("the latest runs: %+v", latest)
 		}
 		return nil
@@ -242,9 +293,23 @@ type logsFake []string
 
 func (l logsFake) Read(context.Context, time.Time, int) ([]string, error) { return l, nil }
 
+type schedulingFake struct {
+	jobs     []ports.SchedulerJob
+	policies []ports.AlertPolicy
+}
+
+func (s schedulingFake) SchedulerJobs(context.Context) ([]ports.SchedulerJob, error) {
+	return s.jobs, nil
+}
+func (s schedulingFake) AlertPolicies(context.Context) ([]ports.AlertPolicy, error) {
+	return s.policies, nil
+}
+
 // The platform's verifications run in the installation's organisation only: a critical finding open past its 7 days
-// fails CTL-RES-04, an NRIC in the logs fails CTL-DP-03 and raises its alert, and another organisation records neither
-// and shows both as not applicable (p1-security-hardening design D8).
+// fails CTL-RES-04, an NRIC in the logs fails CTL-DP-03 and raises its alert, a paused tick with no heartbeat alert
+// fails CTL-RES-05, and another organisation records none of them and shows the first two as not applicable
+// (p1-security-hardening design D8; p1-operations-dr design D6).
+// req: CTL-RES-05
 // req: SEC-33
 // req: CTL-RES-04
 // req: CTL-DP-03
@@ -258,7 +323,7 @@ func TestPlatformVerificationsRunInTheInstallationOnly(t *testing.T) {
 	}
 	var controls []registry.Control
 	for _, c := range all {
-		if c.ID == "CTL-RES-04" || c.ID == "CTL-DP-03" {
+		if c.ID == "CTL-RES-04" || c.ID == "CTL-DP-03" || c.ID == "CTL-RES-05" {
 			controls = append(controls, c)
 		}
 	}
@@ -267,7 +332,8 @@ func TestPlatformVerificationsRunInTheInstallationOnly(t *testing.T) {
 	runner := compliance.Runner{Store: store(t, "fyniq_worker"), Clock: clock.System{}, Controls: controls, Installation: installationAt(inst.Org),
 		Posture: postureFake{{Name: "late", Severity: "CRITICAL", Category: "OPEN_FIREWALL", Resource: "fw", FirstSeen: now.AddDate(0, 0, -8)},
 			{Name: "recent", Severity: "HIGH", Category: "PUBLIC_BUCKET_ACL", Resource: "bucket", FirstSeen: now.AddDate(0, 0, -2)}},
-		Logs: logsFake{`{"msg":"journal posted"}`, "member S1234567D joined"},
+		Logs:       logsFake{`{"msg":"journal posted"}`, "member S1234567D joined"},
+		Scheduling: schedulingFake{jobs: []ports.SchedulerJob{{Name: "tick", Enabled: false}}, policies: nil},
 		Alert: func(_ context.Context, _ storage.UnitOfWork, org uuid.UUID, control string, found []compliance.Finding) error {
 			alerted = append(alerted, fmt.Sprintf("%s %s %d", org, control, len(found)))
 			return nil
@@ -289,8 +355,8 @@ func TestPlatformVerificationsRunInTheInstallationOnly(t *testing.T) {
 			for _, r := range rep.Runs {
 				runs[r.Check] = r
 			}
-			posture, logs := runs["verify posture.findings"], runs["verify logs.scan"]
-			if len(runs) != 2 || posture.OK || posture.Count != 1 || logs.OK ||
+			posture, logs, schedule := runs["verify posture.findings"], runs["verify logs.scan"], runs["verify scheduler.configured"]
+			if len(runs) != 3 || posture.OK || posture.Count != 1 || logs.OK || schedule.OK || schedule.Count != 4 ||
 				logs.Detail != "1 found in 2 log entries of the last day: 1 log entry holds an NRIC or FIN number" ||
 				strings.Contains(string(logs.Items), "S1234567D") {
 				t.Errorf("the installation's runs: %+v", runs)
@@ -302,7 +368,7 @@ func TestPlatformVerificationsRunInTheInstallationOnly(t *testing.T) {
 		}
 		return out
 	}
-	if got := verify(inst.Org); got["CTL-RES-04"].Status != "fail" || got["CTL-DP-03"].Status != "fail" {
+	if got := verify(inst.Org); got["CTL-RES-04"].Status != "fail" || got["CTL-DP-03"].Status != "fail" || got["CTL-RES-05"].Status != "fail" {
 		t.Errorf("the installation's statuses: %+v", got)
 	}
 	if want := inst.Org.String() + " CTL-DP-03 1"; len(alerted) != 1 || alerted[0] != want {

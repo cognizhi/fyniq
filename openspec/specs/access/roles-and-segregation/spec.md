@@ -467,7 +467,7 @@ Source: PRD-001 §6.3
 - **THEN** it is blocked
 
 ### Requirement: Permission matrix legend
-The permission matrix SHALL describe Standard mode with the rights C (create/prepare), A (approve), P (post/execute), R (release, money movement), V (view), M (view masked) and — (none), and the AI SHALL act on behalf of a user and never exceed that user's rights.
+The permission matrix SHALL describe Standard mode with the rights C (create/prepare), A (approve), P (post/execute), R (release, money movement), V (view), M (view masked) and — (none), and the AI SHALL act on behalf of a user and never exceed that user's rights; an AI cell of Proposal or Proposal (draft) SHALL be a view of the rows and no other right, and one naming a kind of proposal that proposal only (rev 0.278).
 
 Source: PRD-001 §D
 
@@ -480,6 +480,13 @@ Source: PRD-001 §D
 #### Scenario: AI never exceeds the user
 - **WHEN** the AI acts on behalf of a user
 - **THEN** it never has more rights than that user, whatever the matrix lists for the AI
+
+#### Scenario: The AI views the rows it proposes for
+- **GIVEN** a user who views invoices
+- **WHEN** the AI acting for them reads an invoice, whose AI cell is Proposal
+- **THEN** it reads it
+- **AND** it cannot create, approve, post or release one
+- **AND** it opens no evidence file, whose AI cell names the doc.attach proposal only
 
 #### Scenario: Masked view
 - **WHEN** a role with M views a capability
@@ -925,6 +932,32 @@ Source: PRD-001 §D
 #### Scenario: AI scenarios only
 - **WHEN** a role acts on the cap table, holders, investors and equity transactions
 - **THEN** the AI assistant can only run scenarios, and only if `fyniq.read.equity` is granted
+
+### Requirement: Permission matrix: Corporate profile and registers
+In Standard mode, each role SHALL hold only the rights over the corporate profile and registers (the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements) that the permission matrix gives it (rev 0.282).
+
+Source: PRD-001 §D
+
+#### Scenario: Approve
+- **WHEN** a role acts on the corporate profile and registers
+- **THEN** the Owner and the Finance controller can approve (A)
+
+#### Scenario: Create or prepare
+- **WHEN** a role acts on the corporate profile and registers
+- **THEN** the Accountant can create or prepare (C)
+- **AND** the Company secretary can create or prepare (C), by the note on the role
+
+#### Scenario: View
+- **WHEN** a role acts on the corporate profile and registers
+- **THEN** the Auditor, the Tax agent, the Board viewer and the AI assistant can view (V)
+
+#### Scenario: View masked
+- **WHEN** a role acts on the corporate profile and registers
+- **THEN** the Compliance officer / DPO can view masked values only (M)
+
+#### Scenario: No access
+- **WHEN** a role acts on the corporate profile and registers
+- **THEN** the Administrator, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver and the Employee have no right over it (—)
 
 #### Scenario: No access
 - **WHEN** a role acts on the cap table, holders, investors and equity transactions
@@ -1530,6 +1563,44 @@ Source: PRD-001 §D
 - **WHEN** a role acts on tenant export
 - **THEN** the Finance controller, the Accountant, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Auditor, the Tax agent, the Board viewer and the AI assistant have no right over it (—)
 
+### Requirement: Permission matrix: Workbook import (migration)
+In Standard mode, each role SHALL hold only the rights over the workbook import (the move from the workbook, steps M1 to M6, their evidence and sign-offs) that the permission matrix gives it (rev 0.255).
+
+Source: PRD-001 §D
+
+#### Scenario: Approve
+- **WHEN** a role acts on the workbook import
+- **THEN** the Owner can approve (A), and reads the migration
+
+#### Scenario: Create or prepare
+- **WHEN** a role acts on the workbook import
+- **THEN** the Finance controller and the Accountant can create or prepare (C): start the migration and upload the workbook
+
+#### Scenario: View
+- **WHEN** a role acts on the workbook import
+- **THEN** the Auditor can view (V)
+
+#### Scenario: No access
+- **WHEN** a role acts on the workbook import
+- **THEN** the Administrator, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over it (—)
+
+### Requirement: Permission matrix: Workbook import sign-offs
+In Standard mode, each role SHALL hold only the rights over the workbook import's sign-offs (the mapping, the parity report and the migration difference register, and the parallel month) that the permission matrix gives it (rev 0.256).
+
+Source: PRD-001 §D
+
+#### Scenario: Approve
+- **WHEN** a role acts on the workbook import's sign-offs
+- **THEN** the Accountant can sign them off (A), stepped up, each over the SHA-256 of what it signs
+
+#### Scenario: View
+- **WHEN** a role acts on the workbook import's sign-offs
+- **THEN** the Owner, the Finance controller and the Auditor can view (V)
+
+#### Scenario: No access
+- **WHEN** a role acts on the workbook import's sign-offs
+- **THEN** the Administrator, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer, the Compliance officer / DPO and the AI assistant have no right over them (—)
+
 ### Requirement: Permission matrix: People and HR link
 In Standard mode, each role SHALL hold only the rights over the People and HR settings (the Nemura link and external HR or payroll systems; FR-PPL-01) that the permission matrix gives it; imported payroll journals are approved under Journals.
 
@@ -1567,6 +1638,29 @@ Source: PRD-001 §D
 #### Scenario: No access
 - **WHEN** a role acts on AI providers and model routes
 - **THEN** the Accountant, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Tax agent, the Board viewer and the AI assistant have no right over it (—)
+
+### Requirement: Permission matrix: AI activity log
+In Standard mode, each member SHALL read their own entries of the AI activity log, the Owner and the Compliance officer / DPO SHALL read every member's, and the AI assistant SHALL read none (rev 0.276, AI-12).
+
+Source: PRD-001 §D
+
+#### Scenario: Own entries
+- **WHEN** a member reads the AI activity log
+- **THEN** the Administrator, the Finance controller, the Accountant, the Bookkeeper, the AR specialist, the AP specialist, the Payroll administrator, the Payment releaser, the Approver, the Employee, the Auditor, the Tax agent and the Board viewer see their own entries only (V (own))
+
+#### Scenario: Every member's entries
+- **WHEN** the Owner or the Compliance officer / DPO reads the AI activity log
+- **THEN** they see every member's entries (V)
+
+#### Scenario: Payroll entries masked and audited
+- **GIVEN** an entry of someone else's that carried payroll
+- **WHEN** a reader who may not see payroll unmasked reads it
+- **THEN** it shows masked (FR-PAY-13)
+- **AND** showing it unmasked to another reader is audited (AUD-05)
+
+#### Scenario: Not the AI
+- **WHEN** the AI assistant acts
+- **THEN** it reads no entry of the AI activity log (—)
 
 ### Requirement: Permission matrix: Connected apps: enable MCP, allowlist clients, grant integration scopes
 In Standard mode, each role SHALL hold only the rights over connected apps (enabling MCP, allowlisting clients, granting integration scopes) that the permission matrix gives it.
@@ -1618,7 +1712,7 @@ Source: PRD-001 §D
 - **THEN** it is refused
 
 ### Requirement: Company secretary in the permission matrix
-The Company secretary role (FR-CS-08) SHALL have the Board viewer's rights, plus C on the corporate profile, registers and evidence, V on the equity register and the AI company secretary runs, and A on the `sec.*` drafts.
+The Company secretary role (FR-CS-08) SHALL have the Board viewer's rights, plus C on the corporate profile, registers and evidence, V on the equity register and the AI company secretary runs, A on every `sec.*` proposal, drafts and tasks alike (rev 0.280), and V on the statutory calendar with C on its corporate items (rev 0.285).
 
 Source: PRD-001 §D
 
@@ -1626,6 +1720,17 @@ Source: PRD-001 §D
 - **WHEN** the Company secretary acts
 - **THEN** they have the Board viewer's rights
 - **AND** they can create or prepare the corporate profile, registers and evidence (C), view the equity register and the AI company secretary runs (V) and approve the `sec.*` drafts (A)
+
+#### Scenario: Every sec.* proposal, tasks included (rev 0.280)
+- **GIVEN** a `sec.*` proposal of the company secretary's agent, such as a task it suggests (`sec.create_task`) or a draft
+- **WHEN** the Company secretary approves it
+- **THEN** the approval is allowed, as Appendix E names the Owner and the Company secretary
+
+#### Scenario: The statutory calendar's corporate items (rev 0.285)
+- **GIVEN** the statutory calendar, with its tax, payroll and corporate items
+- **WHEN** the Company secretary opens it, and records the annual return, the AGM or the financial statements to members as filed or not required, with their acknowledgement
+- **THEN** they see the whole calendar and the record is kept
+- **AND** recording a tax or payroll item, such as the GST F5 or CPF, is refused, as those stay with the Owner, the Controller, the Accountant and the Tax agent
 
 #### Scenario: No transactions, payroll or bank detail unless granted
 - **GIVEN** no grant of transactions, payroll or bank detail

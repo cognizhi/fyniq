@@ -36,7 +36,7 @@ type ConnectorDeps struct {
 
 // ConnectorCodes are the connector lifecycle's refusals.
 var ConnectorCodes = []string{connector.CodeUnknown, connector.CodeScope, connector.CodeConfiguration, connector.CodeSecretMissing,
-	connector.CodeSecretUnknown, connector.CodeState, connector.CodeNotInstalled, connector.CodeChange, storage.CodeConnector}
+	connector.CodeSecretUnknown, connector.CodeState, connector.CodeNotInstalled, connector.CodeChange, connector.CodeModelProvider, storage.CodeConnector}
 
 // connectorFixes say how to fix each refusal of the lifecycle (ENG-23).
 var connectorFixes = map[string]string{
@@ -48,6 +48,7 @@ var connectorFixes = map[string]string{
 	connector.CodeState:         "Take the steps in order: install, configure, test, enable; pause and resume; disable; uninstall",
 	connector.CodeNotInstalled:  "Check the ID: list the installed connectors",
 	connector.CodeChange:        "Read the change again; ask for a new one if the connector changed since",
+	connector.CodeModelProvider: "Add a connection to the model provider in Settings › AI providers, with its own approvals",
 }
 
 // DataClass is a class of data a connector sends out of Fyniq (PRD-001 AI-75).
@@ -109,7 +110,7 @@ func asWebhookPath(s string) WebhookPath   { return WebhookPath(s) }
 
 // ConnectorCapability is a kind of service a connector implements, and how its work behaves (FR-INT-25…27).
 type ConnectorCapability struct {
-	Kind        string `json:"kind" enum:"sign-in,outbound-email,inbound-email,messaging,ticketing,payment-provider,bank-data,e-invoicing,document-ai" doc:"The kind of service." example:"outbound-email"`
+	Kind        string `json:"kind" enum:"sign-in,outbound-email,inbound-email,messaging,ticketing,payment-provider,bank-data,e-invoicing,document-ai,model-provider" doc:"The kind of service; a model provider (AI-71) is connected through AI connections, not installed." example:"outbound-email"`
 	Trigger     string `json:"trigger" enum:"human-authority,system-rule,none" doc:"Who may make it act: a completed human authority, a rule of the platform, or nobody (FR-INT-27)." example:"system-rule"`
 	TriggerRule string `json:"trigger_rule" doc:"The authority or rule, in plain words." example:"A message the outbox holds for sending."`
 	OnDisable   string `json:"on_disable" enum:"hold,cancel" doc:"What disabling does to its queued work; pausing always holds it (FR-INT-26)." example:"hold"`
@@ -156,6 +157,45 @@ type CatalogueEntry struct {
 	HealthCheck     string                 `json:"health_check" example:"Counts refusals and failed connections in recent sends."`
 	TestAction      string                 `json:"test_action" example:"Sends one test message to the organisation's own email address."`
 	LocalSubstitute string                 `json:"local_substitute" example:"Mailpit in the local stack."`
+	// Model is a model provider's declaration (AI-71, AI-72): absent for every other connector.
+	Model *CatalogueModel `json:"model,omitempty" doc:"A model provider's: what its adapter carries, how a connection to it signs in, and the presets a connection may start from; absent for other connectors."`
+}
+
+// ModelFeature is something a model provider's adapter carries, as its manifest names it (AI-71).
+type ModelFeature string
+
+// Schema implements huma.SchemaProvider.
+func (ModelFeature) Schema(huma.Registry) *huma.Schema {
+	most := 40
+	return &huma.Schema{Type: "string", MaxLength: &most, Description: "What the adapter carries, such as tools or streaming; the connection proves it.",
+		Examples: []any{"tools"}}
+}
+
+// ModelAuth is how a connection to a model provider signs in.
+type ModelAuth string
+
+// Schema implements huma.SchemaProvider.
+func (ModelAuth) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{Type: "string", Enum: []any{"api-key", "workload-identity", "oauth-grant", "none"},
+		Description: "How a connection signs in: an API key, the service's own cloud account, an OAuth grant, or none for a self-hosted server.",
+		Examples:    []any{"api-key"}}
+}
+
+// CataloguePreset is a starting point for a connection to a model provider: a provider behind its endpoint, or a server
+// the organisation hosts.
+type CataloguePreset struct {
+	ID         string      `json:"id" example:"kimi"`
+	Name       string      `json:"name" example:"Moonshot Kimi"`
+	BaseURL    string      `json:"base_url,omitempty" doc:"The endpoint it starts from; absent for a server whose address the connection names." example:"https://api.moonshot.ai/v1"`
+	Auth       []ModelAuth `json:"auth" nullable:"false"`
+	SelfHosted bool        `json:"self_hosted" doc:"A server the organisation runs, reached only as a registered private endpoint (SEC-37)." example:"false"`
+}
+
+// CatalogueModel is a model provider's declaration in the catalogue.
+type CatalogueModel struct {
+	Features []ModelFeature    `json:"features" nullable:"false"`
+	Auth     []ModelAuth       `json:"auth" nullable:"false"`
+	Presets  []CataloguePreset `json:"presets" nullable:"false"`
 }
 
 // CataloguePage is a page of the catalogue.
@@ -385,6 +425,14 @@ func catalogueEntryOf(m connector.Manifest) CatalogueEntry {
 	}
 	e.Webhooks = webhooksOf(m.Webhooks)
 	_ = json.Unmarshal(m.Configuration, &e.Configuration)
+	if m.Model != nil {
+		e.Model = &CatalogueModel{Features: named(m.Model.Features, func(x string) ModelFeature { return ModelFeature(x) }),
+			Auth: named(m.Model.Auth, func(x string) ModelAuth { return ModelAuth(x) }), Presets: []CataloguePreset{}}
+		for _, p := range m.Model.Presets {
+			e.Model.Presets = append(e.Model.Presets, CataloguePreset{ID: p.ID, Name: p.Name, BaseURL: p.BaseURL,
+				Auth: named(p.Auth, func(x string) ModelAuth { return ModelAuth(x) }), SelfHosted: p.SelfHosted})
+		}
+	}
 	return e
 }
 
@@ -1062,6 +1110,8 @@ func registerOrganisationConnectors(a *API, writes, versioned, locks []string) {
 			switch {
 			case !ok:
 				return nil, problem(connector.CodeUnknown, in.Body.Connector+" is not a connector of this release.", connectorFixes[connector.CodeUnknown])
+			case b.Manifest.Model != nil:
+				return nil, problem(connector.CodeModelProvider, b.Manifest.Name+" is a model provider, connected as an AI connection of its own.", connectorFixes[connector.CodeModelProvider])
 			case b.Manifest.Scope != connector.ScopeOrganisation:
 				return nil, problem(connector.CodeScope, b.Manifest.Name+" is installed installation-wide by a Super admin.", connectorFixes[connector.CodeScope])
 			}
