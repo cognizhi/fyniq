@@ -43,8 +43,6 @@ func knowHow(text, page, section string) assistant.Segment {
 // A know-how sentence names the page it read this turn and the section it comes from, and may hold a number only if that
 // section holds it as a whole token (AI-51, AI-53, AI-08): the answer shows its words and the guide page the section was
 // compiled from, resolved by Fyniq, never the compiled page and never a source the model named.
-// req: AI-51
-// req: AI-53
 // req: AI-08
 func TestAKnowHowSentenceCitesTheGuidePageItsSectionCameFrom(t *testing.T) {
 	out, _ := knowHowRun(t, knowHow("A claim is submitted within 30 days of the receipt date.", "claims.approve-team-claims", "who-approves"),
@@ -70,7 +68,6 @@ func TestAKnowHowSentenceCitesTheGuidePageItsSectionCameFrom(t *testing.T) {
 // A know-how sentence that cites a page it did not read, a section the read did not return, or a number the section does not
 // hold is asked for again once and then withheld: what the person reads says the guide part could not be established, and
 // the model's number never reaches them.
-// req: AI-53
 // req: AI-08
 func TestAKnowHowSentenceThatFailsTheCheckIsWithheld(t *testing.T) {
 	for name, seg := range map[string]assistant.Segment{
@@ -99,7 +96,6 @@ func TestAKnowHowSentenceThatFailsTheCheckIsWithheld(t *testing.T) {
 
 // The knowledge base's answers hold no figure of the books: a fact segment is still how a figure of the organisation is
 // shown, and a know-how sentence beside it does not change that.
-// req: AI-51
 func TestKnowHowAndFiguresShareAnAnswer(t *testing.T) {
 	b := &api{
 		answers: []ports.ModelResponse{
@@ -123,7 +119,6 @@ func TestKnowHowAndFiguresShareAnAnswer(t *testing.T) {
 
 // A model cannot name a source: sources it supplies on any segment, plain words included, are dropped, and only the guide
 // pages the cited section came from are shown (AI-51).
-// req: AI-51
 func TestAModelCannotNameASourceForAChip(t *testing.T) {
 	fake := []assistant.Source{{Guide: "../../etc/passwd", Title: "Nothing to see", Anchor: "x"}}
 	out, _ := knowHowRun(t,

@@ -279,8 +279,6 @@ func (b *kbSeam) CallModel(_ context.Context, _ string, call assistant.ModelCall
 // unquoted (a page's words and the tool's own hints are not untrusted_text), the orchestrator keeps the page and sections it
 // read, a sentence citing one of them passes the number check, and the answer shows the guide pages the section came from, with
 // the page's version recorded on the tool call. A hand-written tool result in a unit test would not catch a mismatch here.
-// req: AI-51
-// req: AI-53
 // asvs: V8.2.1
 func TestAKnowHowAnswerWorksThroughTheRealToolPath(t *testing.T) {
 	e := newEnv(t)
