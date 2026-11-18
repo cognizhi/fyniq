@@ -296,11 +296,29 @@ func packsCurrent(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, er
 
 // C.2 #12: the watched jobs whose heartbeat is missing or older than they may go without one. A failed run beats no
 // heartbeat, so it shows here once its time has passed.
-func jobsOnTime(_ context.Context, _ storage.UnitOfWork, e *Env) (Result, error) {
-	if e.beats == nil {
-		return Missing("the scheduler's heartbeats", "the platform's schedule"), nil
+func jobsOnTime(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	// Background work whose attempts ran out (§12.11, G4-073): each until a person replays it.
+	dead, err := u.Outbox().Dead(ctx, deadListed)
+	if err != nil {
+		return Result{}, err
 	}
 	var items []Item
+	for _, d := range dead {
+		why := ""
+		if d.LastError != "" {
+			why = ": " + d.LastError
+		}
+		items = append(items, Item{Kind: "outbox", ID: d.ID.String(), Label: "Background work " + d.Kind, Severity: string(Warning),
+			Detail:  fmt.Sprintf("It stopped after %d attempts on %s%s. Replay it once what stopped it is fixed", d.Attempts, d.DiedAt.UTC().Format("2 Jan 2006 15:04 UTC"), why),
+			Version: d.DiedAt.UTC().Format(time.RFC3339Nano)})
+	}
+	stopped := len(items)
+	if e.beats == nil {
+		if stopped > 0 {
+			return Found(Warning, items, fmt.Sprintf("%d background task(s) stopped", stopped), replayFix), nil
+		}
+		return Missing("the scheduler's heartbeats", "the platform's schedule"), nil
+	}
 	for _, j := range e.jobs {
 		label := cmp.Or(ScheduledJobs[j.Name], j.Name)
 		last, ok := e.beats[j.Name]
@@ -316,9 +334,19 @@ func jobsOnTime(_ context.Context, _ storage.UnitOfWork, e *Env) (Result, error)
 	if len(items) == 0 {
 		return Fine(fmt.Sprintf("Each of the %d scheduled jobs ran on time", len(e.jobs))), nil
 	}
-	return Found(Error, items, fmt.Sprintf("%d scheduled job(s) late or failing", len(items)),
-		"Tell whoever runs the installation: the scheduler's runbook says how to find why a job stopped"), nil
+	if len(items) == stopped {
+		// A stopped task is for a person to look at and run again: it does not hold the close (G4-073).
+		return Found(Warning, items, fmt.Sprintf("%d background task(s) stopped", stopped), replayFix), nil
+	}
+	return Found(Error, items, fmt.Sprintf("%d scheduled job(s) or background task(s) late, failing or stopped", len(items)),
+		"Tell whoever runs the installation: the scheduler's runbook says how to find why a job stopped. "+replayFix), nil
 }
+
+// deadListed is how many stopped background tasks C.2 #12 lists, the latest first.
+const deadListed = 100
+
+// replayFix is what to do about a background task that stopped (G4-073).
+const replayFix = "A stopped background task is replayed from its item, by an Owner or an Administrator, once what stopped it is fixed"
 
 // C.2 #11: vendors whose bank details were approved in the last 30 days, with posted bills still open.
 func bankDetailsChanged(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {

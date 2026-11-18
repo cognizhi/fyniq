@@ -73,6 +73,9 @@ export const routes = [
   { kind: "route", id: "break-glass", path: "/break-glass", mode: "basic", signedIn: true, help: "approvals.break-glass", guide: "settings.team-mode#break-glass" },
   { kind: "route", id: "contacts", path: "/contacts", mode: "basic", signedIn: true, help: "contacts.overview", guide: "contacts.manage" },
   { kind: "route", id: "global-search", path: "/search", mode: "basic", signedIn: true, help: "shell.search", guide: "shell.search" },
+  // The user guide, built from docs/user-guide/ (FR-UX-32).
+  { kind: "route", id: "help", path: "/help", mode: "basic", signedIn: true, help: "help.guide", guide: "help.guide" },
+  { kind: "route", id: "help-page", path: "/help/$key", mode: "basic", signedIn: true, help: "help.page", guide: "help.guide#open-a-page" },
   { kind: "route", id: "contact-record", path: "/contacts/$contactId", mode: "basic", signedIn: true, help: "contacts.record", guide: "contacts.manage#what-a-contact-stands-at" },
   { kind: "route", id: "items", path: "/items", mode: "basic", signedIn: true, help: "items.overview", guide: "contacts.manage#items-and-prices" },
   { kind: "route", id: "invoices", path: "/sales/invoices", mode: "basic", signedIn: true, help: "sales.invoices", guide: "sales.invoices" },
@@ -233,6 +236,15 @@ export const actions = [
   { kind: "action", id: "compliance.heartbeat-drills", mode: "expert", help: "compliance.heartbeat-drills", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "heartbeat-drills.minutes", mode: "expert", help: "heartbeat-drills.minutes", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "shell.help", mode: "basic", help: "shell.help", guide: "home.overview#see-which-version-you-are-on" },
+  // Keyboard-first entry (FR-UX-06): the shortcut sheet on ?, the switch and keys of the single-character shortcuts, and
+  // the command palette's actions on selected rows.
+  { kind: "action", id: "shell.shortcuts", mode: "basic", help: "shell.shortcuts", guide: "shell.shortcuts" },
+  { kind: "action", id: "shortcuts.settings", mode: "basic", help: "shortcuts.settings", guide: "shell.shortcuts#turn-them-off-or-change-the-keys" },
+  { kind: "action", id: "shortcuts.bulk", mode: "basic", help: "shortcuts.bulk", guide: "shell.shortcuts#act-on-selected-rows" },
+  // The first-run tour (FR-UX-34): offered at first, and from Help and the command palette any time.
+  { kind: "action", id: "shell.tour", mode: "basic", help: "shell.tour", guide: "help.guide#take-the-tour" },
+  // Plain view or Accountant view of money in and out (FR-UX-08): Expert's; Basic always uses Plain view.
+  { kind: "action", id: "ledger-view", mode: "expert", help: "ledger.view", guide: "banking.accounts#categorise-the-waiting-lines" },
   { kind: "action", id: "shell.assistant", mode: "basic", help: "shell.assistant", guide: "ai.assistant" },
   { kind: "action", id: "assistant.ask-about-this", mode: "basic", help: "assistant.ask-about-this", guide: "ai.assistant#ask-about-a-record-a-report-or-a-figure" },
   { kind: "action", id: "assistant.feedback", mode: "basic", help: "assistant.feedback", guide: "ai.assistant#rate-an-answer" },
@@ -247,6 +259,9 @@ export const actions = [
   { kind: "action", id: "corporate-profile.record-minute-book", mode: "expert", help: "corporate-profile.record-minute-book", guide: "compliance.corporate-profile#draft-a-resolution-notice-or-minutes" },
   { kind: "action", id: "shell.about", mode: "basic", help: "shell.about", guide: "home.overview#see-which-version-you-are-on" },
   // Home's tiles from the plans (FR-KPI-01, FR-PLN-03): against the budget in Expert; the forecast's cash-out month in both.
+  // Home's per-role work and its deadlines (§7.1, FR-UX-40; docs/design/screens Home's upcoming deadlines).
+  { kind: "action", id: "home.your-work", mode: "basic", help: "home.your-work", guide: "home.overview#your-work" },
+  { kind: "action", id: "home.deadlines", mode: "basic", help: "home.deadlines", guide: "home.overview#upcoming-deadlines" },
   { kind: "action", id: "home.revenue-vs-budget", mode: "expert", help: "home.revenue-vs-budget", guide: "home.overview#read-the-plans-on-home" },
   { kind: "action", id: "home.costs-vs-budget", mode: "expert", help: "home.costs-vs-budget", guide: "home.overview#read-the-plans-on-home" },
   { kind: "action", id: "home.forecast-cash-out", mode: "basic", help: "home.forecast-cash-out", guide: "home.overview#read-the-plans-on-home" },
@@ -669,6 +684,7 @@ export const actions = [
   { kind: "action", id: "checks.run", mode: "basic", help: "checks.run", guide: "checks.overview#run-the-checks-now" },
   { kind: "action", id: "checks.owner", mode: "basic", help: "checks.owner", guide: "checks.overview#name-a-checks-owner" },
   { kind: "action", id: "checks.review", mode: "basic", help: "checks.review", guide: "checks.overview#mark-an-item-reviewed" },
+  { kind: "action", id: "checks.replay", mode: "basic", help: "checks.replay", guide: "checks.overview#run-a-stopped-task-again" },
   { kind: "action", id: "close.run-checks", mode: "expert", help: "close.run-checks", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.attest", mode: "expert", help: "close.attest", guide: "accounting.periods#close-a-month" },
   { kind: "action", id: "close.reopen", mode: "expert", help: "close.reopen", guide: "accounting.periods#reopen-a-month" },

@@ -102,6 +102,42 @@ func (q *Queries) DecideInboundMessage(ctx context.Context, arg DecideInboundMes
 	return i, err
 }
 
+const emailMatches = `-- name: EmailMatches :many
+SELECT m.organisation_id::uuid AS organisation_id, m.user_id::uuid AS user_id
+  FROM fyniq.email_matches($1::text, $2::text, $3::text) m
+`
+
+type EmailMatchesParams struct {
+	Email   string
+	Issuer  string
+	Subject string
+}
+
+type EmailMatchesRow struct {
+	OrganisationID uuid.UUID
+	UserID         uuid.UUID
+}
+
+func (q *Queries) EmailMatches(ctx context.Context, arg EmailMatchesParams) ([]EmailMatchesRow, error) {
+	rows, err := q.db.Query(ctx, emailMatches, arg.Email, arg.Issuer, arg.Subject)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EmailMatchesRow
+	for rows.Next() {
+		var i EmailMatchesRow
+		if err := rows.Scan(&i.OrganisationID, &i.UserID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const expireInboundMessage = `-- name: ExpireInboundMessage :one
 UPDATE fyniq.inbound_message SET status = 'expired'
 WHERE id = $1 AND status = 'quarantined'

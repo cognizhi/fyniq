@@ -606,6 +606,32 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-16] compile | docs/user-guide/ai-proposals.md → ai.proposals-approve (sec.draft_document, FR-CS-05)
 
+## [2026-11-17] compile | docs/user-guide/evidence-search.md → compliance.evidence (files open from the search, only my files, show more, filings and GST forecasts searched, a filing missing its acknowledgement)
+
+## [2026-11-17] compile | docs/user-guide/journals.md, docs/user-guide/bills.md → accounting.journals, purchases.bills (a HEIC photo is not accepted yet: export it as JPEG)
+
 ## [2026-11-17] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the organisation's motion switch, FR-UX-38)
 
 ## [2026-11-17] compile | docs/user-guide/statutory-calendar.md → compliance.record-filing, compliance.calendar (the Company secretary records the corporate items, PRD-001 rev 0.285)
+
+## [2026-11-17] compile | docs/user-guide/home.md → home.overview (Your work by role and Upcoming deadlines on Home, §7.1)
+
+## [2026-11-17] compile | docs/user-guide/keyboard-shortcuts.md → shell.shortcuts (new page: keyboard-first entry, FR-UX-06)
+
+## [2026-11-17] compile | docs/user-guide/profile-and-security.md → preferences.security (its Keyboard section, linking shell.shortcuts)
+
+## [2026-11-17] compile | docs/user-guide/checks.md → checks.overview (run a stopped background task again, C.2 #12, G4-073)
+
+## [2026-11-17] compile | docs/user-guide/help.md → help.guide (the user guide in the app, FR-UX-32)
+
+## [2026-11-17] compile | docs/user-guide/home.md → home.overview (Help opens the user guide)
+
+## [2026-11-17] compile | docs/user-guide/invoices.md, bills.md, claims-my-claims.md → sales.invoices, purchases.bills, claims.my-claims (Has advanced details in Basic mode, FR-UX-25)
+
+## [2026-11-17] compile | docs/user-guide/banking.md → banking.categorise (Plain and Accountant views on the grid, FR-UX-08); the other pages citing it re-hashed, unchanged
+
+## [2026-11-18] compile | docs/user-guide/statutory-packs.md → settings.statutory-packs (an update waiting to be activated, ENG-33, G4-103)
+
+## [2026-11-18] compile | docs/user-guide/help.md → help.guide (Take the tour, FR-UX-34)
+
+## [2026-11-18] compile | docs/user-guide/approvals.md → approvals.decide (FM-6: unusual items in the weekly review, rev 0.287)

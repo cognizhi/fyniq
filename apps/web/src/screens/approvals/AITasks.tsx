@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Ban, ChevronLeft, ListChecks, Power, PowerOff, ShieldCheck } from "lucide-react";
+import { Ban, ChevronLeft, CircleCheck, CircleDashed, Hourglass, ListChecks, Power, PowerOff, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { api, etagOf } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -242,7 +242,10 @@ function History() {
                   {p.reason ? ` · ${p.reason}` : ""}
                 </span>
               </span>
-              <span className={`fy-chip ${p.status === "executed" ? "fy-chip--good" : p.status === "pending" ? "fy-chip--warning" : "fy-chip--neutral"}`}>{stateWords[p.status] ?? p.status}</span>
+              <span className={`fy-chip ${p.status === "executed" ? "fy-chip--good" : p.status === "pending" ? "fy-chip--warning" : "fy-chip--neutral"}`}>
+                <Icon of={p.status === "executed" ? CircleCheck : p.status === "pending" ? Hourglass : CircleDashed} />
+                {stateWords[p.status] ?? p.status}
+              </span>
             </li>
           ))}
         </ul>

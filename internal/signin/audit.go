@@ -2,6 +2,8 @@ package signin
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"net"
 	"net/http"
@@ -21,6 +23,9 @@ import (
 const (
 	ActionSignedIn  = "session.started"
 	ActionSignedOut = "session.ended"
+	// ActionEmailMatched is a sign-in by another identity with a member's verified email (FR-ADM-08, G4-061): it linked
+	// and reached nothing, and is recorded against the member in each of their organisations.
+	ActionEmailMatched = "session.email_matched"
 )
 
 // SignedOut is told that the session whose token hash is session ends, and why, before it does.
@@ -94,4 +99,44 @@ func record(ctx context.Context, sessions storage.Sessions, store storage.Store,
 	return store.Do(as(ctx, s.UserID), s.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		return u.Audit().Record(ctx, storage.AuditRecord{Action: action, ObjectType: "user", ObjectID: s.UserID, Changes: changes})
 	})
+}
+
+// AuditEmailMatch records a sign-in by an identity with no Fyniq user whose verified email is a member's: in the trail
+// of each organisation the member belongs to, against the member, it linked nothing and reached nothing, since only a
+// link from the member's own session after step-up adds a sign-in (FR-ADM-08, G4-061). The actor is the identity,
+// named by its provider and a hash of its issuer and subject, never the subject itself.
+func AuditEmailMatch(sessions storage.Sessions, store storage.Store) Alert {
+	return func(ctx context.Context, who ports.SignedIn, session []byte, _ string, at time.Time) error {
+		if who.Email == "" || !who.EmailVerified {
+			return nil
+		}
+		s, err := sessions.Session(ctx, session, at, authn.SessionIdle)
+		if errors.Is(err, ports.ErrNotFound) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if s.UserID != uuid.Nil {
+			return nil // the person's own sign-in, recorded as theirs (AuditSignIn)
+		}
+		matches, err := sessions.EmailMatches(ctx, who.Email, who.Issuer, who.Subject)
+		if err != nil {
+			return err
+		}
+		sum := sha256.Sum256([]byte(who.Issuer + "\x00" + who.Subject))
+		actor := storage.Actor{Type: "identity", ID: who.Provider + ":" + hex.EncodeToString(sum[:8])}
+		c, _ := ctx.Value(clientKey{}).(client)
+		audited := storage.WithAudit(ctx, storage.AuditContext{Actor: &actor,
+			Request: storage.Request{IP: c.ip, UserAgent: c.userAgent, Country: c.country, Region: c.region}})
+		for _, m := range matches {
+			if err := store.Do(audited, m.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+				return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionEmailMatched, ObjectType: "user", ObjectID: m.User,
+					Changes: map[string][2]any{"provider": {nil, who.Provider}, "linked": {nil, false}}})
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 }

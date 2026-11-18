@@ -2,17 +2,23 @@
 key: home.overview
 type: task
 title: The Home page, search and commands, long work, Settings, the version, and signing out
-summary: What Home shows (pulse, tiles, plans, set-up), Search and commands (Ctrl+K), Operations (long work), Settings, the version (Help › About), signing out
+summary: Home (pulse, tiles, plans, your work, deadlines, set-up), Search and commands (Ctrl+K), Operations, Settings, the version (Help › About), signing out
 sources:
-  - docs/user-guide/home.md sha256:767c34cc8464533ccea4b973f7f6234f62820082c9909703222cd3358a299e72
+  - docs/user-guide/home.md sha256:f9d429385c8d965080e1ce59fea9b1786d1aa3589152b6d88dff81f6228bc881
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-11
+compiled_at: 2026-11-17
 aliases:
+  - your work
+  - what do I need to do today
+  - bank lines to categorise
+  - overdue invoices on home
+  - upcoming deadlines
+  - what is due soon
   - copy amounts to excel
   - paste an amount
   - command palette
@@ -48,6 +54,7 @@ aliases:
 - Home is where Fyniq opens after sign-in.
 - It names the organisation the person is signed in to, the currency its books are kept in, and its team mode.
 - **Waiting for you** counts requests waiting for the person's approval ([[approvals.decide]]) and high-risk actions they can review, with any overdue; it also counts the automatic reversals waiting for a month to be opened, which open **Journals** ([[accounting.journals]]).
+- **Your work** counts what waits in the person's areas, by their roles; **Upcoming deadlines** lists the next statutory deadlines (see [Your work and upcoming deadlines](#your-work-and-upcoming-deadlines)).
 - **Set up the company** lists the first steps, **Done** or **To do**, with progress, and goes once all are done.
 - Workspace pages appear as each module arrives; a person only sees the pages their roles allow.
 - The pulse card, the tiles and the charts appear once the books have a month and the person's roles let them read the reports; see the next section.
@@ -65,6 +72,19 @@ aliases:
 - For someone whose roles read the plans, the tiles add the lowest balance of the next 60 days, the month cash runs out in the latest forecast and, in Expert mode, revenue and costs against the budget; see the next section.
 
 (src: docs/user-guide/home.md#what-it-is)
+
+## Your work and upcoming deadlines
+
+- **Your work** shows what the person's roles work through, each row counting a list and opening it.
+- **Bookkeeper**: bank lines to categorise, and draft invoices and bills to finish.
+- **AR specialist**: draft invoices to finish, invoices overdue, receipts to apply (the customer statements show each one) and quotes waiting for an answer.
+- **AP specialist**: draft bills to finish, bills overdue, bills to pay, payment batches being prepared, approved claims to pay and bank-detail changes waiting for a second person.
+- **Payment releaser**: batches waiting for release and payments the bank rejected, then each bank account's balance.
+- A row whose list the person's roles cannot read is left out rather than shown as nothing to do; with several roles each row shows once.
+- The Owner, the Controller, the Accountant and the Tax agent read the same work from the pulse card, the tiles and the Inbox, so the card does not show for them alone.
+- **Upcoming deadlines** lists the next five statutory deadlines from the calendar, those **Overdue** or **Due soon** first, each with its date; **The statutory calendar** opens it when Compliance is one of the person's areas ([[compliance.calendar]]).
+
+(src: docs/user-guide/home.md#your-work) (src: docs/user-guide/home.md#upcoming-deadlines)
 
 ## The plans on Home
 
@@ -127,6 +147,7 @@ aliases:
 - It shows the version, the commit (the git SHA the services were built from), when they were built and, for a published release, its tag.
 - Quote the version and the commit when reporting a problem.
 - Every exported report names the same version and commit in its footer: the last line of a CSV or a spreadsheet, and the footer of a PDF.
+- The same **Help** menu opens the **User guide**, in Fyniq: [[help.guide]].
 
 (src: docs/user-guide/home.md#see-which-version-you-are-on)
 

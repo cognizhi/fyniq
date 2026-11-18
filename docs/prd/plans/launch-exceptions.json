@@ -200,6 +200,12 @@
    "evidence": "docs/runbooks/cost-review.md"
   },
   {
+   "id": "G4-087",
+   "kind": "live-verify",
+   "why": "The pre-go-live check of the configured model IDs reads Google's live pages and calls Agent Platform in asia-southeast1 from the production project: proved in the dev cloud with p1-go-live.",
+   "evidence": "docs/runbooks/ai-go-live.md"
+  },
+  {
    "id": "QA-API-04",
    "kind": "after-go-live",
    "why": "Fyniq's and Nemura's shared contract fixtures need Nemura, built after Fyniq's go-live; the contracts' own tests (QA-API-01 to QA-API-03) launch.",
@@ -234,6 +240,18 @@
    "kind": "after-go-live",
    "why": "The hourly cost is a person's cost rate for projects (FR-PRJ-06: salary and employer CPF over the standard hours), which comes with p1-projects after go-live.",
    "decision": "rev 0.146 (the owner's decisions of 26 Oct 2026 on open question 25: p1-projects follows go-live, displaced by expense claims and payment files)"
+  },
+  {
+   "id": "G4-058",
+   "kind": "after-go-live",
+   "why": "Self-approving an AI-drafted tier-2 journal needs a tier-2 task type; launch's catalogue holds only the company secretary's tier-1 ones, so it is built and proved with the first tier-2 task types, and until then a tier-2 proposal's requester never approves it.",
+   "decision": "rev 0.286 (the owner's decision of 17 Nov 2026: G4-058 after go-live, with the first tier-2 task types)"
+  },
+  {
+   "id": "G4-052",
+   "kind": "after-go-live",
+   "why": "Its scenario needs an issued board pack kept with its hash, which only the board pack (P2, p2-reporting-planning) makes; P1 re-runs a statement as at its revision, labels restated presentation when the chart changed after it, and audits every export with its hash.",
+   "decision": "rev 0.287 (the owner's decision of 18 Nov 2026: G4-052 after go-live, with the board pack)"
   }
  ]
 }

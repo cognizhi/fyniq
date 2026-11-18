@@ -33,6 +33,8 @@ each module arrives; you only ever see the pages your roles allow.
 - **Waiting for you** counts the requests waiting for your approval and the high-risk actions you
   can review, with any that are overdue. Select one to open the Inbox or the review log. It also
   counts the automatic reversals waiting for a month to be opened; select it to open **Journals**.
+- **Your work** counts what waits in your areas, by your roles: see [Your work](#your-work).
+- **Upcoming deadlines** lists the next statutory deadlines: see [Upcoming deadlines](#upcoming-deadlines).
 - **Set up the company** lists the first steps, each marked **Done** or **To do**, with progress.
   It goes once every step is done.
 
@@ -64,6 +66,28 @@ Work down the list. Each step opens the page where you do it:
 
 A step your roles cannot see is left out. Opening balances, bank feeds, employees and importing
 from the workbook join the list as they arrive.
+
+### Your work
+
+**Your work** shows what your roles work through, each row counting a list and opening it:
+
+- **Bookkeeper**: bank lines to categorise, and draft invoices and bills to finish.
+- **AR specialist**: draft invoices to finish, invoices overdue, receipts to apply (the customer statements show each
+  one) and quotes waiting for an answer.
+- **AP specialist**: draft bills to finish, bills overdue, bills to pay, payment batches being prepared, approved
+  claims to pay and bank-detail changes waiting for a second person.
+- **Payment releaser**: batches waiting for release and payments the bank rejected, then each bank account's balance.
+
+A row whose list your roles cannot read is left out rather than shown as nothing to do. With several roles you see
+each row once. The Owner, the Controller, the Accountant and the Tax agent read the same work from the pulse card, the
+tiles and the Inbox, so the card does not show for them alone.
+
+### Upcoming deadlines
+
+- **Upcoming deadlines** lists the next five statutory deadlines from the calendar, those **Overdue** or **Due soon**
+  first, each with its date: GST, CPF, the annual return and the rest.
+- **The statutory calendar** opens the calendar when Compliance is one of your areas
+  ([Keep to the statutory calendar](statutory-calendar.md)).
 
 ### Read the plans on Home
 
@@ -138,6 +162,8 @@ Select **Help** (the question mark in the header; on a phone, under **More**), t
 SHA the services were built from), when they were built and, for a published release, its tag. Quote the version and
 the commit when you report a problem. Every exported report names the same version and commit in its footer: the last
 line of a CSV or a spreadsheet, and the footer of a PDF.
+
+The same **Help** menu opens the **User guide**, this guide, in Fyniq ([Read the user guide](help.md)).
 
 ### Sign out
 

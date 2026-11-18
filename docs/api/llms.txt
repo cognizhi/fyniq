@@ -102,6 +102,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/audit/recoveries/{recovery_id}/acknowledge` (acknowledgeAuditRecovery): Acknowledge a recovery of the audit trail
 - `GET /v1/audit/verification` (getAuditVerification): Verify the audit trail's integrity for a range of days
 - `GET /v1/auto-reconciliations` (listAutoReconciliations): List what the system reconciled
+- `POST /v1/background-work/{work_id}/replay` (replayBackgroundWork): Replay a background task that stopped
 - `POST /v1/bank-changes` (createPayeeBankChange): Prepare a change of a vendor's bank details
 - `GET /v1/bank-changes/{change_id}` (getPayeeBankChange): Get a change of a vendor's bank details
 - `PUT /v1/bank-changes/{change_id}` (replacePayeeBankChange): Change a draft change of bank details
@@ -508,6 +509,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/gst-forecasts/{forecast_id}/evidence/{evidence_id}` (getGSTForecastEvidence): Get a GST forecast's file
 - `DELETE /v1/gst-forecasts/{forecast_id}/evidence/{evidence_id}` (removeGSTForecastEvidence): Remove a file from a drafted GST forecast
 - `POST /v1/gst-forecasts/{forecast_id}/record` (recordGSTForecast): Record a GST forecast
+- `GET /v1/help-state` (getHelpState): Get your first-run tour state
+- `PUT /v1/help-state/tour` (setTourState): Save where you are with the first-run tour
 - `POST /v1/holder-records` (createHolderRecord): Draft a holder record
 - `GET /v1/holder-records/{record_id}` (getHolderRecord): Get a holder record
 - `PUT /v1/holder-records/{record_id}` (replaceHolderRecord): Change a drafted holder record

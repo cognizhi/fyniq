@@ -93,6 +93,8 @@ type UnitOfWork interface {
 	CaptureAddresses() CaptureAddresses
 	InboundMessages() InboundMessages
 	Notifications() Notifications
+	// Help is each person's first-run tour state (FR-UX-34).
+	Help() HelpStates
 	// Announcements are the banners and their dismissals (FR-NTF-03).
 	Announcements() Announcements
 	Outbox() Outbox
@@ -325,6 +327,9 @@ type Ledger interface {
 	// EntriesOfPeriod are a period's entries posted after a ledger revision, in revision order, with their lines, at most
 	// limit: a month's cash flow reads its month alone, not the whole ledger (NFR-PERF-02, INV-11).
 	EntriesOfPeriod(ctx context.Context, period uuid.UUID, afterRevision int64, limit int) ([]Entry, error)
+	// RecordedSince are the entries of the source types recorded since a time, after a ledger revision, in revision
+	// order, at most limit, with their lines: a review of the last days' postings reads them without the whole ledger.
+	RecordedSince(ctx context.Context, sourceTypes []string, since time.Time, afterRevision int64, limit int) ([]Entry, error)
 	// ByIdentity returns the entry posted with a posting identity. When the purge after retention removed it (AUD-10),
 	// it returns its document's carry-forward instead, marked by Carries.
 	ByIdentity(ctx context.Context, postingIdentity string) (Entry, error)

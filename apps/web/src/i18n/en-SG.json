@@ -1,5 +1,13 @@
 {
   "help": {
+    "help.guide": {
+      "label": "User guide",
+      "tooltip": "How to do each thing in Fyniq, and what its words mean: every page for your roles and mode, searchable and printable."
+    },
+    "help.page": {
+      "label": "A page of the guide",
+      "tooltip": "One page of the user guide, with a link to each of its sections and a way to print it."
+    },
     "home.overview": {
       "label": "Home",
       "tooltip": "Where you start: the company's cash, runway and the figures that matter this month, what waits for you, and while the company is new, the set-up steps."
@@ -35,6 +43,26 @@
     "auth.sign-out": {
       "label": "Sign out",
       "tooltip": "Ends your session in this browser."
+    },
+    "shell.shortcuts": {
+      "label": "Keyboard shortcuts",
+      "tooltip": "Every keyboard shortcut you can use, and where to turn single-character shortcuts off or change their keys. Shortcut: ?"
+    },
+    "shortcuts.settings": {
+      "label": "Single-character shortcuts",
+      "tooltip": "Keys such as G then B, which go to Banking. Turn them off if you use speech input or press keys by accident: Ctrl+K and Ctrl+J still work."
+    },
+    "shortcuts.bulk": {
+      "label": "Selected rows",
+      "tooltip": "What you can do to the rows you selected on this page, the same as its buttons."
+    },
+    "shell.tour": {
+      "label": "Take the tour again",
+      "tooltip": "A short tour of the pages you use, step by step. It changes nothing; Esc ends it."
+    },
+    "ledger.view": {
+      "label": "Plain or Accountant view",
+      "tooltip": "Plain view: Money in, Money out and Category. Accountant view: Debit, Credit and Account. The figures are the same."
     },
     "shell.help": {
       "label": "Help",
@@ -1592,6 +1620,10 @@
       "label": "Run all checks now",
       "tooltip": "Run every check now instead of waiting for the next change or the night's run. At most once a minute."
     },
+    "checks.replay": {
+      "label": "Run it again",
+      "tooltip": "A background task that stopped after its attempts ran out goes back in the queue, its attempts counted afresh. Run it again once what stopped it is fixed. An Owner or an Administrator does."
+    },
     "checks.review": {
       "label": "Mark reviewed",
       "tooltip": "Say you looked at this item: it leaves the check until it changes. Owners, Controllers, Accountants and Bookkeepers only."
@@ -2571,6 +2603,14 @@
     "gst-forecast.attach-evidence": {
       "label": "Attach what it rests on",
       "tooltip": "Attach the signed contracts, confirmed orders or letters of award the forecast rests on, as IRAS asks."
+    },
+    "home.your-work": {
+      "label": "Your work",
+      "tooltip": "What waits in your areas, by your roles: bank lines to categorise, drafts to finish, overdue invoices and bills, receipts to apply, quotes waiting, payment batches and claims to pay or release. Each opens its list."
+    },
+    "home.deadlines": {
+      "label": "Upcoming deadlines",
+      "tooltip": "The next statutory deadlines from the calendar, those overdue or due soon first: GST, CPF, the annual return and the rest."
     },
     "home.revenue-vs-budget": {
       "label": "Revenue against budget",

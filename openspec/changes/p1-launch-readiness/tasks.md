@@ -47,7 +47,9 @@ and names the requirement IDs it proves.
   - The exceptions add the rest of the F5 at registration (G4-011, G4-035) and QA-API-04 with Nemura, both rev 0.25.
     They also add 24 cloud-proved items, each naming its runbook or control file.
   - FM-6 launches, by the owner's decision of 16 Nov 2026: a scheduled agent writes advisory findings into the weekly
-    review. It is built in `p1-approval-engine` on the chain's scheduled agents.
+    review. It is built in `p1-approval-engine` on the chain's scheduled agents. (18 Nov 2026, rev 0.287: rule-based
+    at launch instead, the nightly job `review.unusual` in `internal/domain/unusual`, tested by
+    `TestUnusualItemsEnterTheWeeklyReview`; the AI's explanation follows after go-live.)
 
 ## 2. Tags where the tests already prove the requirement (design D3)
 
@@ -221,7 +223,11 @@ and names the requirement IDs it proves.
   and the not-available page were built for it (p1-app-shell 2.1). **Left:** the Home blocks §7.1 names per role
   beyond the pulse (the Approver's "My department", the Bookkeeper's cash today and bank lines, the releaser's
   batches and balances, the Administrator's users and roles waiting, the DPO's data requests), the Auditor's
-  workspace, and each role's Inbox items, which need records waiting for that role.)
+  workspace, and each role's Inbox items, which need records waiting for that role.
+  17 Nov 2026, later: Home's **Your work** gives the Bookkeeper, the AR and AP specialists and the payment releaser
+  their rows of §7.1 (p1-app-shell 2.1), and the walkthroughs check each role's rows, and none for the full-Home
+  roles. **Left:** the Approver's "My department", the Administrator's, Company secretary's and DPO's blocks on the
+  pages they land on, the Auditor's workspace, and each role's Inbox items.)
 - [ ] 5.4 QA-UI-07 and QA-RPT-04's visual snapshots (design D5; rev 0.284):
   - hash baselines in `apps/web/visual/baselines.json`;
   - the key pages on every pull request, every route nightly and in the release workflow, at the five frames, in light
@@ -244,9 +250,17 @@ and names the requirement IDs it proves.
   changed picture builds no image (archtest `TestTheReleaseWaitsForEveryRoutesPictures`). **Left:** the first
   baselines, from CI's first runs; a picture of a route that still changes run to run (a time of day) is masked once a
   nightly shows it; the run uploads the changed picture, not a drawn diff, as the baseline image is not kept.)
-- [ ] 5.5 QA-UI-06: the first-run tour per role by keyboard alone, reduced and animated, axe at 0. Nothing is written
+  (17 Nov 2026, later: the first baselines are those of the pull request that took them in: its first CI run drew the
+  key pages on linux/amd64, `scripts/visual.py approve` took that run's hashes into `baselines.json`, and the label
+  `visual-baseline`, created for it, let the change through; its next run compared every picture against them.)
+- [x] 5.5 QA-UI-06: the first-run tour per role by keyboard alone, reduced and animated, axe at 0. Nothing is written
   but `user_help_state`, and G4-104 resumes it. Waits for `p1-app-shell` task 4.2. Test `// req: QA-UI-06`,
   `// req: G4-104`.
+  (18 Nov 2026: `e2e/tour.spec.ts` completes each role's tour by keyboard alone in Chrome, Firefox and WebKit, with
+  reduced motion (no transition on the spotlight) and with animation, axe at 0 at its first step, and asserts that the
+  only request that is not a read is `PUT /v1/help-state/tour`, ending finished at the last step; a tour left at step 3
+  is offered again, resumes there and ends skipped there with Esc. The server half is
+  `TestTheTourSavesOnlyItsOwnState` (#790).)
 
 ## 6. Security and production gates (QA-SEC-05, QA-PROD-01, QA-MCP-01)
 

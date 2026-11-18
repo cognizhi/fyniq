@@ -107,7 +107,11 @@ suspense. Fyniq never applies a suggestion by itself.
 In Expert mode:
 
 - **Grid view** lists every waiting line with its best suggestion: select several and accept their
-  suggestions at once. Each line posts on its own, so one refused never stops the others.
+  suggestions at once. Each line posts on its own, so one refused never stops the others. Its money
+  shows in **Plain view** (Money in, Money out and the suggested category) or **Accountant view**
+  (Debit and Credit, as the account's ledger has them, and the suggested account): the figures are the
+  same. Choose on the grid, or under **Settings › Profile and security**; Basic mode always uses Plain
+  view.
 - **Split the line** posts it to several accounts, each part with its amount; one part may take the
   rest of the line.
 - **Mark as a transfer** matches money moved between two of your accounts to the other side's line, or

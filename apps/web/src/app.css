@@ -116,8 +116,8 @@ html {
 }
 
 /* Touch targets of 44 × 44 px on touch screens (FR-UX-37): the brand's link, a segmented control's options, a chip
-   that is a button, a list row or navigation item that is a link, a filter, a radio or a checkbox's label, and a link
-   that names a list row, whose hit area is the whole row (.fy-stretch). */
+   that is a button, a list row or navigation item that is a link, a filter, a radio or a checkbox's label, a switch, and
+   a link that names a list row, whose hit area is the whole row (.fy-stretch). */
 @media (pointer: coarse) {
   .fy-brand {
     min-width: var(--touch-target);
@@ -145,6 +145,12 @@ html {
   label:has(> input[type="checkbox"]) {
     min-height: var(--touch-target);
   }
+  /* a switch, whose 40 × 24 px track takes a touch 44 px across and down (its ::after is the knob) */
+  .fy-switch::before {
+    content: "";
+    position: absolute;
+    inset: calc((100% - var(--touch-target)) / 2);
+  }
 }
 .fy-list__item:has(.fy-stretch) {
   position: relative;
@@ -166,5 +172,74 @@ html {
   .fy-listdetail[data-hinge="split"] > .fy-listdetail__list,
   .fy-listdetail[data-hinge="split"] > .fy-listdetail__detail {
     display: block;
+  }
+}
+
+/* The user guide's pages (screens/help/Help.tsx, FR-UX-32): its Markdown as the kit draws a page, a sticky contents
+   column from 1024 px, and a print without the shell. */
+.fy-help {
+  max-width: 55rem;
+  line-height: 1.6;
+}
+.fy-help h2 {
+  margin-top: var(--space-6);
+  scroll-margin-top: calc(var(--header-height, 56px) + var(--space-4));
+}
+.fy-help h3 {
+  margin-top: var(--space-4);
+  scroll-margin-top: calc(var(--header-height, 56px) + var(--space-4));
+}
+.fy-help__list {
+  list-style: disc;
+  padding-left: 1.5rem;
+  display: grid;
+  gap: var(--space-1);
+}
+.fy-help__list--ordered {
+  list-style: decimal;
+}
+.fy-help code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  padding: 0 0.25em;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.fy-help__code {
+  overflow-x: auto;
+  padding: var(--space-3);
+  border-radius: var(--radius-m);
+  background: var(--surface-2);
+}
+.fy-help__note {
+  border-left: 3px solid var(--border-strong, var(--border));
+  padding-left: var(--space-3);
+  color: var(--text-secondary, inherit);
+}
+.fy-help-layout {
+  display: grid;
+  gap: var(--space-6);
+}
+@media (min-width: 1024px) {
+  .fy-help-layout {
+    grid-template-columns: 14rem minmax(0, 1fr);
+  }
+  .fy-help-layout__contents {
+    position: sticky;
+    top: calc(var(--header-height, 56px) + var(--space-4));
+    align-self: start;
+  }
+}
+@media print {
+  .fy-app:has(.fy-help) .fy-side,
+  .fy-app:has(.fy-help) .fy-top,
+  .fy-app:has(.fy-help) .fy-bottom {
+    display: none;
+  }
+  .fy-help-layout {
+    display: block;
+  }
+  .fy-help-layout__contents {
+    display: none;
   }
 }

@@ -15,6 +15,8 @@ cd "$(dirname "$0")/.."
 # A stack of its own, on ports of its own, beside any other running here.
 export COMPOSE_PROJECT_NAME="${VISUAL_PROJECT:-fyniq-visual}"
 export FYNIQ_BUSINESS_DATE="${VISUAL_DATE:-2026-12-31}"
+# No tick: the pictures never depend on background work, such as a control's check, running during the capture.
+export FYNIQ_TICK_INTERVAL=off
 export FYNIQ_HTTP_PORT="${VISUAL_HTTP_PORT:-8095}" FYNIQ_API_PORT=8096 FYNIQ_PG_PORT="${VISUAL_PG_PORT:-25433}" FYNIQ_SMTP_PORT=11026 \
   FYNIQ_MAIL_UI_PORT=18026 FYNIQ_GCS_PORT=14444 FYNIQ_CLAMD_PORT=13311 FYNIQ_PARTNER_PORT=14010 FYNIQ_PARTNER_WISE_PORT=14011 \
   FYNIQ_PARTNER_AIRWALLEX_PORT=14012

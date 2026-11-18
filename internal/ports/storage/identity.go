@@ -124,6 +124,10 @@ type Sessions interface {
 	// RecordIdentityEmail keeps the email the provider verified at a sign-in on the identity, if it has a user, so mail
 	// the person sends to an email-in address is known as theirs (FR-INT-22, rev 0.106).
 	RecordIdentityEmail(ctx context.Context, issuer, subject, email string, now time.Time) error
+	// EmailMatches are the active members, by organisation, of whom another sign-in identity than (issuer, subject) has
+	// the verified email: a sign-in with their email that is not theirs, which links and reaches nothing and is recorded
+	// in their organisations' trails (FR-ADM-08, G4-061). IDs only.
+	EmailMatches(ctx context.Context, email, issuer, subject string) ([]MemberOf, error)
 	// Session returns the live session behind a token's hash at now, or ports.ErrNotFound: unknown,
 	// ended, idle for longer than its organisation's timeout (idle when it has none, rev 0.180), or past its expiry. The identity's user, their organisation and
 	// their live roles are read at that moment, so a role change applies at the next request.
@@ -397,4 +401,10 @@ type RoleAssignment struct {
 	Role         string
 	ExpiresAt    *time.Time
 	RevokedAt    *time.Time
+}
+
+// MemberOf is a person's membership by its organisation and user.
+type MemberOf struct {
+	Organisation uuid.UUID
+	User         uuid.UUID
 }

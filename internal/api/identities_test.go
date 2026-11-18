@@ -14,6 +14,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/signin"
 )
 
 // link links a sign-in as subject to b's account through the sign-in page, sent from site ("" for none), and returns
@@ -68,8 +69,10 @@ func (b *browser) identities() []map[string]any {
 // A person links a sign-in to their account by signing in with it, from Fyniq, in a session that confirmed it is them
 // in the last 5 minutes; lists their sign-ins; and removes one, never the one in use nor their last, which ends its
 // sessions. An account at a provider signs one person in: another's is refused, a matching email links nothing, and the
-// database refuses a link or a removal from a session without a recent second factor whatever the API checks.
+// database refuses a link or a removal from a session without a recent second factor whatever the API checks. The
+// matching email's attempt is recorded in the founder's organisation's trail (G4-061).
 // req: FR-ADM-08
+// req: G4-061
 // asvs: V6.8.1, V7.5.1
 func TestYourSignIns(t *testing.T) {
 	ctx := context.Background()
@@ -141,6 +144,21 @@ func TestYourSignIns(t *testing.T) {
 	stranger.signIn("founder-a-google", true)
 	if r := stranger.session(); r.Status != http.StatusOK || r.str("user_id") != "" {
 		t.Errorf("a matching email signed the founder in: %d %s", r.Status, r.Raw)
+	}
+	// The attempt is recorded against the founder in their organisation's trail, by the identity, never its subject
+	// (G4-061).
+	founder := uuid.MustParse(desk.session().str("user_id"))
+	var matched []storage.AuditEvent
+	if err := s.env.store.Do(ctx, uuid.MustParse(org), func(ctx context.Context, u storage.UnitOfWork) error {
+		var err error
+		matched, err = u.Audit().Find(ctx, storage.AuditQuery{Action: signin.ActionEmailMatched, ObjectType: "user", ObjectID: &founder, Limit: 10})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(matched) != 1 || !strings.Contains(matched[0].Body, `"actor":{"type":"identity","id":"local:`) || !strings.Contains(matched[0].Body, `"linked":[null,false]`) ||
+		strings.Contains(matched[0].Body, "founder-a-google") || strings.Contains(matched[0].Body, "mei.ling@example.com") {
+		t.Errorf("the attempt in the founder's trail: %+v", matched)
 	}
 	// Linked already, to them or to anyone else: the second founder's sign-in stays theirs, whatever its email.
 	if to := desk.link("founder-a-zoho", "same-origin"); to != "/settings/profile?link_error=AUTH-SIGNIN-07" {

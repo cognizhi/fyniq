@@ -15,6 +15,19 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
+// EmailMatches implements storage.Sessions.
+func (s *Store) EmailMatches(ctx context.Context, email, issuer, subject string) ([]storage.MemberOf, error) {
+	rows, err := s.q().EmailMatches(ctx, sqlcdb.EmailMatchesParams{Email: strings.ToLower(email), Issuer: issuer, Subject: subject})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.MemberOf, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, storage.MemberOf{Organisation: r.OrganisationID, User: r.UserID})
+	}
+	return out, nil
+}
+
 // RecordIdentityEmail implements storage.Sessions.
 func (s *Store) RecordIdentityEmail(ctx context.Context, issuer, subject, email string, now time.Time) error {
 	return mapError(s.q().RecordIdentityEmail(ctx, sqlcdb.RecordIdentityEmailParams{Issuer: issuer, Subject: subject, Email: strings.ToLower(email), Now: now}))

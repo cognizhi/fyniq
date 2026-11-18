@@ -4,6 +4,8 @@ import type { Session } from "../../api/client";
 import { answer, ownerSession, problem, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
+import { selectedRowActions } from "../../shell/bulk";
+import { setLedgerView } from "../../view";
 import { Categorise } from "./Categorise";
 import { acceptRequest, checkCategorisation, settles, type Line, type Suggestion } from "./lineActions";
 import { invalid } from "../../test/invalid";
@@ -107,6 +109,43 @@ describe("the categorise queue", () => {
     const basic = await take("basic");
     const expert = await take("expert");
     expect(expert).toEqual(basic);
+  });
+
+  // req: FR-UX-06
+  it("offers accepting the selected lines from the command palette while they are selected", async () => {
+    const sent = answer({
+      ...queue([line()], { l1: line({ suggestions: [invoice] }) }),
+      "POST /v1/bank-lines/l1/match-invoices": { status: 200, body: { line: line({ status: "matched" }) } },
+    });
+    renderPage(Categorise, { path: "/banking/categorise?view=grid", route: "/banking/categorise", session: bookkeeper, mode: "expert" });
+    await screen.findByRole("button", { name: /Accept the suggestion for the line of/ });
+    expect(selectedRowActions()).toEqual([]);
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select every line" }));
+    await waitFor(() => expect(selectedRowActions().map((a) => a.label)).toEqual(["Accept the selected suggestions (1)"]));
+    selectedRowActions()[0]!.run();
+    await waitFor(() => expect(sent.some((s) => s.method === "POST" && s.path === "/v1/bank-lines/l1/match-invoices")).toBe(true));
+    await waitFor(() => expect(selectedRowActions()).toEqual([]));
+  });
+
+  // req: FR-UX-08
+  // req: experience/navigation FR-UX-08 Plain view and Accountant view: Same data in both views
+  it("shows the grid's money as Money in / Money out / Category or Debit / Credit / Account, the same figures", async () => {
+    setLedgerView("plain");
+    answer(queue([line(), line({ id: "l2", amount: sgd("-250.00"), description: "AWS EMEA" })], { l1: line({ suggestions: [invoice] }), l2: line({ id: "l2", amount: sgd("-250.00"), suggestions: [ruleHit] }) }));
+    renderPage(Categorise, { path: "/banking/categorise?view=grid", route: "/banking/categorise", session: bookkeeper, mode: "expert" });
+    const table = await screen.findByRole("table", { name: "Waiting lines" });
+    await screen.findAllByRole("button", { name: /Accept the suggestion for the line of/ });
+    const columns = () => within(table).getAllByRole("columnheader").map((h) => h.textContent);
+    const cells = () => within(table).getAllByRole("row").slice(1).map((r) => within(r).getAllByRole("cell").slice(4, 7).map((c) => c.textContent));
+    expect(columns()).toEqual(expect.arrayContaining(["Money in", "Money out", "Suggested category"]));
+    const plain = cells();
+    expect(plain[0]!.slice(0, 2)).toEqual(["10,900.00", ""]);
+    expect(plain[1]!.slice(0, 2)).toEqual(["", "250.00"]);
+    fireEvent.click(screen.getByRole("radio", { name: "Accountant view" }));
+    expect(columns()).toEqual(expect.arrayContaining(["Debit", "Credit", "Suggested account"]));
+    expect(columns()).not.toContain("Money in");
+    expect(cells()).toEqual(plain);
+    setLedgerView("plain");
   });
 
   it("accepts a rule's suggestion as the rule's category", async () => {

@@ -3,7 +3,7 @@ key: approvals.decide
 title: Approve a change
 mode: basic
 roles: [owner, admin, controller, accountant, auditor, dpo]
-requirements: [FM-1, FM-2, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-10, FM-3, FR-AP-22]
+requirements: [FM-1, FM-2, FR-APR-01, FR-APR-02, FR-APR-03, FR-APR-04, FR-APR-05, FR-APR-10, FM-3, FM-6, FR-AP-22]
 ---
 
 # Approve a change
@@ -105,6 +105,24 @@ unreviewed 14 days after it was made shows as overdue in the Inbox and the revie
 
 A break-glass is listed too, but reviewed on **Break-glass** with each batch it released
 ([Break-glass](team-mode.md#break-glass)).
+
+## Unusual items
+
+In Founder mode, Fyniq looks each night at the last week's journals and supplier payments and adds
+to the review log the ones that look unusual, marked **Unusual**, each with the reason:
+
+- a journal well above the company's usual: more than three times the usual journal of the half
+  year before;
+- a journal of a round sum: a whole number of thousands, from 10,000;
+- a journal posted more than 30 days after its date;
+- a payment within 14 days after the supplier's bank details changed;
+- a payment of the same amount to the same supplier within 7 days of another;
+- the first payment to a supplier.
+
+An unusual item is not a mistake, and nothing is held or changed: Fyniq only asks another founder to
+look. Open the journal from the item, check it against its evidence, then mark it as reviewed with a
+note of what you found. The person who posted it can't review it. A journal or payment shows once for
+each reason. Later, Fyniq's assistant will explain each item as well.
 
 ## When a request can no longer be approved
 

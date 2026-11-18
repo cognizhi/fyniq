@@ -585,6 +585,12 @@ var matrixCalls = map[string]matrixCall{
 	"setQuietHours": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPut, "/v1/notification-quiet-hours", asMatrixMember(e, tok), map[string]any{"from": "22:00", "to": "07:00"}, "If-Match", "*"), nil
 	},
+	"getHelpState": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/help-state", asMatrixMember(e, tok), nil), nil
+	},
+	"setTourState": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPut, "/v1/help-state/tour", asMatrixMember(e, tok), map[string]any{"tour": "started", "step": 0}, "If-Match", "*"), nil
+	},
 	"sendTestNotification": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/notifications/test-messages", asMatrixMember(e, tok), nil), nil
 	},
@@ -1406,6 +1412,11 @@ var matrixCalls = map[string]matrixCall{
 		return e.call(http.MethodGet, "/v1/checks/books.debits-equal-credits", tok, nil), nil
 	},
 	// Run now joins the one still waiting: no worker runs here, so every allowed call after the first joins it.
+	// A task that stopped, made for each call: a refused replay leaves it stopped.
+	"replayBackgroundWork": func(e *env, tok string) (response, func() bool) {
+		id := e.deadWork("the matrix's task")
+		return e.call(http.MethodPost, "/v1/background-work/"+id.String()+"/replay", tok, nil), func() bool { return e.workState(id) == storage.OutboxDead }
+	},
 	"runChecks": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/checks/runs", tok, nil), nil
 	},

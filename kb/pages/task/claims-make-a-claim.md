@@ -4,7 +4,7 @@ type: task
 title: Claim back money spent for the company
 summary: How a member claims a receipt or a trip in My claims, submits it, completes card lines, uses a cash advance, or keeps it as a loan
 sources:
-  - docs/user-guide/claims-my-claims.md sha256:095d578fd5789a4c9fb01fce86cc7d98124a2629c240fd5e2cfa239f27186e9e
+  - docs/user-guide/claims-my-claims.md sha256:71956f8e28753ba30069d9f203a1e1ddc7704046545ab2173d1128d7d0ab446d
 data_class: general
 taint: trusted
 status: draft
@@ -67,7 +67,7 @@ aliases:
 
 - When the company tracks costs by department, project or something of its own, a category may need to know which: under the category, a choice such as **Department** says "needs one" ([[accounting.chart]]).
 - Choose the team, such as ENG Engineering, for each receipt or trip in that category; the claim cannot be paid back until each has one (DIM-05: choose it under the line's category, then submit again).
-- Other choices, for a category that does not need them, are in Expert mode.
+- Other choices, for a category that does not need them, are in Expert mode; in Basic mode a value someone chose for one shows under **Has advanced details**, read-only.
 
 (src: docs/user-guide/claims-my-claims.md#say-which-team-or-project-it-was-for) (src: docs/user-guide/claims-my-claims.md#common-problems)
 

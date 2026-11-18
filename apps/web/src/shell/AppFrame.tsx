@@ -1,5 +1,5 @@
 import { Dialog } from "@base-ui/react/dialog";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Info, LayoutGrid, LogOut, Search, Sparkles, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Session } from "../api/client";
@@ -9,13 +9,16 @@ import { Button, buttonVariants } from "../components/ui/button";
 import { helpText } from "../i18n";
 import { setMode } from "../mode";
 import { nav, type Mode, type NavFeature } from "../registry";
+import { available, enterToNext, keyOf, matcher, onShortcutSheet, useShortcutSettings } from "../shortcuts";
 import { Icon } from "../ui";
 import { AppearanceChoices, AppearanceMenu } from "./AppearanceMenu";
 import { About, HelpMenu } from "./HelpMenu";
+import { TourHost, TourOffer } from "../tour/TourHost";
 import { bottomBar, navFor } from "./navigation";
 
 const CommandPalette = lazy(() => import("./CommandPalette"));
 const AssistantPanel = lazy(() => import("../components/ai/AssistantPanel"));
+const ShortcutSheet = lazy(() => import("./Shortcuts").then((m) => ({ default: m.ShortcutSheet })));
 
 const mainGroups = [
   ["personal", "For you"],
@@ -27,7 +30,7 @@ const allGroups = [...mainGroups, ["footer", "Settings"]] as const;
 function NavItem({ item, current, className, onNavigate }: { item: NavFeature; current: boolean; className: string; onNavigate?: () => void }) {
   const label = helpText(item.help).label;
   return (
-    <Link to={item.route} className={className} aria-current={current ? "page" : undefined} onClick={onNavigate}>
+    <Link to={item.route} className={className} aria-current={current ? "page" : undefined} onClick={onNavigate} data-tour={item.id}>
       <Icon of={item.icon} />
       <span className="fy-nav__label">{label}</span>
     </Link>
@@ -71,11 +74,11 @@ export function ModeSwitch({ mode }: { mode: Mode }) {
   const other: Mode = mode === "basic" ? "expert" : "basic";
   return (
     <>
-      <button type="button" className="fy-modepill fy-only-compact pointer-coarse:min-h-(--touch-target)" onClick={() => setMode(other)} title={h.tooltip}
+      <button type="button" className="fy-modepill fy-only-compact pointer-coarse:min-h-(--touch-target)" onClick={() => setMode(other)} title={h.tooltip} data-tour="mode"
         aria-label={`${h.label}: ${name(mode)}. Switch to ${name(other)}`}>
         {name(mode)}
       </button>
-      <div className="fy-segmented fy-from-medium" role="radiogroup" aria-label={h.label} title={h.tooltip}>
+      <div className="fy-segmented fy-from-medium" role="radiogroup" aria-label={h.label} title={h.tooltip} data-tour="mode">
         {choices.map(([m, label]) => (
           <button key={m} type="button" role="radio" aria-checked={mode === m} tabIndex={mode === m ? 0 : -1} onClick={() => setMode(m)}
             onKeyDown={(e) => {
@@ -103,7 +106,7 @@ export function ModeSwitch({ mode }: { mode: Mode }) {
 // switcher joins it with p1-app-shell 2.1–4.1. The assistant's button and Ctrl+J or ⌘J open the AI panel (FR-UX-17,
 // p1-ai-assistant design D12), docked beside the page in expanded, a sheet in medium and full screen in compact.
 export function AppFrame({ session, title, mode, operations, bell, banners, logo, children }: {
-  session: Pick<Session, "roles" | "features">;
+  session: Pick<Session, "roles" | "features"> & { user_id?: string; super_admin?: boolean };
   title: string;
   mode: Mode;
   operations?: ReactNode;
@@ -119,6 +122,14 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
   const [about, setAbout] = useState(false);
   const [assistant, setAssistant] = useState(false);
   const [context, setContext] = useState<TurnContext | undefined>(undefined);
+  const [sheet, setSheetOpen] = useState(false);
+  const [sheetWanted, setSheetWanted] = useState(false); // load the sheet's code only once it is asked for
+  const setSheet = (o: boolean) => {
+    if (o) setSheetWanted(true);
+    setSheetOpen(o);
+  };
+  const navigate = useNavigate();
+  const keys = useShortcutSettings(session.user_id ?? "");
   const opener = useRef<HTMLButtonElement>(null);
   const visible = navFor(nav, session, mode);
   const bottom = bottomBar(visible);
@@ -162,6 +173,34 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Keyboard-first entry (FR-UX-06): the single-character shortcuts the person may use in their mode, never while
+  // they type in a field or a dialog is open; and Enter to the next field in an entry form.
+  useEffect(() => {
+    const list = available(session, mode, keys);
+    const step = matcher();
+    const onKey = (e: KeyboardEvent) => {
+      enterToNext(e);
+      const key = keyOf(e);
+      if (!key) return;
+      const hit = step(key, e.timeStamp, list);
+      if (!hit) return;
+      e.preventDefault();
+      if (hit === "wait") return;
+      if (hit.to) void navigate({ to: hit.to });
+      else showSheet();
+    };
+    const showSheet = () => {
+      setSheetWanted(true);
+      setSheetOpen(true);
+    };
+    window.addEventListener("keydown", onKey);
+    const off = onShortcutSheet(showSheet);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      off();
+    };
+  }, [session, mode, keys, navigate]);
+
   return (
     <AssistantContext.Provider value={panel}>
     <div className="fy-app" data-ai={assistant ? "open" : undefined}>
@@ -186,7 +225,7 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
         </Link>
         {logo}
         <span className="fy-top__title fy-truncate">{title}</span>
-        <button className="fy-search fy-from-expanded" type="button" onClick={openPalette} title={search.tooltip} aria-keyshortcuts="Control+K Meta+K">
+        <button className="fy-search fy-from-expanded" type="button" onClick={openPalette} title={search.tooltip} aria-keyshortcuts="Control+K Meta+K" data-tour="search">
           <Icon of={Search} />
           <span>{search.label}</span>
           <span className="fy-kbd">Ctrl K</span>
@@ -194,11 +233,11 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
         <div className="fy-top__actions">
           <ModeSwitch mode={mode} />
           <Button ref={opener} variant="ghost" size="sm" onClick={() => (assistant ? closeAssistant() : setAssistant(true))} aria-expanded={assistant}
-            aria-label={ai.label} title={ai.tooltip} aria-keyshortcuts="Control+J Meta+J">
+            aria-label={ai.label} title={ai.tooltip} aria-keyshortcuts="Control+J Meta+J" data-tour="assistant">
             <Icon of={Sparkles} size={20} />
             <span className="fy-from-expanded">{ai.label}</span>
           </Button>
-          <Button variant="ghost" size="icon" className="fy-until-expanded" onClick={openPalette} aria-label={search.label} title={search.tooltip}>
+          <Button variant="ghost" size="icon" className="fy-until-expanded" onClick={openPalette} aria-label={search.label} title={search.tooltip} data-tour="search">
             <Icon of={Search} size={20} />
           </Button>
           {operations}
@@ -214,8 +253,12 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
       </header>
       <main className="fy-main" id="main" tabIndex={-1}>
         {banners}
+        <div className="px-4 pt-4 empty:hidden">
+          <TourOffer session={session} />
+        </div>
         {children}
       </main>
+      <TourHost session={session} />
       <nav className="fy-bottom" aria-label="Main, bottom bar">
         {bottom.map((n) => (
           <NavItem key={n.id} item={n} current={current(n, path)} className="fy-bottom__item" />
@@ -266,6 +309,11 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
         </Dialog.Portal>
       </Dialog.Root>
       <About open={about} onOpenChange={setAbout} />
+      {sheetWanted && (
+        <Suspense fallback={null}>
+          <ShortcutSheet open={sheet} onOpenChange={setSheet} session={session} mode={mode} />
+        </Suspense>
+      )}
       {assistant && (
         <Suspense fallback={null}>
           <AssistantPanel enabled={enabled} mode={mode} context={context} onClearContext={() => setContext(undefined)}

@@ -5,7 +5,10 @@ import { Button } from "../../components/ui/button";
 import { helpText } from "../../i18n";
 import { Icon } from "../../ui";
 import type { Account } from "../accounting/data";
-import { DimensionFields } from "../accounting/lines";
+import { AdvancedDetails, type AdvancedDetail } from "../../components/AdvancedDetails";
+import { month } from "../../format/date";
+import { useSignedIn } from "../../session";
+import { DimensionFields, useDimensionDetails } from "../accounting/lines";
 
 type GSTCode = components["schemas"]["SalesGSTCodes"]["codes"][number];
 export type Item = components["schemas"]["Item"];
@@ -52,8 +55,9 @@ export function fromItem(l: Line, item: Item | undefined, currency: string): Lin
 
 // InvoiceLines is the card of an invoice's lines (FR-AR-03), shared by an invoice, a credit note and a recurring
 // invoice: each line's item, description, quantity, unit price before GST, discount, revenue account, GST code and
-// dimension values (FR-DIM-02, Expert unless set or required); with spreads, the spread of its revenue over months
-// (FR-GL-03). id is the form's, for each error's element.
+// dimension values (FR-DIM-02, Expert unless required); with spreads, the spread of its revenue over months (FR-GL-03).
+// In Basic mode, the values a line has in Expert's fields show read-only under "Has advanced details" (FR-UX-25), and
+// such a field shows itself only to say what is wrong with it. id is the form's, for each error's element.
 export function InvoiceLines({ id, lines, onChange, editable, errors, currency, spreads, codes, choices, items, subtitle, footer }: {
   id: string;
   lines: Line[];
@@ -76,6 +80,16 @@ export function InvoiceLines({ id, lines, onChange, editable, errors, currency, 
       </span>
     ) : null;
   const described = (k: string, help?: string) => (errors[k] ? `${id}-${k}-error` : help);
+  const { mode } = useSignedIn();
+  const dimensionDetails = useDimensionDetails();
+  const expertField = (...keys: string[]) => (keys.some((k) => errors[k]) ? "fy-field" : "fy-field fy-expert-only");
+  const advanced: AdvancedDetail[] = lines.flatMap((l, i) => [
+    ...(l.discount ? [{ label: `Line ${i + 1} · Discount`, value: `${l.discount}%` }] : []),
+    ...(spreads && (l.spread_months || l.spread_from)
+      ? [{ label: `Line ${i + 1} · Spread`, value: `${l.spread_months ? `${l.spread_months} months` : "Over months"} from ${l.spread_from ? month(l.spread_from) : "the invoice's month"}` }]
+      : []),
+    ...dimensionDetails(l.dimension_value_ids, `Line ${i + 1}`, choices.find((a) => a.id === l.account_id)),
+  ]);
   return (
     <section className="fy-card" aria-labelledby={`${id}-lines`}>
       <div className="fy-card__head">
@@ -163,7 +177,7 @@ export function InvoiceLines({ id, lines, onChange, editable, errors, currency, 
                 />
                 {err(`${l.key}.unit_price`)}
               </div>
-              <div className={`fy-field${l.discount ? "" : " fy-expert-only"}`}>
+              <div className={expertField(`${l.key}.discount`)}>
                 <label className="fy-label" htmlFor={`${l.key}-discount`}>
                   Discount (%, optional)
                 </label>
@@ -234,9 +248,9 @@ export function InvoiceLines({ id, lines, onChange, editable, errors, currency, 
                 expertOnly
               />
               {spreads && (
-                // A spread is an Expert field (§7.8), shown in Basic too once a line has one, so nothing is hidden.
+                // A spread is an Expert field (§7.8); in Basic, a line's spread shows under "Has advanced details".
                 <>
-                  <div className={`fy-field${l.spread_months || l.spread_from ? "" : " fy-expert-only"}`}>
+                  <div className={expertField(`${l.key}.spread_months`, `${l.key}.spread_from`)}>
                     <label className="fy-label" htmlFor={`${l.key}-spread`}>
                       Spread over (months, optional)
                     </label>
@@ -256,7 +270,7 @@ export function InvoiceLines({ id, lines, onChange, editable, errors, currency, 
                       </span>
                     )}
                   </div>
-                  <div className={`fy-field${l.spread_months || l.spread_from ? "" : " fy-expert-only"}`}>
+                  <div className={expertField(`${l.key}.spread_months`, `${l.key}.spread_from`)}>
                     <label className="fy-label" htmlFor={`${l.key}-spread-from`}>
                       Spread from
                     </label>
@@ -290,6 +304,7 @@ export function InvoiceLines({ id, lines, onChange, editable, errors, currency, 
             </div>
           </fieldset>
         ))}
+        <AdvancedDetails mode={mode} details={advanced} />
         {err("lines")}
         {editable && (
           <div>

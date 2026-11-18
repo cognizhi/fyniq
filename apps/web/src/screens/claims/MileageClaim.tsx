@@ -159,6 +159,7 @@ export function MileageClaim() {
       {trips && (
         <form
           className="fy-stack fy-stack--4"
+          data-enter="next"
           onSubmit={(e) => {
             e.preventDefault();
             void save();

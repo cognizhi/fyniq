@@ -58,6 +58,7 @@ local stack (the harness).
 | T19 | Browser → API (search) | Tampering / denial: a search's text taken as a LIKE pattern, its wildcards widening the match, or a text that makes the database read every document | Wrong results; slow searches for everyone | Low |
 | T20 | Reports ↔ checks | Tampering (integrity): a balances cache that drifted from its lines is read by the statements too, so the checks that compare them agree on the wrong figure | A drift unseen | Low |
 | T21 | The local stack | Information disclosure / integrity: the services' shared data volume, or a key made twice when they start together | Sealed fields that do not open; false audit alerts; data left on a laptop | Low |
+| T22 | Browser → API (replay) | Elevation / repudiation: someone replays background work that stopped, so a send or a posting runs again, or replays work of another kind than it was | Duplicate work; unexplained activity | Low |
 
 SOD: the monthly drill runs as the jobs' account, which can clone only the production instance and change or remove
 only instances named for the drill; the quarterly drill is run by the Owner with the break-glass holder and recorded by
@@ -90,6 +91,7 @@ caller's rows of `operation`, which already does.
 | T19 | The words of a search are escaped (LIKE's escape character, `%` and `_`) and only narrow the documents on the trigram indexes; the whole text is then matched as typed, as before; every table keeps its row-level security, the indexes led by the organisation | `TestTheSearchFindsTheTextHoweverItsWordsFall`, `TestTheGlobalSearchFindsWhatThePersonMaySee`, `TestTenantKeysIndexesAndForeignKeys` |
 | T20 | Reports read the cache only for a period with nothing later than their revision; a check and the close read the statements from the lines alone (`storage.WithLines`), the trial balance's check from the cache, and `ledger.balances-match-lines` compares the two; the nightly verification too | `TestTamperedBooksFailTheirChecks`, `TestTheCloseAndTheCatalogueAgree`, `TestAPeriodsBalancesAsAtARevisionAreItsLinesUpToIt` |
 | T21 | One named volume, the local stand-in for the cloud's buckets and keys, mounted by the API, the worker and the executor alone, the read-only root and the rest of the hardening kept; a key made once, written whole and linked into place; local only, with synthetic data (DEV-08), and `make reset` deletes it | `TestComposeHardensOurServices`, `TestServicesStartingTogetherHoldOneKey` |
+| T22 | `replayBackgroundWork` needs an Owner or an Administrator (Users and roles, C, or the Owner), who are told when a task stops; it acts only on a row in `dead`, which `outbox_guard` lets go only back to `pending` (FY071); the row keeps its kind, payload and last error, and the replay is audited (`outbox.row.replayed`) | `TestAStoppedTaskShowsOnChecksAndReplays`, the authorisation matrix (G4-073) |
 
 ## 4. What remains
 

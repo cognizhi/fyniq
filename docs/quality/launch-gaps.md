@@ -175,18 +175,21 @@ Built behaviour that no test asserted in full:
 
 ## The exceptions
 
-- **After go-live (14):**
+- **After go-live (16):**
   - the GST F5's part of `p1-gst`, at registration: FR-TAX-01 to FR-TAX-04, FR-TAX-12, C.2 #46, C.2 #47, G4-011,
     G4-021 (the input-tax claim date) and G4-035, G4-036 (the 2200 roll-forward against the boxes);
   - SOD-4, with payroll;
   - QA-API-04, with Nemura;
   - G4-046, contracted MRR, with P2's subscription schedules (rev 0.8).
+  - G4-058, self-approving an AI-drafted tier-2 journal, with the first tier-2 task types (rev 0.286).
+  - G4-052, a board pack re-run as at its revision, with P2's board pack (rev 0.287).
   The others rest on rev 0.25.
-- **Proved in the dev cloud (23):**
+- **Proved in the dev cloud (24):**
   - the controls whose checks run in the cloud (CTL-IAM-03, CTL-IAM-04, CTL-DP-01, CTL-RES-01, CTL-AUD-04, CTL-RES-03,
     CTL-CHG-04, CTL-CHG-05);
   - DR-01, DR-03, NFR-DR-02, NFR-PERF-06, NFR-AVAIL-01 and SEC-30;
   - the costs (NFR-COST-01 to NFR-COST-04, G4-078, G4-086);
-  - the drills (G4-072, G4-074, G4-075).
+  - the drills (G4-072, G4-074, G4-075);
+  - the configured model IDs' pre-go-live check (G4-087, `docs/runbooks/ai-go-live.md`), recorded on 17 Nov 2026.
   Each names its runbook or control file.
 - **Covered elsewhere (1):** C.1 #34, the workbook's fast-mode staleness, which C.2 #12 replaced.

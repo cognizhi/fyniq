@@ -8557,6 +8557,51 @@ components:
       required:
         - items
       type: object
+    BackgroundWork:
+      additionalProperties: false
+      properties:
+        attempts:
+          description: "Its attempts so far: none again once replayed."
+          examples:
+            - 0
+          format: int64
+          minimum: 0
+          type: integer
+        id:
+          description: "The task's ID, as the check C.2 #12 lists it."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+          format: uuid
+          type: string
+        kind:
+          description: What the task does.
+          examples:
+            - email.send
+          type: string
+        last_error:
+          description: Why its last attempt failed, kept when it is replayed.
+          examples:
+            - the provider refused the connection
+          type: string
+        state:
+          description: "Where it stands: pending once replayed."
+          enum:
+            - pending
+            - dispatched
+            - running
+            - done
+            - failed
+            - unknown_outcome
+            - dead
+          examples:
+            - pending
+          type: string
+      required:
+        - id
+        - kind
+        - state
+        - attempts
+      type: object
     BankBillsMatch:
       additionalProperties: false
       properties:
@@ -23744,6 +23789,10 @@ components:
             - person_bank_change
             - founders
             - owner_succession
+            - equity
+            - filing
+            - gst_forecast
+            - corporate
           examples:
             - bill
           type: string
@@ -28038,6 +28087,49 @@ components:
           type: array
       required:
         - items
+      type: object
+    HelpState:
+      additionalProperties: false
+      properties:
+        etag:
+          description: The state's version, for If-Match.
+          examples:
+            - "\"9f1c2b7a\""
+          type: string
+        offer:
+          description: "Whether to offer the tour on Home: it was never answered, or it stopped part-way, to resume there. Help replays it either way."
+          examples:
+            - true
+          type: boolean
+        set_at:
+          description: When the caller last answered or moved, if ever.
+          examples:
+            - "2026-11-17T09:30:00Z"
+          format: date-time
+          type: string
+        step:
+          description: The step shown last, from 0; 0 before the tour starts.
+          examples:
+            - 2
+          format: int64
+          maximum: 6
+          minimum: 0
+          type: integer
+        tour:
+          description: Where the caller is with the first-run tour.
+          enum:
+            - not_started
+            - started
+            - finished
+            - skipped
+          examples:
+            - started
+          type: string
+      required:
+        - tour
+        - step
+        - offer
+        - etag
       type: object
     Holder:
       additionalProperties: false
@@ -43822,7 +43914,7 @@ components:
           format: uuid
           type: string
         kind:
-          description: "approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14); release_conflict: in Founder mode, a payment batch released by who prepared or approved it or a payee's account change (SOD-1, SOD-2); break_glass: an Owner's break-glass, reviewed with what it released through reviewBreakGlass once it has ended (FM-8); account_recovery: a member recovered their account with a recovery code and a confirmation (SEC-35)."
+          description: "approved_change: a change a second person approved (FM-1); founder_bootstrap: a role change or invitation the Owner made alone before a second member joined (FR-ADM-01); self_approved: a journal a founder posted alone at or below the self-approval threshold (FM-2); scheduled_issue: an invoice the scheduler issued and sent from an approved recurring invoice (FR-AR-07); auto_reconciled: a bank line the system reconciled, in the week's sample (FR-BNK-14); release_conflict: in Founder mode, a payment batch released by who prepared or approved it or a payee's account change (SOD-1, SOD-2); break_glass: an Owner's break-glass, reviewed with what it released through reviewBreakGlass once it has ended (FM-8); account_recovery: a member recovered their account with a recovery code and a confirmation (SEC-35); unusual: in Founder mode, a journal or payment of the last week that rules found unusual, the summary saying why, for a founder other than who posted it to look at (FM-6, rev 0.287)."
           enum:
             - approved_change
             - founder_bootstrap
@@ -43832,6 +43924,7 @@ components:
             - release_conflict
             - break_glass
             - account_recovery
+            - unusual
           examples:
             - approved_change
           type: string
@@ -45505,6 +45598,8 @@ components:
               - founders
               - owner_succession
               - equity
+              - filing
+              - gst_forecast
               - corporate
             examples:
               - bill
@@ -49878,6 +49973,30 @@ components:
         - event_id
         - title
         - email
+      type: object
+    TourChange:
+      additionalProperties: false
+      properties:
+        step:
+          description: The step shown last, from 0. A tour has at most seven.
+          examples:
+            - 2
+          format: int64
+          maximum: 6
+          minimum: 0
+          type: integer
+        tour:
+          description: started when the caller starts, resumes or moves to a step; finished at Done; skipped when they decline the offer or stop part-way.
+          enum:
+            - started
+            - finished
+            - skipped
+          examples:
+            - started
+          type: string
+      required:
+        - tour
+        - step
       type: object
     TransferFlowView:
       additionalProperties: false
@@ -65325,6 +65444,162 @@ paths:
       x-fyniq-permission:
         capability: Bank transactions, categorise
         right: V
+  /v1/background-work/{work_id}/replay:
+    post:
+      description: "Sends a task of the organisation's background work whose attempts ran out back to pending, with its attempts counted afresh and its last error kept, once what stopped it is fixed (§12.11, C.2 #12, G4-073). It is dispatched at once after the change commits, and the next tick sends it if that fails. Only a stopped task replays: any other is API-404-01. An Owner or an Administrator, who are told when a task stops (FR-NTF-01). Side effects: the task pending again and its audit event; the check lists it no more from its next run. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: replayBackgroundWork
+      parameters:
+        - description: "The task's ID, as the check C.2 #12 lists it."
+          in: path
+          name: work_id
+          required: true
+          schema:
+            description: "The task's ID, as the check C.2 #12 lists it."
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BackgroundWork"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this answer is the one recorded for the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Replay a background task that stopped
+      tags:
+        - Checks
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        If-Match: "A replay acts on a task that stopped, which nothing else changes: replaying one not stopped is refused."
+      x-fyniq-permission:
+        capability: Users, roles, team mode
+        note: An Owner or an Administrator, who are told when a background task stops.
+        right: C
   /v1/bank-changes:
     post:
       description: "Saves a draft change of a vendor's bank account in one currency (FR-CT-03; PRD-001 rev 0.152): a Singapore account or an overseas one, with the full number, which is sealed (SEC-11) and kept with its last four characters and a keyed fingerprint (FR-CT-04). Nothing changes until the change is asked for and a second person approves it: attach the vendor's letter (evidence type bank_letter, or vendor_confirmation) and ask with requestPayeeBankChangeApproval. Side effects: the change, its sealed number and their audit events, which carry the last four characters and the fingerprint only (AUD-02). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
@@ -125604,6 +125879,10 @@ paths:
               - person_bank_change
               - founders
               - owner_succession
+              - equity
+              - filing
+              - gst_forecast
+              - corporate
             examples:
               - bill
             type: string
@@ -136442,6 +136721,302 @@ paths:
       x-fyniq-permission:
         capability: GST return, filing
         note: "A forecast with its evidence: it posts nothing."
+        right: C
+  /v1/help-state:
+    get:
+      description: "Where the caller is with the first-run tour in this organisation (FR-UX-34): offered on Home until they answer it, offered again to resume when it stopped part-way, and replayable from Help whatever its state. A caller who is not a person gets the not-started state, with no offer. Read-only; no side effects."
+      operationId: getHelpState
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HelpState"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The state's version, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get your first-run tour state
+      tags:
+        - Help
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Own notifications and preferences (rev 0.6)
+        right: V
+  /v1/help-state/tour:
+    put:
+      description: "Saves the caller's own progress through the first-run tour (FR-UX-34): started at a step, finished, or skipped at a step. It is the tour's only write: the tour never changes business data (G4-104, QA-UI-06). Side effects: the state and its audit event. Needs If-Match with the state's etag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: setTourState
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TourChange"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HelpState"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The state's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `HLP-01` Not a person with a tour of their own."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Save where you are with the first-run tour
+      tags:
+        - Help
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - HLP-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Own notifications and preferences (rev 0.6)
         right: C
   /v1/holder-records:
     post:
@@ -212311,6 +212886,8 @@ tags:
     name: Search
   - description: Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05).
     name: Notifications
+  - description: "Each person's first-run tour state: the tour's only write (FR-UX-34, G4-104)."
+    name: Help
   - description: "Banners under the header: those each person sees now, and the announcements the Owner and Administrator publish to their organisation (FR-NTF-03)."
     name: Announcements
   - description: "Document and email templates as data: drafts, and numbered versions published under approval that never change (FR-TPL-01…05)."

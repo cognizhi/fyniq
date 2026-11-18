@@ -12,7 +12,7 @@ status: draft            # written with the app shell's settings pages (P1); rev
 ## What it is
 
 **Settings › Profile and security** holds what is yours alone: whether Fyniq shows you Basic or
-Expert mode, the bank account your expense claims are paid into, the passkeys you confirm it's you
+Expert mode, your keyboard shortcuts, the bank account your expense claims are paid into, the passkeys you confirm it's you
 with, the accounts you sign in with, and the devices you are signed in on. Nobody else changes them.
 
 ## Before you start
@@ -32,6 +32,11 @@ cannot post, what waits for approval, locked periods and deadlines.
 Choose the mode here, or with **Basic | Expert** in the header. Until you choose, your roles
 decide: an Accountant, Controller, Tax agent, Auditor or Payroll administrator starts in Expert;
 everyone else, and every Owner, starts in Basic. For now your choice is kept in this browser.
+
+## Keyboard
+
+Turn the single-character shortcuts off, or change their keys, under **Keyboard**. **Keyboard
+shortcuts** shows every shortcut you can use. See [Use Fyniq from the keyboard](keyboard-shortcuts.md).
 
 ## Confirm it's you
 

@@ -73,7 +73,8 @@ function moving(page: Page): Promise<string[]> {
 test("with motion on, the page moves", async ({ page }) => {
   await open(page, "on");
   await settled(page, 0.18);
-  expect(await moving(page)).not.toEqual([]);
+  // Polled: on a cold first load the page's enter animation and its controls' transitions are styled a moment later.
+  await expect.poll(() => moving(page), { timeout: 10_000 }).not.toEqual([]);
 });
 
 test("the organisation's motion Off stops every animation and transition", async ({ page }) => {
