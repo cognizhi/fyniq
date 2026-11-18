@@ -6,6 +6,8 @@ test red or a requirement tagged that its tests do not fully prove. `[live-verif
 can show; it is written and tested offline here and left for the cloud gate. Slices 1 and 2 are the skeleton
 and its database; the owner's "Decisions needed" (design.md O1 to O5) block none of the first two.
 
+Decisions (owner, 19 Nov 2026), all as recommended in design.md: O1 a second database on Fyniq's Cloud SQL instance until the first paid person's pay data, O2 Fyniq's projects with the label `app=nemura`, O3 `people.<domain>` as configuration, O4 the image rides the release train, O5 one Go module with the archtest allow-list.
+
 Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-change` (every slice),
 `fyniq-security-compliance` (3, 5, 8, 10), `fyniq-api-integrations` (4), `fyniq-design-system` and
 `fyniq-knowledge-base` (7, 9), `fyniq-release` (a PRD revision in slice 1).
@@ -37,7 +39,7 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 2. Its own database and migrations (slice 2)
 
-- [ ] 2.1 The runner takes a migration set (embedded files, directory, goose table); `db/nemura/embed.go` and
+- [ ] 2.1 The runner is a shared `internal/adapters/postgres/gooserun` package that takes a migration set (embedded files, directory, goose table), so Nemura's binary links none of Fyniq's store; `db/nemura/embed.go` and
   `db/nemura/migrations/`; `NEMURA_ROLE=migrate` with `up` and `status` under `nemura_migrator`; `.dockerignore` lines
   for `db/nemura/`; `make db-lint` lints both streams; the local bootstrap creates `nemura_migrator`, the `nemura`
   database and `nemura_hydra` with its role. Fyniq's `migrate` is unchanged and its tests still pass. Tests: the
@@ -49,9 +51,9 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   `ENABLE` and `FORCE ROW LEVEL SECURITY`. Squawk clean; a CHECK widening is `NOT VALID` then validated in the
   next migration. Tests `// req: SEC-03` for the roles' exact grants (`grants.golden`, an extra privilege fails),
   `// req: INV-06` for tenant isolation, each with `// asvs:` IDs from `docs/security/asvs-5.0.tsv`; the schema
-  golden file; `CONNECT` on each database refused to the other application's roles, both ways.
+  golden file; `CONNECT` on Nemura's database refused to a login that holds no Nemura role (the reverse is infra's, `[live-verify]`).
 - [ ] 2.3 `internal/adapters/postgres/nemura`: the unit of work (`store.go`) that sets `app.org_id` first in every
-  transaction, the `Ping` behind `/readyz`'s `database` check, its sqlc config and `make sqlc`; the archtest
+  transaction and the `Ping` behind `/readyz`'s `database` check (sqlc joins when the first query is worth generating); the archtest
   exception for `nemura/store.go` only, so no other file begins or ends a transaction. Compose gains
   `nemura-migrate` and `nemura-api` waits for it; `nemura-api` connects as `nemura_api`. Tests: the unit of work
   refuses a query with no organisation set and cannot read another organisation's row; a planted transaction call
@@ -231,8 +233,8 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 ## 10. Cloud code written offline, the threat model, controls and the close (slice 10)
 
 - [ ] 10.1 `infra/`: Nemura's services (api, worker, executor, assistant, issuer), their identities and database
-  roles in the platform spec, the queues and tick, the database and identity tenants per O1 and O3, the cost label of
-  O2, with the module tests and `make infra-check` proving the rules offline (region, no keys, no authoritative IAM,
+  roles in the platform spec, the queues and tick, the database and identity tenants per O1 (the database on Fyniq's instance, with its own roles) and O3 (the hostname as configuration), the cost label of
+  O2 and its test that no identity of either app holds a role on the other's resources, with the module tests and `make infra-check` proving the rules offline (region, no keys, no authoritative IAM,
   no cross-app role). Plan and apply: `[live-verify]` at the cloud gate. Tests `// req: NM-NFR-01`.
 - [ ] 10.2 The threat model `docs/security/threat-models/nemura-platform.md` (tenancy, the shared relying-party ID,
   restricted data, the approvals, the token issuer, the embedded web app), the controls in `compliance/controls/`,

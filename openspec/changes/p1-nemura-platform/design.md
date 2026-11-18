@@ -114,22 +114,25 @@ What exists (checked on `main`, 18 Nov 2026):
   - A database `nemura`, never Fyniq's tables or database. Roles are cluster-wide in PostgreSQL, so Nemura's are
     named `nemura_*`: the migrator `nemura_migrator` (owns every object), and the group roles `nemura_api`,
     `nemura_worker`, `nemura_executor`, `nemura_assistant` (inserts proposals only, later) and `nemura_readonly`.
-    `CONNECT` on each database is revoked from `PUBLIC` and granted only to its own roles, and a test proves a
-    `fyniq_*` role cannot connect to `nemura` and the reverse.
+    `ALL` on the Nemura database is revoked from `PUBLIC` and `CONNECT` granted only to its own roles, and a test proves a
+    login that holds no Nemura role (a Fyniq role, a person) cannot open it. The other direction, a Nemura role opening Fyniq's
+    database, is Fyniq's database setting and the cloud's per-database IAM bindings (`[live-verify]`).
   - Migrations are a second stream, `db/nemura/migrations/NNNNNN_name.sql`, numbered from 000001, embedded by
     `db/nemura/embed.go`, applied by `NEMURA_ROLE=migrate`. They never use Fyniq's numbers, so the ranges the
     other changes claim in `db/migrations/` are untouched. A change that needs a Fyniq-side migration (the link)
     uses Fyniq's stream under its own range.
-  - The runner is the existing goose provider, parameterised by a migration set (embedded files, directory, table
-    `nemura_migrations.goose_db_version`), not a copy; `Migrate` keeps loading Fyniq's packs, Nemura's set loads
-    none until its packs exist.
+  - The runner is the existing goose provider, moved to a small shared package, `internal/adapters/postgres/gooserun`, and
+    parameterised by a migration set (embedded files, directory, table `nemura_migrations.goose_db_version`), not a copy.
+    Fyniq's `Migrate` keeps loading its packs on top of it; Nemura's set loads none until its packs exist. The package
+    imports nothing of either application, so the nemura binary links none of Fyniq's store.
   - Tenancy as Fyniq: `organisation_id` first in every key and index, composite foreign keys, `ENABLE` and
     `FORCE ROW LEVEL SECURITY` with one policy on `nemura.current_org()`, set per transaction with
     `set_config('app.org_id', …, true)`; unset, it matches no row. Global tables have no grant and are read
     through views.
   - Local: the same Postgres container, with the `nemura` database and roles created by the local bootstrap
     beside `hydra` (`nemura_hydra` for Nemura's issuer, D7). The password is the local-only one.
-  - Tooling: `make db-lint` lints both streams; `make sqlc` generates the Nemura queries from its own config;
+  - Tooling: `make db-lint` lints both streams; `make sqlc` generates the Nemura queries from its own config once the first
+    query is worth generating (until then the adapter's few statements are plain pgx);
     the schema and grants golden files, the catalogue, attack, tenant-isolation and grant suites are Nemura's
     own, in `internal/adapters/postgres/nemura/`. Reuse the existing test harness through `pgtest`.
 
@@ -289,13 +292,12 @@ What exists (checked on `main`, 18 Nov 2026):
   authoritative IAM, one identity and one database role per service. A plan or apply waits for the cloud gate
   (`[live-verify]`).
 
-## Decisions needed (owner)
+## Decisions (owner, 19 Nov 2026)
 
-None of these blocks slices 1 and 2 (the skeleton and its database). Each is needed before the slice or the
-cloud gate named; until answered, the slices proceed on the recommended default, which is cheap to reverse
-except where stated.
+The owner decided all five on 19 Nov 2026, each as recommended. The options stay below as the record of what was weighed;
+each heading says what was decided.
 
-### O1. Where Nemura's database lives in the cloud (needed before the cloud gate; D15)
+### O1. Where Nemura's database lives in the cloud (needed before the cloud gate; D15). **Decided: B**, a second database and roles on Fyniq's Cloud SQL instance until Nemura holds a first paid person's pay data, then its own instance before that data arrives
 
 PRD-002 ADR-N1 says "its own PostgreSQL database". It does not say whether that is its own instance. Locally it
 is a second database in the same container.
@@ -311,7 +313,7 @@ arrives.** Nemura is internal for now (question 8), the connection string is the
 the move is a dump and restore into a new instance. Revisit at the cloud gate with the drill's result
 (`[live-verify]`). If you would rather not hold pay and NRIC data beside the ledger at all, choose A now.
 
-### O2. Which cloud projects and how cost is split (needed before the cloud gate; D15)
+### O2. Which cloud projects and how cost is split (needed before the cloud gate; D15). **Decided: A**, Fyniq's projects, Nemura's own services, identities and database, the cost label `app=nemura`, and an infra test that no Nemura identity holds a role on a Fyniq resource or the reverse, except the link's audience-bound calls
 
 | Option | Pros | Cons |
 |---|---|---|
@@ -321,7 +323,7 @@ the move is a dump and restore into a new instance. Revisit at the cloud gate wi
 Recommendation: **A, with the label and an infra test that no Nemura identity holds a role on a Fyniq resource
 and the reverse, except the link's audience-bound calls.** Go to B if Nemura is sold or an auditor asks for it.
 
-### O3. Nemura's hostname and the shared passkey domain (needed before the cloud gate; D7)
+### O3. Nemura's hostname and the shared passkey domain (needed before the cloud gate; D7). **Decided: A**, `people.<domain>`; the registrable domain is a placeholder in configuration (`NEMURA_PUBLIC_ORIGIN`, `NEMURA_RP_ID`), never hard-coded
 
 Question 10 fixed that both apps sit under one registrable domain, which is the passkey relying-party ID. The
 domain and the name are not fixed. Locally the relying-party ID is `localhost` and nothing is needed.
@@ -335,7 +337,7 @@ domain and the name are not fixed. Locally the relying-party ID is `localhost` a
 Recommendation: **A.** Please name the registrable domain (the production domain of Fyniq is not in the
 repository).
 
-### O4. Whether the `nemura` image rides Fyniq's release train from now (needed before the first release after slice 1; D14)
+### O4. Whether the `nemura` image rides Fyniq's release train from now (needed before the first release after slice 1; D14). **Decided: A**, it joins the images and the release now; an expiring, reviewed scan waiver covers any blocking finding
 
 Adding it to `budgets.json` makes `scripts/images.py publish` build, scan, sign and attest it with each release, and
 the release evidence lists it. Nothing deploys it.
@@ -349,10 +351,9 @@ Recommendation: **A.** It is a dormant, scanned image; the cost is small and a s
 scripts would be new risk in the pipeline guarding go-live. If a Nemura finding ever blocks a Fyniq release, a
 reviewed, expiring scan waiver is the existing remedy.
 
-### O5. Confirm the code boundary: one module with enforced limits (needed before slice 3; D3)
+### O5. The code boundary: one module with enforced limits (needed before slice 3; D3). **Decided: A**, one Go module, `internal/nemura` and the archtest allow-list
 
-Proceeding on the recommendation. It is the one choice that is expensive to undo once the audit, outbox and
-identity code are written against it.
+It is the one choice that is expensive to undo once the audit, outbox and identity code are written against it.
 
 | Option | Pros | Cons |
 |---|---|---|
@@ -365,7 +366,7 @@ Recommendation: **A**, and revisit B when Nemura has its own team (the alternati
 ## Risks / Trade-offs
 
 - [A shared Postgres role or database setting leaks across the two databases] → `CONNECT` is revoked per database
-  and tested both ways; role names never overlap; the Nemura grants golden file fails on any extra privilege.
+  and tested one way, the other being infra's; role names never overlap; the Nemura grants golden file fails on any extra privilege.
 - [Nemura's code drifts into Fyniq's, breaking ADR-N4] → the archtest rules of D3 fail the build at the import.
 - [The shared `fyniq` goose table and Nemura's migrate run in one cluster] → separate tables and schemas; the
   runner takes a set and never both.
