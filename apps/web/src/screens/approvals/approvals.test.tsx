@@ -364,4 +364,26 @@ describe("the review log", () => {
     expect(seen.find((s) => s.method === "POST")?.body).toEqual({ entry_ids: ["e-1"], note: "Agreed on Monday" });
     await noViolations(document.body);
   });
+
+  // req: FM-6
+  it("marks an unusual item with its reason, opens its journal, and leaves deciding to a founder", async () => {
+    const unusual = {
+      ...entry,
+      id: "e-3",
+      kind: "unusual",
+      object_type: "journal",
+      object_key: "j-9",
+      summary: "Back-dated: Journal JNL-0007 is dated 5 Oct 2026 and was posted 44 days later, on 18 Nov 2026",
+      overdue: false,
+    };
+    answer({ "GET /v1/review-log": { status: 200, body: { items: [unusual], unreviewed: 1, overdue: 0 } } });
+    renderPage(ReviewLog, { path: "/review-log" });
+    const item = (await screen.findByText(unusual.summary)).closest("li")!;
+    expect(item.textContent).toContain("Unusual item the rules found, for another founder to look at");
+    expect(within(item).getByText("Unusual")).toBeTruthy();
+    expect(within(item).getByRole("link", { name: "Open the journal" }).getAttribute("href")).toBe("/accounting/journals/j-9");
+    expect(within(item).getByRole("checkbox", { name: `Pick ${unusual.summary}` })).toBeTruthy();
+    expect(within(item).queryByRole("button", { name: /Approve/ })).toBeNull();
+    await noViolations(document.body);
+  });
 });
