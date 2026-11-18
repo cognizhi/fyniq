@@ -427,6 +427,15 @@ fyniq_api       INSERT    policy_version (body, from_draft, key, published_at, p
 fyniq_api       SELECT    policy_version
 fyniq_api       EXECUTE   private_endpoints()
 fyniq_api       EXECUTE   private_endpoints_for()
+fyniq_api       INSERT    project (billing_method, budget_amount, budget_minutes, currency, customer_id, ends_on, id, minor_units, starts_on, status)
+fyniq_api       SELECT    project
+fyniq_api       UPDATE    project (billing_method, budget_amount, budget_minutes, changed_at, customer_id, ends_on, starts_on, status, version)
+fyniq_api       INSERT    project_member (is_manager, project_id, user_id)
+fyniq_api       SELECT    project_member
+fyniq_api       UPDATE    project_member (is_active, is_manager)
+fyniq_api       INSERT    project_task (billable, name, project_id)
+fyniq_api       SELECT    project_task
+fyniq_api       UPDATE    project_task (billable, changed_at, is_active, name, version)
 fyniq_api       EXECUTE   publish_installation_announcement()
 fyniq_api       INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
 fyniq_api       SELECT    quote_outcome
@@ -618,6 +627,9 @@ fyniq_executor  SELECT    period_reopen
 fyniq_executor  SELECT    period_variance_explanation
 fyniq_executor  INSERT    person_key (cohort, person, wrapped)
 fyniq_executor  SELECT    person_key
+fyniq_executor  SELECT    project
+fyniq_executor  SELECT    project_member
+fyniq_executor  SELECT    project_task
 fyniq_executor  SELECT    quote_outcome
 fyniq_executor  SELECT    recurring_bill
 fyniq_executor  SELECT    recurring_bill_version
@@ -803,6 +815,9 @@ fyniq_readonly  SELECT    period_variance_explanation
 fyniq_readonly  SELECT    policy_acknowledgement
 fyniq_readonly  SELECT    policy_draft
 fyniq_readonly  SELECT    policy_version
+fyniq_readonly  SELECT    project
+fyniq_readonly  SELECT    project_member
+fyniq_readonly  SELECT    project_task
 fyniq_readonly  SELECT    quote_outcome
 fyniq_readonly  SELECT    rate_limit_window
 fyniq_readonly  SELECT    recurring_bill
@@ -1102,6 +1117,9 @@ fyniq_worker    SELECT    policy_acknowledgement
 fyniq_worker    SELECT    policy_draft
 fyniq_worker    SELECT    policy_version
 fyniq_worker    EXECUTE   private_endpoints_for()
+fyniq_worker    SELECT    project
+fyniq_worker    SELECT    project_member
+fyniq_worker    SELECT    project_task
 fyniq_worker    EXECUTE   purge_ip_rate_windows()
 fyniq_worker    INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
 fyniq_worker    SELECT    quote_outcome

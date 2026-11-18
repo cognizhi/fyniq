@@ -2199,6 +2199,26 @@
       "label": "Download the PDF",
       "tooltip": "Save the document as the sender issued it, to keep for your records."
     },
+    "projects.overview": {
+      "label": "Projects",
+      "tooltip": "The work you track: each project's customer, how it is billed, its budget, who logs time on it and who approves that time. Off until an Owner or Administrator switches Projects and time on."
+    },
+    "projects.record": {
+      "label": "Project",
+      "tooltip": "One project: its customer, billing method, dates and budgets, the people on it and which of its managers can approve time, and its tasks."
+    },
+    "project.new": {
+      "label": "Add a project",
+      "tooltip": "A project is a value of your Project dimension, so lines you tag with it already count towards it. Choose how it is billed, its customer and who works on it."
+    },
+    "project.people": {
+      "label": "People on the project",
+      "tooltip": "Members log time on the project. A manager also approves that time, but only a person who holds the Approver or Controller role can: naming someone a manager gives them no right of its own."
+    },
+    "project.task-add": {
+      "label": "Add a task",
+      "tooltip": "Time is logged against a task of a project, such as Data migration. A task is never deleted: put it out of use when it is done."
+    },
     "claim.line-dimensions": {
       "label": "Team or project",
       "tooltip": "The department, project or other dimension the receipt or trip was for; a category that needs one says so."

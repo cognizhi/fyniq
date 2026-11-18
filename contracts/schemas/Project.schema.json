@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billing_method": {
+      "description": "How it is billed (FR-PRJ-10): time and materials, fixed fee by milestone, retainer drawn down, or internal (never billed).",
+      "enum": [
+        "time_and_materials",
+        "fixed_fee",
+        "retainer",
+        "internal"
+      ],
+      "examples": [
+        "time_and_materials"
+      ],
+      "type": "string"
+    },
+    "budget_amount": {
+      "description": "The money budget in the project's currency, a decimal string.",
+      "examples": [
+        "60000.00"
+      ],
+      "type": "string"
+    },
+    "budget_minutes": {
+      "description": "The hours budget in whole minutes (400 hours is 24000).",
+      "examples": [
+        24000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "code": {
+      "description": "Its code, unique among the projects and never changed.",
+      "examples": [
+        "ACME-01"
+      ],
+      "type": "string"
+    },
+    "configured": {
+      "description": "false for a value of the Project dimension that has no project record yet (it was added through the dimensions): send replaceProject with If-Match \"0\" to set it up.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "currency": {
+      "description": "The currency it is billed in (FR-PRJ-06); it never changes.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "customer_id": {
+      "description": "The customer it is for.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e41"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "customer_name": {
+      "description": "The customer's name.",
+      "examples": [
+        "Acme Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "dimension_id": {
+      "description": "The Project dimension's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ends_on": {
+      "description": "The last day of the work.",
+      "examples": [
+        "2027-02-28"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "description": "The project's ID: the ID of its value in the Project dimension, which lines carry as a dimension value (FR-DIM-02).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Acme rollout"
+      ],
+      "type": "string"
+    },
+    "people": {
+      "description": "The members, managers first; a member logs time, a manager also approves it.",
+      "items": {
+        "$ref": "ProjectPerson.schema.json"
+      },
+      "type": "array"
+    },
+    "starts_on": {
+      "description": "The first day of the work.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "status": {
+      "description": "Where the project is. A closed project takes no new time and its dimension value goes out of use.",
+      "enum": [
+        "planned",
+        "active",
+        "on_hold",
+        "closed"
+      ],
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The project record's version, for If-Match; 0 when it is not configured.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "warnings": {
+      "description": "What deserves a look, such as a manager who holds no role that approves time.",
+      "items": {
+        "description": "What deserves a look, in plain words, such as a manager who holds no role that approves time.",
+        "examples": [
+          "Sam Tan is named a manager but holds no role that approves time (the Approver or the Controller): they cannot approve until they are given one"
+        ],
+        "maxLength": 400,
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "dimension_id",
+    "code",
+    "name",
+    "configured",
+    "status",
+    "people",
+    "warnings",
+    "version"
+  ],
+  "title": "Project",
+  "type": "object"
+}
