@@ -71,6 +71,16 @@
   `TestTheReferenceIsTheContract` fails while any is stale and checks the hand-written `docs/api/agent-guide.md` has
   its three parts. They are published in the public repository; serving them from an installation comes with
   third-party access in P2)
-- [ ] 3.3 Package the TypeScript client as the SDK. Test `// req: FR-INT-17` (P1 part)
+- [x] 3.3 Package the TypeScript client as the SDK. Test `// req: FR-INT-17` (P1 part)
+  (18 Nov 2026: `sdk/typescript` is the workspace package `@fyniq/sdk`. It owns the one file generated from the
+  contract, `src/schema.d.ts` (moved from the web app; `make openapi` regenerates it, `make api-check` fails while it is
+  stale), and `createFyniqClient` on `openapi-fetch`: the token, an `Idempotency-Key` on every write kept across retries,
+  a retry of 429 and 503 after `Retry-After`, `unwrap` throwing a `FyniqError` with the problem's code, fix and fields,
+  `etagOf`, `previewHeaders` and `wasPreview`, `rateLimitOf` and `paginate` over `next_cursor`. The web app takes its
+  types from it (`apps/web/src/api/schema.ts` re-exports them); `Dockerfile.web` and `.dockerignore` carry the new
+  directory. `pnpm pack` makes the tarball (`publishConfig` points `exports` at the compiled `dist/`); the test
+  `sdk/typescript/src/index.test.ts` runs the client against a fake API and checks the packed files. **Left:** publishing
+  to a registry and the SDK's own version in release-please (the package stays `private` at 0.0.0) are P2 and the
+  owner's call; the Go and Python SDKs are P2.)
 - [ ] 3.4 Create `contracts/events/` with a schema per event version. A test fails on an emitted event type without a schema or a version (`// req: platform/release-and-versioning Event schema versions`)
 - [ ] 3.5 Finish with `make check` and `make test`
