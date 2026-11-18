@@ -5,7 +5,8 @@ import { SignedInProvider } from "../session";
 import { answer, ownerSession, problem } from "../test/api";
 import { noViolations } from "../test/axe";
 import { renderPage } from "../test/render";
-import { Deadlines, rowsFor, YourWork } from "./HomeWork";
+import { Compliance } from "./compliance/Compliance";
+import { AuditorAccess, Deadlines, landingRoles, rowsFor, YourWork } from "./HomeWork";
 
 const organisation: Organisation = { id: ownerSession.organisation_id, name: "Cognizhi Pte Ltd", base_currency: "SGD", base_minor_units: 2, team_mode: "founder", version: 1 };
 
@@ -27,6 +28,66 @@ describe("Home's work by role", () => {
     expect(both.filter((id) => id === "draft-bills")).toHaveLength(1);
     expect(both).toContain("bank-detail-changes");
     for (const r of ["owner", "controller", "accountant", "tax_agent", "employee"]) expect(rowsFor([r])).toEqual([]);
+  });
+
+  it("gives the roles that land elsewhere their rows on the page they land on, and only theirs", () => {
+    expect(rowsFor(["administrator"]).map((w) => w.id)).toEqual(["join-requests", "invitations-open", "role-changes", "integrations-failing"]);
+    expect(rowsFor(["company_secretary"]).map((w) => w.id)).toEqual(["secretary-findings", "register-approvals"]);
+    expect(rowsFor(["dpo"]).map((w) => w.id)).toEqual(["data-requests", "breaches-open"]);
+    expect(rowsFor(["bookkeeper", "administrator"].filter((r) => landingRoles.settings.includes(r as never))).map((w) => w.id)).not.toContain("bank-lines");
+  });
+
+  it("shows the Administrator on Settings who asks to join, invitations, role changes and failing integrations", async () => {
+    answer({
+      "GET /v1/members/join-requests": { status: 200, body: { items: [{ id: "j1", status: "pending" }, { id: "j2", status: "approved" }] } },
+      "GET /v1/members/invitations": { status: 200, body: { items: [{ id: "i1" }, { id: "i2", withdrawn_at: "2026-11-01T00:00:00Z" }] } },
+      "GET /v1/approvals": { status: 200, body: { items: [{ id: "a1", object_type: "membership" }, { id: "a2", object_type: "bill" }] } },
+      "GET /v1/organisation/connectors": { status: 200, body: { items: [{ id: "c1", health: "failing" }, { id: "c2", health: "ok" }] } },
+    });
+    renderPage(() => <As roles={["administrator", "bookkeeper"]}><YourWork only={landingRoles.settings} /></As>, { path: "/settings" });
+    const card = await screen.findByRole("region", { name: "Your work" });
+    expect(await within(card).findByRole("link", { name: /1 person asking to join/ })).toBeTruthy();
+    expect(within(card).getByRole("link", { name: /1 invitation waiting to be accepted/ }).getAttribute("href")).toBe("/settings/members");
+    expect(within(card).getByRole("link", { name: /1 role change waiting for a second approver/ }).getAttribute("href")).toBe("/inbox");
+    expect(within(card).getByRole("link", { name: /1 integration failing/ }).getAttribute("href")).toBe("/settings/integrations");
+    expect(within(card).queryByText(/bank line/)).toBeNull(); // the Bookkeeper's rows are Home's
+    await noViolations(document.body);
+  });
+
+  it("shows the DPO and the Company secretary their work first on Compliance, and the secretary the deadlines", async () => {
+    answer({
+      "GET /v1/compliance/personal-data-requests": { status: 200, body: { items: [{ id: "r1", status: "received" }, { id: "r2", status: "answered" }] } },
+      "GET /v1/compliance/breaches": { status: 200, body: { items: [{ id: "b1", status: "assessed" }, { id: "b2", status: "closed" }] } },
+      "GET /v1/compliance/secretary": { status: 200, body: { state: "on", findings: [{ key: "f1", status: "due" }, { key: "f2", status: "ok" }, { key: "f3", status: "review" }] } },
+      "GET /v1/approvals": { status: 200, body: { items: [{ id: "a1", object_type: "holder_record" }, { id: "a2", object_type: "membership" }] } },
+      "GET /v1/compliance/calendar": { status: 200, body: { today: "2026-11-17", deadlines: [{ key: "AR", title: "Annual return", due_on: "2027-03-31", status: "open", area: "corporate" }] } },
+    });
+    const { unmount } = renderPage(() => <As roles={["dpo"]}><Compliance /></As>, { path: "/compliance" });
+    const card = await screen.findByRole("region", { name: "Your work" });
+    expect(await within(card).findByRole("link", { name: /1 data request to answer/ })).toBeTruthy();
+    expect(within(card).getByRole("link", { name: /1 breach still open/ }).getAttribute("href")).toBe("/compliance/data-protection");
+    expect(screen.queryByRole("list", { name: "Upcoming deadlines" })).toBeNull();
+    await noViolations(document.body);
+    unmount();
+    renderPage(() => <As roles={["company_secretary"]}><Compliance /></As>, { path: "/compliance" });
+    const mine = await screen.findByRole("region", { name: "Your work" });
+    expect(await within(mine).findByRole("link", { name: /2 corporate items to see to/ })).toBeTruthy();
+    expect(within(mine).getByRole("link", { name: /1 register update waiting for approval/ })).toBeTruthy();
+    expect(await screen.findByRole("list", { name: "Upcoming deadlines" })).toBeTruthy();
+  });
+
+  it("tells the Auditor until when their read-only access lasts, and opens what an auditor reads", async () => {
+    answer({
+      "GET /v1/members": { status: 200, body: { items: [{ id: "m1", user_id: ownerSession.user_id, display_name: "Ivy Audit", roles: [{ role: "auditor", expires_at: "2027-01-31T00:00:00Z" }] }] } },
+    });
+    const { unmount } = renderPage(() => <As roles={["auditor"]}><AuditorAccess /></As>, { path: "/reports" });
+    const card = await screen.findByRole("region", { name: "Your engagement" });
+    expect(await within(card).findByText(/Read-only, until 31 Jan 2027/)).toBeTruthy();
+    expect(within(card).getByRole("link", { name: /Audit trail/ }).getAttribute("href")).toBe("/compliance/audit-trail");
+    await noViolations(document.body);
+    unmount();
+    renderPage(() => <As roles={["accountant"]}><AuditorAccess /></As>, { path: "/reports" });
+    expect(screen.queryByRole("region", { name: "Your engagement" })).toBeNull();
   });
 
   it("counts the AP specialist's work from the lists it opens, and leaves out a read the API refuses", async () => {

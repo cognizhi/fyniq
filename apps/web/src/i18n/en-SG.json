@@ -2606,7 +2606,11 @@
     },
     "home.your-work": {
       "label": "Your work",
-      "tooltip": "What waits in your areas, by your roles: bank lines to categorise, drafts to finish, overdue invoices and bills, receipts to apply, quotes waiting, payment batches and claims to pay or release. Each opens its list."
+      "tooltip": "What waits in your areas, by your roles: bank lines to categorise, drafts to finish, overdue invoices and bills, receipts to apply, quotes waiting, payment batches and claims to pay or release, people asking to join, data requests and the like. Each opens its list."
+    },
+    "home.auditor-access": {
+      "label": "Your engagement",
+      "tooltip": "Your access as the auditor: read-only, and until when. Opens the journals, the evidence and the audit trail."
     },
     "home.deadlines": {
       "label": "Upcoming deadlines",

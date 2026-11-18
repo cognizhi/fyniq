@@ -4,6 +4,7 @@ import { helpText } from "../../i18n";
 import { routes } from "../../registry";
 import { useSignedIn } from "../../session";
 import { Icon } from "../../ui";
+import { Deadlines, landingRoles, YourWork } from "../HomeWork";
 
 const pages: { to: string; help: string; icon: LucideIcon }[] = [
   { to: "/compliance/calendar", help: "compliance.calendar", icon: CalendarClock },
@@ -21,8 +22,9 @@ const pages: { to: string; help: string; icon: LucideIcon }[] = [
 
 // Compliance is the Compliance workspace's first page (docs/design/screens: the breadcrumb's "Compliance"; p1-compliance-
 // center D9): its pages, each with what it is for. In Basic mode it lists the pages Basic shows; ⌘K still finds the rest.
+// The Company secretary and the DPO land here (§7.1), so their work comes first, and the secretary's deadlines.
 export function Compliance() {
-  const { mode } = useSignedIn();
+  const { mode, session } = useSignedIn();
   const shown = pages.filter((p) => mode === "expert" || routes.find((r) => r.path === p.to)?.mode === "basic");
   return (
     <div className="fy-page fy-page--narrow fy-enter">
@@ -32,6 +34,8 @@ export function Compliance() {
           <p className="fy-secondary">The statutory deadlines, the controls that keep the books and the platform in order, the GST position, the evidence kept and the audit trail.</p>
         </div>
       </div>
+      <YourWork only={landingRoles.compliance} />
+      {(session.roles ?? []).includes("company_secretary") && <Deadlines />}
       <nav className="fy-card" aria-label="Compliance pages">
         <ul className="fy-list">
           {shown.map((p) => {
