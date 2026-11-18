@@ -445,6 +445,7 @@ func registerAssistant(a *API) {
 		func(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 			a.askTurn(ctx, in, send)
 		})
+	eventIDsAreIntegers(a.API, ask.Path)
 	// The stream's events, by example: a status while it reads, then the answer (NFR-API-01).
 	if item := a.OpenAPI().Paths[ask.Path]; item != nil && item.Post != nil {
 		if mt := item.Post.Responses["200"].Content["text/event-stream"]; mt != nil && mt.Schema != nil && mt.Schema.Items != nil {
