@@ -8,6 +8,8 @@ import { Chart } from "../components/chart/Chart";
 import { formatAmount } from "../format/amount";
 import { sum } from "../format/decimal";
 import { month as monthName } from "../format/date";
+import { HelpInfo } from "../help/HelpInfo";
+import { helpText } from "../i18n";
 import { useSignedIn } from "../session";
 import { Icon } from "../ui";
 import { listPeriods } from "./accounting/data";
@@ -118,6 +120,7 @@ function Pulse({ kpis, health }: { kpis: KPIs; health: Health | null }) {
 // BooksHealth is the pulse card's books health (FR-CTL-02): the score, opening the checks, and the count of each severity
 // found, with the checks not assessed beside it. It shows in Basic and Expert alike: safety is never hidden (§7.8).
 function BooksHealth({ health: h }: { health: Health }) {
+  const { mode } = useSignedIn();
   const score = scores[h.score];
   const chip = (status: keyof typeof statuses, n: number, words: string) => {
     if (n === 0) return null;
@@ -131,7 +134,10 @@ function BooksHealth({ health: h }: { health: Health }) {
   };
   return (
     <div className="fy-stack fy-stack--2" data-health={h.score}>
-      <div className="fy-tile__label">Books health</div>
+      <div className="fy-tile__label">
+        {helpText("home.books-health").label}
+        <HelpInfo help="home.books-health" mode={mode} />
+      </div>
       <Link className="fy-pulse__figure text-foreground" to="/checks">
         {score.label}
       </Link>

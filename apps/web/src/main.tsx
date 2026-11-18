@@ -9,10 +9,12 @@ import { startAppearance } from "./appearance";
 import { installClipboard } from "./format/amount";
 import { installFreshness } from "./freshness";
 import { queryClient, router } from "./router";
+import { installFocusClear } from "./shell/focusClear";
 
 startAppearance();
 installClipboard();
 installFreshness(queryClient);
+installFocusClear();
 
 const root = document.getElementById("root");
 if (!root) throw new Error("index.html has no #root element");

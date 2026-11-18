@@ -120,6 +120,74 @@ func (q *Queries) EvidenceCounts(ctx context.Context, documents []uuid.UUID) ([]
 	return items, nil
 }
 
+const extendEvidenceRetention = `-- name: ExtendEvidenceRetention :one
+UPDATE fyniq.evidence SET retain_until = $1, version = version + 1
+WHERE id = $2 AND state = 'final'
+RETURNING id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
+  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version, nric_flagged
+`
+
+type ExtendEvidenceRetentionParams struct {
+	RetainUntil *time.Time
+	ID          uuid.UUID
+}
+
+type ExtendEvidenceRetentionRow struct {
+	ID             uuid.UUID
+	DocumentID     uuid.UUID
+	EvidenceType   string
+	Note           *string
+	RelatesOn      pgtype.Date
+	FileName       string
+	MediaType      string
+	SizeBytes      int64
+	Sha256         string
+	OriginalSha256 string
+	Source         string
+	DataClass      string
+	StagingKey     string
+	UploadedBy     string
+	UploadedAt     time.Time
+	State          string
+	RemovedAt      *time.Time
+	LockedKey      *string
+	RetainUntil    *time.Time
+	FinalisedAt    *time.Time
+	Version        int32
+	NricFlagged    bool
+}
+
+// A final file's retain-until moved later (FR-DOC-02); the guard refuses one that moves earlier (FY123).
+func (q *Queries) ExtendEvidenceRetention(ctx context.Context, arg ExtendEvidenceRetentionParams) (ExtendEvidenceRetentionRow, error) {
+	row := q.db.QueryRow(ctx, extendEvidenceRetention, arg.RetainUntil, arg.ID)
+	var i ExtendEvidenceRetentionRow
+	err := row.Scan(
+		&i.ID,
+		&i.DocumentID,
+		&i.EvidenceType,
+		&i.Note,
+		&i.RelatesOn,
+		&i.FileName,
+		&i.MediaType,
+		&i.SizeBytes,
+		&i.Sha256,
+		&i.OriginalSha256,
+		&i.Source,
+		&i.DataClass,
+		&i.StagingKey,
+		&i.UploadedBy,
+		&i.UploadedAt,
+		&i.State,
+		&i.RemovedAt,
+		&i.LockedKey,
+		&i.RetainUntil,
+		&i.FinalisedAt,
+		&i.Version,
+		&i.NricFlagged,
+	)
+	return i, err
+}
+
 const finaliseEvidence = `-- name: FinaliseEvidence :one
 UPDATE fyniq.evidence SET state = 'final', locked_key = $1, retain_until = $2,
   finalised_at = $3, version = version + 1

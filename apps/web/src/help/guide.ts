@@ -2,6 +2,7 @@
 // front matter names its key (the registry's guide key), title, mode and roles; its Markdown is rendered by
 // help/markdown.tsx. Nemura's guide (docs/user-guide/nemura/) is Nemura's own app's.
 import changelog from "../../../../CHANGELOG.md?raw";
+import { slug } from "./links";
 
 const raw = import.meta.glob("../../../../docs/user-guide/*.md", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 
@@ -72,16 +73,8 @@ export function search(all: readonly Page[], q: string): Page[] {
   return all.filter((p) => words.every((w) => p.title.toLowerCase().includes(w) || p.text.includes(w)));
 }
 
-export { guideFor, guideLink } from "./links";
+export { guideFor, guideLink, slug } from "./links";
 
-// slug turns a heading into its anchor, as GitHub, the registry's guide keys and the knowledge base's citations do.
-export function slug(heading: string): string {
-  return heading
-    .trim()
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, "")
-    .replace(/\s/g, "-");
-}
 
 // whatsNew is What's new (FR-UX-32): the release notes release-please writes, newest first, without their preamble;
 // empty before the first release.

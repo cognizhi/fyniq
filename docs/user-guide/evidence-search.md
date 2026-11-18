@@ -3,7 +3,7 @@ key: compliance.evidence
 title: Find evidence, and what is missing
 mode: expert
 roles: [owner, controller, accountant, bookkeeper, ar_specialist, ap_specialist, payment_releaser, approver, auditor, tax_agent, dpo]
-requirements: [FR-DOC-10, FR-DOC-06, FR-DOC-01]
+requirements: [FR-DOC-10, FR-DOC-06, FR-DOC-01, FR-DOC-02]
 ---
 
 # Find evidence, and what is missing
@@ -41,6 +41,20 @@ open it:
 You open a file only on a record your role lets you see; an Employee opens the receipts of their own
 claims. Fyniq checks the file against the fingerprint recorded when it was attached before it sends
 it, and records each opening in the audit trail. A file taken off a draft cannot be opened.
+
+## How long files are kept
+
+Once a record is posted, its files are kept in a locked store that nobody can delete from, not even
+an Owner:
+
+- until the end of the financial year in which the record's transactions complete, plus the records'
+  retention (7 years unless your organisation keeps them longer);
+- for a contract on an invoice or a bill whose revenue or cost is spread over months, the last month
+  of the spread is when its transactions complete: a contract for 2027 to 2029 is kept until the end
+  of the financial year that holds the spread's last month, plus the retention;
+- if the record changes so that its transactions complete later, such as a spread lengthened by an
+  approved edit, Fyniq keeps its files longer from that night. A file is never kept for less time
+  than it was.
 
 ## Missing evidence
 

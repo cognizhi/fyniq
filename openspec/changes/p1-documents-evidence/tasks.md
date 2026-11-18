@@ -3,6 +3,14 @@
 ## 1. Storage and scanning
 
 - [x] 1.1 Extend `BlobStore` with `SetRetainUntil`, which only extends, and `SetLegalHold`, and make `Delete` refuse a key under retention. Implement both adapters and extend the conformance suite. Test `// req: FR-DOC-02` (G4-068) (20 Oct 2026: `SetRetainUntil`, `SetLegalHold`, `ErrRetained` on `Delete` and `Put`; the local directory enforces them in code, the Cloud Storage adapter sends Locked retention and a temporary hold and checks them first; `porttest.BlobRetention` runs on the directory, and the emulator test covers all but extension, which fake-gcs-server refuses for a locked retention. **Left:** extension and the bucket's Object Retention Lock itself are proved at the cloud gate, §17.5 item 1)
+  (18 Nov 2026, G4-068 for the launch gate: a committed file's retain-until counts from the later of its commit and when
+  its record's transactions complete (`evidence.Completion`: the last month a line of an invoice or a bill spreads
+  into, else the record's date), so a contract spread over 2027 to 2029 is kept until the end of 2029's financial year
+  plus the retention; `evidence.extend`, nightly at 03:50, moves it later when the record now completes later (an
+  approved edit lengthening the spread), the locked copy first and then its row (`evidence.retention_extended`,
+  audited); the database and the store refuse an earlier date. Tests `TestCompletion`,
+  `TestRetentionFollowsTheRecordsObligations`, `TestAContractIsKeptUntilItsTransactionsComplete` (with CTL-AUD-03's
+  records check). Guide `evidence-search.md`, compiled.)
 - [x] 1.2 Add the `Scanner` port with a ClamAV adapter, an EICAR-flagging fake and the scanner service in the local stack as an optional profile. Test `// req: FR-DOC-01` (scan on upload) (20 Oct 2026: `ports.Scanner`, `local.EICARScanner`, `internal/adapters/clamav` on clamd's INSTREAM, `porttest.Scanner`, and the `scanner` profile in the local stack with `FYNIQ_CLAMD_ADDR`; a failing or missing scanner refuses the file. **Left:** clamd beside the API in the cloud, as a Cloud Run sidecar [verify], and its signature updates)
 - [ ] 1.3 Safe-file handling: type from content, 25 MB limit, HEIC conversion, metadata stripping, macro, ZIP and XML checks, safe previews, file names as data. Test `// req: FR-DOC-08` with a fuzz corpus per type (20 Oct 2026, part: the type from the content for PDF, PNG, JPEG, WebP, CSV, text, XLSX, DOCX, EML and MSG; 25 MB; metadata stripped from JPEG, PNG and WebP; macros, ActiveX and legacy OLE refused; the archive limits read from the ZIP directory; file names kept as data; `FuzzStripMetadata` with a seed corpus. **Left:** HEIC conversion (refused until then, rev 0.38), safe PDF previews, the safe name in download headers (no download yet), XML parsing rules once a part is parsed, and a fuzz corpus per type)
   (17 Nov 2026, part: a HEIC photo is refused with its own message, to export it as JPEG (`IsHEIC`, by its file-type
