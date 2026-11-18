@@ -14,8 +14,9 @@ checks:
     how: "make check"
     evidence: "kb-lint; CI log"
   - frequency: N
-    status: planned
-    arrives: "p1-knowledge-base"
+    status: running
+    how: "verify kb.pages"
+    evidence: "the latest run in each organisation (fyniq.control_run), nightly: every page of the published snapshot still passes the structural lint (a summary, a source cited by every section and listed by the page, the notes it cites still there and, for a page made only from notes, every number in them) and each version was written by who its origin says, so a compiled version never stands in a person's; each exception is listed by page and version (target 0). The platform pages and the per-role reader filter run in the API's role, which the worker does not hold: the filter is tested in CI (TestTheReaderFilterIsTheQuerys, TestTheKnowledgeBaseToolsReadThroughTheReaderFilter) and a nightly run of it against the live database is planned"
   - frequency: E
     status: planned
     arrives: "p1-knowledge-base"
