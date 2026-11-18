@@ -2,40 +2,51 @@
 
 Each slice is its own pull request; each passes `make check` and its own tests. Migration numbers are in design.md.
 
-- [ ] 1.1 The `kb` package (embeds `kb/pages`, `kb/index.md`, `kb/schema.md`) and the guide's raw sources; a Go reader of
+- [x] 1.1 The `kb` package (embeds `kb/pages`, `kb/index.md`, `kb/schema.md`) and the guide's raw sources; a Go reader of
   pages (front matter, sections, headings' anchors) and a Go lint of the same rules as `scripts/kb.py`, with the shared
   fixture set `test/kb/fixtures/` that both run (design D1). Tests `// req: AI-52`, `// req: AI-53`.
-- [ ] 1.2 Migration 000560: `kb_platform_release`, `kb_platform_page`, `kb_platform_source`, the read views, the reader filter
+  Built: `internal/domain/knowledge` (page, front matter, anchors, lint with 29 rule codes, index generator, search-term words) and the embeds `kb/embed.go` and `docs/user-guide/guide.go`. The Go lint and `scripts/kb.py` agree on 27 fixtures in `test/kb/fixtures/` (`scripts/test_kb_fixtures.py` and `TestTheGoLintAgreesWithKbPyOnTheFixtures`), and on the real corpus (the shipped index byte for byte). `kb.py` takes `KB_ROOT` for the fixtures. The rule of PRD-001 rev 0.8, a number as a whole token of the section its paragraph cites, is in neither lint yet: both keep the substring rule, and the runtime compiler's lint (task 6.3) adds it to both.
+- [x] 1.2 Migration 000560: `kb_platform_release`, `kb_platform_page`, `kb_platform_source`, the read views, the reader filter
   function and the full-text and trigram indexes; the storage port and adapter; `cmd/migrate up` loads the release's set
   as the migrator; the migrate image's `.dockerignore` and Dockerfile lines. Tests `// req: AI-50`, `// req: AI-56`, an
   attack test that the app roles cannot write the global tables.
+  Built: migration 000560 (four global tables, the release's `kb_platform_load`, six reader-filter functions, full-text and trigram indexes, no vector column); `postgres.LoadPlatformKB` and `cmd/migrate/kb.go` (only the migrate binary embeds the pages; the Dockerfile and `.dockerignore` lines are in); the storage port `KnowledgeBase()`. Attack test: no application role reads or writes the tables or runs the load, and only the API runs the reads.
 - [ ] 1.3 The platform index generator in Go, equal to `scripts/kb.py index` on the fixtures, and the 8,000-token split
   into sections (design D3). Tests `// req: AI-58`.
+  **Built in part:** the generator (`RenderIndex`, `Entries`) is byte-equal to `kb.py`. **Left:** the 8,000-token split of layer 1's index into sections waits for task 2.3; `kb.index` already lists sections when its result passes the tool's 4,000-token cap.
 
 ## 2. The tools
 
-- [ ] 2.1 The reader filter (design D2): audience from the guide pages' `roles`, data class to the reader's rights, in the
+- [x] 2.1 The reader filter (design D2): audience from the guide pages' `roles`, data class to the reader's rights, in the
   query; the Go and TypeScript parsers of the guide's front matter agree on every page. Tests `// req: AI-54`,
   an `// asvs:` tag.
+  Built: the filter is in migration 000560's functions; the API's `kbReader` works the reader's data classes out from their live rights (never identity; payroll with AI payroll access and a payroll right; equity, personal by rows of Appendix D); the audience (the guide pages' `roles`) is parsed in Go and in `apps/web/src/help/guide.ts`, equal on every page by `test/kb/guide-audience.json`.
 - [ ] 2.2 `kb.index`, `kb.read`, `kb.search` in `contracts/ai/tools/` and `tools.lock.json`; the internal operations through
   `callAITool`; full-text search with `pg_trgm` over pages, aliases and raw guide sources; page versions returned;
   `toolClasses` and AI-83; matrix rows. Tests `// req: AI-49`, `// req: AI-51`, `// req: AI-58`, `// req: AI-83`.
+  **Built in part (platform pages):** the three tools, version 1, pinned in `tools.lock.json`; `callAITool` runs them as the person through `runKBTool` (no new operation, so the authorisation matrix has no new row); `toolClasses` adds know-how (AI-83); page versions returned; sections and outline for a long page. **Left:** the organisation's pages and notes join the search and the index with task 4.2.
 - [ ] 2.3 The layer-1 index operation for the orchestrator, filtered per reader and cached in the prefix. Tests
   `// req: AI-48`.
-- [ ] 2.4 Read how recordings are matched in `internal/assistant/evalsuite` and `evals/cassettes` before adding tools or
+  **Left:** the model reads the index with `kb_index` meanwhile (chat@4). Layer 1's cached, reader-filtered index needs an internal operation, a backend method on the AI service and the prompt's cached prefix; the same filter applies, so the cost is tokens, not safety.
+- [x] 2.4 Read how recordings are matched in `internal/assistant/evalsuite` and `evals/cassettes` before adding tools or
   bumping the prompt; record the finding in design.md.
-- [ ] 2.5 Migration 000561/000562: `ai_tool_call.kb_pages`; the activity log records the page versions each answer used and
+  Built: no cassette is recorded yet (`evals/cassettes/assistant` holds only its README, and the secretary-launch suite none), so adding three tools and bumping the prompt to chat@4 replays nothing that exists; a recording made later is made under chat@4 `[live-verify]`. `TestTheReleasesSkillsLoad` now expects the company secretary's skill to be offered the kb tools it already names.
+- [x] 2.5 Migration 000561/000562: `ai_tool_call.kb_pages`; the activity log records the page versions each answer used and
   shows them. Tests `// req: AI-12`, `// req: AI-51`.
+  Built: migration 000561 (`ai_tool_call.kb_pages`, only the API inserts it) validated in 000562; the AI service keeps the versions on the turn's tool call; the AI activity log lists them in the contract and on the screen; the guide's AI activity page and its compiled page say so.
 
 ## 3. Answers
 
-- [ ] 3.1 The `know_how` segment, the number check against the cited section, the citation chip resolved by platform code to
+- [x] 3.1 The `know_how` segment, the number check against the cited section, the citation chip resolved by platform code to
   a guide page, a setting or a record, never a compiled page; `chat@4` (answering order, draft and out-of-date wording).
   Tests `// req: AI-51`, `// req: AI-53`, `// req: AI-08`.
-- [ ] 3.2 The panel renders the know-how chip (violet AI content only, no compiled-page link); Vitest with axe. Tests
+  Built: the `know_how` segment (`page`, `section`; the model's words), the checks (the page was read this turn, the section was returned, every number a whole token of the section, one regeneration then withheld as "this part of the guide"), citations resolved by Fyniq from the section's own `(src:)` markers to guide pages, never compiled pages; `chat@4` (the answering order, draft and out-of-date wording); the guide's AI assistant page and its compiled page. The statutory rule of AI-53 rev 0.8 is in the prompt only: the platform's own check is task 3.3.
+- [x] 3.2 The panel renders the know-how chip (violet AI content only, no compiled-page link); Vitest with axe. Tests
   `// req: AI-22`.
+  Built: `AssistantPanel` shows a chip per guide source (BookOpen icon, "awaiting review" for a draft guide page) linking `/help/<guide>#<anchor>`; Vitest with axe.
 - [ ] 3.3 Statutory pages: the pack in force newer than the page's makes the tool result say so, and the answer is from
   `packs.get` (G4-091). Tests `// req: AI-53`.
+  **Left:** the platform's check that the pack in force is newer than the page's cited version, and the answer-level proof (G4-091), which needs a recorded model run `[live-verify]`.
 
 ## 4. The organisation's knowledge base
 
@@ -84,10 +95,12 @@ Each slice is its own pull request; each passes `make check` and its own tests. 
 - [ ] 9.1 The `knowledge` suite kind and its ≥ 100 golden questions in the QA-AI-06 categories: deterministic recall per
   category, the revoked reader, citation resolution and the stale-fallback rate gated offline in `make evals`; answer
   accuracy recorded `[live-verify]`. Tests `// req: QA-AI-06` only for what each proves.
+  **Built in part:** `evals/knowledge/knowledge.json` (103 questions in the six categories), `TestTheKnowledgeSuite...` in `make evals`: recall at the top 5 per category against its threshold (the measured baseline, owner and plan on the weak categories), citations of every page, the revoked reader, the fallback. A baseline of 0.75 paraphrase recall became 1.00 by aliases on 17 pages (AI-58). **Left, `[live-verify]`:** answer accuracy, the model's use of the answering order and the stale-guide answer need recorded model runs; QA-AI-06 is not ticked and no test is tagged with it.
 - [ ] 9.2 The publish gate (the deterministic part, per the owner's decision 2). Tests `// req: QA-AI-06`, `// req: AI-56`.
 - [ ] 9.3 CTL-AI-08's nightly (`verify kb`, the reader-filter test) and event checks running. Tests `// req: CTL-AI-08`.
 - [ ] 9.4 `docs/security/threat-models/knowledge-base.md` for security review #4; the build plan's paragraph; `make check`,
   `make test`, `make evals` pass.
+  **Built in part:** `docs/security/threat-models/knowledge-base.md` (K1 to K10, K10 planned). **Left:** the build plan's paragraph, and the threat model's planned rows with their attack tests as tasks 4 to 8 land.
 
 ## Workflow follow-up
 
