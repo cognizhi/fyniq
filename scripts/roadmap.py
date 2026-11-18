@@ -117,12 +117,12 @@ ch("p2-invoicenow", F2, 1, "InvoiceNow (Peppol) sending and receiving, the submi
 ch("p2-bank-feeds-payments", F2, 1, "Bank feeds, bank APIs and host-to-host, DBS RAPID or IDEAL Connect, card feeds, payment links (Model A), online payment, corporate cards", ["p1-bank-import-reconcile", "p1-payment-providers"], "Against sandboxes", "Q24; a licensed feed provider; HitPay", "Co-founder", "—")
 ch("p2-tax-filings", F2, 1, "Corporate income tax support, F7 and F8, IRAS API filing, published pack updates, bad-debt relief with GST", ["p1-gst"], "Against IRAS's sandbox", "IRAS API access", "Tax agent", "—")
 ch("p2-payroll-outputs", F2, 1, "Payslip documents, the CPF submission file, IR8A and the Auto-Inclusion Scheme (in Nemura where it runs payroll)", ["p1-nemura-payroll"], "—", "CPF Board and IRAS formats", "Payroll administrator", "—")
-ch("p2-reporting-planning", F2, 2, "Report builder, board pack, scheduled reports, deferral roll-forward, configurable dashboards, customer counts, anomaly alerts, industry benchmarks, rolling forecast, the funding plan, investor updates, access, obligations and the exit waterfall, shares for services, allocation rules, asset reports", ["p1-reports", "p1-planning", "p1-equity-register"], "—", "—", "Accountant", "—")
+ch("p2-reporting-planning", F2, 2, "Report builder, board pack, scheduled reports, deferral roll-forward, configurable dashboards, customer counts, anomaly alerts, industry benchmarks, rolling forecast, the funding plan, investor updates, access, obligations and the exit waterfall, shares for services, allocation rules, asset reports; the auditor's engagement", ["p1-reports", "p1-planning", "p1-equity-register"], "—", "—", "Accountant", "—")
 ch("p2-customer-portal-subscriptions", F2, 2, "The customer portal, subscription revenue schedules, disputes and promise-to-pay, revenue over time for fixed-fee projects", ["p1-sales", "p1-projects"], "—", "—", "—", "—")
 ch("p2-api-third-parties", F2, 2, "Third-party API clients, webhooks and events, the semantic metrics endpoint, the sandbox, Go and Python SDKs, third-party MCP clients, ticketing connectors, Slack and Zoho Cliq", ["p1-public-api", "p1-mcp-first-party"], "—", "Q22", "Security", "—")
 ch("p2-mobile-approvals-automation", F2, 2, "The PWA with offline reads and camera capture, approval delegation, escalation, approvals by email and PWA, workflow rules without code, outbound webhooks, soft locks, vendor statements, supplier contracts, the usage view, pinned Basic mode, tours, code-mode templates and the template editor's layout, column chooser, conditional blocks and visual diff (the P2 halves of FR-TPL-01, 02 and 04), the annual-return pack, evidence export", ["p1-app-shell", "p1-approval-engine"], "—", "—", "Co-founder", "—")
 ch("p2-ai-expansion", F2, 3, "Approval-quality metrics and more task types, knowledge pages from documents, document AI drafts", ["p1-ai-proposals", "p1-knowledge-base"], "—", "—", "Security", "—")
-ch("p2-security-certification", F2, 3, "Penetration testing and DAST; Cyber Trust or ISO 27001 readiness", ["p1-security-hardening"], "—", "Q8", "Security", "—")
+ch("p2-security-certification", F2, 3, "Penetration testing and DAST; Cyber Trust or ISO 27001 readiness; retention and legal holds", ["p1-security-hardening"], "—", "Q8", "Security", "—")
 ch("p2-nemura-people", N2, 1, "Hiring, performance and KPIs, onboarding plans, letter verification, grievances, the unified HR API and pay documents from external systems, fairness in the assistant", ["p1-nemura-assistant-external"], "—", "—", "HR", "—")
 # P3
 ch("p3-multi-entity", F3, 1, "Several legal entities, intercompany and consolidation, accountant-practice mode, the entity switcher, consolidated reporting", ["p2-reporting-planning"], "—", "Q1", "Accountant", "—")
@@ -186,12 +186,12 @@ LATER = {
     "p2-bank-feeds-payments": "FR-BNK-03 FR-PSP-02 FR-AR-13 FR-AP-08",
     "p2-tax-filings": "FR-TAX-06 ENG-33 FR-AR-11",
     "p2-payroll-outputs": "FR-PAY-08 FR-PAY-09",
-    "p2-reporting-planning": "FR-RPT-04 FR-RPT-06 FR-RPT-07 FR-RPT-13 FR-VIZ-09 FR-KPI-04 FR-KPI-05 FR-KPI-06 FR-KPI-07 FR-PLN-04 FR-PLN-07 FR-EQ-23 FR-EQ-24 FR-EQ-28 FR-EQ-29 FR-EQ-13 FR-DIM-03 FR-FA-04",
+    "p2-reporting-planning": "FR-RPT-04 FR-RPT-06 FR-RPT-07 FR-RPT-13 FR-VIZ-09 FR-KPI-04 FR-KPI-05 FR-KPI-06 FR-KPI-07 FR-PLN-04 FR-PLN-07 FR-EQ-23 FR-EQ-24 FR-EQ-28 FR-EQ-29 FR-EQ-13 FR-DIM-03 FR-FA-04 FR-UX-42",
     "p2-customer-portal-subscriptions": "FR-AR-14 FR-AR-15 FR-PRJ-11",
     "p2-api-third-parties": "FR-INT-04 FR-INT-12 FR-INT-15 FR-INT-18 AI-46 FR-INT-23 FR-INT-24 FR-NTF-04",
     "p2-mobile-approvals-automation": "FR-UX-16 FR-APR-06 FR-APR-07 FR-APR-08 FR-AUT-03 FR-AUT-04 FR-GL-09 FR-AP-10 FR-AP-21 FR-ADM-05 FR-UX-28 FR-UX-35 FR-TPL-06 FR-CS-07 CMP-04",
     "p2-ai-expansion": "AI-33 AI-59",
-    "p2-security-certification": "SEC-25",
+    "p2-security-certification": "SEC-25 AUD-11",
     "p2-nemura-people": "NM-REC-01 NM-REC-02 NM-REC-03 NM-REC-04 NM-REC-05 NM-REC-06 NM-PRF-01 NM-PRF-02 NM-PRF-03 NM-PRF-04 NM-PRF-05 NM-ONB-01 NM-LTR-05 NM-SEC-06 NM-EXT-04 NM-EXT-05 NM-AI-05 people.draft_job_post people.draft_interview_kit people.draft_review_summary",
     "p3-multi-entity": "FR-ENT-01 FR-ENT-02 FR-ENT-03 FR-GL-13 FR-RPT-12 FR-UX-18",
     "p3-saas-platform": "NFR-SCALE-02 FR-INT-05 FR-INT-19 FR-INT-28 AI-47 FR-NTF-06 FR-KPI-08 FR-ITM-02 DR-05 NFR-PORT-06",
