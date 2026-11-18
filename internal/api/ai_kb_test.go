@@ -4,8 +4,10 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -13,9 +15,11 @@ import (
 
 	userguide "github.com/cognizhi/fyniq/docs/user-guide"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/assistant"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/knowledge"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/kb"
 )
@@ -42,10 +46,6 @@ func shippedKB(t *testing.T) knowledge.Corpus {
 // and the guide pages each cites, never the compiled page; a long page as its outline and the section asked for; search finds
 // by the words people use. A page the person may not open is not in their index, their search or their reads, and its
 // refusal reads as a page that is not there. The result holds no figures, and names the page version it used.
-// req: AI-49
-// req: AI-51
-// req: AI-54
-// req: AI-58
 // asvs: V8.2.1, V8.2.2
 func TestTheKnowledgeBaseToolsReadThroughTheReaderFilter(t *testing.T) {
 	e := newEnv(t)
@@ -217,4 +217,126 @@ func containsKey(rows []any, key string) bool {
 		}
 	}
 	return false
+}
+
+// kbSeam is the AI service's backend with the API's real tool operation behind it and a scripted model: the model reads a
+// page, then answers with a know-how sentence built from what the tool actually returned to it. It is the seam the unit tests
+// of the orchestrator cannot see: the API's result, as it leaves the API (screened, serialised), as the orchestrator parses it.
+type kbSeam struct {
+	t       *testing.T
+	e       *env
+	service string
+	key     string
+	read    string // what the model was given for the page
+	calls   int
+}
+
+func (b *kbSeam) CallTool(_ context.Context, token, tool string, input json.RawMessage) (assistant.ToolResult, error) {
+	r := b.e.call(http.MethodPost, "/internal/v1/tool-calls", token, map[string]any{"tool": tool, "input": input}, ServiceTokenHeader, b.service)
+	if r.Status != http.StatusOK {
+		return assistant.ToolResult{}, &assistant.Problem{Status: r.Status, Code: r.str("code"), Detail: r.str("detail")}
+	}
+	var out assistant.ToolResult
+	if err := json.Unmarshal([]byte(r.Raw), &out); err != nil {
+		b.t.Fatal(err)
+	}
+	return out, nil
+}
+
+func (b *kbSeam) Propose(context.Context, string, assistant.Proposal) (assistant.Proposed, error) {
+	return assistant.Proposed{}, nil
+}
+
+var firstNumber = regexp.MustCompile(`[0-9][0-9,]*(?:\.[0-9]+)?`)
+
+func (b *kbSeam) CallModel(_ context.Context, _ string, call assistant.ModelCall) (assistant.ModelResult, error) {
+	b.calls++
+	if b.calls == 1 {
+		in, _ := json.Marshal(map[string]string{"key": b.key})
+		return assistant.ModelResult{Run: "run-1", Response: ports.ModelResponse{Parts: []ports.ModelPart{{Kind: ports.PartToolCall, CallID: "c1", Tool: "kb_read", Input: in}}}}, nil
+	}
+	msgs := call.Request.Messages
+	b.read = msgs[len(msgs)-1].Parts[0].Text // the tool result as the model gets it
+	var got struct {
+		Content struct {
+			Sections []struct{ Section, Text string } `json:"sections"`
+		} `json:"content"`
+	}
+	if err := json.Unmarshal([]byte(b.read), &got); err != nil {
+		b.t.Fatalf("the tool result the model got is not JSON: %v\n%s", err, b.read)
+	}
+	for _, s := range got.Content.Sections {
+		if n := firstNumber.FindString(s.Text); n != "" {
+			seg, _ := json.Marshal(assistant.Structured{Segments: []assistant.Segment{{Text: "The guide mentions " + strings.TrimRight(n, ",.") + " here.", Page: b.key, Section: s.Section}}})
+			return assistant.ModelResult{Run: "run-2", Response: ports.ModelResponse{Parts: []ports.ModelPart{{Kind: ports.PartText, Text: string(seg)}}, StopReason: ports.StopEnd}}, nil
+		}
+	}
+	b.t.Fatalf("no section of %s holds a number", b.key)
+	return assistant.ModelResult{}, nil
+}
+
+// The whole know-how path with the real tool operation behind it (AI-51, AI-53, AI-54): what kb.read returns leaves the API
+// unquoted (a page's words and the tool's own hints are not untrusted_text), the orchestrator keeps the page and sections it
+// read, a sentence citing one of them passes the number check, and the answer shows the guide pages the section came from, with
+// the page's version recorded on the tool call. A hand-written tool result in a unit test would not catch a mismatch here.
+// asvs: V8.2.1
+func TestAKnowHowAnswerWorksThroughTheRealToolPath(t *testing.T) {
+	e := newEnv(t)
+	corpus := shippedKB(t)
+	f := foundersIn(e)
+	service, err := e.services.Token(ServiceAI)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var token string
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		token, err = e.api.issueAIGrant(ctx, u, e.books.Org, uuid.MustParse(f.ahkow), uuid.New())
+		return err
+	})
+	guideKeys := map[string]bool{}
+	for _, g := range corpus.Guide {
+		guideKeys[g.Key] = true
+	}
+	// A page with a number in a section, as the tool returns it.
+	key := ""
+	for _, p := range corpus.Pages {
+		for _, s := range knowledge.Sections(p.Body) {
+			if firstNumber.MatchString(knowledge.Cited(s.Words())) && len(knowledge.Cited(s.Words())) < 2000 {
+				key = p.Key
+			}
+		}
+		if key != "" {
+			break
+		}
+	}
+	if key == "" {
+		t.Fatal("no page of the release has a number in a section")
+	}
+	b := &kbSeam{t: t, e: e, service: service, key: key}
+	prompt, err := assistant.DefaultPrompt(assistant.Agent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := &assistant.Assistant{Backend: b, Prompt: prompt}
+	out, err := a.Answer(context.Background(), assistant.Question{Token: token, Text: "What does the guide say?"}, func(assistant.Event) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(b.read, "untrusted_text") {
+		t.Errorf("a trusted page's words were quoted as untrusted text:\n%.600s", b.read)
+	}
+	if out.Stop != assistant.StopAnswered || out.Grounding.Regenerated || out.Grounding.Withheld != 0 || !strings.Contains(out.Text, "The guide mentions") {
+		t.Fatalf("the answer was not accepted: %+v\n%.600s", out, b.read)
+	}
+	if len(out.Sources) == 0 {
+		t.Fatalf("no guide source: %+v", out)
+	}
+	for _, s := range out.Sources {
+		if !guideKeys[s.Guide] || s.Title == "" || s.Anchor == "" {
+			t.Errorf("a source that is not a guide page: %+v", s)
+		}
+	}
+	if len(out.ToolCalls) != 1 || len(out.ToolCalls[0].KBPages) != 1 || out.ToolCalls[0].KBPages[0].Key != key || !strings.HasPrefix(out.ToolCalls[0].KBPages[0].Version, "v-test#") {
+		t.Errorf("the page version recorded: %+v", out.ToolCalls)
+	}
 }

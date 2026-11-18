@@ -86,7 +86,6 @@ func TestTheAssistantsTurnsInTheActivityLog(t *testing.T) {
 // (AI-12, AI-51; p1-knowledge-base design D4): "why did the assistant say that" is answered with the page's exact text, which
 // the release or the organisation keeps per version. Other reads list none.
 // req: AI-12
-// req: AI-51
 // asvs: V16.3.3
 func TestTheActivityLogShowsTheKnowledgePagesAnAnswerUsed(t *testing.T) {
 	e := newEnv(t)
