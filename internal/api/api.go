@@ -541,6 +541,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerClaimEvidence(a)
 	registerSession(a)
 	registerIntegrationClients(a)
+	registerPersonalTokens(a)
 	a.registerInternal(mux)
 	return a
 }

@@ -575,6 +575,14 @@ var (
 	GetIntegrationClient    = Policy{Operation: "getIntegrationClient", Capability: ConnectedApps, Need: View}
 	CreateIntegrationClient = Policy{Operation: "createIntegrationClient", Capability: ConnectedApps, Need: Create}
 	RevokeIntegrationClient = Policy{Operation: "revokeIntegrationClient", Capability: ConnectedApps, Need: Create}
+	// Personal access tokens (FR-INT-02): a member makes, lists and revokes their own under "Own MCP connection"; an
+	// Administrator lists and revokes any, and asks to reclass one, under "Connected apps".
+	CreatePersonalAccessToken         = Policy{Operation: "createPersonalAccessToken", Capability: OwnMCPConnection, Need: Create}
+	ListMyPersonalAccessTokens        = Policy{Operation: "listMyPersonalAccessTokens", Capability: OwnMCPConnection, Need: View}
+	RevokeMyPersonalAccessToken       = Policy{Operation: "revokeMyPersonalAccessToken", Capability: OwnMCPConnection, Need: Create}
+	ListPersonalAccessTokens          = Policy{Operation: "listPersonalAccessTokens", Capability: ConnectedApps, Need: View}
+	RevokePersonalAccessToken         = Policy{Operation: "revokePersonalAccessToken", Capability: ConnectedApps, Need: Create}
+	RequestPersonalAccessTokenReclass = Policy{Operation: "requestPersonalAccessTokenReclass", Capability: ConnectedApps, Need: Create}
 	// The data-class policy (AI-75): read under any right on the row; changed by one person's request the Owner approves.
 	GetAIDataPolicy    = Policy{Operation: "getAIDataPolicy", Capability: AIProviders, Need: View}
 	ChangeAIDataPolicy = Policy{Operation: "changeAIDataPolicy", Capability: AIProviders, Need: Create}
@@ -1930,7 +1938,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,

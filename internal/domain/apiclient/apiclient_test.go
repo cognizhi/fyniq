@@ -95,3 +95,33 @@ func TestAnIntegrationClientIsCheckedWhole(t *testing.T) {
 		t.Error("a client with no scope")
 	}
 }
+
+// A personal access token is checked like an integration client, but its expiry is within 90 days, not a year, and it has
+// no key: every refusal at once, each with its field and its fix (SEC-07, FR-INT-02).
+// req: FR-INT-02
+// req: SEC-07
+// asvs: V8.2.1, V16.3.2
+func TestAPersonalAccessTokenIsCheckedWhole(t *testing.T) {
+	now := time.Date(2026, 11, 18, 9, 0, 0, 0, time.UTC)
+	ok := Personal{Name: "Claude Code", Scopes: []string{"fyniq.read.reports"}, ExpiresAt: now.AddDate(0, 0, 89)}
+	if _, err := CheckPersonal(ok, now); err != nil {
+		t.Fatalf("89 days: %v", err)
+	}
+	for _, days := range []int{91, 365} {
+		ok.ExpiresAt = now.AddDate(0, 0, days)
+		_, err := CheckPersonal(ok, now)
+		if e, isErrs := err.(Errors); !isErrs || len(e) != 1 || e[0].Code != CodeExpiry || e[0].Fix == "" {
+			t.Errorf("%d days: %v", days, err)
+		}
+	}
+}
+
+func TestAPersonalAccessTokenRefusesEveryFieldAtOnce(t *testing.T) {
+	now := time.Date(2026, 11, 18, 9, 0, 0, 0, time.UTC)
+	_, err := CheckPersonal(Personal{Name: " x", Scopes: []string{"fyniq.write.payroll"}, Networks: []string{"10.0.0.1/99"},
+		ExpiresAt: now.AddDate(0, 4, 0)}, now)
+	var errs Errors
+	if !errors.As(err, &errs) || len(errs) != 4 {
+		t.Fatalf("want name, scope, network and expiry refused at once, got %v", err)
+	}
+}

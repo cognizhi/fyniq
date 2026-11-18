@@ -79,63 +79,97 @@ type Checked struct {
 	Alg, Thumbprint string
 }
 
-// CheckIntegration checks d at now and returns it as it will be registered, or every refusal at once.
-func CheckIntegration(d Integration, now time.Time) (Checked, error) {
-	var errs Errors
+// definition is the part of an API client's definition that integration clients and personal access tokens share: the
+// name, scopes, networks, own limits and expiry, which must fall within life of now. It adds every refusal to errs and
+// returns the scopes sorted and the networks as canonical prefixes.
+func definition(errs *Errors, name string, scopes, networks []string, reads, writes int, expires, now time.Time, life time.Duration, within string) ([]string, []string) {
 	add := func(code, field, message, fix string) {
-		errs = append(errs, &Error{Code: code, Field: field, Message: message, Fix: fix})
+		*errs = append(*errs, &Error{Code: code, Field: field, Message: message, Fix: fix})
 	}
-	out := Checked{Integration: d}
-	if n := len([]rune(d.Name)); n == 0 || n > 80 || d.Name != strings.TrimSpace(d.Name) {
+	if n := len([]rune(name)); n == 0 || n > 80 || name != strings.TrimSpace(name) {
 		add(CodeName, "name", "is empty, longer than 80 characters or has spaces at either end", "Give the client a name of 1 to 80 characters")
 	}
-	out.Scopes = nil
-	for i, s := range d.Scopes {
+	var outScopes []string
+	for i, s := range scopes {
 		switch {
 		case !authz.ClientScope(s):
 			add(CodeScope, fmt.Sprintf("scopes[%d]", i), "is not a scope an API client may be granted",
 				"Choose fyniq.read.<area> or fyniq.write.<area> from "+strings.Join(authz.ClientScopes(), ", "))
-		case slices.Contains(out.Scopes, s):
+		case slices.Contains(outScopes, s):
 			add(CodeScope, fmt.Sprintf("scopes[%d]", i), "is given twice", "Give each scope once")
 		default:
-			out.Scopes = append(out.Scopes, s)
+			outScopes = append(outScopes, s)
 		}
 	}
-	if len(d.Scopes) == 0 || len(d.Scopes) > MaxScopes {
-		add(CodeScope, "scopes", fmt.Sprintf("has %d scopes", len(d.Scopes)), fmt.Sprintf("Grant 1 to %d scopes, only what the integration needs", MaxScopes))
+	if len(scopes) == 0 || len(scopes) > MaxScopes {
+		add(CodeScope, "scopes", fmt.Sprintf("has %d scopes", len(scopes)), fmt.Sprintf("Grant 1 to %d scopes, only what the integration needs", MaxScopes))
 	}
-	slices.Sort(out.Scopes)
-	out.Networks = []string{}
-	for i, n := range d.Networks {
+	slices.Sort(outScopes)
+	outNetworks := []string{}
+	for i, n := range networks {
 		p, err := netip.ParsePrefix(strings.TrimSpace(n))
 		if err != nil {
 			add(CodeNetwork, fmt.Sprintf("networks[%d]", i), "is not a network in CIDR form", "Write it as 203.0.113.0/24 or 2001:db8::/32")
 			continue
 		}
-		out.Networks = append(out.Networks, p.Masked().String())
+		outNetworks = append(outNetworks, p.Masked().String())
 	}
-	if len(d.Networks) > MaxNetworks {
-		add(CodeNetwork, "networks", fmt.Sprintf("has %d networks", len(d.Networks)), fmt.Sprintf("Give at most %d networks", MaxNetworks))
+	if len(networks) > MaxNetworks {
+		add(CodeNetwork, "networks", fmt.Sprintf("has %d networks", len(networks)), fmt.Sprintf("Give at most %d networks", MaxNetworks))
 	}
-	if d.ReadsPerMinute < 0 || d.ReadsPerMinute > MaxReadsPerMinute {
+	if reads < 0 || reads > MaxReadsPerMinute {
 		add(CodeLimit, "reads_per_minute", "is outside 1 to the platform's 600", "Give 1 to 600, or leave it out for the platform's")
 	}
-	if d.WritesPerMinute < 0 || d.WritesPerMinute > MaxWritesPerMinute {
+	if writes < 0 || writes > MaxWritesPerMinute {
 		add(CodeLimit, "writes_per_minute", "is outside 1 to the platform's 120", "Give 1 to 120, or leave it out for the platform's")
 	}
 	switch {
-	case !d.ExpiresAt.After(now):
-		add(CodeExpiry, "expires_at", "is not in the future", "Give a time within the next year")
-	case d.ExpiresAt.Sub(now) > MaxIntegrationLife-time.Minute: // the database checks a year from when it is registered
-		add(CodeExpiry, "expires_at", "is more than a year away", "Give a time within the next year; register a new client before it expires")
+	case !expires.After(now):
+		add(CodeExpiry, "expires_at", "is not in the future", "Give a time within "+within)
+	case expires.Sub(now) > life-time.Minute: // the database checks the life from when it is registered
+		add(CodeExpiry, "expires_at", "is more than "+within+" away", "Give a time within "+within+"; register a new one before it expires")
 	}
+	return outScopes, outNetworks
+}
+
+// CheckIntegration checks d at now and returns it as it will be registered, or every refusal at once.
+func CheckIntegration(d Integration, now time.Time) (Checked, error) {
+	var errs Errors
+	out := Checked{Integration: d}
+	out.Scopes, out.Networks = definition(&errs, d.Name, d.Scopes, d.Networks, d.ReadsPerMinute, d.WritesPerMinute, d.ExpiresAt, now, MaxIntegrationLife, "the next year")
 	alg, thumb, err := publicKey(d.Key)
 	if err != nil {
-		add(CodeKey, "public_key", err.Error(), "Give the public half of an EC P-256 key (ES256) or an RSA key of 2048 bits or more (RS256), as a JWK")
+		errs = append(errs, &Error{Code: CodeKey, Field: "public_key", Message: err.Error(),
+			Fix: "Give the public half of an EC P-256 key (ES256) or an RSA key of 2048 bits or more (RS256), as a JWK"})
 	}
 	out.Alg, out.Thumbprint = alg, thumb
 	if len(errs) > 0 {
 		return Checked{}, errs
+	}
+	return out, nil
+}
+
+// Personal is what a developer asks a personal access token to be (FR-INT-02): it carries no key of its own, since the
+// OAuth server issues its secret; it expires within 90 days.
+type Personal struct {
+	Name            string
+	Scopes          []string
+	Networks        []string
+	ReadsPerMinute  int // 0: the platform's
+	WritesPerMinute int
+	ExpiresAt       time.Time
+}
+
+// MaxPersonalLife is the longest a personal access token lives (FR-INT-02).
+const MaxPersonalLife = 90 * 24 * time.Hour
+
+// CheckPersonal checks d at now and returns it as it will be registered, or every refusal at once.
+func CheckPersonal(d Personal, now time.Time) (Personal, error) {
+	var errs Errors
+	out := d
+	out.Scopes, out.Networks = definition(&errs, d.Name, d.Scopes, d.Networks, d.ReadsPerMinute, d.WritesPerMinute, d.ExpiresAt, now, MaxPersonalLife, "the next 90 days")
+	if len(errs) > 0 {
+		return Personal{}, errs
 	}
 	return out, nil
 }

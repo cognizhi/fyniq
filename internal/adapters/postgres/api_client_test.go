@@ -155,4 +155,35 @@ func TestAttackAnAPIClientKeepsItsRules(t *testing.T) {
 		err := asOrg(ctx, conn(t, "fyniq_api"), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt, p.ID); return err })
 		wantState(t, x.what, err, x.states...)
 	}
+	// The storage port reclasses it once, at its version, while it is live (FR-INT-02: the Owner approved it).
+	reclass := func(id uuid.UUID, version int, class string) (out storage.APIClient, err error) {
+		err = api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+			out, err = u.APIClients().Reclass(ctx, id, version, class)
+			return err
+		})
+		return out, err
+	}
+	if _, err := reclass(p.ID, 9, "integration"); !storageCode(err, storage.CodeVersion) {
+		t.Errorf("a reclass of an old version: %v", err)
+	}
+	if got, err := reclass(p.ID, p.Version, "integration"); err != nil || got.Class != "integration" || got.Version != p.Version+1 || got.Kind != storage.APIClientPersonal {
+		t.Fatalf("reclassing: %+v, %v", got, err)
+	}
+	if _, err := reclass(p.ID, p.Version+1, "integration"); err == nil {
+		t.Error("a reclass to the class it has")
+	}
+	gone := p
+	gone.ClientID, gone.ID, gone.Version = "hydra-"+uuid.NewString(), uuid.Nil, 0
+	if gone, err = create(gone); err != nil {
+		t.Fatal(err)
+	}
+	if err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.APIClients().Revoke(ctx, gone.ID, 1, "user:"+owner.String(), "Lost.", now)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := reclass(gone.ID, 2, "integration"); err == nil {
+		t.Error("a reclass of a revoked token")
+	}
 }

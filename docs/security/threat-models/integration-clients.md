@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Feature and requirement IDs | Integration clients of the public API: FR-INT-02 (client classes, P1 part), SEC-07 (client credentials, networks, expiry), AI-34 (client classes), FR-INT-16 (per-client limits), AUD-01; `p1-public-api` task 3.1, in part (personal access tokens follow) |
+| Feature and requirement IDs | Integration clients of the public API: FR-INT-02 (client classes, P1 part), SEC-07 (client credentials, networks, expiry), AI-34 (client classes), FR-INT-16 (per-client limits), AUD-01; `p1-public-api` task 3.1: integration clients (17 Nov 2026) and personal access tokens (18 Nov 2026, section 5) |
 | Author, reviewer, date | Claude Code for the founders, 17 Nov 2026; reviewer: a founder at sign-off (second human review waived before production, AGENTS.md) |
 | Data and its class | Each client's record: its name, class, the member it acts for, its scopes, networks, limits, expiry and the RFC 7638 thumbprint of its public key (internal); its public key and its OAuth client at the OAuth server (internal); what it reads and writes through the API is the organisation's data, at the class of each row (up to confidential) |
 | Who acts | An Administrator asks to register a client (C on Connected apps); the Owner approves it with a second approver (FR-INT-02's dual control); an Administrator revokes one. The client itself calls the API with tokens from the OAuth server (Ory Hydra, ADR-T3). The worker deletes a revoked client from the OAuth server. No AI or MCP tool registers, changes or revokes a client |
@@ -49,7 +49,31 @@ tokens. Trust boundaries:
 
 ## 4. What is left
 
-- Personal access tokens (FR-INT-02: hashed at rest, ≤ 90 days, shown once, class `agent` by default, reclassed by the
-  Owner with dual control) are the next slice of task 3.1; the table already holds them.
 - The Connected apps screen that lists and revokes clients follows the API; until then an Administrator uses the API.
 - Hydra's own client registration and token endpoint in the dev cloud, behind its load balancer [live-verify].
+
+## 5. Personal access tokens (18 Nov 2026)
+
+A personal access token (FR-INT-02) is a developer's own credential: a client of the OAuth server whose secret the server
+generates, returns once and keeps only as a hash (`client_secret_basic`, client-credentials grant, audience the API's), so
+Fyniq never holds it. The developer exchanges client ID and secret for access tokens of an hour (AI-38). **Decision
+recorded (18 Nov 2026, the recommended default):** the shown-once credential is that secret, not a long-lived bearer token,
+so access tokens stay within AI-38's 60 minutes and every token comes from the OAuth server (ADR-T3); the alternative, a
+90-day bearer token, would break AI-38. Creation is self-service for the member's own token (Appendix D's "Own MCP
+connection"), because its class is `agent`: it reads and proposes and cannot write, whatever its scopes, until the Owner
+reclasses it with a second approver (the approval object `api_client`, operation `api_client.reclass`).
+
+| # | Boundary or step | Threat (STRIDE) | Mitigation | Verified by |
+|---|---|---|---|---|
+| P1 | creation | Elevation: a token, an integration or the AI makes a credential, or a person makes one without step-up | Only a session of a person with a Fyniq user and step-up in the last 5 minutes; the operation is not in the AI or MCP surface and its Appendix D cell is empty for the AI | `TestPersonalAccessTokens`, the matrix rows |
+| P2 | creation | Tampering: wide scopes, an expiry beyond 90 days, a wildcard | The same checks as an integration client's, at once; the database repeats the scope and the 90-day rule | `TestAPersonalAccessTokenIsCheckedWhole`, `TestAttackAnAPIClientKeepsItsRules` |
+| P3 | secret | Disclosure: the secret in a list, a log, the audit trail or a stored idempotent answer | Shown once in a `Cache-Control: no-store` answer; the command takes no `Idempotency-Key` and no preview (exempt, `TestConventionExemptions`); the record, the lists and the audit event never hold it | `TestPersonalAccessTokens` (lists and the whole trail searched) |
+| P4 | use | Elevation: an agent token writes, because its scopes say so | Class `agent` takes only the AI column of Appendix D, so a write scope changes nothing until the reclass | `TestPersonalAccessTokens` (a draft journal refused before the reclass, created after, audited as the integration) |
+| P5 | use | Spoofing: a token for another audience, scope or secret | Hydra issues only for the API's audience and the registered scopes, to the secret alone; the API refuses a client it does not know or whose subject is not the client | `TestPersonalAccessTokens` |
+| P6 | reclass | Elevation: a person reclasses their own token | An approval request of `api_client` asked by a person with C on Connected apps and approved by the Owner with a second approver, never the requester; it lapses if the token moves on | `TestPersonalAccessTokens` |
+| P7 | revocation | A lost laptop: the token keeps working | A member revokes their own at once, an Administrator any; the API refuses it within the introspection cache's 30 seconds and the worker deletes the client from Hydra | `TestPersonalAccessTokens` |
+| P8 | records | A member sees or revokes another's token | The own-token operations find only the caller's tokens (not found for another's); the organisation-wide list and revoke need C or V on Connected apps | `TestPersonalAccessTokens`, the matrix rows |
+
+Left: a Hydra `client_secret` has no expiry the OAuth server enforces, so Fyniq's record is the authority (the API refuses
+an expired token at once); the worker does not yet sweep expired personal clients from Hydra, which hold no access once the
+record has expired [live-verify against Hydra in the dev cloud].

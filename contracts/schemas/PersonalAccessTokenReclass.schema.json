@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "Why it should be an integration client: the Owner and a second approver read it.",
+      "examples": [
+        "It feeds the nightly import."
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "PersonalAccessTokenReclass",
+  "type": "object"
+}

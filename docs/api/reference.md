@@ -886,6 +886,146 @@ Revokes an integration client at once (FR-INT-02, SEC-07): never held back for a
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CLIENT-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-API-CLIENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+### `GET /v1/personal-access-tokens`
+
+**List the organisation's personal access tokens** (`listPersonalAccessTokens`)
+
+Every member's personal access tokens (FR-INT-02, SEC-07), oldest first, a page at a time (FR-INT-10): each one's client ID, the member it acts for, its class, scopes, networks, expiry and status, revoked ones included, for the quarterly access review (FR-CTL-06). Never a secret. Read-only; no side effects.
+
+- **Permission:** View on Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`PersonalAccessTokenList`](../../contracts/schemas/PersonalAccessTokenList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/personal-access-tokens`
+
+**Create a personal access token** (`createPersonalAccessToken`)
+
+Creates your own personal access token (FR-INT-02, AI-34): a client of Fyniq's OAuth server whose secret is generated there, shown to you once in this answer and kept only as a hash; Fyniq never holds it. With the client_id and the secret you ask the OAuth server's token endpoint for access tokens (grant_type=client_credentials, the client_id and secret as HTTP Basic credentials, and the audience returned here); each lives an hour. It acts for you and never does more than you may now; its scopes narrow that to whole areas, and no scope approves or releases. It expires within 90 days (30 when you name no expiry), and give its networks where you can. Its class is `agent` because a token may be pasted into an AI tool: an agent reads and proposes and cannot write, whatever its scopes, until the Owner reclasses it as an integration with a second approver (requestPersonalAccessTokenReclass). Every field is checked at once. Side effects: the OAuth client and its record, and the audit event api_client.registered (never the secret). Needs a person signed in to Fyniq with step-up: an OAuth client, a token or the AI is refused, so no credential makes another. It takes no Idempotency-Key and no preview: a stored answer would keep the secret at rest. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on Own MCP connection (opt in, consent, revoke) (rev 0.2)
+- **Request body:** [`PersonalAccessTokenCreate`](../../contracts/schemas/PersonalAccessTokenCreate.schema.json)
+- **Responses:**
+  - `201` Created [`PersonalAccessTokenCreated`](../../contracts/schemas/PersonalAccessTokenCreated.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-API-CLIENT-01` An API client is kept, revoked once, and never rewritten; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-CLIENT-01` The client's name is not valid; `API-CLIENT-02` Not a scope an API client may be granted; `API-CLIENT-03` Not a network in CIDR form; `API-CLIENT-04` The client's limit is outside the platform's; `API-CLIENT-05` The client's expiry is not within a year; `API-CLIENT-07` The client's member is not an active member with a role; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-CLIENT-01`, `API-CLIENT-02`, `API-CLIENT-03`, `API-CLIENT-04`, `API-CLIENT-05`, `API-CLIENT-07`, `API-FAILURE-01`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-API-CLIENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/personal-access-tokens/mine`
+
+**List your personal access tokens** (`listMyPersonalAccessTokens`)
+
+Your own personal access tokens (FR-INT-02), oldest first, a page at a time (FR-INT-10): each one's client ID, class, scopes, networks, own rate limits, expiry and status, revoked ones included. Never a secret. Read-only; no side effects.
+
+- **Permission:** View on Own MCP connection (opt in, consent, revoke) (rev 0.2)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`PersonalAccessTokenList`](../../contracts/schemas/PersonalAccessTokenList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/personal-access-tokens/mine/{personal_access_token_id}/revoke`
+
+**Revoke your personal access token** (`revokeMyPersonalAccessToken`)
+
+Revokes one of your own personal access tokens at once (FR-INT-02, SEC-07): never held back. The API refuses its tokens from now, within the 30 seconds an introspection is trusted (AI-38), and the OAuth server then deletes the client and every token it obtained. It is kept, revoked, for the access review. Side effects: its new version, the audit event api_client.revoked with the reason, and the deletion queued for the worker. Another member's token is not found. Idempotent with Idempotency-Key; Prefer: return=preview shows the result and saves nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on Own MCP connection (opt in, consent, revoke) (rev 0.2)
+- **Parameters:**
+  - `personal_access_token_id` (path, required): The personal access token's ID in Fyniq.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PersonalAccessTokenRevoke`](../../contracts/schemas/PersonalAccessTokenRevoke.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PersonalAccessToken`](../../contracts/schemas/PersonalAccessToken.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-CLIENT-08` The client is revoked already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-API-CLIENT-01` An API client is kept, revoked once, and never rewritten; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CLIENT-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-API-CLIENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/personal-access-tokens/{personal_access_token_id}/reclass`
+
+**Ask to reclass a personal access token as an integration** (`requestPersonalAccessTokenReclass`)
+
+Asks to reclass a live personal access token from `agent` to `integration` (FR-INT-02, AI-34): from then on it may prepare and post in its write scopes' areas under the approval policies, as an integration client may, instead of only reading and proposing. It is dual controlled (golden rule 6): the answer is the approval request, which the Owner, who holds A on "Connected apps", approves with a second approver; the token is unchanged until then, and the approval lapses if the token is revoked first. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. Needs a person signed in with step-up. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)
+- **Parameters:**
+  - `personal_access_token_id` (path, required): The personal access token's ID in Fyniq.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PersonalAccessTokenReclass`](../../contracts/schemas/PersonalAccessTokenReclass.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-CLIENT-08` The client is revoked already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-API-CLIENT-01` An API client is kept, revoked once, and never rewritten; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-CLIENT-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `STORAGE-API-CLIENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/personal-access-tokens/{personal_access_token_id}/revoke`
+
+**Revoke a member's personal access token** (`revokePersonalAccessToken`)
+
+Revokes any member's personal access token at once (FR-INT-02, SEC-07): never held back for a second person, for a lost laptop or a member who left. The API refuses its tokens from now, within the 30 seconds an introspection is trusted (AI-38), and the OAuth server then deletes the client and every token it obtained. It is kept, revoked, for the access review. Side effects: its new version, the audit event api_client.revoked with the reason, and the deletion queued for the worker. Idempotent with Idempotency-Key; Prefer: return=preview shows the result and saves nothing. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)
+- **Parameters:**
+  - `personal_access_token_id` (path, required): The personal access token's ID in Fyniq.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PersonalAccessTokenRevoke`](../../contracts/schemas/PersonalAccessTokenRevoke.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PersonalAccessToken`](../../contracts/schemas/PersonalAccessToken.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-CLIENT-08` The client is revoked already; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-API-CLIENT-01` An API client is kept, revoked once, and never rewritten; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CLIENT-08`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-API-CLIENT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ## Session
 
 Signing in to the web app: the providers, and your own session (SEC-05, FR-ADM-08).

@@ -21,6 +21,11 @@ UPDATE fyniq.api_client SET revoked_at = sqlc.arg(revoked_at), revoked_by = sqlc
 WHERE id = sqlc.arg(id) AND version = sqlc.arg(version)
 RETURNING *;
 
+-- name: ReclassAPIClient :one
+UPDATE fyniq.api_client SET class = sqlc.arg(class), version = version + 1
+WHERE id = sqlc.arg(id) AND version = sqlc.arg(version) AND revoked_at IS NULL
+RETURNING *;
+
 -- name: APIClientAccess :one
 -- An empty kind means a client ID Fyniq does not know.
 SELECT coalesce(a.organisation_id, '00000000-0000-0000-0000-000000000000')::uuid AS organisation_id,

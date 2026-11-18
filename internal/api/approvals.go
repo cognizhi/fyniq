@@ -1956,6 +1956,8 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		return a.executeAIRoute(ctx, u, r, s)
 	case approval.OpAPIClientCreate: // FR-INT-02: the integration client registered with the OAuth server, then recorded
 		return a.executeAPIClient(ctx, u, r, s)
+	case approval.OpAPIClientReclass: // FR-INT-02: the personal access token reclassed from agent to integration
+		return a.executePersonalReclass(ctx, u, r, s)
 	case approval.OpAIProposalExecute: // AI-P5: Approved, and queued for the executor, which runs it as the approver
 		return a.executeAIProposal(ctx, u, r, signer)
 	case approval.OpBudgetRecord: // FR-PLN-01: the budget recorded and locked, the year's budget from then on
