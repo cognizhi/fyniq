@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "counts": {
+      "$ref": "AgentFindingCounts.schema.json",
+      "description": "Its findings by status, once done."
+    },
+    "findings": {
+      "description": "Every finding, Not assessed first.",
+      "items": {
+        "$ref": "AgentRunFinding.schema.json"
+      },
+      "type": "array"
+    },
+    "finished_at": {
+      "examples": [
+        "2026-11-15T23:01:10Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c12"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kb_snapshot": {
+      "description": "The knowledge base it read.",
+      "examples": [
+        "none"
+      ],
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The books' revision it read (ENG-46).",
+      "examples": [
+        42
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "model": {
+      "$ref": "AgentRunModel.schema.json",
+      "description": "The model step, when it asked the model."
+    },
+    "model_missed": {
+      "description": "Why its AI step did not run when it was due to: the model unavailable, the AI off, no route or the budget spent. Its findings and tasks stand; C.2 #36 shows it.",
+      "examples": [
+        "the AI is switched off"
+      ],
+      "type": "string"
+    },
+    "model_used": {
+      "description": "Whether it asked the model: only when an input changed, for the monitor and events.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "new": {
+      "description": "Whether what it found differs from the run done before it: new since the last run.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "packs": {
+      "description": "The statutory packs it read.",
+      "items": {
+        "$ref": "AgentPackVersion.schema.json"
+      },
+      "type": "array"
+    },
+    "proposals": {
+      "description": "The proposals it made that you may see.",
+      "items": {
+        "$ref": "AIProposalSummary.schema.json"
+      },
+      "type": "array"
+    },
+    "reason": {
+      "description": "Why it failed or was skipped.",
+      "examples": [
+        "the agent is paused"
+      ],
+      "type": "string"
+    },
+    "skill_version": {
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "slot_at": {
+      "description": "When it was due.",
+      "examples": [
+        "2026-11-15T23:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "started_at": {
+      "examples": [
+        "2026-11-15T23:00:05Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "running",
+        "done",
+        "failed",
+        "skipped"
+      ],
+      "examples": [
+        "done"
+      ],
+      "type": "string"
+    },
+    "summary": {
+      "description": "Fyniq's summary, never \"all clear\" while anything is open (AI-65).",
+      "examples": [
+        "2 things need you this week."
+      ],
+      "type": "string"
+    },
+    "tasks": {
+      "description": "The tasks its findings have.",
+      "items": {
+        "$ref": "ComplianceTask.schema.json"
+      },
+      "type": "array"
+    },
+    "trigger": {
+      "description": "What started it: schedule:\u003centry\u003e, event:\u003ckind\u003e:\u003ckey\u003e or run_now.",
+      "examples": [
+        "schedule:monitor"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "skill_version",
+    "ledger_revision",
+    "packs",
+    "findings",
+    "tasks",
+    "proposals",
+    "id",
+    "trigger",
+    "slot_at",
+    "status",
+    "counts",
+    "model_used",
+    "new"
+  ],
+  "title": "AgentRunReport",
+  "type": "object"
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "description": "existing: Fyniq has the value; create: the set-up creates it.",
+      "enum": [
+        "existing",
+        "create"
+      ],
+      "examples": [
+        "create"
+      ],
+      "type": "string"
+    },
+    "code": {
+      "description": "The dimension value's code.",
+      "examples": [
+        "PRODUCT-ENGINEERING"
+      ],
+      "maxLength": 30,
+      "minLength": 1,
+      "type": "string"
+    },
+    "workbook": {
+      "description": "The workbook's name for it: the entry's key.",
+      "examples": [
+        "Product \u0026 Engineering"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "workbook",
+    "code",
+    "action"
+  ],
+  "title": "MigrationValueMap",
+  "type": "object"
+}

@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "figure": {
+      "description": "The value as the answer shows it, rounded once by RND-DISPLAY.",
+      "examples": [
+        "SGD 125,000.00"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "examples": [
+        "2026-07-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "F3a9c0d1e2b4f5a6"
+      ],
+      "type": "string"
+    },
+    "inputs": {
+      "description": "A calculated fact's input facts.",
+      "items": {
+        "description": "A fact's ID.",
+        "examples": [
+          "F3a9c0d1e2b4f5a6"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "ledger_revision": {
+      "examples": [
+        1204
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "lineage": {
+      "description": "The API path it was read from: what Explain opens.",
+      "examples": [
+        "/v1/reports/statements/pl?from=2026-07\u0026to=2026-09\u0026as_at_revision=1204"
+      ],
+      "type": "string"
+    },
+    "measure": {
+      "examples": [
+        "revenue"
+      ],
+      "type": "string"
+    },
+    "member": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"
+      ],
+      "type": "string"
+    },
+    "member_name": {
+      "examples": [
+        "Acme Pte Ltd"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "examples": [
+        "Revenue"
+      ],
+      "type": "string"
+    },
+    "pack": {
+      "examples": [
+        "sg-gst"
+      ],
+      "type": "string"
+    },
+    "pack_version": {
+      "examples": [
+        "sg-gst@2026.3"
+      ],
+      "type": "string"
+    },
+    "source": {
+      "examples": [
+        "the profit and loss's revenue"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "examples": [
+        "2026-09-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "unit": {
+      "examples": [
+        "amount"
+      ],
+      "type": "string"
+    },
+    "value": {
+      "description": "Exact decimal text; absent when the fact has no value.",
+      "examples": [
+        "125000.00"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "measure",
+    "figure",
+    "unit",
+    "ledger_revision",
+    "source",
+    "lineage"
+  ],
+  "title": "AIFact",
+  "type": "object"
+}

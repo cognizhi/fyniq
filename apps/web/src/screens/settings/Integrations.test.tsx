@@ -6,6 +6,7 @@ import { renderPage } from "../../test/render";
 import type { Mode } from "../../registry";
 import { IntegrationDetail } from "./IntegrationDetail";
 import { Integrations } from "./Integrations";
+import { invalid } from "../../test/invalid";
 
 const none = { data_classes: [], destinations: [], scopes: [], webhooks: [] };
 
@@ -232,7 +233,7 @@ describe("A connector's page", () => {
     fireEvent.click(await screen.findByRole("tab", { name: "Configuration" }));
     fireEvent.change(screen.getByLabelText("DNS records"), { target: { value: "{not json" } });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(await screen.findByText(/DNS records is not valid JSON/)).toBeTruthy();
+    await invalid(document.body, "DNS records", "DNS records is not valid JSON. Check the brackets, quotes and commas, then save again.");
     expect(calls()).not.toContain("PUT /v1/installation/connectors/c-1/configuration");
   });
 

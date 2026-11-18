@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Archive, ChevronRight, ClockAlert, EyeOff, Pencil, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
+import { Archive, ChevronRight, CircleCheck, ClockAlert, EyeOff, Pencil, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -12,6 +12,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
+import { dataClassesLabel, processedIn } from "../settings/connectorWords";
 import { DPOContact } from "../settings/Organisation";
 
 type Inventory = components["schemas"]["DataInventory"];
@@ -82,6 +83,15 @@ async function dpias() {
   const { data, error } = await api.GET("/v1/compliance/dpias");
   if (error) throw error;
   return data.items;
+}
+
+type AIInventory = components["schemas"]["AIInventory"];
+type AIConnection = AIInventory["connections"][number];
+
+async function aiInventory() {
+  const { data, error } = await api.GET("/v1/compliance/ai-inventory");
+  if (error) throw error;
+  return data;
 }
 
 async function dpia(key: string) {
@@ -206,7 +216,7 @@ function InventoryTab() {
         </div>
         <ul className="fy-list" aria-labelledby={`${id}-notheld`}>
           {d.not_held.map((n) => (
-            <li key={n.key} className="fy-list__item">
+            <li key={n.key} className="fy-list__item fy-list__item--wrap">
               <span className="fy-list__main">
                 <span className="fy-list__title">{n.what}</span>
                 <span className="fy-list__meta whitespace-normal">{n.why}</span>
@@ -337,7 +347,7 @@ function EntryForm({ entry, onClose }: { entry: Entry | null; onClose: () => voi
         {field("who", "Who reads it")}
         {field("retention", "How long it is kept")}
         {field("transfers", "Where it goes abroad")}
-        <label className="fy-check">
+        <label className="fy-row gap-2">
           <input type="checkbox" checked={form.needs_dpia} onChange={(e) => setForm({ ...form, needs_dpia: e.target.checked })} />
           It needs a data protection impact assessment
         </label>
@@ -416,47 +426,124 @@ function DPIAsTab() {
   if (list.isError) return <Refusal problem={problemOf(list.error)} title="The impact assessments could not be shown" />;
   if (!list.data) return <p className="fy-small">Loading the impact assessments…</p>;
   return (
-    <section className="fy-card" aria-labelledby={`${id}-dpias`}>
-      <div className="fy-card__head">
-        <h2 className="fy-h3" id={`${id}-dpias`}>
-          Impact assessments
-        </h2>
-        {officer && (
-          <Button size="sm" onClick={() => setOpen("new")}>
-            <Icon of={Plus} />
-            Write one
-          </Button>
-        )}
-      </div>
-      <ul className="fy-list" aria-labelledby={`${id}-dpias`}>
-        {list.data.map((d: DPIA) => (
-          <li key={d.key} className="fy-list__item fy-list__item--wrap">
-            <span className="fy-list__main">
-              <span className="fy-list__title whitespace-normal">{d.title}</span>
-              <span className="fy-list__meta whitespace-normal">
-                {d.why} · {d.version === 0 ? "Fyniq's draft" : `version ${d.version}`}
-                {d.approved && ` · version ${d.approved.version} approved ${date(d.approved.at)}`}
-              </span>
-            </span>
-            {d.required && d.unapproved ? (
-              <span className="fy-chip fy-chip--serious">
-                <Icon of={ClockAlert} />
-                Needs approving
-              </span>
-            ) : d.approved && !d.unapproved ? (
-              <span className="fy-chip fy-chip--good">
-                <Icon of={ShieldCheck} />
-                Approved
-              </span>
-            ) : null}
-            <Button size="sm" variant="ghost" onClick={() => setOpen(d.key)} aria-label={`Open ${d.title}`}>
-              <Icon of={Pencil} />
-              Open
+    <div className="fy-stack fy-stack--6">
+      <section className="fy-card" aria-labelledby={`${id}-dpias`}>
+        <div className="fy-card__head">
+          <h2 className="fy-h3" id={`${id}-dpias`}>
+            Impact assessments
+          </h2>
+          {officer && (
+            <Button size="sm" onClick={() => setOpen("new")}>
+              <Icon of={Plus} />
+              Write one
             </Button>
-          </li>
-        ))}
-      </ul>
-      {open && <DPIAForm dpiaKey={open === "new" ? null : open} officer={officer} onClose={() => setOpen(null)} />}
+          )}
+        </div>
+        <ul className="fy-list" aria-labelledby={`${id}-dpias`}>
+          {list.data.map((d: DPIA) => (
+            <li key={d.key} className="fy-list__item fy-list__item--wrap">
+              <span className="fy-list__main">
+                <span className="fy-list__title whitespace-normal">{d.title}</span>
+                <span className="fy-list__meta whitespace-normal">
+                  {d.why} · {d.version === 0 ? "Fyniq's draft" : `version ${d.version}`}
+                  {d.approved && ` · version ${d.approved.version} approved ${date(d.approved.at)}`}
+                </span>
+              </span>
+              {d.required && d.unapproved ? (
+                <span className="fy-chip fy-chip--serious">
+                  <Icon of={ClockAlert} />
+                  Needs approving
+                </span>
+              ) : d.approved && !d.unapproved ? (
+                <span className="fy-chip fy-chip--good">
+                  <Icon of={ShieldCheck} />
+                  Approved
+                </span>
+              ) : null}
+              <Button size="sm" variant="ghost" onClick={() => setOpen(d.key)} aria-label={`Open ${d.title}`}>
+                <Icon of={Pencil} />
+                Open
+              </Button>
+            </li>
+          ))}
+        </ul>
+        {open && <DPIAForm dpiaKey={open === "new" ? null : open} officer={officer} onClose={() => setOpen(null)} />}
+      </section>
+      <AIInventoryCard />
+    </div>
+  );
+}
+
+// connectionLine is a connection in the AI inventory, in words: its name, allowed models and where prompts are processed.
+function connectionLine(c: AIConnection): string {
+  const models = c.models.length ? c.models.join(", ") : "no model allowed yet";
+  return `${c.name} (${models}), processed ${processedIn(c.processed_in)}`;
+}
+
+// AIInventoryCard is the AI inventory beside the AI assistant's assessment (CMP-AI-02): what the AI uses, read from its
+// configuration, and whether the assessment was approved after the AI's last change.
+function AIInventoryCard() {
+  const id = useId();
+  const h = helpText("data-protection.ai-inventory");
+  const inv = useQuery({ queryKey: ["ai-inventory"], queryFn: aiInventory });
+  if (inv.isError) return <Refusal problem={problemOf(inv.error)} title="The AI inventory could not be shown" />;
+  if (!inv.data) return <p className="fy-small">Loading the AI inventory…</p>;
+  const d = inv.data;
+  const inUse = d.connections.filter((c) => c.state === "enabled");
+  const waiting = d.connections.filter((c) => c.state !== "enabled");
+  const versions = [...d.prompts, ...d.tools].map((v) => `${v.name} ${v.version}`);
+  return (
+    <section className="fy-card" aria-labelledby={`${id}-ai`}>
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id={`${id}-ai`} title={h.tooltip}>
+          {h.label}
+        </h2>
+        {d.owner && <span className="fy-small fy-muted">Owner: {d.owner}</span>}
+      </div>
+      <div className="fy-card__body">
+        <dl className="fy-dl">
+          <div>
+            <dt>Connections</dt>
+            <dd>{inUse.length ? inUse.map(connectionLine).join("; ") : "None in use"}</dd>
+          </div>
+          {waiting.length > 0 && (
+            <div>
+              <dt>Waiting or off</dt>
+              <dd>{waiting.map(connectionLine).join("; ")}</dd>
+            </div>
+          )}
+          <div>
+            <dt>Routes</dt>
+            <dd>
+              {d.routes.length
+                ? d.routes.map((r) => `${r.agent}: ${r.steps.map((st) => `${st.model} on ${st.connection}`).join(", then ")}`).join("; ")
+                : "No agent has a route yet"}
+            </dd>
+          </div>
+          <div>
+            <dt>Prompts and tools</dt>
+            <dd>{versions.length ? versions.join(" · ") : "None yet: they come with the AI assistant"}</dd>
+          </div>
+          <div>
+            <dt>Data categories</dt>
+            <dd>{d.classes.length ? dataClassesLabel(d.classes) : "None: no route carries data yet"}</dd>
+          </div>
+        </dl>
+        <p className="fy-small">
+          {d.dpia.current ? (
+            <span className="fy-chip fy-chip--good">
+              <Icon of={CircleCheck} />
+              Assessment current
+            </span>
+          ) : (
+            <span className="fy-chip fy-chip--warning">
+              <Icon of={TriangleAlert} />
+              Assessment to review
+            </span>
+          )}{" "}
+          {d.dpia.why}.
+        </p>
+      </div>
     </section>
   );
 }
@@ -928,7 +1015,7 @@ function BreachesTab() {
         ) : (
           <ul className="fy-list" aria-labelledby={`${id}-exercises`}>
             {(ex.data ?? []).slice().reverse().map((x) => (
-              <li key={x.id} className="fy-list__item">
+              <li key={x.id} className="fy-list__item fy-list__item--wrap">
                 <span className="fy-list__main">
                   <span className="fy-list__title whitespace-normal">
                     {date(x.held_on)}: {x.scenario}
@@ -1000,7 +1087,7 @@ function BreachForm({ onClose }: { onClose: () => void }) {
         <fieldset className="fy-field">
           <legend className="fy-label">The data involved</legend>
           {(Object.keys(classWords) as BreachClass[]).map((c) => (
-            <label key={c} className="fy-check">
+            <label key={c} className="fy-row gap-2">
               <input type="checkbox" checked={form.classes.includes(c)} onChange={() => toggle(c)} />
               {classWords[c]}
             </label>
@@ -1069,11 +1156,11 @@ function BreachStepForm({ breach, onClose }: { breach: Breach; onClose: () => vo
         {form.step === "decided" && (
           <fieldset className="fy-field" aria-describedby={`${id}-forced`}>
             <legend className="fy-label">Is it notifiable?</legend>
-            <label className="fy-check">
+            <label className="fy-row gap-2">
               <input type="radio" name={`${id}-n`} checked={form.notifiable} onChange={() => setForm({ ...form, notifiable: true })} />
               Yes: likely to cause significant harm, or 500 or more people
             </label>
-            <label className="fy-check">
+            <label className="fy-row gap-2">
               <input type="radio" name={`${id}-n`} checked={!form.notifiable} disabled={forced} onChange={() => setForm({ ...form, notifiable: false })} />
               No
             </label>
@@ -1450,7 +1537,7 @@ function ShreddingTab() {
         ) : (
           <ul className="fy-list" aria-labelledby={`${id}-anonymised`}>
             {(done.data ?? []).map((x) => (
-              <li key={x.id} className="fy-list__item">
+              <li key={x.id} className="fy-list__item fy-list__item--wrap">
                 <span className="fy-list__main">
                   <span className="fy-list__title">{x.contact_name}</span>
                   <span className="fy-list__meta whitespace-normal">

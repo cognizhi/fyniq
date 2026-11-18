@@ -11,7 +11,7 @@ import (
 
 // The standard chart is the workbook's 83 accounts, one moved, B.5's three (PRD-001 rev 0.31) and 2330 withholding tax
 // payable (rev 0.90, FR-AP-19), 1160 Asset disposal clearing (rev 0.151, FR-FA-03) and 2040 Share application monies
-// (rev 0.203, B.7): every code once, every system account B.5 names, and the flags as the PRD reads.
+// (rev 0.203, B.7) and 3900 Opening balance clearing (rev 0.257, FR-GL-06): every code once, every system account B.5 names, and the flags as the PRD reads.
 // req: FR-COA-01
 // req: FR-COA-02
 // req: ledger/chart-of-accounts Default useful life (rev 0.151)
@@ -20,8 +20,8 @@ func TestTheStandardChart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(accounts) != 89 {
-		t.Fatalf("%d accounts; want 89", len(accounts))
+	if len(accounts) != 90 {
+		t.Fatalf("%d accounts; want 90", len(accounts))
 	}
 	byCode := map[string]Account{}
 	sources := map[string]int{}
@@ -41,7 +41,7 @@ func TestTheStandardChart(t *testing.T) {
 			t.Errorf("account %s's guidance names a workbook sheet: %s", a.Code, a.Guidance)
 		}
 	}
-	if want := map[string]int{"workbook": 82, "workbook-moved": 1, "prd-b5": 4, "prd-151": 1, "prd-203": 1}; !maps.Equal(sources, want) {
+	if want := map[string]int{"workbook": 82, "workbook-moved": 1, "prd-b5": 4, "prd-151": 1, "prd-203": 1, "prd-257": 1}; !maps.Equal(sources, want) {
 		t.Errorf("sources %v; want %v", sources, want)
 	}
 
@@ -55,7 +55,7 @@ func TestTheStandardChart(t *testing.T) {
 		"3020": "Share capital - Preference", "3300": "Capital contribution", "2700": "Convertible notes / SAFE", "6050": "Directors' fees",
 		"7040": "Unrealised FX gain or loss", "7050": "Gain / (loss) on disposal of assets", "1050": "Payment gateway (e.g. Stripe)",
 		"5040": "Payment processing fees", "2020": "Accrued expenses", "2330": "Withholding tax payable", "1160": "Asset disposal clearing",
-		"2040": "Share application monies"} {
+		"2040": "Share application monies", "3900": "Opening balance clearing"} {
 		if a, ok := byCode[code]; !ok || a.Name != name {
 			t.Errorf("account %s: %q; want %q", code, a.Name, name)
 		}
@@ -95,7 +95,7 @@ func TestTheStandardChart(t *testing.T) {
 			"2120", "2500"}},
 		"share capital": {flagged(func(a Account) bool { return a.Role == storage.RoleShareCapital }), []string{"3010", "3020"}},
 		"system": {flagged(func(a Account) bool { return a.Role != "" }), []string{"1100", "1210", "1590", "2010", "2040", "2100", "2110", "2120",
-			"2150", "2200", "2300", "2330", "2400", "2410", "2500", "2700", "2999", "3010", "3020", "3100", "3300", "6020", "6030", "6610", "7030", "7040", "8010"}},
+			"2150", "2200", "2300", "2330", "2400", "2410", "2500", "2700", "2999", "3010", "3020", "3100", "3300", "3900", "6020", "6030", "6610", "7030", "7040", "8010"}},
 		"money": {flagged(func(a Account) bool { return a.MoneyAccount }), []string{"1010", "1020", "1030", "1040", "1050", "2030", "2150"}},
 	} {
 		if !slices.Equal(c.got, c.want) {

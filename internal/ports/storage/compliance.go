@@ -47,6 +47,24 @@ type DualControlRelease struct {
 	BreakGlassUsed bool
 }
 
+// ExecutedProposal is an AI proposal the executor ran (CTL-AI-02, AI-P5): what was approved, its approval request and
+// the people whose approvals of the request signed its envelope, and how many approvals of it the audit trail records
+// for an actor that is not a person.
+type ExecutedProposal struct {
+	ID              uuid.UUID
+	FinishedAt      time.Time
+	PayloadSHA256   string
+	ApprovedPayload string
+	ApprovedSHA256  string
+	DecidedBy       *uuid.UUID
+	RequestID       *uuid.UUID
+	RequestObject   string // the request's object, as type:key
+	RequestStatus   string
+	Envelope        string
+	Signers         []uuid.UUID
+	NotByAPerson    int
+}
+
 // MemberSecondFactor is an active member's second factors (CTL-IAM-01, SEC-01): their passkeys, their sign-ins that
 // passed a second factor, and their sessions seen in the window that passed none.
 type MemberSecondFactor struct {
@@ -331,6 +349,30 @@ type BreachStep struct {
 	Reference  string     // pdpc_notified's
 }
 
+// CodeIncident is the database's refusal of an incident's step out of order, or of any change (FY322).
+const CodeIncident = "STORAGE-INCIDENT-01"
+
+// Incident is a security incident (SEC-32, p1-security-hardening design D10), with its steps.
+type Incident struct {
+	ID         uuid.UUID
+	Title      string
+	Summary    string
+	Severity   string // critical, high, medium or low
+	DetectedAt time.Time
+	OpenedBy   string
+	OpenedAt   time.Time
+	Steps      []IncidentStep // oldest first
+}
+
+// IncidentStep is an incident's step: contained, assessed, notified, recovered or reviewed, which closes it.
+type IncidentStep struct {
+	Step   string
+	At     time.Time
+	By     string
+	Note   string
+	Breach *uuid.UUID // assessed's: the breach register's breach, when personal data was involved
+}
+
 // BreachExercise is a tabletop exercise of the breach runbook (CTL-DP-06).
 type BreachExercise struct {
 	ID         uuid.UUID
@@ -339,6 +381,59 @@ type BreachExercise struct {
 	Findings   string
 	RecordedBy string
 	RecordedAt time.Time
+}
+
+// CodeRestoreDrill is the database's refusal to change or remove a recorded restore drill (FY323).
+const CodeRestoreDrill = "STORAGE-RESTORE-DRILL-01"
+
+// RestoreDrill is a full restore drill a person ran by docs/runbooks/restore-drill.md (DR-06, NFR-DR-01, NFR-DR-02,
+// CTL-RES-02 Q; p1-operations-dr design D2): its scenario, what it restored from, the data lost and the time taken, and
+// DR-06's checks on the restored copy.
+type RestoreDrill struct {
+	ID              uuid.UUID
+	HeldOn          time.Time
+	Scenario        string // project_loss, corruption or zone_failure
+	RestoredFrom    string
+	DataLostMinutes int
+	TookMinutes     int
+	Ledger          bool // the ledger's verification passed on the copy
+	AuditChain      bool // the audit chain's verification passed on the copy
+	Documents       bool // the documents opened
+	Keys            bool // the keys decrypted and signed
+	SignIn          bool // people signed in
+	Tick            bool // the Scheduler's tick ran the jobs
+	Outbox          bool // the outbox's work was reconciled
+	Findings        string
+	RecordedBy      string
+	RecordedAt      time.Time
+}
+
+// Recovered reports whether the drill counts as recovered: every one of DR-06's checks passed.
+func (d RestoreDrill) Recovered() bool {
+	return d.Ledger && d.AuditChain && d.Documents && d.Keys && d.SignIn && d.Tick && d.Outbox
+}
+
+// CodeHeartbeatDrill is the database's refusal to change or remove a recorded heartbeat drill (FY324).
+const CodeHeartbeatDrill = "STORAGE-HEARTBEAT-DRILL-01"
+
+// HeartbeatDrill is a drill in which the tick was paused, by docs/runbooks/heartbeat-drill.md (NFR-OBS-02, CTL-RES-05 Q;
+// p1-operations-dr design D6): how long, and how many minutes after the pause the first alert and the escalation came.
+type HeartbeatDrill struct {
+	ID                uuid.UUID
+	HeldOn            time.Time
+	Environment       string // staging or production
+	PausedMinutes     int
+	FirstAlertMinutes *int // nil: no alert came
+	EscalationMinutes *int // nil: no escalation came
+	Findings          string
+	RecordedBy        string
+	RecordedAt        time.Time
+}
+
+// Passed reports whether the drill passed: the platform owner was told within 30 minutes and the Owners within 60
+// (NFR-OBS-02).
+func (d HeartbeatDrill) Passed() bool {
+	return d.FirstAlertMinutes != nil && *d.FirstAlertMinutes <= 30 && d.EscalationMinutes != nil && *d.EscalationMinutes <= 60
 }
 
 // Compliance is what the Compliance Center's verifications read and record, in the organisation's unit of work.
@@ -382,6 +477,20 @@ type Compliance interface {
 	RecordBreach(ctx context.Context, b Breach) (Breach, error)
 	// StepBreach adds a breach's step, audited as breach.<step>; CodeBreach when it is out of order.
 	StepBreach(ctx context.Context, id uuid.UUID, s BreachStep) error
+	// Incidents are the organisation's security incidents with their steps, oldest first (SEC-32).
+	Incidents(ctx context.Context) ([]Incident, error)
+	// OpenIncident opens an incident, audited as incident.opened.
+	OpenIncident(ctx context.Context, i Incident) (Incident, error)
+	// StepIncident adds an incident's step, audited as incident.<step>; CodeIncident when it is out of order.
+	StepIncident(ctx context.Context, id uuid.UUID, s IncidentStep) error
+	// RestoreDrills are the organisation's restore drills, oldest first (DR-06).
+	RestoreDrills(ctx context.Context) ([]RestoreDrill, error)
+	// RecordRestoreDrill records a restore drill, audited as restore_drill.recorded.
+	RecordRestoreDrill(ctx context.Context, d RestoreDrill) (RestoreDrill, error)
+	// HeartbeatDrills are the organisation's heartbeat drills, oldest first (NFR-OBS-02).
+	HeartbeatDrills(ctx context.Context) ([]HeartbeatDrill, error)
+	// RecordHeartbeatDrill records a heartbeat drill, audited as tick_drill.recorded.
+	RecordHeartbeatDrill(ctx context.Context, d HeartbeatDrill) (HeartbeatDrill, error)
 	// BreachExercises are the tabletop exercises, oldest first (CTL-DP-06).
 	BreachExercises(ctx context.Context) ([]BreachExercise, error)
 	// RecordBreachExercise records a tabletop exercise, audited as breach_exercise.recorded.
@@ -438,6 +547,8 @@ type Compliance interface {
 	LatestRuns(ctx context.Context) ([]ControlRun, error)
 	// DualControl are the approvals decided and the batches released since.
 	DualControl(ctx context.Context, since time.Time) ([]DualControlApproval, []DualControlRelease, error)
+	// ExecutedProposals are the AI proposals executed since, each with its approval request and who signed it.
+	ExecutedProposals(ctx context.Context, since time.Time) ([]ExecutedProposal, error)
 	// SecondFactors are the active members' second factors, with their sessions seen since without one.
 	SecondFactors(ctx context.Context, since time.Time) ([]MemberSecondFactor, error)
 	// UnreconciledReads are the report exports asked for since without their audit event, and the latest sample events

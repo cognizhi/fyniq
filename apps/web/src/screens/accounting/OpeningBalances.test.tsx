@@ -7,6 +7,7 @@ import { answer, ownerSession, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { cellsOf, draftOf, OpeningBalances } from "./OpeningBalances";
+import { invalid } from "../../test/invalid";
 
 type Account = components["schemas"]["Account"];
 type Opening = components["schemas"]["OpeningBalances"];
@@ -58,10 +59,11 @@ describe("the opening balances' form", () => {
       },
       errors: {},
     });
-    expect(draftOf({ x: { debit: "5", credit: "5" }, y: { debit: "abc", credit: "" }, z: { debit: "(5)", credit: "" } }, "SGD", "").errors).toEqual({
+    expect(draftOf({ x: { debit: "5", credit: "5" }, y: { debit: "abc", credit: "" }, z: { debit: "(5)", credit: "" }, "a-dir:p1": { debit: "", credit: "5" } }, "SGD", "").errors).toEqual({
       x: "Enter a debit or a credit balance, not both.",
       y: "Enter an amount, such as 1,200.00.",
       z: "Enter the balance without a minus sign: a credit balance goes under Credit.",
+      "a-dir:p1": "Choose where the balance came from.", // a director's balance says where it came from (FR-EQ-01)
     });
   });
 });
@@ -145,7 +147,7 @@ describe("the opening balances page", () => {
     fireEvent.change(screen.getByLabelText("1010 DBS current account: debit"), { target: { value: "12,000.00" } });
     fireEvent.change(screen.getByLabelText("3010 Share capital, ordinary: credit"), { target: { value: "12,000.00" } });
     fireEvent.click(screen.getAllByRole("button", { name: "Ask for approval" })[0]!);
-    expect(await screen.findByText(/Say why: the approver reads it/)).toBeTruthy();
+    await invalid(document.body, "Why they change", "Say why: the approver reads it, and the reversal keeps it.");
     expect(seen.filter((x) => x.method === "POST")).toEqual([]);
     await noViolations(document.body);
     fireEvent.change(screen.getByLabelText("Why they change"), { target: { value: "The bank balance was 12,000.00" } });

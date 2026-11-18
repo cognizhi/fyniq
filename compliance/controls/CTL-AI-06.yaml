@@ -10,8 +10,14 @@ evidence: "Reports"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-ai-assistant"
+    status: running
+    how: "test TestPlantedExclusionsReachNoModelRequest"
+    evidence: "an NRIC, a bank account number and a home address planted in the sample books, and an NRIC and an account number typed into an earlier question, reach no request the assistant's model received, end to end through the AI service and the read tools; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestWhatNeverReachesTheAI"
+    evidence: "the never-send fields leave every read an AI principal makes, through a public operation or a read tool, and pay goes only with AI payroll access on and the person's own payroll right (AI-02); CI artefact test-report (90 days)"
   - frequency: W
-    status: planned
-    arrives: "p1-ai-assistant"
+    status: running
+    how: "verify ai.traces"
+    evidence: "the latest run in each organisation (fyniq.control_run), daily, more often than the weekly the PRD asks: up to 1,000 of the last day's turns of the assistant, whose answer, segments, facts and reads' inputs are scanned for an NRIC or FIN number and a bank account number, and whose classes are checked against AI payroll access on the day; a finding names the turn and the kind, never the value"

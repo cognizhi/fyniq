@@ -258,7 +258,7 @@ export function RecurringJournalPage() {
       {isNew && !mayPrepare && <p className="fy-secondary">An Accountant or a Tax agent sets up recurring journals.</p>}
 
       {f && (
-        <form id={`${id}-form`} className="fy-stack fy-stack--6" onSubmit={(e) => void send(false, e)} noValidate>
+        <form id={`${id}-form`} className="fy-stack fy-stack--6" data-enter="next" onSubmit={(e) => void send(false, e)} noValidate>
           <fieldset className="fy-stack fy-stack--6 m-0 min-w-0 border-0 p-0" disabled={!mayPrepare}>
             <section className="fy-card" aria-labelledby={`${id}-head`}>
               <div className="fy-card__head">

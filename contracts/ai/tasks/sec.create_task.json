@@ -1,0 +1,46 @@
+{
+  "id": "sec.create_task",
+  "version": 1,
+  "name": "Create a compliance task",
+  "description": "Creates a compliance task in the Inbox, with an owner and a due date, for something your own cross-check found that no deterministic finding covers. Fyniq raises the findings' own tasks itself: never propose one for a finding it gave you, and never a second for a finding that has a task open or proposed. The task is a reminder for a person: it files, approves or marks nothing as met.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["finding_key", "title", "owner_role", "due_on"],
+    "properties": {
+      "finding_key": {
+        "type": "string",
+        "pattern": "^agent:[a-z0-9][a-z0-9._:-]{1,150}$",
+        "maxLength": 157,
+        "description": "Your finding's stable key, agent: and words, such as agent:director-loan-2026: the same finding keeps the same key."
+      },
+      "title": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 200,
+        "description": "What the person must do, in plain words."
+      },
+      "detail": {
+        "type": "string",
+        "maxLength": 2000,
+        "description": "Why, what to do next and the rule and source behind it."
+      },
+      "owner_role": {
+        "type": "string",
+        "enum": ["owner", "administrator", "controller", "accountant", "company_secretary", "board_viewer"],
+        "description": "The role whose members own the task."
+      },
+      "due_on": {
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        "maxLength": 10,
+        "description": "The date it is due by, as 2027-01-31."
+      }
+    }
+  },
+  "command": "CreateComplianceTask",
+  "tier": 1,
+  "limits": { "items": 1 },
+  "approvers": ["owner", "company_secretary"],
+  "expiry_hours": 72
+}

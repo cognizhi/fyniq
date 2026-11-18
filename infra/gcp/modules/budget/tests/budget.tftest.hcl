@@ -1,4 +1,5 @@
 # req: NFR-COST-01
+# req: NFR-COST-03
 
 mock_provider "google" {
   mock_data "google_project" {

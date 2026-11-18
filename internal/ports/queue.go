@@ -12,6 +12,7 @@ type Task struct {
 	Name     string        // unique: a second Enqueue with the same name is a no-op
 	Payload  []byte        // a JSON object
 	Deadline time.Duration // how long the handler may take (Cloud Tasks: 15 s to 30 min); 0 means 10 min
+	At       time.Time     // deliver it no earlier than this (Cloud Tasks' scheduleTime); zero means now
 }
 
 // Queue delivers tasks to their worker class's HTTP handler, with that class's credential, and

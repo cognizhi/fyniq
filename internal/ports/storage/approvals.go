@@ -110,6 +110,8 @@ type NewApprovalSignature struct {
 	SignedAt     time.Time
 	Reason       string
 	Passkey      *PasskeyAssertion // with MFAMethod passkey
+	// SelectionSHA256 is the hash of the items of an AI proposal its approver approves, re-hashed (AI-32); "" for the whole.
+	SelectionSHA256 string
 }
 
 // Approvals are the organisation's approval requests and their signatures. Every change is audited. The
@@ -121,6 +123,8 @@ type Approvals interface {
 	Request(ctx context.Context, n NewApprovalRequest) (ApprovalRequest, error)
 	// Get returns a request, or ports.ErrNotFound.
 	Get(ctx context.Context, id uuid.UUID) (ApprovalRequest, error)
+	// LastApproved is the latest approved request to change the record, or ports.ErrNotFound.
+	LastApproved(ctx context.Context, objectType, objectKey string) (ApprovalRequest, error)
 	// Lock is Get with the request's row locked until commit: taken first by the command that decides it (ENG-47
 	// step 1, as a document is).
 	Lock(ctx context.Context, id uuid.UUID) (ApprovalRequest, error)

@@ -71,6 +71,26 @@ func TestImportRuleCatchesAPlantedViolation(t *testing.T) {
 	}
 }
 
+// Only the local adapters, the renderer and the ClamAV wrapper start programs, so a developer's command-line agent
+// (DEV-09) runs only in the local build; a planted subprocess elsewhere is caught.
+// req: DEV-09
+func TestSubprocessesStayInTheirPackages(t *testing.T) {
+	for _, tags := range []string{"", "local"} {
+		if v := SubprocessViolations(goList(t, tags)); len(v) > 0 {
+			t.Errorf("tags %q:\n%s", tags, strings.Join(v, "\n"))
+		}
+	}
+	planted := []Pkg{
+		{ImportPath: Module + "/internal/ai", Imports: []string{"os/exec"}},
+		{ImportPath: Module + "/cmd/api", Imports: []string{"os/exec"}},
+		{ImportPath: Module + "/internal/adapters/local", Imports: []string{"os/exec"}},
+		{ImportPath: Module + "/internal/render/typst", Imports: []string{"os/exec"}},
+	}
+	if v := SubprocessViolations(planted); len(v) != 2 {
+		t.Fatalf("want 2 violations (internal/ai and cmd/api), got %d:\n%s", len(v), strings.Join(v, "\n"))
+	}
+}
+
 // req: DEV-05
 func TestNoWallClockOutsideTheClockPackage(t *testing.T) {
 	root := repoRoot(t)
@@ -528,9 +548,9 @@ jobs:
       - run: gcloud container binauthz attestations sign-and-create
 `)
 	// main as well as releases, publishing as the attester, no scan before publishing, the generator by branch, no admit
-	// as the attester, attesting before the provenance exists, and a key-signed image
-	if got := ReleaseWorkflowViolations(planted); len(got) != 7 {
-		t.Fatalf("want 7 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
+	// as the attester, attesting before the provenance exists, a key-signed image, no launch gate and no visual snapshots
+	if got := ReleaseWorkflowViolations(planted); len(got) != 9 {
+		t.Fatalf("want 9 planted violations, got %d:\n%s", len(got), strings.Join(got, "\n"))
 	}
 	// Only the SLSA generator may be named by a tag, and only at a release.
 	tagged := []byte(`
@@ -551,6 +571,61 @@ jobs:
 `)
 	if got := WorkflowViolations("tagged.yml", tagged); len(got) != 2 {
 		t.Fatalf("want the generator by branch and another workflow by tag refused, got %d:\n%s", len(got), strings.Join(got, "\n"))
+	}
+}
+
+// The release builds no image while a launch requirement is untested (p1-launch-readiness task 7.2): release.yml's
+// images job waits for the launch gate, whose step is exactly `make trace-gate PHASE=launch`. Each planted way round it is
+// refused: no wait, another phase, a step that cannot fail, and a gate that may fail without failing the release.
+// scripts/test_trace_requirements.py runs the gate's step itself on a planted repository (the release's dry run).
+// req: QA-TRACE-01
+func TestTheReleaseWaitsForTheLaunchGate(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join(repoRoot(t), ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(src)
+	for what, planted := range map[string]string{
+		"the images job does not wait":  strings.Replace(text, "    needs: [launch-gate, visual]\n", "    needs: visual\n", 1),
+		"another phase":                 strings.Replace(text, "- run: make trace-gate PHASE=launch\n", "- run: make trace-gate PHASE=P1\n", 1),
+		"a step that cannot fail":       strings.Replace(text, "- run: make trace-gate PHASE=launch\n", "- run: make trace-gate PHASE=launch || true\n", 1),
+		"the gate may fail and pass on": strings.Replace(text, "    timeout-minutes: 15\n", "    timeout-minutes: 15\n    continue-on-error: true\n", 1),
+		"the step may fail and pass on": strings.Replace(text, "      - run: make trace-gate PHASE=launch\n", "      - run: make trace-gate PHASE=launch\n        continue-on-error: true\n", 1),
+	} {
+		if planted == text {
+			t.Fatalf("%s: the plant changed nothing; release.yml's launch gate moved", what)
+		}
+		got := ReleaseWorkflowViolations([]byte(planted))
+		if len(got) != 1 || !strings.Contains(got[0], "launch-gate") {
+			t.Errorf("%s: want the launch gate's violation alone, got:\n%s", what, strings.Join(got, "\n"))
+		}
+	}
+}
+
+// A release builds no image while a picture differs from its baseline (QA-UI-07, rev 0.284; p1-launch-readiness task
+// 5.4): release.yml's images job waits for the visual job, whose step is exactly `VISUAL_ALL=1 make test-visual`. Each
+// planted way round it is refused.
+// req: QA-UI-07
+func TestTheReleaseWaitsForEveryRoutesPictures(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join(repoRoot(t), ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(src)
+	for what, planted := range map[string]string{
+		"the images job does not wait":  strings.Replace(text, "    needs: [launch-gate, visual]\n", "    needs: launch-gate\n", 1),
+		"the key pages only":            strings.Replace(text, "- run: VISUAL_ALL=1 make test-visual\n", "- run: make test-visual\n", 1),
+		"a step that cannot fail":       strings.Replace(text, "- run: VISUAL_ALL=1 make test-visual\n", "- run: VISUAL_ALL=1 make test-visual || true\n", 1),
+		"the job may fail and pass on":  strings.Replace(text, "    timeout-minutes: 150\n", "    timeout-minutes: 150\n    continue-on-error: true\n", 1),
+		"the step may fail and pass on": strings.Replace(text, "      - run: VISUAL_ALL=1 make test-visual\n", "      - run: VISUAL_ALL=1 make test-visual\n        continue-on-error: true\n", 1),
+	} {
+		if planted == text {
+			t.Fatalf("%s: the plant changed nothing; release.yml's visual job moved", what)
+		}
+		got := ReleaseWorkflowViolations([]byte(planted))
+		if len(got) != 1 || !strings.Contains(got[0], "QA-UI-07") {
+			t.Errorf("%s: want the visual job's violation alone, got:\n%s", what, strings.Join(got, "\n"))
+		}
 	}
 }
 
@@ -729,6 +804,37 @@ func TestTheRenderServiceCarriesNoDatabaseCode(t *testing.T) {
 	}
 }
 
+// The AI service holds no database role, no provider key and no write credential (PRD-001 §9.3, golden rule 5;
+// p1-ai-assistant design D3), so its binary carries no database adapter or driver, none of the services' wiring, not the
+// API, no domain command and no model connector, in either flavour: it reads and calls models only through the API.
+// req: AI-P2
+// req: ai/proposals The orchestrator holds no write credential
+// req: CMP-AI-01
+func TestTheAIServiceCarriesNoDatabaseCode(t *testing.T) {
+	forbidden := []string{"github.com/cognizhi/fyniq/internal/adapters/postgres", "github.com/jackc/pgx", "github.com/cognizhi/fyniq/internal/wiring",
+		"github.com/cognizhi/fyniq/internal/api", "github.com/cognizhi/fyniq/internal/domain/journal", "github.com/cognizhi/fyniq/internal/domain/ledger",
+		"github.com/cognizhi/fyniq/internal/ai", "github.com/cognizhi/fyniq/connectors", "github.com/cognizhi/fyniq/internal/connector"}
+	for _, tags := range []string{"", "local"} {
+		cmd := exec.Command("go", "list", "-deps", "-tags", tags, "./cmd/ai")
+		cmd.Dir = repoRoot(t)
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatalf("go list: %v", err)
+		}
+		deps := strings.Fields(string(out))
+		if !slices.Contains(deps, "github.com/cognizhi/fyniq/internal/assistant") {
+			t.Fatalf("tags %q: cmd/ai does not run the assistant", tags)
+		}
+		for _, dep := range deps {
+			for _, f := range forbidden {
+				if dep == f || strings.HasPrefix(dep, f+"/") {
+					t.Errorf("tags %q: cmd/ai depends on %s", tags, dep)
+				}
+			}
+		}
+	}
+}
+
 // goSources calls fn with each non-test Go file under internal/ and cmd/, by its path from the repository's root.
 func goSources(t *testing.T, fn func(rel string, src []byte)) {
 	t.Helper()
@@ -815,15 +921,15 @@ func TestNoNRICAuthenticatesOrLocksAFile(t *testing.T) {
 	}
 }
 
-// CMP-AI-01: every tool of the AI tool registry is read-only (readOnlyHint, as MCP annotates tools). The registry
-// arrives with p1-ai-assistant in contracts/ai/tools/; until it exists the test passes and says why.
+// CMP-AI-01: every tool of the AI tool registry, contracts/ai/tools/*.json, is read-only (readOnlyHint, as MCP annotates
+// tools), read from the files themselves beside internal/aitool's own checks as it loads them.
 // req: CMP-AI-01
 // req: CTL-AI-01
+// req: AI-19
 func TestTheAIToolsAreReadOnly(t *testing.T) {
 	tools, _ := filepath.Glob(filepath.Join(repoRoot(t), "contracts", "ai", "tools", "*.json"))
-	if len(tools) == 0 {
-		t.Log("no AI tool registry yet (contracts/ai/tools/*.json): p1-ai-assistant adds it, and from then every tool must be read-only")
-		return
+	if len(tools) < 8 {
+		t.Fatalf("%d tools in contracts/ai/tools/*.json: the registry has gone (p1-ai-assistant design D5)", len(tools))
 	}
 	for _, path := range tools {
 		var tool struct {

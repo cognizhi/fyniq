@@ -2,7 +2,7 @@
 # kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
 id: CTL-RES-04
 section: "F.6"
-control: "Security Command Center high/critical findings fixed within SLA"
+control: "Security Command Center high/critical findings fixed within SLA. (rev 0.247, the owner's decision of 11 Nov 2026) The SLA: a Critical finding within 7 days, a High one within 30, from when it was first found"
 mapping: "ISO 8.8; SOC2 CC7.1; CT"
 automated_check: "Daily overdue-finding check"
 frequency: "D"
@@ -12,4 +12,4 @@ checks:
   - frequency: D
     status: running
     how: "verify posture.findings"
-    evidence: "the latest run in the installation's organisation (fyniq.control_run): Security Command Center's active findings of high or critical severity, and those open past the SLA (Critical 7 days, High 30 days [verify the SLA with the founders]); read as the jobs' account in the cloud [live-verify], none locally"
+    evidence: "the latest run in the installation's organisation (fyniq.control_run): Security Command Center's active findings of high or critical severity, and those open past the SLA (Critical 7 days, High 30 days, PRD-001 rev 0.247); read as the jobs' account in the cloud [live-verify], none locally"

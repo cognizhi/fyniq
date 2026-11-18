@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "heading": {
+      "description": "Its heading.",
+      "examples": [
+        "Resolved"
+      ],
+      "type": "string"
+    },
+    "items": {
+      "description": "Its numbered items, such as the resolutions.",
+      "examples": [
+        [
+          "That the financial statements be approved."
+        ]
+      ],
+      "items": {
+        "examples": [
+          "That the financial statements be approved."
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "paragraphs": {
+      "description": "Its paragraphs.",
+      "examples": [
+        [
+          "We, being all the directors, pass the following resolutions in writing."
+        ]
+      ],
+      "items": {
+        "examples": [
+          "We, being all the directors, pass the following resolutions in writing."
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "paragraphs",
+    "items"
+  ],
+  "title": "PaperSection",
+  "type": "object"
+}

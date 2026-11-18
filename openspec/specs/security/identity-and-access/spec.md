@@ -235,6 +235,11 @@ Source: PRD-001 §13.1 · Priority M · Phase P1
 - **THEN** a cooling-off period starts (default 24 hours; a setting)
 - **AND** during it the account cannot approve, release payments, change payee bank details, roles or sign-in methods, or use break-glass (FM-8)
 
+#### Scenario: The cooling-off is a setting (rev 0.253)
+- **WHEN** an Owner sets "Hold after an account recovery" (`security.recovery_cooling_off_hours`), under dual control
+- **THEN** it takes 24 to 72 hours, 24 by default
+- **AND** a person who belongs to several organisations is held for the longest of theirs
+
 #### Scenario: Recovery is audited and reviewed
 - **WHEN** an account is recovered
 - **THEN** the recovery is audited

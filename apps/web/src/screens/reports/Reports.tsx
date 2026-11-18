@@ -8,6 +8,7 @@ import { formatAmount } from "../../format/amount";
 import { month } from "../../format/date";
 import { Icon } from "../../ui";
 import { listPeriods } from "../accounting/data";
+import { AuditorAccess } from "../HomeWork";
 import { AccountantExports } from "./AccountantExports";
 import { runOf, statementNames } from "./Statement";
 
@@ -100,6 +101,7 @@ export function Reports() {
           <p className="fy-secondary">Start with the essentials. Every figure opens to the lines behind it.</p>
         </div>
       </div>
+      <AuditorAccess />
       <div className="fy-field max-w-[520px]">
         <label className="fy-label fy-sr" htmlFor={`${id}-find`}>
           Find a report

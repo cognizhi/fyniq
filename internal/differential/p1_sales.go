@@ -38,6 +38,7 @@ type invoiceDoc struct {
 	FXRate       string `json:"fx_rate"`
 	FXRateSource string `json:"fx_rate_source"`
 	Invoice      string `json:"invoice"`
+	OpeningItem  bool   `json:"opening_item"`
 	Lines        []struct {
 		Account      string `json:"account"`
 		Amount       string `json:"amount"`
@@ -163,6 +164,29 @@ func (r *p1) invoice(i int, d Document, date time.Time, credit bool) (ledger.Ent
 		if c, err := totals.Total.Cmp(left); err != nil || c > 0 {
 			return ledger.Entry{}, false
 		}
+	}
+	if x.OpeningItem { // FR-GL-06 (rev 0.257): issued before the books start, it posts at the books start
+		start, ok := r.booksStart()
+		if !ok {
+			return ledger.Entry{}, false
+		}
+		inv.Opening = &start
+		if credit { // rev 0.261: a credit note open at the books start
+			e, err := ledger.PostOpeningCreditNote(inv, r.settings)
+			if err != nil || !r.fits(e) {
+				return ledger.Entry{}, false
+			}
+			r.hold(d.ID, date, e, ledger.RoleAccountsReceivable)
+			return e, true
+		}
+		e, err := ledger.PostOpeningInvoice(inv, r.settings)
+		if err != nil || !r.fits(e) {
+			return ledger.Entry{}, false
+		}
+		r.issued[d.ID] = &issued{date: date, charged: totals.Total, credited: money.Zero(cur)}
+		r.keepOpen(d.ID, "invoice", e, ledger.RoleAccountsReceivable)
+		r.hold(d.ID, date, e, ledger.RoleAccountsReceivable)
+		return e, true
 	}
 	if credit {
 		e, err := ledger.PostCreditNote(inv, r.settings)

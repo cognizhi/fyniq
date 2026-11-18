@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The entry.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision it made (ENG-46).",
+      "examples": [
+        18402
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "lines": {
+      "description": "Its lines, in order.",
+      "items": {
+        "$ref": "LedgerEntryLine.schema.json"
+      },
+      "type": "array"
+    },
+    "memo": {
+      "description": "Its memo.",
+      "examples": [
+        "GitHub Team, September"
+      ],
+      "type": "string"
+    },
+    "posting_date": {
+      "description": "The date it posted on.",
+      "examples": [
+        "2026-09-05"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "reverses": {
+      "description": "The entry it reverses, for a reversing entry.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d81"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "LedgerEntrySource.schema.json",
+      "description": "Where it comes from."
+    }
+  },
+  "required": [
+    "id",
+    "posting_date",
+    "ledger_revision",
+    "source",
+    "lines"
+  ],
+  "title": "LedgerEntryView",
+  "type": "object"
+}

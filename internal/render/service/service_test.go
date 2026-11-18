@@ -143,6 +143,44 @@ func TestTheRenderServiceRendersAReport(t *testing.T) {
 	}
 }
 
+// A paper its caller wrote, such as a resolution, renders without a template, within its bounds; it names nothing of a
+// document and comes without a report.
+// req: FR-CS-05
+func TestTheRenderServiceRendersAPaper(t *testing.T) {
+	c, err := typst.New(os.Getenv("FYNIQ_TYPST"), t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := New(c, tokens{})
+	paper := render.Paper{Title: "Directors' resolution in writing", Author: "Cognizhi Pte. Ltd.", Lines: []string{"UEN 202612345K"},
+		Sections:   []render.PaperSection{{Heading: "Resolved", Items: []string{"That the financial statements be approved."}}},
+		Signatures: []render.PaperSignature{{Name: "Tan Mei Lin", Role: "Director"}}, Footer: "directors.approve_statements@1"}
+	req := render.Request{Paper: &paper, Created: time.Date(2026, 11, 16, 9, 0, 0, 0, time.UTC)}
+	w, _ := call(t, h, "ok", req)
+	var res render.Response
+	if err := json.Unmarshal(w.Body.Bytes(), &res); w.Code != http.StatusOK || err != nil || !bytes.HasPrefix(res.PDF, []byte("%PDF-")) || len(res.SHA256) != 64 {
+		t.Fatalf("a paper: %d %s", w.Code, w.Body.String())
+	}
+	both := req
+	both.DocumentType = doctemplate.Invoice
+	if w, out := call(t, h, "ok", both); w.Code != http.StatusBadRequest || out["code"] != render.CodeRequest {
+		t.Errorf("a paper that names a document type: %d %v", w.Code, out)
+	}
+	report := render.Report{Title: "Balance sheet", Columns: []string{"Oct 2026"}}
+	if w, out := call(t, h, "ok", render.Request{Paper: &paper, Report: &report, Created: req.Created}); w.Code != http.StatusBadRequest || out["code"] != render.CodeRequest {
+		t.Errorf("a paper with a report: %d %v", w.Code, out)
+	}
+	empty := paper
+	empty.Sections = []render.PaperSection{{Heading: "Resolved"}}
+	if w, out := call(t, h, "ok", render.Request{Paper: &empty, Created: req.Created}); w.Code != http.StatusUnprocessableEntity || out["code"] != render.CodeRequest ||
+		!strings.Contains(out["message"].(string), "section 1 has no paragraph or item") {
+		t.Errorf("a paper with an empty section: %d %v", w.Code, out)
+	}
+	if w, _ := call(t, h, "", req); w.Code != http.StatusUnauthorized {
+		t.Errorf("a paper without a token: %d", w.Code)
+	}
+}
+
 // The render service draws the organisation's logo for documents and emails (FR-ORG-09): an SVG made safe again and
 // drawn 192 pixels high, or narrower at most 768 wide, on a transparent background, the same bytes each time; a hostile
 // SVG drawn without what made it hostile; a PNG drawn again at that height; anything else, or a logo sent with a

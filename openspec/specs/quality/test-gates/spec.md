@@ -254,13 +254,22 @@ Source: PRD-001 §16.2
 - **THEN** the merge is blocked
 
 ### Requirement: QA-UI-07 Device classes and motion
-Visual snapshots SHALL cover every P1 route at the five reference frames of §7.10, in light and dark; an end-to-end journey SHALL run per device class; and with motion off or reduced, no animation or transition SHALL run.
+Visual snapshots SHALL cover the key pages on every pull request and every P1 route nightly and before each release, at the five reference frames of §7.10, in light and dark; an end-to-end journey SHALL run per device class; and with motion off or reduced, no animation or transition SHALL run.
 
 Source: PRD-001 §16.2
 
 #### Scenario: Visual snapshots at the reference frames
-- **WHEN** the visual snapshot tests run
+- **WHEN** the visual snapshot tests run nightly or before a release
 - **THEN** every P1 route is captured at the five reference frames of §7.10, in light and dark
+
+#### Scenario: Key pages on every pull request
+- **WHEN** CI runs on a pull request
+- **THEN** the key pages (Home, the Inbox, a financial statement, an invoice and Settings) are captured at the five frames, in light and dark (rev 0.284)
+
+#### Scenario: A failure of the full set blocks the next release
+- **GIVEN** a nightly run in which a route's snapshot fails
+- **WHEN** the next release is prepared
+- **THEN** it is blocked until the snapshot passes or its new baseline is approved
 
 #### Scenario: Journey per device class
 - **WHEN** the end-to-end tests run
@@ -272,7 +281,7 @@ Source: PRD-001 §16.2
 - **THEN** no animation or transition runs, and the computed durations are 0
 
 #### Scenario: A failure blocks the merge
-- **GIVEN** a pull request for which a snapshot, journey or motion test fails
+- **GIVEN** a pull request for which a key page's snapshot, a journey or a motion test fails
 - **WHEN** CI runs
 - **THEN** the merge is blocked
 
@@ -288,6 +297,11 @@ Source: PRD-001 §16.2
 #### Scenario: Two roles
 - **WHEN** a person holds two roles
 - **THEN** the test asserts they see the union
+
+#### Scenario: The Home blocks at launch (rev 0.288)
+- **WHEN** the walkthroughs run at launch
+- **THEN** they assert the Home blocks built from what Fyniq records: the Approver's approvals with their limits, the Administrator's, Company secretary's and DPO's work on the pages they land on, and the Auditor's access and its expiry
+- **AND** the Approver's department figures (FR-PPL-06), the Auditor's requests and samples (FR-UX-42) and retention holds (AUD-11) follow after go-live
 
 ### Requirement: QA-UI-09 Needs-verification banner
 A test SHALL read the review register and assert that every page listed for a pending area shows the FR-UX-41 banner naming that area and its reviewer, in Basic and Expert mode; that no page shows it once its area is reviewed; and that excluded pages never show it.
@@ -436,3 +450,18 @@ Source: PRD-001 §16.2
 #### Scenario: Gate at every minor release
 - **WHEN** a minor release is prepared
 - **THEN** the load tests must meet the NFR-PERF targets
+
+#### Scenario: Weekly at 1 M lines, at 10 M per release (rev 0.249)
+- **WHEN** the week's CI runs, or a minor release is prepared
+- **THEN** the harness runs on the local stack at 1 M lines each week, and at 10 M lines before the release
+- **AND** the release's report is kept as evidence
+
+#### Scenario: Gating from the first release (rev 0.250)
+- **WHEN** release evidence is gathered for any release
+- **THEN** the 10 M-line run must meet the NFR-PERF targets for it to pass
+- **AND** the general ledger export and the reports are made to meet NFR-PERF-05 and NFR-PERF-02 first
+
+#### Scenario: Concurrent users pause between reads (rev 0.252)
+- **WHEN** the harness measures NFR-PERF-01 for NFR-SCALE-01's 100 concurrent users
+- **THEN** the gated measure is 100 people who each pause 1 to 3 seconds between reads
+- **AND** 100 reads at once, back to back, are reported as throughput and gate nothing

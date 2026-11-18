@@ -37,10 +37,11 @@ const (
 	BankData        Kind = "bank-data"
 	EInvoicing      Kind = "e-invoicing"
 	DocumentAI      Kind = "document-ai"
+	ModelProvider   Kind = "model-provider" // an AI model provider (AI-71), connected through AI connections of its own
 )
 
 // Kinds are every kind, in the catalogue's order.
-var Kinds = []Kind{SignIn, OutboundEmail, InboundEmail, Messaging, Ticketing, PaymentProvider, BankData, EInvoicing, DocumentAI}
+var Kinds = []Kind{SignIn, OutboundEmail, InboundEmail, Messaging, Ticketing, PaymentProvider, BankData, EInvoicing, DocumentAI, ModelProvider}
 
 // The scopes a connector is installed at.
 const (
@@ -66,8 +67,8 @@ const (
 // DataClasses are the classes of data a connector may send out (PRD-001 AI-75's classes).
 var DataClasses = []string{"know-how", "business-figures", "personal-data", "payroll", "restricted"}
 
-// Services are the services that may read a secret.
-var Services = []string{"api", "worker", "jobs"}
+// Services are the services that may read a secret: the AI service reads a model provider's credential (AI-79).
+var Services = []string{"api", "worker", "jobs", "ai"}
 
 // Manifest is a connector's manifest.
 type Manifest struct {
@@ -87,6 +88,7 @@ type Manifest struct {
 	Regions         []string        `json:"regions"`
 	Destinations    []Destination   `json:"destinations"`
 	Webhooks        []Webhook       `json:"webhooks"`
+	Model           *ModelSpec      `json:"model,omitempty"`
 	HealthCheck     string          `json:"health_check"`
 	TestAction      string          `json:"test_action"`
 	LocalSubstitute string          `json:"local_substitute"`
@@ -180,6 +182,7 @@ func Parse(raw []byte) (Manifest, error) {
 		bad("scope %q is neither installation nor organisation", m.Scope)
 	}
 	checkCapabilities(m.Capabilities, bad)
+	checkModel(&m, bad)
 	secrets := checkSecrets(m.Secrets, bad)
 	props := checkConfiguration(&m, secrets, bad)
 	for _, c := range m.DataClasses {
@@ -236,6 +239,155 @@ func Parse(raw []byte) (Manifest, error) {
 	return m, nil
 }
 
+// ModelFeatures are what a model provider's adapter may declare it carries (AI-71): tool calling, strict structured
+// output, streaming, image and PDF input, prompt caching, reasoning controls and batch. A connection's conformance
+// suite proves each for its model, and one it cannot prove counts as absent.
+var ModelFeatures = []string{"tools", "strict-output", "streaming", "images", "pdf", "caching", "reasoning", "batch"}
+
+// ModelAuth are the ways a model provider's connection may authenticate (AI-72): an API key, a cloud service account
+// with workload identity, an OAuth grant (a user's own plan, P2: AI-73 (c)), or none, for a private self-hosted
+// endpoint. Consumer-plan tokens, chat sessions, cookies and command-line seats are not among them (AI-73).
+var ModelAuth = []string{"api-key", "workload-identity", "oauth-grant", "none"}
+
+// ModelSpec is a model-provider connector's declaration (AI-71, AI-72): what its adapter carries, how its connections
+// authenticate, the provider's model list (AI-80; no list, no connection), and the presets a connection may start from.
+// Its connections are AI connections of their own (p1-ai-providers design D2), never an installed connector.
+type ModelSpec struct {
+	Features   []string      `json:"features"`
+	Auth       []string      `json:"auth"`
+	ListModels string        `json:"list_models"`
+	Presets    []ModelPreset `json:"presets,omitempty"`
+	// PriceCatalogue is how LiteLLM's public price catalogue names the provider (AI-82), by how a connection
+	// authenticates: the Anthropic API and Claude on Agent Platform are priced apart. A preset's own naming comes first.
+	PriceCatalogue map[string]PriceNaming `json:"price_catalogue,omitempty"`
+}
+
+// PriceNaming is how a price catalogue names a provider and its models (AI-82): the provider's name, and the prefix
+// its keys carry, such as "vertex_ai/". A model is priced exactly only from an entry under this name [verify: each
+// provider's name in LiteLLM's catalogue]; a provider with none stays unpriced, never priced by a guess.
+type PriceNaming struct {
+	Provider string `json:"provider"`
+	Prefix   string `json:"prefix,omitempty"`
+	// GoogleBilling prices the provider's models from Google's Cloud Billing Catalog first, as Agent Platform's
+	// (AI-82 (b)) [live-verify].
+	GoogleBilling bool `json:"google_billing,omitempty"`
+}
+
+// Naming is how the price catalogue names a connection's provider for its preset and authentication: false when it
+// names none, such as for a self-hosted server.
+func (s ModelSpec) Naming(preset, auth string) (PriceNaming, bool) {
+	for _, p := range s.Presets {
+		if p.ID == preset {
+			if p.PriceCatalogue == nil {
+				return PriceNaming{}, false
+			}
+			return *p.PriceCatalogue, true
+		}
+	}
+	n, ok := s.PriceCatalogue[auth]
+	return n, ok
+}
+
+// ModelPreset is a starting point for a connection: a provider behind an OpenAI-compatible endpoint, or a self-hosted
+// server whose address the connection names.
+type ModelPreset struct {
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	BaseURL    string   `json:"base_url,omitempty"`
+	Auth       []string `json:"auth"`
+	SelfHosted bool     `json:"self_hosted,omitempty"`
+	// PriceCatalogue is how LiteLLM's catalogue names this preset's provider; none for a self-hosted server, which needs
+	// no per-token price (AI-82).
+	PriceCatalogue *PriceNaming `json:"price_catalogue,omitempty"`
+}
+
+// namingPattern and prefixPattern are a price catalogue's provider name and key prefix.
+var (
+	namingPattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{1,59}$`)
+	prefixPattern = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,39}/$`)
+)
+
+func checkModel(m *Manifest, bad func(string, ...any)) {
+	_, isModel := m.Capability(ModelProvider)
+	switch {
+	case isModel && m.Model == nil:
+		bad("a model-provider connector declares model: its features, auth and model list (AI-71)")
+		return
+	case !isModel && m.Model != nil:
+		bad("model is declared only by a model-provider connector")
+		return
+	case !isModel:
+		return
+	}
+	if len(m.Capabilities) != 1 {
+		bad("a model-provider connector implements nothing else: its connections are AI connections of their own")
+	}
+	if m.Scope != ScopeOrganisation {
+		bad("a model-provider connector's scope is organisation: each organisation makes its own connections")
+	}
+	checkFrom := func(what string, got, allowed []string, empty bool) {
+		if len(got) == 0 && !empty {
+			bad("model %s is empty", what)
+		}
+		var seen []string
+		for _, v := range got {
+			if !slices.Contains(allowed, v) {
+				bad("model %s %q is not one of %s", what, v, strings.Join(allowed, ", "))
+			}
+			if slices.Contains(seen, v) {
+				bad("model %s %q is listed twice", what, v)
+			}
+			seen = append(seen, v)
+		}
+	}
+	checkFrom("feature", m.Model.Features, ModelFeatures, true)
+	checkFrom("auth", m.Model.Auth, ModelAuth, false)
+	if strings.TrimSpace(m.Model.ListModels) == "" {
+		bad("model list_models is empty: a provider whose models cannot be listed cannot be connected (AI-80)")
+	}
+	var ids []string
+	for _, p := range m.Model.Presets {
+		if !idPattern.MatchString(p.ID) || slices.Contains(ids, p.ID) {
+			bad("model preset %q is not a unique id", p.ID)
+		}
+		ids = append(ids, p.ID)
+		if strings.TrimSpace(p.Name) == "" {
+			bad("model preset %s has no name", p.ID)
+		}
+		checkFrom("preset "+p.ID+" auth", p.Auth, m.Model.Auth, false)
+		switch {
+		case p.SelfHosted && p.BaseURL != "":
+			bad("model preset %s is self-hosted: the connection names its address", p.ID)
+		case !p.SelfHosted && !strings.HasPrefix(p.BaseURL, "https://"):
+			bad("model preset %s: base_url %q is not https://", p.ID, p.BaseURL)
+		case !p.SelfHosted && slices.Contains(p.Auth, "none"):
+			bad("model preset %s: only a self-hosted endpoint may need no authentication (AI-72)", p.ID)
+		}
+	}
+	checkNaming := func(where string, n PriceNaming) {
+		if !namingPattern.MatchString(n.Provider) || (n.Prefix != "" && !prefixPattern.MatchString(n.Prefix)) {
+			bad("model %s price_catalogue %+v is not a provider name and a prefix ending in /", where, n)
+		}
+	}
+	for auth, n := range m.Model.PriceCatalogue {
+		if !slices.Contains(m.Model.Auth, auth) {
+			bad("model price_catalogue names auth %q, which the provider does not offer", auth)
+		}
+		checkNaming(auth, n)
+	}
+	for _, p := range m.Model.Presets {
+		if p.PriceCatalogue != nil {
+			if p.SelfHosted {
+				bad("model preset %s is self-hosted: it needs no per-token price, so no price_catalogue (AI-82)", p.ID)
+			}
+			checkNaming("preset "+p.ID, *p.PriceCatalogue)
+		}
+	}
+	if slices.Contains(m.Model.Auth, "none") && !slices.ContainsFunc(m.Model.Presets, func(p ModelPreset) bool { return p.SelfHosted }) {
+		bad("model auth none is only for a self-hosted endpoint, and no preset is self-hosted")
+	}
+}
+
 func checkCapabilities(cs []Capability, bad func(string, ...any)) {
 	if len(cs) == 0 {
 		bad("capabilities is empty")
@@ -288,7 +440,7 @@ func checkSecrets(ss []Secret, bad func(string, ...any)) []string {
 		}
 		for _, u := range s.UsedBy {
 			if !slices.Contains(Services, u) {
-				bad("secret %s: used_by %q is not api, worker or jobs", s.Name, u)
+				bad("secret %s: used_by %q is not api, worker, jobs or ai", s.Name, u)
 			}
 		}
 		if s.RotationOverlapHours < 0 || s.RotationOverlapHours > 168 {
@@ -365,6 +517,20 @@ func checkDestinations(ds []Destination, props map[string]string, bad func(strin
 
 // Hash is the SHA-256 of the manifest's RFC 8785 form: what an installation consented to.
 func (m Manifest) Hash() string { return m.hash }
+
+// Default is the default its configuration's schema gives property name, or "" when it gives none.
+func (m Manifest) Default(name string) string {
+	var top struct {
+		Properties map[string]struct {
+			Default any `json:"default"`
+		} `json:"properties"`
+	}
+	if json.Unmarshal(m.Configuration, &top) != nil {
+		return ""
+	}
+	s, _ := top.Properties[name].Default.(string)
+	return s
+}
 
 // Capability returns the manifest's capability of kind k.
 func (m Manifest) Capability(k Kind) (Capability, bool) {

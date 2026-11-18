@@ -61,3 +61,19 @@ WHERE state IN ('pending', 'dispatched', 'running', 'failed');
 
 -- name: HoldOutbox :exec
 SELECT fyniq.hold_outbox(sqlc.arg(id), sqlc.arg(holder), sqlc.arg(until), sqlc.arg(why));
+
+-- name: DeadOutbox :many
+-- The rows whose attempts ran out, the latest first (C.2 #12).
+SELECT id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
+       lease_holder, lease_expires_at, deadline_at, last_error, updated_at
+FROM fyniq.outbox WHERE state = 'dead'
+ORDER BY updated_at DESC, id
+LIMIT sqlc.arg(max_rows);
+
+-- name: ReplayOutbox :one
+-- A person replays a dead row: pending again, its attempts counted afresh, its last error kept (G4-073).
+UPDATE fyniq.outbox
+SET state = 'pending', attempts = 0, task_name = NULL, lease_holder = NULL, lease_expires_at = NULL, deadline_at = NULL
+WHERE id = sqlc.arg(id) AND state = 'dead'
+RETURNING id, worker_class, kind, payload, business_key, state, attempts, max_attempts, dispatches, task_name,
+          lease_holder, lease_expires_at, deadline_at, last_error;

@@ -42,6 +42,7 @@ const (
 	ExpenseClaims       Capability = "Expense claims"
 	DirectorAccounts    Capability = "Director accounts, settlements, share issues (rev 0.3)"
 	CapTable            Capability = "Cap table, holders, investors, equity transactions (rev 0.3)"
+	CorporateProfile    Capability = "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)"
 	Evidence            Capability = "Evidence: add, supersede (rev 0.3)"
 	KnowledgeBase       Capability = "Knowledge base: compiled pages and index (rev 0.4)"
 	AICompanySecretary  Capability = "AI company secretary: enable, schedule, runs and drafts (rev 0.6)" // #nosec G101 -- a permission row's name, not a credential
@@ -68,7 +69,10 @@ const (
 	StatutoryCalendar   Capability = "Statutory calendar: deadlines, and filings recorded as done (rev 0.211)"
 	ChecksHealth        Capability = "Checks and books health (rev 0.163)"
 	TenantExport        Capability = "Tenant export"
+	WorkbookImport      Capability = "Workbook import (migration): the move from the workbook, steps M1 to M6, their evidence and sign-offs (rev 0.255)"
+	WorkbookSignOffs    Capability = "Workbook import sign-offs: the mapping, the parity report and register, and the parallel month (rev 0.256)"
 	AIProviders         Capability = "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
+	AIActivity          Capability = "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
 	PeopleAndHR         Capability = "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
 	ConnectedApps       Capability = "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
 	OwnMCPConnection    Capability = "Own MCP connection (opt in, consent, revoke) (rev 0.2)"
@@ -80,7 +84,7 @@ const (
 var WholeRow = []string{"limit", "+ second approver", "+ second approver (enable); C (schedule)", "edit, publish", "schedule"}
 
 // Rows are Appendix D's rows in its order.
-var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, AIProviders, PeopleAndHR, ConnectedApps, OwnMCPConnection}
+var Rows = []Capability{UsersAndRoles, ApprovalPolicies, OrganisationProfile, AccountingBasis, StatutoryParameters, ChartOfAccounts, DimensionValues, ContactsAndItems, BankTransactions, BankReconciliation, Invoices, Bills, VendorBankDetails, PaymentBatches, ExpenseClaims, DirectorAccounts, CapTable, CorporateProfile, Evidence, KnowledgeBase, AICompanySecretary, Integrations, Announcements, OwnNotifications, DocumentTemplates, Timesheets, ProjectReports, BankConnections, Journals, PayRuns, FixedAssets, PeriodClose, AccountantReview, GSTReturns, Reports, Budgets, AuditTrail, ComplianceCenter, PolicyLibrary, DataProtection, OwnDataRequests, StatutoryCalendar, ChecksHealth, TenantExport, WorkbookImport, WorkbookSignOffs, AIProviders, AIActivity, PeopleAndHR, ConnectedApps, OwnMCPConnection}
 
 // The capabilities outside Appendix D.
 const (
@@ -118,14 +122,15 @@ const (
 // reimbursement of claims (FR-AP-07; the owner's decision of 26 Oct 2026, rev 0.148); voiding a disposal of a fixed asset
 // (FR-FA-03, p1-fixed-assets); a change of a vendor's bank details (FR-CT-03, rev 0.153); the member a director or
 // shareholder signs in as (FR-EQ-01, rev 0.167); merging an account into another (FR-COA-04, rev 0.174); a holder's
-// record and a share class (FR-EQ-15, FR-EQ-16, rev 0.203).
+// record and a share class (FR-EQ-15, FR-EQ-16, rev 0.203); the workbook import's commit (FR-MIG-01, rev 0.258); recording the corporate profile's records (FR-CS-01, rev 0.282); an integration client's
+// registration (FR-INT-02, p1-public-api task 3.1).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
 	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts, CapTable,
-	Budgets}
+	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile, ConnectedApps}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
-	Rights    string // e.g. "CP" for "C/P (limit)"; "" for "—", "Proposal" and other words
+	Rights    string // e.g. "CP" for "C/P (limit)"; "" for "—", "Proposal" and other words (the AI's Proposal views: holds)
 	Qualifier string // the words after the letters, e.g. "limit"; or the whole cell when it has no letters
 }
 
@@ -183,6 +188,9 @@ var Grants = map[Capability]map[string]Cell{
 	},
 	CapTable: {
 		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"CP", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {"V", "own grants"}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", "own holding; all if granted"}, "DPO": {"M", ""}, "AI": {"", "Scenarios only, if `fyniq.read.equity` granted"},
+	},
+	CorporateProfile: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"A", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", ""}, "DPO": {"M", ""}, "AI": {"V", ""},
 	},
 	Evidence: {
 		"Owner": {"C", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {"C", "payroll"}, "Releaser": {"C", ""}, "Approver": {"C", ""}, "Employee": {"C", "own"}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {"", "Proposal (`doc.attach`)"},
@@ -262,8 +270,17 @@ var Grants = map[Capability]map[string]Cell{
 	TenantExport: {
 		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
 	},
+	WorkbookImport: {
+		"Owner": {"A", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
+	},
+	WorkbookSignOffs: {
+		"Owner": {"V", ""}, "Admin": {}, "Controller": {"V", ""}, "Accountant": {"A", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {},
+	},
 	AIProviders: {
 		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
+	},
+	AIActivity: {
+		"Owner": {"V", ""}, "Admin": {"V", "own"}, "Controller": {"V", "own"}, "Accountant": {"V", "own"}, "Bookkeeper": {"V", "own"}, "AR": {"V", "own"}, "AP": {"V", "own"}, "Payroll": {"V", "own"}, "Releaser": {"V", "own"}, "Approver": {"V", "own"}, "Employee": {"V", "own"}, "Auditor": {"V", "own"}, "Tax agent": {"V", "own"}, "Board": {"V", "own"}, "DPO": {"V", ""}, "AI": {},
 	},
 	PeopleAndHR: {
 		"Owner": {"A", "+ second approver"}, "Admin": {"C", ""}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {"V", ""}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {"V", ""}, "AI": {},
@@ -313,13 +330,17 @@ type Policy struct {
 
 // The policies of the P0 endpoints. A cell's qualifier is carried, not enforced: the amount limit
 // of "C/P (limit)" and the segregation of duties and Founder-mode rules (SOD-3, FM-1) come from the
-// approval engine (FR-APR, P1). AI cells without letters ("Proposal") grant nothing through the API:
-// the AI's only write path is a proposal (golden rule 5), which arrives in P1.
+// approval engine (FR-APR, P1). An AI cell of "Proposal" or "Proposal (draft)" grants a view and nothing else through
+// the API (rev 0.278), and one naming a kind of proposal grants nothing: the AI's only write path is a proposal (golden
+// rule 5).
 var (
 	GetOrganisation = Policy{Operation: "getOrganisation", Capability: Membership, Need: View}
 	ListAccounts    = Policy{Operation: "listAccounts", Capability: ChartOfAccounts, Need: View}
 	GetAccount      = Policy{Operation: "getAccount", Capability: ChartOfAccounts, Need: View}
 	CreateAccount   = Policy{Operation: "createAccount", Capability: ChartOfAccounts, Need: Create,
+		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
+	GetAccountsTemplate = Policy{Operation: "getAccountsTemplate", Capability: ChartOfAccounts, Need: View}
+	ImportAccounts      = Policy{Operation: "importAccounts", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 	UpdateAccount = Policy{Operation: "updateAccount", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
@@ -359,6 +380,8 @@ var (
 	SetNotificationPreference  = Policy{Operation: "setNotificationPreference", Capability: OwnNotifications, Need: Create}
 	SetQuietHours              = Policy{Operation: "setQuietHours", Capability: OwnNotifications, Need: Create}
 	SendTestNotification       = Policy{Operation: "sendTestNotification", Capability: OwnNotifications, Need: Create}
+	GetHelpState               = Policy{Operation: "getHelpState", Capability: OwnNotifications, Need: View}   // the first-run tour (FR-UX-34)
+	SetTourState               = Policy{Operation: "setTourState", Capability: OwnNotifications, Need: Create} // its only write (G4-104)
 	ListEmailMessages          = Policy{Operation: "listEmailMessages", Capability: Integrations, Need: View}
 	ListBanners                = Policy{Operation: "listBanners", Capability: OwnNotifications, Need: View}
 	DismissBanner              = Policy{Operation: "dismissBanner", Capability: OwnNotifications, Need: Create}
@@ -414,8 +437,14 @@ var (
 	ListItems         = Policy{Operation: "listItems", Capability: ContactsAndItems, Need: View}
 	GetItem           = Policy{Operation: "getItem", Capability: ContactsAndItems, Need: View}
 	CreateItem        = Policy{Operation: "createItem", Capability: ContactsAndItems, Need: Create}
-	UpdateItem        = Policy{Operation: "updateItem", Capability: ContactsAndItems, Need: Create}
-	LoadStandardChart = Policy{Operation: "loadStandardChart", Capability: ChartOfAccounts, Need: Create,
+	// The generic import (FR-MIG-03, rev 0.270): each entity's template read under its V, its file imported under its C,
+	// as entering the records by hand.
+	GetContactsTemplate = Policy{Operation: "getContactsTemplate", Capability: ContactsAndItems, Need: View}
+	ImportContacts      = Policy{Operation: "importContacts", Capability: ContactsAndItems, Need: Create}
+	GetItemsTemplate    = Policy{Operation: "getItemsTemplate", Capability: ContactsAndItems, Need: View}
+	ImportItems         = Policy{Operation: "importItems", Capability: ContactsAndItems, Need: Create}
+	UpdateItem          = Policy{Operation: "updateItem", Capability: ContactsAndItems, Need: Create}
+	LoadStandardChart   = Policy{Operation: "loadStandardChart", Capability: ChartOfAccounts, Need: Create,
 		Note: "The Owner and the Controller approve chart changes; the approval itself arrives with the approval engine (P1)."}
 
 	// Customer groups and their reminder schedules (FR-AR-08) are contact master data.
@@ -424,7 +453,10 @@ var (
 	CreateCustomerGroup  = Policy{Operation: "createCustomerGroup", Capability: ContactsAndItems, Need: Create}
 	ReplaceCustomerGroup = Policy{Operation: "replaceCustomerGroup", Capability: ContactsAndItems, Need: Create}
 
-	CreateJournal             = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
+	CreateJournal = Policy{Operation: "createJournal", Capability: Journals, Need: Create}
+	// The generic import's journals (FR-MIG-03, rev 0.271): drafts, each posted through its own approval.
+	GetJournalsTemplate       = Policy{Operation: "getJournalsTemplate", Capability: Journals, Need: View}
+	ImportJournals            = Policy{Operation: "importJournals", Capability: Journals, Need: Create}
 	BulkCreateJournals        = Policy{Operation: "bulkCreateJournals", Capability: Journals, Need: Create}
 	GetOrganisationProfile    = Policy{Operation: "getOrganisationProfile", Capability: OrganisationProfile, Need: View}
 	UpdateOrganisationProfile = Policy{Operation: "updateOrganisationProfile", Capability: OrganisationProfile, Need: Create,
@@ -468,7 +500,10 @@ var (
 	// 0.49, provisional). Changing them once posted is high-risk (FM-1) and arrives with a second person's approval.
 	GetOpeningBalances     = Policy{Operation: "getOpeningBalances", Capability: Journals, Need: View}
 	ReplaceOpeningBalances = Policy{Operation: "replaceOpeningBalances", Capability: Journals, Need: Create}
-	PostOpeningBalances    = Policy{Operation: "postOpeningBalances", Capability: Journals, Need: Post}
+	// The generic import's opening balances (FR-MIG-03, rev 0.272): a draft, posted later through its approval.
+	GetOpeningBalancesTemplate = Policy{Operation: "getOpeningBalancesTemplate", Capability: Journals, Need: View}
+	ImportOpeningBalances      = Policy{Operation: "importOpeningBalances", Capability: Journals, Need: Create}
+	PostOpeningBalances        = Policy{Operation: "postOpeningBalances", Capability: Journals, Need: Post}
 	// Changing posted opening balances is a high-risk action in every team mode (FM-1; rev 0.66): whoever posts journals
 	// asks, and another person who holds A on Journals approves it through the approval engine.
 	RequestOpeningBalancesEdit = Policy{Operation: "requestOpeningBalancesEdit", Capability: Journals, Need: Post,
@@ -494,6 +529,9 @@ var (
 	// reports (rev 0.52).
 	GetGeneralLedger = Policy{Operation: "getGeneralLedger", Capability: Reports, Need: View, Unqualified: true,
 		Note: "A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused."}
+	// A ledger entry with its lines and its source, the Trace panel's (FR-UX-04): read as the general ledger is.
+	GetLedgerEntry = Policy{Operation: "getLedgerEntry", Capability: Reports, Need: View, Unqualified: true,
+		Note: "A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused."}
 	// The schedules of spreads (FR-GL-03, INV-07): a view of the ledger, read as the general ledger is.
 	GetSchedules = Policy{Operation: "getSchedules", Capability: Reports, Need: View, Unqualified: true,
 		Note: "A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused."}
@@ -511,6 +549,117 @@ var (
 	GetReportExport     = Policy{Operation: "getReportExport", Capability: Reports, Need: View, Unqualified: true}
 	GetReportExportFile = Policy{Operation: "getReportExportFile", Capability: Reports, Need: View, Unqualified: true,
 		Note: "Checked again at each download: a right taken away stops the download at once."}
+	// The full tenant export (FR-MIG-04, design D10; rev 0.273): asked for under C on "Tenant export", approved by another
+	// person who holds its A (FM-1), listed for everyone with a right on the row, and saved only by its requester, through
+	// a link that works for 5 minutes; the API's own link needs no session, its token is the right.
+	RequestTenantExport        = Policy{Operation: "requestTenantExport", Capability: TenantExport, Need: Create}
+	ListTenantExports          = Policy{Operation: "listTenantExports", Capability: TenantExport, Need: View}
+	CreateTenantExportDownload = Policy{Operation: "createTenantExportDownload", Capability: TenantExport, Need: Create,
+		Note: "Only the person who asked for the export saves it."}
+	GetTenantExportDownload = Policy{Operation: "getTenantExportDownload", Capability: TenantExport, Need: View, Public: true}
+
+	// Connections to AI model providers (AI-72, AI-73, AI-79; p1-ai-providers task 3.1): one person asks to create, change,
+	// re-key or enable one, and the Owner, who holds the row's A, approves (golden rule 6, FM-1). Switching one off is
+	// never held back: whoever may ask may do it at once; the Owner's own switch is ai.enabled, for all of the AI (AI-13).
+	ListAIConnections         = Policy{Operation: "listAIConnections", Capability: AIProviders, Need: View}
+	GetAIConnection           = Policy{Operation: "getAIConnection", Capability: AIProviders, Need: View}
+	CreateAIConnection        = Policy{Operation: "createAIConnection", Capability: AIProviders, Need: Create}
+	ChangeAIConnection        = Policy{Operation: "changeAIConnection", Capability: AIProviders, Need: Create}
+	SetAIConnectionCredential = Policy{Operation: "setAIConnectionCredential", Capability: AIProviders, Need: Create}
+	EnableAIConnection        = Policy{Operation: "enableAIConnection", Capability: AIProviders, Need: Create}
+	DisableAIConnection       = Policy{Operation: "disableAIConnection", Capability: AIProviders, Need: Create}
+	// Integration clients (FR-INT-02, SEC-07; p1-public-api task 3.1): an Administrator asks to register one with its narrow
+	// scopes, and the Owner, who holds the Connected apps row's A with a second approver, approves; revoking one is never
+	// held back. Read under any right on the row (the quarterly access review's list, FR-CTL-06).
+	ListIntegrationClients  = Policy{Operation: "listIntegrationClients", Capability: ConnectedApps, Need: View}
+	GetIntegrationClient    = Policy{Operation: "getIntegrationClient", Capability: ConnectedApps, Need: View}
+	CreateIntegrationClient = Policy{Operation: "createIntegrationClient", Capability: ConnectedApps, Need: Create}
+	RevokeIntegrationClient = Policy{Operation: "revokeIntegrationClient", Capability: ConnectedApps, Need: Create}
+	// The data-class policy (AI-75): read under any right on the row; changed by one person's request the Owner approves.
+	GetAIDataPolicy    = Policy{Operation: "getAIDataPolicy", Capability: AIProviders, Need: View}
+	ChangeAIDataPolicy = Policy{Operation: "changeAIDataPolicy", Capability: AIProviders, Need: Create}
+	// The models a connection's provider lists (AI-80): read under any right on the row; refreshed from the provider by
+	// the Owner or an Administrator (C).
+	GetAIConnectionModels     = Policy{Operation: "getAIConnectionModels", Capability: AIProviders, Need: View}
+	RefreshAIConnectionModels = Policy{Operation: "refreshAIConnectionModels", Capability: AIProviders, Need: Create}
+	// A connection's allow-list (AI-72): a model probed under C; asked onto it under C, which the Owner approves; taken off
+	// at once under C.
+	ProbeAIConnectionModel  = Policy{Operation: "probeAIConnectionModel", Capability: AIProviders, Need: Create}
+	AllowAIConnectionModel  = Policy{Operation: "allowAIConnectionModel", Capability: AIProviders, Need: Create}
+	RemoveAIConnectionModel = Policy{Operation: "removeAIConnectionModel", Capability: AIProviders, Need: Create}
+	// The models' prices (AI-82, AI-85): the catalogue's downloads read under any right on the row; a price waiting for a
+	// review confirmed or declined by the Owner, who holds the row's A.
+	ListAIPriceCatalogues = Policy{Operation: "listAIPriceCatalogues", Capability: AIProviders, Need: View}
+	ReviewAIPrice         = Policy{Operation: "reviewAIPrice", Capability: AIProviders, Need: Approve}
+	// An Owner's price (AI-82): entered by the Owner, who holds the row's A, as a request a second approver approves; withdrawn
+	// by the Owner at once.
+	PriceAIConnectionModel = Policy{Operation: "priceAIConnectionModel", Capability: AIProviders, Need: Approve}
+	WithdrawAIPrice        = Policy{Operation: "withdrawAIPrice", Capability: AIProviders, Need: Approve}
+	// Each agent's route (AI-74): read under any right on the row; set by the Owner or an Administrator (C), at once when it
+	// narrows where data goes and otherwise as a request the Owner or a second approver approves.
+	GetAIRoutes = Policy{Operation: "getAIRoutes", Capability: AIProviders, Need: View}
+	GetAIRoute  = Policy{Operation: "getAIRoute", Capability: AIProviders, Need: View}
+	SetAIRoute  = Policy{Operation: "setAIRoute", Capability: AIProviders, Need: Create}
+	// The route presets (AI-26): read under any right on the row.
+	GetAIPresets = Policy{Operation: "getAIPresets", Capability: AIProviders, Need: View}
+	// The AI budgets (AI-77, AI-86): read under any right on the row; set by the Owner, who holds the row's A.
+	GetAIBudgets = Policy{Operation: "getAIBudgets", Capability: AIProviders, Need: View}
+	SetAIBudget  = Policy{Operation: "setAIBudget", Capability: AIProviders, Need: Approve}
+	// The AI usage (AI-77): read under any right on the row.
+	GetAIUsage = Policy{Operation: "getAIUsage", Capability: AIProviders, Need: View}
+	// Qualifying a model for an agent (AI-78): runs the agent's evals, as a probe does, under the row's C.
+	QualifyAIConnectionModel = Policy{Operation: "qualifyAIConnectionModel", Capability: AIProviders, Need: Create}
+	// The AI activity log (AI-12): every member reads their own entries; the Owner and the DPO, who hold the row's V
+	// without "own", read everyone's. The handler narrows to the caller's own entries otherwise.
+	ListAIActivity = Policy{Operation: "listAIActivity", Capability: AIActivity, Need: View}
+	// The assistant's conversations (p1-ai-assistant task 6.1, design D1): each member's own, on the AI activity log's row,
+	// whose AI column is "—", so no AI or MCP client reaches them (§9.6). Starting, asking and deleting are views of one's own
+	// activity, as the semantic query is a view of the books; the handlers keep each person to their own conversations.
+	CreateAIConversation = Policy{Operation: "createAIConversation", Capability: AIActivity, Need: View}
+	ListAIConversations  = Policy{Operation: "listAIConversations", Capability: AIActivity, Need: View}
+	GetAIConversation    = Policy{Operation: "getAIConversation", Capability: AIActivity, Need: View}
+	DeleteAIConversation = Policy{Operation: "deleteAIConversation", Capability: AIActivity, Need: View}
+	AskAIConversation    = Policy{Operation: "askAIConversation", Capability: AIActivity, Need: View}
+	ListAITurnActivity   = Policy{Operation: "listAITurnActivity", Capability: AIActivity, Need: View}
+	// Feedback on the assistant's answers (QA-AI-05, p1-ai-assistant task 6.4): each member rates the answers of their own
+	// conversations, on the conversations' row. Reviewing it, which decides what feeds the eval set, is eval work on the AI
+	// providers' row, where qualifying a model runs the evals: under its C, which the Administrator holds; the Owner, whose
+	// cell is A, reviews it too, as a review changes no setting and needs no second person.
+	GiveAIFeedback = Policy{Operation: "giveAIFeedback", Capability: AIActivity, Need: View}
+	// The AI's proposals (§9.5, AI-07; p1-ai-proposals-core design D5): each member sees their own and those they may sign,
+	// the Owner and the DPO every one; the handler decides each, so a proposal one may not see is not found. The AI holds
+	// no right on the row: it never reads its proposals' reviews or the catalogue's status.
+	ListAIProposals = Policy{Operation: "listAIProposals", Capability: AIActivity, Need: View}
+	GetAIProposal   = Policy{Operation: "getAIProposal", Capability: AIActivity, Need: View, ByRecord: true}
+	ListAITaskTypes = Policy{Operation: "listAITaskTypes", Capability: AIActivity, Need: View}
+	// The compliance tasks the scheduled agents' findings and proposals raise (AI-65; p1-scheduled-agents design D7): seen
+	// under V on the AI company secretary's row, done or dismissed under its C, which the Administrator holds; the Owner,
+	// whose cell is A, closes them too. The AI holds no right on them.
+	ListComplianceTasks    = Policy{Operation: "listComplianceTasks", Capability: AICompanySecretary, Need: View}
+	GetComplianceTask      = Policy{Operation: "getComplianceTask", Capability: AICompanySecretary, Need: View}
+	CompleteComplianceTask = Policy{Operation: "completeComplianceTask", Capability: AICompanySecretary, Need: Create, OwnerMay: true,
+		Note: "The Owner holds A on the AI company secretary's row, not C, and closes its tasks as the Administrator does."}
+	DismissComplianceTask = Policy{Operation: "dismissComplianceTask", Capability: AICompanySecretary, Need: Create, OwnerMay: true,
+		Note: "The Owner holds A on the AI company secretary's row, not C, and dismisses its tasks as the Administrator does."}
+	// The AI company secretary assistant's workspace (FR-CS-04 in part, AI-62, AI-65; p1-scheduled-agents design D9): it, its
+	// runs and their reports are seen under V on its row; Run now needs its C, as its schedule does, the Owner's A too. The
+	// AI holds no right on them: it runs as the agent's principal instead (AI-63).
+	GetCompanySecretary = Policy{Operation: "getCompanySecretary", Capability: AICompanySecretary, Need: View}
+	ListAgentRuns       = Policy{Operation: "listAgentRuns", Capability: AICompanySecretary, Need: View}
+	GetAgentRun         = Policy{Operation: "getAgentRun", Capability: AICompanySecretary, Need: View}
+	RunCompanySecretary = Policy{Operation: "runCompanySecretary", Capability: AICompanySecretary, Need: Create, OwnerMay: true,
+		Note: "Run now is the schedule's: C on the AI company secretary's row, which the Administrator holds; the Owner, whose cell is A, too."}
+	ListAIFeedback = Policy{Operation: "listAIFeedback", Capability: AIProviders, Need: Create, OwnerMay: true,
+		Note: "The Owner holds A on \"AI providers and model routes\", not C, and reviews feedback as the Administrator does (QA-AI-05)."}
+	ReviewAIFeedback = Policy{Operation: "reviewAIFeedback", Capability: AIProviders, Need: Create, OwnerMay: true,
+		Note: "The Owner holds A on \"AI providers and model routes\", not C, and reviews feedback as the Administrator does (QA-AI-05)."}
+	// The AI's switch and budgets (AI-13, AI-77): read under any right on the AI providers' row. The Owner, who holds A on the
+	// organisation's settings, switches the AI off at once: the kill switch needs no second person; switching it on is a
+	// setting change a second approver approves.
+	GetAISettings = Policy{Operation: "getAISettings", Capability: AIProviders, Need: View}
+	SwitchOffAI   = Policy{Operation: "switchOffAI", Capability: OrganisationProfile, Need: Approve}
+	// The AI inventory (CMP-AI-02): read in the Compliance Center, under any right on its row.
+	GetAIInventory = Policy{Operation: "getAIInventory", Capability: ComplianceCenter, Need: View}
 	// The management reports (FR-RPT-03; p1-reports design D9): a view of the reports limited to sales reads the sales
 	// reports, and one limited to purchases the spend by supplier; the top expenses read the P&L, as the statements do.
 	GetSalesByCustomer = Policy{Operation: "getSalesByCustomer", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"sales"},
@@ -525,6 +674,10 @@ var (
 	// them too (Home's board viewer sees KPIs only). Their entered counts are planning inputs: "Budgets, forecasts" C.
 	GetKpis = Policy{Operation: "getKpis", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"},
 		Note: "A view of the reports limited to the board pack reads it; one limited to sales, purchases, payroll or a department is refused."}
+	// The semantic layer (AI-03, AI-68; p1-ai-assistant design D6) reads every account, as the statements do; by customer it
+	// reads the receivables and by vendor the payables, whose own rows decide too.
+	QueryMetrics = Policy{Operation: "queryMetrics", Capability: Reports, Need: View, Unqualified: true,
+		Note: "A view of the reports limited to sales, purchases, payroll or a department is refused; by customer it needs a view of invoices, by vendor of bills."}
 	ListKpiInputs = Policy{Operation: "listKpiInputs", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"board pack"},
 		Note: "A view of the reports limited to the board pack reads them; one limited to sales, purchases, payroll or a department is refused."}
 	// The checks (FR-CTL-01, FR-CTL-02; p1-checks design D7): every reader sees each check's status, count and words, and
@@ -537,7 +690,10 @@ var (
 	SetCheckOwner = Policy{Operation: "setCheckOwner", Capability: ChecksHealth, Need: Create}
 	// Marking a ⚠ item reviewed (rev 0.164, ENG-21): A, which the whole books' roles hold; the AI holds V only.
 	ReviewCheckItem = Policy{Operation: "reviewCheckItem", Capability: ChecksHealth, Need: Approve, Unqualified: true}
-	SetKpiInput     = Policy{Operation: "setKpiInput", Capability: Budgets, Need: Create, Unqualified: true,
+	// ReplayBackgroundWork is for whoever is told when a task stops (FR-NTF-01): the Administrator, and the Owner.
+	ReplayBackgroundWork = Policy{Operation: "replayBackgroundWork", Capability: UsersAndRoles, Need: Create, OwnerMay: true,
+		Note: "An Owner or an Administrator, who are told when a background task stops."}
+	SetKpiInput = Policy{Operation: "setKpiInput", Capability: Budgets, Need: Create, Unqualified: true,
 		Note: "A department's budget holder (C dept) does not enter the company's counts."}
 	GetPeriodClose = Policy{Operation: "getPeriodClose", Capability: PeriodClose, Need: View}
 	RunCloseChecks = Policy{Operation: "runCloseChecks", Capability: PeriodClose, Need: Create}
@@ -557,13 +713,16 @@ var (
 	GetYearEnd = Policy{Operation: "getYearEnd", Capability: PeriodClose, Need: View}
 	// Exchange rates (FR-GL-05, ENG-40; rev 0.70) are month-end work: read with the close (V), entered and withdrawn by the
 	// members who run its checks (C: the Accountant, the Controller). Postings take them through the cascade, whoever posts.
-	ListFxRates       = Policy{Operation: "listFxRates", Capability: PeriodClose, Need: View}
-	GetFxRate         = Policy{Operation: "getFxRate", Capability: PeriodClose, Need: View}
-	ListFeedRates     = Policy{Operation: "listFeedRates", Capability: PeriodClose, Need: View}
-	LookupFxRate      = Policy{Operation: "lookupFxRate", Capability: PeriodClose, Need: View}
-	CreateFxRate      = Policy{Operation: "createFxRate", Capability: PeriodClose, Need: Create}
-	BulkCreateFxRates = Policy{Operation: "bulkCreateFxRates", Capability: PeriodClose, Need: Create}
-	WithdrawFxRate    = Policy{Operation: "withdrawFxRate", Capability: PeriodClose, Need: Create}
+	ListFxRates   = Policy{Operation: "listFxRates", Capability: PeriodClose, Need: View}
+	GetFxRate     = Policy{Operation: "getFxRate", Capability: PeriodClose, Need: View}
+	ListFeedRates = Policy{Operation: "listFeedRates", Capability: PeriodClose, Need: View}
+	LookupFxRate  = Policy{Operation: "lookupFxRate", Capability: PeriodClose, Need: View}
+	CreateFxRate  = Policy{Operation: "createFxRate", Capability: PeriodClose, Need: Create}
+	// The generic import's FX rates (FR-MIG-03, rev 0.272), as recording them by hand.
+	GetFxRatesTemplate = Policy{Operation: "getFxRatesTemplate", Capability: PeriodClose, Need: View}
+	ImportFxRates      = Policy{Operation: "importFxRates", Capability: PeriodClose, Need: Create}
+	BulkCreateFxRates  = Policy{Operation: "bulkCreateFxRates", Capability: PeriodClose, Need: Create}
+	WithdrawFxRate     = Policy{Operation: "withdrawFxRate", Capability: PeriodClose, Need: Create}
 	// The month-end revaluation (FR-GL-04; rev 0.73) is close work too: previewed with the close (V), run by the members
 	// who run its checks (C).
 	GetFxRevaluation  = Policy{Operation: "getFxRevaluation", Capability: PeriodClose, Need: View}
@@ -580,15 +739,18 @@ var (
 	// Bills (FR-AP-02; p1-purchases): read under V, prepared under C (the Bookkeeper, the AP specialist, the Accountant),
 	// posted and voided under P (the Accountant), as journals are; asking for approval to post or void is posting (P),
 	// and another person who holds A approves it through the approval engine (FM-1, FM-2, SOD-3).
-	ListBills       = Policy{Operation: "listBills", Capability: Bills, Need: View}
-	GetBill         = Policy{Operation: "getBill", Capability: Bills, Need: View}
-	CreateBill      = Policy{Operation: "createBill", Capability: Bills, Need: Create}
-	ReplaceBill     = Policy{Operation: "replaceBill", Capability: Bills, Need: Create}
-	PostBill        = Policy{Operation: "postBill", Capability: Bills, Need: Post}
-	VoidBill        = Policy{Operation: "voidBill", Capability: Bills, Need: Post}
-	RequestBillPost = Policy{Operation: "requestBillPost", Capability: Bills, Need: Post}
-	RequestBillVoid = Policy{Operation: "requestBillVoid", Capability: Bills, Need: Post}
-	EditBill        = Policy{Operation: "editBill", Capability: Bills, Need: Post}
+	ListBills  = Policy{Operation: "listBills", Capability: Bills, Need: View}
+	GetBill    = Policy{Operation: "getBill", Capability: Bills, Need: View}
+	CreateBill = Policy{Operation: "createBill", Capability: Bills, Need: Create}
+	// The generic import's bills (FR-MIG-03, rev 0.271): drafts, each posted through its own approval.
+	GetBillsTemplate = Policy{Operation: "getBillsTemplate", Capability: Bills, Need: View}
+	ImportBills      = Policy{Operation: "importBills", Capability: Bills, Need: Create}
+	ReplaceBill      = Policy{Operation: "replaceBill", Capability: Bills, Need: Create}
+	PostBill         = Policy{Operation: "postBill", Capability: Bills, Need: Post}
+	VoidBill         = Policy{Operation: "voidBill", Capability: Bills, Need: Post}
+	RequestBillPost  = Policy{Operation: "requestBillPost", Capability: Bills, Need: Post}
+	RequestBillVoid  = Policy{Operation: "requestBillVoid", Capability: Bills, Need: Post}
+	EditBill         = Policy{Operation: "editBill", Capability: Bills, Need: Post}
 	// Expense claims (FR-AP-07, FR-AP-14, FR-AP-17; p1-expense-claims): a claimant's own under the Employee's "C (own)",
 	// which the handlers narrow to the caller's own claims (design D10); everyone's under V (the Owner, the Accountant,
 	// the Bookkeeper, the AP specialist, the Auditor, the Tax agent) or A (the Approver, the Controller). Submitting asks
@@ -841,9 +1003,12 @@ var (
 	// Accountant), issued, voided and edited under P (the AR specialist, the Accountant); asking for approval to issue,
 	// void or edit is issuing (P), and another person who holds A approves it through the approval engine (FM-1, FM-2,
 	// SOD-3).
-	ListInvoices        = Policy{Operation: "listInvoices", Capability: Invoices, Need: View}
-	GetInvoice          = Policy{Operation: "getInvoice", Capability: Invoices, Need: View}
-	CreateInvoice       = Policy{Operation: "createInvoice", Capability: Invoices, Need: Create}
+	ListInvoices  = Policy{Operation: "listInvoices", Capability: Invoices, Need: View}
+	GetInvoice    = Policy{Operation: "getInvoice", Capability: Invoices, Need: View}
+	CreateInvoice = Policy{Operation: "createInvoice", Capability: Invoices, Need: Create}
+	// The generic import's invoices (FR-MIG-03, rev 0.271): drafts, each issued through its own approval.
+	GetInvoicesTemplate = Policy{Operation: "getInvoicesTemplate", Capability: Invoices, Need: View}
+	ImportInvoices      = Policy{Operation: "importInvoices", Capability: Invoices, Need: Create}
 	ReplaceInvoice      = Policy{Operation: "replaceInvoice", Capability: Invoices, Need: Create}
 	IssueInvoice        = Policy{Operation: "issueInvoice", Capability: Invoices, Need: Post}
 	VoidInvoice         = Policy{Operation: "voidInvoice", Capability: Invoices, Need: Post}
@@ -916,8 +1081,11 @@ var (
 	UndoBankTransfer       = Policy{Operation: "undoBankTransfer", Capability: BankTransactions, Need: Post}
 	// Rules are written under C (FR-BNK-05); a reconciliation is prepared under C on "Bank reconciliation sign-off" and
 	// signed under A, by another person (FR-BNK-10, FM-5).
-	ListBankRules             = Policy{Operation: "listBankRules", Capability: BankTransactions, Need: View}
-	CreateBankRule            = Policy{Operation: "createBankRule", Capability: BankTransactions, Need: Create}
+	ListBankRules  = Policy{Operation: "listBankRules", Capability: BankTransactions, Need: View}
+	CreateBankRule = Policy{Operation: "createBankRule", Capability: BankTransactions, Need: Create}
+	// The generic import's bank rules (FR-MIG-03, rev 0.272): each suggests until an approver makes it auto-apply.
+	GetBankRulesTemplate      = Policy{Operation: "getBankRulesTemplate", Capability: BankTransactions, Need: View}
+	ImportBankRules           = Policy{Operation: "importBankRules", Capability: BankTransactions, Need: Create}
 	GetBankRule               = Policy{Operation: "getBankRule", Capability: BankTransactions, Need: View}
 	ReplaceBankRule           = Policy{Operation: "replaceBankRule", Capability: BankTransactions, Need: Create}
 	BackTestBankRule          = Policy{Operation: "backTestBankRule", Capability: BankTransactions, Need: View}
@@ -1148,6 +1316,7 @@ var (
 	GetApprovalPolicy     = Policy{Operation: "getApprovalPolicy", Capability: ApprovalPolicies, Need: View}
 	ListStatutoryPacks    = Policy{Operation: "listStatutoryPacks", Capability: StatutoryParameters, Need: View}
 	GetStatutoryPack      = Policy{Operation: "getStatutoryPack", Capability: StatutoryParameters, Need: View}
+	GetStatutoryValues    = Policy{Operation: "getStatutoryValues", Capability: StatutoryParameters, Need: View}
 	ActivateStatutoryPack = Policy{Operation: "activateStatutoryPack", Capability: StatutoryParameters, Need: Create,
 		Note: "Always waits for approval by a member who holds A on the row (the Owner or the Controller), never the proposer (ENG-32, SOD-10); " +
 			"needs a person signed in who passed step-up in the last 5 minutes."}
@@ -1191,7 +1360,9 @@ var (
 
 var (
 	ListSignInProviders = Policy{Operation: "listSignInProviders", Capability: Session, Need: View, Public: true}
-	GetSession          = Policy{Operation: "getSession", Capability: Session, Need: View, NoOrganisation: true, SingleFactor: true,
+	GetPlatformVersion  = Policy{Operation: "getPlatformVersion", Capability: Session, Need: View, Public: true,
+		Note: "The platform version and build, as /version answers them (REL-05)."}
+	GetSession = Policy{Operation: "getSession", Capability: Session, Need: View, NoOrganisation: true, SingleFactor: true,
 		Note: "Needs a person signed in to Fyniq; an OAuth client or the AI is refused."}
 )
 
@@ -1399,6 +1570,61 @@ var (
 	GetStatutoryTests              = Policy{Operation: "getStatutoryTests", Capability: CapTable, Need: View, Unqualified: true}
 )
 
+// The corporate profile (FR-CS-01, FR-CS-06; p1-company-secretary design D2, rev 0.282): the company's name, registered
+// office and SSIC code, and its officers, drafted by the Accountant and recorded on another person's approval with their
+// evidence; an officer never approves their own record.
+var (
+	GetCorporateProfile               = Policy{Operation: "getCorporateProfile", Capability: CorporateProfile, Need: View, Unqualified: true}
+	CreateCorporateDetail             = Policy{Operation: "createCorporateDetail", Capability: CorporateProfile, Need: Create}
+	GetCorporateDetail                = Policy{Operation: "getCorporateDetail", Capability: CorporateProfile, Need: View, Unqualified: true}
+	ReplaceCorporateDetail            = Policy{Operation: "replaceCorporateDetail", Capability: CorporateProfile, Need: Create}
+	RequestCorporateDetailApproval    = Policy{Operation: "requestCorporateDetailApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up."}
+	AddCorporateDetailEvidence        = Policy{Operation: "addCorporateDetailEvidence", Capability: CorporateProfile, Need: Create}
+	ListCorporateDetailEvidence       = Policy{Operation: "listCorporateDetailEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	GetCorporateDetailEvidence        = Policy{Operation: "getCorporateDetailEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	RemoveCorporateDetailEvidence     = Policy{Operation: "removeCorporateDetailEvidence", Capability: CorporateProfile, Need: Create}
+	CreateCorporateOfficer            = Policy{Operation: "createCorporateOfficer", Capability: CorporateProfile, Need: Create}
+	GetCorporateOfficer               = Policy{Operation: "getCorporateOfficer", Capability: CorporateProfile, Need: View, Unqualified: true}
+	ReplaceCorporateOfficer           = Policy{Operation: "replaceCorporateOfficer", Capability: CorporateProfile, Need: Create}
+	RequestCorporateOfficerApproval   = Policy{Operation: "requestCorporateOfficerApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up, never the officer."}
+	AddCorporateOfficerEvidence       = Policy{Operation: "addCorporateOfficerEvidence", Capability: CorporateProfile, Need: Create}
+	ListCorporateOfficerEvidence      = Policy{Operation: "listCorporateOfficerEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	GetCorporateOfficerEvidence       = Policy{Operation: "getCorporateOfficerEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	RemoveCorporateOfficerEvidence    = Policy{Operation: "removeCorporateOfficerEvidence", Capability: CorporateProfile, Need: Create}
+	CreateNomineeEntry                = Policy{Operation: "createNomineeEntry", Capability: CorporateProfile, Need: Create}
+	GetNomineeEntry                   = Policy{Operation: "getNomineeEntry", Capability: CorporateProfile, Need: View, Unqualified: true}
+	ReplaceNomineeEntry               = Policy{Operation: "replaceNomineeEntry", Capability: CorporateProfile, Need: Create}
+	RequestNomineeEntryApproval       = Policy{Operation: "requestNomineeEntryApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up, never the nominee."}
+	AddNomineeEntryEvidence           = Policy{Operation: "addNomineeEntryEvidence", Capability: CorporateProfile, Need: Create}
+	ListNomineeEntryEvidence          = Policy{Operation: "listNomineeEntryEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	GetNomineeEntryEvidence           = Policy{Operation: "getNomineeEntryEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	RemoveNomineeEntryEvidence        = Policy{Operation: "removeNomineeEntryEvidence", Capability: CorporateProfile, Need: Create}
+	CreateStatementsApproval          = Policy{Operation: "createStatementsApproval", Capability: CorporateProfile, Need: Create}
+	GetStatementsApproval             = Policy{Operation: "getStatementsApproval", Capability: CorporateProfile, Need: View, Unqualified: true}
+	ReplaceStatementsApproval         = Policy{Operation: "replaceStatementsApproval", Capability: CorporateProfile, Need: Create}
+	RequestStatementsApprovalApproval = Policy{Operation: "requestStatementsApprovalApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up."}
+	AddStatementsApprovalEvidence     = Policy{Operation: "addStatementsApprovalEvidence", Capability: CorporateProfile, Need: Create}
+	ListStatementsApprovalEvidence    = Policy{Operation: "listStatementsApprovalEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	GetStatementsApprovalEvidence     = Policy{Operation: "getStatementsApprovalEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	RemoveStatementsApprovalEvidence  = Policy{Operation: "removeStatementsApprovalEvidence", Capability: CorporateProfile, Need: Create}
+	GetCorporateReconciliation        = Policy{Operation: "getCorporateReconciliation", Capability: CorporateProfile, Need: View, Unqualified: true}
+	// The corporate documents (FR-CS-05; p1-company-secretary task 4.1): drafted as the profile's records are; the Owner
+	// drafts one too, as they approve the AI's sec.draft_document (Appendix E), and a draft is never signed or filed.
+	GetCorporateTemplates   = Policy{Operation: "getCorporateTemplates", Capability: CorporateProfile, Need: View, Unqualified: true}
+	CreateCorporateDocument = Policy{Operation: "createCorporateDocument", Capability: CorporateProfile, Need: Create, OwnerMay: true,
+		Note: "The Owner drafts one too, as they approve sec.draft_document (Appendix E); a draft is never signed or filed."}
+	GetCorporateDocument     = Policy{Operation: "getCorporateDocument", Capability: CorporateProfile, Need: View, Unqualified: true}
+	ReplaceCorporateDocument = Policy{Operation: "replaceCorporateDocument", Capability: CorporateProfile, Need: Create}
+	GetCorporateDocumentPDF  = Policy{Operation: "getCorporateDocumentPDF", Capability: CorporateProfile, Need: View, Unqualified: true,
+		MaskedFields: []string{"sha256", "content_base64"}}
+	// The minute book (task 4.2): the signed copy attached, and recorded on another person's approval.
+	RequestCorporateDocumentApproval = Policy{Operation: "requestCorporateDocumentApproval", Capability: CorporateProfile, Need: Create, Note: "Another person approves it, stepped up."}
+	AddCorporateDocumentEvidence     = Policy{Operation: "addCorporateDocumentEvidence", Capability: CorporateProfile, Need: Create}
+	ListCorporateDocumentEvidence    = Policy{Operation: "listCorporateDocumentEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	GetCorporateDocumentEvidence     = Policy{Operation: "getCorporateDocumentEvidence", Capability: CorporateProfile, Need: View, Unqualified: true}
+	RemoveCorporateDocumentEvidence  = Policy{Operation: "removeCorporateDocumentEvidence", Capability: CorporateProfile, Need: Create}
+)
+
 // The ACRA reconciliation (FR-EQ-26; p1-equity-register slice 8, design D11): an extract typed in and recorded by the
 // Accountant, who holds P on the cap table, with the business profile attached; read by whoever reads the whole table.
 var (
@@ -1453,8 +1679,11 @@ var (
 // copied, imported and asked for approval by whoever prepares them; approved by a person who holds A, never the one
 // who asked. A department's budget holder (C dept) waits for members to carry their department.
 var (
-	ListBudgets           = Policy{Operation: "listBudgets", Capability: Budgets, Need: View, Unqualified: true}
-	CreateBudget          = Policy{Operation: "createBudget", Capability: Budgets, Need: Create, Unqualified: true}
+	ListBudgets  = Policy{Operation: "listBudgets", Capability: Budgets, Need: View, Unqualified: true}
+	CreateBudget = Policy{Operation: "createBudget", Capability: Budgets, Need: Create, Unqualified: true}
+	// The generic import's budgets (FR-MIG-03, rev 0.272): each financial year's a draft, approved later.
+	GetBudgetsTemplate    = Policy{Operation: "getBudgetsTemplate", Capability: Budgets, Need: View, Unqualified: true}
+	ImportBudgets         = Policy{Operation: "importBudgets", Capability: Budgets, Need: Create, Unqualified: true}
 	GetBudget             = Policy{Operation: "getBudget", Capability: Budgets, Need: View, Unqualified: true}
 	ReplaceBudget         = Policy{Operation: "replaceBudget", Capability: Budgets, Need: Create, Unqualified: true}
 	CopyBudget            = Policy{Operation: "copyBudget", Capability: Budgets, Need: Create, Unqualified: true}
@@ -1522,6 +1751,60 @@ var (
 	// Compliance Center; each is signed off on its own page.
 	ListComplianceReviews = Policy{Operation: "listComplianceReviews", Capability: ComplianceCenter, Need: View}
 	// The risk register (CMP-06; p1-compliance-center D7): the Compliance officer saves and reviews risks.
+	ListIncidents = Policy{Operation: "listIncidents", Capability: ComplianceCenter, Need: View}
+	OpenIncident  = Policy{Operation: "openIncident", Capability: ComplianceCenter, Need: Create}
+	StepIncident  = Policy{Operation: "stepIncident", Capability: ComplianceCenter, Need: Create}
+
+	// The restore drill register (DR-06, CTL-RES-02 Q; p1-operations-dr design D2): under Appendix D's "Compliance Center", as
+	// the incident register is.
+	ListRestoreDrills  = Policy{Operation: "listRestoreDrills", Capability: ComplianceCenter, Need: View}
+	RecordRestoreDrill = Policy{Operation: "recordRestoreDrill", Capability: ComplianceCenter, Need: Create}
+
+	// The workbook migration (FR-MIG-01, §17.1; p1-workbook-migration design D3, D11): prepared by the Controller or
+	// Accountant, read by the Owner and the Auditor; the AI has no right on it.
+	ListMigrations          = Policy{Operation: "listMigrations", Capability: WorkbookImport, Need: View}
+	StartMigration          = Policy{Operation: "startMigration", Capability: WorkbookImport, Need: Create}
+	GetMigration            = Policy{Operation: "getMigration", Capability: WorkbookImport, Need: View}
+	UploadMigrationWorkbook = Policy{Operation: "uploadMigrationWorkbook", Capability: WorkbookImport, Need: Create}
+	GetMigrationReport      = Policy{Operation: "getMigrationReport", Capability: WorkbookImport, Need: View}
+	GetMigrationMapping     = Policy{Operation: "getMigrationMapping", Capability: WorkbookImport, Need: View}
+	ChangeMigrationMapping  = Policy{Operation: "changeMigrationMapping", Capability: WorkbookImport, Need: Create}
+	// Signing the mapping (§17.1 M2) is the Accountant's alone, under its own row (rev 0.256).
+	SignMigrationMapping = Policy{Operation: "signMigrationMapping", Capability: WorkbookSignOffs, Need: Approve,
+		Note: "A person signed in to Fyniq, stepped up in the last 5 minutes."}
+
+	// The commit (§17.1 M3, rev 0.258): prepared under C, approved by an Owner who did not prepare it through the
+	// approval request, then run in batches by anyone who may prepare it.
+	RequestMigrationCommit = Policy{Operation: "requestMigrationCommit", Capability: WorkbookImport, Need: Create,
+		Note: "A person signed in to Fyniq, stepped up in the last 5 minutes."}
+	RunMigrationCommit = Policy{Operation: "runMigrationCommit", Capability: WorkbookImport, Need: Create}
+	GetMigrationCommit = Policy{Operation: "getMigrationCommit", Capability: WorkbookImport, Need: View}
+
+	// The reconciliation against the workbook (§17.1 M4, FR-MIG-02, design D8): read by whoever reads the migration.
+	GetMigrationReconciliation = Policy{Operation: "getMigrationReconciliation", Capability: WorkbookImport, Need: View}
+	// The register's decisions and the sign-off of the report with it are the Accountant's alone, under the sign-offs' row
+	// (rev 0.266).
+	DecideMigrationDifference   = Policy{Operation: "decideMigrationDifference", Capability: WorkbookSignOffs, Need: Approve}
+	SignMigrationReconciliation = Policy{Operation: "signMigrationReconciliation", Capability: WorkbookSignOffs, Need: Approve,
+		Note: "A person signed in to Fyniq, stepped up in the last 5 minutes."}
+	// The parallel month (§17.1 M5, rev 0.268): its workbook uploaded and read as the import's, its report decided and
+	// signed by the Accountant as M4's.
+	UploadMigrationParallelWorkbook   = Policy{Operation: "uploadMigrationParallelWorkbook", Capability: WorkbookImport, Need: Create}
+	GetMigrationParallelReport        = Policy{Operation: "getMigrationParallelReport", Capability: WorkbookImport, Need: View}
+	GetMigrationParallel              = Policy{Operation: "getMigrationParallel", Capability: WorkbookImport, Need: View}
+	DecideMigrationParallelDifference = Policy{Operation: "decideMigrationParallelDifference", Capability: WorkbookSignOffs, Need: Approve}
+	SignMigrationParallel             = Policy{Operation: "signMigrationParallel", Capability: WorkbookSignOffs, Need: Approve,
+		Note: "A person signed in to Fyniq, stepped up in the last 5 minutes."}
+	// The archive and go-live (§17.1 M6, rev 0.269): prepared under C, as the commit is, the archive stepped up.
+	UploadMigrationArchivePDF = Policy{Operation: "uploadMigrationArchivePDF", Capability: WorkbookImport, Need: Create}
+	GetMigrationArchive       = Policy{Operation: "getMigrationArchive", Capability: WorkbookImport, Need: View}
+	ArchiveMigration          = Policy{Operation: "archiveMigration", Capability: WorkbookImport, Need: Create,
+		Note: "A person signed in to Fyniq, stepped up in the last 5 minutes."}
+
+	// The heartbeat drill register (NFR-OBS-02, CTL-RES-05 Q; p1-operations-dr design D6), as the restore drills.
+	ListHeartbeatDrills  = Policy{Operation: "listHeartbeatDrills", Capability: ComplianceCenter, Need: View}
+	RecordHeartbeatDrill = Policy{Operation: "recordHeartbeatDrill", Capability: ComplianceCenter, Need: Create}
+
 	ListRisks  = Policy{Operation: "listRisks", Capability: ComplianceCenter, Need: View}
 	CreateRisk = Policy{Operation: "createRisk", Capability: ComplianceCenter, Need: Create}
 	ReviseRisk = Policy{Operation: "reviseRisk", Capability: ComplianceCenter, Need: Create}
@@ -1540,25 +1823,35 @@ var (
 
 // The statutory calendar (FR-TAX-07, CMP-02; p1-gst slice 3a, design D8): read by whoever views it; an item recorded as
 // filed or not required, and a record withdrawn, by the Owner, the Controller, the Accountant and the Tax agent (the
-// owner's decision of 7 Nov 2026, Appendix D's Statutory calendar row).
+// owner's decision of 7 Nov 2026, Appendix D's Statutory calendar row), and its corporate items by the Company secretary
+// too (rev 0.285). A right qualified to corporate passes the writes here; the handler refuses it on any other item.
 var (
 	GetStatutoryCalendar          = Policy{Operation: "getStatutoryCalendar", Capability: StatutoryCalendar, Need: View}
 	ListStatutoryFilings          = Policy{Operation: "listStatutoryFilings", Capability: StatutoryCalendar, Need: View}
-	CreateStatutoryFiling         = Policy{Operation: "createStatutoryFiling", Capability: StatutoryCalendar, Need: Create}
+	CreateStatutoryFiling         = Policy{Operation: "createStatutoryFiling", Capability: StatutoryCalendar, Need: Create, Unqualified: true, Qualified: calendarItems, Note: calendarNote}
 	GetStatutoryFiling            = Policy{Operation: "getStatutoryFiling", Capability: StatutoryCalendar, Need: View}
-	ReplaceStatutoryFiling        = Policy{Operation: "replaceStatutoryFiling", Capability: StatutoryCalendar, Need: Create}
-	RecordStatutoryFiling         = Policy{Operation: "recordStatutoryFiling", Capability: StatutoryCalendar, Need: Create, Note: "What was filed outside Fyniq, with its acknowledgement: it posts nothing."}
-	WithdrawStatutoryFiling       = Policy{Operation: "withdrawStatutoryFiling", Capability: StatutoryCalendar, Need: Create}
-	AddStatutoryFilingEvidence    = Policy{Operation: "addStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: Create}
+	ReplaceStatutoryFiling        = Policy{Operation: "replaceStatutoryFiling", Capability: StatutoryCalendar, Need: Create, Unqualified: true, Qualified: calendarItems, Note: calendarNote}
+	RecordStatutoryFiling         = Policy{Operation: "recordStatutoryFiling", Capability: StatutoryCalendar, Need: Create, Unqualified: true, Qualified: calendarItems, Note: "What was filed outside Fyniq, with its acknowledgement: it posts nothing. " + calendarNote}
+	WithdrawStatutoryFiling       = Policy{Operation: "withdrawStatutoryFiling", Capability: StatutoryCalendar, Need: Create, Unqualified: true, Qualified: calendarItems, Note: calendarNote}
+	AddStatutoryFilingEvidence    = Policy{Operation: "addStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: Create, Unqualified: true, Qualified: calendarItems, Note: calendarNote}
 	ListStatutoryFilingEvidence   = Policy{Operation: "listStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: View}
 	GetStatutoryFilingEvidence    = Policy{Operation: "getStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: View}
-	RemoveStatutoryFilingEvidence = Policy{Operation: "removeStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: Create}
+	RemoveStatutoryFilingEvidence = Policy{Operation: "removeStatutoryFilingEvidence", Capability: StatutoryCalendar, Need: Create, Unqualified: true, Qualified: calendarItems, Note: calendarNote}
 )
+
+var calendarItems = []string{CalendarCorporate}
+
+const calendarNote = "The Company secretary's right reaches the corporate items alone."
 
 // GetOperation is polling long work (FR-INT-11): any member asks for long work under the work's own policy, and reads
 // only the operations they asked for, so an operation is decided past this policy by its own record.
 var GetOperation = Policy{Operation: "getOperation", Capability: Membership, Need: View, ByRecord: true,
 	Note: "Only whoever asked for the work reads its operation; anyone else gets 404."}
+
+// ListMyOperations is the caller's own long work, newest first (FR-INT-11; the operations tray, design D10): any member
+// lists only the operations they asked for.
+var ListMyOperations = Policy{Operation: "listMyOperations", Capability: Membership, Need: View,
+	Note: "Only the caller's own operations."}
 
 // Joining by email domain (FR-ADM-08, rev 0.199): a person without a Fyniq account finds and asks; an Owner decides and
 // claims the organisation's domains.
@@ -1637,7 +1930,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,
@@ -1647,9 +1940,9 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListDimensions, CreateDimension, ReplaceDimension, ListDimensionValues, CreateDimensionValue, ReplaceDimensionValue, ListContacts, GetContact, GetContactSummary,
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, RemoveMember, SearchEvidence, GetEvidenceFile, CreateEvidenceDownload, GetEvidenceDownload, SearchRecords, ListOwnerSuccessions, StartOwnerSuccession, AddOwnerSuccessionEvidence, ListOwnerSuccessionEvidence,
-	ObjectToOwnerSuccession, WithdrawOwnerSuccession, CompleteOwnerSuccession, GetAccessReview, ExportAccessReview, AttestAccessReview, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
+	ObjectToOwnerSuccession, WithdrawOwnerSuccession, CompleteOwnerSuccession, GetAccessReview, ExportAccessReview, AttestAccessReview, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, GetHelpState, SetTourState, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit,
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
-	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetKpis, ListKpiInputs, SetKpiInput, ListChecks, GetCheck, RunChecks, SetCheckOwner, ReviewCheckItem, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
+	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetLedgerEntry, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetKpis, QueryMetrics, ListKpiInputs, SetKpiInput, ListChecks, GetCheck, RunChecks, SetCheckOwner, ReviewCheckItem, ReplayBackgroundWork, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,
 	ListPeriodVariances, ExplainVariance, GetCloseChecklistTemplate, ReplaceCloseChecklistTemplate, GetPeriodChecklist, MarkChecklistTask, GetYearEnd,
 	ListFxRates, GetFxRate, ListFeedRates, LookupFxRate, CreateFxRate, BulkCreateFxRates, WithdrawFxRate, GetFxRevaluation, PostFxRevaluation, ListForeignMoneyAccounts,
 	AddJournalEvidence, ListJournalEvidence, GetJournalEvidence, RemoveJournalEvidence, AddBillEvidence, ListBillEvidence, GetBillEvidence, RemoveBillEvidence,
@@ -1715,12 +2008,12 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	AddMoneyAccountEvidence, ListMoneyAccountEvidence, ListBankSignals, DismissBankSignal,
 	ListQuotes, GetQuote, GetSalesPipeline, CreateQuote, ReplaceQuote, SendQuote, CancelQuote, AcceptQuote, DeclineQuote, InvoiceQuote,
 	GetSetupStatus, CompleteSetup, CreateSuperAdminInvitation, AcceptSuperAdminInvitation, ReplaceRecoveryCodes,
-	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
-	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, ActivateStatutoryPack,
+	ConfirmSuperAdminRecovery, RecoverSuperAdmin, ListSignInProviders, GetPlatformVersion, GetSession, ListApprovals, GetApproval, ApproveApproval, RejectApproval,
+	WithdrawApproval, ChallengeApproval, ListReviewLog, ReviewLogEntries, ListApprovalPolicies, GetApprovalPolicy, ChangeApprovalPolicy, ListStatutoryPacks, GetStatutoryPack, GetStatutoryValues, ActivateStatutoryPack,
 	GetTeamMode, SwitchTeamMode, ListPasskeys, StartPasskeyRegistration, RegisterPasskey, RevokePasskey, StartStepUp, StepUp,
 	ListDevices, SignOutDevice, SignOutOtherDevices, ListIdentities, UnlinkIdentity, ListSignInMethods, ChangeSignInMethod, ListPrivateEndpoints, RegisterPrivateEndpoint,
 	GetMyRecoveryCodes, ReplaceMyRecoveryCodes, RecoverAccount, ConfirmAccountRecovery, GetJoinOffer, RequestToJoin, ListJoinRequests,
-	ApproveJoinRequest, RejectJoinRequest, ListJoinDomains, ClaimJoinDomain, ReleaseJoinDomain, GetBrand, GetBrandFile, ChangeBrand, GetOperation,
+	ApproveJoinRequest, RejectJoinRequest, ListJoinDomains, ClaimJoinDomain, ReleaseJoinDomain, GetBrand, GetBrandFile, ChangeBrand, GetOperation, ListMyOperations,
 	ListHolders, GetHolder, CreateHolderRecord, GetHolderRecord, ReplaceHolderRecord, RequestHolderRecordApproval, AddHolderRecordEvidence,
 	ListHolderRecordEvidence, GetHolderRecordEvidence, RemoveHolderRecordEvidence, ListShareClasses, GetShareClass, CreateShareClass,
 	ReplaceShareClass, RequestShareClassApproval, AddShareClassEvidence, ListShareClassEvidence, GetShareClassEvidence, RemoveShareClassEvidence,
@@ -1746,8 +2039,17 @@ var Policies = index(ListConnectorCatalogue, ListInstallationConnectors, GetInst
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
-	GetFeasibilityResults)
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, GetMigrationMapping, ChangeMigrationMapping, SignMigrationMapping, RequestMigrationCommit, RunMigrationCommit, GetMigrationCommit, GetMigrationReconciliation, DecideMigrationDifference, SignMigrationReconciliation, UploadMigrationParallelWorkbook, GetMigrationParallelReport, GetMigrationParallel, DecideMigrationParallelDifference, SignMigrationParallel, UploadMigrationArchivePDF, GetMigrationArchive, ArchiveMigration, GetContactsTemplate, ImportContacts, GetItemsTemplate, ImportItems, GetAccountsTemplate, ImportAccounts, GetJournalsTemplate, ImportJournals, GetInvoicesTemplate, ImportInvoices, GetBillsTemplate, ImportBills, GetFxRatesTemplate, ImportFxRates, GetBankRulesTemplate, ImportBankRules, GetOpeningBalancesTemplate, ImportOpeningBalances, GetBudgetsTemplate, ImportBudgets, RequestTenantExport, ListTenantExports, CreateTenantExportDownload, GetTenantExportDownload, ListAIConnections, GetAIConnection, CreateAIConnection, ChangeAIConnection, SetAIConnectionCredential, EnableAIConnection, DisableAIConnection, GetAIDataPolicy, ChangeAIDataPolicy, GetAIConnectionModels, RefreshAIConnectionModels, ProbeAIConnectionModel, AllowAIConnectionModel, RemoveAIConnectionModel, ListAIPriceCatalogues, ReviewAIPrice, PriceAIConnectionModel, WithdrawAIPrice, GetAIRoutes, GetAIRoute, SetAIRoute, GetAIPresets, GetAIBudgets, SetAIBudget, GetAIUsage, QualifyAIConnectionModel, ListAIActivity, CreateAIConversation, ListAIConversations, GetAIConversation, DeleteAIConversation, AskAIConversation, ListAITurnActivity, GiveAIFeedback, ListAIFeedback, ReviewAIFeedback, ListAIProposals, GetAIProposal, ListAITaskTypes, ListComplianceTasks, GetComplianceTask, CompleteComplianceTask, DismissComplianceTask, GetCompanySecretary, ListAgentRuns, GetAgentRun, RunCompanySecretary, GetAISettings, SwitchOffAI, GetAIInventory, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	GetFeasibilityResults, GetCorporateProfile, CreateCorporateDetail, GetCorporateDetail, ReplaceCorporateDetail, RequestCorporateDetailApproval,
+	AddCorporateDetailEvidence, ListCorporateDetailEvidence, GetCorporateDetailEvidence, RemoveCorporateDetailEvidence, CreateCorporateOfficer,
+	GetCorporateOfficer, ReplaceCorporateOfficer, RequestCorporateOfficerApproval, AddCorporateOfficerEvidence, ListCorporateOfficerEvidence,
+	GetCorporateOfficerEvidence, RemoveCorporateOfficerEvidence, CreateNomineeEntry, GetNomineeEntry, ReplaceNomineeEntry,
+	RequestNomineeEntryApproval, AddNomineeEntryEvidence, ListNomineeEntryEvidence, GetNomineeEntryEvidence, RemoveNomineeEntryEvidence,
+	CreateStatementsApproval, GetStatementsApproval, ReplaceStatementsApproval, RequestStatementsApprovalApproval,
+	AddStatementsApprovalEvidence, ListStatementsApprovalEvidence, GetStatementsApprovalEvidence, RemoveStatementsApprovalEvidence,
+	GetCorporateReconciliation, GetCorporateTemplates, CreateCorporateDocument, GetCorporateDocument, ReplaceCorporateDocument,
+	GetCorporateDocumentPDF, RequestCorporateDocumentApproval, AddCorporateDocumentEvidence, ListCorporateDocumentEvidence, GetCorporateDocumentEvidence,
+	RemoveCorporateDocumentEvidence)
 
 func index(ps ...Policy) map[string]Policy {
 	out := make(map[string]Policy, len(ps))
@@ -1801,6 +2103,12 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 				return Decision{Allowed: true, Right: r}
 			}
 		}
+		// (rev 0.280) The Company secretary holds A on every sec.* proposal, its tasks included (Appendix D): they reach the
+		// operations that sign a request, and the request's own rule decides, so they sign only a sec.* proposal whose step
+		// names them (proposal.Approves). The review log stays the rows' own.
+		if slices.Contains(SignsRequests, p.Operation) && slices.Contains(roles, CompanySecretary) {
+			return Decision{Allowed: true, Right: Approve}
+		}
 		return Decision{Reason: fmt.Sprintf("these roles hold no %q right on the rows approvals cover", string(p.Need))}
 	}
 	best, ok := holds(p, roles)
@@ -1840,6 +2148,27 @@ func Decide(p Policy, roles []Role, ai bool) Decision {
 	return d
 }
 
+// SecretaryCells are the Company secretary's own cells (Appendix D's note, rev 0.6, 0.280, 0.282, 0.285; FR-CS-08,
+// p1-company-secretary design D7): C on the corporate profile and registers and on evidence, V on the whole equity
+// register and on the AI company secretary's runs, and the statutory calendar in view with C on its corporate items
+// (the owner's decision of 17 Nov 2026). Elsewhere they take the Board viewer's column; no transaction, payroll or bank
+// detail. Their A on sec.* proposals is Decide's (SignsRequests).
+var SecretaryCells = map[Capability]Cell{
+	CorporateProfile:   {Rights: "C"},
+	Evidence:           {Rights: "C"},
+	CapTable:           {Rights: "V"},
+	AICompanySecretary: {Rights: "V"},
+	StatutoryCalendar:  {Rights: "C", Qualifier: CalendarCorporate},
+}
+
+// CalendarCorporate qualifies a right on the statutory calendar to its corporate items: the sg-deadlines pack's area of
+// the annual return, the AGM and the financial statements to members.
+const CalendarCorporate = "corporate"
+
+// SignsRequests are the operations that sign an approval request: approving, rejecting, and the passkey challenge for
+// either.
+var SignsRequests = []string{ApproveApproval.Operation, RejectApproval.Operation, ChallengeApproval.Operation}
+
 // rank orders the ways of satisfying View: a full view is better than a masked one.
 func rank(r Right) int {
 	if r == Masked {
@@ -1858,8 +2187,17 @@ func holds(p Policy, roles []Role) (Right, bool) {
 			continue
 		}
 		var rights string
-		switch cell := Grants[p.Capability][col]; {
+		cell := Grants[p.Capability][col]
+		if own, ok := SecretaryCells[p.Capability]; ok && r == CompanySecretary {
+			cell = own
+		}
+		switch {
 		case p.Capability == Membership:
+			rights = "V"
+		case col == "AI" && cell.Rights == "" && (cell.Qualifier == "Proposal" || cell.Qualifier == "Proposal (draft)"):
+			// (rev 0.278) Proposal: the AI views the rows, within the person's rights, and may propose for them; it never
+			// creates, approves, posts or releases (§9.5). A proposal of a named kind, such as evidence's doc.attach, is that
+			// proposal only.
 			rights = "V"
 		case p.Unqualified && cell.Qualifier != "" && !slices.Contains(p.Qualified, cell.Qualifier):
 			continue

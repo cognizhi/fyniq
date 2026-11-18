@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cognizhi/fyniq/internal/telemetry"
 	"github.com/cognizhi/fyniq/internal/version"
 )
 
@@ -74,7 +75,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Strict-Transport-Security", HSTS)
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	s.mu.Lock()
-	var h http.Handler = s.Mux
+	h := telemetry.Routed(s.Mux) // each request's span named by its route (NFR-OBS-01)
 	for i := len(s.wrap) - 1; i >= 0; i-- {
 		h = s.wrap[i](h)
 	}

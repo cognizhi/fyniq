@@ -44,6 +44,11 @@
   engine (`member.Bootstrap`, under a members' lock that joining takes too). **Left:** scopes (entity, department),
   invitation emails (`p1-templates-email`), the quarterly review of external users (SEC-06), listing the bootstrap's
   changes in FM-3's weekly review (with `p1-approval-engine` 3.2), the join and members screens (4.1).)
+  (12 Nov 2026: the quarterly review of external users (the access review, rev 0.165), FM-3's listing of the
+  bootstrap's changes (`founder_bootstrap`) and the join and members screens are built. PRD-001 rev 0.253, the owner's
+  decision: department scopes are built in P1, a role narrowed to department values reaching only those records, lines
+  and budgets under Appendix D's "dept" cells; entity scopes with multi-entity (P3). **Left:** department scopes and
+  invitation emails.)
 - [ ] 2.2 Mandatory MFA: TOTP through the `SignIn` port's fake, WebAuthn passkeys in the API, no SMS. Tests `// req: FR-ADM-02` (P1 part) and `// req: SEC-01`, with a replayed assertion refused; sign-in and step-up allow password managers, paste and passkeys (the sign-in half of NFR-A11Y-05, which `p1-app-shell` closes)
   (20 Oct 2026, provisional (PRD rev 0.43): TOTP stays with the sign-in provider; the local sign-in page's second factor
   is its fake, ticked by default. Passkeys in the API (`internal/passkey`, go-webauthn v0.18.2; attestation "none", user
@@ -103,19 +108,29 @@
   (migrations 000240 and 000241, FY272, FY273). Tests `TestSignInProviders`, `TestTheFlowFollowsTheProvidersSwitches`,
   `SignInProviders.test.tsx`. **Left:** joining by domain as a pending Employee membership an Owner approves; adding
   providers in the app (P2 or P3).)
+  (17 Nov 2026, for the launch gate, G4-061: a sign-in by an identity with no Fyniq user whose verified email is a
+  member's links and reaches nothing, as before, and is now recorded against the member in each of their
+  organisations' trails (`session.email_matched`, linked false), its actor the provider and a hash of the issuer and
+  subject. `fyniq.email_matches` (migration 000440) gives the API the members' organisations and IDs only; the hook is
+  `signin.AuditEmailMatch`. Test `TestYourSignIns`.)
   (7 Nov 2026, PRD-001 rev 0.199, on the owner's decision of the same day: joining by domain. An Owner claims the
   organisation's email domains (one organisation per domain); a Super admin lets a provider take requests for the
   domains it accepts. A person without an account, signed in with a verified email on a claimed domain, asks to join;
   an Owner approves (a member with the Employee role) or rejects. Migrations 000244 and 000245. Tests
   `TestJoinByDomain`, `join.test.tsx`. Every P1 part is built; adding providers in the app (P2 or P3) and the Super
   admin console for organisations a Super admin is not a member of (P3) belong to later phases.)
-- [ ] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060
+- [x] 2.5 Account recovery as an audited state machine with two independent proofs, cooling-off, notices and revocation. Test `// req: SEC-35` with G4-060
   (7 Nov 2026, PRD-001 rev 0.198, on the owner's decisions of 6 Nov 2026: ten recovery codes per person on the profile,
   keyed hashes; a confirmation from an Owner or Administrator after speaking to the person (one-time, 24 hours); the
   recovery from a session without a second factor gives it one by recovery, ends other sessions and tokens, replaces
   the codes, notifies the person and every Owner, logs the weekly review and holds `authz.HeldInCoolingOff` for 24
   hours. Migrations 000242 and 000243. Tests `TestAccountRecovery` (G4-060), `TestTheCoolingOffHoldsRealOperations`,
   `recovery.test.tsx`. **Left:** the cooling-off's length as a setting.)
+  (12 Nov 2026, PRD-001 rev 0.253, the owner's decision: the organisation setting `security.recovery_cooling_off_hours`,
+  24 to 72 hours, 24 by default, under dual control; a person in several organisations is held for the longest.)
+  (12 Nov 2026: built. The setting kind `hours`; migration 000324: `recovery_cooling_off` reads each of the person's
+  organisations' value in force and keeps the longest, and `recover_account` holds for it. Guide
+  `organisation-settings.md` (Hold after an account recovery). Test `TestTheHoldAfterARecoveryIsTheOrganisationsSetting`.)
 
 ## 3. Clients, outputs and administration
 

@@ -1,0 +1,19 @@
+{
+  "kind": "members.written_resolution",
+  "version": 1,
+  "title": "Members' written resolution",
+  "summary": "The members pass ordinary or special resolutions in writing, without a meeting.",
+  "signers": "members",
+  "fields": [
+    {"name": "resolution_kind", "type": "choice", "label": "Ordinary or special", "choices": {"ordinary": "ordinary", "special": "special"}},
+    {"name": "resolutions", "type": "lines", "label": "The resolutions, one a line"},
+    {"name": "circulated_on", "type": "date", "label": "The day it is sent to the members"}
+  ],
+  "sections": [
+    {"paragraphs": [
+      "We, the undersigned members of {{.Company.Name}}, entitled to vote on the resolutions below, agree to them as {{.F.resolution_kind}} resolutions passed in writing under section 184A of the Companies Act 1967. The resolutions were circulated on {{.F.circulated_on}}.",
+      "An ordinary resolution is passed when members holding more than half of the total voting rights agree to it, and a special resolution when members holding at least 75% of them do. A resolution that needs special notice cannot be passed this way."
+    ]},
+    {"heading": "Resolved", "items_from": "resolutions"}
+  ]
+}

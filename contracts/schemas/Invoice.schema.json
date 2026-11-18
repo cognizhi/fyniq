@@ -150,6 +150,13 @@
       "$ref": "Money.schema.json",
       "description": "An issued invoice: what is still to be received of it, in its currency: its total less what receipts and credits settle (FR-AR-18). An issued credit note: what is left of it to apply or refund."
     },
+    "opening_item": {
+      "description": "Whether it is an opening item: issued before the books start and unpaid then, posted at the books start against 3900 Opening balance clearing (FR-GL-06).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "posted_at": {
       "description": "When it was issued.",
       "examples": [
@@ -239,7 +246,8 @@
     "checks",
     "ledger_impact",
     "sends",
-    "links"
+    "links",
+    "opening_item"
   ],
   "title": "Invoice",
   "type": "object"

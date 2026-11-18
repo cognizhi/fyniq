@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "rating": {
+      "description": "up: the answer helped; down: it did not.",
+      "enum": [
+        "up",
+        "down"
+      ],
+      "examples": [
+        "down"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why, in your words. An Owner or Administrator reads it with the question and the answer when they review it.",
+      "examples": [
+        "It used June's figures, not July's."
+      ],
+      "maxLength": 1000,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "rating",
+    "reason"
+  ],
+  "title": "AIFeedbackIn",
+  "type": "object"
+}

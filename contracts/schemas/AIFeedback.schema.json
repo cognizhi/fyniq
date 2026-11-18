@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "answer": {
+      "description": "The answer it rates, as its person read it; absent when masked.",
+      "examples": [
+        "July's revenue was SGD 48,200.00."
+      ],
+      "type": "string"
+    },
+    "classes": {
+      "description": "The classes of data the turn read (AI-83).",
+      "items": {
+        "description": "A class of data: restricted data never goes to an AI provider (AI-75).",
+        "enum": [
+          "know-how",
+          "business-figures",
+          "personal-data",
+          "payroll"
+        ],
+        "examples": [
+          "business-figures"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "conversation_id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "given_at": {
+      "examples": [
+        "2026-11-15T08:01:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a51"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "masked": {
+      "description": "Its turn read payroll and you may not see payroll unmasked: its question, answer and reason are withheld (FR-PAY-13), and it can only be dismissed.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "person": {
+      "description": "Who gave it: user:\u003cid\u003e.",
+      "examples": [
+        "user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"
+      ],
+      "type": "string"
+    },
+    "question": {
+      "description": "What was asked; absent when masked.",
+      "examples": [
+        "What was July's revenue?"
+      ],
+      "type": "string"
+    },
+    "rating": {
+      "enum": [
+        "up",
+        "down"
+      ],
+      "examples": [
+        "down"
+      ],
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why; absent when masked.",
+      "examples": [
+        "It used June's figures, not July's."
+      ],
+      "type": "string"
+    },
+    "reviewed_at": {
+      "examples": [
+        "2026-11-16T02:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "reviewed_by": {
+      "description": "Who reviewed it: user:\u003cid\u003e.",
+      "examples": [
+        "user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2e"
+      ],
+      "type": "string"
+    },
+    "state": {
+      "description": "waiting: for an Owner or Administrator to review; golden: it feeds the eval set; dismissed: it does not.",
+      "enum": [
+        "waiting",
+        "golden",
+        "dismissed"
+      ],
+      "examples": [
+        "waiting"
+      ],
+      "type": "string"
+    },
+    "turn_id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "turn_id",
+    "conversation_id",
+    "person",
+    "rating",
+    "classes",
+    "given_at",
+    "state",
+    "masked"
+  ],
+  "title": "AIFeedback",
+  "type": "object"
+}

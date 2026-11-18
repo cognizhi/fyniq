@@ -181,6 +181,7 @@ func TestTheSalesChecks(t *testing.T) {
 // req: C.2 #10
 // req: C.2 #20
 // req: C.2 #48
+// req: G4-037
 func TestThePurchasesChecks(t *testing.T) {
 	t.Run("a draft bill that cannot post", func(t *testing.T) {
 		e := newEnv(t)
@@ -259,6 +260,7 @@ func TestThePurchasesChecks(t *testing.T) {
 // req: C.1 #8
 // req: C.1 #9
 // req: C.1 #18
+// req: G4-025
 func TestTheJournalsSetupAndContactsChecks(t *testing.T) {
 	e := newEnv(t)
 	wantStatus(t, e.checked("journals.problems"), "ok")

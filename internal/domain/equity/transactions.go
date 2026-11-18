@@ -481,13 +481,24 @@ func ReviseTransactionIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID
 // its evidence attached (EQUITY-06), numbered EQ- (gap-free), the day of its approval saved, so it is never effective
 // earlier. It posts nothing: the transaction moves shares when it is made effective.
 func ApproveTransactionIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, today time.Time, s ledger.Settings) (storage.Document, error) {
+	return approveTransaction(ctx, u, id, today, s, true)
+}
+
+// ApproveImportedIn approves a transaction the workbook import drafted (FR-MIG-01; rev 0.262) on the day the workbook
+// says it happened: its evidence is the workbook the migration keeps as M1's evidence, which its migration record names,
+// and the import's approved commit is its approval [accountant to confirm].
+func ApproveImportedIn(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, on time.Time, s ledger.Settings) (storage.Document, error) {
+	return approveTransaction(ctx, u, id, on, s, false)
+}
+
+func approveTransaction(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, today time.Time, s ledger.Settings, evidence bool) (storage.Document, error) {
 	doc, t, err := DraftedTransaction(ctx, u, id)
 	if err != nil {
 		return doc, err
 	}
 	if n, err := attached(ctx, u, id); err != nil {
 		return doc, err
-	} else if n == 0 {
+	} else if n == 0 && evidence {
 		return doc, &Error{CodeNoEvidence, "the transaction has no evidence attached", "Attach the resolutions, the instrument of transfer or the ACRA extract, then ask again"}
 	}
 	if t, err = CheckTransaction(ctx, u, t, s); err != nil {

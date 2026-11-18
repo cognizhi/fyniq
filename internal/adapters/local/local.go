@@ -14,6 +14,10 @@ func init() {
 		{Port: "queue", Name: "memory", Local: true},
 		{Port: "signer", Name: "ed25519", Local: true},
 		{Port: "authn", Name: "dev-tokens", Local: true},
+		{Port: "models", Name: "replay", Local: true},
+		{Port: "screening", Name: "stub", Local: true},
+		{Port: "models", Name: "cli-agent", Local: true},
+		{Port: "prices", Name: "files", Local: true},
 	} {
 		runtime.RegisterAdapter(a)
 	}

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/oauth2"
+
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -30,6 +32,9 @@ type Config struct {
 	Consent storage.ConnectorConsent
 	// Clock is the runtime's clock, for an adapter that reads a period up to now (a bank feed's statement).
 	Clock ports.Clock
+	// Tokens are the service's own account's access tokens, for a connection that authenticates with workload identity
+	// (AI-72), such as Claude on Agent Platform; nil where the runtime has none.
+	Tokens oauth2.TokenSource
 }
 
 // String returns the configuration value name as a string, or def when it is unset or empty.
@@ -55,6 +60,9 @@ type Binding struct {
 	OutboundEmail func(Config) (ports.Email, error)
 	InboundEmail  func(Config) (ports.InboundMail, error)
 	BankData      func(Config) (ports.BankData, error)
+	// Model builds a model provider's adapter for one AI connection (AI-71): its configuration and credential are the
+	// connection's, never an installed connector's (p1-ai-providers design D2).
+	Model func(Config) (ports.ModelProvider, error)
 	// VerifyWebhook checks a provider's webhook to an installed organisation connector against its configuration and
 	// secrets, at now; nil: the connector takes no webhook. A verified webhook only prompts work: its body is never data.
 	VerifyWebhook func(c Config, h http.Header, body []byte, now time.Time) error
@@ -71,6 +79,9 @@ func (b Binding) kinds() []Kind {
 	}
 	if b.BankData != nil {
 		ks = append(ks, BankData)
+	}
+	if b.Model != nil {
+		ks = append(ks, ModelProvider)
 	}
 	return ks
 }

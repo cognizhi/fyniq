@@ -12,6 +12,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
 	"github.com/cognizhi/fyniq/internal/connector"
+	"github.com/cognizhi/fyniq/internal/ports"
 )
 
 // schema is contracts/connectors/manifest.schema.json, compiled.
@@ -230,3 +231,147 @@ func TestManifestHashIsCanonical(t *testing.T) {
 }
 
 func jsonUnmarshal(b []byte, v any) error { return json.Unmarshal(b, v) }
+
+// validModel is a model-provider manifest that passes, which each case below breaks in one way.
+const validModel = `{
+  "id": "example-models", "name": "Example models", "publisher": "Fyniq", "version": "1.0.0", "min_platform": "0.1.0",
+  "summary": "An example model provider.", "scope": "organisation",
+  "capabilities": [{"kind": "model-provider", "trigger": "system-rule", "trigger_rule": "A model call an agent makes through its route.",
+    "on_pause": "hold", "on_disable": "cancel", "in_flight": "finish"}],
+  "configuration": {"type": "object", "additionalProperties": false,
+    "properties": {"base_url": {"type": "string", "pattern": "^https://"}}},
+  "secrets": [{"name": "api_key", "title": "API key", "description": "The key.", "used_by": ["ai", "worker"], "rotation_overlap_hours": 24}],
+  "provider_scopes": [], "fyniq_scopes": [], "data_classes": ["know-how", "business-figures"], "regions": ["configured"],
+  "destinations": [{"configured": "base_url", "port": 443}], "webhooks": [],
+  "model": {"features": ["tools", "streaming"], "auth": ["api-key", "none"], "list_models": "GET /models on the base URL",
+    "price_catalogue": {"api-key": {"provider": "example"}},
+    "presets": [{"id": "hosted", "name": "Hosted", "base_url": "https://api.example.com/v1", "auth": ["api-key"],
+      "price_catalogue": {"provider": "example_hosted", "prefix": "hosted/"}},
+      {"id": "own", "name": "Our own server", "auth": ["none"], "self_hosted": true}]},
+  "health_check": "Counts failures.", "test_action": "Probes a model.", "local_substitute": "Recorded answers.",
+  "limits": {"requests_per_minute": 600, "breaker_failures": 5, "breaker_cooldown_seconds": 60}
+}`
+
+func editModel(t *testing.T, change func(m map[string]any)) []byte {
+	t.Helper()
+	var m map[string]any
+	if err := json.Unmarshal([]byte(validModel), &m); err != nil {
+		t.Fatal(err)
+	}
+	change(m)
+	b, err := json.Marshal(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+func model(m map[string]any) map[string]any { return m["model"].(map[string]any) }
+
+func preset(m map[string]any, i int) map[string]any {
+	return model(m)["presets"].([]any)[i].(map[string]any)
+}
+
+// A model-provider connector (AI-71, AI-72) declares what its adapter carries, how its connections authenticate and
+// how its models are listed, and implements nothing else; its connections are each organisation's own. Its
+// authentication is an API key, a cloud service account, an OAuth grant or, for a self-hosted endpoint alone, none:
+// a consumer plan's token, a session, a cookie or a command-line seat cannot even be declared (AI-73). A provider with
+// no model list cannot be declared (AI-80). It names how the price catalogue names it, by preset or authentication,
+// and a self-hosted server is never priced (AI-82). The schema refuses what it can say too.
+// req: AI-71
+// req: AI-82
+func TestModelProviderManifests(t *testing.T) {
+	s := schema(t)
+	m, err := connector.Parse([]byte(validModel))
+	if err != nil {
+		t.Fatalf("the valid model provider: %v", err)
+	}
+	doc, _ := jsonschema.UnmarshalJSON(strings.NewReader(validModel))
+	if err := s.Validate(doc); err != nil {
+		t.Fatalf("the schema refuses the valid model provider: %v", err)
+	}
+	if m.Model == nil || len(m.Model.Presets) != 2 || m.Model.ListModels == "" {
+		t.Fatalf("the declaration: %+v", m.Model)
+	}
+	// How the price catalogue names the provider (AI-82): a preset's own naming first, then by authentication; none for a
+	// self-hosted server.
+	for _, c := range []struct {
+		preset, auth, provider string
+		ok                     bool
+	}{{"hosted", "api-key", "example_hosted", true}, {"", "api-key", "example", true}, {"own", "none", "", false}, {"", "none", "", false}} {
+		if n, ok := m.Model.Naming(c.preset, c.auth); ok != c.ok || n.Provider != c.provider {
+			t.Errorf("the naming of %s/%s: %+v %v", c.preset, c.auth, n, ok)
+		}
+	}
+	cases := []struct {
+		name, want string
+		schemaToo  bool
+		change     func(m map[string]any)
+	}{
+		{"no declaration", "declares model", false, func(m map[string]any) { delete(m, "model") }},
+		{"a declaration elsewhere", "only by a model-provider connector", false, func(m map[string]any) {
+			capability(m)["kind"] = "document-ai"
+		}},
+		{"another capability", "implements nothing else", false, func(m map[string]any) {
+			m["capabilities"] = append(m["capabilities"].([]any), map[string]any{"kind": "messaging", "trigger": "system-rule",
+				"trigger_rule": "A message.", "on_pause": "hold", "on_disable": "hold", "in_flight": "finish"})
+		}},
+		{"installed for everyone", "scope is organisation", false, func(m map[string]any) { m["scope"] = "installation" }},
+		{"an unknown feature", "feature \"telepathy\"", true, func(m map[string]any) { model(m)["features"] = []any{"telepathy"} }},
+		{"a consumer plan's session", "auth \"session-token\"", true, func(m map[string]any) {
+			model(m)["auth"] = []any{"api-key", "session-token"}
+		}},
+		{"a command-line seat", "auth \"cli-seat\"", true, func(m map[string]any) { model(m)["auth"] = []any{"cli-seat"} }},
+		{"no authentication", "model auth is empty", true, func(m map[string]any) { model(m)["auth"] = []any{} }},
+		{"no model list", "list_models is empty", true, func(m map[string]any) { delete(model(m), "list_models") }},
+		{"a preset over plain HTTP", "is not https://", true, func(m map[string]any) {
+			preset(m, 0)["base_url"] = "http://api.example.com/v1"
+		}},
+		{"a self-hosted preset with an address", "the connection names its address", false, func(m map[string]any) {
+			preset(m, 1)["base_url"] = "https://own.example.com"
+		}},
+		{"a hosted provider with no authentication", "only a self-hosted endpoint", false, func(m map[string]any) {
+			preset(m, 0)["auth"] = []any{"none"}
+		}},
+		{"a preset's auth the connector lacks", "preset hosted auth \"workload-identity\"", false, func(m map[string]any) {
+			preset(m, 0)["auth"] = []any{"workload-identity"}
+		}},
+		{"no authentication without a self-hosted preset", "no preset is self-hosted", false, func(m map[string]any) {
+			model(m)["presets"] = []any{preset(m, 0)}
+		}},
+		{"a price naming for an auth it lacks", "names auth \"workload-identity\"", false, func(m map[string]any) {
+			model(m)["price_catalogue"] = map[string]any{"workload-identity": map[string]any{"provider": "example"}}
+		}},
+		{"a price naming that is not a name", "is not a provider name", true, func(m map[string]any) {
+			preset(m, 0)["price_catalogue"] = map[string]any{"provider": "Example Inc", "prefix": "hosted"}
+		}},
+		{"a priced self-hosted preset", "needs no per-token price", false, func(m map[string]any) {
+			preset(m, 1)["price_catalogue"] = map[string]any{"provider": "example"}
+		}},
+		{"a secret for an unknown service", "used_by \"browser\"", true, func(m map[string]any) {
+			m["secrets"].([]any)[0].(map[string]any)["used_by"] = []any{"browser"}
+		}},
+	}
+	for _, c := range cases {
+		raw := editModel(t, c.change)
+		_, err := connector.Parse(raw)
+		if err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%s: %v; want %q", c.name, err, c.want)
+		}
+		if c.schemaToo {
+			doc, _ := jsonschema.UnmarshalJSON(bytes.NewReader(raw))
+			if s.Validate(doc) == nil {
+				t.Errorf("%s: the schema accepts what the platform refuses", c.name)
+			}
+		}
+	}
+
+	// The catalogue takes a model provider only with a binding that builds its adapter.
+	if _, err := connector.NewCatalogue(connector.Binding{Manifest: m}); err == nil || !strings.Contains(err.Error(), "model-provider") {
+		t.Errorf("a model provider without its adapter: %v", err)
+	}
+	built := connector.Binding{Manifest: m, Model: func(connector.Config) (ports.ModelProvider, error) { return nil, errors.New("unused") }}
+	if c, err := connector.NewCatalogue(built); err != nil || len(c.Implementing(connector.ModelProvider)) != 1 {
+		t.Errorf("a model provider with its adapter: %v", err)
+	}
+}

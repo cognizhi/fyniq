@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "appointed_on": {
+      "description": "The day they were appointed.",
+      "examples": [
+        "2026-03-02"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "appointment_lodged_on": {
+      "description": "The day BizFile+ acknowledged the appointment: within 14 days (s173A).",
+      "examples": [
+        "2026-03-09"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "ceased_on": {
+      "description": "The day they ceased to hold the office.",
+      "examples": [
+        "2027-06-30"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "cessation_lodged_on": {
+      "description": "The day BizFile+ acknowledged the cessation: within 14 days (s173A).",
+      "examples": [
+        "2027-07-07"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "id_last4": {
+      "description": "An individual's identifier, its last 4 characters only (SEC-15); the full number stays in ACRA's register.",
+      "examples": [
+        "567A"
+      ],
+      "maxLength": 4,
+      "type": "string"
+    },
+    "id_type": {
+      "description": "The identifier's type: nric, fin or passport for an individual; uen or foreign_registration for an audit firm.",
+      "enum": [
+        "nric",
+        "fin",
+        "passport",
+        "uen",
+        "foreign_registration"
+      ],
+      "examples": [
+        "nric"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "individual; or entity, for an audit firm only: a director, the secretary and the CEO are natural persons (s145, s171).",
+      "enum": [
+        "individual",
+        "entity"
+      ],
+      "examples": [
+        "individual"
+      ],
+      "type": "string"
+    },
+    "member_user_id": {
+      "description": "The member of the organisation they sign in as, if they are one: the named secretary holds the Company secretary role (FR-CS-06).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4a01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Their name as ACRA registers it.",
+      "examples": [
+        "Mei Lin Tan"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "nominator": {
+      "description": "Whom a nominee director acts for.",
+      "examples": [
+        "Lion Rock Ventures Pte. Ltd."
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "nominee": {
+      "description": "true: a nominee director, who acts on another's directions (s386AL).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "note": {
+      "description": "A note for the record.",
+      "examples": [
+        "Appointed at incorporation"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "registration_number": {
+      "description": "An audit firm's UEN or foreign registration number.",
+      "examples": [
+        "T08LL1234A"
+      ],
+      "maxLength": 30,
+      "type": "string"
+    },
+    "role": {
+      "description": "The office: ACRA keeps the registers of directors, secretaries and auditors, and the CEO.",
+      "enum": [
+        "director",
+        "secretary",
+        "ceo",
+        "auditor"
+      ],
+      "examples": [
+        "director"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "role",
+    "name",
+    "kind",
+    "appointed_on",
+    "nominee"
+  ],
+  "title": "CorporateOfficerDraft",
+  "type": "object"
+}

@@ -28,6 +28,25 @@ SELECT r.id, r.object_type, r.object_key, r.decided_at::timestamptz AS decided_a
    AND r.status = 'approved' AND r.decided_at >= sqlc.arg(since)
  ORDER BY r.decided_at, r.id;
 
+-- name: ExecutedProposals :many
+-- CTL-AI-02: each AI proposal executed since the window began, with what was approved, its approval request, the people
+-- whose live approvals signed the request's envelope, and the approvals of it the audit trail records for an actor that
+-- is not a person.
+SELECT p.id, p.finished_at::timestamptz AS finished_at, p.payload_sha256, coalesce(p.approved_payload, '')::text AS approved_payload,
+       coalesce(p.approved_sha256, '')::text AS approved_sha256, p.decided_by, r.id AS request_id,
+       coalesce(r.object_type || ':' || r.object_key, '')::text AS request_object, coalesce(r.status, '')::text AS request_status,
+       coalesce(r.envelope, '')::text AS envelope,
+       coalesce((SELECT array_agg(s.signer ORDER BY s.signed_at) FROM fyniq.approval_signature s
+                  WHERE s.organisation_id = r.organisation_id AND s.request_id = r.id AND s.decision = 'approve'
+                    AND s.voided_at IS NULL AND s.envelope_hash = r.envelope_hash), '{}')::uuid[] AS signers,
+       (SELECT count(*) FROM fyniq.audit_event e
+         WHERE e.organisation_id = p.organisation_id AND e.object_type = 'approval_request' AND e.object_id = r.id
+           AND e.action = 'approval.given' AND (e.body::jsonb -> 'actor' ->> 'type') IS DISTINCT FROM 'user')::integer AS not_by_a_person
+  FROM fyniq.ai_proposal p
+  LEFT JOIN fyniq.approval_request r ON r.organisation_id = p.organisation_id AND r.id = p.approval_request_id
+ WHERE p.status = 'executed' AND p.finished_at >= sqlc.arg(since)
+ ORDER BY p.finished_at, p.id;
+
 -- name: DualControlReleases :many
 -- CTL-FIN-08: each payment batch released since the window began, with its approval's signatures (all of them, and those
 -- of whoever prepared the batch or asked for its approval) or whether its break-glass's Owner used it for the batch.
@@ -258,6 +277,23 @@ VALUES (sqlc.arg(breach_id), sqlc.arg(step), sqlc.arg(at), sqlc.arg(by_actor), s
   sqlc.narg(reference))
 RETURNING id, breach_id, step, at, by_actor, note, notifiable, pdpc_due_on, reference;
 
+-- name: ListIncidents :many
+-- The organisation's security incidents, oldest first (SEC-32).
+SELECT id, title, summary, severity, detected_at, opened_by, opened_at FROM fyniq.security_incident ORDER BY detected_at, id;
+
+-- name: InsertIncident :one
+INSERT INTO fyniq.security_incident (title, summary, severity, detected_at, opened_by, opened_at)
+VALUES (sqlc.arg(title), sqlc.arg(summary), sqlc.arg(severity), sqlc.arg(detected_at), sqlc.arg(opened_by), sqlc.arg(opened_at))
+RETURNING id, title, summary, severity, detected_at, opened_by, opened_at;
+
+-- name: ListIncidentSteps :many
+SELECT id, incident_id, step, at, by_actor, note, breach_id FROM fyniq.security_incident_step ORDER BY at, id;
+
+-- name: InsertIncidentStep :one
+INSERT INTO fyniq.security_incident_step (incident_id, step, at, by_actor, note, breach_id)
+VALUES (sqlc.arg(incident_id), sqlc.arg(step), sqlc.arg(at), sqlc.arg(by_actor), sqlc.arg(note), sqlc.narg(breach_id))
+RETURNING id, incident_id, step, at, by_actor, note, breach_id;
+
 -- name: ListBreachExercises :many
 SELECT id, held_on, scenario, findings, recorded_by, recorded_at FROM fyniq.pd_breach_exercise ORDER BY held_on, id;
 
@@ -278,3 +314,30 @@ INSERT INTO fyniq.pd_transfer (transfer_id, version, flow, recipient, countries,
 VALUES (sqlc.arg(transfer_id), sqlc.arg(version), sqlc.narg(flow), sqlc.arg(recipient), sqlc.arg(countries), sqlc.arg(data), sqlc.arg(purpose),
   sqlc.arg(basis), sqlc.arg(assessed_on), sqlc.arg(assessed_by), sqlc.arg(evidence), sqlc.arg(next_review_on), sqlc.arg(state),
   sqlc.arg(saved_by), sqlc.arg(saved_at));
+
+-- name: ListRestoreDrills :many
+-- The organisation's restore drills, oldest first (DR-06).
+SELECT id, held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys, sign_in, tick, outbox,
+       findings, recorded_by, recorded_at
+FROM fyniq.restore_drill ORDER BY held_on, recorded_at, id;
+
+-- name: InsertRestoreDrill :one
+INSERT INTO fyniq.restore_drill (held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys,
+                                 sign_in, tick, outbox, findings, recorded_by, recorded_at)
+VALUES (sqlc.arg(held_on), sqlc.arg(scenario), sqlc.arg(restored_from), sqlc.arg(data_lost_minutes), sqlc.arg(took_minutes), sqlc.arg(ledger),
+        sqlc.arg(audit_chain), sqlc.arg(documents), sqlc.arg(keys), sqlc.arg(sign_in), sqlc.arg(tick), sqlc.arg(outbox), sqlc.arg(findings),
+        sqlc.arg(recorded_by), sqlc.arg(recorded_at))
+RETURNING id, held_on, scenario, restored_from, data_lost_minutes, took_minutes, ledger, audit_chain, documents, keys, sign_in, tick, outbox,
+          findings, recorded_by, recorded_at;
+
+-- name: ListHeartbeatDrills :many
+-- The organisation's heartbeat drills, oldest first (NFR-OBS-02).
+SELECT id, held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by, recorded_at
+FROM fyniq.tick_drill ORDER BY held_on, recorded_at, id;
+
+-- name: InsertHeartbeatDrill :one
+INSERT INTO fyniq.tick_drill (held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by,
+                                   recorded_at)
+VALUES (sqlc.arg(held_on), sqlc.arg(environment), sqlc.arg(paused_minutes), sqlc.narg(first_alert_minutes), sqlc.narg(escalation_minutes),
+        sqlc.arg(findings), sqlc.arg(recorded_by), sqlc.arg(recorded_at))
+RETURNING id, held_on, environment, paused_minutes, first_alert_minutes, escalation_minutes, findings, recorded_by, recorded_at;

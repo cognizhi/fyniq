@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Globe, Hourglass, Plus, Trash2, UserPlus, X } from "lucide-react";
+import { Ban, Check, CircleCheck, Globe, Hourglass, Plus, Trash2, UserPlus, X } from "lucide-react";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
@@ -156,7 +156,10 @@ export function JoinRequests() {
                 </Button>
               </span>
             ) : (
-              <span className={r.status === "approved" ? "fy-chip fy-chip--good" : "fy-chip fy-chip--neutral"}>{r.status === "approved" ? "Approved" : "Rejected"}</span>
+              <span className={r.status === "approved" ? "fy-chip fy-chip--good" : "fy-chip fy-chip--neutral"}>
+                <Icon of={r.status === "approved" ? CircleCheck : Ban} />
+                {r.status === "approved" ? "Approved" : "Rejected"}
+              </span>
             )}
           </li>
         ))}

@@ -42,7 +42,7 @@ func ReadConnectorNames(env func(string) string) (map[string]string, error) {
 // Runtime is the connector runtime of a service: the catalogue, the keys through a cache, the egress guard.
 func (k *Kit) Runtime(clock ports.Clock) *connector.Runtime {
 	return &connector.Runtime{Catalogue: k.Connectors, Secrets: connector.NewSecretCache(k.ConnectorSecrets, clock), Egress: k.Egress,
-		SenderDomain: domainOf(k.Mail.From), Clock: clock}
+		SenderDomain: domainOf(k.Mail.From), Clock: clock, Tokens: k.ModelTokens}
 }
 
 func domainOf(from string) string {

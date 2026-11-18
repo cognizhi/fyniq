@@ -37,6 +37,14 @@ FROM fyniq.balance_differences() AS d(account_id, period_id, dimension_set_id, c
 -- name: RebuildBalances :one
 SELECT fyniq.rebuild_balances()::bigint AS rows;
 
+-- name: BalanceLinesForPeriodAt :many
+-- A period's balances as at a ledger revision summed from the lines alone, never the cache (storage.WithLines): the
+-- checks read the statements so (INV-08). The balance service alone reads it.
+SELECT account_id::uuid AS account_id, period_id::uuid AS period_id, currency::text AS currency,
+       amount::numeric(20, 4) AS amount, base_amount::numeric(20, 4) AS base_amount, line_count::bigint AS line_count
+FROM fyniq.balance_lines_at(sqlc.arg(period_id)::uuid, sqlc.arg(ledger_revision)::bigint) AS b
+ORDER BY account_id, currency;
+
 -- name: BalancesForPeriodAt :many
 -- A period's balances as at a ledger revision (FR-RPT-08, ENG-46), from fyniq.balances_at. The balance service alone
 -- reads it.

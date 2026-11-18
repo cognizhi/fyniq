@@ -83,6 +83,23 @@ func (c compliance) DualControl(ctx context.Context, since time.Time) ([]storage
 	return a, rel, nil
 }
 
+func (c compliance) ExecutedProposals(ctx context.Context, since time.Time) ([]storage.ExecutedProposal, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ExecutedProposals(ctx, &since)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.ExecutedProposal, len(rows))
+	for i, r := range rows {
+		out[i] = storage.ExecutedProposal{ID: r.ID, FinishedAt: r.FinishedAt, PayloadSHA256: r.PayloadSha256, ApprovedPayload: r.ApprovedPayload,
+			ApprovedSHA256: r.ApprovedSha256, DecidedBy: r.DecidedBy, RequestID: r.RequestID, RequestObject: r.RequestObject,
+			RequestStatus: r.RequestStatus, Envelope: r.Envelope, Signers: r.Signers, NotByAPerson: int(r.NotByAPerson)}
+	}
+	return out, nil
+}
+
 func (c compliance) SecondFactors(ctx context.Context, since time.Time) ([]storage.MemberSecondFactor, error) {
 	if err := c.u.check(); err != nil {
 		return nil, err
@@ -786,6 +803,66 @@ func (c compliance) StepBreach(ctx context.Context, id uuid.UUID, s storage.Brea
 		"pdpc_due_on": {nil, dayOf(nullDate(r.PdpcDueOn))}, "reference": {nil, nilIfEmpty(str(r.Reference))}})
 }
 
+func (c compliance) Incidents(ctx context.Context) ([]storage.Incident, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListIncidents(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	steps, err := c.u.q.ListIncidentSteps(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.Incident, 0, len(rows))
+	at := map[uuid.UUID]int{}
+	for _, r := range rows {
+		at[r.ID] = len(out)
+		out = append(out, storage.Incident{ID: r.ID, Title: r.Title, Summary: r.Summary, Severity: r.Severity, DetectedAt: r.DetectedAt,
+			OpenedBy: r.OpenedBy, OpenedAt: r.OpenedAt})
+	}
+	for _, s := range steps {
+		if i, ok := at[s.IncidentID]; ok {
+			out[i].Steps = append(out[i].Steps, storage.IncidentStep{Step: s.Step, At: s.At, By: s.ByActor, Note: s.Note, Breach: s.BreachID})
+		}
+	}
+	return out, nil
+}
+
+func (c compliance) OpenIncident(ctx context.Context, i storage.Incident) (storage.Incident, error) {
+	if err := c.u.check(); err != nil {
+		return storage.Incident{}, err
+	}
+	r, err := c.u.q.InsertIncident(ctx, sqlcdb.InsertIncidentParams{Title: i.Title, Summary: i.Summary, Severity: i.Severity, DetectedAt: i.DetectedAt,
+		OpenedBy: i.OpenedBy, OpenedAt: i.OpenedAt})
+	if err != nil {
+		return storage.Incident{}, mapError(err)
+	}
+	if err := c.u.event(ctx, "incident.opened", "security_incident", r.ID, nil, map[string][2]any{"title": {nil, r.Title}, "severity": {nil, r.Severity},
+		"detected_at": {nil, r.DetectedAt}}); err != nil {
+		return storage.Incident{}, err
+	}
+	return storage.Incident{ID: r.ID, Title: r.Title, Summary: r.Summary, Severity: r.Severity, DetectedAt: r.DetectedAt, OpenedBy: r.OpenedBy,
+		OpenedAt: r.OpenedAt}, nil
+}
+
+func (c compliance) StepIncident(ctx context.Context, id uuid.UUID, s storage.IncidentStep) error {
+	if err := c.u.check(); err != nil {
+		return err
+	}
+	r, err := c.u.q.InsertIncidentStep(ctx, sqlcdb.InsertIncidentStepParams{IncidentID: id, Step: s.Step, At: s.At, ByActor: s.By, Note: s.Note,
+		BreachID: s.Breach})
+	if err != nil {
+		return mapError(err)
+	}
+	var breach any
+	if r.BreachID != nil {
+		breach = r.BreachID.String()
+	}
+	return c.u.event(ctx, "incident."+s.Step, "security_incident", id, nil, map[string][2]any{"step": {nil, r.Step}, "breach": {nil, breach}})
+}
+
 func (c compliance) BreachExercises(ctx context.Context) ([]storage.BreachExercise, error) {
 	if err := c.u.check(); err != nil {
 		return nil, err
@@ -815,4 +892,104 @@ func (c compliance) RecordBreachExercise(ctx context.Context, e storage.BreachEx
 		return storage.BreachExercise{}, err
 	}
 	return storage.BreachExercise{ID: r.ID, HeldOn: r.HeldOn, Scenario: r.Scenario, Findings: r.Findings, RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt}, nil
+}
+
+func restoreDrillOf(id uuid.UUID, heldOn time.Time, scenario, from string, lost, took int32, ledger, chain, docs, keys, signIn, tick, outbox bool,
+	findings, by string, at time.Time) storage.RestoreDrill {
+	return storage.RestoreDrill{ID: id, HeldOn: heldOn, Scenario: scenario, RestoredFrom: from, DataLostMinutes: int(lost), TookMinutes: int(took),
+		Ledger: ledger, AuditChain: chain, Documents: docs, Keys: keys, SignIn: signIn, Tick: tick, Outbox: outbox, Findings: findings,
+		RecordedBy: by, RecordedAt: at}
+}
+
+func (c compliance) RestoreDrills(ctx context.Context) ([]storage.RestoreDrill, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListRestoreDrills(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.RestoreDrill, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, restoreDrillOf(r.ID, r.HeldOn, r.Scenario, r.RestoredFrom, r.DataLostMinutes, r.TookMinutes, r.Ledger, r.AuditChain,
+			r.Documents, r.Keys, r.SignIn, r.Tick, r.Outbox, r.Findings, r.RecordedBy, r.RecordedAt))
+	}
+	return out, nil
+}
+
+func (c compliance) RecordRestoreDrill(ctx context.Context, d storage.RestoreDrill) (storage.RestoreDrill, error) {
+	if err := c.u.check(); err != nil {
+		return storage.RestoreDrill{}, err
+	}
+	lost, took := int32(d.DataLostMinutes), int32(d.TookMinutes) // #nosec G115 -- minutes, at most a year's by the API (recordRestoreDrill)
+	r, err := c.u.q.InsertRestoreDrill(ctx, sqlcdb.InsertRestoreDrillParams{HeldOn: d.HeldOn, Scenario: d.Scenario, RestoredFrom: d.RestoredFrom,
+		DataLostMinutes: lost, TookMinutes: took, Ledger: d.Ledger, AuditChain: d.AuditChain, Documents: d.Documents, Keys: d.Keys, SignIn: d.SignIn,
+		Tick: d.Tick, Outbox: d.Outbox, Findings: d.Findings, RecordedBy: d.RecordedBy, RecordedAt: d.RecordedAt})
+	if err != nil {
+		return storage.RestoreDrill{}, mapError(err)
+	}
+	out := restoreDrillOf(r.ID, r.HeldOn, r.Scenario, r.RestoredFrom, r.DataLostMinutes, r.TookMinutes, r.Ledger, r.AuditChain, r.Documents, r.Keys,
+		r.SignIn, r.Tick, r.Outbox, r.Findings, r.RecordedBy, r.RecordedAt)
+	if err := c.u.event(ctx, "restore_drill.recorded", "restore_drill", r.ID, nil, map[string][2]any{"held_on": {nil, r.HeldOn.Format(time.DateOnly)},
+		"scenario": {nil, r.Scenario}, "restored_from": {nil, r.RestoredFrom}, "data_lost_minutes": {nil, r.DataLostMinutes}, "took_minutes": {nil, r.TookMinutes},
+		"recovered": {nil, out.Recovered()}}); err != nil {
+		return storage.RestoreDrill{}, err
+	}
+	return out, nil
+}
+
+// minutes32 is minutes as the database keeps them; nil stays nil.
+func minutes32(m *int) *int32 {
+	if m == nil {
+		return nil
+	}
+	v := int32(*m) // #nosec G115 -- minutes, at most a year's by the API (recordHeartbeatDrill)
+	return &v
+}
+
+func minutesOf(m *int32) *int {
+	if m == nil {
+		return nil
+	}
+	v := int(*m)
+	return &v
+}
+
+func (c compliance) HeartbeatDrills(ctx context.Context) ([]storage.HeartbeatDrill, error) {
+	if err := c.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := c.u.q.ListHeartbeatDrills(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.HeartbeatDrill, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, storage.HeartbeatDrill{ID: r.ID, HeldOn: r.HeldOn, Environment: r.Environment, PausedMinutes: int(r.PausedMinutes),
+			FirstAlertMinutes: minutesOf(r.FirstAlertMinutes), EscalationMinutes: minutesOf(r.EscalationMinutes), Findings: r.Findings,
+			RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt})
+	}
+	return out, nil
+}
+
+func (c compliance) RecordHeartbeatDrill(ctx context.Context, d storage.HeartbeatDrill) (storage.HeartbeatDrill, error) {
+	if err := c.u.check(); err != nil {
+		return storage.HeartbeatDrill{}, err
+	}
+	paused := int32(d.PausedMinutes) // #nosec G115 -- minutes, at most a year's by the API (recordHeartbeatDrill)
+	r, err := c.u.q.InsertHeartbeatDrill(ctx, sqlcdb.InsertHeartbeatDrillParams{HeldOn: d.HeldOn, Environment: d.Environment, PausedMinutes: paused,
+		FirstAlertMinutes: minutes32(d.FirstAlertMinutes), EscalationMinutes: minutes32(d.EscalationMinutes), Findings: d.Findings,
+		RecordedBy: d.RecordedBy, RecordedAt: d.RecordedAt})
+	if err != nil {
+		return storage.HeartbeatDrill{}, mapError(err)
+	}
+	out := storage.HeartbeatDrill{ID: r.ID, HeldOn: r.HeldOn, Environment: r.Environment, PausedMinutes: int(r.PausedMinutes),
+		FirstAlertMinutes: minutesOf(r.FirstAlertMinutes), EscalationMinutes: minutesOf(r.EscalationMinutes), Findings: r.Findings,
+		RecordedBy: r.RecordedBy, RecordedAt: r.RecordedAt}
+	if err := c.u.event(ctx, "tick_drill.recorded", "tick_drill", r.ID, nil, map[string][2]any{"held_on": {nil, r.HeldOn.Format(time.DateOnly)},
+		"environment": {nil, r.Environment}, "paused_minutes": {nil, r.PausedMinutes}, "first_alert_minutes": {nil, out.FirstAlertMinutes},
+		"escalation_minutes": {nil, out.EscalationMinutes}, "passed": {nil, out.Passed()}}); err != nil {
+		return storage.HeartbeatDrill{}, err
+	}
+	return out, nil
 }

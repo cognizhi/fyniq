@@ -149,6 +149,9 @@ const (
 	// PurposeRemittance is a supplier's remittance advice (FR-BNK-12), from the invoices sender: the organisation's accounts
 	// address until a purchases sender is configured.
 	PurposeRemittance = "remittance"
+	// PurposeSecretaryReminder is a reminder the company secretary assistant drafted and a person approved (Appendix E
+	// sec.draft_reminder), to members, from the notifications sender. Only the executor queues one.
+	PurposeSecretaryReminder = "secretary_reminder"
 )
 
 // fromOf is the address a message of purpose is sent from: the organisation's sender in force for it, or the

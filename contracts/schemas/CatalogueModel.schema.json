@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "auth": {
+      "items": {
+        "description": "How a connection signs in: an API key, the service's own cloud account, an OAuth grant, or none for a self-hosted server.",
+        "enum": [
+          "api-key",
+          "workload-identity",
+          "oauth-grant",
+          "none"
+        ],
+        "examples": [
+          "api-key"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "features": {
+      "items": {
+        "description": "What the adapter carries, such as tools or streaming; the connection proves it.",
+        "examples": [
+          "tools"
+        ],
+        "maxLength": 40,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "presets": {
+      "items": {
+        "$ref": "CataloguePreset.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "features",
+    "auth",
+    "presets"
+  ],
+  "title": "CatalogueModel",
+  "type": "object"
+}

@@ -75,6 +75,10 @@ type Outbox interface {
 	// Work that a burst of changes would ask for many times is asked for once while a row waits (the checks' refresh,
 	// FR-CTL-01), and a request that joins it names that row (FR-INT-11).
 	Waiting(ctx context.Context, kind string) (*OutboxRow, error)
+	// Ahead is a row of a kind that runs under a lease not expired at now and took it before row did: its lease ends
+	// first, or at the same time with a lower ID. nil when none does. Work that must not overlap itself, such as the
+	// checks' refresh, waits while a row ahead of it runs, so of rows delivered together the first runs (NFR-PERF-01).
+	Ahead(ctx context.Context, kind string, row uuid.UUID, leaseUntil, now time.Time) (*OutboxRow, error)
 	// MarkDispatched records the task a row was sent as, and when it is overdue.
 	MarkDispatched(ctx context.Context, id uuid.UUID, taskName string, deadline time.Time) error
 	// Lease gives the row to holder until until, counting an attempt. ok is false when the row is
@@ -85,6 +89,18 @@ type Outbox interface {
 	// Hold ends holder's lease without an outcome: the row waits until until, dispatched again then, and the attempt
 	// its lease counted is given back (FR-INT-26: work held while its connectors are paused spends no attempt).
 	Hold(ctx context.Context, id uuid.UUID, holder string, until time.Time, why string) error
+	// Dead are the rows whose attempts ran out, the latest first, at most limit (C.2 #12): background work a person
+	// looks at and replays.
+	Dead(ctx context.Context, limit int) ([]DeadRow, error)
+	// Replay sends a dead row back to pending with its attempts counted afresh (§12.11, C.2 #12, G4-073), keeping its
+	// last error; ports.ErrNotFound when no dead row has that ID.
+	Replay(ctx context.Context, id uuid.UUID) (OutboxRow, error)
+}
+
+// DeadRow is a row whose attempts ran out, and when it died.
+type DeadRow struct {
+	OutboxRow
+	DiedAt time.Time
 }
 
 // Sweeping is what the tick needs from an organisation's outbox (§12.11).

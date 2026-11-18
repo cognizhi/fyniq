@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agent": {
+      "examples": [
+        "chat"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "examples": [
+        "The assistant's chat and tool loop: questions, answers and the tools it reads with."
+      ],
+      "type": "string"
+    },
+    "handles": {
+      "description": "The classes it may ever handle: a route names some of them.",
+      "items": {
+        "description": "A class of data: restricted data never goes to an AI provider (AI-75).",
+        "enum": [
+          "know-how",
+          "business-figures",
+          "personal-data",
+          "payroll"
+        ],
+        "examples": [
+          "business-figures"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "line": {
+      "description": "The model line its presets pin: classification for high-volume work (AI-26).",
+      "enum": [
+        "main",
+        "classification"
+      ],
+      "examples": [
+        "main"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "examples": [
+        "Assistant"
+      ],
+      "type": "string"
+    },
+    "route": {
+      "$ref": "AIRoute.schema.json",
+      "description": "Its route in force; absent until one is set, and then the agent does not run."
+    },
+    "versions": {
+      "description": "Its versions, newest first, at most 20.",
+      "items": {
+        "$ref": "AIRoute.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "versions",
+    "agent",
+    "name",
+    "description",
+    "handles",
+    "line"
+  ],
+  "title": "AIAgentRouteHistory",
+  "type": "object"
+}

@@ -431,7 +431,7 @@ func registerAccessReview(a *API) {
 			if r, _, err = a.accessReviewOf(ctx, u); err != nil {
 				return err
 			}
-			data = sheet.CSV(accessReviewSheet(r))
+			data = sheet.CSV(a.footed(a.deps.Clock.Now(), accessReviewSheet(r))[0])
 			sum := sha256.Sum256(data)
 			return u.Audit().Record(ctx, storage.AuditRecord{Action: "access_review.exported", ObjectType: "report", ObjectID: id,
 				Changes: map[string][2]any{"export": {nil, map[string]any{"report": "access_review", "format": "csv", "members": len(r.Members),

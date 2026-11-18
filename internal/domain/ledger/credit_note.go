@@ -24,6 +24,8 @@ var asCreditNote = strings.NewReplacer(
 	"An invoice's total is more than zero; record what the company owes a customer as a credit note", "A credit note's total is more than zero",
 	"the invoice's", "the credit note's",
 	"the invoice", "the credit note",
+	"this invoice", "this credit note",
+	"an ordinary invoice", "an ordinary credit note",
 	"invoice's", "credit note's",
 )
 
@@ -66,7 +68,8 @@ func PostCreditNote(i Invoice, s Settings) (Entry, error) {
 // CreditNoteRules are every credit note rule version the engine has posted with, by name: like Rules, a version is
 // never removed or changed while an entry names it.
 var CreditNoteRules = map[string]InvoiceRule{
-	RuleCreditNote: PostCreditNote,
+	RuleCreditNote:        PostCreditNote,
+	RuleOpeningCreditNote: PostOpeningCreditNote,
 }
 
 // ReplayCreditNote re-runs the rule version that posted a credit note's entry over the same version (ENG-06).

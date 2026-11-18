@@ -11,6 +11,11 @@ library only.
     python3 scripts/roadmap.py check   # exit 1 on an unplaced requirement or screen, or a stale region (make roadmap-check)
     python3 scripts/roadmap.py write   # rewrite the marked regions (make roadmap)
 
+It also writes the launch subset, `docs/prd/plans/launch-subset.json` (p1-launch-readiness design D1): every change whose
+launch column launches it, with its requirements and Appendix G's acceptance scenarios. The exceptions to it are kept by
+hand in `docs/prd/plans/launch-exceptions.json`, each with the decision or evidence it rests on; `check` refuses one that
+names nothing of the subset or rests on nothing.
+
 A requirement added to the PRD lands in its capability's default change; a P2 or P3 row, or a row
 that belongs elsewhere, needs its ID in LATER or BY_ID, and the check names it until it has one.
 """
@@ -26,6 +31,12 @@ INVENTORY = ROOT / "docs/design/screens/inventory.json"
 PLAN = ROOT / "docs/prd/plans/p1-p3-build-plan-2026-10-16.md"
 REGION = re.compile(r"<!-- roadmap:([A-Za-z0-9 _-]+?) -->(.*?)<!-- /roadmap -->", re.S)
 EMPTY_OK = {"cloud-first-deployment"}  # holds P0's cloud tasks, not requirements of its own
+LAUNCH_SUBSET = ROOT / "docs/prd/plans/launch-subset.json"
+LAUNCH_EXCEPTIONS = ROOT / "docs/prd/plans/launch-exceptions.json"
+PRDS = {"PRD-001": ROOT / "docs/prd/prd-001-fyniq-platform.md", "PRD-002": ROOT / "docs/prd/prd-002-nemura-people.md"}
+# The kinds of exception (design D1): moved after go-live by a decision, proved in the dev cloud by its evidence, or
+# proved by another gate than a tagged test.
+EXCEPTION_KINDS = ("after-go-live", "live-verify", "covered-elsewhere")
 
 # ---------------------------------------------------------------- changes
 # (id, track, wave, title, depends on, local-first note, outside dependency, reviewer, launch proposal)
@@ -74,13 +85,16 @@ ch("p1-audit-explorer", F1, 5, "Sensitive values in the trail, period-close snap
 ch("p1-compliance-center", F1, 5, "The control dashboard, attestations, the risk register and the policy library; the control rows of Appendix F whose modules are built, each closed when its check runs; the AI write-grant control test", ["p1-checks"], "Evidence from local runs; cloud evidence at the cloud gate", "—", "Security (#4)", "Launch")
 ch("p1-pdpa-retention", F1, 5, "The DPO, data inventory, notices and consent, access and correction requests, breach timers, transfers, NRIC handling, DPIAs; encryption, application-level encryption, residency, minimisation; retention per data class with crypto-shredding", ["p1-documents-evidence", "p1-audit-explorer"], "—", "Counsel confirms before payroll data is loaded (Q39)", "Security (#4)", "Launch (before payroll data)")
 # Wave 6: AI and MCP (security boundary)
-ch("p1-ai-providers", F1, 6, "One model port, provider connectors and capabilities, routes per agent, data handling per provider, failover, usage and budgets, qualification, model lists and prices from their sources", ["p1-connector-framework"], "Replay mode offline; live local tests through DEV-09's adapters or an API key", "A developer's own Claude or ChatGPT plan, or an API key, for live local tests (DEV-09)", "Security (#4)", "After go-live")
-ch("p1-ai-assistant", F1, 6, "On-behalf-of read tools, exclusions, the semantic layer, result limits, typed facts, guardrails against the OWASP LLM risks, the eval suites, Ask, explain and simulate", ["p1-ai-providers", "p1-reports"], "Evals in replay; live runs with the local AI provider", "—", "Security (#4)", "After go-live")
+ch("p1-ai-providers", F1, 6, "One model port, provider connectors and capabilities, routes per agent, data handling per provider, failover, usage and budgets, qualification, model lists and prices from their sources", ["p1-connector-framework"], "Replay mode offline; live local tests through DEV-09's adapters or an API key", "A developer's own Claude or ChatGPT plan, or an API key, for live local tests (DEV-09)", "Security (#4)", "Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs)")
+ch("p1-ai-assistant", F1, 6, "On-behalf-of read tools, exclusions, the semantic layer, result limits, typed facts, numeric grounding and the calculator, guardrails against the OWASP LLM risks, the eval harness with the golden questions and the red team, Ask, explain and simulate", ["p1-ai-providers", "p1-reports"], "Evals in replay; live runs with the local AI provider", "—", "Security (#4)", "Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs)")
 ch("p1-knowledge-base", F1, 6, "The organisation knowledge base from trusted sources, context assembly, compile, index and lint, trust, versioning and publishing", ["p1-ai-assistant"], "—", "—", "Security (#4)", "After go-live")
-ch("p1-ai-proposals", F1, 6, "The proposal principles, the task catalogue of Appendix E, approval of AI work, numeric grounding, idempotent execution through the executor, undo, kill switches and budgets, the red-team cases", ["p1-ai-assistant", "p1-approval-engine"], "—", "—", "Security (#4)", "After go-live")
+# The owner's decision of 15 Nov 2026 (PRD-001 rev 0.279): the proposals the company secretary's agent needs at launch
+# (AI-65) come ahead of the rest, as p1-ai-proposals-core; the other task types and their extras follow after go-live.
+ch("p1-ai-proposals-core", F1, 6, "The proposal principles and store, the catalogue as dual-controlled data with its tiers and never-list, approval of AI work in the Inbox with rejection reasons fed back, idempotent execution through the executor as the approving human, the proposal evals' harness and the controls", ["p1-ai-assistant", "p1-approval-engine"], "—", "—", "Security (#4)", "Launch (owner, 15 Nov 2026: the proposals the company secretary's agent needs)")
+ch("p1-ai-proposals", F1, 6, "The rest of the task catalogue of Appendix E (bank, sales, purchases, journals, contacts, planning, reports, knowledge pages), two approvers for tier 3, undo, approval-quality metrics", ["p1-ai-proposals-core"], "—", "—", "Security (#4)", "After go-live")
 ch("p1-mcp-first-party", F1, 6, "The MCP server for first-party clients: client classes, off by default, audience-bound tokens with option (b), consent and scopes, transport, the tool surface, limits, audit and detection; the local MCP endpoint; QA-MCP-01", ["p1-ai-proposals"], "Option (b) with a local key; Cloud KMS at the cloud gate", "Security review #4", "Security (#4)", "After go-live")
-ch("p1-scheduled-agents", F1, 6, "Agent skills, schedules and triggers, identity and permissions, deterministic first, outputs, the never-list, budgets and failure", ["p1-ai-assistant"], "—", "—", "Security (#4)", "After go-live")
-ch("p1-company-secretary", F1, 6, "The corporate profile, ACRA pack, cross-checks, the company secretary workspace and role, document drafts, the named human secretary, and the AI secretary's scheduled checks", ["p1-scheduled-agents", "p1-equity-register"], "—", "A corporate secretarial firm appointed (Q19)", "Accountant", "Decide (Q25)")
+ch("p1-scheduled-agents", F1, 6, "Agent skills, schedules and triggers, identity and permissions, deterministic first, outputs with their Inbox tasks and the sec.create_task and sec.draft_reminder proposals, the never-list, budgets and failure", ["p1-ai-assistant", "p1-ai-proposals-core"], "—", "—", "Security (#4)", "Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs)")
+ch("p1-company-secretary", F1, 6, "The corporate profile, ACRA pack, cross-checks, the company secretary workspace and role, document drafts, the named human secretary, and the AI secretary's scheduled checks", ["p1-scheduled-agents", "p1-equity-register"], "—", "A corporate secretarial firm appointed (Q19)", "Accountant", "Launch (owner, 13 Nov 2026: in full, with the AI secretary's scheduled checks)")
 ch("p1-document-capture", F1, 6, "Smart document capture (upload, paste, email-in), bill capture and automated bill entry, as drafts a person confirms", ["p1-ai-providers", "p1-purchases", "p1-templates-email"], "Inbound email through Mailpit", "—", "Security (#4)", "After go-live")
 # Wave 7: platform, migration and readiness
 ch("p1-security-hardening", F1, 7, "Web protections, uploads, outbound requests to configured hosts, registered private endpoints, dependency hygiene, SLSA provenance and reproducible builds, security monitoring, alerting and the incident runbook, release review and recorded versions", ["P0"], "Local logs and alerts; Binary Authorization and cloud posture at the cloud gate", "—", "Security (#4)", "Launch")
@@ -103,12 +117,12 @@ ch("p2-invoicenow", F2, 1, "InvoiceNow (Peppol) sending and receiving, the submi
 ch("p2-bank-feeds-payments", F2, 1, "Bank feeds, bank APIs and host-to-host, DBS RAPID or IDEAL Connect, card feeds, payment links (Model A), online payment, corporate cards", ["p1-bank-import-reconcile", "p1-payment-providers"], "Against sandboxes", "Q24; a licensed feed provider; HitPay", "Co-founder", "—")
 ch("p2-tax-filings", F2, 1, "Corporate income tax support, F7 and F8, IRAS API filing, published pack updates, bad-debt relief with GST", ["p1-gst"], "Against IRAS's sandbox", "IRAS API access", "Tax agent", "—")
 ch("p2-payroll-outputs", F2, 1, "Payslip documents, the CPF submission file, IR8A and the Auto-Inclusion Scheme (in Nemura where it runs payroll)", ["p1-nemura-payroll"], "—", "CPF Board and IRAS formats", "Payroll administrator", "—")
-ch("p2-reporting-planning", F2, 2, "Report builder, board pack, scheduled reports, deferral roll-forward, configurable dashboards, customer counts, anomaly alerts, industry benchmarks, rolling forecast, the funding plan, investor updates, access, obligations and the exit waterfall, shares for services, allocation rules, asset reports", ["p1-reports", "p1-planning", "p1-equity-register"], "—", "—", "Accountant", "—")
+ch("p2-reporting-planning", F2, 2, "Report builder, board pack, scheduled reports, deferral roll-forward, configurable dashboards, customer counts, anomaly alerts, industry benchmarks, rolling forecast, the funding plan, investor updates, access, obligations and the exit waterfall, shares for services, allocation rules, asset reports; the auditor's engagement", ["p1-reports", "p1-planning", "p1-equity-register"], "—", "—", "Accountant", "—")
 ch("p2-customer-portal-subscriptions", F2, 2, "The customer portal, subscription revenue schedules, disputes and promise-to-pay, revenue over time for fixed-fee projects", ["p1-sales", "p1-projects"], "—", "—", "—", "—")
 ch("p2-api-third-parties", F2, 2, "Third-party API clients, webhooks and events, the semantic metrics endpoint, the sandbox, Go and Python SDKs, third-party MCP clients, ticketing connectors, Slack and Zoho Cliq", ["p1-public-api", "p1-mcp-first-party"], "—", "Q22", "Security", "—")
 ch("p2-mobile-approvals-automation", F2, 2, "The PWA with offline reads and camera capture, approval delegation, escalation, approvals by email and PWA, workflow rules without code, outbound webhooks, soft locks, vendor statements, supplier contracts, the usage view, pinned Basic mode, tours, code-mode templates and the template editor's layout, column chooser, conditional blocks and visual diff (the P2 halves of FR-TPL-01, 02 and 04), the annual-return pack, evidence export", ["p1-app-shell", "p1-approval-engine"], "—", "—", "Co-founder", "—")
 ch("p2-ai-expansion", F2, 3, "Approval-quality metrics and more task types, knowledge pages from documents, document AI drafts", ["p1-ai-proposals", "p1-knowledge-base"], "—", "—", "Security", "—")
-ch("p2-security-certification", F2, 3, "Penetration testing and DAST; Cyber Trust or ISO 27001 readiness", ["p1-security-hardening"], "—", "Q8", "Security", "—")
+ch("p2-security-certification", F2, 3, "Penetration testing and DAST; Cyber Trust or ISO 27001 readiness; retention and legal holds", ["p1-security-hardening"], "—", "Q8", "Security", "—")
 ch("p2-nemura-people", N2, 1, "Hiring, performance and KPIs, onboarding plans, letter verification, grievances, the unified HR API and pay documents from external systems, fairness in the assistant", ["p1-nemura-assistant-external"], "—", "—", "HR", "—")
 # P3
 ch("p3-multi-entity", F3, 1, "Several legal entities, intercompany and consolidation, accountant-practice mode, the entity switcher, consolidated reporting", ["p2-reporting-planning"], "—", "Q1", "Accountant", "—")
@@ -172,12 +186,12 @@ LATER = {
     "p2-bank-feeds-payments": "FR-BNK-03 FR-PSP-02 FR-AR-13 FR-AP-08",
     "p2-tax-filings": "FR-TAX-06 ENG-33 FR-AR-11",
     "p2-payroll-outputs": "FR-PAY-08 FR-PAY-09",
-    "p2-reporting-planning": "FR-RPT-04 FR-RPT-06 FR-RPT-07 FR-RPT-13 FR-VIZ-09 FR-KPI-04 FR-KPI-05 FR-KPI-06 FR-KPI-07 FR-PLN-04 FR-PLN-07 FR-EQ-23 FR-EQ-24 FR-EQ-28 FR-EQ-29 FR-EQ-13 FR-DIM-03 FR-FA-04",
+    "p2-reporting-planning": "FR-RPT-04 FR-RPT-06 FR-RPT-07 FR-RPT-13 FR-VIZ-09 FR-KPI-04 FR-KPI-05 FR-KPI-06 FR-KPI-07 FR-PLN-04 FR-PLN-07 FR-EQ-23 FR-EQ-24 FR-EQ-28 FR-EQ-29 FR-EQ-13 FR-DIM-03 FR-FA-04 FR-UX-42",
     "p2-customer-portal-subscriptions": "FR-AR-14 FR-AR-15 FR-PRJ-11",
     "p2-api-third-parties": "FR-INT-04 FR-INT-12 FR-INT-15 FR-INT-18 AI-46 FR-INT-23 FR-INT-24 FR-NTF-04",
     "p2-mobile-approvals-automation": "FR-UX-16 FR-APR-06 FR-APR-07 FR-APR-08 FR-AUT-03 FR-AUT-04 FR-GL-09 FR-AP-10 FR-AP-21 FR-ADM-05 FR-UX-28 FR-UX-35 FR-TPL-06 FR-CS-07 CMP-04",
     "p2-ai-expansion": "AI-33 AI-59",
-    "p2-security-certification": "SEC-25",
+    "p2-security-certification": "SEC-25 AUD-11",
     "p2-nemura-people": "NM-REC-01 NM-REC-02 NM-REC-03 NM-REC-04 NM-REC-05 NM-REC-06 NM-PRF-01 NM-PRF-02 NM-PRF-03 NM-PRF-04 NM-PRF-05 NM-ONB-01 NM-LTR-05 NM-SEC-06 NM-EXT-04 NM-EXT-05 NM-AI-05 people.draft_job_post people.draft_interview_kit people.draft_review_summary",
     "p3-multi-entity": "FR-ENT-01 FR-ENT-02 FR-ENT-03 FR-GL-13 FR-RPT-12 FR-UX-18",
     "p3-saas-platform": "NFR-SCALE-02 FR-INT-05 FR-INT-19 FR-INT-28 AI-47 FR-NTF-06 FR-KPI-08 FR-ITM-02 DR-05 NFR-PORT-06",
@@ -199,7 +213,7 @@ BY_ID.update({
     "RND-RATE": "p1-multi-currency-fx", "RND-GST-EXCL": "p1-statutory-packs", "RND-GST-INCL": "p1-statutory-packs",
     "RND-CPF": "p1-nemura-payroll", "RND-CPF-GRAD": "p1-nemura-payroll", "RND-SDL": "p1-nemura-payroll",
     "RND-SHARE": "p1-founders-money", "RND-MILEAGE": "p1-expense-claims", "RND-DISPLAY": "p1-app-shell",
-    "RND-PERCENT": "p1-general-ledger-close", "RND-KPI": "p1-dashboard-kpis",
+    "RND-PERCENT": "p1-general-ledger-close", "RND-KPI": "p1-dashboard-kpis", "RND-IMPORT": "p1-workbook-migration",
     "INV-07": "p1-checks", "INV-10": "p1-reports", "INV-11": "p1-reports", "ENG-45": "p1-statutory-packs",
     "ENG-40": "p1-multi-currency-fx", "ENG-41": "p1-multi-currency-fx", "ENG-42": "p1-multi-currency-fx",
     "ENG-43": "p1-multi-currency-fx", "SEC-07": "p1-users-roles", "SEC-35": "p1-users-roles",
@@ -211,8 +225,23 @@ BY_ID.update({
     # The owner's decision of 9 Nov 2026 (PRD-001 rev 0.240): the AI inventory and gated AI changes come with the AI;
     # the control rows whose checks need a later module move to it (each row is built with the module it guards).
     "CMP-AI-02": "p1-ai-providers", "CMP-AI-03": "p1-ai-providers", "CTL-AI-05": "p1-ai-providers",
-    "CTL-AI-02": "p1-ai-proposals", "CTL-AI-03": "p1-ai-proposals", "CTL-AI-04": "p1-ai-proposals", "CTL-AI-07": "p1-ai-proposals",
+    "CTL-AI-07": "p1-ai-proposals",
     "CTL-AI-06": "p1-ai-assistant", "CTL-AI-08": "p1-knowledge-base", "CTL-AI-09": "p1-scheduled-agents",
+    # The owner's decision of 13 Nov 2026 (PRD-001 rev 0.275): with the AI at launch, its activity log and kill switch
+    # come with the model calls they record and stop, ahead of the proposals.
+    "AI-12": "p1-ai-providers", "AI-13": "p1-ai-providers",
+    # The owner's decisions of 14 Nov 2026 (PRD-001 rev 0.277): each eval suite is built with what it evaluates, and the
+    # rules the assistant rests on are built with it, their proposal parts filling in with p1-ai-proposals.
+    "QA-AI-06": "p1-knowledge-base", "QA-AI-07": "p1-scheduled-agents",
+    "AI-P1": "p1-ai-assistant", "AI-P2": "p1-ai-assistant", "AI-P6": "p1-ai-assistant", "AI-P7": "p1-ai-assistant",
+    "AI-P8": "p1-ai-assistant", "AI-08": "p1-ai-assistant",
+    # The owner's decision of 15 Nov 2026 (PRD-001 rev 0.279): the proposals AI-65 needs at launch, with their evals and
+    # controls, come with p1-ai-proposals-core.
+    "AI-P3": "p1-ai-proposals-core", "AI-P4": "p1-ai-proposals-core", "AI-P5": "p1-ai-proposals-core", "AI-89": "p1-ai-proposals-core",
+    "AI-06": "p1-ai-proposals-core", "AI-07": "p1-ai-proposals-core", "AI-10": "p1-ai-proposals-core",
+    "AI-11": "p1-ai-proposals-core", "AI-14": "p1-ai-proposals-core", "AI-30": "p1-ai-proposals-core", "AI-32": "p1-ai-proposals-core",
+    "QA-AI-02": "p1-ai-proposals-core", "CTL-AI-02": "p1-ai-proposals-core", "CTL-AI-03": "p1-ai-proposals-core",
+    "CTL-AI-04": "p1-ai-proposals-core",
     "CTL-MCP-01": "p1-mcp-first-party", "CTL-MCP-02": "p1-mcp-first-party", "CTL-MCP-03": "p1-mcp-first-party",
     "CTL-MCP-04": "p1-mcp-first-party", "CTL-DP-05": "p1-pdpa-retention", "CTL-DP-06": "p1-pdpa-retention",
     "CTL-DP-03": "p1-security-hardening", "CTL-CHG-07": "p1-security-hardening", "CTL-RES-04": "p1-security-hardening",
@@ -234,7 +263,7 @@ CHECKS_WITH_MODULES = {
     "p1-founders-money": "C.2 #21|C.2 #22|C.2 #23|C.2 #25",
     "p1-equity-register": "C.2 #26|C.2 #27|C.2 #28|C.2 #29",
     "p1-company-secretary": "C.2 #32|C.2 #33|C.2 #34|C.2 #35|C.2 #54",
-    "p1-ai-proposals": "C.2 #19",
+    "p1-ai-proposals-core": "C.2 #19",
     "p1-scheduled-agents": "C.2 #36",
     "p1-ai-providers": "C.2 #55",
     "p1-payment-providers": "C.2 #42|C.2 #50",
@@ -242,6 +271,8 @@ CHECKS_WITH_MODULES = {
     # C.2 #30 needs the evidence rules (FR-DOC-06), which p1-documents-evidence builds (its task 3.1; rev 0.166).
     "p1-documents-evidence": "C.2 #30",
     "p2-mobile-approvals-automation": "C.2 #52",
+    # C.2 #63 guards the opening open items p1-workbook-migration builds (FR-GL-06; rev 0.257).
+    "p1-workbook-migration": "C.2 #63",
 }
 BY_ID.update({i: c for c, ids in CHECKS_WITH_MODULES.items() for i in ids.split("|")})
 # Phase-less rows placed by title
@@ -259,6 +290,14 @@ TITLE = [
     ("ledger/posting-rules", r"Payment-provider", "p1-payment-providers"),
     ("ledger/posting-rules", r"GST codes", "p1-gst"),
     ("data/backup-and-recovery", r"^Retention of AI conversations", "p1-ai-assistant"),  # rev 0.245: built with the conversations
+    ("ai/proposals", r"^The orchestrator holds no write credential", "p1-ai-assistant"),  # rev 0.277: built with the assistant
+    # rev 0.279: the proposal store, the executor and the catalogue the company secretary's agent needs at launch
+    ("ai/proposals", r"^Proposal (lifecycle|content|rationale|tier)|^The executor runs approved proposals", "p1-ai-proposals-core"),
+    ("ai/task-catalogue", r"^(Catalogue as versioned|Catalogue entry attributes|Risk tiers and approver roles|Never in the catalogue|AI tasks page)", "p1-ai-proposals-core"),
+    # rev 0.279: each sec.* task type is built with what it acts on: the agent's tasks and reminders, the secretary's documents
+    ("ai/task-catalogue", r"^sec\.(create_task|draft_reminder)", "p1-scheduled-agents"),
+    ("ai/task-catalogue", r"^sec\.draft_document", "p1-company-secretary"),
+    ("ai/guardrails", r"^External agents and MCP clients", "p1-mcp-first-party"),  # rev 0.277: built with the MCP server
     ("data/backup-and-recovery", r"^Retention|Personal data in immutable|Shredded keys", "p1-pdpa-retention"),
     ("data/migration", r"Parallel run|Go-live and workbook", "p1-go-live"),
     ("data/audit-trail", r"Database and platform logs", "p1-operations-dr"),
@@ -266,7 +305,7 @@ TITLE = [
     ("platform/local-mode", r"Local AI", "p1-ai-providers"),
     ("platform/local-mode", r"partner substitutes", "p1-connector-framework"),
     ("platform/release-and-versioning", r"Statutory parameter pack", "p1-statutory-packs"),
-    ("platform/release-and-versioning", r"AI catalogue", "p1-ai-proposals"),
+    ("platform/release-and-versioning", r"AI catalogue", "p1-ai-proposals-core"),
     ("platform/release-and-versioning", r"Knowledge base versions", "p1-knowledge-base"),
     ("platform/release-and-versioning", r"Event schema", "p1-public-api"),
     ("platform/portability-and-cost", r"Claude in Singapore", "p1-ai-providers"),
@@ -321,8 +360,77 @@ def requirements():
             src = re.search(r"^Source: (.*)$", b, re.M)
             ph = re.search(r"Phase (.+)$", src.group(1)) if src else None
             phase = ph.group(1).strip() if ph else None
-            reqs.append(dict(cap=cap, rid=rid, head=head, phase=phase, target=assign(cap, rid, head, phase)))
+            scenarios = re.findall(r"^#### Scenario: (G4-\d{3})\b", b, re.M)
+            reqs.append(dict(cap=cap, rid=rid, head=head, phase=phase, target=assign(cap, rid, head, phase), scenarios=scenarios))
     return reqs
+
+
+def launches(c):
+    """Whether a change's launch column puts it, or a part of it, in the launch subset."""
+    return c["launch"].startswith("Launch") or " at launch" in c["launch"]
+
+
+def label(r):
+    """A requirement as the subset and the tests' tags name it: its ID, else its capability and title."""
+    return r["rid"] or f"{r['cap']}: {r['head']}"
+
+
+def launch_subset(reqs):
+    """The launch subset: each launching change, in the plan's order, with its requirements and acceptance scenarios."""
+    out = []
+    for c in C:
+        if not launches(c):
+            continue
+        mine = [r for r in reqs if r["target"] == c["id"]]
+        scenarios = sorted({s for r in mine for s in r["scenarios"]})
+        out.append(dict(id=c["id"], wave=c["wave"], launch=c["launch"], requirements=[label(r) for r in mine], scenarios=scenarios))
+    return {"doc": "The launch subset (PRD-001 §16.2; the build plan's launch column), written by scripts/roadmap.py: each "
+                   "change that launches, with the requirements and Appendix G acceptance scenarios a launch proves. "
+                   "Exceptions are in launch-exceptions.json. Do not edit by hand: run make roadmap.",
+            "changes": out}
+
+
+def revisions(prd):
+    """The revisions a PRD's history records, such as 0.284."""
+    return set(re.findall(r"^\| (0\.\d+) \|", PRDS[prd].read_text(encoding="utf-8"), re.M))
+
+
+def check_exceptions(subset, raw=None):
+    """What is wrong with the launch exceptions against the subset: an ID the subset does not hold, twice; a kind not
+    known; no why; an after-go-live exception whose decision names no revision of its PRD's history; a live-verify one
+    whose evidence is no file of the repository; a covered-elsewhere one that names no other gate."""
+    if raw is None:
+        if not LAUNCH_EXCEPTIONS.exists():
+            return [f"{LAUNCH_EXCEPTIONS.relative_to(ROOT)} is missing"]
+        raw = LAUNCH_EXCEPTIONS.read_text(encoding="utf-8")
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as e:
+        return [f"launch-exceptions.json is not JSON: {e}"]
+    held = {i for c in subset["changes"] for i in c["requirements"] + c["scenarios"]}
+    known = {prd: revisions(prd) for prd in PRDS}
+    errors, seen = [], set()
+    for x in data.get("exceptions", []):
+        i, kind = x.get("id", ""), x.get("kind", "")
+        where = f"exception {i or '(no id)'}"
+        if i not in held:
+            errors.append(f"{where}: not a requirement or scenario of the launch subset")
+        if i in seen:
+            errors.append(f"{where}: listed twice")
+        seen.add(i)
+        if kind not in EXCEPTION_KINDS:
+            errors.append(f"{where}: kind {kind!r} is not one of {', '.join(EXCEPTION_KINDS)}")
+        if not str(x.get("why", "")).strip():
+            errors.append(f"{where}: says no why")
+        if kind == "after-go-live":
+            m = re.search(r"\b(PRD-00[12] )?rev (0\.\d+)\b", x.get("decision", ""))
+            if not m or m.group(2) not in known[(m.group(1) or "PRD-001 ").strip()]:
+                errors.append(f"{where}: its decision names no revision of the PRD's history (such as rev 0.25)")
+        if kind == "live-verify" and not (x.get("evidence") and (ROOT / x["evidence"]).is_file()):
+            errors.append(f"{where}: its evidence names no file of the repository (a runbook or an evidence record)")
+        if kind == "covered-elsewhere" and not str(x.get("by", "")).strip():
+            errors.append(f"{where}: names no gate that covers it")
+    return errors
 
 
 def ids_text(items):
@@ -408,6 +516,9 @@ def main():
     if cmd not in ("check", "write"):
         raise SystemExit(__doc__)
     regions, errors, (reqs, placed) = build()
+    subset = launch_subset(requirements())
+    errors += check_exceptions(subset)
+    subset_text = json.dumps(subset, indent=1, ensure_ascii=False) + "\n"
     if errors:
         print("✖ the P1–P3 plan does not place everything:")
         for e in errors:
@@ -415,15 +526,21 @@ def main():
         sys.exit(1)
     text = PLAN.read_text(encoding="utf-8")
     new = render(text, regions)
+    old_subset = LAUNCH_SUBSET.read_text(encoding="utf-8") if LAUNCH_SUBSET.exists() else ""
     if cmd == "write":
         if new != text:
             PLAN.write_text(new, encoding="utf-8")
-        print(f"✔ {PLAN.relative_to(ROOT)} regenerated")
-    elif new != text:
-        print(f"✖ {PLAN.relative_to(ROOT)} is stale: the specs, the screens or scripts/roadmap.py changed. Run `make roadmap`")
+        if subset_text != old_subset:
+            LAUNCH_SUBSET.write_text(subset_text, encoding="utf-8")
+        print(f"✔ {PLAN.relative_to(ROOT)} and {LAUNCH_SUBSET.relative_to(ROOT)} regenerated")
+    elif new != text or subset_text != old_subset:
+        stale = PLAN if new != text else LAUNCH_SUBSET
+        print(f"✖ {stale.relative_to(ROOT)} is stale: the specs, the screens or scripts/roadmap.py changed. Run `make roadmap`")
         sys.exit(1)
     else:
-        print(f"✔ P1–P3 plan: {reqs:,} requirements and {placed} screens after P0, each placed once, across {len(C)} changes")
+        n = sum(len(c["requirements"]) for c in subset["changes"])
+        print(f"✔ P1–P3 plan: {reqs:,} requirements and {placed} screens after P0, each placed once, across {len(C)} changes; "
+              f"the launch subset: {len(subset['changes'])} changes, {n:,} requirements")
 
 
 if __name__ == "__main__":

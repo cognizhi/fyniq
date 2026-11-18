@@ -75,6 +75,10 @@ func Check(ctx context.Context, scanner ports.Scanner, name string, data []byte)
 			"Compress it, or split it into smaller files."}}, nil
 	}
 	mt, ok := Sniff(data, f.Name)
+	if !ok && IsHEIC(data) {
+		return f, []Problem{{CodeType, "file", "The file is a HEIC photo, which Fyniq does not convert to JPEG yet, so it was not stored.",
+			"Export it as JPEG and attach that. On an iPhone, Settings › Camera › Formats › Most Compatible takes new photos as JPEG."}}, nil
+	}
 	if !ok {
 		return f, []Problem{{CodeType, "file", "The file's content is not " + Accepted + ".",
 			"Save or export it as PDF, or as a PNG or JPEG picture, and attach that."}}, nil
@@ -224,10 +228,19 @@ func (c Committer) Commit(ctx context.Context, org uuid.UUID) (int, error) {
 	if zone == nil {
 		zone = singapore
 	}
-	until := RetainUntil(fyStart, RecordsYears(), c.Clock.Now(), zone)
+	now := c.Clock.Now()
 	n := 0
 	var errs []error
 	for _, e := range waiting {
+		var until time.Time
+		if err := c.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			d, err := u.Documents().Get(ctx, e.DocumentID)
+			until = retainUntilOf(fyStart, RecordsYears(), now, d, zone)
+			return err
+		}); err != nil {
+			errs = append(errs, fmt.Errorf("evidence %s: %w", e.ID, err))
+			continue
+		}
 		if err := c.commit(ctx, org, e, until); err != nil {
 			errs = append(errs, fmt.Errorf("evidence %s: %w", e.ID, err))
 			continue

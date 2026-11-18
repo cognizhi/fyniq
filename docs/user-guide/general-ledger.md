@@ -32,7 +32,9 @@ ledger**.
 3. Read each account's opening balance, its lines and its closing balance with the debits and the
    credits.
 
-At most 5,000 lines of one account show at once. If an account has more, choose a shorter range.
+At most 5,000 lines of one account show at once. If an account has more, choose a shorter range, or
+ask for the general ledger as an accountant export, which has no such limit
+([Accountant exports](financial-statements.md#accountant-exports)).
 
 When the organisation uses dimensions, **Only the lines of** shows the lines of a value alone, such as
 the Engineering department: the opening balance, the lines and the running balance are theirs. Each

@@ -68,6 +68,24 @@ const operations: Record<Approval["operation"], string> = {
   "investor_right.record": "Record an investor's rights",
   "controller_entry.record": "Record a registrable controller conclusion",
   "budget.record": "Approve and lock a budget",
+  "migration.commit": "Commit the workbook import",
+  "tenant_export.prepare": "Prepare the full export",
+  "ai_connection.create": "Connect an AI provider",
+  "ai_connection.change": "Change an AI provider's connection",
+  "ai_connection.credential": "Replace an AI provider's API key",
+  "ai_connection.enable": "Switch on an AI provider's connection",
+  "ai_data_policy.change": "Change where the AI may send each kind of data",
+  "ai_connection.allow_model": "Allow a model on an AI provider's connection",
+  "ai_connection.price": "Price a model on an AI provider's connection",
+  "ai_route.change": "Change an AI agent's route",
+  "api_client.create": "Register an integration client",
+  "api_client.reclass": "Reclass a personal access token as an integration",
+  "ai_proposal.execute": "Approve a change the AI proposed",
+  "corporate_detail.record": "Record the company's name, registered office and SSIC code",
+  "corporate_officer.record": "Record an officer's appointment or its change",
+  "nominee_entry.record": "Record a nominee director or shareholder",
+  "statements_approval.record": "Record the directors' approval of the financial statements",
+  "corporate_document.record": "Record a signed corporate document in the minute book",
 };
 
 export function operationLabel(op: string): string {
@@ -126,6 +144,18 @@ const objects: Record<string, string> = {
   investor_right: "Investor rights",
   controller_entry: "Registrable controller entry",
   budget: "Budget",
+  migration_commit: "Workbook import",
+  tenant_export: "Full export",
+  ai_connection: "AI provider connection",
+  ai_data_policy: "AI data-class policy",
+  ai_route: "AI agent's route",
+  api_client: "Integration client",
+  ai_proposal: "AI proposal",
+  corporate_detail: "Corporate details",
+  corporate_officer: "Officer",
+  nominee_entry: "Nominee entry",
+  statements_approval: "Statements approval",
+  corporate_document: "Corporate document",
 };
 
 export function objectLabel(t: string): string {

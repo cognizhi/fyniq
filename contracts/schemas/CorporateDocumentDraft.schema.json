@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "fields": {
+      "$ref": "CorporateDocumentFields.schema.json",
+      "description": "The fields its kind asks for; nothing else."
+    },
+    "kind": {
+      "description": "The kind of document, as getCorporateTemplates lists them.",
+      "enum": [
+        "agm.dispensation",
+        "agm.minutes",
+        "agm.notice",
+        "directors.allot_shares",
+        "directors.appoint_officer",
+        "directors.approve_statements",
+        "directors.change_office",
+        "directors.remove_officer",
+        "members.written_resolution"
+      ],
+      "examples": [
+        "directors.approve_statements"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "A note for the record, not on the paper.",
+      "examples": [
+        "For the AGM on 15 June"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "fields"
+  ],
+  "title": "CorporateDocumentDraft",
+  "type": "object"
+}

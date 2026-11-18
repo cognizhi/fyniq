@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "values": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Each column's value, as the pack writes it: decimals as text, dates as YYYY-MM-DD, empty for none.",
+      "examples": [
+        {
+          "amount": "1000000.00",
+          "currency": "SGD",
+          "limit": "registration_threshold"
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "values"
+  ],
+  "title": "StatutoryRow",
+  "type": "object"
+}

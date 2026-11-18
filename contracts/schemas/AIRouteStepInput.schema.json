@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cache": {
+      "description": "Whether the stable prompt and tools are cached, where the connection proves caching (AI-27).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "connection_id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2b"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "effort": {
+      "description": "The thinking effort; absent for the model's default (AI-27).",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "examples": [
+        "high"
+      ],
+      "type": "string"
+    },
+    "model": {
+      "description": "A model on the connection's allow-list.",
+      "examples": [
+        "claude-opus-4-6"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "connection_id",
+    "model",
+    "cache"
+  ],
+  "title": "AIRouteStepInput",
+  "type": "object"
+}

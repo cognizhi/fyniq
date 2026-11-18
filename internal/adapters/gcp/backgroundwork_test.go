@@ -27,8 +27,10 @@ import (
 const queue = "projects/fyniq-staging/locations/asia-southeast1/queues/worker"
 
 // An outbox row becomes one Cloud Tasks HTTP task to its class's /tasks, named after the row, with the
-// OIDC token Cloud Tasks mints for the class's invoker; a second Enqueue of the row is taken as done.
+// OIDC token Cloud Tasks mints for the class's invoker; a second Enqueue of the row is taken as done. A task due later
+// carries its scheduleTime.
 // req: NFR-PORT-04
+// req: AI-62
 // req: SEC-03
 // asvs: V13.2.1
 func TestTasksEnqueueNamedOIDCTasks(t *testing.T) {
@@ -76,6 +78,18 @@ func TestTasksEnqueueNamedOIDCTasks(t *testing.T) {
 	}
 	if err := q.Enqueue(ctx, ports.Task{Queue: "worker", Name: row, Payload: []byte(`{}`)}); err != nil {
 		t.Errorf("a second Enqueue of the same row: %v; want it taken as done", err)
+	}
+	// A scheduled agent's slot is delivered at its time (AI-62): the task carries its scheduleTime, and an unscheduled one
+	// none.
+	at := time.Date(2026, 11, 16, 23, 0, 0, 0, time.UTC)
+	if err := q.Enqueue(ctx, ports.Task{Queue: "worker", Name: "slot-1", Payload: []byte(`{}`), At: at}); err != nil {
+		t.Fatal(err)
+	}
+	if got := created[queue+"/tasks/slot-1"]["scheduleTime"]; got != "2026-11-16T23:00:00Z" {
+		t.Errorf("the slot's scheduleTime: %v", got)
+	}
+	if _, set := task["scheduleTime"]; set {
+		t.Errorf("a task due now has a scheduleTime: %v", task)
 	}
 	for name, task := range map[string]ports.Task{
 		"an unknown class":           {Queue: "payments", Name: row},

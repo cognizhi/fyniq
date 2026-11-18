@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "auth": {
+      "examples": [
+        "workload-identity"
+      ],
+      "type": "string"
+    },
+    "classification_line": {
+      "description": "The prefix it pins for high-volume classification.",
+      "examples": [
+        "claude-sonnet-"
+      ],
+      "type": "string"
+    },
+    "connector": {
+      "examples": [
+        "anthropic"
+      ],
+      "type": "string"
+    },
+    "location": {
+      "examples": [
+        "asia-southeast1"
+      ],
+      "type": "string"
+    },
+    "main_line": {
+      "description": "The prefix of the model IDs it pins for most agents.",
+      "examples": [
+        "claude-opus-"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "connector",
+    "auth",
+    "location",
+    "main_line",
+    "classification_line"
+  ],
+  "title": "AIPresetTarget",
+  "type": "object"
+}

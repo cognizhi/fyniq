@@ -8,5 +8,5 @@ import "embed"
 
 // FS holds every pack version; a pack is a top-level directory.
 //
-//go:embed sg-gst sg-deadlines sg-cit sg-cpf sg-sdl
+//go:embed sg-gst sg-deadlines sg-cit sg-cpf sg-sdl sg-acra
 var FS embed.FS

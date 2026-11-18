@@ -12,6 +12,7 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
@@ -23,7 +24,11 @@
   "include": [
     "src",
     "e2e",
+    "journeys",
+    "visual",
     "vite.config.ts",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    ".storybook",
+    "vitest.storybook.config.ts"
   ]
 }

@@ -79,6 +79,34 @@ func (r outbox) Get(ctx context.Context, id uuid.UUID) (storage.OutboxRow, error
 		row.Dispatches, row.TaskName, row.LeaseHolder, row.LeaseExpiresAt, row.DeadlineAt, row.LastError), nil
 }
 
+func (r outbox) Dead(ctx context.Context, limit int) ([]storage.DeadRow, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.DeadOutbox(ctx, int32(min(max(limit, 1), 500))) // #nosec G115 -- bounded to 1..500
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.DeadRow, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, storage.DeadRow{DiedAt: row.UpdatedAt, OutboxRow: toOutbox(row.ID, row.WorkerClass, row.Kind, row.Payload, row.BusinessKey,
+			row.State, row.Attempts, row.MaxAttempts, row.Dispatches, row.TaskName, row.LeaseHolder, row.LeaseExpiresAt, row.DeadlineAt, row.LastError)})
+	}
+	return out, nil
+}
+
+func (r outbox) Replay(ctx context.Context, id uuid.UUID) (storage.OutboxRow, error) {
+	if err := r.u.check(); err != nil {
+		return storage.OutboxRow{}, err
+	}
+	row, err := r.u.q.ReplayOutbox(ctx, id)
+	if err != nil {
+		return storage.OutboxRow{}, mapError(err)
+	}
+	return toOutbox(row.ID, row.WorkerClass, row.Kind, row.Payload, row.BusinessKey, row.State, row.Attempts, row.MaxAttempts,
+		row.Dispatches, row.TaskName, row.LeaseHolder, row.LeaseExpiresAt, row.DeadlineAt, row.LastError), nil
+}
+
 func (r outbox) ByKey(ctx context.Context, kind, key string) (*storage.OutboxRow, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err
