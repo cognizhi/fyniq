@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "description": "The approval request that signed it; none when the Owner published alone in Founder mode, which waits in the weekly review.",
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2e"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "created_at": {
+      "examples": [
+        "2026-11-19T08:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "created_by": {
+      "examples": [
+        "user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "reason": {
+      "examples": [
+        "The expense policy changed."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "number",
+    "reason",
+    "created_at"
+  ],
+  "title": "KBSnapshot",
+  "type": "object"
+}

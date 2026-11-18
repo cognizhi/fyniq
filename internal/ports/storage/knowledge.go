@@ -188,4 +188,24 @@ type OrganisationKnowledge interface {
 	LiveIndex(ctx context.Context, classes []string) ([]KBLivePage, error)
 	LivePage(ctx context.Context, key string, classes []string) (KBLivePage, bool, error)
 	Search(ctx context.Context, terms, classes []string, limit int) ([]KBHit, error)
+	// AddFinding records what a lint found, open until a person resolves it; Findings lists them (status "" for all, newest first),
+	// OpenFindings those of one page, ResolveFinding closes one, once, with why. Each is audited.
+	AddFinding(ctx context.Context, f KBFinding) (KBFinding, error)
+	Findings(ctx context.Context, status string, limit int) ([]KBFinding, error)
+	OpenFindings(ctx context.Context, key string) ([]KBFinding, error)
+	ResolveFinding(ctx context.Context, id uuid.UUID, by uuid.UUID, resolution string, at time.Time) error
+}
+
+// KBFinding is what the lint, or the weekly semantic pass, found.
+type KBFinding struct {
+	ID          uuid.UUID
+	Kind        string
+	PageKey     string
+	PageVersion int
+	Detail      string
+	Status      string // open or resolved
+	CreatedAt   time.Time
+	ResolvedBy  *uuid.UUID
+	ResolvedAt  *time.Time
+	Resolution  string
 }

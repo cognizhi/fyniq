@@ -12,6 +12,33 @@ import (
 	"github.com/google/uuid"
 )
 
+const insertKBFinding = `-- name: InsertKBFinding :one
+INSERT INTO fyniq.kb_lint_finding (kind, page_key, page_version, detail, created_at)
+VALUES ($1, $2::text, $3::integer, $4, $5)
+RETURNING id
+`
+
+type InsertKBFindingParams struct {
+	Kind        string
+	PageKey     *string
+	PageVersion *int32
+	Detail      string
+	At          time.Time
+}
+
+func (q *Queries) InsertKBFinding(ctx context.Context, arg InsertKBFindingParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, insertKBFinding,
+		arg.Kind,
+		arg.PageKey,
+		arg.PageVersion,
+		arg.Detail,
+		arg.At,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const insertKBNote = `-- name: InsertKBNote :one
 INSERT INTO fyniq.kb_note (key, kind, title, body, data_class, created_by, created_at, updated_by, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $6, $7)
@@ -158,6 +185,60 @@ type InsertKBSnapshotPageParams struct {
 func (q *Queries) InsertKBSnapshotPage(ctx context.Context, arg InsertKBSnapshotPageParams) error {
 	_, err := q.db.Exec(ctx, insertKBSnapshotPage, arg.SnapshotNumber, arg.Key, arg.Version)
 	return err
+}
+
+const kBFindings = `-- name: KBFindings :many
+SELECT id, kind, page_key, page_version, detail, status, created_at, resolved_by, resolved_at, resolution
+FROM fyniq.kb_lint_finding WHERE ($1::text = '' OR status = $1::text) ORDER BY created_at DESC, id DESC LIMIT $2
+`
+
+type KBFindingsParams struct {
+	Status  string
+	MaxRows int32
+}
+
+type KBFindingsRow struct {
+	ID          uuid.UUID
+	Kind        string
+	PageKey     *string
+	PageVersion *int32
+	Detail      string
+	Status      string
+	CreatedAt   time.Time
+	ResolvedBy  *uuid.UUID
+	ResolvedAt  *time.Time
+	Resolution  string
+}
+
+func (q *Queries) KBFindings(ctx context.Context, arg KBFindingsParams) ([]KBFindingsRow, error) {
+	rows, err := q.db.Query(ctx, kBFindings, arg.Status, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []KBFindingsRow
+	for rows.Next() {
+		var i KBFindingsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.PageKey,
+			&i.PageVersion,
+			&i.Detail,
+			&i.Status,
+			&i.CreatedAt,
+			&i.ResolvedBy,
+			&i.ResolvedAt,
+			&i.Resolution,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const kBLatestPageVersions = `-- name: KBLatestPageVersions :many
@@ -446,6 +527,55 @@ func (q *Queries) KBNotes(ctx context.Context) ([]KBNotesRow, error) {
 	return items, nil
 }
 
+const kBOpenFindingsOf = `-- name: KBOpenFindingsOf :many
+SELECT id, kind, page_key, page_version, detail, status, created_at, resolved_by, resolved_at, resolution
+FROM fyniq.kb_lint_finding WHERE status = 'open' AND page_key = $1::text ORDER BY created_at, id
+`
+
+type KBOpenFindingsOfRow struct {
+	ID          uuid.UUID
+	Kind        string
+	PageKey     *string
+	PageVersion *int32
+	Detail      string
+	Status      string
+	CreatedAt   time.Time
+	ResolvedBy  *uuid.UUID
+	ResolvedAt  *time.Time
+	Resolution  string
+}
+
+func (q *Queries) KBOpenFindingsOf(ctx context.Context, pageKey string) ([]KBOpenFindingsOfRow, error) {
+	rows, err := q.db.Query(ctx, kBOpenFindingsOf, pageKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []KBOpenFindingsOfRow
+	for rows.Next() {
+		var i KBOpenFindingsOfRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.PageKey,
+			&i.PageVersion,
+			&i.Detail,
+			&i.Status,
+			&i.CreatedAt,
+			&i.ResolvedBy,
+			&i.ResolvedAt,
+			&i.Resolution,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const kBOrgSearch = `-- name: KBOrgSearch :many
 SELECT d.key::text AS key, d.title::text AS title, d.summary::text AS summary, d.snippet::text AS snippet, d.rank::real AS rank
 FROM fyniq.kb_org_search($1::text[], $2::text[], $3::integer) AS d(key, title, summary, snippet, rank)
@@ -601,6 +731,31 @@ func (q *Queries) KBSnapshots(ctx context.Context, maxRows int32) ([]KBSnapshots
 		return nil, err
 	}
 	return items, nil
+}
+
+const resolveKBFinding = `-- name: ResolveKBFinding :execrows
+UPDATE fyniq.kb_lint_finding SET status = 'resolved', resolved_by = $1, resolved_at = $2, resolution = $3
+WHERE id = $4 AND status = 'open'
+`
+
+type ResolveKBFindingParams struct {
+	By         *uuid.UUID
+	At         *time.Time
+	Resolution string
+	ID         uuid.UUID
+}
+
+func (q *Queries) ResolveKBFinding(ctx context.Context, arg ResolveKBFindingParams) (int64, error) {
+	result, err := q.db.Exec(ctx, resolveKBFinding,
+		arg.By,
+		arg.At,
+		arg.Resolution,
+		arg.ID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const updateKBNote = `-- name: UpdateKBNote :execrows

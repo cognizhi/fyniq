@@ -7,9 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -155,6 +157,64 @@ func TestAttackTheOrganisationsKnowledgeBaseOnlyGoesForward(t *testing.T) {
 		{"the AI running the search", "fyniq_ai", `SELECT * FROM fyniq.kb_org_search(ARRAY['x'], ARRAY['general'], 5)`, []string{"42501"}},
 	} {
 		err := asOrg(ctx, conn(t, x.role), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })
+		wantState(t, x.what, err, x.states...)
+	}
+}
+
+// A finding is open until a person resolves it, once, and stops its page's publication meanwhile (AI-52, AI-56; design D8).
+// asvs: V8.2.2
+func TestAFindingIsResolvedOnceByAPerson(t *testing.T) {
+	ctx := context.Background()
+	a := books(t, "Findings Pte Ltd")
+	api := store(t, "fyniq_api")
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	person := founder(t, api, a.Org, 1, now)
+	var id uuid.UUID
+	if err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		k := u.OrganisationKnowledge()
+		f, err := k.AddFinding(ctx, storage.KBFinding{Kind: "contradiction", PageKey: "org.expense-policy", PageVersion: 2, Detail: "says 14 days, the setting says 30", CreatedAt: now})
+		if err != nil {
+			return err
+		}
+		id = f.ID
+		open, err := k.OpenFindings(ctx, "org.expense-policy")
+		if err != nil || len(open) != 1 || open[0].Kind != "contradiction" || open[0].PageVersion != 2 {
+			t.Errorf("the open findings: %+v %v", open, err)
+		}
+		if other, _ := k.OpenFindings(ctx, "org.other"); len(other) != 0 {
+			t.Errorf("another page's findings: %+v", other)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		k := u.OrganisationKnowledge()
+		if err := k.ResolveFinding(ctx, id, person, "The page is right: the setting changed", now.Add(time.Minute)); err != nil {
+			return err
+		}
+		if open, _ := k.OpenFindings(ctx, "org.expense-policy"); len(open) != 0 {
+			t.Errorf("a resolved finding is open: %+v", open)
+		}
+		if all, _ := k.Findings(ctx, "resolved", 10); len(all) != 1 || all[0].ResolvedBy == nil || *all[0].ResolvedBy != person {
+			t.Errorf("the resolved findings: %+v", all)
+		}
+		if err := k.ResolveFinding(ctx, id, person, "again", now.Add(2*time.Minute)); err != ports.ErrNotFound {
+			t.Errorf("resolved twice: %v", err)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, x := range []struct {
+		what, stmt string
+		states     []string
+	}{
+		{"the owner reopening it", `UPDATE fyniq.kb_lint_finding SET status = 'open', resolved_at = NULL, resolved_by = NULL`, []string{"FY561"}},
+		{"the owner rewriting what it found", `UPDATE fyniq.kb_lint_finding SET detail = 'nothing'`, []string{"FY561"}},
+		{"the owner removing it", `DELETE FROM fyniq.kb_lint_finding`, []string{"FY561"}},
+	} {
+		err := asOrg(ctx, conn(t, "fyniq_migrator"), a.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })
 		wantState(t, x.what, err, x.states...)
 	}
 }

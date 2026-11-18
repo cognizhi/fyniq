@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "aliases": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "author": {
+      "description": "user:\u003cid\u003e, kb-compiler or system.",
+      "examples": [
+        "user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"
+      ],
+      "type": "string"
+    },
+    "base_key": {
+      "description": "An overlay: the platform page it replaces.",
+      "examples": [
+        "claims.approve-team-claims"
+      ],
+      "type": "string"
+    },
+    "body": {
+      "examples": [
+        "# Expense policy"
+      ],
+      "type": "string"
+    },
+    "compiler": {
+      "description": "The model that compiled it.",
+      "examples": [
+        "claude-opus-5-5"
+      ],
+      "type": "string"
+    },
+    "created_at": {
+      "examples": [
+        "2026-11-19T08:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "data_class": {
+      "examples": [
+        "general"
+      ],
+      "type": "string"
+    },
+    "human_edited": {
+      "description": "true when a person wrote it: a recompile never overwrites it.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "key": {
+      "examples": [
+        "org.expense-policy"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "Its version; the page's ETag carries the newest for If-Match.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "origin": {
+      "enum": [
+        "rendered",
+        "compiled",
+        "human_edited",
+        "overlay",
+        "rollback"
+      ],
+      "examples": [
+        "human_edited"
+      ],
+      "type": "string"
+    },
+    "restores": {
+      "description": "A rollback: the version whose content it restores.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "sources": {
+      "items": {
+        "$ref": "KBSourceInput.schema.json"
+      },
+      "type": "array"
+    },
+    "state": {
+      "description": "published when the live snapshot lists it, draft when it is newer than the published one, superseded when an earlier one.",
+      "enum": [
+        "published",
+        "draft",
+        "superseded"
+      ],
+      "examples": [
+        "draft"
+      ],
+      "type": "string"
+    },
+    "summary": {
+      "examples": [
+        "How claims are made here."
+      ],
+      "type": "string"
+    },
+    "title": {
+      "examples": [
+        "Expense policy"
+      ],
+      "type": "string"
+    },
+    "type": {
+      "examples": [
+        "policy"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "number",
+    "state",
+    "origin",
+    "type",
+    "title",
+    "summary",
+    "aliases",
+    "body",
+    "sources",
+    "data_class",
+    "author",
+    "created_at",
+    "human_edited"
+  ],
+  "title": "KBPageVersion",
+  "type": "object"
+}

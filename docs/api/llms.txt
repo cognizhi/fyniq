@@ -626,6 +626,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/knowledge-base/notes` (listKBNotes): List the organisation's knowledge-base notes
 - `POST /v1/knowledge-base/notes` (createKBNote): Write a knowledge-base note
 - `PUT /v1/knowledge-base/notes/{key}` (reviseKBNote): Change a knowledge-base note
+- `PUT /v1/knowledge-base/pages/{key}` (editKBPage): Edit a knowledge-base page
+- `POST /v1/knowledge-base/pages/{key}/rollback` (rollbackKBPage): Roll a knowledge-base page back to an earlier version
+- `POST /v1/knowledge-base/publications` (publishKBPages): Publish knowledge-base pages
+- `POST /v1/knowledge-base/publications/approval` (requestKBPublication): Ask for approval to publish knowledge-base pages
 - `GET /v1/kpi-inputs` (listKpiInputs): List the KPIs' entered counts
 - `PUT /v1/kpi-inputs/{month}` (setKpiInput): Enter a month's KPI counts
 - `GET /v1/kpis` (getKpis): Get the KPIs of a month

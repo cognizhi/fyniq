@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "aliases": {
+      "description": "Other words people use for it, which search matches.",
+      "examples": [
+        [
+          "claims rule"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 30,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "body": {
+      "description": "Markdown: a title, then sections, each citing its source as (src: note:\u003ckey\u003e#\u003canchor\u003e), (src: setting:\u003ckey\u003e#\u003canchor\u003e) or (src: platform:\u003ckey\u003e#\u003canchor\u003e). Every number in it must be in a source it cites.",
+      "maxLength": 60000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "sources": {
+      "description": "What the page is made from; each section cites one of these.",
+      "items": {
+        "$ref": "KBSourceInput.schema.json"
+      },
+      "maxItems": 50,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "summary": {
+      "description": "One line the index shows.",
+      "examples": [
+        "How claims are made here."
+      ],
+      "maxLength": 160,
+      "minLength": 1,
+      "type": "string"
+    },
+    "title": {
+      "examples": [
+        "Expense policy"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "type": {
+      "description": "What the page is.",
+      "enum": [
+        "concept",
+        "task",
+        "reference",
+        "policy",
+        "decision"
+      ],
+      "examples": [
+        "policy"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "title",
+    "summary",
+    "body",
+    "sources"
+  ],
+  "title": "KBPageInput",
+  "type": "object"
+}

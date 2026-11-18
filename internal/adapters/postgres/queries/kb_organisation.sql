@@ -63,3 +63,20 @@ FROM fyniq.kb_live_page WHERE key = sqlc.arg(key)::text AND data_class = ANY(sql
 -- name: KBOrgSearch :many
 SELECT d.key::text AS key, d.title::text AS title, d.summary::text AS summary, d.snippet::text AS snippet, d.rank::real AS rank
 FROM fyniq.kb_org_search(sqlc.arg(terms)::text[], sqlc.arg(classes)::text[], sqlc.arg(max_hits)::integer) AS d(key, title, summary, snippet, rank);
+
+-- name: InsertKBFinding :one
+INSERT INTO fyniq.kb_lint_finding (kind, page_key, page_version, detail, created_at)
+VALUES (sqlc.arg(kind), sqlc.narg(page_key)::text, sqlc.narg(page_version)::integer, sqlc.arg(detail), sqlc.arg(at))
+RETURNING id;
+
+-- name: KBFindings :many
+SELECT id, kind, page_key, page_version, detail, status, created_at, resolved_by, resolved_at, resolution
+FROM fyniq.kb_lint_finding WHERE (sqlc.arg(status)::text = '' OR status = sqlc.arg(status)::text) ORDER BY created_at DESC, id DESC LIMIT sqlc.arg(max_rows);
+
+-- name: KBOpenFindingsOf :many
+SELECT id, kind, page_key, page_version, detail, status, created_at, resolved_by, resolved_at, resolution
+FROM fyniq.kb_lint_finding WHERE status = 'open' AND page_key = sqlc.arg(page_key)::text ORDER BY created_at, id;
+
+-- name: ResolveKBFinding :execrows
+UPDATE fyniq.kb_lint_finding SET status = 'resolved', resolved_by = sqlc.arg(by), resolved_at = sqlc.arg(at), resolution = sqlc.arg(resolution)
+WHERE id = sqlc.arg(id) AND status = 'open';

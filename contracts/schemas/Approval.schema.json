@@ -140,7 +140,8 @@
         "nominee_entry",
         "statements_approval",
         "corporate_document",
-        "api_client"
+        "api_client",
+        "kb_publication"
       ],
       "examples": [
         "organisation_setting"
@@ -227,7 +228,8 @@
         "statements_approval.record",
         "corporate_document.record",
         "api_client.create",
-        "api_client.reclass"
+        "api_client.reclass",
+        "kb_publication.publish"
       ],
       "examples": [
         "organisation_setting.change"

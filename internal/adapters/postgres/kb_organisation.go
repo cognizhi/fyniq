@@ -11,6 +11,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/sqlcdb"
 	"github.com/cognizhi/fyniq/internal/domain/knowledge"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -287,4 +288,79 @@ func (r orgKB) Search(ctx context.Context, terms, classes []string, limit int) (
 		out = append(out, storage.KBHit{Kind: "page", Key: x.Key, Title: x.Title, Summary: x.Summary, Snippet: x.Snippet, Rank: x.Rank})
 	}
 	return out, nil
+}
+
+func findingOf(id uuid.UUID, kind string, key *string, version *int32, detail, status string, at time.Time, by *uuid.UUID, resolvedAt *time.Time, resolution string) storage.KBFinding {
+	f := storage.KBFinding{ID: id, Kind: kind, Detail: detail, Status: status, CreatedAt: at, ResolvedBy: by, ResolvedAt: resolvedAt, Resolution: resolution}
+	if key != nil {
+		f.PageKey = *key
+	}
+	if version != nil {
+		f.PageVersion = int(*version)
+	}
+	return f
+}
+
+func (r orgKB) AddFinding(ctx context.Context, f storage.KBFinding) (storage.KBFinding, error) {
+	if err := r.u.check(); err != nil {
+		return storage.KBFinding{}, err
+	}
+	p := sqlcdb.InsertKBFindingParams{Kind: f.Kind, Detail: f.Detail, At: f.CreatedAt}
+	if f.PageKey != "" {
+		p.PageKey = &f.PageKey
+	}
+	if f.PageVersion > 0 {
+		n := int32(f.PageVersion) // #nosec G115 -- a version number
+		p.PageVersion = &n
+	}
+	id, err := r.u.q.InsertKBFinding(ctx, p)
+	if err != nil {
+		return storage.KBFinding{}, mapError(err)
+	}
+	f.ID, f.Status = id, "open"
+	return f, r.u.event(ctx, "kb_finding.raised", "kb_lint_finding", id, nil, map[string][2]any{"kind": {nil, f.Kind}, "page": {nil, f.PageKey}, "detail": {nil, f.Detail}})
+}
+
+func (r orgKB) Findings(ctx context.Context, status string, limit int) ([]storage.KBFinding, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.KBFindings(ctx, sqlcdb.KBFindingsParams{Status: status, MaxRows: int32(min(max(limit, 1), 500))}) // #nosec G115 -- capped
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.KBFinding, 0, len(rows))
+	for _, x := range rows {
+		out = append(out, findingOf(x.ID, x.Kind, x.PageKey, x.PageVersion, x.Detail, x.Status, x.CreatedAt, x.ResolvedBy, x.ResolvedAt, x.Resolution))
+	}
+	return out, nil
+}
+
+func (r orgKB) OpenFindings(ctx context.Context, key string) ([]storage.KBFinding, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.KBOpenFindingsOf(ctx, key)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.KBFinding, 0, len(rows))
+	for _, x := range rows {
+		out = append(out, findingOf(x.ID, x.Kind, x.PageKey, x.PageVersion, x.Detail, x.Status, x.CreatedAt, x.ResolvedBy, x.ResolvedAt, x.Resolution))
+	}
+	return out, nil
+}
+
+func (r orgKB) ResolveFinding(ctx context.Context, id, by uuid.UUID, resolution string, at time.Time) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	n, err := r.u.q.ResolveKBFinding(ctx, sqlcdb.ResolveKBFindingParams{By: &by, At: &at, Resolution: resolution, ID: id})
+	if err != nil {
+		return mapError(err)
+	}
+	if n == 0 {
+		return ports.ErrNotFound
+	}
+	return r.u.event(ctx, "kb_finding.resolved", "kb_lint_finding", id, nil, map[string][2]any{"status": {"open", "resolved"}, "resolution": {nil, resolution}})
 }

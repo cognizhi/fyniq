@@ -88,7 +88,8 @@
         "nominee_entry",
         "statements_approval",
         "corporate_document",
-        "api_client"
+        "api_client",
+        "kb_publication"
       ],
       "examples": [
         "organisation_setting"
