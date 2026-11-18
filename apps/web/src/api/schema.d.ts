@@ -60416,7 +60416,7 @@ export interface operations {
                          */
                         event: "answer";
                         /** @description The event ID. */
-                        id?: number | string;
+                        id?: number;
                         /** @description The retry time in milliseconds. */
                         retry?: number;
                     } | {
@@ -60427,7 +60427,7 @@ export interface operations {
                          */
                         event: "error";
                         /** @description The event ID. */
-                        id?: number | string;
+                        id?: number;
                         /** @description The retry time in milliseconds. */
                         retry?: number;
                     } | {
@@ -60438,7 +60438,7 @@ export interface operations {
                          */
                         event: "status";
                         /** @description The event ID. */
-                        id?: number | string;
+                        id?: number;
                         /** @description The retry time in milliseconds. */
                         retry?: number;
                     })[];
