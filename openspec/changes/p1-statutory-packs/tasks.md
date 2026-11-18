@@ -15,10 +15,10 @@
   the day it is posted. G4-018 and G4-019 are pinned in `pack_test.go` and `ledger/deposit_test.go`. IRAS's page
   "Deposits and downpayment" (last updated 4 June 2026, read 18 Nov 2026) says that for a deposit that is part payment you
   "charge and account for GST" when you receive it and may adjust it by a credit note if you refund it, and that a
-  refundable security deposit bears GST when it is used; its "When to report supplies in GST returns" page puts
+  refundable security deposit bears GST when it is used; its "Completing GST returns" page puts
   "deposits received as part payment" in Box 1; neither says that the final invoice reports only the balance, so G4-018's
   [verify] stays for that half in the PRD. **Left:** G4-021 (the claim-date policy and the adjustment queue, FR-TAX-12) is
-  `p1-gst` task 7.4, which the founders left to GST registration (PRD question 29); the stored GST dates go with it.)
+  `p1-gst` task 7.4, which `p1-gst` leaves to GST registration (its section 7, "At GST registration (question 2), not before"); the stored GST dates go with it.)
 - [x] 2.3 Apply RND-GST-EXCL per subtotal or per line, as the organisation's setting says, and RND-GST-INCL extraction. Tests `// req: RND-GST-EXCL` and `// req: RND-GST-INCL`, with cases worked by hand (**Left:** the rounding package sits under the oracle's differential and mutation gates, so this goes with the oracle's half in `p1-gst`)
   (27 Oct 2026, the oracle session: the oracle's half is written from §10.4, `money.rnd_gst_excl` per GST-code subtotal or per line and `money.rnd_gst_incl` at the base currency's minor units, with hand-worked cases and properties `# req: RND-GST-EXCL`, `# req: RND-GST-INCL` in `oracle/tests/test_gst_rounding.py`. **Left:** the differential reaches them through the bank-line and invoice shapes of `fyniq-scenario@1` once `cmd/scenario-run` reads those (an engine-session task in `p1-bank-import-reconcile` and `p1-sales`))
   (18 Nov 2026, p1-statutory-packs, engine: the Go half was built with the sales and bank sources and is tagged:
