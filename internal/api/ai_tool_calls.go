@@ -132,8 +132,13 @@ func registerToolCalls(a *API) {
 		if err != nil {
 			return nil, err
 		}
-		if err := a.screenResult(ctx, &out); err != nil {
-			return nil, err
+		// A knowledge-base tool's content is the release's own page text, which is trusted (AI-54): it is not quoted as
+		// untrusted_text, which would turn a page's words and the tool's own hints into data the model is told to ignore. An
+		// organisation's untrusted page, when there is one (P2), is quoted by its taint.
+		if !strings.HasPrefix(tool.Name, "kb.") {
+			if err := a.screenResult(ctx, &out); err != nil {
+				return nil, err
+			}
 		}
 		if err := a.widenTurn(ctx, toolClasses(tool.Name, in.Body.Input)); err != nil {
 			return nil, err

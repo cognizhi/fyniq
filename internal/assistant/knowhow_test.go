@@ -120,3 +120,23 @@ func TestKnowHowAndFiguresShareAnAnswer(t *testing.T) {
 		t.Errorf("the answer: %+v", out)
 	}
 }
+
+// A model cannot name a source: sources it supplies on any segment, plain words included, are dropped, and only the guide
+// pages the cited section came from are shown (AI-51).
+// req: AI-51
+func TestAModelCannotNameASourceForAChip(t *testing.T) {
+	fake := []assistant.Source{{Guide: "../../etc/passwd", Title: "Nothing to see", Anchor: "x"}}
+	out, _ := knowHowRun(t,
+		assistant.Segment{Text: "Some plain words.", Sources: fake},
+		assistant.Segment{Text: "A claim is submitted within 30 days of the receipt date.", Page: "claims.approve-team-claims", Section: "who-approves", Sources: fake})
+	for i, g := range out.Segments {
+		for _, s := range g.Sources {
+			if s.Guide == "../../etc/passwd" {
+				t.Errorf("segment %d keeps a source the model named: %+v", i, g)
+			}
+		}
+	}
+	if len(out.Segments[0].Sources) != 0 || len(out.Sources) != 1 || out.Sources[0].Guide != "claims.approve-team" {
+		t.Errorf("the sources: %+v, segments %+v", out.Sources, out.Segments)
+	}
+}
