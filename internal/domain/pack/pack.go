@@ -179,6 +179,14 @@ var Schemas = map[string]Schema{
 		},
 		Since: map[string][2]int{"low_wages": {2026, 2}, "maxima": {2026, 2}},
 	},
+	// The self-help group funds' monthly contributions by wage band (FR-PLN-02; p1-statutory-packs 4.1).
+	"sg-shg": {
+		Tables: map[string][]string{
+			"funds": {"fund", "administrator", "basis", "applies_to", "source"},
+			"bands": {"fund", "wage_above", "wage_to", "effective_from", "effective_to", "amount", "source"},
+		},
+		Pinned: map[string][]string{"bands": {"case", "month", "fund", "wages", "want", "why", "source"}},
+	},
 	// The Skills Development Levy by month (FR-PLN-02).
 	"sg-sdl": {
 		Tables: map[string][]string{"levy": {"effective_from", "effective_to", "rate", "minimum", "maximum", "source"}},
@@ -448,6 +456,8 @@ func Load(fsys fs.FS, dir string) (Version, error) {
 		out = append(out, checkCPF(dir, v)...)
 	case "sg-sdl":
 		out = append(out, checkSDL(dir, v)...)
+	case "sg-shg":
+		out = append(out, checkSHG(dir, v)...)
 	}
 	if len(out) > 0 {
 		return Version{}, out
