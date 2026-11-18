@@ -31,6 +31,17 @@ A Controller, an Accountant or a Tax agent asks. An Owner or a Controller who di
 as with any other change ([Approve a change](approvals.md)). Fyniq runs the pinned tests again before
 it records the activation, with who asked, who approved and the request.
 
+## An update waiting to be activated
+
+When a later version of a pack you activated is in force, such as a correction to the GST codes, its
+update is waiting. Until an Owner or a Controller approves it:
+
+- the checks whose figures read that pack say **Not assessed: based on** the version you have, **update
+  pending**, naming the later one, so none of them gives an all clear;
+- **The statutory parameters in force are current** on **Checks** lists the later version.
+
+Activate the later version as above; the checks are worked out again with it.
+
 ## Common problems
 
 - **A pinned statutory test fails**: the version cannot be activated. The platform team publishes a
