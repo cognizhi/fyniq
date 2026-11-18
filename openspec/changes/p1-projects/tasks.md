@@ -4,55 +4,64 @@ Five slices, each its own pull request. Migrations 000600 to 000619 only (design
 
 ## 1. Projects (slice 1)
 
-- [ ] 1.1 Migration 000600 (and 000601 if a check is widened): `project`, `project_member`, `project_task` on the
+- [x] 1.1 Migration 000600 (and 000601 if a check is widened): `project`, `project_member`, `project_task` on the
   project dimension's values (design D1): RLS with `FORCE`, grants by column, audit triggers, the guard (a project's
   value is of the project dimension; versions move by one; nothing deleted; a closed project takes no new tasks);
   squawk clean; goldens updated.
   - Tests: tenancy and grants goldens; a project on a department value refused; a second tenant sees nothing.
     `// req: FR-PRJ-01`
-- [ ] 1.2 `internal/domain/project`: the project's draft read and checked with every problem at once (ENG-22, ENG-23):
+- [x] 1.2 `internal/domain/project`: the project's draft read and checked with every problem at once (ENG-22, ENG-23):
   statuses, billing methods, dates, budget, currency, managers and members who are active members of the organisation,
   at least one manager unless internal.
   - Tests: each problem named with its code and fix. `// req: FR-PRJ-01`
-- [ ] 1.3 The API, contract first (`make openapi`): `listProjects`, `createProject`, `getProject`, `replaceProject`
+- [x] 1.3 The API, contract first (`make openapi`): `listProjects`, `createProject`, `getProject`, `replaceProject`
   (ETag, If-Match), project tasks, `PRJ-OFF` when the switch is off (design D7); matrix rows
   (`TestAuthorisationMatrix`): project records are kept under "Chart of accounts, dimensions" (Accountant C), read
   under "Timesheets and project time" or "Project reports and cost rates" V.
   - Tests: the matrix rows; every operation refused while the switch is off; creating a project creates its dimension
     value and, when none, the Project dimension; audit events. `// req: FR-PRJ-01`, `// req: FR-ORG-06`
-- [ ] 1.4 Web: Projects (`/projects`, list with budget use, billing method, status, feature-off state) and the project
+- [x] 1.4 Web: Projects (`/projects`, list with budget use, billing method, status, feature-off state) and the project
   record (`/projects/:id`: details, managers and members, tasks; the tabs for time, costs and billing arrive with
   their slices), the feature registry entries (`basic`/`expert`), help keys, the guide page `projects.projects`, and the
   compiled knowledge-base page.
   - Tests: Vitest with axe; the registry and help tests; the navigation shows Projects only when on and the person has a
     right. `// req: FR-PRJ-01`, `// req: FR-UX-40`
-- [ ] 1.5 Close the slice: `make check`, `make test`-level suites touched, a Conventional Commit with upgrade notes
+- [x] 1.5 Close the slice: `make check`, `make test`-level suites touched, a Conventional Commit with upgrade notes
   (new endpoints, new setting behaviour).
+
+Built (slice 1, PR 843): migration 000600; `internal/domain/project`; the API with `PRJ-09`; Projects and the project record; the guide
+page `projects.projects` and its knowledge-base page. Tasks 1.1 to 1.5 are ticked. The tests: `TestProjects*`, `TestProjectTasks`, the matrix
+rows, `TestAProjectIsADimensionValueWithAttributes`, `TestAttackAProject…`, `src/screens/projects/projects.test.tsx`.
 
 ## 2. Time, submission and approval (slice 2)
 
-- [ ] 2.1 PRD change (rev 0.N, provisional): `RND-TIME` in §10.4 (and its spec); FR-PRJ-07's route (decision B); the new
+- [x] 2.1 PRD change (rev 0.N, provisional): `RND-TIME` in §10.4 (and its spec); FR-PRJ-07's route (decision B); the new
   Appendix D row for person-level cost rates (decision A); `python3 scripts/prdspec.py stamp`, `make roadmap`.
-- [ ] 2.2 Migration 000602/000603: `time_entry`, `time_timer`, `timesheet_submission`; the triggers: a locked entry
+- [x] 2.2 Migration 000602/000603: `time_entry`, `time_timer`, `timesheet_submission`; the triggers: a locked entry
   never changes or goes, one reversal per original, the Monday check, `decided_by` ≠ `user_id` and the manager-or-Controller
   rule (design D2 to D4).
   - Tests: attack tests on the triggers as the application role. `// req: FR-PRJ-05`, `// req: FR-PRJ-07`
-- [ ] 2.3 `internal/domain/timesheet`: the week grid, the timer, `RND-TIME` in `internal/domain/rounding`, the missing
+- [x] 2.3 `internal/domain/timesheet`: the week grid, the timer, `RND-TIME` in `internal/domain/rounding`, the missing
   days (holidays from the calendar pack), submit, approve, return, reverse.
   - Tests: UC-PRJ-01's 2 h 15 min timer; a correction after approval; property tests for `RND-TIME` (a reversal costs
     exactly the negative; sums are exact). `// req: FR-PRJ-02`, `// req: FR-PRJ-05`
-- [ ] 2.4 The API: my week, save the grid, the timer (start, stop, current), submit the week, list submissions (mine,
+- [x] 2.4 The API: my week, save the grid, the timer (start, stop, current), submit the week, list submissions (mine,
   waiting for me, a project's), approve, return, reverse an entry; operation policies and the matrix rows: Employee
   `C (own)`, Approver only on their projects, Controller on any, nobody on their own time, the Owner never.
   - Tests: a member without the Approver role named as manager decides nothing; a manager of project X cannot decide
     project Y; self-approval refused in both modes; the matrix rows. `// req: FR-PRJ-07`, `// req: FR-UX-40`
-- [ ] 2.5 Web: My time (`/me/time`, personal workspace, FR-UX-39), the timesheet (`/projects/timesheet`: grid, timer,
+- [x] 2.5 Web: My time (`/me/time`, personal workspace, FR-UX-39), the timesheet (`/projects/timesheet`: grid, timer,
   submit, the team's waiting weeks for a manager), the Inbox item "Time to approve", reminders shown on the grid; help
   keys, the guide page `projects.time`, the compiled page.
   - Tests: Vitest with axe; a person with personal rights only sees My time and nothing else of Projects.
     `// req: FR-PRJ-05`, `// req: FR-UX-39`
 - [ ] 2.6 Missing-day reminders as notifications on the scheduler's tick (Friday), skipped while the module is off.
   - Tests: a person with a missing day is reminded once. `// req: FR-PRJ-05`
+
+Built (slice 2): migration 000602; `internal/domain/timesheet` and `RND-TIME`; the API (`/v1/timesheet`, `/v1/timer`, `/v1/time-entries`,
+`/v1/timesheet-submissions`); My time and Timesheet; PRD-001 rev 0.293 (FR-PRJ-05, FR-PRJ-07, `RND-TIME`; the Appendix D row for cost rates waits
+for slice 3). **Left:** 2.6, the Friday reminder (the scheduler job and a notification type), and the Inbox item for weeks to approve (the
+Timesheet page lists them).
 
 ## 3. Rates (slice 3)
 
@@ -100,6 +109,10 @@ Five slices, each its own pull request. Migrations 000600 to 000619 only (design
 - [ ] 5.4 Web: the Unbilled tab, milestones, retainer; help and guide.
 
 ## Left (named, not forgotten)
+
+- **Slices 3 to 5** (rates, reports and checks, billing and project costs) are not built: the design decides them (D5 to D10) and the
+  decisions A and C open the rates slice. They follow the same way: the PRD row for person-level cost rates, `person_cost_rate` and
+  `billing_rate` (000604), the tier function, then `balance.BySet` for the reports.
 
 - **FR-PRJ-09** per-task budgets, forecasts at completion, alerts at 80% and 100%, change orders: in this change's plan
   row, outside the commission; the project's own budget in hours and money and its use are built (slice 4).

@@ -149,10 +149,23 @@ waiting for the caller beside approvals, and `/projects/timesheet` is the team v
 
 ### D7. Feature switch on the server (FR-ORG-06, FR-UX-40d)
 
-Every operation of this change refuses with `PRJ-OFF` (403: "Projects and time are switched off. An Owner turns them on in
+Every operation of this change refuses with `PRJ-09` (403: "Projects and time are switched off. An Owner turns them on in
 Settings → Features") when `features.projects` is off for the organisation, whatever the caller's rights; the session
 already carries the switch to the web app. Turning it off hides the module and keeps its data; tags on posted lines
 stay (the ledger is immutable). The reminders and the checks of the module do not run while it is off.
+
+### Built so far (19 Nov 2026)
+
+- **Slice 1 (PR 843):** migration `000600`; the project, its people and tasks; `PRJ-09`. A project's key is `id` (the value's ID) and a
+  member has an `id` of its own, because §11.4 asks every tenant table for `UNIQUE (organisation_id, id)`. Projects are kept under
+  "Chart of accounts, dimensions" (C: the Accountant, the Tax agent), so an Owner or Controller who holds only A there adds a project
+  through an Accountant role, as for a dimension value. `listProjectPeople` gives them the members' names, since "Users, roles,
+  team mode" is not theirs to read. Task creation is `POST /v1/project-tasks` with the project in the body: the contract rule
+  (FR-INT-09) asks If-Match of a command under a record's path.
+- **Slice 2:** migration `000602`; time entries, the timer, submissions; the in-module approval (decision B, provisional in PRD-001 rev 0.293);
+  `RND-TIME`. A draft or returned entry a person removes is deleted (the one `DELETE` the application holds on time; the week's audit
+  event keeps it); an approved or submitted entry never goes (FY603). The Friday reminder is not built (it needs the scheduler and a
+  notification type): the grid and C.2 #41 show the days nobody entered.
 
 ### D8. Costs on projects (FR-PRJ-08)
 
