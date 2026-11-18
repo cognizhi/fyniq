@@ -1769,9 +1769,11 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		if err != nil {
 			return err
 		}
-		_, err = u.ApprovalPolicies().Add(ctx, storage.NewApprovalPolicy{ObjectType: r.ObjectKey, Version: c.Version, Steps: c.Steps,
-			Rules: c.Rules, RequestID: r.ID, CreatedBy: r.RequestedBy, CreatedAt: a.deps.Clock.Now()})
-		return err
+		if _, err = u.ApprovalPolicies().Add(ctx, storage.NewApprovalPolicy{ObjectType: r.ObjectKey, Version: c.Version, Steps: c.Steps,
+			Rules: c.Rules, RequestID: r.ID, CreatedBy: r.RequestedBy, CreatedAt: a.deps.Clock.Now()}); err != nil {
+			return err
+		}
+		return a.renderKnowledge(ctx, u)
 	case approval.OpPackActivate:
 		_, err := u.Packs().Activate(ctx, storage.NewPackActivation{VersionID: r.ObjectKey, ProposedBy: r.RequestedBy, ApprovedBy: signer,
 			Approval: r.ID, ActivatedAt: a.deps.Clock.Now()})

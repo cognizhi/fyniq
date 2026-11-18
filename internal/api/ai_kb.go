@@ -357,7 +357,11 @@ func orgView(p storage.KBLivePage, mayReadNotes bool) kbPageView {
 				}
 				return kbCite{Title: "Note: " + title, Anchor: anchor, Href: "/settings/ai/knowledge-base#note-" + ref}, true
 			case "setting":
-				return kbCite{Title: "Setting: " + title, Anchor: anchor, Href: "/settings#" + ref}, true
+				return kbCite{Title: "Setting: " + title, Anchor: anchor, Href: "/settings/organisation#" + ref}, true
+			case "policy":
+				return kbCite{Title: title, Anchor: anchor, Href: "/settings/approval-policies#" + ref}, true
+			case "team_mode":
+				return kbCite{Title: "Setting: " + title, Anchor: anchor, Href: "/settings/team-mode"}, true
 			case "platform":
 				return kbCite{Guide: ref, Title: title, Anchor: anchor, Href: "/help/" + ref + "#" + anchor}, true
 			}

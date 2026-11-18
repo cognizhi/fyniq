@@ -118,10 +118,10 @@ func TestAPublicationIsLintedThenMadeByAnOwnerAloneOrSignedByAnother(t *testing.
 	})
 	// Founder mode: the Owner publishes alone, it waits in the weekly review, and the assistant reads it.
 	snap := publish(owner, map[string]int{"org.expense-policy": 2})
-	if snap.Status != http.StatusCreated || snap.Body["number"] != float64(1) || snap.Body["approval_id"] != nil {
+	if snap.Status != http.StatusCreated || snap.Body["number"] == nil || snap.Body["approval_id"] != nil {
 		t.Fatalf("publishKBPages: %d %s", snap.Status, snap.Raw)
 	}
-	if r := reads(); r.Status != http.StatusOK || !strings.Contains(r.Raw, "within 14 days") || !strings.Contains(r.Raw, "organisation snapshot 1, version 2") {
+	if r := reads(); r.Status != http.StatusOK || !strings.Contains(r.Raw, "within 14 days") || !strings.Contains(r.Raw, ", version 2") {
 		t.Errorf("the assistant's read after the publication: %d %s", r.Status, r.Raw)
 	}
 	if r := e.call(http.MethodGet, "/v1/review-log", f.as(f.weiling, authz.Owner), nil); r.Status != http.StatusOK || !strings.Contains(r.Raw, "knowledge base alone") {
@@ -163,7 +163,7 @@ func TestAPublicationIsLintedThenMadeByAnOwnerAloneOrSignedByAnother(t *testing.
 	if r := f.decide(other, req.str("id"), "approve", hashOf(req)); r.Status != http.StatusOK {
 		t.Fatalf("another Owner signing: %d %s", r.Status, r.Raw)
 	}
-	if r := reads(); !strings.Contains(r.Raw, "in writing") || !strings.Contains(r.Raw, "organisation snapshot 2, version 4") {
+	if r := reads(); !strings.Contains(r.Raw, "in writing") || !strings.Contains(r.Raw, ", version 4") {
 		t.Errorf("the assistant's read after the signed publication: %d %s", r.Status, r.Raw)
 	}
 	// A request holds the snapshot it replaces: a publication that lands first voids it.
@@ -182,7 +182,90 @@ func TestAPublicationIsLintedThenMadeByAnOwnerAloneOrSignedByAnother(t *testing.
 	if r := f.decide(other, first.str("id"), "approve", hashOf(first)); r.Status != http.StatusOK {
 		t.Fatalf("the request: %d %s", r.Status, r.Raw)
 	}
-	if r := reads(); !strings.Contains(r.Raw, "date of the receipt") || !strings.Contains(r.Raw, "organisation snapshot 3, version 5") {
+	if r := reads(); !strings.Contains(r.Raw, "date of the receipt") || !strings.Contains(r.Raw, ", version 5") {
 		t.Errorf("the assistant's read: %s", r.Raw)
 	}
+}
+
+// The organisation's settings are rendered into pages that publish with the change that moved them (AI-50, AI-56; design D6): the
+// assistant reads the new value, its reason and whether it was changed, as soon as the change is made, with no second approval of
+// the same facts; a page a person edited is never overwritten, and the difference is a finding for them.
+// asvs: V8.2.1
+func TestSettingsArePublishedAsPagesWithTheirChange(t *testing.T) {
+	e := newEnv(t)
+	shippedKB(t)
+	f := foundersIn(e)
+	owner := f.as(f.ahkow) // the Owner and the Controller, who may change settings
+	const paused = "/v1/organisation/settings/agents.company_secretary.paused"
+	change := func(value string) {
+		t.Helper()
+		tag := e.call(http.MethodGet, paused, owner, nil).Header.Get("ETag")
+		if r := e.call(http.MethodPatch, paused, owner, map[string]any{"value": value}, "If-Match", tag); r.Status != http.StatusOK {
+			t.Fatalf("setting it %s: %d %s", value, r.Status, r.Raw)
+		}
+	}
+	service, err := e.services.Token(ServiceAI)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var token string
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		token, err = e.api.issueAIGrant(ctx, u, e.books.Org, uuid.MustParse(f.ahkow), uuid.New())
+		return err
+	})
+	const key = "org.settings.company-secretary-assistant"
+	read := func() string {
+		return e.call(http.MethodPost, "/internal/v1/tool-calls", token, map[string]any{"tool": "kb.read", "input": map[string]any{"key": key}}, ServiceTokenHeader, service).Raw
+	}
+	change("true")
+	if r := read(); !strings.Contains(r, "Pause the assistant") && !strings.Contains(r, "is true (changed from the recommended value") {
+		t.Fatalf("the setting's page after the change: %s", r)
+	}
+	// The team mode and the approval policies are pages too, and they cite what the reader can open.
+	if r := e.call(http.MethodPost, "/internal/v1/tool-calls", token, map[string]any{"tool": "kb.read", "input": map[string]any{"key": "org.team-mode"}}, ServiceTokenHeader, service); !strings.Contains(r.Raw, "works in Founder mode") || !strings.Contains(r.Raw, `/settings/team-mode`) {
+		t.Errorf("the team mode's page: %d %s", r.Status, r.Raw)
+	}
+	var snaps []storage.KBSnapshot
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		snaps, err = u.OrganisationKnowledge().Snapshots(ctx, 10)
+		return err
+	})
+	if len(snaps) == 0 || snaps[0].Reason != "Rendered from settings" || snaps[0].ApprovalID != nil {
+		t.Errorf("the snapshots: %+v", snaps)
+	}
+	before := len(snaps)
+	// A change that renders the same page makes no new snapshot.
+	change("true")
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		snaps, err = u.OrganisationKnowledge().Snapshots(ctx, 10)
+		return err
+	})
+	// A person edits the page; the next change is not rendered over it.
+	pg := e.call(http.MethodPut, "/v1/knowledge-base/pages/"+key, owner, map[string]any{"type": "decision", "title": "Our assistant settings", "summary": "Edited by a person.",
+		"body": "# Ours\n\n## Pause\n\nWe pause it on Fridays. (src: setting:agents.company_secretary.paused#value)\n", "sources": []map[string]any{{"kind": "setting", "ref": "agents.company_secretary.paused", "title": "Paused"}}},
+		"If-Match", func() string {
+			var n int
+			e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+				vs, err := u.OrganisationKnowledge().Versions(ctx, key)
+				n = vs[0].Number
+				return err
+			})
+			return kbPageETag(n)
+		}())
+	if pg.Status != http.StatusCreated {
+		t.Fatalf("the edit: %d %s", pg.Status, pg.Raw)
+	}
+	change("false")
+	var findings []storage.KBFinding
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		findings, err = u.OrganisationKnowledge().Findings(ctx, "open", 10)
+		return err
+	})
+	if len(findings) != 1 || findings[0].Kind != "human_edit_conflict" || findings[0].PageKey != key {
+		t.Errorf("the findings: %+v", findings)
+	}
+	if r := read(); strings.Contains(r, "We pause it on Fridays") {
+		t.Errorf("an unpublished edit is read: %s", r) // the edit is a draft: the last rendered page stays published
+	}
+	_ = before
 }

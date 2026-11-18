@@ -149,6 +149,9 @@ func (a *API) recordSetting(ctx context.Context, u storage.UnitOfWork, key, valu
 	if err != nil {
 		return Setting{}, err
 	}
+	if err := a.renderKnowledge(ctx, u); err != nil {
+		return Setting{}, err
+	}
 	return settingOf(d, append(changes, c), today, true), nil
 }
 

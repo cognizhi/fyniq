@@ -429,7 +429,7 @@ func TestTheOrganisationsPublishedPagesAreReadWithThePlatformsPages(t *testing.T
 		return m
 	}
 	o := byTitle(cites(owner))
-	if o["Note: Expense policy"]["href"] != "/settings/ai/knowledge-base#note-expense-policy" || o["Setting: Self-approval limit"]["href"] != "/settings#approvals.self_approval_limit" {
+	if o["Note: Expense policy"]["href"] != "/settings/ai/knowledge-base#note-expense-policy" || o["Setting: Self-approval limit"]["href"] != "/settings/organisation#approvals.self_approval_limit" {
 		t.Errorf("the Owner's sources: %v", o)
 	}
 	em := byTitle(cites(employee))

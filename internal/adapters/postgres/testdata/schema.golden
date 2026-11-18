@@ -4924,7 +4924,7 @@ kb_page_version | kb_page_version_pkey | PRIMARY KEY (organisation_id, id)
 kb_page_version | kb_page_version_prompt_version_not_null | NOT NULL prompt_version
 kb_page_version | kb_page_version_rollback | CHECK ((((origin = 'rollback'::text) = (restores IS NOT NULL)) AND ((restores IS NULL) OR (restores < number))))
 kb_page_version | kb_page_version_search_not_null | NOT NULL search
-kb_page_version | kb_page_version_sources | CHECK (((jsonb_typeof(sources) = 'array'::text) AND (jsonb_array_length(sources) <= 50)))
+kb_page_version | kb_page_version_sources | CHECK (((jsonb_typeof(sources) = 'array'::text) AND (jsonb_array_length(sources) <= 200)))
 kb_page_version | kb_page_version_sources_not_null | NOT NULL sources
 kb_page_version | kb_page_version_summary_not_null | NOT NULL summary
 kb_page_version | kb_page_version_taint | CHECK ((taint = ANY (ARRAY['trusted'::text, 'untrusted'::text])))
