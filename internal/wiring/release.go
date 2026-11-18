@@ -3,6 +3,7 @@
 package wiring
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -20,10 +21,13 @@ import (
 	"github.com/cognizhi/fyniq/connectors"
 	"github.com/cognizhi/fyniq/internal/adapters/clamav"
 	"github.com/cognizhi/fyniq/internal/adapters/gcp"
+	"github.com/cognizhi/fyniq/internal/adapters/litellm"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/render"
+	"github.com/cognizhi/fyniq/internal/scanservice"
 )
 
 // Config is the Google Cloud wiring the deployment writes (p0-infra-opentofu) as JSON in FYNIQ_GCP; the
@@ -43,7 +47,7 @@ type Config struct {
 		MACKeyVersion string `json:"mac_key_version"` // projects/…/cryptoKeys/…/cryptoKeyVersions/N
 	} `json:"fields"`
 	// Evidence names the unlocked staging bucket and the retention-locked evidence bucket (FR-DOC-13, DR-07);
-	// optional until the ClamAV service arrives: without them, and a scanner, no file can be attached.
+	// without them, and a scanner, no file can be attached.
 	Evidence struct {
 		Staging string `json:"staging"`
 		Bucket  string `json:"bucket"`
@@ -51,6 +55,24 @@ type Config struct {
 	// Render is the private render service (PRD-001 §12.3, rev 0.96): its URL, its audience and its callers' accounts;
 	// optional until the deployment adds it: without it no preview renders and no template with IRAS particulars publishes.
 	Render gcp.Callers `json:"render"`
+	// Scanner is the private scanner service, clamd behind an HTTP front (FR-DOC-08, SEC-24; PRD-001 rev 0.247): its URL,
+	// its audience and its callers' accounts; without it, or FYNIQ_CLAMD_ADDR, no file can be attached.
+	Scanner gcp.Callers `json:"scanner"`
+	// AI is the AI service (p1-ai-assistant design D3) [live-verify]: its URL on internal ingress and its audience; the
+	// api's account is among its callers. Without it every turn fails, saying the AI service is not set up.
+	AI gcp.Callers `json:"ai"`
+	// API is the api's internal operations as the worker calls them for a scheduled agent's model step (PRD-001 rev 0.281;
+	// p1-scheduled-agents design D5) [live-verify]: their URL and the audience of the worker's own token, which the api
+	// accepts from invokers.agent_runs (the worker's account). Without it the agents' runs stay deterministic.
+	API gcp.Callers `json:"api"`
+	// Exports is the weekly export's instance and buckets (DR-02, DR-04; p1-operations-dr design D1): the instance's
+	// resource name (projects/<project>/instances/<name>), its database, and the weekly and monthly buckets in the audit
+	// project. Without it the export job fails, which its heartbeat's absence alert shows.
+	Exports struct {
+		Instance string `json:"instance"`
+		Database string `json:"database"`
+		backup.Buckets
+	} `json:"exports"`
 	// PlatformRanges are the platform's own networks (its subnet and the range its database is peered on), which no
 	// registered private endpoint reaches (SEC-37).
 	PlatformRanges []string `json:"platform_ranges"`
@@ -115,12 +137,24 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		staging.Sign, locked.Sign = sign, sign
 		kit.Staging, kit.Evidence = staging, locked
 	}
+	if strings.HasPrefix(c.AI.URL, "https://") && c.AI.Audience != "" { // the AI service, as the service's own account [live-verify]
+		kit.AssistantURL, kit.AssistantToken = c.AI.URL, gcp.IdentityTokens(c.AI.Audience, nil)
+		kit.AssistantHTTP = platform.Bounded(16<<20, 5*time.Minute).For(egress.HostOf(c.AI.URL))
+	}
+	if strings.HasPrefix(c.API.URL, "https://") && c.API.Audience != "" { // the worker's model step, as its own account [live-verify]
+		kit.AgentModelURL, kit.AgentModelToken = c.API.URL, gcp.IdentityTokens(c.API.Audience, nil)
+		kit.AgentModelHTTP = platform.Bounded(1<<20, 31*time.Minute).For(egress.HostOf(c.API.URL))
+	}
 	if strings.HasPrefix(c.Render.URL, "https://") && c.Render.Audience != "" { // as the service's own account
 		kit.Render = &render.Client{URL: c.Render.URL, Token: gcp.IdentityTokens(c.Render.Audience, nil),
 			HTTP: platform.Bounded(64<<20, 2*time.Minute).For(egress.HostOf(c.Render.URL))}
 	}
-	if addr := os.Getenv("FYNIQ_CLAMD_ADDR"); addr != "" { // clamd beside the service (SEC-24)
-		kit.Scanner = clamav.Scanner{Addr: addr}
+	switch {
+	case strings.HasPrefix(c.Scanner.URL, "https://") && c.Scanner.Audience != "": // the scanner service, as the service's own account
+		kit.Scanner = &scanservice.Client{URL: c.Scanner.URL, Token: gcp.IdentityTokens(c.Scanner.Audience, nil),
+			HTTP: platform.Bounded(64<<10, 2*time.Minute).For(egress.HostOf(c.Scanner.URL))}
+	case os.Getenv("FYNIQ_CLAMD_ADDR") != "": // clamd beside the service (SEC-24)
+		kit.Scanner = clamav.Scanner{Addr: os.Getenv("FYNIQ_CLAMD_ADDR")}
 	}
 	// The connectors (FR-INT-20, rev 0.139): their keys in Secret Manager, only the secrets FYNIQ_CONNECTOR_SECRETS names
 	// and the organisations' connector secrets; their traffic through the egress guard, never to the platform's own
@@ -148,9 +182,33 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		}
 	}
 	kit.Egress = outbound
+	kit.ModelTokens = tokens // Claude and Gemini on Agent Platform, with the service's own account (AI-72)
+	// Model Armor screens the AI's prompts, tool results and answers in Singapore (AI-18, AI-P7; p1-ai-assistant design D8),
+	// with the template FYNIQ_MODEL_ARMOR_TEMPLATE names, as the service's own account [live-verify]. Without one no AI
+	// call is sent.
+	if template := os.Getenv("FYNIQ_MODEL_ARMOR_TEMPLATE"); template != "" {
+		endpoint := gcp.ModelArmorAPI(locationOf(template))
+		if kit.Screening, err = gcp.NewModelArmor(endpoint, template, tokens, platform.For(egress.HostOf(endpoint))); err != nil {
+			return nil, err
+		}
+	}
+	// LiteLLM's public model price catalogue, from its one host through the platform's guard (AI-82, AI-85) [live-verify].
+	kit.Prices = litellm.Catalogue{HTTP: platform.Bounded(40<<20, 2*time.Minute).For(litellm.Host)}
+	// Google's Cloud Billing Catalog for Agent Platform's prices, as the service's own account (AI-82 (b)) [live-verify].
+	kit.Billing = gcp.NewBillingCatalog(gcp.CloudBillingAPI, tokens, platform.For(egress.HostOf(gcp.CloudBillingAPI)))
+	// The weekly export (DR-02, DR-04) and the restore drill's copy (DR-06), as the jobs' account [live-verify].
+	if parts := strings.Split(c.Exports.Instance, "/"); len(parts) == 4 && parts[0] == "projects" && parts[2] == "instances" {
+		sql := gcp.NewCloudSQL(gcp.SQLAdminAPI, parts[1], parts[3], cmp.Or(c.Exports.Database, "fyniq"), tokens, google)
+		sql.Clock = clock
+		// The monthly restore drill's copy, cloned in this project and opened as this service's role (DR-06) [live-verify].
+		kit.Backup, kit.Clone = sql, sql
+		kit.OpenClone = copyOpener(url, postgres.WithClock(clock), postgres.WithFingerprints(fields))
+		kit.ExportBuckets = c.Exports.Buckets
+	}
 	// The platform's posture and logs, read as the jobs' account (SEC-33, CTL-DP-03) [live-verify].
 	kit.Posture = gcp.NewSecurityCenter(gcp.SecurityCenterAPI, "projects/"+projectOf(c.Job), tokens, google)
 	kit.Logs = gcp.NewLogging(gcp.LoggingAPI, projectOf(c.Job), tokens, google)
+	kit.Scheduling = gcp.NewScheduling(gcp.SchedulerAPI, gcp.MonitoringAPI, projectOf(c.Job), locationOf(c.Job), tokens, google)
 	kit.watchChanges(clock)
 	return kit, nil
 }
@@ -159,6 +217,15 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 const secretsRegion = "asia-southeast1"
 
 // projectOf is the project of a resource name such as projects/<project>/locations/…/jobs/….
+// locationOf is the location a resource name names (projects/<project>/locations/<location>/…).
+func locationOf(name string) string {
+	parts := strings.Split(name, "/")
+	if len(parts) > 3 && parts[2] == "locations" {
+		return parts[3]
+	}
+	return ""
+}
+
 func projectOf(name string) string {
 	parts := strings.Split(name, "/")
 	if len(parts) > 1 && parts[0] == "projects" {
@@ -242,7 +309,7 @@ func (c Config) check() error {
 func mailEnv(env func(string) string) func(string) string { return env }
 
 // PlatformEgress is the guard of the platform's own outbound connections: public addresses only.
-func PlatformEgress() *egress.Guard { return &egress.Guard{} }
+func PlatformEgress() *egress.Guard { return &egress.Guard{Propagate: true} }
 
 // GoogleKeys are Google's signing keys, which the OIDC checks of Cloud Tasks' and the render service's callers verify
 // against, fetched through the platform's guard from Google's certificate host only.

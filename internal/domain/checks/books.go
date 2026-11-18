@@ -12,6 +12,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/balance"
 	"github.com/cognizhi/fyniq/internal/domain/financials"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
+	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -34,6 +35,11 @@ var (
 
 // The checks of the books, the setup, the ledger and the audit trail: p1-checks slice 1 (task 1.6).
 var booksChecks = []Definition{
+	{Key: "books.opening-clearing", Ref: "C.2 #63", Area: "Books", Worst: Warning, Title: "The opening balance clearing account nets to zero",
+		Explain: "Invoices and bills still unpaid at the books start post against 3900 Opening balance clearing, and the opening " +
+			"balances carry those receivables and payables there instead (FR-GL-06). Once both have posted it holds nothing: a " +
+			"balance means an opening item is missing or posted twice, or the opening balances carry another amount.",
+		Rules: "FR-GL-06", Owner: "accountant", View: viewReports, Triggers: onOpening, Run: openingClearing},
 	{Key: "books.debits-equal-credits", Ref: "C.1 #1", Area: "Books", Worst: Error, Title: "Debits equal credits",
 		Explain: "Every entry's debits equal its credits, so each month's trial balance nets to zero. The database refuses an entry " +
 			"that does not balance, so a month that does not means something went around it: report it.",
@@ -400,4 +406,29 @@ func keys(defs []Definition) []string {
 	}
 	slices.Sort(out)
 	return out
+}
+
+// openingClearing: what the opening balance clearing account holds at the organisation's today (C.2 #63, FR-GL-06; rev
+// 0.257). It nets to zero once the opening balances and the opening items have both posted.
+func openingClearing(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
+	all, err := u.Accounts().List(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	for _, a := range all {
+		if string(a.Role) != ledger.RoleOpeningClearing {
+			continue
+		}
+		_, held, err := balance.Through(ctx, u, a.ID, e.Base, e.Base, e.Today)
+		if err != nil {
+			return Result{}, err
+		}
+		if held.IsZero() {
+			return Fine(fmt.Sprintf("%s %s holds nothing", a.Code, a.Name)), nil
+		}
+		return Found(Warning, []Item{{Kind: "account", ID: a.ID.String(), Label: a.Code + " " + a.Name, Detail: fmt.Sprintf("holds %s %s", held, e.Base.Code)}},
+			fmt.Sprintf("%s %s holds %s %s", a.Code, a.Name, held, e.Base.Code),
+			"Post the opening items the opening balances carry, or correct the opening balances to carry what the items do"), nil
+	}
+	return Fine("The chart has no opening balance clearing account: no opening item has posted"), nil
 }

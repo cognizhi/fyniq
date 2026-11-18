@@ -126,6 +126,38 @@ func (r *rest) do(ctx context.Context, method, url, contentType string, body io.
 	return json.NewDecoder(io.LimitReader(resp.Body, 8<<20)).Decode(out)
 }
 
+// send sends one request as do does, and is its status and headers, whatever the status: for a protocol, such as a
+// resumable upload, whose answers other than 2xx carry meaning (308).
+func (r *rest) send(ctx context.Context, method, url string, header http.Header, body io.Reader) (int, http.Header, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
+	if err != nil {
+		return 0, nil, err
+	}
+	for k, v := range header {
+		req.Header[k] = v
+	}
+	if r.tokens != nil {
+		t, err := r.tokens.Token()
+		if err != nil {
+			return 0, nil, fmt.Errorf("no access token: %w", err)
+		}
+		t.SetAuthHeader(req)
+	}
+	client := r.client
+	if client == nil {
+		client = egress.Public()
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, nil, fmt.Errorf("%s: the service did not answer", method)
+	}
+	defer resp.Body.Close()
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<20))
+	return resp.StatusCode, resp.Header, nil
+}
+
 func jsonBody(v any) (io.Reader, error) {
 	b, err := json.Marshal(v)
 	return bytes.NewReader(b), err

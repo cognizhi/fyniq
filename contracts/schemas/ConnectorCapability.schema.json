@@ -14,7 +14,7 @@
       "type": "string"
     },
     "kind": {
-      "description": "The kind of service.",
+      "description": "The kind of service; a model provider (AI-71) is connected through AI connections, not installed.",
       "enum": [
         "sign-in",
         "outbound-email",
@@ -24,7 +24,8 @@
         "payment-provider",
         "bank-data",
         "e-invoicing",
-        "document-ai"
+        "document-ai",
+        "model-provider"
       ],
       "examples": [
         "outbound-email"

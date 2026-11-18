@@ -6,6 +6,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	neturl "net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -15,6 +16,10 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/adapters/smtp"
+	"github.com/cognizhi/fyniq/internal/agents"
+	"github.com/cognizhi/fyniq/internal/assistant"
+	"github.com/cognizhi/fyniq/internal/connector"
+	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/render"
@@ -57,7 +62,11 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 	if err != nil {
 		return nil, err
 	}
-	catalogue, err := connectors.Catalogue()
+	scripted, err := scriptedModel()
+	if err != nil {
+		return nil, err
+	}
+	catalogue, err := connectors.Catalogue(scripted)
 	if err != nil {
 		return nil, err
 	}
@@ -66,13 +75,15 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		return nil, err
 	}
 	renderURL := cmp.Or(os.Getenv("FYNIQ_RENDER_URL"), "http://localhost:8086")
+	aiURL := cmp.Or(os.Getenv("FYNIQ_AI_URL"), "http://localhost:8082")
+	apiInternalURL := cmp.Or(os.Getenv("FYNIQ_API_INTERNAL_URL"), "http://localhost:8081/internal/v1")
 	kit := &Kit{
 		// The connectors' keys in files under .data/secrets; their traffic through the guard, which lets the local
 		// substitutes (Mailpit, Prism) through on loopback and the Docker network, never the metadata service.
 		Connectors: catalogue, ConnectorSecrets: secrets, ConnectorNames: names, Egress: &egress.Guard{Local: true},
 		Store:  store,
 		Tokens: tokens,
-		Queue:  local.NewPush(map[string]string{"worker": worker, "executor": executor, "jobs": worker}, tokens, 5, time.Second),
+		Queue:  local.NewPush(map[string]string{"worker": worker, "executor": executor, "jobs": worker}, tokens, clock, 5, time.Second),
 		Jobs:   local.HTTPJobs{URL: worker, Tokens: tokens},
 		Blobs:  blobs,
 		Signer: signer,
@@ -85,15 +96,53 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		Origin: cmp.Or(os.Getenv("FYNIQ_PUBLIC_ORIGIN"), "http://localhost:8080"),
 		// The daily rate feed from files of synthetic rates, one per date (FR-GL-05).
 		Rates: local.RateFiles{Dir: filepath.Join(data, "fx")},
+		// The model price catalogue from files in LiteLLM's format, when a developer puts them there (AI-85).
+		Prices: local.PriceFiles{Dir: filepath.Join(data, "ai-prices")},
 		// The render service beside it (`make dev`: :8086; the stack: render:8080), called with a task token.
 		Render: &render.Client{URL: renderURL, HTTP: PlatformEgress().Bounded(64<<20, 2*time.Minute).For(egress.HostOf(renderURL)),
 			Token: func(context.Context) (string, error) { return tokens.Token(render.Class) }},
+		// The weekly export with pg_dump as the database's owner, into .data/exports (DR-02, DR-04).
+		Backup:        local.PGDump{URL: cmp.Or(os.Getenv("FYNIQ_EXPORT_DATABASE_URL"), asOwner(url, "fyniq")), Dir: filepath.Join(data, "exports")},
+		ExportBuckets: backup.Buckets{Weekly: "weekly", Monthly: "monthly"},
+		// The restore drill's copy, made from the database as a template by its owner, opened as this service's role (DR-06).
+		// Only when asked: the copy stops every connection while it is made (DrillOnDemand).
+		Clone:         postgres.TemplateClone{AdminURL: asOwner(url, "postgres"), Source: "fyniq", Clock: clock},
+		OpenClone:     copyOpener(url, postgres.WithClock(clock), postgres.WithFingerprints(fields)),
+		DrillOnDemand: true,
 		// No cloud findings locally, and the logs a developer saves under .data/logs (CTL-DP-03).
 		Posture: local.Posture{},
-		Logs:    local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},
+		// Local mode's stub of Model Armor: it flags the red-team corpus's patterns (QA-AI-03).
+		Screening: local.Screen{},
+		// The AI service beside it (`make dev`: :8082; the stack: ai:8080), called with a task token.
+		AssistantURL:   aiURL,
+		AssistantToken: func(context.Context) (string, error) { return tokens.Token(assistant.Class) },
+		AssistantHTTP:  PlatformEgress().Bounded(16<<20, 5*time.Minute).For(egress.HostOf(aiURL)),
+		// The API's internal operations (`make dev`: :8081; the stack: api:8080), which the worker asks for a run's model
+		// step with a task token; the step waits while the model works, within the run's caps.
+		AgentModelURL:   apiInternalURL,
+		AgentModelToken: func(context.Context) (string, error) { return tokens.Token(agents.ModelClass) },
+		AgentModelHTTP:  PlatformEgress().Bounded(1<<20, 31*time.Minute).For(egress.HostOf(apiInternalURL)),
+		Scheduling:      local.Scheduling{},
+		Logs:            local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},
 	}
 	kit.watchChanges(clock)
 	return kit, nil
+}
+
+// scriptedModel is local mode's scripted model as a connector (p1-launch-readiness design D6): the AI journeys' connection
+// answers from its scripts inside the API. Only the local build adds it to the catalogue.
+func scriptedModel() (connector.Binding, error) {
+	m, err := connector.Parse(local.ScriptedManifest)
+	if err != nil {
+		return connector.Binding{}, err
+	}
+	scripts, err := local.JourneyScripts()
+	if err != nil {
+		return connector.Binding{}, err
+	}
+	return connector.Binding{Manifest: m, Model: func(connector.Config) (ports.ModelProvider, error) {
+		return local.Scripted{Scripts: scripts}, nil
+	}}, nil
 }
 
 // scanner is clamd at FYNIQ_CLAMD_ADDR when it is set, else fallback.
@@ -126,4 +175,16 @@ func mailEnv(env func(string) string) func(string) string {
 
 // PlatformEgress is the guard of the platform's own outbound connections; the local flavour lets the local stand-ins
 // (Hydra, the render service, Mailpit) through on loopback and the Docker network, never the metadata service.
-func PlatformEgress() *egress.Guard { return &egress.Guard{Local: true} }
+func PlatformEgress() *egress.Guard { return &egress.Guard{Local: true, Propagate: true} }
+
+// asOwner is the local database's URL, at the service's own host, as the owner the local stack creates (POSTGRES_USER in
+// deploy/local/compose.yaml), on database db.
+func asOwner(base, db string) string {
+	u, err := neturl.Parse(base)
+	if err != nil {
+		return base
+	}
+	u.User = neturl.UserPassword("fyniq", postgres.LocalPassword)
+	u.Path = "/" + db
+	return u.String()
+}

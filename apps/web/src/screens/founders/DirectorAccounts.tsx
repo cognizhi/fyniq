@@ -864,11 +864,11 @@ function ExemptDialog({ open, onClose, onDone }: { open: boolean; onClose: () =>
             </div>
             <fieldset className="fy-field" aria-describedby={errors.exempt ? `${id}-exempt-error` : undefined}>
               <legend className="fy-label">Exempt private company from that day</legend>
-              <label className="fy-check">
+              <label className="fy-row gap-2">
                 <input type="radio" name={`${id}-exempt`} checked={exempt === "yes"} onChange={() => setExempt("yes")} />
                 <span>Yes, exempt</span>
               </label>
-              <label className="fy-check">
+              <label className="fy-row gap-2">
                 <input type="radio" name={`${id}-exempt`} checked={exempt === "no"} onChange={() => setExempt("no")} />
                 <span>No, not exempt (for example, a corporate investor joined)</span>
               </label>

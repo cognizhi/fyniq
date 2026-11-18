@@ -212,6 +212,7 @@ Source: PRD-001 §15 · Priority M · Phase P1
 #### Scenario: Fixed-fee items billed while idle
 - **WHEN** the platform is idle
 - **THEN** the items billed are the database, storage, the load balancer and Cloud Armor, keys and secrets, registry storage, the Scheduler tick and the independent monitor (NFR-OBS-02)
+- **AND** (rev 0.249) in production, the scanner service's one warm instance
 
 #### Scenario: Monthly bill review and cost alert
 - **WHEN** service compute is billed while idle as defined

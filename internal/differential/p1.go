@@ -76,6 +76,7 @@ var systemRoles = map[string]string{
 	"deferred_remuneration":    ledger.RoleDeferredRemuneration,
 	"depreciation":             ledger.RoleDepreciation,
 	"accumulated_depreciation": ledger.RoleAccumulatedDepreciation,
+	"opening_clearing":         ledger.RoleOpeningClearing,
 }
 
 // applySettings gives the chart the P1 settings: the system roles by key, and each money account its currency.

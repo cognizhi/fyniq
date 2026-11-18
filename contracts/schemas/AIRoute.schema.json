@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval": {
+      "description": "The second approver's approval, for a version that widened where data goes.",
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2e"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "classes": {
+      "items": {
+        "description": "A class of data: restricted data never goes to an AI provider (AI-75).",
+        "enum": [
+          "know-how",
+          "business-figures",
+          "personal-data",
+          "payroll"
+        ],
+        "examples": [
+          "business-figures"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "made_at": {
+      "examples": [
+        "2026-11-14T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "made_by": {
+      "examples": [
+        "user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d"
+      ],
+      "type": "string"
+    },
+    "preset": {
+      "description": "The ADR-T2 preset it was set from (AI-26).",
+      "enum": [
+        "A",
+        "B",
+        "C"
+      ],
+      "examples": [
+        "A"
+      ],
+      "type": "string"
+    },
+    "steps": {
+      "description": "The primary first, then the fallbacks in order.",
+      "items": {
+        "$ref": "AIRouteStep.schema.json"
+      },
+      "type": "array"
+    },
+    "version": {
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "classes",
+    "steps",
+    "made_by",
+    "made_at"
+  ],
+  "title": "AIRoute",
+  "type": "object"
+}

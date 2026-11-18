@@ -40,7 +40,7 @@ Source: PRD-001 §6.5 · Priority M · Phase P1
 - **THEN** the signature is refused with APR-11, and the step needs someone else (rev 0.40)
 
 #### Scenario: Conditions decide the steps
-- **GIVEN** a policy with ordered rules, each with conditions and its own steps, and its default steps (rev 0.178; the owner's decision of 6 Nov 2026, provisional until sign-off)
+- **GIVEN** a policy with ordered rules, each with conditions and its own steps, and its default steps (rev 0.178; the owner's decision of 6 Nov 2026, confirmed on 12 Nov 2026 in rev 0.253; provisional until sign-off)
 - **WHEN** a journal, bill, invoice, purchase order or payment batch asks for approval
 - **THEN** the first rule whose conditions all hold decides its steps: an amount at or above, in the base currency; a department, an account or a vendor on the change; when no rule matches, the default steps apply
 - **AND** a policy has at most 10 rules, each with at least one condition, refused otherwise with APR-16, and the request records the rule that chose its steps, which the approver sees

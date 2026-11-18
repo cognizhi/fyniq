@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "key": {
+      "description": "Its business key from its row, unique in the commit.",
+      "examples": [
+        "contact:harbourline logistics pte ltd"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "What the row becomes.",
+      "examples": [
+        "contact"
+      ],
+      "type": "string"
+    },
+    "row": {
+      "description": "Its row; 0 for a sheet's settings as a whole.",
+      "examples": [
+        6
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "sheet": {
+      "description": "The workbook's sheet.",
+      "examples": [
+        "Contacts"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "kind",
+    "sheet",
+    "row"
+  ],
+  "title": "MigrationCommitNext",
+  "type": "object"
+}

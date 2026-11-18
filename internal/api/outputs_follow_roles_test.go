@@ -20,6 +20,7 @@ import (
 // req: security/identity-and-access Role change takes effect within 60 seconds
 // req: security/identity-and-access G4-064 Cached report results do not cross scopes
 // req: security/identity-and-access A notification by row follows the role (rev 0.186)
+// req: G4-065
 // asvs: V8.2.2, V8.3.2, V14.3.2
 func TestEveryOutputFollowsTheRolesHeldNow(t *testing.T) {
 	f := newFounders(t)
@@ -63,6 +64,9 @@ func TestEveryOutputFollowsTheRolesHeldNow(t *testing.T) {
 	}
 	if r := e.call(http.MethodGet, "/v1/report-exports/"+export+"/file", f.as(f.weiling, authz.Employee), nil); r.Status != http.StatusForbidden {
 		t.Fatalf("downloading it after the reporting roles went: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodGet, "/v1/report-exports/"+export+"/file", "", nil); r.Status != http.StatusUnauthorized {
+		t.Fatalf("downloading it signed in as no one (G4-065): %d %s", r.Status, r.Raw)
 	}
 
 	// G4-064: each scope its own answer, none cached.

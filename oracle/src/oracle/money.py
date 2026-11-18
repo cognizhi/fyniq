@@ -134,6 +134,27 @@ def parse_rate(text: str) -> Decimal:
     return value
 
 
+def saved_number(saved: str) -> Decimal:
+    """RND-IMPORT's reading of a number the workbook saved, typed or calculated (rev 0.255): to a spreadsheet's 15
+    significant digits, half away from zero, without trailing zeros, so 98.09999999999999 is the 98.1 a person sees."""
+    if not _AMOUNT.fullmatch(saved):
+        raise FormatError(f"{saved!r} is not a decimal")
+    ctx = Context(prec=15, rounding=ROUND_HALF_UP)
+    out = ctx.plus(Decimal(saved))
+    out = out.normalize(ctx) if out != 0 else Decimal(0)
+    # normalize writes 3000 as 3E+3; give it back as a plain decimal.
+    return out.quantize(Decimal(1)) if out == out.to_integral_value() else out
+
+
+def rnd_import(saved: str, minor_units: int) -> Decimal:
+    """RND-IMPORT (PRD-001 §10.4, rev 0.255): a figure the workbook calculated, read from its saved decimal text to 15
+    significant digits (saved_number), then rounded once to the currency's minor units, half away from zero. The
+    workbook saves binary floating-point numbers, so a calculated cent may read 0.009999. A saved value is decimal text,
+    never a binary floating-point number."""
+    out = saved_number(saved).quantize(quantum(minor_units), context=_HALF_AWAY_FROM_ZERO)
+    return out if out != 0 else out.copy_abs()
+
+
 def rnd_fx(amount: Decimal, rate: Decimal, base_minor_units: int) -> Decimal:
     """``RND-FX`` (§10.4): base amount = round(foreign amount × rate, base minor units), half-up.
 

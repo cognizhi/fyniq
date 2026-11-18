@@ -5,6 +5,7 @@ import { answer } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { DocumentView, tokenOf } from "./DocumentView";
+import { invalid } from "../../test/invalid";
 
 type PublicDocument = components["schemas"]["PublicDocument"];
 
@@ -66,7 +67,7 @@ describe("The customer's view of a document", () => {
     const sent = answer({ "GET /v1/public/document": { status: 200, body: quote }, "POST /v1/public/document/accept": { status: 200, body: { ...quote, status: "accepted", can_answer: false } } });
     renderPage(DocumentView, { path: "/d" });
     fireEvent.click(await screen.findByRole("button", { name: "Accept the quote" }));
-    expect(await screen.findByText("Enter your name to accept the quote.")).toBeTruthy();
+    await invalid(document.body, "Your full name", "Enter your name to accept the quote.");
     fireEvent.change(screen.getByLabelText("Your full name"), { target: { value: "Jane Tan" } });
     fireEvent.change(screen.getByLabelText("Comment (optional)"), { target: { value: "Please start on 1 November" } });
     fireEvent.click(screen.getByRole("button", { name: "Accept the quote" }));

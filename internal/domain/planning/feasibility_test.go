@@ -1,6 +1,7 @@
 package planning_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/cockroachdb/apd/v3"
@@ -134,5 +135,31 @@ func TestTheIRR(t *testing.T) {
 		if err != nil || text(got) != c.want {
 			t.Errorf("%v: %s, want %s (%v)", c.flows, text(got), c.want, err)
 		}
+	}
+}
+
+// The workbook's study without an investment (its golden sets, p1-launch-readiness task 3.1: test_edge_misc.py's
+// "No-investment idea" and test_edge_nonposting.py's test_bug_feasibility_without_investment): five years at 15% with
+// nothing invested, 100 units a year at 50.00 less 10.00 of variable cost and 1,000.00 of fixed costs, taxed at 17%. Each
+// year brings (100 × 40.00 − 1,000.00) × 0.83 = 2,490.00, worth 2,165.22, 1,882.80, 1,637.22, 1,423.67 and 1,237.97 at
+// 15% (each rounded to the cent under RND-PLAN): an NPV of 8,346.88, where the workbook's sum of unrounded values is
+// 8,346.87, within the cent its comparison allows per year. Every flow is positive, so there is no IRR; the payback is
+// immediate, so the idea is feasible.
+// req: FR-PLN-06
+func TestTheWorkbooksStudyWithoutAnInvestment(t *testing.T) {
+	r, err := planning.Feasible(study(t, func(s *planning.Study) {
+		s.Years, s.Rate, s.MaxPayback, s.Investment, s.Life = 5, dec(t, "0.15"), dec(t, "3"), dec(t, "0"), 5
+		s.Units, s.Price, s.VarCost, s.Fixed, s.TaxRate = dec(t, "100"), dec(t, "50"), dec(t, "10"), dec(t, "1000"), dec(t, "0.17")
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pvs []string
+	for _, y := range r.Years[1:] {
+		pvs = append(pvs, text(y.CashFlow)+"/"+text(y.PV))
+	}
+	if strings.Join(pvs, " ") != "2490.00/2165.22 2490.00/1882.80 2490.00/1637.22 2490.00/1423.67 2490.00/1237.97" || text(r.NPV) != "8346.88" ||
+		r.IRR != nil || shown(t, r.Payback, 1) != "0.0" || r.Verdict != planning.VerdictFeasible {
+		t.Errorf("no investment: %v, NPV %s, IRR %s, payback %s, %s", pvs, text(r.NPV), text(r.IRR), shown(t, r.Payback, 1), r.Verdict)
 	}
 }

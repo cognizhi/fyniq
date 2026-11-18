@@ -205,7 +205,7 @@ func OpenBill(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, s ledger.
 	if doc.Type != storage.DocumentBill || doc.Status != storage.DocumentPosted {
 		return Open{}, &Error{CodeBill, fmt.Sprintf("%s is not a posted bill", cmp(doc.Number, doc.ID.String())), "Choose one of the supplier's posted bills"}
 	}
-	e, err := u.Ledger().ByIdentity(ctx, ledger.BillIdentity(doc.ID, doc.Version, ledger.RuleBill))
+	e, err := u.Ledger().ByIdentity(ctx, bill.IdentityOf(doc))
 	if err != nil {
 		return Open{}, err
 	}

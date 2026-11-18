@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "fyniq": {
+      "description": "The sg-gst pack's code.",
+      "examples": [
+        "SR"
+      ],
+      "maxLength": 10,
+      "minLength": 1,
+      "type": "string"
+    },
+    "row": {
+      "description": "Its row on the Lists sheet; ignored in a change.",
+      "examples": [
+        6
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "workbook": {
+      "description": "The workbook's GST code: the entry's key.",
+      "examples": [
+        "SR"
+      ],
+      "maxLength": 10,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "workbook",
+    "fyniq"
+  ],
+  "title": "MigrationCodeMap",
+  "type": "object"
+}

@@ -37,3 +37,8 @@ output "org_secrets_project" {
   description = "The project of the organisations' connector secrets (org_secrets.tf)."
   value       = var.secrets_project
 }
+
+output "alert_channels" {
+  description = "The founders' notification channels, which the SLOs' burn-rate alerts go to (the slo module)."
+  value       = [for c in google_monitoring_notification_channel.security : c.id]
+}

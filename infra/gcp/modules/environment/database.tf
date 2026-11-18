@@ -91,6 +91,12 @@ resource "google_sql_database_instance" "main" {
       value = "0"
     }
   }
+  lifecycle {
+    precondition {
+      condition     = local.spec.environment != "production" || local.spec.database.availability == "REGIONAL"
+      error_message = "Production's database must be regional HA, a synchronous standby in a second zone (DR-01)."
+    }
+  }
   depends_on = [google_service_networking_connection.services, google_kms_crypto_key_iam_member.agent]
 }
 
@@ -99,4 +105,45 @@ resource "google_sql_database" "databases" {
   project  = var.project
   instance = google_sql_database_instance.main.name
   name     = each.value
+}
+
+# The monthly restore drill (DR-06, CTL-RES-02; p1-operations-dr design D2): the jobs' account may clone this instance at a
+# point in time, and read, update and delete only its drill copies, <instance>-drill-<time>, which the adapter alone
+# names and removes [verify the permissions Cloud SQL asks for a clone] [live-verify].
+resource "google_project_iam_custom_role" "drill_clone" {
+  project     = var.project
+  role_id     = "fyniqRestoreDrillClone"
+  title       = "Fyniq restore drill: clone"
+  description = "Clone the production instance at a point in time for the monthly restore drill (DR-06)."
+  permissions = ["cloudsql.instances.clone", "cloudsql.instances.get"]
+}
+
+resource "google_project_iam_custom_role" "drill_copies" {
+  project     = var.project
+  role_id     = "fyniqRestoreDrillCopies"
+  title       = "Fyniq restore drill: its copies"
+  description = "Read, unprotect and delete the restore drill's copies of the instance (DR-06)."
+  permissions = ["cloudsql.instances.get", "cloudsql.instances.update", "cloudsql.instances.delete"]
+}
+
+resource "google_project_iam_member" "drill_clone" {
+  project = var.project
+  role    = google_project_iam_custom_role.drill_clone.id
+  member  = local.member["jobs"]
+  condition {
+    title       = "fyniq-${local.spec.environment} only"
+    description = "The production instance, never another."
+    expression  = "resource.name == \"projects/${var.project}/instances/${google_sql_database_instance.main.name}\""
+  }
+}
+
+resource "google_project_iam_member" "drill_copies" {
+  project = var.project
+  role    = google_project_iam_custom_role.drill_copies.id
+  member  = local.member["jobs"]
+  condition {
+    title       = "the drill's copies only"
+    description = "Instances named for the drill; never the instance itself."
+    expression  = "resource.name.startsWith(\"projects/${var.project}/instances/${google_sql_database_instance.main.name}-drill-\")"
+  }
 }

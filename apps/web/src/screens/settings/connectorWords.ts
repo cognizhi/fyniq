@@ -11,7 +11,8 @@ export type Kind = components["schemas"]["ConnectorCapability"]["kind"];
 export type DataClass = NonNullable<CatalogueEntry["data_classes"]>[number];
 export type Scope = "installation" | "organisation";
 
-// kinds is every kind of service in the catalogue's order (docs/design/screens ConnectorCatalogue).
+// kinds is every kind of service in the catalogue's order (docs/design/screens ConnectorCatalogue), but model providers:
+// those are connected in Settings › AI providers, as AI connections of their own, and never installed here (AI-72).
 export const kinds: [Kind, string][] = [
   ["sign-in", "Sign-in"],
   ["outbound-email", "Outbound email"],

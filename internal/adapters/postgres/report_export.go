@@ -64,6 +64,21 @@ func (r reportExports) Get(ctx context.Context, id uuid.UUID) (storage.ReportExp
 	return toReportExport(row), nil
 }
 
+func (r reportExports) OfReport(ctx context.Context, report string, limit int) ([]storage.ReportExport, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.ReportExportsOfReport(ctx, sqlcdb.ReportExportsOfReportParams{Report: report, PageSize: int32(min(max(limit, 1), 1000))}) // #nosec G115 -- 1 to 1,000
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.ReportExport, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, toReportExport(row))
+	}
+	return out, nil
+}
+
 func (r reportExports) Mine(ctx context.Context, requestedBy string, limit int) ([]storage.ReportExport, error) {
 	if err := r.u.check(); err != nil {
 		return nil, err

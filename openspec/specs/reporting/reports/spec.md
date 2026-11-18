@@ -187,6 +187,7 @@ Source: PRD-001 §8.12 · Priority M · Phase P1
 - **AND** "restated presentation" shows the new ones, labelled
 - **AND** the stored PDF still matches its hash (FR-DOC-04)
 - **AND** the cache does not serve the old presentation to a new run
+- **AND** (rev 0.287) it is proved after go-live, with the board pack (P2)
 
 ### Requirement: FR-RPT-09 Asynchronous exports and their audit
 Large exports SHALL run asynchronously and deliver a short-lived signed link, and every export SHALL be logged in the audit trail (who, what, filters, row count).

@@ -84,6 +84,13 @@
       "maxLength": 2000,
       "type": "string"
     },
+    "opening_item": {
+      "description": "A bill only: received before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts payable against 3900 Opening balance clearing, with no cost or GST, which were in the books before; it spreads nothing and withholds no tax (LEDGER-50). Payments then settle it as any bill.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "reason": {
       "description": "Why it is edited: the audit trail and the reversal's memo keep it (FR-GL-12).",
       "examples": [

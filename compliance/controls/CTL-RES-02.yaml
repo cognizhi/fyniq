@@ -2,7 +2,7 @@
 # kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
 id: CTL-RES-02
 section: "F.6"
-control: "Restore drill with ledger and audit-chain verification"
+control: "Restore drill with ledger and audit-chain verification. (rev 0.249, the owner's decision of 11 Nov 2026) The monthly point-in-time restore is a clone of the production database in its own project, which no app can reach, verified and deleted by a job; the quarterly full drill restores the weekly export into an isolated drill project (DR-06)"
 mapping: "ISO 5.30, 8.13; SOC2 A1.3; CE"
 automated_check: "Automated monthly PITR restore; quarterly full drill"
 frequency: "M, Q"
@@ -10,8 +10,10 @@ evidence: "Drill report"
 owner: Owner
 checks:
   - frequency: M
-    status: planned
-    arrives: "p1-operations-dr"
+    status: running
+    how: "job restore.drill"
+    evidence: "the job's latest run (every 28 days): a copy of the database an hour back, cloned in production's own project, the ledger's and the audit chain's verifications passed on it within NFR-DR-02's 4 hours, the copy removed; its restore.drilled event in the installation's trail. Cloud SQL's clone is [live-verify]; locally make restore-drill"
   - frequency: Q
-    status: planned
-    arrives: "p1-operations-dr"
+    status: running
+    how: "attestation restore-drill"
+    evidence: "the restore drill register (fyniq.restore_drill): each full drill of the weekly export restored into an isolated project by docs/runbooks/restore-drill.md, with its scenario, the data lost, the time taken and DR-06's checks; the review is due 3 months after the last that recovered"

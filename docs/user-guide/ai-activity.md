@@ -1,0 +1,75 @@
+---
+key: settings.ai-activity
+title: See what the AI did, and use your own AI plan
+mode: expert
+roles: [all]
+requirements: [AI-12, AI-73, AI-74, AI-76, QA-AI-05]
+---
+
+# See what the AI did, and use your own AI plan
+
+## What it is
+
+**Settings → AI activity** (Expert mode, under your own settings) lists every model call the AI made, newest first:
+when, for whom, which agent and step of its route, which connection and model, what happened, the tokens and the cost.
+Every attempt is kept, whether it was served or not.
+
+## Whose entries you see
+
+- Each member sees their own entries. The Owner and the data protection officer see every member's, and can filter by
+  member.
+- The page says which you are seeing: **Your own entries** or **Every member's entries**.
+
+## What each entry shows
+
+- **Agent and step**: the agent, the route version and step it followed, and the step it fell back from, if it did.
+  A probe or a qualification run is shown as outside any route. The classes of data it carried are listed beneath.
+- **Connection and model**: the model asked for, the model the provider says answered if it differs, and the version
+  it reported.
+- **Outcome**: **Served**, **Skipped** (not sent, with why), **Stopped** (refused before sending, or cancelled), or a
+  failure such as **Timed out** or **Refused by the provider**.
+- **Tokens in / out** and **Cost**, exact, in the base currency at the day's rate, with the provider's own currency
+  beneath when it differs. A call with no price shows no cost.
+- The tiles above the list count, in the entries shown, how many were served, fell back, failed or stopped, and were
+  masked.
+
+## Questions to the assistant
+
+- Above the model calls, each question asked of the assistant: when, who asked (for the Owner and the data protection
+  officer), the question and the classes of data it read, how it ended (**Answered**, **Refused** with the code of what
+  stopped it, or **Failed**), whether a figure failed the check and the answer was asked for again, each read of the
+  books it made and how many figures it read, and its tokens.
+- Beside each, its reads refused, what screening stopped or withheld, and its cost in the base currency.
+- What a read returned is never shown here, only how it went. **Its model calls** shows the calls the question made.
+- Someone else's question that read payroll is masked for a reader who may not see payroll unmasked.
+
+## Feedback on answers
+
+- Members rate the assistant's answers with a thumbs up or down and a reason, once per answer. Their own conversation
+  shows the rating and where its review is.
+- The Owner and an Administrator see **Feedback on answers** on this page: each rating with its reason, who gave it,
+  the question and the answer. **Show** picks feedback waiting for review, in the golden set, dismissed, or all.
+- **Add to the golden set** puts it in the set the assistant's evals are built from; **Dismiss** leaves it out.
+  Feedback is reviewed once, and feedback nobody reviewed never feeds the evals.
+- Feedback on someone else's question that read payroll is masked for a reviewer who may not see payroll unmasked, and
+  can only be dismissed; someone who sees payroll can add it to the golden set. When it is shown unmasked, the audit
+  trail records it.
+
+## Masked entries
+
+- Someone else's entry that carried payroll is masked for a reader who may not see payroll unmasked: its detail is
+  withheld.
+- When someone else's payroll entry is shown unmasked, the audit trail records it.
+
+## Filter
+
+- Filter by agent, by day, and, for the Owner and the data protection officer, by member.
+- **Its fallbacks** shows one call with every step it tried; **Show every call** goes back.
+- **Show more** loads the next page.
+
+## Your own AI plan
+
+- **Profile → Use your own AI plan** is not offered yet. The assistant uses only the organisation's own AI
+  connections, which the Owner and the administrators choose.
+- A consumer chat plan meant for the provider's own apps, and reusing a chat session or a browser cookie, are never
+  supported.

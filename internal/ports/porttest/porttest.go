@@ -101,12 +101,21 @@ func BlobRetention(t *testing.T, build func(t *testing.T, c ports.Clock) ports.B
 	if err := b.SetLegalHold(ctx, key, true); !errors.Is(err, ports.ErrNotFound) {
 		t.Fatalf("SetLegalHold of a missing blob: want ErrNotFound, got %v", err)
 	}
+	if _, err := b.RetentionOf(ctx, key); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("RetentionOf a missing blob: want ErrNotFound, got %v", err)
+	}
 	if err := b.Create(ctx, key, bytes.NewBufferString("%PDF-1.7 receipt")); err != nil {
 		t.Fatalf("Create: %v", err)
+	}
+	if r, err := b.RetentionOf(ctx, key); err != nil || r.Locked || !r.RetainUntil.IsZero() || r.Held {
+		t.Fatalf("RetentionOf a blob with none = %+v, %v", r, err)
 	}
 	until := now.AddDate(7, 0, 0)
 	if err := b.SetRetainUntil(ctx, key, until); err != nil {
 		t.Fatalf("SetRetainUntil: %v", err)
+	}
+	if r, err := b.RetentionOf(ctx, key); err != nil || !r.Locked || !r.RetainUntil.Equal(until) || r.Held {
+		t.Fatalf("RetentionOf a retained blob = %+v, %v; want locked until %s", r, err, until)
 	}
 	if err := b.Delete(ctx, key); !errors.Is(err, ports.ErrRetained) {
 		t.Fatalf("Delete of a retained blob: want ErrRetained, got %v", err)
@@ -135,6 +144,9 @@ func BlobRetention(t *testing.T, build func(t *testing.T, c ports.Clock) ports.B
 	// Past the retain-until, a legal hold still keeps it; without the hold it can go.
 	if err := b.SetLegalHold(ctx, key, true); err != nil {
 		t.Fatalf("SetLegalHold: %v", err)
+	}
+	if r, err := b.RetentionOf(ctx, key); err != nil || !r.Held {
+		t.Fatalf("RetentionOf a blob on legal hold = %+v, %v", r, err)
 	}
 	c.Set(until.AddDate(1, 0, 1))
 	if err := b.Delete(ctx, key); !errors.Is(err, ports.ErrRetained) {

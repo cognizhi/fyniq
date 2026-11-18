@@ -73,6 +73,7 @@ async function serve(page: Page) {
       case "GET /v1/approvals":
       case "GET /v1/notifications":
       case "GET /v1/banners":
+      case "GET /v1/operations": // the header's operations tray (FR-INT-11)
         return json(200, { items: [] });
       default:
         return route.fulfill({ status: 403, contentType: "application/problem+json", body: JSON.stringify({ code: "API-AUTHZ-01", status: 403 }) });

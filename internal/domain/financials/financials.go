@@ -366,8 +366,8 @@ func Lay(ctx context.Context, u storage.UnitOfWork, base money.Currency, r Reque
 	}
 	s.Checks = l.checks(totals)
 	if r.Kind == BalanceSheet {
-		// The movement in equity over each column's run, and that it reconciles (INV-11, BS_EqChk).
-		fs, err := flows(ctx, u, base, r, cols, accounts)
+		// The movement in equity over each column's run, and that it reconciles (INV-11, BS_EqChk), without every entry.
+		fs, err := equityFlows(ctx, u, base, r, cols, accounts)
 		if err != nil {
 			return Statement{}, err
 		}

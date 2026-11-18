@@ -458,6 +458,7 @@ func (s *sessionStack) founders(t *testing.T) (desk, phone *browser, org string)
 // req: FR-APR-03
 // req: FR-APR-04
 // req: FM-1
+// req: G4-056
 // asvs: V6.5.1, V6.7.2
 func TestPasskeySignedApprovals(t *testing.T) {
 	ctx := context.Background()
@@ -553,6 +554,7 @@ func TestPasskeySignedApprovals(t *testing.T) {
 // request's and envelope's hash, answered by the signer's live passkey within 5 minutes; an approval challenge is issued
 // only for a pending request's own envelope; and a signature keeps all of its assertion or none (G4-056).
 // req: FR-APR-03
+// req: G4-056
 // asvs: V6.5.1, V8.2.2
 func TestAttackPasskeySignaturesAnswerTheirChallenge(t *testing.T) {
 	ctx := context.Background()

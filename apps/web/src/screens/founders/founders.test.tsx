@@ -10,6 +10,7 @@ import { cellsOf, draftOf, personKey } from "../accounting/OpeningBalances";
 import type { Account } from "../accounting/data";
 import { DirectorAccounts } from "./DirectorAccounts";
 import { MoneyIPutIn } from "./MoneyIPutIn";
+import { invalid } from "../../test/invalid";
 
 const sgd = (amount: string) => ({ amount, currency: "SGD" });
 const loan = { account_id: "acc-2500", code: "2500", name: "Loan from director / shareholder", role: "director-loan" as const };
@@ -237,6 +238,9 @@ describe("a director's pay choice", () => {
     const card = (await screen.findByRole("heading", { name: "Mei Lin Tan" })).closest("section") as HTMLElement;
     expect(within(card).getByText("Pay: No salary")).toBeTruthy();
     fireEvent.click(within(card).getByRole("button", { name: "Change pay choice" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Next: attach the signed decision" }));
+    await invalid(document.body, "From the month", "Choose the month it applies from.");
+    await invalid(document.body, "Pay choice", "Choose the pay choice.");
     fireEvent.change(await screen.findByLabelText("From the month"), { target: { value: "2026-11" } });
     fireEvent.change(screen.getByLabelText("Pay choice"), { target: { value: "salary_deferred" } });
     expect(screen.getByText(/CPF is still due at the end of each month/)).toBeTruthy();
@@ -266,6 +270,15 @@ describe("a director's fee", () => {
     renderPage(DirectorAccounts, { path: "/accounting/directors" });
     const card = (await screen.findByRole("heading", { name: "Mei Lin Tan" })).closest("section") as HTMLElement;
     fireEvent.click(within(card).getByRole("button", { name: "Fees" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Next: attach the resolution" }));
+    await invalid(document.body, "Voted on", "Enter the day of the general meeting that voted it.");
+    await invalid(document.body, "Fee (SGD)", "Enter the fee in SGD, more than zero.");
+    await invalid(document.body, "For the period from", "Enter the first and last day of the period it is for.");
+    fireEvent.change(screen.getByLabelText("For the period from"), { target: { value: "2026-12-31" } });
+    fireEvent.change(screen.getByLabelText("To"), { target: { value: "2026-01-01" } });
+    fireEvent.click(screen.getByRole("button", { name: "Next: attach the resolution" }));
+    await invalid(document.body, "To", "The period ends before it starts.");
+    expect(seen.filter((s) => s.method === "POST")).toEqual([]);
     fireEvent.change(await screen.findByLabelText("Voted on"), { target: { value: "2026-11-30" } });
     fireEvent.change(screen.getByLabelText("Fee (SGD)"), { target: { value: "6,000" } });
     fireEvent.change(screen.getByLabelText("For the period from"), { target: { value: "2026-01-01" } });
@@ -297,6 +310,9 @@ describe("the exempt private company status", () => {
     const card = screen.getByRole("heading", { name: "Arjun Rao" }).closest("section") as HTMLElement;
     expect(within(card).getByText(/section 162 of the Companies Act bans loans to directors/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Record exempt status" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Next: attach the business profile" }));
+    await invalid(document.body, "From", "Enter the day it applies from.");
+    expect(screen.getByText("Say whether the company is exempt from that day.")).toBeTruthy();
     fireEvent.change(await screen.findByLabelText("From"), { target: { value: "2025-03-14" } });
     fireEvent.click(screen.getByLabelText("Yes, exempt"));
     fireEvent.click(screen.getByRole("button", { name: "Next: attach the business profile" }));

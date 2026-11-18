@@ -90,6 +90,13 @@
       "maxLength": 2000,
       "type": "string"
     },
+    "opening_item": {
+      "description": "An invoice only: issued before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts receivable against 3900 Opening balance clearing, with no revenue or GST, which were in the books before; it spreads nothing and deducts no deposit (LEDGER-50). Receipts then settle it as any invoice.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "reference": {
       "description": "The customer's reference for it, such as their purchase order number.",
       "examples": [

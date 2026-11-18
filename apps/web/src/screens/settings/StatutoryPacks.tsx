@@ -113,7 +113,7 @@ function PackVersion({ id, waiting, onClose, onAsked }: { id: string | null; wai
                 Active since {date(p.activation.activated_at)}
               </span>
             )}
-            {!p.readable && <span className="fy-chip fy-chip--critical">This release cannot read it</span>}
+            {!p.readable && <span className="fy-chip fy-chip--critical"><Icon of={CircleX} />This release cannot read it</span>}
           </div>
           {p.conditions && <p className="fy-small fy-secondary">{p.conditions}</p>}
           <section className="fy-stack fy-stack--2" aria-labelledby="pack-sources">

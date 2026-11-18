@@ -18,12 +18,31 @@
       "maxLength": 1000,
       "type": "string"
     },
+    "officers": {
+      "description": "The officers it lists, to reconcile the corporate profile with (FR-CS-01, C.2 #34): an extract without them leaves the profile not assessed.",
+      "items": {
+        "$ref": "AcraOfficerDraft.schema.json"
+      },
+      "maxItems": 50,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "profile_on": {
       "description": "The day the business profile was generated, as printed on it.",
       "examples": [
         "2026-10-01"
       ],
       "format": "date",
+      "type": "string"
+    },
+    "registered_office": {
+      "description": "The registered office it gives.",
+      "examples": [
+        "1 North Bridge Road, #08-08, Singapore 179094"
+      ],
+      "maxLength": 500,
       "type": "string"
     }
   },

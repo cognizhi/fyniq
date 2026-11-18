@@ -28,7 +28,7 @@ CONTROLS = ROOT / "compliance" / "controls"
 TABLE = ROOT / "compliance" / "release-assets.json"
 WORKFLOWS = ROOT / ".github" / "workflows"
 CI_KINDS = {"make", "test", "ci"}
-WAIT = 4 * 3600  # CI on main takes about an hour; the job's own timeout is longer
+WAIT = 5 * 3600 + 45 * 60  # CI on main takes about an hour, perf.yml's 10 M run on a release commit up to six
 TAG = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 
 

@@ -3,6 +3,10 @@
 # req: NFR-COST-01
 # req: CTL-IAM-03
 # req: SEC-30
+# req: DR-04
+# req: DR-07
+# req: CTL-RES-03
+# req: NFR-OBS-02
 
 mock_provider "google" {
   mock_data "google_project" {
@@ -59,6 +63,26 @@ run "production" {
   assert {
     condition     = jsondecode(output.gcp_config).anchors.bucket == module.anchors.bucket && strcontains(jsondecode(output.gcp_config).anchors.key_version, "/cryptoKeyVersions/1")
     error_message = "the services sign and store anchors where the anchors module made them"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).exports.weekly == module.db_export.buckets.weekly && jsondecode(output.gcp_config).exports.monthly == "fyniq-production-db-monthly"
+    error_message = "the jobs export into the buckets the db-export module made in fyniq-audit (DR-04)"
+  }
+  assert {
+    condition     = jsondecode(output.gcp_config).evidence == module.evidence.buckets && module.evidence.buckets.bucket == "fyniq-production-evidence"
+    error_message = "the services keep evidence in the buckets the evidence module made (DR-07)"
+  }
+  assert {
+    condition     = module.evidence.project == "fyniq-audit" && module.field_keys.project == "fyniq-audit" && jsondecode(output.gcp_config).fields == module.field_keys.config
+    error_message = "the evidence buckets and the field keys live in fyniq-audit, beside the export, and the services read them there (DR-07, SEC-11, rev 0.250)"
+  }
+  assert {
+    condition     = toset(keys(module.slo.slos)) == toset(["api", "ai", "mcp", "oauth"])
+    error_message = "every public service has its objectives (CTL-RES-03)"
+  }
+  assert {
+    condition     = contains(module.heartbeat.policies, "Fyniq production: heartbeat tick absent 30 minutes")
+    error_message = "the tick's absence alerts the platform owner (NFR-OBS-02)"
   }
   assert {
     condition     = startswith(jsondecode(output.gcp_config).tasks.worker.queue, "projects/fyniq-prod/")

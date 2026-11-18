@@ -278,3 +278,46 @@ func (a *Admin) CreateDelegationClient(ctx context.Context, c DelegationClient) 
 	err = a.do(ctx, http.MethodPost, "/admin/clients", nil, body, nil, &out)
 	return out.ID, out.Secret, err
 }
+
+var _ ports.OAuthClients = (*Admin)(nil)
+
+// RegisterIntegration implements ports.OAuthClients: a confidential client with the client-credentials grant only,
+// authenticating with private_key_jwt by its own public key (FR-INT-02, SEC-07), never a shared secret; its tokens name
+// only the API's audience and live TokenLifespan.
+func (a *Admin) RegisterIntegration(ctx context.Context, c ports.IntegrationRegistration) (string, error) {
+	if len(c.Key) == 0 || c.Alg == "" || c.Audience == "" {
+		return "", errors.New("hydra: an integration client needs its key, its algorithm and the API's audience")
+	}
+	// #nosec G101 -- OAuth client metadata (its grant and how it authenticates), not a credential
+	body := map[string]any{"client_name": c.Name, "audience": []string{c.Audience}, "scope": strings.Join(c.Scopes, " "),
+		"grant_types": []string{"client_credentials"}, "response_types": []string{}, "token_endpoint_auth_method": "private_key_jwt",
+		"token_endpoint_auth_signing_alg": c.Alg, "jwks": map[string]any{"keys": []json.RawMessage{c.Key}},
+		"metadata": map[string]any{"class": c.Class, "organisation": c.Organisation}}
+	if c.TokenLifespan > 0 {
+		body["client_credentials_grant_access_token_lifespan"] = c.TokenLifespan.String()
+	}
+	var out client
+	if err := a.do(ctx, http.MethodPost, "/admin/clients", nil, body, nil, &out); err != nil {
+		return "", err
+	}
+	if out.ClientID == "" {
+		return "", errors.New("hydra: the client was registered without an ID")
+	}
+	return out.ClientID, nil
+}
+
+// RemoveClient implements ports.OAuthClients: its tokens are deleted first, then the client.
+func (a *Admin) RemoveClient(ctx context.Context, clientID string) error {
+	if clientID == "" {
+		return errors.New("hydra: remove needs a client ID")
+	}
+	err := a.do(ctx, http.MethodDelete, "/admin/oauth2/tokens", url.Values{"client_id": {clientID}}, nil, nil, nil)
+	if err != nil && !errors.Is(err, ports.ErrNoChallenge) {
+		return err
+	}
+	err = a.do(ctx, http.MethodDelete, "/admin/clients/"+url.PathEscape(clientID), nil, nil, nil, nil)
+	if errors.Is(err, ports.ErrNoChallenge) {
+		return nil // gone already
+	}
+	return err
+}

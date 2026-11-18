@@ -80,7 +80,7 @@ func TestTheShippedPacksLoadAndPassTheirPinnedTests(t *testing.T) {
 	for _, v := range versions {
 		ids = append(ids, v.ID)
 	}
-	if want := []string{"sg-cit@2026.1", "sg-cpf@2026.1", "sg-deadlines@2026.1", "sg-gst@2026.1", "sg-gst@2026.2", "sg-gst@2026.3", "sg-sdl@2026.1"}; !slices.Equal(ids, want) {
+	if want := []string{"sg-acra@2026.1", "sg-cit@2026.1", "sg-cpf@2026.1", "sg-deadlines@2026.1", "sg-gst@2026.1", "sg-gst@2026.2", "sg-gst@2026.3", "sg-sdl@2026.1"}; !slices.Equal(ids, want) {
 		t.Fatalf("loaded %v; want %v, sorted by id", ids, want)
 	}
 	for _, v := range versions {
@@ -314,6 +314,8 @@ func TestTheSimplifiedInvoiceLimitIsInTheGSTPackFromItsVersion(t *testing.T) {
 func ptr(t time.Time) *time.Time { return &t }
 
 // req: ENG-45
+// req: G4-018
+// req: G4-019
 // The tax point is the earlier of the invoice and the payment received; a security deposit counts only
 // once applied to the price. G4-018 and G4-019 are the review's pinned cases (Appendix G.4).
 func TestTheTaxPointIsTheEarlierOfTheInvoiceAndThePayment(t *testing.T) {

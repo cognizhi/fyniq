@@ -106,6 +106,9 @@ type Bill struct {
 	Lines    []BillLine
 	// Withholding is the tax withheld from a non-resident supplier's bill (FR-AP-19; rev 0.90); nil when none is.
 	Withholding *Withholding
+	// Opening is the books start an opening item posts at (FR-GL-06, opening_bill@1; rev 0.257): a bill received before
+	// the books start and still unpaid then. Nil for every other bill.
+	Opening *time.Time
 }
 
 // Withholding is withholding tax on a bill, at the rate the tax agent advised, as a percentage ("17").
@@ -380,7 +383,8 @@ type BillRule func(b Bill, s Settings) (Entry, error)
 // BillRules are every bill rule version the engine has posted with, by name: like Rules, a version is never removed or
 // changed while an entry names it.
 var BillRules = map[string]BillRule{
-	RuleBill: PostBill,
+	RuleBill:        PostBill,
+	RuleOpeningBill: PostOpeningBill,
 }
 
 // ReplayBill re-runs the rule version that posted a bill's entry over the same version (ENG-06).

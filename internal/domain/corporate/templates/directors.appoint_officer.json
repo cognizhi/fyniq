@@ -1,0 +1,19 @@
+{
+  "kind": "directors.appoint_officer",
+  "version": 1,
+  "title": "Directors' resolution in writing",
+  "summary": "The directors appoint an officer who has consented to act, and authorise the lodgement with ACRA.",
+  "signers": "directors",
+  "fields": [
+    {"name": "name", "type": "text", "label": "The officer's name"},
+    {"name": "role", "type": "choice", "label": "The office", "choices": {"director": "director", "secretary": "secretary", "ceo": "chief executive officer", "auditor": "auditor"}},
+    {"name": "from", "type": "date", "label": "The day the appointment takes effect"}
+  ],
+  "sections": [
+    {"paragraphs": ["We, being all the directors of {{.Company.Name}}, pass the following resolutions in writing, as the company's constitution allows."]},
+    {"heading": "Resolved", "items": [
+      "That {{.F.name}}, having consented to act, be appointed as the company's {{.F.role}} with effect from {{.F.from}}.",
+      "That any one director or the secretary be authorised to lodge the appointment with ACRA."
+    ]}
+  ]
+}

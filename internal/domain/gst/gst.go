@@ -132,6 +132,36 @@ func Version(ctx context.Context, u storage.UnitOfWork, on time.Time) (pack.Vers
 	return pack.Version{}, fmt.Errorf("this release carries no sg-gst version in force on %s", on.Format(time.DateOnly))
 }
 
+// PackState is what a GST-bearing document's approval depends on for its codes and rates (FR-APR-10, G4-057): the
+// sg-gst versions the organisation has activated, and those this release carries, which Version picks from. Activating
+// a version, or a release that carries another, changes it, so a request made before restarts.
+func PackState(ctx context.Context, u storage.UnitOfWork) (string, error) {
+	all, err := releasePacks()
+	if err != nil {
+		return "", err
+	}
+	acts, err := u.Packs().Activations(ctx)
+	if err != nil {
+		return "", err
+	}
+	var carried, active []string
+	for _, v := range all {
+		if v.Pack != "sg-gst" {
+			continue
+		}
+		carried = append(carried, v.ID)
+		if slices.ContainsFunc(acts, func(a storage.PackActivation) bool { return a.VersionID == v.ID }) {
+			active = append(active, v.ID)
+		}
+	}
+	slices.Sort(carried)
+	slices.Sort(active)
+	if len(active) == 0 {
+		active = []string{"none"}
+	}
+	return "activated: " + strings.Join(active, ", ") + "; carried: " + strings.Join(carried, ", "), nil
+}
+
 // PackOn is the version of the pack name in force on a day among the organisation's active versions, else among the
 // versions this release carries (ENG-31), and false when neither holds one then: the GST version a document is read
 // with, or the sg-deadlines version a deadline is (FR-TAX-07).

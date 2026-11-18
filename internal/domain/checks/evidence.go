@@ -72,26 +72,31 @@ func missingEvidence(ctx context.Context, u storage.UnitOfWork, e *Env) (Result,
 		if err != nil {
 			return Result{}, err
 		}
-		journals, err := documents(ctx, u, []storage.DocumentType{storage.DocumentJournal}, storage.DocumentPosted, from, to)
-		if err != nil {
-			return Result{}, err
-		}
-		bare, err := missing(journals)
-		if err != nil {
-			return Result{}, err
-		}
-		for _, d := range bare {
-			debits, err := postedDebits(ctx, u, d.ID, e.Base)
+		// A page of journals at a time, and a page's entries in one read, so the check keeps its time and memory as the
+		// ledger grows (NFR-PERF-01; p1-operations-dr task 13.13).
+		err = eachDocumentPage(ctx, u, storage.DocumentJournal, storage.DocumentPosted, from, to, func(page []storage.Document) error {
+			bare, err := missing(page)
+			if err != nil || len(bare) == 0 {
+				return err
+			}
+			debits, err := postedDebits(ctx, u, bare, e.Base)
 			if err != nil {
-				return Result{}, err
+				return err
 			}
-			if n, err := debits.Cmp(threshold); err != nil || n <= 0 {
-				if err != nil {
-					return Result{}, err
+			for _, d := range bare {
+				if n, err := debits[d.ID].Cmp(threshold); err != nil || n <= 0 {
+					if err != nil {
+						return err
+					}
+					continue
 				}
-				continue
+				items = append(items, docItem("journal", d, "", fmt.Sprintf("Debits of %s %s and no %s attached", debits[d.ID], e.Base.Code,
+					evidence.ManualJournal.Expected)))
 			}
-			items = append(items, docItem("journal", d, "", fmt.Sprintf("Debits of %s %s and no %s attached", debits, e.Base.Code, evidence.ManualJournal.Expected)))
+			return nil
+		})
+		if err != nil {
+			return Result{}, err
 		}
 	}
 	if value(evidence.StatutoryFiling.Setting) != evidence.LevelOptional {
@@ -122,12 +127,18 @@ func missingEvidence(ctx context.Context, u storage.UnitOfWork, e *Env) (Result,
 		"Attach each one's file in its Evidence panel"), nil
 }
 
-// postedDebits are a posted journal's debits in the base currency, as its latest entry posted them: the one no later
-// entry reverses.
-func postedDebits(ctx context.Context, u storage.UnitOfWork, doc uuid.UUID, base money.Currency) (money.Money, error) {
-	entries, err := u.Ledger().OfSource(ctx, doc)
+// postedDebits are posted journals' debits in the base currency, by journal, as each one's latest entry posted them: the
+// one no later entry reverses. Their entries are read at once.
+func postedDebits(ctx context.Context, u storage.UnitOfWork, docs []storage.Document, base money.Currency) (map[uuid.UUID]money.Money, error) {
+	ids := make([]uuid.UUID, len(docs))
+	out := make(map[uuid.UUID]money.Money, len(docs))
+	for i, d := range docs {
+		ids[i] = d.ID
+		out[d.ID] = money.Zero(base)
+	}
+	entries, err := u.Ledger().OfSources(ctx, ids)
 	if err != nil {
-		return money.Money{}, err
+		return nil, err
 	}
 	reversed := map[uuid.UUID]bool{}
 	for _, en := range entries {
@@ -135,22 +146,30 @@ func postedDebits(ctx context.Context, u storage.UnitOfWork, doc uuid.UUID, base
 			reversed[*en.ReversesEntryID] = true
 		}
 	}
-	out := money.Zero(base)
 	for _, en := range entries {
 		if en.ReversesEntryID != nil || reversed[en.ID] {
+			continue
+		}
+		doc, err := uuid.Parse(en.Source.ID)
+		if err != nil {
+			return nil, err
+		}
+		sum, ok := out[doc]
+		if !ok {
 			continue
 		}
 		for _, l := range en.Lines {
 			v, err := money.ParseStored(string(l.BaseAmount), base)
 			if err != nil {
-				return money.Money{}, err
+				return nil, err
 			}
 			if v.Sign() > 0 {
-				if out, err = out.Add(v); err != nil {
-					return money.Money{}, err
+				if sum, err = sum.Add(v); err != nil {
+					return nil, err
 				}
 			}
 		}
+		out[doc] = sum
 	}
 	return out, nil
 }

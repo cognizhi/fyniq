@@ -33,6 +33,16 @@ type BlobStore interface {
 	// SetLegalHold puts the blob on legal hold or takes it off; ErrNotFound for a missing blob. A hold does
 	// not move the retain-until.
 	SetLegalHold(ctx context.Context, key string, hold bool) error
+	// RetentionOf is how the store keeps the blob now (CTL-AUD-03's daily check); ErrNotFound for a missing blob.
+	RetentionOf(ctx context.Context, key string) (BlobRetention, error)
+}
+
+// BlobRetention is how a store keeps a blob: Locked when its retain-until can only move later (Cloud Storage's Locked
+// mode; the local store enforces every retain-until so), RetainUntil zero when it has none, and Held on legal hold.
+type BlobRetention struct {
+	Locked      bool
+	RetainUntil time.Time
+	Held        bool
 }
 
 // ErrExists is returned by Create when the blob is already there.

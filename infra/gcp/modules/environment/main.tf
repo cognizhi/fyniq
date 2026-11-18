@@ -42,6 +42,36 @@ variable "anchors" {
   })
 }
 
+variable "traces" {
+  description = "Whether the services send traces to Cloud Trace (NFR-OBS-01). Off until the dev cloud shows Cloud Trace keeps them in Singapore (CTL-DP-07; the owner's decision of 11 Nov 2026, rev 0.250) [live-verify]: off, no service is told a trace project or may write traces, and logs and metrics are unchanged."
+  type        = bool
+  default     = false
+}
+
+variable "field_keys" {
+  description = "The field keys in the audit project (infra/gcp/modules/field-keys; SEC-11, rev 0.250): the wrapping key and the fingerprint key's pinned version."
+  type = object({
+    key             = string
+    mac_key_version = string
+  })
+}
+
+variable "evidence" {
+  description = "The staging and the locked evidence buckets in the audit project (infra/gcp/modules/evidence; FR-DOC-13, DR-07, rev 0.250)."
+  type = object({
+    staging = string
+    bucket  = string
+  })
+}
+
+variable "exports" {
+  description = "The weekly export's buckets in the audit project (infra/gcp/modules/db-export; DR-02, DR-04)."
+  type = object({
+    weekly  = string
+    monthly = string
+  })
+}
+
 variable "artifact_registry" {
   description = "The repository the release images come from (the CI project's), so this project's Cloud Run can pull them; null before CI exists."
   type = object({
@@ -122,7 +152,7 @@ locals {
   spec    = var.spec
   region  = local.spec.region
   number  = data.google_project.this.number
-  apis    = ["run", "sqladmin", "secretmanager", "cloudkms", "cloudtasks", "cloudscheduler", "compute", "servicenetworking", "iam", "iamcredentials", "monitoring", "logging", "identitytoolkit", "privilegedaccessmanager", "securitycenter"]
+  apis    = ["run", "sqladmin", "secretmanager", "cloudkms", "cloudtasks", "cloudscheduler", "compute", "servicenetworking", "iam", "iamcredentials", "monitoring", "logging", "identitytoolkit", "privilegedaccessmanager", "securitycenter", "telemetry", "cloudtrace"]
   runners = merge(local.spec.services, local.spec.jobs)
 
   # One identity per service and job (SEC-03), one invoker per worker class and one for the Scheduler.
@@ -140,7 +170,7 @@ locals {
   url = { for name in keys(local.spec.services) : name => "https://${name}-${local.number}.${local.region}.run.app" }
 
   # FYNIQ_GCP (internal/wiring/release.go Config): the worker classes' queues, handlers and invokers, the
-  # Scheduler's, the anchors, the jobs image's Cloud Run job and the render service.
+  # Scheduler's, the anchors, the jobs image's Cloud Run job, the evidence buckets, the weekly export, and the render and scanner services.
   gcp_config = jsonencode({
     tasks = { for class, c in local.spec.classes : class => {
       queue           = "projects/${var.project}/locations/${local.region}/queues/${class}"
@@ -151,20 +181,35 @@ locals {
     invokers = merge(
       { for class, c in local.spec.classes : class => { service_account = local.email["tasks-${class}"], audience = local.url[c.service] } },
       { scheduler = { service_account = local.email["scheduler"], audience = "${local.url["api"]}/internal/tick" } },
+      # The AI service's calls to the api's internal API (PRD-001 §9.3 rev 0.277, p1-ai-assistant design D4) [live-verify].
+      { ai = { service_account = local.email["ai"], audience = "${local.url["api"]}/internal/v1" } },
+      # The worker's one call to the api's internal API, a scheduled agent's model step (PRD-001 rev 0.281,
+      # p1-scheduled-agents design D5) [live-verify].
+      { agent_runs = { service_account = local.email["worker"], audience = "${local.url["api"]}/internal/v1/agent-runs" } },
     )
-    anchors = var.anchors
-    job     = "projects/${var.project}/locations/${local.region}/jobs/jobs"
-    # The field keys (SEC-11, fields.tf): the wrapping key and the fingerprint key's pinned version.
-    fields = { key = google_kms_crypto_key.fields.id, mac_key_version = "${google_kms_crypto_key.fingerprints.id}/cryptoKeyVersions/1" }
+    # Where the worker sends that step, and the audience of its own token (internal/wiring/release.go Config.API).
+    api      = { url = "${local.url["api"]}/internal/v1", audience = "${local.url["api"]}/internal/v1/agent-runs", service_accounts = [local.email["worker"]] }
+    anchors  = var.anchors
+    evidence = var.evidence
+    job      = "projects/${var.project}/locations/${local.region}/jobs/jobs"
+    # The weekly export (DR-02, DR-04): the instance the jobs' account exports, its database, and the buckets.
+    exports = merge({ instance = "projects/${var.project}/instances/${google_sql_database_instance.main.name}", database = google_sql_database.databases["fyniq"].name }, var.exports)
+    # The field keys (SEC-11, infra/gcp/modules/field-keys): the wrapping key and the fingerprint key's pinned version.
+    fields = var.field_keys
     # The private render service (§12.3, rev 0.96): where the api and the worker send documents, the audience of their
     # ID tokens, and the accounts it accepts (render.Client, gcp.CallerTokens).
     render = { url = local.url["render"], audience = local.url["render"], service_accounts = [local.email["api"], local.email["worker"]] }
+    # The private scanner service (PRD-001 rev 0.247): where the api and the worker send files to scan (scanservice.Client).
+    scanner = { url = local.url["scanner"], audience = local.url["scanner"], service_accounts = [local.email["api"], local.email["worker"]] }
     # The platform's own networks: its subnet and the range its database is peered on, which no registered private
     # endpoint reaches (SEC-37, internal/egress).
     platform_ranges = [google_compute_subnetwork.run.ip_cidr_range, "${google_compute_global_address.services.address}/${google_compute_global_address.services.prefix_length}"]
   })
   # Who reads FYNIQ_GCP (wiring.Build), and who reaches Hydra's admin port.
-  wired       = toset(["api", "worker", "executor", "jobs", "render"])
+  wired = toset(["api", "worker", "executor", "jobs", "render", "scanner"])
+  # Fyniq's own services, which send their traces to Cloud Trace (NFR-OBS-01; p1-operations-dr design D5); Hydra does not.
+  # Only with var.traces on: Cloud Trace must keep them in Singapore first (CTL-DP-07, rev 0.250).
+  traced      = toset([for name in ["api", "ai", "mcp", "worker", "executor", "jobs", "render", "scanner"] : name if contains(keys(local.runners), name) && var.traces])
   oauth_admin = toset(["api", "worker"])
   with_db     = { for name, r in local.runners : name => r if r.database_role != null }
 

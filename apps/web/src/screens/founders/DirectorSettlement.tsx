@@ -65,11 +65,26 @@ type Form = {
 
 const blankConversion: Form["conversion"] = { class_account_id: "", price: "", price_basis: "", capacity: "lender", measurement: "carrying", fair_value_price: "", difference_account_id: "", note: "" };
 
-const blank = (route: Route, account: string): Form => ({ route, account_id: account, amount: "", interest_rate: "0", repay_on: "", subordinated: false, credit_account_id: "", capacity: "shareholder", reason: "", conversion: blankConversion, instrument_id: "" });
+export const blank = (route: Route, account: string): Form => ({ route, account_id: account, amount: "", interest_rate: "0", repay_on: "", subordinated: false, credit_account_id: "", capacity: "shareholder", reason: "", conversion: blankConversion, instrument_id: "" });
 
 // The price bases and capacities of a conversion, in the PRD's words (FR-EQ-06).
 const priceBases: Record<NonNullable<Conversion["price_basis"]>, string> = { latest_priced_round: "The latest priced round", valuation: "An independent valuation", unanimous: "A price every shareholder approves" };
 const capacities: Record<Conversion["capacity"], string> = { lender: "A lender", employee: "An employee", shareholder: "A shareholder" };
+
+// checkSettlement names each field of the route chosen that cannot be read, all at once (ENG-23).
+export function checkSettlement(f: Form, base: string): Record<string, string> {
+  const errs: Record<string, string> = {};
+  const amount = typed(f.amount);
+  if (!f.account_id) errs.account = "Choose the account the company owes them on.";
+  if (!amount || amount.startsWith("-") || isZero(amount)) errs.amount = `Enter the amount in ${base}, more than zero.`;
+  if (f.route === "keep" && (typed(f.interest_rate) === null || f.interest_rate.startsWith("-"))) errs.interest_rate = "Enter the interest a year as a percentage, such as 0.";
+  if (f.route === "waive" && !f.credit_account_id) errs.credit = "Choose the account the waiver credits.";
+  if (f.route === "waive" && !f.reason.trim()) errs.reason = "Say why they waive it.";
+  if (f.route === "convert" && !f.conversion.class_account_id) errs.class = "Choose the class of shares allotted.";
+  if (f.route === "safe" && !f.instrument_id) errs.instrument = "Choose the SAFE or note they hold.";
+  if (f.route === "convert" && (!typed(f.conversion.price) || isZero(typed(f.conversion.price) ?? "0"))) errs.price = "Enter the price per share, such as 1.20.";
+  return errs;
+}
 
 function formOf(s: Settlement): Form {
   return {
@@ -397,16 +412,8 @@ export function DirectorSettlement() {
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
-    const errs: Record<string, string> = {};
+    const errs = checkSettlement(f, base);
     const amount = typed(f.amount);
-    if (!f.account_id) errs.account = "Choose the account the company owes them on.";
-    if (!amount || amount.startsWith("-") || isZero(amount)) errs.amount = `Enter the amount in ${base}, more than zero.`;
-    if (f.route === "keep" && (typed(f.interest_rate) === null || f.interest_rate.startsWith("-"))) errs.interest_rate = "Enter the interest a year as a percentage, such as 0.";
-    if (f.route === "waive" && !f.credit_account_id) errs.credit = "Choose the account the waiver credits.";
-    if (f.route === "waive" && !f.reason.trim()) errs.reason = "Say why they waive it.";
-    if (f.route === "convert" && !f.conversion.class_account_id) errs.class = "Choose the class of shares allotted.";
-    if (f.route === "safe" && !f.instrument_id) errs.instrument = "Choose the SAFE or note they hold.";
-    if (f.route === "convert" && (!typed(f.conversion.price) || isZero(typed(f.conversion.price) ?? "0"))) errs.price = "Enter the price per share, such as 1.20.";
     setErrors(errs);
     if (Object.keys(errs).length > 0 || !amount) return;
     const body = {

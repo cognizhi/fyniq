@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detected_at": {
+      "description": "When it was first seen; left out, now. Never later than now.",
+      "examples": [
+        "2026-11-11T02:14:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "severity": {
+      "description": "How bad it is (docs/runbooks/incident-response.md).",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ],
+      "examples": [
+        "high"
+      ],
+      "type": "string"
+    },
+    "summary": {
+      "description": "What is known now. Never a secret, a token, a full NRIC or a bank number (SEC-15).",
+      "examples": [
+        "The security alert impossible_travel fired for an Owner at 02:14."
+      ],
+      "maxLength": 8000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "title": {
+      "description": "What happened, in a few words.",
+      "examples": [
+        "An admin signed in from a new device in another country"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "summary",
+    "severity"
+  ],
+  "title": "IncidentInput",
+  "type": "object"
+}

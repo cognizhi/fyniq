@@ -4,15 +4,18 @@ type: task
 title: Read the financial statements
 summary: The P&L, balance sheet, cash flow and trial balance for any months, compared with the past, budget or forecast, traced to their lines
 sources:
-  - docs/user-guide/financial-statements.md sha256:c38cd190f3e9c94ee304b6afb02abc27114ae78b2cab306941373678369acf5e
+  - docs/user-guide/financial-statements.md sha256:8883067d5b1e62b251fd784468ea420c1931ad6fb5b522ae91f21b30acb258cc
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-08
+compiled_at: 2026-11-12
 aliases:
+  - trace a figure
+  - drill down
+  - where does this number come from
   - financial statements
   - profit and loss
   - P&L
@@ -76,11 +79,17 @@ aliases:
 
 (src: docs/user-guide/financial-statements.md#by-department-or-project)
 
-## See the lines behind a figure
+## Trace a figure to its source
 
-- An account's figure, or a group's total, opens the general ledger at its lines for the same months, and of the column's value or the value chosen; a computed figure such as gross profit does not open, nor does a figure of the lines with no value of a dimension.
+- An account's figure, or a group's or a section's total, opens the **Trace** panel beside the statement, in four steps.
+- **Breakdown**: the accounts a total is made of, each with its figure; an account's own figure starts at its lines.
+- **Ledger lines**: the account's lines for the same months, and of the column's value or the value chosen, with the balance before and after them, read at the statement's ledger revision: the lines the figure was read from, even if something was posted since.
+- **Source**: the entry a line belongs to and its document (number, customer or supplier, date, status now, a link to open it); Expert mode adds the entry's lines.
+- **History**: what happened to that document, from the audit trail, only for people whose roles read the audit trail; others are told so.
+- The path at the top goes back a step; **Back** or closing the panel returns to the statement as it was; **Open as a full page** shows the account's lines in the general ledger report.
+- A computed figure such as gross profit does not open, nor does a figure of the lines with no value of a dimension, nor a budget's.
 
-(src: docs/user-guide/financial-statements.md#see-the-lines-behind-a-figure)
+(src: docs/user-guide/financial-statements.md#trace-a-figure-to-its-source)
 
 ## Export a statement
 
@@ -96,6 +105,7 @@ aliases:
 - In Expert mode **Reports** has the **Accountant exports**: the general ledger and the journal entries over a range of days, and the trial balance, the fixed asset schedule, and the receivables and payables in detail at a day, as Excel or CSV.
 - Choose the report, its days and the format, then **Prepare the export**; it is prepared in the background, the list says when it is ready and a notification tells you; then **Download**.
 - Only the person who asked can download it, for 24 hours; then it expires and its file is deleted; **Ask again** beside an expired export makes a fresh one.
+- The general ledger export has no limit of lines: it is written as it is read. An Excel sheet holds at most 1,048,576 rows, so a longer one goes on in a second sheet named after the first with (2), its header repeated.
 - An export that cannot be made says why, such as a general ledger range that crosses the start of a financial year (export each year apart). Each export and download is recorded in the audit trail.
 
 (src: docs/user-guide/financial-statements.md#accountant-exports)

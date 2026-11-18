@@ -32,7 +32,8 @@ func TestEveryRunningVerificationIsBuilt(t *testing.T) {
 			}
 		}
 	}
-	for _, name := range slices.Concat(slices.Collect(maps.Keys(verifications)), slices.Collect(maps.Keys(platformVerifications))) {
+	for _, name := range slices.Concat(slices.Collect(maps.Keys(verifications)), slices.Collect(maps.Keys(platformVerifications)),
+		slices.Collect(maps.Keys(fileVerifications))) {
 		if _, ok := registry.Verifications[name]; !ok {
 			t.Errorf("verify %s is built but not declared in registry.Verifications", name)
 		}

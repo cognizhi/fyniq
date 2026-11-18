@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "pack": {
+      "examples": [
+        "sg-gst"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "examples": [
+        "sg-gst@2026.1"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "pack",
+    "version"
+  ],
+  "title": "AgentPackVersion",
+  "type": "object"
+}

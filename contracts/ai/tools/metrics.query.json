@@ -1,0 +1,59 @@
+{
+  "name": "metrics.query",
+  "title": "Query a measure",
+  "version": 1,
+  "description": "Reads a named measure of the books (revenue, gross profit, net burn, cash, receivables, a KPI and others) from the semantic layer, as the person asking may see it. Returns typed facts: each has an ID, the value as exact decimal text, its unit and currency, the period, the dimension member, the ledger revision and a lineage link. Quote figures only from facts; cite each by its ID. Use by to split a measure by account, customer, vendor or department, and grain month for one fact a month.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["measure"],
+    "properties": {
+      "measure": {
+        "type": "string",
+        "description": "A measure of the semantic layer.",
+        "enum": [
+          "revenue", "gross_profit", "ebitda", "net_profit", "costs", "spend_sm", "spend_rd", "spend_ga", "net_burn",
+          "cash", "receivables", "payables", "current_assets", "current_liabilities", "total_liabilities", "equity",
+          "account_movement", "account_balance",
+          "gross_margin", "ebitda_margin", "net_margin", "revenue_growth", "booked_mrr", "arr", "runway", "burn_multiple",
+          "current_ratio", "quick_ratio", "working_capital", "dso", "dpo"
+        ]
+      },
+      "by": {
+        "type": "string",
+        "description": "The dimension to split it by, which the measure must offer.",
+        "enum": ["account", "customer", "vendor", "department"]
+      },
+      "member": {
+        "type": "string",
+        "description": "Keep one member of the dimension: its ID (an account's code too).",
+        "maxLength": 60
+      },
+      "from": {
+        "type": "string",
+        "description": "The first month, YYYY-MM; left out, the last month's.",
+        "pattern": "^[0-9]{4}-[0-9]{2}$"
+      },
+      "to": {
+        "type": "string",
+        "description": "The last month, YYYY-MM; left out, the month of the organisation's today.",
+        "pattern": "^[0-9]{4}-[0-9]{2}$"
+      },
+      "grain": {
+        "type": "string",
+        "description": "month: a fact a month; total: one over the months, a flow summed, a stock at the last month's end.",
+        "enum": ["month", "total"],
+        "default": "total"
+      },
+      "revision": {
+        "type": "integer",
+        "description": "Read the ledger as at this revision; 0 or left out, as it stands.",
+        "minimum": 0
+      }
+    }
+  },
+  "annotations": {"readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false},
+  "runs": "api",
+  "scope": "ai.read",
+  "limits": {"rows": 50, "timeout_ms": 5000, "result_tokens": 4000}
+}

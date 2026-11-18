@@ -6,6 +6,7 @@ import { answer, ownerSession, problem, seen } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { PeriodClose } from "./PeriodClose";
+import { invalid } from "../../test/invalid";
 
 type State = components["schemas"]["PeriodCloseState"];
 
@@ -127,7 +128,7 @@ describe("the period close page", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Ask to reopen…" }));
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Ask to reopen" }));
-    expect(await within(dialog).findByText(/Say why/)).toBeTruthy();
+    await invalid(dialog, "Why it reopens", "Say why: the approver reads it, and the reopening keeps it.");
     expect(seen.filter((x) => x.method === "POST")).toEqual([]);
     fireEvent.change(within(dialog).getByLabelText("Why it reopens"), { target: { value: "A late invoice" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Ask to reopen" }));

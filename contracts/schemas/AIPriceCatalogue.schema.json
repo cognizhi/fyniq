@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entries": {
+      "description": "The chat models it prices.",
+      "examples": [
+        2150
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "failure": {
+      "description": "Why it was rejected.",
+      "examples": [
+        "the catalogue prices 12 chat models, fewer than 100: it is not a whole catalogue"
+      ],
+      "type": "string"
+    },
+    "fetched_at": {
+      "examples": [
+        "2026-11-14T06:15:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "id": {
+      "examples": [
+        "0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2c"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "licence": {
+      "description": "What the licence check found; absent when it failed.",
+      "examples": [
+        "MIT, outside enterprise/"
+      ],
+      "type": "string"
+    },
+    "licence_sha256": {
+      "examples": [
+        "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae"
+      ],
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "licence_url": {
+      "examples": [
+        "https://raw.githubusercontent.com/BerriAI/litellm/main/LICENSE"
+      ],
+      "type": "string"
+    },
+    "outcome": {
+      "description": "Only a valid download prices anything; a rejected one changes no price.",
+      "enum": [
+        "valid",
+        "rejected"
+      ],
+      "examples": [
+        "valid"
+      ],
+      "type": "string"
+    },
+    "sha256": {
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "size": {
+      "description": "Its size in bytes.",
+      "examples": [
+        4072360
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "source": {
+      "enum": [
+        "litellm"
+      ],
+      "examples": [
+        "litellm"
+      ],
+      "type": "string"
+    },
+    "url": {
+      "examples": [
+        "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "source",
+    "url",
+    "fetched_at",
+    "sha256",
+    "size",
+    "licence_url",
+    "licence_sha256",
+    "outcome",
+    "entries"
+  ],
+  "title": "AIPriceCatalogue",
+  "type": "object"
+}

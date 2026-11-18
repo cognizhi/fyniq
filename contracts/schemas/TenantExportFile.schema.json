@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expires_at": {
+      "description": "When its file is deleted: 24 hours after it was ready.",
+      "examples": [
+        "2026-11-14T09:05:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "ledger_revision": {
+      "description": "The ledger revision it was read at.",
+      "examples": [
+        4211
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "name": {
+      "description": "The ZIP's name.",
+      "examples": [
+        "fyniq-export-2026-11-13.zip"
+      ],
+      "type": "string"
+    },
+    "ready_at": {
+      "description": "When the worker finished it.",
+      "examples": [
+        "2026-11-13T09:05:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "rows": {
+      "description": "The rows of the organisation's tables it holds.",
+      "examples": [
+        125000
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "sha256": {
+      "description": "The ZIP's SHA-256, in hexadecimal, to check what was saved.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "size": {
+      "description": "Its size in bytes.",
+      "examples": [
+        5242880
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "name",
+    "sha256",
+    "size",
+    "rows",
+    "ledger_revision",
+    "ready_at",
+    "expires_at"
+  ],
+  "title": "TenantExportFile",
+  "type": "object"
+}

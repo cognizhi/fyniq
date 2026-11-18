@@ -42,6 +42,8 @@ func deposit(t testing.TB, into Account, amount string, cur money.Currency, rate
 // req: FR-AR-09
 // req: ledger/posting-rules Customer refunds and deposits
 // req: RND-GST-INCL
+// req: G4-018
+// req: G4-019
 func TestPostCustomerDeposit(t *testing.T) {
 	s := depositing()
 	intoSGD := deposit(t, current, "1000.00", usd, nil, "")
@@ -216,6 +218,8 @@ func deducting(t testing.TB, amount, base, tax string, cur money.Currency) Invoi
 //
 // req: FR-AR-09
 // req: ledger/posting-rules Posting an invoice
+// req: G4-018
+// req: G4-019
 func TestAnInvoiceDeductsDeposits(t *testing.T) {
 	s := depositing()
 	with := func(i Invoice, ds ...InvoiceDeposit) Invoice { i.Deposits = ds; return i }

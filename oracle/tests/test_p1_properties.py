@@ -166,7 +166,8 @@ def test_1590_holds_the_depreciation_of_the_assets_still_in_the_register(data):
 
 # req: QA-ENG-02
 def test_every_source_has_generator_kinds():
-    assert SOURCES == ("bank", "purchases", "sales", "claims", "assets", "founders", "general-ledger", "fx", "equity")
+    assert SOURCES == ("bank", "purchases", "sales", "claims", "assets", "founders", "general-ledger", "fx", "equity",
+                       "opening-items")
     assert set(SOURCES) == set(KINDS)
 
 

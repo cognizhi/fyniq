@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "file": {
+      "$ref": "MigrationFileView.schema.json",
+      "description": "The workbook as kept."
+    },
+    "operation_id": {
+      "description": "The operation that validates it: poll it, then read the report. Absent for a preview.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "step": {
+      "$ref": "MigrationStepView.schema.json",
+      "description": "The step, validating."
+    }
+  },
+  "required": [
+    "step",
+    "file"
+  ],
+  "title": "MigrationUploadView",
+  "type": "object"
+}

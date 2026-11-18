@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contact": {
+      "description": "The supplier, by its name on the Contacts sheet: the entry's key.",
+      "examples": [
+        "CloudNimbus Hosting"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "country": {
+      "description": "Where it is resident for tax; ignored in a change.",
+      "examples": [
+        "US"
+      ],
+      "type": "string"
+    },
+    "nature": {
+      "description": "The nature of payment its bills record for the tax agent's withholding decision (FR-AP-19); empty until the Accountant chooses, which stops the sign-off.",
+      "enum": [
+        "",
+        "goods",
+        "software_use",
+        "software_rights",
+        "services_in_singapore",
+        "services_outside_singapore",
+        "interest",
+        "movable_rent",
+        "other"
+      ],
+      "examples": [
+        "services_outside_singapore"
+      ],
+      "type": "string"
+    },
+    "outcome": {
+      "description": "The tax agent's decision its bills post with: not_applicable, or withhold at the rate they advised (treaty: a reduced treaty rate); empty until entered, which stops the sign-off.",
+      "enum": [
+        "",
+        "not_applicable",
+        "withhold",
+        "treaty"
+      ],
+      "examples": [
+        "not_applicable"
+      ],
+      "type": "string"
+    },
+    "rate_percent": {
+      "description": "The rate withheld, a percentage: only when tax is withheld.",
+      "examples": [
+        "17"
+      ],
+      "type": "string"
+    },
+    "row": {
+      "description": "Its row on the Contacts sheet; ignored in a change.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "tax_agent": {
+      "description": "The tax agent who decided.",
+      "examples": [
+        "Tally \u0026 Co Accounting"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    }
+  },
+  "required": [
+    "contact",
+    "nature",
+    "outcome",
+    "tax_agent"
+  ],
+  "title": "MigrationNatureMap",
+  "type": "object"
+}

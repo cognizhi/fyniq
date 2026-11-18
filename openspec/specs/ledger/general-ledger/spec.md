@@ -281,6 +281,18 @@ Source: PRD-001 §8.8 · Priority M · Phase P1
 - **AND** on another person's approval their next version posts as a reversal of the entry they had and the new entry, both at the books start
 - **AND** while the month the books start in is closed, the request is refused
 
+#### Scenario: Opening open items post against the clearing account (rev 0.257)
+- **GIVEN** an invoice or bill marked as an opening item, dated before the books start and unpaid then
+- **WHEN** it is posted
+- **THEN** its total goes to accounts receivable or payable at the books start, in its currency at its rate, against 3900 Opening balance clearing in the base currency, with no revenue, cost or GST
+- **AND** the opening balances carry those receivables and payables on 3900, which nets to zero once both have posted, and receipts and payments settle the item as any other [accountant to confirm]
+
+#### Scenario: Credits open at the books start (rev 0.261)
+- **GIVEN** a credit note to a customer or a supplier's credit note marked as an opening item, dated before the books start and open then
+- **WHEN** it is posted
+- **THEN** it posts the other way at the books start, Cr 1100 or Dr 2010 against 3900, under opening_credit_note@1 or opening_vendor_credit@1
+- **AND** it is applied or refunded later as any credit [accountant to confirm]
+
 ### Requirement: FR-GL-07 Period close workflow
 The system SHALL provide a **period close workflow** per month: a close checklist, checks that must be clean, reconciliations signed off and an attestation (FM-4); closing locks the period.
 

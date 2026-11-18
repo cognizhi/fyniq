@@ -18,6 +18,24 @@ const inventory = {
   review: { quarter: "2026-07-01", label: "Q3 2026", due_by: "2026-10-14", overdue: true },
 };
 
+const aiInventory = {
+  owner: "Arjun Rao",
+  connections: [
+    { id: "c-1", name: "Claude in Singapore", connector: "anthropic", endpoint: "asia-southeast1-aiplatform.googleapis.com", state: "enabled", processed_in: ["SG"],
+      training: "no", models: ["claude-opus-4-6"], classes: ["business-figures", "personal-data"], asked_by: "user:u-1", changed_at: "2026-11-09T02:00:00Z" },
+    { id: "c-2", name: "OpenAI", connector: "openai", endpoint: "api.openai.com", state: "disabled", processed_in: ["US"], training: "no", models: [], classes: [],
+      asked_by: "user:u-1", changed_at: "2026-11-09T02:00:00Z" },
+  ],
+  routes: [{ agent: "chat", version: 2, classes: ["business-figures", "personal-data"], steps: [{ model: "claude-opus-4-6", connection: "Claude in Singapore" }],
+    made_by: "user:u-1", made_at: "2026-11-10T02:00:00Z" }],
+  classes: ["business-figures", "personal-data"],
+  prompts: [],
+  tools: [],
+  dpia: { key: "ai-assistant", required: true, current: false, approved: { version: 1, by: "user:u-2", at: "2026-11-09T02:00:00Z" },
+    why: "The AI's connections or routes changed after its approval: review it, and approve it again" },
+};
+
+// req: CMP-AI-02
 // req: CMP-PD-02
 // req: CMP-05
 // req: CMP-PD-09
@@ -82,6 +100,25 @@ describe("Compliance › Data protection", () => {
     await noViolations();
   });
 
+  it("shows the AI inventory beside the AI assistant's assessment, to review after a later change; axe finds nothing", async () => {
+    answer({
+      "GET /v1/compliance/data-inventory": { status: 200, body: inventory },
+      "GET /v1/compliance/dpias": { status: 200, body: { items: [] } },
+      "GET /v1/compliance/ai-inventory": { status: 200, body: aiInventory },
+    });
+    renderPage(DataProtection, { path: "/compliance/data-protection", session: auditor });
+    fireEvent.click(await screen.findByRole("tab", { name: "Impact assessments" }));
+    const card = await screen.findByRole("region", { name: "AI inventory" });
+    expect(within(card).getByText("Owner: Arjun Rao")).toBeTruthy();
+    expect(within(card).getByText("Claude in Singapore (claude-opus-4-6), processed in Singapore")).toBeTruthy();
+    expect(within(card).getByText("OpenAI (no model allowed yet), processed in United States")).toBeTruthy();
+    expect(within(card).getByText("chat: claude-opus-4-6 on Claude in Singapore")).toBeTruthy();
+    expect(within(card).getByText("None yet: they come with the AI assistant")).toBeTruthy();
+    expect(within(card).getByText("business figures and personal data")).toBeTruthy();
+    expect(within(card).getByText("Assessment to review")).toBeTruthy();
+    await noViolations();
+  });
+
   it("lists the impact assessments, one switched on and not approved, and lets the Compliance officer approve Fyniq's draft; axe finds nothing", async () => {
     const payroll = { key: "payroll", title: "Data protection impact assessment of the payroll link", required: true, why: "Required now: the payroll link is switched on (features.payroll).",
       version: 0, from: "fyniq-dpia-draft@1", unapproved: true };
@@ -92,6 +129,7 @@ describe("Compliance › Data protection", () => {
       "GET /v1/compliance/dpias": { status: 200, body: { items: [payroll, ai] } },
       "GET /v1/compliance/dpias/payroll": { status: 200, body: { ...payroll, body: "# Data protection impact assessment of the payroll link\n\n[counsel to confirm] ...", sources: [] } },
       "POST /v1/compliance/dpias/payroll/approvals": { status: 201, body: { ...payroll, version: 1, unapproved: false, approved: { version: 1, by: "user:u-1", at: "2026-11-09T02:00:00Z" } } },
+      "GET /v1/compliance/ai-inventory": { status: 200, body: aiInventory },
     });
     renderPage(DataProtection, { path: "/compliance/data-protection", session: dpo });
     fireEvent.click(await screen.findByRole("tab", { name: "Impact assessments" }));

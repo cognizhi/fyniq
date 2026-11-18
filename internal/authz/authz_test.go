@@ -122,6 +122,15 @@ func TestDecide(t *testing.T) {
 		{"the AI reads accounts for an Accountant", authz.ListAccounts, []authz.Role{authz.Accountant}, true, true},
 		{"the AI never exceeds the user", authz.ListAccounts, []authz.Role{authz.Employee}, true, false},
 		{"the AI cannot post for an Accountant (Proposal)", authz.PostJournal, []authz.Role{authz.Accountant}, true, false},
+		{"the AI views journals for an Owner (Proposal, rev 0.278)", authz.GetJournal, []authz.Role{authz.Owner}, true, true},
+		{"the AI views invoices for a Controller (Proposal)", authz.GetInvoice, []authz.Role{authz.Controller}, true, true},
+		{"the AI views bills for an AP specialist (Proposal)", authz.GetBill, []authz.Role{authz.APSpecialist}, true, true},
+		{"the AI views no invoice for an Employee", authz.GetInvoice, []authz.Role{authz.Employee}, true, false},
+		{"the AI views no payment batch, even for an Owner (—)", authz.ListPaymentBatches, []authz.Role{authz.Owner}, true, false},
+		{"the AI views no audit trail, even for an Owner (—)", authz.ListAuditEvents, []authz.Role{authz.Owner}, true, false},
+		{"the AI drafts no journal for an Accountant (Proposal is no C)", authz.CreateJournal, []authz.Role{authz.Accountant}, true, false},
+		{"the AI never reads a person's bank change evidence", authz.GetMyBankChangeEvidence, []authz.Role{authz.Owner, authz.Employee}, true, false},
+		{"a person reads their own bank change evidence", authz.GetMyBankChangeEvidence, []authz.Role{authz.Employee}, false, true},
 		{"the Super admin is not a member", authz.GetOrganisation, []authz.Role{authz.SuperAdmin}, false, false},
 		{"an HR officer has no Fyniq rights", authz.GetOrganisation, []authz.Role{authz.HROfficer}, false, false},
 		{"an Employee is a member", authz.GetOrganisation, []authz.Role{authz.Employee}, false, true},
@@ -172,8 +181,8 @@ func TestParseCell(t *testing.T) {
 }
 
 // Only the installation's operations (setup, Super admins), the caller's own session and joining an
-// organisation by invitation bypass the organisation, and only the setup status, the sign-in providers and the
-// online link's operations (whose token is the credential) need no credential.
+// organisation by invitation bypass the organisation, and only the setup status, the sign-in providers, the platform
+// version and the online link's operations (whose token is the credential) need no credential.
 // req: SEC-02
 // req: FR-AR-06
 // asvs: V8.2.1
@@ -185,8 +194,11 @@ func TestOnlySetupIsPublicOrOutsideAnOrganisation(t *testing.T) {
 		// document of one organisation (FR-AR-06, FR-AR-16; docs/security/threat-models/document-links.md).
 		link := op == "getPublicDocument" || op == "getPublicDocumentPDF" || op == "acceptQuoteByLink" || op == "declineQuoteByLink" ||
 			// An evidence file's download link: its signed, 5-minute token is the credential, to one file (SEC-24).
-			op == "getEvidenceDownload"
-		public := op == "getSetupStatus" || op == "listSignInProviders" || link
+			op == "getEvidenceDownload" ||
+			// A full tenant export's download link, the same: its signed, 5-minute token, given only to the person who asked
+			// for the export, is the credential to that one file (SEC-24, FR-MIG-04; rev 0.273).
+			op == "getTenantExportDownload"
+		public := op == "getSetupStatus" || op == "listSignInProviders" || op == "getPlatformVersion" || link
 		noOrg := installation && !public
 		if p.Public != public || p.NoOrganisation != noOrg {
 			t.Errorf("%s: Public %v, NoOrganisation %v; want %v, %v", op, p.Public, p.NoOrganisation, public, noOrg)

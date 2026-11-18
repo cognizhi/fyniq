@@ -4,14 +4,14 @@ type: task
 title: Sign in to Fyniq, confirm it's you with a passkey, or join with an invitation
 summary: Signing in with a second factor, passkeys, your devices, when a session ends, joining a company or as the second Super admin by invitation, and errors
 sources:
-  - docs/user-guide/sign-in.md sha256:e631c4ea397fa71a8d84bfdbdeb6ee658dbcb9d1d881e89445e5b97a838e9d75
+  - docs/user-guide/sign-in.md sha256:69bca9594e9125f1b18c09dc5d6e457a5d671662453cf14703f8dc35c65a599d
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-07
+compiled_at: 2026-11-12
 aliases:
   - log in
   - login
@@ -98,7 +98,7 @@ aliases:
 - A provider that is down, or an account lost there: sign in with another provider linked on the profile ([[preferences.security]]).
 - Every authenticator lost: sign in with the provider, select **Lost every authenticator?**, ask an Owner or Administrator in person or by phone for a confirmation, then type a recovery code and the confirmation and **Recover my account**.
 - Keep the ten new codes shown once and add a new passkey; other sessions end, and the person and every Owner are told.
-- For 24 hours approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait. Email alone or a support request never recovers an account.
+- For 24 hours, or up to 72 as your organisation set its **Hold after an account recovery**, approving, releasing payments, changing bank details, roles or sign-ins, break-glass and confirming others' recoveries wait. Email alone or a support request never recovers an account.
 
 (src: docs/user-guide/sign-in.md#recover-your-account)
 

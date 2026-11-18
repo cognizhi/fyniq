@@ -193,6 +193,7 @@ resolution, under **Evidence** on the journal's page.
 
 - Fyniq decides the file's type from its content, scans it for malware, and strips image metadata
   such as location before keeping it.
+- A HEIC photo, as an iPhone takes by default, is not accepted yet: export it as JPEG first.
 - A file whose text shows an NRIC or FIN in full is marked **Shows an NRIC**: mask the number
   before you share the file.
 - A journal whose debits are above S$1,000 posts only with a supporting calculation or document

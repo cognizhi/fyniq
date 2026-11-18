@@ -28,21 +28,50 @@ export function valueText(kind: Setting["kind"], v: string): string {
       return v === "true" ? "On" : "Off";
     case "minutes":
       return `${v} ${v === "1" ? "minute" : "minutes"}`;
+    case "hours":
+      return `${v} ${v === "1" ? "hour" : "hours"}`;
     case "days":
       return `${v} ${v === "1" ? "day" : "days"}`;
     case "months":
       return `${v} ${v === "1" ? "month" : "months"}`;
     case "years":
       return `${v} ${v === "1" ? "year" : "years"}`;
+    case "count":
+      return `${v} ${v === "1" ? "time" : "times"}`;
+    case "tokens":
+      return `${v} tokens`;
     case "amount_sgd":
       return `S$${formatAmount(v)}`;
     case "percent":
       return `${v}%`;
     case "choice":
       return choiceText(v);
+    case "fields":
+    case "task_types":
+      return v ? v.split(",").join(", ") : "None";
+    case "choices":
+      return v ? v.split(",").map(choiceText).join(", ") : "None";
+    case "cron":
+      return cronText(v);
+    case "time_range":
+      return v === "off" ? "Off" : `${v.replace("-", " to ")}, Singapore time`;
     default:
       return v;
   }
+}
+
+const weekdays = ["Sundays", "Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays", "Sundays"];
+
+// cronText reads a schedule's entry as words for its common shapes, "0 7 * * *" as "Daily at 07:00, Singapore time", and
+// shows any other as it is written.
+export function cronText(v: string): string {
+  if (v === "off") return "Off";
+  const [minute = "", hour = "", day = "", month = "", weekday = "", ...rest] = v.split(" ");
+  if (rest.length || !/^\d{1,2}$/.test(minute) || !/^\d{1,2}$/.test(hour) || day !== "*" || month !== "*") return `${v} (cron, Singapore time)`;
+  const at = `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`;
+  if (weekday === "*") return `Daily at ${at}, Singapore time`;
+  if (/^[0-7]$/.test(weekday)) return `${weekdays[Number(weekday)]} at ${at}, Singapore time`;
+  return `${v} (cron, Singapore time)`;
 }
 
 // choiceText reads a choice's value as words: "latest_priced_round" is "Latest priced round".
@@ -86,6 +115,20 @@ function ValueInput({ setting: s, value, onChange, id, describedBy, invalid }: {
         ))}
       </div>
     );
+  if (s.kind === "choices") {
+    const picked = value ? value.split(",") : [];
+    const toggle = (c: string) => onChange((s.choices ?? []).filter((x) => (x === c ? !picked.includes(c) : picked.includes(x))).join(","));
+    return (
+      <div className="fy-stack fy-stack--2" role="group" aria-labelledby={`${id}-label`} aria-describedby={describedBy}>
+        {(s.choices ?? []).map((c) => (
+          <label key={c} className="fy-row gap-2">
+            <input type="checkbox" checked={picked.includes(c)} onChange={() => toggle(c)} />
+            {choiceText(c)}
+          </label>
+        ))}
+      </div>
+    );
+  }
   if (s.kind === "choice")
     return (
       <select className="fy-select max-w-72" id={id} value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={invalid || undefined} aria-describedby={describedBy}>
@@ -96,13 +139,13 @@ function ValueInput({ setting: s, value, onChange, id, describedBy, invalid }: {
         ))}
       </select>
     );
-  const numeric = s.kind !== "text";
+  const numeric = s.kind !== "text" && s.kind !== "fields" && s.kind !== "task_types" && s.kind !== "cron" && s.kind !== "time_range";
   return (
     <input
       className="fy-input max-w-72"
       id={id}
       value={value}
-      inputMode={s.kind === "minutes" || s.kind === "days" || s.kind === "months" || s.kind === "years" ? "numeric" : numeric ? "decimal" : undefined}
+      inputMode={s.kind === "minutes" || s.kind === "hours" || s.kind === "days" || s.kind === "months" || s.kind === "years" || s.kind === "count" || s.kind === "tokens" ? "numeric" : numeric ? "decimal" : undefined}
       onChange={(e) => onChange(e.target.value)}
       aria-invalid={invalid || undefined}
       aria-describedby={describedBy}
@@ -113,12 +156,21 @@ function ValueInput({ setting: s, value, onChange, id, describedBy, invalid }: {
 // check finds what the page can tell before asking the API: the shape of the value for its kind.
 function check(s: Setting, v: string): string {
   const t = v.trim();
-  if (s.kind === "minutes" || s.kind === "days" || s.kind === "years") return /^\d{1,6}$/.test(t) ? "" : `Enter a whole number of ${s.kind}.`;
+  if (s.kind === "minutes" || s.kind === "hours" || s.kind === "days" || s.kind === "years") return /^\d{1,6}$/.test(t) ? "" : `Enter a whole number of ${s.kind}.`;
+  if (s.kind === "count") return /^\d{1,6}$/.test(t) ? "" : "Enter a whole number of times.";
+  if (s.kind === "tokens") return /^\d{1,6}$/.test(t) ? "" : "Enter a whole number of tokens.";
+  if (s.kind === "cron")
+    return t === "off" || /^\S+(\s+\S+){4}$/.test(t) ? "" : "Enter five cron fields in Singapore time, minute hour day month weekday, such as 0 7 * * *, or off.";
+  if (s.kind === "time_range") return t === "off" || /^\d{2}:\d{2}-\d{2}:\d{2}$/.test(t) ? "" : "Enter two times of the day, such as 22:00-07:00, or off.";
+  if (s.kind === "choices") return t ? "" : "Choose at least one.";
   if (s.kind === "amount_sgd") return /^\d{1,14}(\.\d{1,2})?$/.test(t) ? "" : "Enter an amount in Singapore dollars, such as 1000.00, without the S$ or commas.";
   if (s.kind === "percent") return /^\d{1,3}(\.\d{1,4})?$/.test(t) ? "" : "Enter a percentage, such as 3, without the % sign.";
   if (s.kind === "text") return t ? "" : "Enter a value.";
   if (s.kind === "choice") return (s.choices ?? []).includes(t) ? "" : "Choose one of the values offered.";
   if (s.kind === "account_code") return /^[0-9A-Za-z][0-9A-Za-z.-]{0,19}$/.test(t) ? "" : "Enter the code of an account in your chart, such as 6460.";
+  if (s.kind === "fields") return /^$|^[a-z][a-z0-9_]{0,40}(\s*,\s*[a-z][a-z0-9_]{0,40})*$/.test(t) ? "" : "Enter field names separated by commas, in lower case with underscores, such as notes, memo.";
+  if (s.kind === "task_types")
+    return /^$|^[a-z]+\.[a-z]+(_[a-z]+)*(\s*,\s*[a-z]+\.[a-z]+(_[a-z]+)*)*$/.test(t) ? "" : "Enter task types separated by commas, as the AI tasks page names them, such as sec.create_task.";
   return "";
 }
 

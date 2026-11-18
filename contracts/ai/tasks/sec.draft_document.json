@@ -1,0 +1,183 @@
+{
+  "id": "sec.draft_document",
+  "version": 1,
+  "name": "Draft a corporate document",
+  "description": "Drafts a corporate document from one of Fyniq's templates, filled from the company's records on the day it is drafted: a directors' resolution approving the financial statements, allotting shares, appointing an officer, ending the secretary's or CEO's appointment or changing the registered office; a members' written resolution; the AGM's notice or its minutes; or the notice that the statements were sent without an AGM. It is a draft for the directors and the company secretary to review and have signed: it changes no record, and nothing is signed, lodged or entered in the minute book. Give only the fields its kind asks for, from records you read.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "kind",
+      "fields"
+    ],
+    "properties": {
+      "kind": {
+        "type": "string",
+        "enum": [
+          "agm.dispensation",
+          "agm.minutes",
+          "agm.notice",
+          "directors.allot_shares",
+          "directors.appoint_officer",
+          "directors.approve_statements",
+          "directors.change_office",
+          "directors.remove_officer",
+          "members.written_resolution"
+        ],
+        "description": "The kind of document, as Fyniq's templates name them."
+      },
+      "fields": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "The fields its kind asks for, and no other; dates as 2026-12-31, amounts and counts as plain decimals.",
+        "properties": {
+          "fy_end": {
+            "type": "string",
+            "description": "The financial year's last day: approving its statements, the AGM's notice and minutes, the notice that they were sent.",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "members_approved_on": {
+            "type": "string",
+            "description": "An allotment: the day the members approved the issue (s161).",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "allottee": {
+            "type": "string",
+            "description": "An allotment: whom the shares are allotted to.",
+            "maxLength": 500
+          },
+          "shares": {
+            "type": "string",
+            "description": "An allotment: how many shares, a whole number with no commas.",
+            "pattern": "^[1-9][0-9]{0,14}$"
+          },
+          "share_class": {
+            "type": "string",
+            "description": "An allotment: the shares' class.",
+            "maxLength": 500
+          },
+          "price": {
+            "type": "string",
+            "description": "An allotment: the price of each share in the base currency, a decimal string.",
+            "pattern": "^[0-9]{1,12}(\\.[0-9]{1,4})?$"
+          },
+          "name": {
+            "type": "string",
+            "description": "An appointment: the officer's name.",
+            "maxLength": 500
+          },
+          "role": {
+            "type": "string",
+            "description": "An appointment: the office, director, secretary, ceo or auditor.",
+            "maxLength": 500
+          },
+          "from": {
+            "type": "string",
+            "description": "An appointment or a change of office: the day it takes effect.",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "officer_id": {
+            "type": "string",
+            "description": "A cessation: the secretary or CEO in office, by their first version's ID.",
+            "maxLength": 500
+          },
+          "on": {
+            "type": "string",
+            "description": "A cessation: the day the appointment ends.",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "address": {
+            "type": "string",
+            "description": "A change of office: the new registered office.",
+            "maxLength": 500
+          },
+          "resolution_kind": {
+            "type": "string",
+            "description": "A members' written resolution: ordinary or special.",
+            "maxLength": 500
+          },
+          "resolutions": {
+            "type": "array",
+            "maxItems": 20,
+            "description": "A members' written resolution or the AGM's minutes: the resolutions, one a line.",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "circulated_on": {
+            "type": "string",
+            "description": "A members' written resolution: the day it is sent to the members.",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "meeting_on": {
+            "type": "string",
+            "description": "The AGM's notice or minutes: the meeting's day.",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "time": {
+            "type": "string",
+            "description": "The AGM's notice or minutes: its time, 24-hour.",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "place": {
+            "type": "string",
+            "description": "The AGM's notice or minutes: its place.",
+            "maxLength": 500
+          },
+          "notice_on": {
+            "type": "string",
+            "description": "The AGM's notice: the day it is given.",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          },
+          "other_business": {
+            "type": "array",
+            "maxItems": 20,
+            "description": "The AGM's notice: other business, one a line.",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "chair": {
+            "type": "string",
+            "description": "The AGM's minutes: who chaired it.",
+            "maxLength": 500
+          },
+          "present": {
+            "type": "array",
+            "maxItems": 20,
+            "description": "The AGM's minutes: who was present, one a line.",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "sent_on": {
+            "type": "string",
+            "description": "The notice that the statements were sent: the day they were sent to the members (s175A).",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          }
+        }
+      },
+      "note": {
+        "type": "string",
+        "maxLength": 1000,
+        "description": "A note for the record, not on the paper."
+      }
+    }
+  },
+  "command": "DraftCorporateDocument",
+  "tier": 1,
+  "limits": {
+    "items": 1
+  },
+  "approvers": [
+    "owner",
+    "company_secretary"
+  ],
+  "expiry_hours": 72
+}

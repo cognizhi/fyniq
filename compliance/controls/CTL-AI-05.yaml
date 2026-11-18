@@ -10,5 +10,6 @@ evidence: "Eval report"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-ai-providers"
+    status: running
+    how: "make evals"
+    evidence: "each suite checked to judge soundly and each model's recorded run replayed against its threshold, the assistant's golden and red-team suites through the real orchestrator on the synthetic sample company among them (their expected values worked out again from the seed); the AI evals CI job's artefact eval-report (90 days). Until a model's answers are recorded the report says so; a release run (FYNIQ_EVALS_RELEASE=1) fails on a missing recording"

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agent": {
+      "examples": [
+        "chat"
+      ],
+      "type": "string"
+    },
+    "notes": {
+      "items": {
+        "description": "What the preset leaves out of the route, and why.",
+        "examples": [
+          "personal-data stays with preset A, in Singapore (AI-75)"
+        ],
+        "maxLength": 300,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "route": {
+      "$ref": "AIRouteSet.schema.json",
+      "description": "The route, as setAIRoute takes it."
+    },
+    "why": {
+      "description": "Why the preset gives the agent no route it could set now.",
+      "examples": [
+        "no connection that is on has an allowed model of the lines preset A pins"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "agent",
+    "notes"
+  ],
+  "title": "AIPresetAgent",
+  "type": "object"
+}

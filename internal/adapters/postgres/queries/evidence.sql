@@ -35,6 +35,13 @@ WHERE id = sqlc.arg(id)
 RETURNING id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
   staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version, nric_flagged;
 
+-- name: ExtendEvidenceRetention :one
+-- A final file's retain-until moved later (FR-DOC-02); the guard refuses one that moves earlier (FY123).
+UPDATE fyniq.evidence SET retain_until = sqlc.arg(retain_until), version = version + 1
+WHERE id = sqlc.arg(id) AND state = 'final'
+RETURNING id, document_id, evidence_type, note, relates_on, file_name, media_type, size_bytes, sha256, original_sha256, source, data_class,
+  staging_key, uploaded_by, uploaded_at, state, removed_at, locked_key, retain_until, finalised_at, version, nric_flagged;
+
 -- name: UnfinalisedEvidence :many
 SELECT e.id, e.document_id, e.evidence_type, e.note, e.relates_on, e.file_name, e.media_type, e.size_bytes, e.sha256, e.original_sha256,
   e.source, e.data_class, e.staging_key, e.uploaded_by, e.uploaded_at, e.state, e.removed_at, e.locked_key, e.retain_until,

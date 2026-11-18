@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "last_complete": {
+      "description": "When the list was last read whole: switching the connection on needs one.",
+      "examples": [
+        "2026-11-14T06:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "models": {
+      "description": "Every model the provider has listed, by ID; none is ever removed, so its history stays.",
+      "items": {
+        "$ref": "AIModel.schema.json"
+      },
+      "type": "array"
+    },
+    "reads": {
+      "description": "The latest reads, newest first, at most 10.",
+      "items": {
+        "$ref": "AIModelListRead.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "models",
+    "reads"
+  ],
+  "title": "AIModelList",
+  "type": "object"
+}

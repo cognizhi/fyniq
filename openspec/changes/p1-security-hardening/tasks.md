@@ -60,7 +60,9 @@ module tests on mock providers and tagged `[live-verify]`.
 - [x] 7.1 `createEvidenceDownload` (D5): a 5-minute link, a V4 signed URL in the cloud and an HMAC path locally,
   served as an attachment with its content type. Audited where the file is sensitive. `getEvidenceFile` is deprecated
   with its Sunset. The web app moves to the link. `// req: SEC-24`
-- [ ] 7.2 ClamAV as an internal Cloud Run service in `infra/`, with a module test `[live-verify]`. `// req: SEC-24`
+- [x] 7.2 ClamAV as an internal Cloud Run service in `infra/`, with a module test `[live-verify]`. `// req: SEC-24` (rev 0.247: a
+  private scanner service, an HTTP front with clamd as its sidecar, since a Cloud Run service takes no raw TCP; rev 0.248:
+  its two images, and the image scan blocking only what a patch exists for)
 
 ## 8. Security alerts (slice 8)
 
@@ -97,19 +99,19 @@ module tests on mock providers and tagged `[live-verify]`.
   `make scan`. `// req: SEC-26`
 - [x] 11.2 The archtest that the auto-approval never approves a pull request not opened by the owner, `CODEOWNERS`,
   and branch protection `[live-verify]`. `// req: REL-04`
-- [ ] 11.3 `getPlatformVersion` and the About dialog. The version and git SHA in every exported report. Component
+- [x] 11.3 `getPlatformVersion` and the About dialog. The version and git SHA in every exported report. Component
   test with axe. `// req: REL-05`
 
 ## 12. Incident response (slice 12)
 
-- [ ] 12.1 `docs/runbooks/incident-response.md`, with the PDPA breach procedure and its timers. `// req: SEC-32`
-- [ ] 12.2 The incident register (D10): the table with attack tests, the API with matrix rows, and the Incidents tab
+- [x] 12.1 `docs/runbooks/incident-response.md`, with the PDPA breach procedure and its timers. `// req: SEC-32`
+- [x] 12.2 The incident register (D10): the table with attack tests, the API with matrix rows, and the Incidents tab
   with its help keys, guide section and component test with axe. `// req: SEC-32`
 
 ## 13. Threat model and as built (slice 13)
 
-- [ ] 13.1 `docs/security/threat-models/security-hardening.md`.
-- [ ] 13.2 `make test` and `make up` pass on the last slice. The build plan's paragraph says what was built.
+- [x] 13.1 `docs/security/threat-models/security-hardening.md`.
+- [x] 13.2 `make test` and `make up` pass on the last slice. The build plan's paragraph says what was built.
 
 ## Workflow follow-up
 

@@ -26,7 +26,7 @@ const (
 	Auditor          Role = "auditor"
 	TaxAgent         Role = "tax_agent"
 	BoardViewer      Role = "board_viewer"
-	CompanySecretary Role = "company_secretary" // the Board viewer's rights here (Appendix D, rev 0.6)
+	CompanySecretary Role = "company_secretary" // the Board viewer's rights here, with their own cells (SecretaryCells; Appendix D, rev 0.6)
 	DPO              Role = "dpo"
 	HROfficer        Role = "hr_officer" // Nemura only: no rights in Fyniq
 )

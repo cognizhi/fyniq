@@ -551,6 +551,10 @@ Source: PRD-001 §C.2
 - **WHEN** a scheduled agent run is late
 - **THEN** the check flags it for review
 
+#### Scenario: Agent run without its AI step
+- **WHEN** a scheduled agent run ended with its findings but its AI step could not run (rev 0.283)
+- **THEN** the check flags it for review
+
 ### Requirement: C.2 #37 Sending domain alignment, bounces and complaints
 The system SHALL flag for review, on every relevant change and nightly, a sending domain that fails SPF, DKIM or DMARC alignment, or bounces or complaints above the threshold (FR-INT-21).
 
@@ -845,6 +849,19 @@ Source: PRD-001 §C.2
 
 #### Scenario: Nothing waits
 - **WHEN** no automatic reversal is due by the period's end and none from the period waits
+- **THEN** the check passes
+
+### Requirement: C.2 #63 Opening balance clearing not at nothing
+The system SHALL warn (⚠) when 3900 Opening balance clearing holds a balance: an opening open item is missing or posted twice, or the opening balances carry another amount than the items (FR-GL-06; rev 0.257).
+
+Source: PRD-001 §C.2
+
+#### Scenario: The clearing account holds a balance
+- **WHEN** 3900 Opening balance clearing holds a balance at the organisation's today
+- **THEN** the check warns (⚠), naming the account and what it holds
+
+#### Scenario: The clearing account nets to zero
+- **WHEN** it holds nothing, or the chart has no opening balance clearing account
 - **THEN** the check passes
 
 ### Requirement: C.2 #62 Reconciliations signed off under an override
