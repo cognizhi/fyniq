@@ -4,14 +4,14 @@ type: task
 title: Ask for, approve or reject a change that needs a second approver
 summary: Which changes wait for a second person, approving in steps from the Inbox, a person's bank account, withdrawing a request, and why one becomes void
 sources:
-  - docs/user-guide/approvals.md sha256:f4eb86d190b46b4a1bc94bc6d2435f4a19e413d373aaa3676a952b7d14974861
+  - docs/user-guide/approvals.md sha256:fd2b932e9fab49f8e2c7edb00d43a881f4006cf3c2040841ea8ced7f1acbfe11
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-06
+compiled_at: 2026-11-18
 aliases:
   - keyboard shortcuts
   - inbox keys
@@ -28,6 +28,8 @@ aliases:
   - weekly review
   - review log
   - approve a bank account
+  - unusual items
+  - anomaly review
   - person's bank account
 ---
 
@@ -93,6 +95,14 @@ aliases:
 - A break-glass is listed too, but reviewed on **Break-glass** with each batch it released ([[settings.team-mode]]).
 
 (src: docs/user-guide/approvals.md#review-high-risk-actions)
+
+## Unusual items
+
+- In Founder mode, each night Fyniq adds to the review log the last week's journals and supplier payments that look unusual, marked **Unusual**, each with its reason.
+- The reasons: a journal more than three times the usual journal of the half year before; a journal of a round sum, a whole number of thousands from 10,000; a journal posted more than 30 days after its date; a payment within 14 days after the supplier's bank details changed; a payment of the same amount to the same supplier within 7 days of another; the first payment to a supplier.
+- An unusual item is not a mistake and nothing is held or changed; another founder opens the journal, checks it against its evidence and marks it as reviewed with a note. The person who posted it can't review it; each journal or payment shows once for each reason.
+
+(src: docs/user-guide/approvals.md#unusual-items)
 
 ## When it can no longer be approved
 

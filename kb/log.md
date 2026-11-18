@@ -630,4 +630,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-18] compile | docs/user-guide/home.md → home.overview (What happened? Where to record it, and empty lists' first actions, FR-UX-11)
 
+## [2026-11-18] compile | docs/user-guide/statutory-packs.md → settings.statutory-packs (an update waiting to be activated, ENG-33, G4-103)
+
 ## [2026-11-18] compile | docs/user-guide/help.md → help.guide (Take the tour, FR-UX-34)
+
+## [2026-11-18] compile | docs/user-guide/approvals.md → approvals.decide (FM-6: unusual items in the weekly review, rev 0.287)
