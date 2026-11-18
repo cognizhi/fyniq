@@ -4,7 +4,7 @@ type: task
 title: Invoices
 summary: Entering, issuing and approving an invoice to a customer; emailing it with its PDF; credit notes; spreading revenue; voiding or editing an invoice
 sources:
-  - docs/user-guide/invoices.md sha256:a93dc0631d11daeb4d3040a2da0f66211ea260991512f65c1ba924e831749183
+  - docs/user-guide/invoices.md sha256:9130ca6a7e72ab9ffdfcc484a2da9f704880119284e6547983f5b4288018ae87
 data_class: general
 taint: trusted
 status: draft
@@ -150,6 +150,7 @@ aliases:
 - When the organisation uses dimensions, such as Department or Project, each line can take one value of each, such as ENG Engineering, so its revenue shows by team or by project ([[accounting.chart]]).
 - The choices are in Expert mode; a line on a revenue account that requires a dimension shows its choice in Basic mode too, with "needs one" under it, and the invoice does not issue until the line has one (DIM-05).
 - A spread line's revenue keeps its values each month it is released; a credit note's lines take values in the same way, and a quote's and a recurring invoice's lines pass theirs to the invoices made from them.
+- In Basic mode, an invoice whose lines have values in Expert's fields (a discount, a spread, a dimension value the account does not require) shows **Has advanced details** with how many: open it to read them, **Open in Expert mode** to change them.
 
 (src: docs/user-guide/invoices.md#tag-a-line-with-dimensions)
 

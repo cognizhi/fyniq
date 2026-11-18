@@ -58,7 +58,8 @@ for your vehicle, a trip cannot be submitted.
 When the company tracks costs by department, project or something of its own, a category may need
 to know which: under the category, a choice such as **Department** says "needs one". Choose your
 team, such as ENG Engineering, for each receipt or trip in that category; the claim cannot be paid
-back until each has one. Other choices, for a category that does not need them, are in Expert mode.
+back until each has one. Other choices, for a category that does not need them, are in Expert mode;
+in Basic mode, a value someone chose for one shows under **Has advanced details**, read-only.
 
 ## Attach the receipt
 

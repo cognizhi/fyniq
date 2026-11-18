@@ -155,6 +155,10 @@ of each, such as ENG Engineering, so its revenue shows by team or by project. Th
 Expert mode; a line on a revenue account that requires a dimension shows its choice in Basic mode
 too, with "needs one" under it, and the invoice does not issue until the line has one (DIM-05).
 
+In Basic mode, an invoice whose lines have values in Expert's fields, such as a discount, a spread or
+a dimension value the account does not require, shows **Has advanced details** with how many. Open it
+to read them; **Open in Expert mode** to change them.
+
 A spread line's revenue keeps its values each month it is released. A credit note's lines take values
 in the same way, and a quote's and a recurring invoice's lines pass theirs to the invoices made from
 them.

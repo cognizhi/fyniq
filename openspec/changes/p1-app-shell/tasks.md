@@ -136,6 +136,11 @@
   sources and fails on a query-cache write that does not name the server's answer it stores ("the server's answer
   (FR-UX-22)" on its line) and on an `onMutate` that writes the cache. **Left:** the live-update feed (FR-UX-19) and one
   polite status region for the shell's counts (FR-UX-21).)
+  (18 Nov 2026, G4-077 for the launch gate: `src/freshness.ts`, started with the app: a page back after being hidden,
+  offline or asleep (its timers stopped) for longer than the feed window, 5 minutes [proposed], reloads its state
+  once: every query re-reads through the API, which lists only what the person may still see, and each list is
+  replaced, so nothing shows twice. Test `freshness.test.tsx`. **Left:** FR-UX-19's change feed itself (S), with
+  its resume cursor, which this reload stands in for until it is built.)
 
 ## 4. Modes and help
 
@@ -147,6 +152,13 @@
   preferences operation exists. **Left:** storing it on the server, the Administrator's default per role, the
   disclosure of hidden fields and the mode-parity test.)
 
+  (17 Nov 2026, for the launch gate: nothing silently hidden on records (FR-UX-25). `components/AdvancedDetails.tsx`:
+  in Basic mode, "Has advanced details (N)" lists read-only the values a record has in fields only Expert shows, with
+  "Open in Expert mode"; nothing in Expert mode. The invoice, credit note and recurring invoice lines (discount, spread,
+  dimension values), the bill lines (spread, dimension values) and the claim's receipts (dimension values) use it: such
+  a field is Expert's in Basic now even with a value, unless its account or category requires it or it carries an
+  error to fix. Guides `invoices.md`, `bills.md`, `claims-my-claims.md`, compiled. Tests `AdvancedDetails.test.tsx`,
+  `invoices.test.tsx`.)
 - [ ] 4.2 Tooltips, `/help` built from `docs/user-guide/`, context-aware help, the first-run tour, practice in the sample company, and the FR-UX-41 banner from the review register. Tests `// req: FR-UX-30`, `// req: FR-UX-32`, `// req: FR-UX-33` (guide half), `// req: FR-UX-34`, `// req: FR-UX-36` and `// req: FR-UX-41`
   (20 Oct 2026, in part: the FR-UX-41 banner, `components/ReviewBanner.tsx`, reads the review register at build time
   and shows on each Settings page whose screen it lists while the area is pending. Test `ReviewBanner.test.tsx`.
@@ -157,6 +169,13 @@
   If-Match, Idempotency-Key, preview), each person's own (`HLP-01` for a caller that is not a person). Test
   `TestTheTourSavesOnlyItsOwnState`: every save writes the state and its audit event and nothing else (G4-104).
   **Left:** the tour itself in the web app and its end-to-end test per role (QA-UI-06).)
+  (18 Nov 2026, the tour in the web app: `tour/Tour.tsx` is MASTER.md §12's walkthrough (a non-modal spotlight and
+  caption card on the real interface, focus to its title, → and ← and the buttons, Esc ends it, each step announced,
+  focus back where it was; no movement with reduced motion); `tour/steps.ts` a variant per role group (founder,
+  accountant, employee, approver, board viewer), at most seven steps on elements marked `data-tour`, a hidden one
+  skipped; `tour/TourHost.tsx` offers it where the person lands until they answer, offers to resume one left part-way,
+  runs it on Home for those who have it, and saves each step, finished or skipped, its only write. Help › Take the tour
+  again replays it. Guide `help.md` (Take the tour), compiled. Tests `tour.test.tsx`, `e2e/tour.spec.ts`.)
   (17 Nov 2026, the user guide, for the launch gate: `/help` builds every page of `docs/user-guide/` into the web app
   (`help/guide.ts`, at build time; the web image copies the guide and the release notes), lists those the person's
   roles call for, Basic ones in Basic mode with how many Expert adds, and searches them as they type; `/help/$key`
@@ -196,5 +215,11 @@
 
 ## 6. Screens
 
+  (18 Nov 2026, the page-load and interaction budgets, for the launch gate (NFR-PERF-UI-01): `e2e/performance.spec.ts`,
+  in Chrome over an emulated 4G link (9 Mbps down, 1.5 Mbps up, 85 ms) on the built app with fixture answers: the
+  75th percentile Largest Contentful Paint of eight cold loads of Home, the invoices, the Inbox and Settings under 1.5 s,
+  the slowest interaction's next paint under 200 ms (the mode switch, the palette, the Help menu), and a change of route
+  whose data is cached under 300 ms; it logs what it measured (locally, at half the CPU: 1.3 s, 48 ms, 35 ms). **Left:**
+  NFR-L10N-01's externalised strings and per-user formats.)
 - [ ] 6.1 Build the 18 shell screens as designed. Each has help keys, a `docs/user-guide/` page compiled into `kb/`, and a tour step where it is on the first-run path
 - [ ] 6.2 Finish with `make check`, `make test` and `make test-e2e`
