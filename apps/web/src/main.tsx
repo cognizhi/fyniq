@@ -7,11 +7,13 @@ import "./styles/globals.css";
 import "./app.css";
 import { startAppearance } from "./appearance";
 import { installClipboard } from "./format/amount";
-import { router } from "./router";
+import { installFreshness } from "./freshness";
+import { queryClient, router } from "./router";
 import { installFocusClear } from "./shell/focusClear";
 
 startAppearance();
 installClipboard();
+installFreshness(queryClient);
 installFocusClear();
 
 const root = document.getElementById("root");

@@ -11,7 +11,8 @@ test. ZAP's baseline spiders the origin, with its AJAX spider too (a browser, wh
 reaches its pages and the API calls they make), and reports what its passive rules see, with the session cookie on
 every request so the app's pages are reached. compliance/zap-rules.tsv sets each rule's level, as ZAP reads it: FAIL,
 WARN or IGNORE. A High alert, or one of a FAIL rule, fails the scan unless compliance/scan-waivers.toml waives it
-(tool "zap", the rule's ID, the alert's path) with a reason and an expiry. The reports land in .data/dast/: ZAP's
+(tool "zap", the rule's ID, the alert's path) with a reason and an expiry. A PII Disclosure whose digits the response
+holds only inside record IDs (a UUID's last group, all decimal by chance) is dropped. The reports land in .data/dast/: ZAP's
 HTML and JSON, and dast.md, the evidence. ZAP runs from its image, pinned by digest (both platforms).
 """
 from __future__ import annotations
@@ -41,6 +42,8 @@ RULES = ROOT / "compliance" / "zap-rules.tsv"
 ZAP_IMAGE = "ghcr.io/zaproxy/zaproxy:2.17.0@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af"
 LEVELS = {"FAIL", "WARN", "IGNORE"}
 HIGH = "3"   # ZAP's riskcode for High
+PII = "10062"   # PII Disclosure: digits that pass a card number's checks
+UUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
 
 
 def rules(path: Path = RULES) -> dict[str, str]:
@@ -58,9 +61,16 @@ def rules(path: Path = RULES) -> dict[str, str]:
     return out
 
 
-def findings(report: dict, levels: dict[str, str]) -> list[scan.Finding]:
+def only_in_ids(body: str, digits: str) -> bool:
+    """Whether digits appear in body, and only inside UUIDs: a record ID's last group of 12 hex digits is sometimes all
+    decimal, and ZAP's PII Disclosure reads it as a card number."""
+    return digits in body and digits not in UUID.sub("", body)
+
+
+def findings(report: dict, levels: dict[str, str], fetch=None) -> list[scan.Finding]:
     """ZAP's JSON report as findings: one per alert and path, blocking when High or of a FAIL rule; IGNORE rules
-    dropped."""
+    dropped. With fetch (a URI to its response body), a PII Disclosure whose digits the response holds only inside
+    record IDs is dropped too: it is a UUID, not a card number."""
     out, seen = [], set()
     for site in report.get("site", []):
         for a in site.get("alerts", []):
@@ -69,6 +79,8 @@ def findings(report: dict, levels: dict[str, str]) -> list[scan.Finding]:
             if level == "IGNORE":
                 continue
             for inst in a.get("instances", []) or [{"uri": site.get("@name", "")}]:
+                if rule == PII and fetch and inst.get("evidence") and only_in_ids(fetch(inst.get("uri", "")), inst["evidence"]):
+                    continue
                 path = urllib.parse.urlsplit(inst.get("uri", "")).path or "/"
                 if (rule, path) in seen:
                     continue
@@ -96,6 +108,13 @@ def sign_in(origin: str) -> str:
     raise SystemExit("✖ signing in set no session cookie")
 
 
+def zap_target(origin: str) -> str:
+    """The origin as ZAP's container reaches it: on Docker Desktop and Colima the host is not its localhost."""
+    if platform.system() == "Linux":
+        return origin
+    return re.sub(r"//(localhost|127\.0\.0\.1)\b", "//host.docker.internal", origin)
+
+
 def zap(origin: str, session: str | None) -> dict:
     """Runs ZAP's baseline against origin and returns its JSON report."""
     if shutil.which("docker") is None:
@@ -104,9 +123,7 @@ def zap(origin: str, session: str | None) -> dict:
     for f in ("zap.json", "zap.html"):
         (REPORTS / f).unlink(missing_ok=True)
     shutil.copy(RULES, REPORTS / "zap-rules.tsv")
-    target = origin
-    if platform.system() != "Linux":   # Docker Desktop and Colima: the host is not the container's localhost
-        target = re.sub(r"//(localhost|127\.0\.0\.1)\b", "//host.docker.internal", origin)
+    target = zap_target(origin)
     options = []
     if session:   # the session on every request ZAP sends, so the spider reaches the app's pages
         options = ["replacer.full_list(0).description=session", "replacer.full_list(0).enabled=true",
@@ -123,6 +140,19 @@ def zap(origin: str, session: str | None) -> dict:
     if not (REPORTS / "zap.json").exists():
         raise SystemExit(f"✖ ZAP wrote no report ({p.returncode}); see .data/dast/zap.log:\n{p.stderr[-2000:]}")
     return json.loads((REPORTS / "zap.json").read_text())
+
+
+def fetcher(origin: str, target: str, session: str | None):
+    """Reads a URI ZAP reported, as the signed-in session, from the origin ZAP scanned through target."""
+    def fetch(uri: str) -> str:
+        url = uri.replace(target, origin, 1)
+        req = urllib.request.Request(url, headers={"Cookie": f"fyniq_session={session}"} if session else {})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310 (the scanned origin)
+                return r.read().decode("utf-8", "replace")
+        except OSError:
+            return ""
+    return fetch
 
 
 def evidence(origin: str, signed_in: bool, found: list[scan.Finding], problems: list[str]) -> str:
@@ -167,6 +197,14 @@ def self_test() -> int:
     ]}]}
     got = findings(report, levels)
     assert [(f.rule, f.path, f.blocking) for f in got] == [("10020", "/", True), ("40012", "/s", True), ("10049", "/", False)], got
+    # A PII Disclosure of a record ID's digits is dropped; the same digits standing alone are not.
+    pii = {"site": [{"@name": "http://localhost:8080", "alerts": [{"pluginid": PII, "name": "PII Disclosure", "riskcode": HIGH,
+        "instances": [{"uri": "http://localhost:8080/api/v1/periods", "evidence": "587802228102"}]}]}]}
+    ids = '{"items":[{"id":"01928f6e-7a3b-7c41-9d2e-587802228102"}]}'
+    assert findings(pii, {PII: "FAIL"}, lambda uri: ids) == []
+    loose = findings(pii, {PII: "FAIL"}, lambda uri: ids + ' "card": "587802228102"')
+    assert [(f.rule, f.path, f.blocking) for f in loose] == [(PII, "/api/v1/periods", True)], loose
+    assert [f.rule for f in findings(pii, {PII: "FAIL"})] == [PII]   # nothing to read: kept
     today = dt.date(2099, 1, 1)
     waiver = scan.Waiver("zap", "40012", "/s", "a reflected value the scan cannot tell apart", dt.date(2099, 2, 1))
     problems = scan.judge(got, [waiver], {"zap"}, today)
@@ -188,7 +226,7 @@ def main() -> int:
         return self_test()
     levels = rules()
     session = None if a.anonymous else sign_in(a.origin)
-    found = findings(zap(a.origin, session), levels)
+    found = findings(zap(a.origin, session), levels, fetcher(a.origin, zap_target(a.origin), session))
     problems = scan.judge(found, [w for w in scan.load_waivers() if w.tool == "zap"], {"zap"}, dt.date.today())
     (REPORTS / "dast.md").write_text(evidence(a.origin, session is not None, found, problems))
     if problems:

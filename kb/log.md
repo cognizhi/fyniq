@@ -616,8 +616,14 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-17] compile | docs/user-guide/home.md → home.overview (Your work by role and Upcoming deadlines on Home, §7.1)
 
+## [2026-11-17] compile | docs/user-guide/checks.md → checks.overview (run a stopped background task again, C.2 #12, G4-073)
+
 ## [2026-11-17] compile | docs/user-guide/help.md → help.guide (the user guide in the app, FR-UX-32)
 
 ## [2026-11-17] compile | docs/user-guide/home.md → home.overview (Help opens the user guide)
 
+## [2026-11-17] compile | docs/user-guide/invoices.md, bills.md, claims-my-claims.md → sales.invoices, purchases.bills, claims.my-claims (Has advanced details in Basic mode, FR-UX-25)
+
 ## [2026-11-17] compile | docs/user-guide/banking.md → banking.categorise (Plain and Accountant views on the grid, FR-UX-08); the other pages citing it re-hashed, unchanged
+
+## [2026-11-18] compile | docs/user-guide/help.md → help.guide (Take the tour, FR-UX-34)

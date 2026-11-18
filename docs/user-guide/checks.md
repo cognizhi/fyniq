@@ -74,6 +74,16 @@ Two checks are reviewed only where their control lives, so the people they watch
 with a click: a logged action is reviewed in the **review log**, and the quarter's access review is
 attested on **Settings → Access review**.
 
+## Run a stopped task again
+
+Fyniq does some work in the background, such as sending an email or making a recurring document.
+A task that fails is tried again by itself; one that fails every time stops, and **Every scheduled
+job ran on time** lists it with when it stopped and why. Once what stopped it is fixed (a provider
+that was down, a setting that was missing), an Owner or an Administrator selects **Run it again**
+beside it and confirms: it goes back in the queue with its attempts counted afresh, and its last
+error stays on record. Each run again is kept in the audit trail, and the task leaves the check once
+the checks run again.
+
 ## Name a check's owner
 
 An Owner or a Controller can name the person who owns a check: select the pencil beside its

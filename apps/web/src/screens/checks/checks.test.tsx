@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Session } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -210,6 +210,40 @@ describe("Books health and checks", () => {
     await screen.findByRole("region", { name: "Books health: problems" });
     expect(seen.find((s) => s.method === "POST")!.body).toEqual({ kind: "bill", id: "b1", note: "Rounded by the supplier" });
     await noViolations(document.body);
+  });
+
+  // req: G4-073
+  it("offers an Owner or an Administrator to run a stopped background task again, and no one else", async () => {
+    const stopped: ChecksOut = {
+      ...answered,
+      checks: [
+        ...answered.checks,
+        check("scheduler.jobs-on-time", "Scheduler", "error", {
+          title: "Every scheduled job ran on time",
+          count: 1,
+          detail: "1 scheduled job(s) or background task(s) late, failing or stopped",
+          items: [{ kind: "outbox", id: "w-1", label: "Background work email.send", detail: "It stopped after 5 attempts on 17 Nov 2026 09:00 UTC: the provider refused the connection" }],
+        }),
+      ],
+    };
+    const sent = answer({
+      "GET /v1/checks": { status: 200, body: stopped },
+      "POST /v1/background-work/w-1/replay": { status: 200, body: { id: "w-1", kind: "email.send", state: "pending", attempts: 0 } },
+    });
+    const admin = renderPage(Checks, { path: "/checks", session: { ...ownerSession, roles: ["administrator"] } as Session, mode: "basic" });
+    fireEvent.click(await screen.findByRole("button", { name: "Run Background work email.send again" }));
+    const dialog = await screen.findByRole("dialog", { name: "Run Background work email.send again?" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Run it again" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    const post = sent.find((s) => s.method === "POST" && s.path === "/v1/background-work/w-1/replay");
+    expect(post?.headers.get("Idempotency-Key")).toBeTruthy();
+    await noViolations(document.body);
+    admin.unmount();
+
+    answer({ "GET /v1/checks": { status: 200, body: stopped } });
+    renderPage(Checks, { path: "/checks", session: controller, mode: "basic" });
+    await screen.findByRole("region", { name: "Books health: problems" });
+    expect(screen.queryByRole("button", { name: /again$/ })).toBeNull();
   });
 
   it("offers no review to a role that may not mark items reviewed", async () => {
