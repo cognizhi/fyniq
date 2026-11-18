@@ -142,6 +142,12 @@ export function BankRules() {
           <Icon of={FlaskConical} size={24} />
           <h2 className="fy-h3">No rules yet</h2>
           <p className="fy-secondary">A rule codes the lines it meets, such as every AWS charge to Software. Test it against the lines held before you save it.</p>
+          {may && (
+            <button type="button" className="fy-btn fy-btn--secondary fy-btn--sm self-center" onClick={() => setEditing({ form: blank })}>
+              <Icon of={Plus} />
+              Make your first rule
+            </button>
+          )}
         </div>
       )}
       {items.length > 0 && (

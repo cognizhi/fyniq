@@ -493,6 +493,12 @@ export function PreIncorporationCosts() {
           <Icon of={Receipt} size={24} />
           <h2 className="fy-h3">No costs before the books start</h2>
           <p className="fy-secondary">Add each cost a founder paid before the company's books start, with its receipt, for the accountant to decide.</p>
+          {mayRecord && (
+            <Button variant="secondary" size="sm" className="self-center" onClick={() => setDialog("add")}>
+              <Icon of={Plus} />
+              Add the first cost
+            </Button>
+          )}
         </div>
       )}
       {items.length > 0 && (

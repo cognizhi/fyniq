@@ -199,6 +199,23 @@
   Tests `help.test.tsx` (`// req: FR-UX-32`, `// req: FR-UX-33`). **Left:** the glossary and the keyboard shortcuts'
   pages, which wait for their sources; screenshots from the end-to-end tests; "Try it in the sample company"; the
   tour and practice.)
+  (18 Nov 2026, the ⓘ and the glossary, for the launch gate: `components/HelpPopover.tsx` is MASTER.md §12's info
+  popover (a 24 × 24 px ⓘ beside the visible label, or a glossary term's own words; opens on hover and focus, pins on a
+  click or tap, stays while hovered, Esc closes it and returns focus, an outside click closes a pinned one; a
+  non-modal dialog named by its title, with "Learn more"). `help/HelpInfo.tsx` fills it from a help key, whose
+  catalogue entry may now carry `detail`, `example` and the `expert` detail Expert mode adds; `help/Term.tsx` from
+  `docs/user-guide/glossary.md` (20 terms, draft until the accountant reviews them). The KPI tiles' ⓘ use it; Books
+  health has one; the suspense note's terms are glossary terms. Guide `glossary.md`, compiled into
+  `reference.glossary`. Tests `HelpPopover.test.tsx`, `glossary.test.tsx`, `kpis.test.tsx`. **Left:** FR-UX-30's
+  breadth: help on every field label, column header, status chip, stat tile and chart across the screens (most have a
+  help key's native tooltip only), screen by screen.)
+  (18 Nov 2026, FR-UX-11's rest, for the launch gate: "What happened? Where to record it" on Home
+  (`screens/WhatHappened.tsx`, from the workbook's Start Here: nine things that happen, each with the page that records
+  it and what to do there, listed only when the person's access opens that page). Every empty list explains what goes
+  there and offers its first action: rates, dimensions, payment batches, items, contacts, pre-incorporation costs and
+  bank rules now offer "Add your first …" in the empty state, the fixed-asset register what is not in it yet, and
+  Categorise importing a statement; those filled from elsewhere are listed with why. Guide `home.md`, compiled. Tests
+  `whatHappened.test.tsx`.)
 
 ## 5. Devices, accessibility and budgets
 

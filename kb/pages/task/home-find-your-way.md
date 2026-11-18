@@ -4,7 +4,7 @@ type: task
 title: The Home page, search and commands, long work, Settings, the version, and signing out
 summary: Home (pulse, tiles, plans, your work, deadlines, set-up), Search and commands (Ctrl+K), Operations, Settings, the version (Help › About), signing out
 sources:
-  - docs/user-guide/home.md sha256:409653610a991d47626cac0fb91ceb0047d4f6131cdf97ab2afdfcf4fccbd9af
+  - docs/user-guide/home.md sha256:fa4ab207e2fdbf79abe2242296459867d5a0fdf16c573fad6a16d4c0fed23145
 data_class: general
 taint: trusted
 status: draft
@@ -105,6 +105,13 @@ aliases:
 - A step the person's roles cannot see is left out; opening balances, bank feeds, employees and the workbook import join as they arrive.
 
 (src: docs/user-guide/home.md#set-up-the-company)
+
+## What happened? Where to record it
+
+- Under **What happened? Where to record it** on Home, choose what happened, such as "A customer paid us" or "I paid a company cost with my own money": Fyniq says where to record it and what to do there, linking that page and its guide page; it lists only what the person's access lets them record.
+- Every empty list says what goes there and offers the first thing to do, such as **Add your first contact**.
+
+(src: docs/user-guide/home.md#what-happened-where-to-record-it)
 
 ## Find a page or run a command
 
