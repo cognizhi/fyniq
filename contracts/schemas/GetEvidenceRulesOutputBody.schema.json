@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "rules": {
+      "description": "The table's rows, in its order.",
+      "items": {
+        "$ref": "EvidenceRule.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "rules"
+  ],
+  "title": "GetEvidenceRulesOutputBody",
+  "type": "object"
+}

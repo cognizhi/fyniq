@@ -23829,6 +23829,88 @@ components:
         - id
         - status
       type: object
+    EvidenceRule:
+      additionalProperties: false
+      properties:
+        area:
+          description: The group of activities it belongs to.
+          enum:
+            - purchases
+            - journals
+            - filings
+            - equity
+            - governance
+          examples:
+            - purchases
+          type: string
+        built:
+          description: Whether its module exists, so the rule is enforced now; otherwise it starts to apply with its module.
+          examples:
+            - true
+          type: boolean
+        key:
+          description: The activity.
+          examples:
+            - bill
+          type: string
+        label:
+          description: The activity in a sentence.
+          examples:
+            - Bill
+          type: string
+        level:
+          description: "How its evidence counts today: the organisation's setting where there is one, else the table's default."
+          enum:
+            - required
+            - recommended
+            - optional
+          examples:
+            - required
+          type: string
+        recommended:
+          description: What is recommended; a missing item is a warning.
+          items:
+            $ref: "#/components/schemas/EvidenceRuleItem"
+          type: array
+        required:
+          description: What it needs; a missing item blocks completing it while its level is required.
+          items:
+            $ref: "#/components/schemas/EvidenceRuleItem"
+          type: array
+        setting:
+          description: The organisation setting that holds its level (FR-ORG-08), changed under dual control; none when its module fixes it.
+          examples:
+            - evidence.bill
+          type: string
+      required:
+        - key
+        - area
+        - label
+        - level
+        - built
+        - required
+        - recommended
+      type: object
+    EvidenceRuleItem:
+      additionalProperties: false
+      properties:
+        label:
+          description: In the table's words.
+          examples:
+            - Receipt or invoice
+          type: string
+        types:
+          description: Evidence types that meet it, as a file names what it is; none means any file does.
+          items:
+            description: What a file is, such as bank_letter or receipt.
+            examples:
+              - bank_letter
+            type: string
+          type: array
+      required:
+        - label
+        - types
+      type: object
     ExemptStatusDraft:
       additionalProperties: false
       properties:
@@ -27950,6 +28032,17 @@ components:
         - currency
         - ledger_revision
         - accounts
+      type: object
+    GetEvidenceRulesOutputBody:
+      additionalProperties: false
+      properties:
+        rules:
+          description: The table's rows, in its order.
+          items:
+            $ref: "#/components/schemas/EvidenceRule"
+          type: array
+      required:
+        - rules
       type: object
     HeartbeatDrillInput:
       additionalProperties: false
@@ -126109,6 +126202,95 @@ paths:
         - API-UNAVAILABLE-01
       x-fyniq-permission:
         capability: "Evidence: add, supersede (rev 0.3)"
+        right: V
+  /v1/evidence-rules:
+    get:
+      description: "The required and recommended evidence of each kind of activity (FR-DOC-06; PRD-001 §8.16), with each configurable activity's level in force today: required blocks completing it, recommended warns (C.2 #30), optional asks for nothing. Read-only; any member may read it."
+      operationId: getEvidenceRules
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetEvidenceRulesOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the evidence rules
+      tags:
+        - Evidence
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: (membership)
+        note: "Any member: the table of required and recommended evidence holds no record or figure."
         right: V
   /v1/evidence/{evidence_id}/download:
     post:

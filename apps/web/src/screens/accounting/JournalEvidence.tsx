@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleCheck, Download, Eye, FileText, Lock, Paperclip, Trash2, TriangleAlert } from "lucide-react";
+import { CircleCheck, CircleX, Download, Eye, FileText, Lock, Paperclip, Trash2, TriangleAlert } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -48,17 +48,17 @@ export interface EvidenceRecord {
 
 // The kinds of file each record usually rests on; any other name is accepted.
 const kindsOf = {
-  journal: ["calculation", "invoice", "receipt", "statement", "agreement", "board resolution", "screenshot"],
-  bill: ["invoice", "receipt", "quotation", "statement", "agreement", "screenshot"],
+  journal: ["calculation", "explanation", "invoice", "receipt", "statement", "agreement", "board resolution", "screenshot"],
+  bill: ["invoice", "receipt", "business purpose note", "quotation", "statement", "agreement", "screenshot"],
   invoice: ["purchase order", "contract", "delivery confirmation", "timesheet", "agreement", "screenshot"],
-  claim: ["receipt", "tax invoice", "card statement", "boarding pass", "screenshot"],
+  claim: ["receipt", "tax invoice", "business purpose note", "card statement", "boarding pass", "screenshot"],
   "card-line": ["receipt", "tax invoice", "screenshot"],
   // bank_letter or vendor_confirmation meets a change's required evidence (FR-DOC-06)
   "bank-change": ["bank_letter", "vendor_confirmation", "call-back record", "email"],
   // bank_app_screenshot or bank_statement meets a person's change's required evidence (FR-AP-22)
   "my-bank-change": ["bank_app_screenshot", "bank_statement"],
   "claimant-bank-change": ["bank_app_screenshot", "bank_statement"],
-  "pre-incorporation-cost": ["receipt", "invoice", "card statement", "screenshot"],
+  "pre-incorporation-cost": ["receipt", "invoice", "business purpose note", "card statement", "screenshot"],
   "pay-choice": ["board minute", "directors' resolution", "signed letter"],
   "director-fee": ["shareholders' resolution", "AGM minutes", "written resolution"],
   "exempt-status": ["ACRA business profile", "register of members"],
@@ -79,7 +79,7 @@ const kindsOf = {
   "corporate-document": ["Signed copy"],
   "acra-extract": ["ACRA business profile"],
   "gst-forecast": ["Signed contract", "Confirmed order", "Letter of award"],
-  "statutory-filing": ["IRAS acknowledgement", "CPF Board acknowledgement", "ACRA acknowledgement", "AGM minutes"],
+  "statutory-filing": ["IRAS acknowledgement", "CPF Board acknowledgement", "ACRA acknowledgement", "AGM minutes", "working papers"],
   "director-settlement": ["loan note", "board minute", "deed of waiver", "directors' resolution", "shareholders' approval", "board resolution", "conversion agreement", "balance confirmation"],
   "owner-succession": ["board resolution", "accountant's confirmation"],
 };
@@ -238,6 +238,76 @@ function sizeOf(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// ruleOf names the row of the evidence rules table (FR-DOC-06) a kind of record's panel shows; a kind with no row of its
+// own, or one that several rows share (an equity transaction is an issue or a transfer), shows none.
+const ruleOf: Partial<Record<EvidenceRecord["kind"], string>> = {
+  journal: "manual_journal",
+  bill: "bill",
+  claim: "expense_claim",
+  "pre-incorporation-cost": "founder_cost",
+  "bank-change": "payee_bank_change",
+  "director-settlement": "founder_settlement",
+  instrument: "instrument",
+  "option-grant": "instrument",
+  "statutory-filing": "statutory_filing",
+};
+
+// kindKey makes two names of one kind of file equal: bank_letter and "Bank letter".
+const kindKey = (k: string) => k.trim().toLowerCase().replace(/[_\s]+/g, " ");
+
+type Rule = components["schemas"]["EvidenceRule"];
+type RuleItem = components["schemas"]["EvidenceRuleItem"];
+
+// RulesBlock is "Rules for this activity" (docs/design/screens EvidencePanel): what the record rests on, each item ✖
+// while a required one is missing, ⚠ while a recommended one is, and ✔ once a file meets it. An item with no kinds is met
+// by any file; the others by a file of one of its kinds. Where the organisation made the evidence optional it asks for
+// nothing, and the block says so. The server decides what blocks; this only says what is missing (FR-DOC-06).
+function RulesBlock({ rule, files }: { rule: Rule; files: Evidence[] }) {
+  const live = files.filter((f) => f.state !== "removed");
+  const met = (it: RuleItem) => (it.types.length === 0 ? live.length > 0 : live.some((f) => it.types.some((t) => kindKey(t) === kindKey(f.evidence_type))));
+  if (rule.level === "optional") {
+    return (
+      <p className="fy-small fy-muted" aria-label="Rules for this activity">
+        Your organisation does not ask for evidence of a {rule.label.toLowerCase()}.
+      </p>
+    );
+  }
+  const rows: { item: RuleItem; strength: "required" | "recommended" }[] = [
+    ...rule.required.map((item) => ({ item, strength: rule.level === "required" ? ("required" as const) : ("recommended" as const) })),
+    ...rule.recommended.map((item) => ({ item, strength: "recommended" as const })),
+  ];
+  if (rows.length === 0) return null;
+  return (
+    <div className="fy-stack fy-stack--2" role="group" aria-label="Rules for this activity">
+      <span className="fy-eyebrow">Rules for this activity</span>
+      {rows.map(({ item, strength }) => {
+        const ok = met(item);
+        return (
+          <div className="fy-row fy-row--between" key={`${strength}-${item.label}`}>
+            <span>{item.label}</span>
+            {ok ? (
+              <span className="fy-chip fy-chip--good">
+                <Icon of={CircleCheck} />
+                Attached
+              </span>
+            ) : strength === "required" ? (
+              <span className="fy-chip fy-chip--critical">
+                <Icon of={CircleX} />
+                Required
+              </span>
+            ) : (
+              <span className="fy-chip fy-chip--warning">
+                <Icon of={TriangleAlert} />
+                Recommended
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function State({ e }: { e: Evidence }) {
   if (e.state === "final") {
     return (
@@ -290,6 +360,10 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
   const attach = helpText(`${record.kind}.attach-evidence`);
   const q = useQuery({ queryKey: [`${record.kind}-evidence`, record.id], queryFn: () => files(record) });
   const items = q.data ?? [];
+  const ruleKey = ruleOf[record.kind];
+  // The table of rules: a failed read only leaves the block out, the files and the server's own refusals are unchanged.
+  const table = useQuery({ queryKey: ["evidence-rules"], queryFn: async () => (await api.GET("/v1/evidence-rules")).data?.rules ?? [], enabled: !!ruleKey, staleTime: 60_000 });
+  const rule = table.data?.find((r) => r.key === ruleKey);
   const [shown, setShown] = useState<Shown | null>(null);
 
   // open shows a picture below the list, and saves any other file (openEvidence).
@@ -607,6 +681,7 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
             ? "Files that support the journal, such as a calculation or an invoice. While it is a draft, a file can come off again."
             : "Files that support the journal. Once it is posted they are kept, and never deleted, for as long as the records are."}
       </p>
+      {rule && q.data && <RulesBlock rule={rule} files={items} />}
       {q.isError && <Refusal problem={problemOf(q.error)} title="The evidence could not be shown" />}
       {problem && <Refusal problem={problem} title={failed} />}
       {q.data && items.length === 0 && <p className="fy-small">No files are attached.</p>}

@@ -480,6 +480,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerBreakGlass(a)
 	registerOwnerSuccession(a)
 	registerEvidenceSearch(a)
+	registerEvidenceRulesList(a)
 	registerEvidenceFile(a)
 	registerEvidenceDownloads(a)
 	registerSearch(a)

@@ -142,6 +142,11 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **WHEN** a bill, or a manual journal whose debits are above the evidence threshold (S$1,000 by default), is posted or its post asked for or approved with no file attached while its evidence is required
 - **THEN** it is refused (DOC-10), saying what is missing and how to attach it; while recommended it posts and Checks lists it (C.2 #30); while optional nothing is asked
 
+#### Scenario: The panel shows the rules for its activity (rev 0.290)
+- **WHEN** a record's Evidence panel is opened
+- **THEN** it lists the activity's required and recommended items from the table (`GET /v1/evidence-rules`): a required item with no file is ✖, a recommended one ⚠, and a file of a kind that meets it ✔
+- **AND** where the organisation made the evidence optional the panel says it asks for none; the table's levels for bills, manual journals and filings are the organisation's settings, and the other activities' modules fix theirs
+
 ### Requirement: Default evidence for purchases, payee changes and payments
 By default the system SHALL require and recommend evidence for bills, expense claims, founder costs paid personally, payee bank-detail changes and payment batch releases as the §8.16 evidence rules table sets out.
 

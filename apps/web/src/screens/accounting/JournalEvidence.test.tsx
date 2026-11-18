@@ -113,6 +113,65 @@ describe("a journal's evidence", () => {
     await noViolations(document.body);
   });
 
+  // req: FR-DOC-06
+  // req: FR-DOC-05
+  it("shows the rules for the activity: a required item missing is a cross, a recommended one a warning, each file meets its own", async () => {
+    let files: Evidence[] = [];
+    const rule = (level: string) => ({
+      status: 200,
+      body: {
+        rules: [
+          {
+            key: "manual_journal", area: "journals", label: "Manual journal (above the evidence threshold)", level, setting: "evidence.manual_journal", built: true,
+            required: [{ label: "Supporting calculation or document", types: [] }],
+            recommended: [{ label: "Explanation", types: ["explanation"] }],
+          },
+        ],
+      },
+    });
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } },
+      "GET /v1/journals/j1/evidence": () => ({ status: 200, body: { items: files } }),
+      "GET /v1/evidence-rules": () => rule("required"),
+    });
+    const view = renderPage(page(accountant), at);
+    const group = await screen.findByRole("group", { name: "Rules for this activity" });
+    expect(within(group).getByText("Supporting calculation or document").parentElement!.textContent).toContain("Required");
+    expect(within(group).getByText("Explanation").parentElement!.textContent).toContain("Recommended");
+    await noViolations(document.body);
+    view.unmount();
+
+    // A calculation meets the required item only; an explanation meets the recommended one; a removed file meets none.
+    files = [file({ evidence_type: "calculation" }), file({ id: "ev2", evidence_type: "Explanation", file_name: "why.txt" }), file({ id: "ev3", evidence_type: "calculation", state: "removed", file_name: "gone.pdf" })];
+    renderPage(page(accountant), at);
+    await screen.findByText("why.txt");
+    const met = await screen.findByRole("group", { name: "Rules for this activity" });
+    expect(within(met).getByText("Supporting calculation or document").parentElement!.textContent).toContain("Attached");
+    expect(within(met).getByText("Explanation").parentElement!.textContent).toContain("Attached");
+  });
+
+  // req: FR-DOC-06
+  it("says so where the organisation asks for no evidence, and shows nothing where the table cannot be read", async () => {
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } },
+      "GET /v1/journals/j1/evidence": { status: 200, body: { items: [] } },
+      "GET /v1/evidence-rules": { status: 200, body: { rules: [{ key: "manual_journal", area: "journals", label: "Manual journal", level: "optional", built: true, required: [{ label: "x", types: [] }], recommended: [] }] } },
+    });
+    const view = renderPage(page(accountant), at);
+    expect(await screen.findByText("Your organisation does not ask for evidence of a manual journal.")).toBeTruthy();
+    view.unmount();
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } },
+      "GET /v1/journals/j1/evidence": { status: 200, body: { items: [] } },
+    });
+    renderPage(page(accountant), at);
+    expect(await screen.findByText("No files are attached.")).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "Rules for this activity" })).toBeNull();
+  });
+
   it("attaches a file with what it is to a draft at the version read, and takes it off again; axe finds nothing", async () => {
     let files: Evidence[] = [];
     answer({

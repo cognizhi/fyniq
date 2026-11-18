@@ -20846,6 +20846,22 @@ Public: no session; the link's token is the right, for 5 minutes (SEC-24). The f
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-UNAVAILABLE-01`
 
+### `GET /v1/evidence-rules`
+
+**List the evidence rules** (`getEvidenceRules`)
+
+The required and recommended evidence of each kind of activity (FR-DOC-06; PRD-001 §8.16), with each configurable activity's level in force today: required blocks completing it, recommended warns (C.2 #30), optional asks for nothing. Read-only; any member may read it.
+
+- **Permission:** View on (membership). Any member: the table of required and recommended evidence holds no record or figure.
+- **Responses:**
+  - `200` OK [`GetEvidenceRulesOutputBody`](../../contracts/schemas/GetEvidenceRulesOutputBody.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`
+
 ### `POST /v1/evidence/{evidence_id}/download`
 
 **Get a link that saves an evidence file** (`createEvidenceDownload`)
