@@ -72,4 +72,14 @@ describe("help beside what it explains", () => {
     fireEvent.click(term);
     expect(screen.getByRole("dialog", { name: "Suspense" }).textContent).toContain("The account where money waits.");
   });
+
+  it("closes on Esc pressed on the page when the button never took the focus, as in Safari", () => {
+    render(<Labelled />);
+    const info = screen.getByRole("button", { name: "About Books health" });
+    fireEvent.click(info); // a click that does not focus the button
+    expect(screen.getByRole("dialog", { name: "Books health" })).toBeTruthy();
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(info);
+  });
 });

@@ -16,8 +16,8 @@
    "id": "statutory",
    "title": "Statutory values and payroll",
    "reviewer": "an accountant or tax agent",
-   "status": "pending",
-   "pr": null,
+   "status": "reviewed",
+   "pr": 5,
    "short": "Statutory and payroll rules await review by an accountant or tax agent",
    "message": "They follow our best current reading of the official guidance. Check the figures before you rely on them or file them.",
    "sections": [
@@ -131,8 +131,8 @@
    "id": "controls",
    "title": "Roles, approvals and payments",
    "reviewer": "a second director",
-   "status": "pending",
-   "pr": null,
+   "status": "reviewed",
+   "pr": 6,
    "short": "Approval and payment rules await review by a second director",
    "message": "Check each approval and payment before you release it.",
    "sections": [
@@ -185,8 +185,8 @@
    "id": "security",
    "title": "AI and MCP, identity and tenancy",
    "reviewer": "a security reviewer",
-   "status": "pending",
-   "pr": null,
+   "status": "reviewed",
+   "pr": 4,
    "short": "Sign-in, AI and integration settings await review by a security reviewer",
    "message": "Keep access closed unless you need it, and check each setting before you turn it on.",
    "sections": [
