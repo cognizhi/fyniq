@@ -45,7 +45,7 @@ func TestNemuraRulesCatchPlantedViolations(t *testing.T) {
 }
 
 // Every Nemura service of the local stack is in the `people` profile, so `make up` and the smoke test of QA-LOCAL-01 run
-// the core stack alone, and none shares the data volume (PRD-002 NM-ARC-01: Nemura runs with no Fyniq, and Fyniq with no
+// the core stack alone, and none shares a data volume (PRD-002 NM-ARC-01: Nemura runs with no Fyniq, and Fyniq with no
 // Nemura).
 func TestNemuraServicesAreInThePeopleProfile(t *testing.T) {
 	var compose struct {
@@ -71,8 +71,10 @@ func TestNemuraServicesAreInThePeopleProfile(t *testing.T) {
 		if !slices.Equal(s.Profiles, []string{"people"}) {
 			t.Errorf("compose service %s is in profiles %v, want only people", name, s.Profiles)
 		}
-		if len(s.Volumes) > 0 {
-			t.Errorf("compose service %s mounts %v: Nemura shares no volume with Fyniq", name, s.Volumes)
+		for _, v := range s.Volumes { // a read-only config file is no shared data; a named volume is
+			if !strings.HasPrefix(v, "./") || !strings.HasSuffix(v, ":ro") {
+				t.Errorf("compose service %s mounts %s: Nemura shares no data volume with Fyniq (only a read-only file of its own)", name, v)
+			}
 		}
 	}
 	if found == 0 {

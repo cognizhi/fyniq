@@ -1,0 +1,42 @@
+# Nemura's personal-data inventory (PRD-002 NM-SEC-03; PRD-001 CMP-PD-02): each class of personal data Nemura holds, what it is, why,
+# where, who reads it, how long it is kept, and how it is protected. internal/nemura/datacat keeps it complete: every column of
+# Nemura's schema whose name looks personal is in a class here (and in the code's registry) or marked not personal with why, and a
+# test fails when this file and the registry differ. A record type that arrives with a later change adds its class in the same commit.
+schema: nemura-data-inventory@1
+classes:
+  - key: members
+    what: "Members' display names, the people each organisation's Nemura knows, and their roles and reporting lines"
+    why: "To let people sign in and do their work, to name who did what, and to route approvals and leave to their manager"
+    where: "Nemura's database, in Singapore (Cloud SQL, asia-southeast1; locally the developer's database)"
+    who: "Appendix B's directory: every member sees colleagues' names; roles and reporting lines by Appendix B"
+    retention: "While a member and for the audit trail's retention afterwards; a name in an audit event stays with it"
+    protection: "Row-level security per organisation; the audit trail's personal values are masked or sealed (SEC-15, AUD-02)"
+    transfers: "None"
+    columns: [member.display_name]
+  - key: sign-in-identities
+    what: "Each person's name at the identity provider: its issuer, subject and tenant, and the invitations and sessions that let them in (kept as hashes)"
+    why: "To recognise a person who signs in, never by email alone, and to keep them signed in until they sign out or are deactivated"
+    where: "Nemura's database, in Singapore; the identity provider is the deployment's (Identity Platform, or the local sign-in page)"
+    who: "The person themselves and the services that authenticate them; no role reads the directory directly"
+    retention: "Kept while a member; a deactivated member's identity is switched off and kept for the audit trail"
+    protection: "A global table no application role can read, reached only through functions that return the caller's own memberships; tokens and codes kept only as SHA-256"
+    transfers: "The identity provider: the flow sign-in, assessed when it is outside Singapore (CMP-PD-06)"
+    columns: [identity_directory.subject]
+  - key: access-requests
+    what: "A person's request for their own data, the decision for each category of record and the written outcome"
+    why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"
+    where: "Nemura's database, in Singapore"
+    who: "HR (Appendix B's own file beyond routine release); the person who asked sees their own"
+    retention: "Kept as the record of how the organisation met its obligation"
+    protection: "Row-level security; every change is audited; an answered request and its decisions cannot change"
+    transfers: "None"
+    columns: [access_request.outcome, access_request_item.exception]
+  - key: legal-holds
+    what: "A reason a person's or a type's records are kept past their retention"
+    why: "To keep records that a dispute, an inquiry or the law requires, and to say why"
+    where: "Nemura's database, in Singapore"
+    who: "HR administrators and the Owner"
+    retention: "Kept as the record of why a deletion did not happen"
+    protection: "Row-level security; every change is audited"
+    transfers: "None"
+    columns: [legal_hold.reason]

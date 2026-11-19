@@ -114,11 +114,12 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 5. Identity, the token issuer and sign-in with no Fyniq (slice 5)
 
-- [ ] 5.1 Members and identities: `member`, `user_identity` (issuer, subject, tenant; never matched on email alone,
+- [x] 5.1 Members and identities: `member`, `user_identity` (issuer, subject, tenant; never matched on email alone,
   NM-INT-12's rule), invitations with a one-time code and expiry, and first-run setup that makes the first
   organisation's Owner with a one-time setup code (as FR-ADM-06; a `make` command with a `## description` and a
   row in AGENTS.md's table). Tests: one person in two organisations; a matching email with a different subject is
   not the same person; a used or expired code is refused.
+  (Built, 19 Nov 2026: migration 000007, `internal/nemura/identity`, `internal/adapters/postgres/nemura/identity.go`, `make people-setup-code` and the migrate role's `setup-code`; `TestFirstRunSetupWorksOnceWithTheDeploymentsCode`, `TestPeopleAreMatchedByIssuerSubjectAndTenant`, `TestAnInvitationWorksOnceAndOnlyItsHashIsKept`. `// req: NM-ARC-01` is tagged on setup and invitations but the requirement is partial: the journal and bank files are payroll's.)
 - [ ] 5.2 Nemura's own Ory Hydra (D7): `nemura-oauth-migrate` and `nemura-oauth` in the `people` profile on
   `nemura_hydra`, the same pinned image and settings (opaque tokens, PKCE only, 60-minute access tokens), the
   `OAuth` port wired, `/api/auth/login` and `/consent` on Nemura's origin, the audience `nemura-api`, and Nemura's own
@@ -131,6 +132,8 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   adapter, so `scripts/images.py` lists it in the images that must. Tests `// req: NM-ARC-06` for: the services'
   separate identities and roles, the standalone profile (the list of what Nemura needs) and **sign-in with every
   Fyniq service stopped**, proven by a new `scripts/local-smoke-people.sh` that CI runs beside QA-LOCAL-01.
+  (Built in part, 19 Nov 2026: sessions as opaque hashed tokens, expiry, revocation, deactivation and the step-up window (`TestSessionsAreOpaqueExpireAndEndWithTheMember`). **Left, so unticked:** the `SignIn` port's local adapter and the sign-in page, the Identity Platform adapter [live-verify], the `__Host-` cookie, `scripts/local-smoke-people.sh`, and `// req: NM-ARC-06`'s full proof.)
+  (Built in part, 19 Nov 2026, later: `internal/nemura/auth` (`GET /auth/signin`, `GET /auth/callback`, `POST /auth/signout`; state, PKCE and nonce through the shared `SignIn` port; `nemura_session` cookie, `__Host-nemura_session` over https; `SafeReturn`), the local sign-in page wired in the local build, `GET /v1/session` with `Landing`, `nemura-edge` on `NEMURA_HTTP_PORT` and `deploy/local/Caddyfile.people`; `TestAPersonSignsInThroughTheLocalProviderAndSeesTheirSession` signs in with no Fyniq running (`// req: NM-ARC-01`). **Left, so unticked:** the Identity Platform adapter [live-verify], `scripts/local-smoke-people.sh` in CI, Nemura's own Hydra (5.2) and `// req: NM-ARC-06`'s full proof.)
 - [ ] 5.4 Passkeys and step-up: WebAuthn with the relying-party ID from `NEMURA_RP_ID` (locally `localhost`), single-use
   server-side challenges, assertions kept for re-verification, step-up for approvals and role changes; and Nemura's
   own API clients, audience-bound, with the scopes of NM-ARC-06's own token issuer (question 11). Tests: a step-up is
@@ -157,16 +160,18 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   and bank-account pairs exist (**Left:** `p1-nemura-records-packs` for the bank account, `p1-nemura-payroll` for the
   run, `p1-nemura-fyniq-link` for the run's salary batch in Fyniq).
   (Built, 19 Nov 2026: `approval_request` with the version and digest, `internal/nemura/roles`, `RequestRoleGrant`, `DecideRoleGrant`; `TestNobodyEscalatesTheirOwnRights` and `TestNobodyApprovesTheirOwnRequestAndSetupRunsOnce` carry `// req: NM-ROLE-05`. **Left:** the passkey assertion on a decision (with passkeys, 5.4), the team-of-one rule (with the founders' team modes, `p1-nemura-fyniq-link`), and NM-ROLE-04's pay-run and bank-account pairs; `NM-ROLE-04` stays untagged.)
-- [ ] 6.4 Need to know (NM-SEC-02): the restricted-field framework (masked by default, released only with the right,
+- [x] 6.4 Need to know (NM-SEC-02): the restricted-field framework (masked by default, released only with the right,
   `nemura.restricted.read` on every release), row-level scope predicates reading `app.person_id` and `app.roles`,
   `reporting_line` (effective-dated) as the source for the manager scope, and the platform's own restricted objects
   as the proof (role history, access requests, the audit read). Tests `// req: NM-SEC-02` for the mechanism over
   the platform's objects (the Left: each record type's fields are added by its change, which adds its own test
   to the same suite), `// req: NM-ROLE-03` for the scope (a manager sees only their reports; never pay), and an
   attack test that a missed API check cannot read what the role may not, with ASVS IDs.
+  (Built, 19 Nov 2026: migration 000005 (`reporting_line`, `current_person`, `is_manager_of`, `has_role`), `Store.InOrgAs`, `internal/nemura/access`, `ReadRestricted`; `TestARestrictedFieldIsReleasedByNeedToKnowAndEveryReadIsAudited` (`// req: NM-SEC-02`) and `TestTheLineManagerSeesOnlyTheirReportsThroughRowLevelSecurity` (`// req: NM-ROLE-03`). The scope is proven on a probe table; each record type adds its own fields and policy to the same suite.)
 - [ ] 6.5 Landing by role: the session operation returns the person's landing page and effective rights (the table of
   PRD-002 §3). Tests: each role's landing; no ledger, bank, revenue, cash or company-financial field in any
   Nemura operation's schema (a contract scan), `// req: NM-ROLE-02`, completed with the web app in 7.4.
+  (Built in part, 19 Nov 2026: `GET /v1/session` returns the person, organisation, roles and landing (`api.Landing`; `TestEachRoleLandsWhereThePRDSays`, `// req: NM-ROLE-02`). **Left, so unticked:** the contract scan that no operation carries a ledger, bank, revenue, cash or company-financial field, and the web shell's landing (7.4).)
 - [ ] 6.6 Verify: `TestNemuraAuthorisationMatrix` rows for every new operation (`FYNIQ_MATRIX_ONLY=<regex>` while
   working), `make openapi`, `make check`, `make test`.
 
@@ -211,22 +216,26 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 8. Privacy and records (slice 8)
 
-- [ ] 8.1 The data-category registry (D12) and `compliance/nemura-data-inventory.yaml`: key, what it holds, purpose,
+- [x] 8.1 The data-category registry (D12) and `compliance/nemura-data-inventory.yaml`: key, what it holds, purpose,
   restricting right, retention rule, export and erase hooks; the completeness test over Nemura's schema golden file;
   the register of transfers outside Singapore with their assessments (CMP-PD-06). Tests `// req: NM-SEC-03` (a
   purpose per type, an inventory entry per type, a transfer refused without a current assessment).
-- [ ] 8.2 Retention (NM-SEC-04, NM-SEC-05): a schedule per record type with its reason; the minimum periods read
+  (Built, 19 Nov 2026: `internal/nemura/datacat`, `compliance/nemura-data-inventory.yaml`, `TestTheInventoryIsComplete` and `TestTheInventoryFileIsTheRegistry`, the transfer assessments (`TestPersonalDataLeavesSingaporeOnlyAfterAnAssessment`). `// req: NM-SEC-03`.)
+- [x] 8.2 Retention (NM-SEC-04, NM-SEC-05): a schedule per record type with its reason; the minimum periods read
   from the pack when it exists and refused to go below; the deletion job that produces a report for review with a
   default 30-day review date, ✖ after it, legal holds skipped and listed, and a proof event for each deletion;
   never silent. Tests `// req: NM-SEC-05` for the job, the review date, the hold and the proof; `// req: NM-SEC-04`
   for the refusal below a minimum (**Left:** the Singapore pack's own values, reviewed with
   `p1-nemura-records-packs`; a test of this engine with a stub pack minimum is what is tagged here).
+  (Built, 19 Nov 2026: migration 000006 `legal_hold`, `deletion_report`, `deletion_proof`; `internal/nemura/retention`; `ReportDueDeletions`, `ReviewDeletionReport`, `RunReviewedDeletion`; `TestADueDeletionIsReportedReviewedHeldAndProved`, `TestARetentionPeriodNeverGoesBelowTheMinimum`, `TestALegalHoldKeepsWhatItNames`. `// req: NM-SEC-05` and `// req: NM-SEC-04` (the engine, with a stub minimum). **Left:** the Singapore pack's own periods, in `p1-nemura-records-packs`.)
 - [ ] 8.3 Access to one's own file (NM-SEC-07, CMP-PD-04) and `nm-access-request` built to its fragment: a tracked
   request with a due date at 30 days or a written notice within them, HR's review of each category (release, redact
   other people's data, withhold with a recorded exception), the written outcome, withdrawal never deleting
   records the law requires, and the overdue state for Checks to read later. The PDPC exception stays
   `[verify the current edition with the DPO]`. Tests `// req: NM-SEC-07`; the page's journey; axe.
-- [ ] 8.4 Verify: `make check`, `make test`, `make kb-lint`, the controls (`make controls`) for the new entries.
+  (Built in part, 19 Nov 2026: the request lifecycle in migration 000006, `internal/nemura/accessreq` and `privacy.go` (`TestAnAccessRequestIsTrackedDecidedAnsweredAndKept`, `// req: NM-SEC-07`). **Left, so unticked:** the API operations and the page `nm-access-request`, with the web app (7.x).)
+- [x] 8.4 Verify: `make check`, `make test`, `make kb-lint`, the controls (`make controls`) for the new entries.
+  (Done for the engine: `make check`, `make db-lint`, the controls and `make kb-lint` unchanged, no user-guide page yet.)
 
 ## 9. My pay, performance and the pay-day alert (slice 9)
 
@@ -255,12 +264,14 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   roles in the platform spec, the queues and tick, the database and identity tenants per O1 (the database on Fyniq's instance, with its own roles) and O3 (the hostname as configuration), the cost label of
   O2 and its test that no identity of either app holds a role on the other's resources, with the module tests and `make infra-check` proving the rules offline (region, no keys, no authoritative IAM,
   no cross-app role). Plan and apply: `[live-verify]` at the cloud gate. Tests `// req: NM-NFR-01`.
+  (Built in part, 19 Nov 2026: `infra/gcp/modules/people` and its tests, checked by `make infra-check` and Checkov. **Left, so unticked:** wiring it into the environment module and the executor and issuer services when they exist; the plan and apply are `[live-verify]`.)
 - [ ] 10.2 The threat model `docs/security/threat-models/nemura-platform.md` (tenancy, the shared relying-party ID,
   restricted data, the approvals, the token issuer, the embedded web app), the controls in `compliance/controls/`,
   ASVS L2 with L3 on sign-in, authorisation and logging for pay and approval flows, the runbooks (first run, role
   recovery, restoring Nemura alone, `[live-verify]` for the drill), and the second-reviewer label on the pull
   requests that change tenancy, approvals or the audit trail. Tests `// req: NM-SEC-01` (tagged now: tenancy,
   audit, logging, secrets and ASVS are all proven in 2, 3, 5 and here) and `// req: SEC-20`.
+  (Built in part, 19 Nov 2026: `docs/security/threat-models/nemura-platform.md`. **Left, so unticked:** the controls in `compliance/controls/` (each must be a PRD-001 Appendix F row), the runbooks, and `// req: NM-SEC-01` once the issuer and sign-in are built.)
 - [ ] 10.3 The close: every requirement in the coverage table below carries a test tag or a "Left" note naming its
   change; `make roadmap` and `python3 scripts/prdspec.py` report nothing stale; a final `openspec validate
   p1-nemura-platform --strict`; `make check`, `make test`, `make images`, `make image-scan`, `make image-sign`.
