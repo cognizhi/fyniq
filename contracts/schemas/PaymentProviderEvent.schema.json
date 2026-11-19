@@ -41,6 +41,9 @@
     },
     "last_error": {
       "description": "Why its last attempt failed.",
+      "examples": [
+        "stripe: /v1/payouts/po_1Q3 answered 503"
+      ],
       "type": "string"
     },
     "object_id": {

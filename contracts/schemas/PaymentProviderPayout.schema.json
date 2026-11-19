@@ -34,14 +34,11 @@
       "type": "string"
     },
     "missing": {
-      "description": "References of lines that are not imported or not posted.",
-      "items": {
-        "type": "string"
-      },
-      "type": [
-        "array",
-        "null"
-      ]
+      "description": "References of lines that are not imported or not posted, separated by commas.",
+      "examples": [
+        "txn_1Q3, txn_1Q3:fee"
+      ],
+      "type": "string"
     },
     "money_account_id": {
       "description": "The provider's clearing money account.",

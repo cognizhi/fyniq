@@ -39821,6 +39821,8 @@ components:
           type: string
         last_error:
           description: Why its last attempt failed.
+          examples:
+            - "stripe: /v1/payouts/po_1Q3 answered 503"
           type: string
         object_id:
           description: The object's provider ID.
@@ -39900,12 +39902,10 @@ components:
           format: uuid
           type: string
         missing:
-          description: References of lines that are not imported or not posted.
-          items:
-            type: string
-          type:
-            - array
-            - "null"
+          description: References of lines that are not imported or not posted, separated by commas.
+          examples:
+            - txn_1Q3, txn_1Q3:fee
+          type: string
         money_account_id:
           description: The provider's clearing money account.
           examples:

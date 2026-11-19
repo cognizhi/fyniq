@@ -79,7 +79,7 @@ type PaymentProviderPayout struct {
 	PayoutLinePosted bool                 `json:"payout_line_posted" doc:"Whether the payout's own statement line has posted, as a transfer to the bank." example:"true"`
 	NetsToZero       *bool                `json:"nets_to_zero,omitempty" doc:"Whether the payout and what it settles come to nothing in clearing; absent until the payout's own line has posted." example:"true"`
 	Difference       *Money               `json:"difference,omitempty" doc:"What they come to, when not nothing."`
-	Missing          []string             `json:"missing,omitempty" doc:"References of lines that are not imported or not posted."`
+	Missing          string               `json:"missing,omitempty" doc:"References of lines that are not imported or not posted, separated by commas." example:"txn_1Q3, txn_1Q3:fee"`
 }
 
 // PaymentProviderEvent is a webhook event as received, without its payload.
@@ -95,7 +95,7 @@ type PaymentProviderEvent struct {
 	ObjectID      string `json:"object_id,omitempty" doc:"The object's provider ID." example:"po_1Q3"`
 	Status        string `json:"status" enum:"received,processed,parked,failed" doc:"Where it stands: parked waits for a person (an event type Fyniq does not know, or an object it cannot post)." example:"parked"`
 	ParkedReason  string `json:"parked_reason,omitempty" doc:"Why it is parked." example:"Fyniq does not know this event type (radar.early_fraud_warning.created): a person reviews it, and it posts nothing"`
-	LastError     string `json:"last_error,omitempty" doc:"Why its last attempt failed."`
+	LastError     string `json:"last_error,omitempty" doc:"Why its last attempt failed." example:"stripe: /v1/payouts/po_1Q3 answered 503"`
 	ReceivedAt    string `json:"received_at" format:"date-time" doc:"When it was received." example:"2026-11-12T10:00:00Z"`
 }
 
@@ -471,7 +471,7 @@ func registerPaymentProviders(a *API) {
 func pspPayoutOf(m storage.MoneyAccount, cur money.Currency, r pspnet.Result) PaymentProviderPayout {
 	po := r.Payout
 	out := PaymentProviderPayout{ID: po.ID.String(), PayoutID: po.PayoutID, MoneyAccountID: m.ID.String(), Amount: moneyOf(po.Amount, po.Currency), Status: po.Status,
-		Automatic: po.Automatic, Transactions: []PaymentProviderTxn{}, PayoutLinePosted: r.PayoutLine != nil && pspnet.Posted(r.PayoutLine.Status), Missing: r.Missing}
+		Automatic: po.Automatic, Transactions: []PaymentProviderTxn{}, PayoutLinePosted: r.PayoutLine != nil && pspnet.Posted(r.PayoutLine.Status), Missing: strings.Join(r.Missing, ", ")}
 	if po.ArrivalDate != nil {
 		out.ArrivalDate = dateOf(*po.ArrivalDate)
 	}

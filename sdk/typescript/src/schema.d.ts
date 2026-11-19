@@ -43757,7 +43757,10 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70
              */
             id: string;
-            /** @description Why its last attempt failed. */
+            /**
+             * @description Why its last attempt failed.
+             * @example stripe: /v1/payouts/po_1Q3 answered 503
+             */
             last_error?: string;
             /**
              * @description The object's provider ID.
@@ -43819,8 +43822,11 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60
              */
             id: string;
-            /** @description References of lines that are not imported or not posted. */
-            missing?: string[] | null;
+            /**
+             * @description References of lines that are not imported or not posted, separated by commas.
+             * @example txn_1Q3, txn_1Q3:fee
+             */
+            missing?: string;
             /**
              * Format: uuid
              * @description The provider's clearing money account.
