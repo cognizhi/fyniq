@@ -6,9 +6,9 @@ Load before each slice: `fyniq-ai-proposals`, `fyniq-security-compliance`, `fyni
 
 ## 1. The rules, the settings and the proposals (slice 1)
 
-- [ ] 1.1 The people never-list as words and the catalogue of `people.draft_letter` and `people.draft_fwa_reply` (strict input schemas, tier 1, approver roles, 72-hour expiry), both refused as they load and as each proposal is made. A test names every NM-AI-04 sentence. `// req: NM-AI-04, NM-AI-01`
-- [ ] 1.2 AI settings per organisation, off by default, changed by the Owner and audited: the assistant on or off, the route, own-pay explanations (cannot be turned on without a second approver). `// req: NM-AI-01, NM-AI-06`
-- [ ] 1.3 `nemura.ai_proposal` (insert-only for `nemura_assistant`; the decider is another person with the task's approver role; expiry at 72 hours; the final text and its hash), its API (list, read, approve, reject, edit before approving), the audit events and the data inventory row. `// req: NM-AI-04, NM-ARC-06`
+- [x] 1.1 The people never-list as words and the catalogue of `people.draft_letter` and `people.draft_fwa_reply` (strict input schemas, tier 1, approver roles, 72-hour expiry), both refused as they load and as each proposal is made. A test names every NM-AI-04 sentence. `// req: NM-AI-04, NM-AI-01`
+- [x] 1.2 AI settings per organisation, off by default, changed by the Owner and audited: the assistant on or off, the route, own-pay explanations (cannot be turned on without a second approver). `// req: NM-AI-01, NM-AI-06`
+- [x] 1.3 `nemura.ai_proposal` (insert-only for `nemura_assistant`; the decider is another person with the task's approver role; expiry at 72 hours; the final text and its hash), its API (list, read, approve, reject, edit before approving), the audit events and the data inventory row. `// req: NM-AI-04, NM-ARC-06`
 
 ## 2. Questions (slice 2)
 

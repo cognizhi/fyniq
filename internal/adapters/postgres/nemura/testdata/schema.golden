@@ -1,6 +1,8 @@
 ## tables (table | owner | rls | forced)
 access_request | nemura_migrator | true | true
 access_request_item | nemura_migrator | true | true
+ai_proposal | nemura_migrator | true | true
+ai_settings | nemura_migrator | true | true
 api_client | nemura_migrator | true | true
 api_client_request | nemura_migrator | true | true
 approval_request | nemura_migrator | true | true
@@ -102,6 +104,32 @@ access_request_item | decision | text | true |
 access_request_item | exception | text | false | 
 access_request_item | decided_by | uuid | true | 
 access_request_item | decided_at | timestamp with time zone | true | now()
+ai_proposal | organisation_id | uuid | true | nemura.current_org()
+ai_proposal | id | uuid | true | uuidv7()
+ai_proposal | task_type | text | true | 
+ai_proposal | task_version | integer | true | 
+ai_proposal | asker | uuid | true | 
+ai_proposal | payload | jsonb | true | 
+ai_proposal | payload_hash | bytea | true | 
+ai_proposal | rationale | text | false | 
+ai_proposal | model_id | text | true | 
+ai_proposal | prompt_version | text | true | 
+ai_proposal | state | text | true | 'pending'::text
+ai_proposal | created_at | timestamp with time zone | true | 
+ai_proposal | expires_at | timestamp with time zone | true | 
+ai_proposal | decided_by | uuid | false | 
+ai_proposal | decided_at | timestamp with time zone | false | 
+ai_proposal | decision_reason | text | false | 
+ai_proposal | final_payload | jsonb | false | 
+ai_proposal | approved_hash | bytea | false | 
+ai_proposal | applied_at | timestamp with time zone | false | 
+ai_settings | organisation_id | uuid | true | nemura.current_org()
+ai_settings | enabled | boolean | true | false
+ai_settings | route | text | true | 'none'::text
+ai_settings | task_types | text[] | true | '{}'::text[]
+ai_settings | own_pay | boolean | true | false
+ai_settings | updated_by | uuid | true | 
+ai_settings | updated_at | timestamp with time zone | true | 
 api_client | organisation_id | uuid | true | nemura.current_org()
 api_client | id | uuid | true | uuidv7()
 api_client | name | text | true | 
@@ -965,6 +993,43 @@ access_request_item | access_request_item_organisation_id_not_null | NOT NULL or
 access_request_item | access_request_item_pkey | PRIMARY KEY (organisation_id, request_id, category)
 access_request_item | access_request_item_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES nemura.access_request(organisation_id, id)
 access_request_item | access_request_item_request_id_not_null | NOT NULL request_id
+ai_proposal | ai_proposal_asker_fkey | FOREIGN KEY (organisation_id, asker) REFERENCES nemura.member(organisation_id, id)
+ai_proposal | ai_proposal_asker_not_null | NOT NULL asker
+ai_proposal | ai_proposal_created_at_not_null | NOT NULL created_at
+ai_proposal | ai_proposal_decider_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
+ai_proposal | ai_proposal_decider_is_another | CHECK (((decided_by IS NULL) OR (decided_by <> asker)))
+ai_proposal | ai_proposal_decision_whole | CHECK ((((state = 'pending'::text) AND (decided_by IS NULL) AND (decided_at IS NULL) AND (final_payload IS NULL) AND (approved_hash IS NULL) AND (applied_at IS NULL)) OR ((state = 'rejected'::text) AND (decided_by IS NOT NULL) AND (decided_at IS NOT NULL) AND (decision_reason IS NOT NULL) AND (length(btrim(decision_reason)) > 0) AND (final_payload IS NULL) AND (applied_at IS NULL)) OR ((state = 'approved'::text) AND (decided_by IS NOT NULL) AND (decided_at IS NOT NULL) AND (final_payload IS NOT NULL) AND (approved_hash IS NOT NULL) AND (applied_at IS NULL)) OR ((state = 'applied'::text) AND (decided_by IS NOT NULL) AND (decided_at IS NOT NULL) AND (final_payload IS NOT NULL) AND (approved_hash IS NOT NULL) AND (applied_at IS NOT NULL))))
+ai_proposal | ai_proposal_expires_at_not_null | NOT NULL expires_at
+ai_proposal | ai_proposal_expiry | CHECK ((expires_at = (created_at + '72:00:00'::interval)))
+ai_proposal | ai_proposal_hash | CHECK (((octet_length(payload_hash) = 32) AND ((approved_hash IS NULL) OR (octet_length(approved_hash) = 32))))
+ai_proposal | ai_proposal_id_not_null | NOT NULL id
+ai_proposal | ai_proposal_model_id_not_null | NOT NULL model_id
+ai_proposal | ai_proposal_organisation_id_not_null | NOT NULL organisation_id
+ai_proposal | ai_proposal_payload_hash_not_null | NOT NULL payload_hash
+ai_proposal | ai_proposal_payload_not_null | NOT NULL payload
+ai_proposal | ai_proposal_pkey | PRIMARY KEY (organisation_id, id)
+ai_proposal | ai_proposal_prompt_version_not_null | NOT NULL prompt_version
+ai_proposal | ai_proposal_rationale_length | CHECK (((rationale IS NULL) OR (length(rationale) <= 500)))
+ai_proposal | ai_proposal_state_known | CHECK ((state = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'applied'::text])))
+ai_proposal | ai_proposal_state_not_null | NOT NULL state
+ai_proposal | ai_proposal_task_known | CHECK ((task_type = ANY (ARRAY['people.draft_letter'::text, 'people.draft_fwa_reply'::text])))
+ai_proposal | ai_proposal_task_type_not_null | NOT NULL task_type
+ai_proposal | ai_proposal_task_version_not_null | NOT NULL task_version
+ai_proposal | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_settings | ai_settings_by_fkey | FOREIGN KEY (organisation_id, updated_by) REFERENCES nemura.member(organisation_id, id)
+ai_settings | ai_settings_enabled_not_null | NOT NULL enabled
+ai_settings | ai_settings_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+ai_settings | ai_settings_organisation_id_not_null | NOT NULL organisation_id
+ai_settings | ai_settings_own_pay_needs_a_second_approver | CHECK ((NOT own_pay))
+ai_settings | ai_settings_own_pay_not_null | NOT NULL own_pay
+ai_settings | ai_settings_pkey | PRIMARY KEY (organisation_id)
+ai_settings | ai_settings_route_known | CHECK ((route = ANY (ARRAY['none'::text, 'scripted'::text])))
+ai_settings | ai_settings_route_not_null | NOT NULL route
+ai_settings | ai_settings_task_types_known | CHECK ((task_types <@ ARRAY['people.draft_letter'::text, 'people.draft_fwa_reply'::text]))
+ai_settings | ai_settings_task_types_not_null | NOT NULL task_types
+ai_settings | ai_settings_updated_at_not_null | NOT NULL updated_at
+ai_settings | ai_settings_updated_by_not_null | NOT NULL updated_by
+ai_settings | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 api_client | api_client_created_at_not_null | NOT NULL created_at
 api_client | api_client_created_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
 api_client | api_client_created_by_not_null | NOT NULL created_by
@@ -2270,6 +2335,9 @@ working_pattern | working_pattern_weekdays_not_null | NOT NULL weekdays
 CREATE INDEX access_request_due_idx ON nemura.access_request USING btree (organisation_id, state, due_on)
 CREATE UNIQUE INDEX access_request_item_pkey ON nemura.access_request_item USING btree (organisation_id, request_id, category)
 CREATE UNIQUE INDEX access_request_pkey ON nemura.access_request USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_proposal_pkey ON nemura.ai_proposal USING btree (organisation_id, id)
+CREATE INDEX ai_proposal_state_idx ON nemura.ai_proposal USING btree (organisation_id, state, created_at)
+CREATE UNIQUE INDEX ai_settings_pkey ON nemura.ai_settings USING btree (organisation_id)
 CREATE UNIQUE INDEX api_client_hydra_key ON nemura.api_client USING btree (hydra_client_id)
 CREATE UNIQUE INDEX api_client_live_name_key ON nemura.api_client USING btree (organisation_id, lower(name)) WHERE (revoked_at IS NULL)
 CREATE UNIQUE INDEX api_client_pkey ON nemura.api_client USING btree (organisation_id, id)
@@ -2442,6 +2510,9 @@ CREATE UNIQUE INDEX working_pattern_pkey ON nemura.working_pattern USING btree (
 CREATE TRIGGER access_request_guard BEFORE DELETE OR UPDATE ON nemura.access_request FOR EACH ROW EXECUTE FUNCTION nemura.access_request_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.access_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('access_request', 'id')
 CREATE TRIGGER access_request_item_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.access_request_item FOR EACH ROW EXECUTE FUNCTION nemura.access_request_item_guard()
+CREATE TRIGGER ai_proposal_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.ai_proposal FOR EACH ROW EXECUTE FUNCTION nemura.ai_proposal_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.ai_proposal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('ai_proposal', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.ai_settings DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('ai_settings', 'organisation_id')
 CREATE TRIGGER api_client_guard BEFORE DELETE OR UPDATE ON nemura.api_client FOR EACH ROW EXECUTE FUNCTION nemura.api_client_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.api_client DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('api_client', 'id')
 CREATE TRIGGER api_client_request_guard BEFORE DELETE OR UPDATE ON nemura.api_client_request FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
@@ -2583,6 +2654,8 @@ CREATE TRIGGER working_pattern_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura
 ## policies (table | name | using | with check)
 access_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 access_request_item | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+ai_proposal | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+ai_settings | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 api_client | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 api_client_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 approval_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -2685,6 +2758,39 @@ BEGIN
   IF TG_OP = 'DELETE' OR EXISTS (SELECT 1 FROM nemura.access_request r
        WHERE r.organisation_id = coalesce(NEW.organisation_id, OLD.organisation_id) AND r.id = coalesce(NEW.request_id, OLD.request_id) AND r.state = 'answered') THEN
     RAISE EXCEPTION 'The decisions of an answered access request are kept' USING ERRCODE = 'NM090';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.ai_proposal_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'A proposal is evidence: it is decided and applied, never deleted' USING ERRCODE = 'NM178';
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.state <> 'pending' THEN
+      RAISE EXCEPTION 'A proposal starts pending' USING ERRCODE = 'NM178';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.task_type IS DISTINCT FROM OLD.task_type OR NEW.task_version IS DISTINCT FROM OLD.task_version OR NEW.asker IS DISTINCT FROM OLD.asker OR NEW.payload IS DISTINCT FROM OLD.payload
+     OR NEW.payload_hash IS DISTINCT FROM OLD.payload_hash OR NEW.created_at IS DISTINCT FROM OLD.created_at OR NEW.expires_at IS DISTINCT FROM OLD.expires_at
+     OR NEW.model_id IS DISTINCT FROM OLD.model_id OR NEW.prompt_version IS DISTINCT FROM OLD.prompt_version OR NEW.rationale IS DISTINCT FROM OLD.rationale THEN
+    RAISE EXCEPTION 'A proposal keeps what the assistant proposed: a human edits it into the final text' USING ERRCODE = 'NM178';
+  END IF;
+  IF NOT ((OLD.state = 'pending' AND NEW.state IN ('approved', 'rejected')) OR (OLD.state = 'approved' AND NEW.state = 'applied')) THEN
+    RAISE EXCEPTION 'A proposal moves from pending to approved or rejected, and from approved to applied' USING ERRCODE = 'NM178';
+  END IF;
+  IF OLD.state = 'pending' AND NEW.state = 'approved' AND NEW.decided_at > OLD.expires_at THEN
+    RAISE EXCEPTION 'A proposal that has waited 72 hours cannot be approved: ask again' USING ERRCODE = 'NM178';
+  END IF;
+  IF OLD.state = 'approved' AND (NEW.decided_by IS DISTINCT FROM OLD.decided_by OR NEW.decided_at IS DISTINCT FROM OLD.decided_at OR NEW.final_payload IS DISTINCT FROM OLD.final_payload OR NEW.approved_hash IS DISTINCT FROM OLD.approved_hash) THEN
+    RAISE EXCEPTION 'What was approved is applied as approved' USING ERRCODE = 'NM178';
   END IF;
   RETURN NEW;
 END

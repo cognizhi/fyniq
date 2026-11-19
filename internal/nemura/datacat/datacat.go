@@ -112,6 +112,13 @@ var Categories = []Category{
 			"person_terms.fixed_deductions", "person_terms.overtime_period", "person_terms.other_pay"},
 	},
 	{
+		Key: "people-assistant", What: "What the people assistant drafted for a request (the fields of a letter, the words of a reply), the text a person approved, their reason for not using a draft, and the assistant's own reasoning for it",
+		Purpose:    "To let the people team edit, approve or refuse a draft and to apply exactly the text that was approved (NM-AI-02, NM-AI-04)",
+		Capability: "Letters and templates",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the letter or the reply it became: an approved draft is evidence of what the company stated about the person"},
+		Columns:    []string{"ai_proposal.payload", "ai_proposal.final_payload", "ai_proposal.rationale", "ai_proposal.decision_reason"},
+	},
+	{
 		Key: "letters", What: "A person's request for a letter and what it is for, the facts filled into it from their record, the issued letter's data, the company's letterhead and the notes on a template",
 		Purpose:    "To issue letters the person asked for, exactly and attributably, and to keep the issued letter as evidence of what was said and who signed it",
 		Capability: "Letters and templates",
@@ -135,6 +142,8 @@ var Categories = []Category{
 
 // NotPersonal are columns whose names look personal and are not, with why. A column here needs a reason a reviewer can read.
 var NotPersonal = map[string]string{
+	"ai_proposal.payload_hash":     "the SHA-256 of a draft's text, which holds none of it",
+	"ai_settings.own_pay":          "whether the Owner turned on explaining a person's own pay: a setting of the company, always off until a second approver exists",
 	"pay_group.name":               "the name of a pay group, such as Monthly, not of a person",
 	"pay_group.pay_day":            "the day of the month a group is paid, not a person's pay",
 	"organisation.name":            "the name of a company, not of a person",

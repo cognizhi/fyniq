@@ -210,9 +210,16 @@ func TestEachRoleHoldsExactlyItsGrants(t *testing.T) {
 				t.Errorf("a role holds %s: %s", bad, g)
 			}
 		}
-		if strings.HasPrefix(g, "nemura_assistant | ") || strings.HasPrefix(g, "nemura_readonly | ") {
+		if strings.HasPrefix(g, "nemura_readonly | ") {
 			if strings.HasSuffix(g, "| INSERT") || strings.HasSuffix(g, "| UPDATE") || strings.HasSuffix(g, "| DELETE") {
-				t.Errorf("the assistant and the read-only role never write yet: %s", g)
+				t.Errorf("the read-only role never writes: %s", g)
+			}
+		}
+		// The assistant's one write is a proposal and the audit event of it (NM-AI-04, NM-ARC-06): nothing else, and never an update or a delete.
+		if strings.HasPrefix(g, "nemura_assistant | ") {
+			insertOK := strings.HasPrefix(g, "nemura_assistant | column nemura.ai_proposal.") || strings.HasPrefix(g, "nemura_assistant | column nemura.audit_event.")
+			if strings.HasSuffix(g, "| UPDATE") || strings.HasSuffix(g, "| DELETE") || (strings.HasSuffix(g, "| INSERT") && !insertOK) || strings.HasSuffix(g, "| TRUNCATE") {
+				t.Errorf("the assistant writes more than a proposal and its audit event: %s", g)
 			}
 		}
 	}

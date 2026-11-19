@@ -4,6 +4,253 @@
 # info.version follows the platform version (release-please updates it).
 components:
   schemas:
+    AIDecision:
+      additionalProperties: false
+      properties:
+        approve:
+          description: Approve the draft, or not.
+          examples:
+            - true
+          type: boolean
+        final_payload:
+          additionalProperties: {}
+          description: "The text to approve, after editing: it must fit the task's shape. Left out, the assistant's own text is approved."
+          type: object
+        reason:
+          description: Required to reject.
+          examples:
+            - Not needed.
+          maxLength: 500
+          type: string
+      required:
+        - approve
+      type: object
+    AIProposal:
+      additionalProperties: false
+      properties:
+        asker:
+          description: The person the assistant acted for.
+          examples:
+            - Ana Tan
+          type: string
+        asker_id:
+          description: Their login, so a page does not offer them a decision they cannot make.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+          format: uuid
+          type: string
+        created_at:
+          description: When it was proposed.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        decided_by:
+          description: The human who decided it.
+          examples:
+            - Mei Tan
+          type: string
+        decision_reason:
+          description: Their reason.
+          examples:
+            - Not needed.
+          type: string
+        expired:
+          description: "True when it waited more than 72 hours without a decision: it cannot be approved."
+          examples:
+            - false
+          type: boolean
+        expires_at:
+          description: When it expires.
+          examples:
+            - "2026-11-23T10:00:00Z"
+          format: date-time
+          type: string
+        final_payload:
+          additionalProperties: {}
+          description: What the human approved, after editing.
+          type: object
+        id:
+          description: The proposal.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80
+          format: uuid
+          type: string
+        model_id:
+          description: The route that made it.
+          examples:
+            - scripted
+          type: string
+        payload:
+          additionalProperties: {}
+          description: What the assistant proposed.
+          type: object
+        rationale:
+          description: Why, in the assistant's words.
+          examples:
+            - Filled from the record.
+          type: string
+        state:
+          description: Where it is.
+          enum:
+            - pending
+            - approved
+            - rejected
+            - applied
+          examples:
+            - pending
+          type: string
+        task_type:
+          description: What kind of draft.
+          examples:
+            - people.draft_letter
+          type: string
+        what:
+          description: What it proposes.
+          examples:
+            - A letter from a template for a request, with the fields filled from the record
+          type: string
+      required:
+        - id
+        - task_type
+        - what
+        - asker
+        - asker_id
+        - payload
+        - model_id
+        - state
+        - expired
+        - created_at
+        - expires_at
+      type: object
+    AISettings:
+      additionalProperties: false
+      properties:
+        catalogue:
+          description: Every task type the assistant may propose.
+          items:
+            $ref: "#/components/schemas/AITask"
+          type:
+            - array
+            - "null"
+        enabled:
+          description: "Whether the assistant is on: off until the Owner turns it on."
+          examples:
+            - false
+          type: boolean
+        own_pay:
+          description: "Whether own-pay explanations are on. They need the Owner and a second approver, which arrives with the Fyniq link: always false until then."
+          examples:
+            - false
+          type: boolean
+        own_pay_note:
+          description: Why own pay is off.
+          examples:
+            - Needs the Owner and a second approver.
+          type: string
+        route:
+          description: "The model route: none, or local mode's scripted model. A real route needs processing evidenced in Singapore."
+          enum:
+            - none
+            - scripted
+          examples:
+            - none
+          type: string
+        task_types:
+          description: The task types the Owner turned on; each is off until then.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        updated_at:
+          description: When the Owner last changed them.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+      required:
+        - enabled
+        - route
+        - task_types
+        - own_pay
+        - own_pay_note
+        - catalogue
+      type: object
+    AISettingsInput:
+      additionalProperties: false
+      properties:
+        enabled:
+          description: Turn the assistant on or off.
+          examples:
+            - true
+          type: boolean
+        own_pay:
+          description: Refused until a second approver exists.
+          examples:
+            - false
+          type: boolean
+        route:
+          description: The model route.
+          enum:
+            - none
+            - scripted
+          examples:
+            - scripted
+          type: string
+        task_types:
+          description: The task types to turn on.
+          examples:
+            - - people.draft_letter
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+      required:
+        - enabled
+        - route
+        - task_types
+      type: object
+    AITask:
+      additionalProperties: false
+      properties:
+        approver_roles:
+          description: The roles that decide a proposal of it.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        expiry_hours:
+          description: How long a proposal waits for a human.
+          examples:
+            - 72
+          format: int64
+          type: integer
+        id:
+          description: The task type.
+          examples:
+            - people.draft_letter
+          type: string
+        tier:
+          description: "Tier 1: routine and reversible."
+          examples:
+            - 1
+          format: int64
+          type: integer
+        what:
+          description: What it proposes.
+          examples:
+            - A letter from a template for a request, with the fields filled from the record
+          type: string
+      required:
+        - id
+        - what
+        - tier
+        - approver_roles
+        - expiry_hours
+      type: object
     AccrualCountOutputBody:
       additionalProperties: false
       properties:
@@ -228,6 +475,19 @@ components:
         - number
         - issued_on
         - expires_on
+      type: object
+    AiProposalsOutputBody:
+      additionalProperties: false
+      properties:
+        proposals:
+          description: Newest first, up to 200.
+          items:
+            $ref: "#/components/schemas/AIProposal"
+          type:
+            - array
+            - "null"
+      required:
+        - proposals
       type: object
     AppliedOutputBody:
       additionalProperties: false
@@ -7272,6 +7532,320 @@ paths:
       summary: Revoke an API client
       tags:
         - API clients
+  /v1/assistant/proposals:
+    get:
+      description: The drafts the assistant proposed, newest first, with what it proposed, who it acted for and where each is. The HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: listAssistantProposals
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: Only proposals in this state; all when left out.
+          explode: false
+          in: query
+          name: state
+          schema:
+            description: Only proposals in this state; all when left out.
+            enum:
+              - pending
+              - approved
+              - rejected
+              - applied
+            examples:
+              - pending
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiProposalsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: The assistant's proposals
+      tags:
+        - Assistant
+  /v1/assistant/proposals/{id}:
+    get:
+      description: One draft with its text. The HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: getAssistantProposal
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The proposal.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The proposal.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIProposal"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: One proposal
+      tags:
+        - Assistant
+  /v1/assistant/proposals/{id}/decision:
+    post:
+      description: A named human approves or rejects a pending proposal, never the person the assistant acted for. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. It is audited with the hashes, never the text.
+      operationId: decideAssistantProposal
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The proposal.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The proposal.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIDecision"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Approve or reject a proposal
+      tags:
+        - Assistant
+  /v1/assistant/settings:
+    get:
+      description: Whether the assistant is on, its model route, the task types turned on and the catalogue of what it may propose. The assistant is off, with no route and no task type, until the Owner turns it on. Own-pay explanations are always off until a second approver exists. The HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: getAssistantSettings
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: Only requests in this state.
+          explode: false
+          in: query
+          name: state
+          schema:
+            description: Only requests in this state.
+            enum:
+              - requested
+              - checked
+              - refused
+              - issued
+              - withdrawn
+            examples:
+              - checked
+            type: string
+        - description: Only the caller's own.
+          explode: false
+          in: query
+          name: mine
+          schema:
+            description: Only the caller's own.
+            examples:
+              - true
+            type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AISettings"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: The people assistant's settings
+      tags:
+        - Assistant
+    put:
+      description: Saves the settings. Only the Owner, after a passkey confirmation in the last five minutes. A task type outside the catalogue, own-pay explanations (they need a second approver) and a route this build does not have are refused; turning the assistant on needs a route. It is audited.
+      operationId: putAssistantSettings
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AISettingsInput"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Turn the people assistant on or off
+      tags:
+        - Assistant
   /v1/bank-account-changes/{id}:
     get:
       description: Returns a change with its account masked and where it is. The person it concerns and the approvers (HR administrator, Payroll administrator, Owner) read it; anyone else is told there is none. It changes nothing.
@@ -15848,6 +16422,8 @@ tags:
     name: Packs
   - description: Working patterns, leave balances and the ledger behind them (NM-LV-01, NM-LV-02, NM-LV-13, NM-TIM-01).
     name: Leave
+  - description: The people assistant's settings and the drafts it proposed for a person to decide (NM-AI-01, NM-AI-04).
+    name: Assistant
   - description: "Pay groups, a person's pay, the year to date and one-off items: for the Payroll administrator and the Owner alone (NM-PAY-02, NM-PAY-03, FR-EMP-01)."
     name: Payroll
   - description: The task to invite new people to Fyniq, and a leaver's dates, checklist and leave settlement (NM-ONB-02, NM-ONB-03).

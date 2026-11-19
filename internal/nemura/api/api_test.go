@@ -19,6 +19,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/nemura/apiclient"
+	"github.com/cognizhi/fyniq/internal/nemura/assistant"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/checks"
 	"github.com/cognizhi/fyniq/internal/nemura/features"
@@ -330,6 +331,20 @@ func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.
 // fakeLetters answers letters with whatever the test says.
 type fakePayroll struct{ err error }
 
+type fakeAssistant struct{ err error }
+
+func (f fakeAssistant) Settings(context.Context, Session) (AISettings, error) {
+	return AISettings{TaskTypes: []string{}, Catalogue: []AITask{}}, f.err
+}
+func (f fakeAssistant) SetSettings(context.Context, Session, AISettingsInput) error { return f.err }
+func (f fakeAssistant) Proposals(context.Context, Session, string) ([]AIProposal, error) {
+	return nil, f.err
+}
+func (f fakeAssistant) Proposal(context.Context, Session, uuid.UUID) (AIProposal, error) {
+	return AIProposal{}, f.err
+}
+func (f fakeAssistant) Decide(context.Context, Session, uuid.UUID, AIDecision) error { return f.err }
+
 func (f fakePayroll) Export(context.Context, Session, uuid.UUID, ExportInput) (ExportFile, error) {
 	return ExportFile{Skipped: []ExportSkipped{}}, f.err
 }
@@ -520,7 +535,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, Assistant: fakeAssistant{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -718,6 +733,10 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodeLeaveConflict:      {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/working-pattern", body: patternBody, signedIn: true, err: &leave.Refusal{Code: leave.CodeConflict, Message: "Overlaps."}},
 		CodeFeatureOff:         {method: "GET", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026", signedIn: true, featuresOff: true},
 		CodeLeaverAccount:      {method: "GET", path: "/v1/me/details", signedIn: true, leaver: true},
+		CodeAINever:            {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeNever, Message: "The assistant never approves."}},
+		CodeAIInvalid:          {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeInvalid, Message: "reply: text of up to 4000 characters."}},
+		CodeAIOff:              {method: "PUT", path: "/v1/assistant/settings", body: `{"enabled":false,"route":"none","task_types":[]}`, signedIn: true, owner: true, stepUp: true, err: &assistant.Refusal{Code: assistant.CodeOff, Message: "The assistant is off."}},
+		CodeAIConflict:         {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeConflict, Message: "Decided already."}},
 		CodePayrollInvalid:     {method: "POST", path: "/v1/payroll/groups", body: `{"name":"Monthly","pay_day":25,"cutoff_days":7,"approval_days":3}`, signedIn: true, owner: true, err: &payroll.Refusal{Code: payroll.CodeInvalid, Message: "The pay day is wrong."}},
 		CodePayrollConflict:    {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/pay/year-to-date", body: `{"year":2026,"ow":"25000.00","aw_subject":"0.00","aw_paid":"0.00","through_month":"2026-05-01"}`, signedIn: true, owner: true, err: &payroll.Refusal{Code: payroll.CodeConflict, Message: "Held already."}},
 		CodeOnboardingInvalid:  {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/offboarding", body: `{"kind":"resignation","last_day":"2026-11-30"}`, signedIn: true, err: &onboarding.Refusal{Code: onboarding.CodeInvalid, Message: "The last day is required."}},

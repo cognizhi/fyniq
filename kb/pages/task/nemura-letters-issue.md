@@ -4,7 +4,7 @@ type: task
 title: Check, sign and issue letters in Nemura
 summary: How the people team checks a letter request and the signatory signs it with a passkey, and what the issued letter proves
 sources:
-  - docs/user-guide/nemura/letters-issue.md sha256:e2f6afbdf1f92580296c5c2bd3e70a7b54e094e1d61edc039ffc93c86099104d
+  - docs/user-guide/nemura/letters-issue.md sha256:bb4b0e741377796e55f43e187cf745e328c69ca5264deaa1c2166b4b7e0d9c19
 data_class: general
 taint: trusted
 status: published
@@ -29,7 +29,7 @@ aliases:
 
 1. The HR officer selects **Check**: Nemura fills the template, draws the PDF, keeps it and gives it a reference; nobody checks their own letter. To refuse, write a reason and select **Refuse**.
 2. The signatory selects **Read the letter**, compares the hash shown, then **Sign with my passkey**; the letter is issued once.
-3. The person finds it under their requests ([[nemura.letters.request]]).
+3. The person finds it under their requests ([[nemura.letters.request]]). A draft from the people assistant is decided like any other ([[nemura.assistant]]).
 
 (src: docs/user-guide/nemura/letters-issue.md#steps)
 

@@ -309,8 +309,11 @@ var matrixCaptures = map[string]func(e *env, tok string) (response, func() bool)
 		return r, func() bool { return capturesOf(e) == was }
 	},
 	"captureFromMessage": func(e *env, tok string) (response, func() bool) {
+		// A message accepted at the organisation's document address, new each time (each file is adopted once); the refusals of a quarantined message and of
+		// another member's own mail are proved in TestAcceptedMailIsCapturedByAPersonAndAnotherMembersMailIsNot.
+		m, f := receivedMail(e, nil, storage.InboundAccepted, []byte("Tax invoice matrix "+uuid.NewString()+"\nTotal 1.00\n"))
 		was := capturesOf(e)
-		r := e.call(http.MethodPost, "/v1/captures/from-message", tok, map[string]any{"message_id": uuid.NewString(), "file_id": uuid.NewString()})
+		r := e.call(http.MethodPost, "/v1/captures/from-message", tok, map[string]any{"message_id": m, "file_id": f}, "Idempotency-Key", uuid.NewString())
 		return r, func() bool { return capturesOf(e) == was }
 	},
 	"listCaptures": func(e *env, tok string) (response, func() bool) {
@@ -325,7 +328,8 @@ var matrixCaptures = map[string]func(e *env, tok string) (response, func() bool)
 		return e.call(http.MethodGet, "/v1/captures/"+id+"/file", tok, nil), nil
 	},
 	"readCapture": func(e *env, tok string) (response, func() bool) {
-		id, tag := matrixCapture(e)
+		c := e.capture(e.as(authz.Accountant), "matrix.txt", []byte("Tax invoice matrix "+uuid.NewString()+"\nTotal 1.00\n")) // a text file: a PDF with no text is refused before the switch
+		id, tag := c.str("id"), c.Header.Get("ETag")
 		r := e.call(http.MethodPost, "/v1/captures/"+id+"/read", tok, nil, "If-Match", tag)
 		return r, func() bool { return captureStatus(e, id) == "received" }
 	},
@@ -347,6 +351,51 @@ var matrixCaptures = map[string]func(e *env, tok string) (response, func() bool)
 		r := e.call(http.MethodPost, "/v1/captures/"+id+"/claim", steppedUp(e, tok), map[string]any{"date": "2026-10-15", "lines": []any{taxi(travel)}}, "If-Match", tag)
 		return r, func() bool { return captureStatus(e, id) == "read" }
 	},
+}
+
+// receivedMail leaves a message with one text attachment at the organisation's email-in address for documents (who nil) or at a member's own, with the status the
+// worker's fetch gives it (accepted, or quarantined), and returns the message's and the file's IDs. The organisation's address is named first when it has none.
+func receivedMail(e *env, who *uuid.UUID, status string, body []byte) (message, file string) {
+	e.t.Helper()
+	var m storage.InboundMessage
+	var f storage.InboundFile
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		live, err := u.CaptureAddresses().Live(ctx)
+		if err != nil {
+			return err
+		}
+		var addr storage.CaptureAddress
+		for _, a := range live {
+			if a.Kind == storage.CaptureDocuments && ((who == nil && a.UserID == nil) || (who != nil && a.UserID != nil && *a.UserID == *who)) {
+				addr = a
+			}
+		}
+		if addr.ID == uuid.Nil && who == nil {
+			if addr, err = u.CaptureAddresses().Create(ctx, "bills-"+uuid.NewString()[:8], nil, storage.CaptureDocuments); err != nil {
+				return err
+			}
+		}
+		m, _, err = u.InboundMessages().Receive(ctx, storage.NewInboundMessage{AddressID: addr.ID, Provider: "mailpit", ProviderID: uuid.NewString(), Sender: "ar@supplier.example",
+			Subject: "Invoice", ReceivedAt: e.clock.Now()})
+		return err
+	})
+	key := "inbound/" + e.books.Org.String() + "/" + m.ID.String() + "/" + uuid.NewString()
+	if err := e.api.deps.Staging.Put(context.Background(), key, bytes.NewReader(body)); err != nil {
+		e.t.Fatal(err)
+	}
+	sum := sha256.Sum256(body)
+	if err := workerStore(e.t).Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := u.InboundMessages().Fetched(ctx, m.ID, storage.InboundFetch{SPF: "pass", DKIM: "pass", DMARC: "pass", Status: status}, e.clock.Now()); err != nil {
+			return err
+		}
+		var err error
+		f, err = u.InboundMessages().AddFile(ctx, storage.InboundFile{MessageID: m.ID, Kind: storage.InboundAttachment, FileName: "INV.txt", MediaType: "text/plain",
+			Size: int64(len(body)), SHA256: hex.EncodeToString(sum[:]), OriginalSHA256: hex.EncodeToString(sum[:]), BlobKey: key, StoredAt: e.clock.Now()})
+		return err
+	}); err != nil {
+		e.t.Fatal(err)
+	}
+	return m.ID.String(), f.ID.String()
 }
 
 // A supplier's defaults are suggested from its posted bills and kept on its contact once a person confirms them with the draft (FR-AP-12): the account
@@ -410,45 +459,11 @@ func TestAcceptedMailIsCapturedByAPersonAndAnotherMembersMailIsNot(t *testing.T)
 		t.Fatalf("Ann's own address: %d %s", r.Status, r.Raw)
 	}
 	// A message with one attachment at each address, accepted or quarantined, as the worker leaves it.
-	staging := e.api.deps.Staging
 	type mail struct{ message, file string }
 	arrive := func(who *uuid.UUID, status string, body []byte) mail {
 		t.Helper()
-		var m storage.InboundMessage
-		var f storage.InboundFile
-		e.do(func(ctx context.Context, u storage.UnitOfWork) error {
-			live, err := u.CaptureAddresses().Live(ctx)
-			if err != nil {
-				return err
-			}
-			var addr storage.CaptureAddress
-			for _, a := range live {
-				if a.Kind == storage.CaptureDocuments && ((who == nil && a.UserID == nil) || (who != nil && a.UserID != nil && *a.UserID == *who)) {
-					addr = a
-				}
-			}
-			m, _, err = u.InboundMessages().Receive(ctx, storage.NewInboundMessage{AddressID: addr.ID, Provider: "mailpit", ProviderID: uuid.NewString(), Sender: "ar@supplier.example",
-				Subject: "Invoice", ReceivedAt: e.clock.Now()})
-			return err
-		})
-		key := "inbound/" + e.books.Org.String() + "/" + m.ID.String() + "/" + uuid.NewString()
-		if err := staging.Put(context.Background(), key, bytes.NewReader(body)); err != nil {
-			t.Fatal(err)
-		}
-		sum := sha256.Sum256(body)
-		w := workerStore(t)
-		if err := w.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
-			if _, err := u.InboundMessages().Fetched(ctx, m.ID, storage.InboundFetch{SPF: "pass", DKIM: "pass", DMARC: "pass", Status: status}, e.clock.Now()); err != nil {
-				return err
-			}
-			var err error
-			f, err = u.InboundMessages().AddFile(ctx, storage.InboundFile{MessageID: m.ID, Kind: storage.InboundAttachment, FileName: "INV.pdf", MediaType: "application/pdf",
-				Size: int64(len(body)), SHA256: hex.EncodeToString(sum[:]), OriginalSHA256: hex.EncodeToString(sum[:]), BlobKey: key, StoredAt: e.clock.Now()})
-			return err
-		}); err != nil {
-			t.Fatal(err)
-		}
-		return mail{m.ID.String(), f.ID.String()}
+		m, f := receivedMail(e, who, status, body)
+		return mail{m, f}
 	}
 	adopt := func(tok string, m mail) response {
 		return e.call(http.MethodPost, "/v1/captures/from-message", tok, map[string]any{"message_id": m.message, "file_id": m.file}, "Idempotency-Key", uuid.NewString())
