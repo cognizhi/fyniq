@@ -456,6 +456,7 @@ type FyniqAiProposalUndo struct {
 
 type FyniqAiProposalView struct {
 	OrganisationID uuid.UUID
+	ID             uuid.UUID
 	ProposalID     uuid.UUID
 	UserID         uuid.UUID
 	FirstViewedAt  time.Time
