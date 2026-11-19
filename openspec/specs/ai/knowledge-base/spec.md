@@ -184,6 +184,16 @@ Source: PRD-001 §9.11 · Priority M · Phase P1
 - **WHEN** a page states a statutory rule (applicability, exceptions, effective dates)
 - **THEN** the rule carries its pack key and version
 
+#### Scenario: A page records the pack versions it read
+- **WHEN** a page states a statutory value
+- **THEN** it lists the pack versions it read in its `packs` front matter (kb-schema@2)
+- **AND** the lint fails a version that does not exist or a line that is not `<pack>@<year>.<n>`
+
+#### Scenario: A newer pack version makes the page stale
+- **GIVEN** a newer version of a pack a page lists exists
+- **WHEN** the lint runs, or `make kb-stale`
+- **THEN** the page is flagged as out of date until it is recompiled and its `packs` line updated
+
 #### Scenario: A newer pack is in force
 - **GIVEN** the pack in force on the question's date is newer than the one a page's statutory rule cites
 - **WHEN** the assistant answers
