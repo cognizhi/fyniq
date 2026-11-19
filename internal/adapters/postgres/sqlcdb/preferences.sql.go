@@ -13,41 +13,43 @@ import (
 )
 
 const insertUserPreference = `-- name: InsertUserPreference :one
-INSERT INTO fyniq.user_preference (user_id, mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format, set_at)
+INSERT INTO fyniq.user_preference (user_id, mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format, negative_format, set_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7,
-        $8, $9::jsonb, $10, $11, $12)
-RETURNING id, user_id, mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format, set_at
+        $8, $9::jsonb, $10, $11, $12, $13)
+RETURNING id, user_id, mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format, negative_format, set_at
 `
 
 type InsertUserPreferenceParams struct {
-	UserID       uuid.UUID
-	Mode         *string
-	LedgerView   *string
-	Theme        *string
-	Contrast     *string
-	Density      *string
-	Motion       *string
-	ShortcutsOn  *bool
-	ShortcutKeys []byte
-	NumberFormat *string
-	DateFormat   *string
-	SetAt        time.Time
+	UserID         uuid.UUID
+	Mode           *string
+	LedgerView     *string
+	Theme          *string
+	Contrast       *string
+	Density        *string
+	Motion         *string
+	ShortcutsOn    *bool
+	ShortcutKeys   []byte
+	NumberFormat   *string
+	DateFormat     *string
+	NegativeFormat *string
+	SetAt          time.Time
 }
 
 type InsertUserPreferenceRow struct {
-	ID           uuid.UUID
-	UserID       uuid.UUID
-	Mode         *string
-	LedgerView   *string
-	Theme        *string
-	Contrast     *string
-	Density      *string
-	Motion       *string
-	ShortcutsOn  *bool
-	ShortcutKeys []byte
-	NumberFormat *string
-	DateFormat   *string
-	SetAt        time.Time
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Mode           *string
+	LedgerView     *string
+	Theme          *string
+	Contrast       *string
+	Density        *string
+	Motion         *string
+	ShortcutsOn    *bool
+	ShortcutKeys   []byte
+	NumberFormat   *string
+	DateFormat     *string
+	NegativeFormat *string
+	SetAt          time.Time
 }
 
 func (q *Queries) InsertUserPreference(ctx context.Context, arg InsertUserPreferenceParams) (InsertUserPreferenceRow, error) {
@@ -63,6 +65,7 @@ func (q *Queries) InsertUserPreference(ctx context.Context, arg InsertUserPrefer
 		arg.ShortcutKeys,
 		arg.NumberFormat,
 		arg.DateFormat,
+		arg.NegativeFormat,
 		arg.SetAt,
 	)
 	var i InsertUserPreferenceRow
@@ -79,31 +82,33 @@ func (q *Queries) InsertUserPreference(ctx context.Context, arg InsertUserPrefer
 		&i.ShortcutKeys,
 		&i.NumberFormat,
 		&i.DateFormat,
+		&i.NegativeFormat,
 		&i.SetAt,
 	)
 	return i, err
 }
 
 const latestUserPreference = `-- name: LatestUserPreference :many
-SELECT id, user_id, mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format, set_at
+SELECT id, user_id, mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format, negative_format, set_at
 FROM fyniq.user_preference WHERE user_id = $1
 ORDER BY set_at DESC, id DESC LIMIT 1
 `
 
 type LatestUserPreferenceRow struct {
-	ID           uuid.UUID
-	UserID       uuid.UUID
-	Mode         *string
-	LedgerView   *string
-	Theme        *string
-	Contrast     *string
-	Density      *string
-	Motion       *string
-	ShortcutsOn  *bool
-	ShortcutKeys []byte
-	NumberFormat *string
-	DateFormat   *string
-	SetAt        time.Time
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Mode           *string
+	LedgerView     *string
+	Theme          *string
+	Contrast       *string
+	Density        *string
+	Motion         *string
+	ShortcutsOn    *bool
+	ShortcutKeys   []byte
+	NumberFormat   *string
+	DateFormat     *string
+	NegativeFormat *string
+	SetAt          time.Time
 }
 
 // The preferences in force: the latest save.
@@ -129,6 +134,7 @@ func (q *Queries) LatestUserPreference(ctx context.Context, userID uuid.UUID) ([
 			&i.ShortcutKeys,
 			&i.NumberFormat,
 			&i.DateFormat,
+			&i.NegativeFormat,
 			&i.SetAt,
 		); err != nil {
 			return nil, err

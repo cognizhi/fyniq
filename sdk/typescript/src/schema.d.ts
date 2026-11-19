@@ -42091,6 +42091,12 @@ export interface components {
              */
             motion?: "on" | "reduce";
             /**
+             * @description How negative amounts are written on screen: −1,234.56 (minus) or (1,234.56) (parentheses); the sign or the brackets always show, so colour is never the only cue; absent: minus.
+             * @example minus
+             * @enum {string}
+             */
+            negative_format?: "minus" | "parentheses";
+            /**
              * @description How amounts and counts are written on screen: 1,234.56 (comma_dot), 1.234,56 (dot_comma), 1 234,56 (space_comma) or 1 234.56 (space_dot). Amounts stay exact decimal strings everywhere else (NFR-L10N-01); absent: comma_dot.
              * @example comma_dot
              * @enum {string}
@@ -46087,13 +46093,19 @@ export interface components {
              */
             motion?: "on" | "reduce";
             /**
+             * @description Set how negative amounts are written.
+             * @example parentheses
+             * @enum {string}
+             */
+            negative_format?: "minus" | "parentheses";
+            /**
              * @description Set the number format.
              * @example dot_comma
              * @enum {string}
              */
             number_format?: "comma_dot" | "dot_comma" | "space_comma" | "space_dot";
             /**
-             * @description The choices to take back to their defaults: mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format or date_format.
+             * @description The choices to take back to their defaults: mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format or negative_format.
              * @example [
              *       "theme"
              *     ]

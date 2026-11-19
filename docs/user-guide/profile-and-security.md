@@ -41,7 +41,8 @@ else, and every Owner, starts in Basic, unless an Administrator changed a role's
 ## Numbers and dates
 
 Under **Numbers and dates**, choose how amounts and dates are written for you: for example 1,234.56 or 1.234,56 or
-1 234,56, and 12 Oct 2026, 12/10/2026, 10/12/2026 or 2026-10-12. Each choice shows an example. Dates and times are
+1 234,56, and 12 Oct 2026, 12/10/2026, 10/12/2026 or 2026-10-12. Each choice shows an example, and **Negative amounts** chooses between −1,234.56 and (1,234.56); the sign or the
+brackets always show. Dates and times are
 written in the organisation's time zone, which an Administrator sets on the organisation's profile.
 
 This changes only how figures look. Amounts stay exact: nothing is rounded again, and when you copy an amount from

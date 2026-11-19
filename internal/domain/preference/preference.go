@@ -21,10 +21,11 @@ var (
 	Motions       = []string{"on", "reduce"}
 	NumberFormats = []string{"comma_dot", "dot_comma", "space_comma", "space_dot"}
 	DateFormats   = []string{"d_mmm_yyyy", "dd_mm_yyyy", "mm_dd_yyyy", "iso"}
+	NegativeForms = []string{"minus", "parentheses"}
 )
 
 // Fields are the choices a reset may name, in the order the API lists them.
-var Fields = []string{"mode", "ledger_view", "theme", "contrast", "density", "motion", "shortcuts_on", "shortcut_keys", "number_format", "date_format"}
+var Fields = []string{"mode", "ledger_view", "theme", "contrast", "density", "motion", "shortcuts_on", "shortcut_keys", "number_format", "date_format", "negative_format"}
 
 // Preferences is a person's saved state. An empty string, a nil ShortcutsOn and an empty ShortcutKeys are choices
 // never made.
@@ -39,6 +40,7 @@ type Preferences struct {
 	ShortcutKeys map[string]string
 	NumberFormat string
 	DateFormat   string
+	NegativeForm string
 }
 
 // Change is what a save asks for: the choices it sets, and the fields it takes back to their defaults. A nil
@@ -78,7 +80,7 @@ func Validate(c Change) *Problem {
 	for _, p := range []*Problem{
 		oneOf("mode", s.Mode, Modes), oneOf("ledger_view", s.LedgerView, LedgerViews), oneOf("theme", s.Theme, Themes),
 		oneOf("contrast", s.Contrast, Contrasts), oneOf("density", s.Density, Densities), oneOf("motion", s.Motion, Motions),
-		oneOf("number_format", s.NumberFormat, NumberFormats), oneOf("date_format", s.DateFormat, DateFormats),
+		oneOf("number_format", s.NumberFormat, NumberFormats), oneOf("date_format", s.DateFormat, DateFormats), oneOf("negative_format", s.NegativeForm, NegativeForms),
 	} {
 		if p != nil {
 			return p
@@ -129,6 +131,8 @@ func Apply(cur Preferences, c Change) Preferences {
 			out.NumberFormat = ""
 		case "date_format":
 			out.DateFormat = ""
+		case "negative_format":
+			out.NegativeForm = ""
 		}
 	}
 	set := func(dst *string, v string) {
@@ -144,6 +148,7 @@ func Apply(cur Preferences, c Change) Preferences {
 	set(&out.Motion, c.Set.Motion)
 	set(&out.NumberFormat, c.Set.NumberFormat)
 	set(&out.DateFormat, c.Set.DateFormat)
+	set(&out.NegativeForm, c.Set.NegativeForm)
 	if c.Set.ShortcutsOn != nil {
 		on := *c.Set.ShortcutsOn
 		out.ShortcutsOn = &on

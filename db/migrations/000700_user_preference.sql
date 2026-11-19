@@ -1,6 +1,6 @@
 -- A person's preferences, kept on the server so they are the same on every device (PRD-001 FR-UX-23, FR-UX-27, FR-UX-08,
 -- FR-UX-06, FR-UX-38, NFR-L10N-01; p1-app-shell tasks 4.1, 2.3, 3.2 and 5.3): the experience mode, the Plain or
--- Accountant view, how the app looks, the keyboard shortcuts, and the number and date formats. They change no business
+-- Accountant view, how the app looks, the keyboard shortcuts, and the number and date formats, and how negative amounts are written. They change no business
 -- data, hold nothing secret and never change what a person may do. Kept per organisation, as the help state is. Each
 -- save is a new row with the whole state, audited; the latest is in force, so the history stays. A column that is NULL
 -- is a choice never made: the organisation's default for the person's roles applies (FR-UX-27), or the standard one.
@@ -24,6 +24,7 @@ CREATE TABLE fyniq.user_preference (
   shortcut_keys   jsonb       NOT NULL DEFAULT '{}',
   number_format   text,
   date_format     text,
+  negative_format text,
   set_at          timestamptz NOT NULL,
   CONSTRAINT user_preference_pkey PRIMARY KEY (organisation_id, id),
   CONSTRAINT user_preference_member_fkey FOREIGN KEY (organisation_id, user_id)
@@ -36,6 +37,7 @@ CREATE TABLE fyniq.user_preference (
   CONSTRAINT user_preference_motion_known CHECK (motion IS NULL OR motion IN ('on', 'reduce')),
   CONSTRAINT user_preference_number_known CHECK (number_format IS NULL OR number_format IN ('comma_dot', 'dot_comma', 'space_comma', 'space_dot')),
   CONSTRAINT user_preference_date_known CHECK (date_format IS NULL OR date_format IN ('d_mmm_yyyy', 'dd_mm_yyyy', 'mm_dd_yyyy', 'iso')),
+  CONSTRAINT user_preference_negative_known CHECK (negative_format IS NULL OR negative_format IN ('minus', 'parentheses')),
   CONSTRAINT user_preference_keys_object CHECK (jsonb_typeof(shortcut_keys) = 'object' AND octet_length(shortcut_keys::text) <= 4096)
 );
 CREATE INDEX user_preference_latest ON fyniq.user_preference (organisation_id, user_id, set_at);
@@ -56,5 +58,5 @@ CREATE POLICY tenant_isolation ON fyniq.user_preference
 
 -- A person sets their own through the API, which saves only the caller's; the worker reads it for the tenant export.
 GRANT SELECT ON fyniq.user_preference TO fyniq_api, fyniq_worker, fyniq_readonly;
-GRANT INSERT (user_id, mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format, set_at)
+GRANT INSERT (user_id, mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format, negative_format, set_at)
   ON fyniq.user_preference TO fyniq_api;

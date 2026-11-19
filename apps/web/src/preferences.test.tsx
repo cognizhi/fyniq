@@ -129,6 +129,10 @@ describe("preferences kept on the server", () => {
     adopt(session(prefs({ number_format: "dot_comma", date_format: "dd_mm_yyyy" }), "America/New_York"));
     expect(formatAmount("-1234567.50")).toBe("−1.234.567,50");
     expect(formatAmount("1234.56", "parentheses")).toBe("1.234,56");
+    adopt(session(prefs({ number_format: "dot_comma", date_format: "dd_mm_yyyy", negative_format: "parentheses" }), "America/New_York"));
+    expect(formatAmount("-1234567.50")).toBe("(1.234.567,50)"); // the person's way of writing a negative
+    expect(formatAmount("-1234567.50", "minus")).toBe("−1.234.567,50"); // unless the screen names one
+    adopt(session(prefs({ number_format: "dot_comma", date_format: "dd_mm_yyyy" }), "America/New_York"));
     expect(formatAmount("-1234.56", "parentheses")).toBe("(1.234,56)");
     expect(timeZone).toBe("America/New_York");
     expect(date("2026-10-21T02:30:00Z")).toBe("20/10/2026"); // evening of the 20th in New York

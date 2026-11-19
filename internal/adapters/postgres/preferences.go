@@ -29,12 +29,12 @@ func valueOf(s *string) string {
 	return *s
 }
 
-func savedOf(userID uuid.UUID, mode, view, theme, contrast, density, motion *string, shortcutsOn *bool, keys []byte, number, date *string, at storage.SavedPreferences) (storage.SavedPreferences, error) {
+func savedOf(userID uuid.UUID, mode, view, theme, contrast, density, motion *string, shortcutsOn *bool, keys []byte, number, date, negative *string, at storage.SavedPreferences) (storage.SavedPreferences, error) {
 	out := at
 	out.UserID = userID
 	out.Mode, out.LedgerView, out.Theme, out.Contrast, out.Density, out.Motion = valueOf(mode), valueOf(view), valueOf(theme), valueOf(contrast), valueOf(density), valueOf(motion)
 	out.ShortcutsOn = shortcutsOn
-	out.NumberFormat, out.DateFormat = valueOf(number), valueOf(date)
+	out.NumberFormat, out.DateFormat, out.NegativeForm = valueOf(number), valueOf(date), valueOf(negative)
 	out.ShortcutKeys = map[string]string{}
 	if err := json.Unmarshal(keys, &out.ShortcutKeys); err != nil {
 		return storage.SavedPreferences{}, err
@@ -61,12 +61,12 @@ func (r preferences) Save(ctx context.Context, user uuid.UUID, p preference.Pref
 	row, err := r.u.q.InsertUserPreference(ctx, sqlcdb.InsertUserPreferenceParams{
 		UserID: user, Mode: textOrNil(p.Mode), LedgerView: textOrNil(p.LedgerView), Theme: textOrNil(p.Theme), Contrast: textOrNil(p.Contrast),
 		Density: textOrNil(p.Density), Motion: textOrNil(p.Motion), ShortcutsOn: p.ShortcutsOn, ShortcutKeys: raw,
-		NumberFormat: textOrNil(p.NumberFormat), DateFormat: textOrNil(p.DateFormat), SetAt: r.u.store.clock.Now(),
+		NumberFormat: textOrNil(p.NumberFormat), DateFormat: textOrNil(p.DateFormat), NegativeFormat: textOrNil(p.NegativeForm), SetAt: r.u.store.clock.Now(),
 	})
 	if err != nil {
 		return storage.SavedPreferences{}, mapError(err)
 	}
-	out, err := savedOf(row.UserID, row.Mode, row.LedgerView, row.Theme, row.Contrast, row.Density, row.Motion, row.ShortcutsOn, row.ShortcutKeys, row.NumberFormat, row.DateFormat, storage.SavedPreferences{SetAt: row.SetAt})
+	out, err := savedOf(row.UserID, row.Mode, row.LedgerView, row.Theme, row.Contrast, row.Density, row.Motion, row.ShortcutsOn, row.ShortcutKeys, row.NumberFormat, row.DateFormat, row.NegativeFormat, storage.SavedPreferences{SetAt: row.SetAt})
 	if err != nil {
 		return storage.SavedPreferences{}, err
 	}
@@ -85,6 +85,7 @@ func (r preferences) Save(ctx context.Context, user uuid.UUID, p preference.Pref
 	note("motion", before.Motion, out.Motion)
 	note("number_format", before.NumberFormat, out.NumberFormat)
 	note("date_format", before.DateFormat, out.DateFormat)
+	note("negative_format", before.NegativeForm, out.NegativeForm)
 	on := func(b *bool) any {
 		if b == nil {
 			return nil
@@ -125,6 +126,6 @@ func (r preferences) Latest(ctx context.Context, user uuid.UUID) (storage.SavedP
 		return storage.SavedPreferences{}, false, nil
 	}
 	x := rows[0]
-	out, err := savedOf(x.UserID, x.Mode, x.LedgerView, x.Theme, x.Contrast, x.Density, x.Motion, x.ShortcutsOn, x.ShortcutKeys, x.NumberFormat, x.DateFormat, storage.SavedPreferences{SetAt: x.SetAt})
+	out, err := savedOf(x.UserID, x.Mode, x.LedgerView, x.Theme, x.Contrast, x.Density, x.Motion, x.ShortcutsOn, x.ShortcutKeys, x.NumberFormat, x.DateFormat, x.NegativeFormat, storage.SavedPreferences{SetAt: x.SetAt})
 	return out, true, err
 }

@@ -31,9 +31,9 @@ func TestPreferencesAreKeptOnTheServer(t *testing.T) {
 	}
 	_, seq := auditActionsAfter(t, e, 0)
 
-	saved := e.call(http.MethodPatch, "/v1/preferences", ahkow, map[string]any{"mode": "expert", "number_format": "dot_comma", "date_format": "iso",
+	saved := e.call(http.MethodPatch, "/v1/preferences", ahkow, map[string]any{"mode": "expert", "number_format": "dot_comma", "date_format": "iso", "negative_format": "parentheses",
 		"shortcuts_on": false, "shortcut_keys": map[string]any{"go.home": "g h"}}, "If-Match", got.str("etag"))
-	if saved.Status != 200 || saved.Body["mode"] != "expert" || saved.Body["number_format"] != "dot_comma" || saved.Body["date_format"] != "iso" || saved.Body["shortcuts_on"] != false {
+	if saved.Status != 200 || saved.Body["mode"] != "expert" || saved.Body["number_format"] != "dot_comma" || saved.Body["date_format"] != "iso" || saved.Body["negative_format"] != "parentheses" || saved.Body["shortcuts_on"] != false {
 		t.Fatalf("saving: %d %s", saved.Status, saved.Raw)
 	}
 	// A save names only what it changes: the rest stays.

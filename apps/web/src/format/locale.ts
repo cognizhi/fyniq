@@ -20,6 +20,7 @@ export const separatorsOf: Readonly<Record<NumberFormat, { group: string; decima
 
 let number: NumberFormat | null = null;
 let date: DateFormat = "d_mmm_yyyy";
+let negatives: "minus" | "parentheses" = "minus";
 // The organisation's time zone: every date and time is written in it (FR-ORG-01). A live binding, so a screen that
 // imports it reads the current one.
 export let timeZone = "Asia/Singapore";
@@ -29,12 +30,14 @@ export interface Locale {
   number?: string | null;
   date?: string | null;
   timeZone?: string | null;
+  negatives?: string | null;
 }
 
 // setLocale applies the person's formats and the organisation's time zone; a value it does not know is the default.
 export function setLocale(l: Locale): void {
   number = numberFormats.find((f) => f === l.number) ?? null;
   date = dateFormats.find((f) => f === l.date) ?? "d_mmm_yyyy";
+  negatives = l.negatives === "parentheses" ? "parentheses" : "minus";
   timeZone = l.timeZone && validZone(l.timeZone) ? l.timeZone : "Asia/Singapore";
   for (const f of listeners) f();
 }
@@ -56,6 +59,11 @@ export function separators(): { group: string; decimal: string } {
 // chosenNumberFormat is the person's own choice; null while they have not made one.
 export function chosenNumberFormat(): NumberFormat | null {
   return number;
+}
+
+// negativeStyle is how the person writes a negative amount: with a minus sign or in brackets.
+export function negativeStyle(): "minus" | "parentheses" {
+  return negatives;
 }
 
 export function dateFormat(): DateFormat {

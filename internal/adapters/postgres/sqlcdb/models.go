@@ -3402,6 +3402,7 @@ type FyniqUserPreference struct {
 	ShortcutKeys   []byte
 	NumberFormat   *string
 	DateFormat     *string
+	NegativeFormat *string
 	SetAt          time.Time
 }
 

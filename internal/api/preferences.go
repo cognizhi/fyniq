@@ -27,34 +27,42 @@ const CodePreferenceNoUser = "PRF-04"
 // checks or what is saved. A choice never made is absent: the organisation's starting mode for the caller's roles, or
 // the standard choice, applies.
 type MyPreferences struct {
-	Mode         string            `json:"mode,omitempty" enum:"basic,expert" doc:"The experience mode the caller chose; absent until they choose, when default_mode applies." example:"expert"`
-	DefaultMode  string            `json:"default_mode" enum:"basic,expert" doc:"The mode in force while the caller has not chosen: from the organisation's starting mode for each of their roles, the Owner's winning when they hold it (FR-UX-27)." example:"basic"`
-	LedgerView   string            `json:"ledger_view,omitempty" enum:"plain,accountant" doc:"Plain view or Accountant view where a screen offers both, in Expert mode (FR-UX-08); absent: plain." example:"plain"`
-	Theme        string            `json:"theme,omitempty" enum:"light,dark,system" doc:"Light, dark or the device's setting (FR-UX-38); absent: system." example:"system"`
-	Contrast     string            `json:"contrast,omitempty" enum:"standard,more,system" doc:"Standard or more contrast, or the device's setting; absent: system." example:"system"`
-	Density      string            `json:"density,omitempty" enum:"comfortable,compact" doc:"The row height of lists and tables; absent: comfortable." example:"comfortable"`
-	Motion       string            `json:"motion,omitempty" enum:"on,reduce" doc:"Whether transitions run; the organisation's switch and the device's reduced-motion setting always win; absent: on." example:"on"`
-	ShortcutsOn  *bool             `json:"shortcuts_on,omitempty" doc:"Whether the single-key shortcuts are on (WCAG 2.2 SC 2.1.4); absent: on." example:"true"`
-	ShortcutKeys map[string]string `json:"shortcut_keys,omitempty" doc:"The keys the caller chose for a shortcut, by its name on the shortcut sheet; a shortcut not listed keeps its usual keys (FR-UX-06)."`
-	NumberFormat string            `json:"number_format,omitempty" enum:"comma_dot,dot_comma,space_comma,space_dot" doc:"How amounts and counts are written on screen: 1,234.56 (comma_dot), 1.234,56 (dot_comma), 1 234,56 (space_comma) or 1 234.56 (space_dot). Amounts stay exact decimal strings everywhere else (NFR-L10N-01); absent: comma_dot." example:"comma_dot"`
-	DateFormat   string            `json:"date_format,omitempty" enum:"d_mmm_yyyy,dd_mm_yyyy,mm_dd_yyyy,iso" doc:"How dates are written on screen: 12 Oct 2026 (d_mmm_yyyy), 12/10/2026 (dd_mm_yyyy), 10/12/2026 (mm_dd_yyyy) or 2026-10-12 (iso), in the organisation's time zone (NFR-L10N-01); absent: d_mmm_yyyy." example:"d_mmm_yyyy"`
-	SetAt        *time.Time        `json:"set_at,omitempty" doc:"When the caller last saved their preferences, if ever." example:"2026-11-20T09:30:00Z"`
-	ETag         string            `json:"etag" doc:"The preferences' version, for If-Match." example:"\"9f1c2b7a\""`
+	Mode           string            `json:"mode,omitempty" enum:"basic,expert" doc:"The experience mode the caller chose; absent until they choose, when default_mode applies." example:"expert"`
+	DefaultMode    string            `json:"default_mode" enum:"basic,expert" doc:"The mode in force while the caller has not chosen: from the organisation's starting mode for each of their roles, the Owner's winning when they hold it (FR-UX-27)." example:"basic"`
+	LedgerView     string            `json:"ledger_view,omitempty" enum:"plain,accountant" doc:"Plain view or Accountant view where a screen offers both, in Expert mode (FR-UX-08); absent: plain." example:"plain"`
+	Theme          string            `json:"theme,omitempty" enum:"light,dark,system" doc:"Light, dark or the device's setting (FR-UX-38); absent: system." example:"system"`
+	Contrast       string            `json:"contrast,omitempty" enum:"standard,more,system" doc:"Standard or more contrast, or the device's setting; absent: system." example:"system"`
+	Density        string            `json:"density,omitempty" enum:"comfortable,compact" doc:"The row height of lists and tables; absent: comfortable." example:"comfortable"`
+	Motion         string            `json:"motion,omitempty" enum:"on,reduce" doc:"Whether transitions run; the organisation's switch and the device's reduced-motion setting always win; absent: on." example:"on"`
+	ShortcutsOn    *bool             `json:"shortcuts_on,omitempty" doc:"Whether the single-key shortcuts are on (WCAG 2.2 SC 2.1.4); absent: on." example:"true"`
+	ShortcutKeys   map[string]string `json:"shortcut_keys,omitempty" doc:"The keys the caller chose for a shortcut, by its name on the shortcut sheet; a shortcut not listed keeps its usual keys (FR-UX-06)."`
+	NumberFormat   string            `json:"number_format,omitempty" enum:"comma_dot,dot_comma,space_comma,space_dot" doc:"How amounts and counts are written on screen: 1,234.56 (comma_dot), 1.234,56 (dot_comma), 1 234,56 (space_comma) or 1 234.56 (space_dot). Amounts stay exact decimal strings everywhere else (NFR-L10N-01); absent: comma_dot." example:"comma_dot"`
+	DateFormat     string            `json:"date_format,omitempty" enum:"d_mmm_yyyy,dd_mm_yyyy,mm_dd_yyyy,iso" doc:"How dates are written on screen: 12 Oct 2026 (d_mmm_yyyy), 12/10/2026 (dd_mm_yyyy), 10/12/2026 (mm_dd_yyyy) or 2026-10-12 (iso), in the organisation's time zone (NFR-L10N-01); absent: d_mmm_yyyy." example:"d_mmm_yyyy"`
+	NegativeFormat string            `json:"negative_format,omitempty" enum:"minus,parentheses" doc:"How negative amounts are written on screen: −1,234.56 (minus) or (1,234.56) (parentheses); the sign or the brackets always show, so colour is never the only cue; absent: minus." example:"minus"`
+	SetAt          *time.Time        `json:"set_at,omitempty" doc:"When the caller last saved their preferences, if ever." example:"2026-11-20T09:30:00Z"`
+	ETag           string            `json:"etag" doc:"The preferences' version, for If-Match." example:"\"9f1c2b7a\""`
 }
 
 // PreferenceChange is what a save sets and takes back; whatever it does not name stays as it is.
 type PreferenceChange struct {
-	Mode         string            `json:"mode,omitempty" enum:"basic,expert" doc:"Set the experience mode." example:"expert"`
-	LedgerView   string            `json:"ledger_view,omitempty" enum:"plain,accountant" doc:"Set the Plain or Accountant view." example:"accountant"`
-	Theme        string            `json:"theme,omitempty" enum:"light,dark,system" doc:"Set the theme." example:"dark"`
-	Contrast     string            `json:"contrast,omitempty" enum:"standard,more,system" doc:"Set the contrast." example:"more"`
-	Density      string            `json:"density,omitempty" enum:"comfortable,compact" doc:"Set the density." example:"compact"`
-	Motion       string            `json:"motion,omitempty" enum:"on,reduce" doc:"Set the motion." example:"reduce"`
-	ShortcutsOn  *bool             `json:"shortcuts_on,omitempty" doc:"Turn the single-key shortcuts on or off." example:"false"`
-	ShortcutKeys map[string]string `json:"shortcut_keys,omitempty" doc:"Replace the keys the caller chose, as a whole: 1 to 12 printable characters each, at most 64 shortcuts. Send an empty object to clear them."`
-	NumberFormat string            `json:"number_format,omitempty" enum:"comma_dot,dot_comma,space_comma,space_dot" doc:"Set the number format." example:"dot_comma"`
-	DateFormat   string            `json:"date_format,omitempty" enum:"d_mmm_yyyy,dd_mm_yyyy,mm_dd_yyyy,iso" doc:"Set the date format." example:"iso"`
-	Reset        []string          `json:"reset,omitempty" maxItems:"10" doc:"The choices to take back to their defaults: mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format or date_format." example:"[\"theme\"]"`
+	Mode           string            `json:"mode,omitempty" enum:"basic,expert" doc:"Set the experience mode." example:"expert"`
+	LedgerView     string            `json:"ledger_view,omitempty" enum:"plain,accountant" doc:"Set the Plain or Accountant view." example:"accountant"`
+	Theme          string            `json:"theme,omitempty" enum:"light,dark,system" doc:"Set the theme." example:"dark"`
+	Contrast       string            `json:"contrast,omitempty" enum:"standard,more,system" doc:"Set the contrast." example:"more"`
+	Density        string            `json:"density,omitempty" enum:"comfortable,compact" doc:"Set the density." example:"compact"`
+	Motion         string            `json:"motion,omitempty" enum:"on,reduce" doc:"Set the motion." example:"reduce"`
+	ShortcutsOn    *bool             `json:"shortcuts_on,omitempty" doc:"Turn the single-key shortcuts on or off." example:"false"`
+	ShortcutKeys   map[string]string `json:"shortcut_keys,omitempty" doc:"Replace the keys the caller chose, as a whole: 1 to 12 printable characters each, at most 64 shortcuts. Send an empty object to clear them."`
+	NumberFormat   string            `json:"number_format,omitempty" enum:"comma_dot,dot_comma,space_comma,space_dot" doc:"Set the number format." example:"dot_comma"`
+	DateFormat     string            `json:"date_format,omitempty" enum:"d_mmm_yyyy,dd_mm_yyyy,mm_dd_yyyy,iso" doc:"Set the date format." example:"iso"`
+	NegativeFormat string            `json:"negative_format,omitempty" enum:"minus,parentheses" doc:"Set how negative amounts are written." example:"parentheses"`
+	Reset          []string          `json:"reset,omitempty" maxItems:"11" doc:"The choices to take back to their defaults: mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format or negative_format." example:"[\"theme\"]"`
+}
+
+// TransformSchema implements huma.SchemaTransformer: an example for each item of reset (NFR-API-01).
+func (PreferenceChange) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	itemExamples(s, map[string]any{"reset": "theme"})
+	return s
 }
 
 type setMyPreferencesInput struct {
@@ -122,7 +130,7 @@ func myPreferencesOf(ctx context.Context, a *API, u storage.UnitOfWork, user uui
 func fill(out MyPreferences, s *storage.SavedPreferences) MyPreferences {
 	at := s.SetAt.UTC()
 	out.Mode, out.LedgerView, out.Theme, out.Contrast, out.Density, out.Motion = s.Mode, s.LedgerView, s.Theme, s.Contrast, s.Density, s.Motion
-	out.ShortcutsOn, out.NumberFormat, out.DateFormat = s.ShortcutsOn, s.NumberFormat, s.DateFormat
+	out.ShortcutsOn, out.NumberFormat, out.DateFormat, out.NegativeFormat = s.ShortcutsOn, s.NumberFormat, s.DateFormat, s.NegativeForm
 	if len(s.ShortcutKeys) > 0 {
 		out.ShortcutKeys = s.ShortcutKeys
 	}
@@ -169,7 +177,7 @@ func registerPreferences(a *API) {
 		}
 		change := preference.Change{Set: preference.Preferences{Mode: in.Body.Mode, LedgerView: in.Body.LedgerView, Theme: in.Body.Theme, Contrast: in.Body.Contrast,
 			Density: in.Body.Density, Motion: in.Body.Motion, ShortcutsOn: in.Body.ShortcutsOn, ShortcutKeys: in.Body.ShortcutKeys,
-			NumberFormat: in.Body.NumberFormat, DateFormat: in.Body.DateFormat}, Reset: in.Body.Reset}
+			NumberFormat: in.Body.NumberFormat, DateFormat: in.Body.DateFormat, NegativeForm: in.Body.NegativeFormat}, Reset: in.Body.Reset}
 		if pr := preference.Validate(change); pr != nil {
 			return nil, invalid([]FieldProblem{{Code: pr.Code, Field: "body." + pr.Field, Message: pr.Message, Fix: pr.Fix}})
 		}

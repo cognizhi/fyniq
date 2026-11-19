@@ -58,7 +58,7 @@ export function adopt(session: Pick<Session, "user_id" | "preferences" | "time_z
   etag = prefs.etag;
   setPreferenceSender(send);
   setStartingMode(prefs.default_mode as Mode);
-  setLocale({ number: prefs.number_format, date: prefs.date_format, timeZone: session.time_zone });
+  setLocale({ number: prefs.number_format, date: prefs.date_format, negatives: prefs.negative_format, timeZone: session.time_zone });
 
   const upload: PreferenceChange = {};
   if (prefs.mode) applyMode(prefs.mode as Mode);

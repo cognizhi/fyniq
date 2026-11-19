@@ -23,7 +23,7 @@ import { Button, buttonVariants } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
 import { formatAmount } from "../../format/amount";
 import { browserOf, clock, date, dateAs, dateTime } from "../../format/date";
-import { chosenNumberFormat, dateFormat, dateFormats, numberFormats, onLocale, setLocale, timeZone, type DateFormat, type NumberFormat } from "../../format/locale";
+import { chosenNumberFormat, dateFormat, dateFormats, negativeStyle, numberFormats, onLocale, setLocale, timeZone, type DateFormat, type NumberFormat } from "../../format/locale";
 import { helpText } from "../../i18n";
 import { setMode } from "../../mode";
 import { persist, type PreferenceChange } from "../../preferenceSink";
@@ -127,9 +127,10 @@ function FormatChoice() {
   useEffect(() => onLocale(() => redraw((n) => n + 1)), []);
   const number = chosenNumberFormat() ?? "comma_dot";
   const dates = dateFormat();
+  const negatives = negativeStyle();
   const choose = (change: PreferenceChange) => {
     persist(change);
-    setLocale({ number: change.number_format ?? number, date: change.date_format ?? dates, timeZone });
+    setLocale({ number: change.number_format ?? chosenNumberFormat(), date: change.date_format ?? dates, negatives: change.negative_format ?? negatives, timeZone });
   };
   const sample = "2026-10-12T08:30:00Z";
   const numberNames: Record<NumberFormat, string> = { comma_dot: "1,234.56", dot_comma: "1.234,56", space_comma: "1 234,56", space_dot: "1 234.56" };
@@ -160,6 +161,13 @@ function FormatChoice() {
                 {dateAs(sample, f)}
               </option>
             ))}
+          </select>
+        </label>
+        <label className="fy-field">
+          <span className="fy-label">Negative amounts</span>
+          <select className="fy-select" value={negatives} onChange={(e) => choose({ negative_format: e.target.value as "minus" | "parentheses" })}>
+            <option value="minus">{formatAmount("-1234.56", "minus", number)} (a minus sign)</option>
+            <option value="parentheses">{formatAmount("-1234.56", "parentheses", number)} (in brackets)</option>
           </select>
         </label>
         <p className="fy-small fy-secondary">

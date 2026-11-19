@@ -80,6 +80,7 @@ func TestAttackPreferencesKeepTheirHistoryAndTheirTenant(t *testing.T) {
 		{"fyniq_worker", "save as the worker", "INSERT INTO fyniq.user_preference (user_id, set_at) SELECT user_id, now() FROM fyniq.user_preference LIMIT 1", "42501"},
 		{"fyniq_api", "save a mode the app does not offer", "INSERT INTO fyniq.user_preference (user_id, mode, set_at) SELECT user_id, 'pro', now() FROM fyniq.user_preference LIMIT 1", "23514"},
 		{"fyniq_api", "save a date format the app does not offer", "INSERT INTO fyniq.user_preference (user_id, date_format, set_at) SELECT user_id, 'yy', now() FROM fyniq.user_preference LIMIT 1", "23514"},
+		{"fyniq_api", "save a way of writing negatives the app does not offer", "INSERT INTO fyniq.user_preference (user_id, negative_format, set_at) SELECT user_id, 'brackets', now() FROM fyniq.user_preference LIMIT 1", "23514"},
 		{"fyniq_api", "save shortcut keys that are not an object", "INSERT INTO fyniq.user_preference (user_id, shortcut_keys, set_at) SELECT user_id, '[]', now() FROM fyniq.user_preference LIMIT 1", "23514"},
 		{"fyniq_api", "save for someone who is no member", "INSERT INTO fyniq.user_preference (user_id, set_at) VALUES (gen_random_uuid(), now())", "23503"},
 	} {

@@ -4,7 +4,7 @@ type: task
 title: Your profile and security: Basic or Expert mode, your bank account, passkeys, sign-ins and devices
 summary: Basic or Expert mode, your bank account for reimbursements, confirming it's you, passkeys, linking or removing a sign-in, and signing out devices
 sources:
-  - docs/user-guide/profile-and-security.md sha256:071a05b50a2a5b4670d1f19def4bf81265568a0571599fc606ebd2106faa4889
+  - docs/user-guide/profile-and-security.md sha256:e823e311662f54742e43fe4b5455c03f126a58892929737b732336dae8c84d29
 data_class: general
 taint: trusted
 status: draft
@@ -60,7 +60,7 @@ aliases:
 
 ## Numbers and dates
 
-- Under **Numbers and dates**, choose how amounts and dates are written: for example 1,234.56 or 1.234,56 or 1 234,56, and 12 Oct 2026, 12/10/2026, 10/12/2026 or 2026-10-12; each choice shows an example.
+- Under **Numbers and dates**, choose how amounts and dates are written: for example 1,234.56 or 1.234,56 or 1 234,56, and 12 Oct 2026, 12/10/2026, 10/12/2026 or 2026-10-12; each choice shows an example, and **Negative amounts** chooses between −1,234.56 and (1,234.56); the sign or the brackets always show.
 - Dates and times are written in the organisation's time zone, which an Administrator sets on the organisation's profile.
 - It changes only how figures look: amounts stay exact, nothing is rounded again, and a copied amount is a plain decimal such as -1234.56 whatever the format; a pasted amount is read the same way.
 

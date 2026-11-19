@@ -73,6 +73,7 @@ func TestValidateRefusesWhatACheckConstraintWould(t *testing.T) {
 		{"a mode", preference.Change{Set: preference.Preferences{Mode: "pro"}}, preference.CodeValue, "mode"},
 		{"a number format", preference.Change{Set: preference.Preferences{NumberFormat: "1,2,3"}}, preference.CodeValue, "number_format"},
 		{"a date format", preference.Change{Set: preference.Preferences{DateFormat: "yy"}}, preference.CodeValue, "date_format"},
+		{"a way of writing negatives", preference.Change{Set: preference.Preferences{NegativeForm: "brackets"}}, preference.CodeValue, "negative_format"},
 		{"a shortcut name", preference.Change{Set: preference.Preferences{ShortcutKeys: map[string]string{"Go Home": "g h"}}}, preference.CodeKeys, "shortcut_keys"},
 		{"empty keys", preference.Change{Set: preference.Preferences{ShortcutKeys: map[string]string{"go.home": ""}}}, preference.CodeKeys, "shortcut_keys"},
 		{"keys with a space at the end", preference.Change{Set: preference.Preferences{ShortcutKeys: map[string]string{"go.home": "g "}}}, preference.CodeKeys, "shortcut_keys"},

@@ -71,6 +71,17 @@
       ],
       "type": "string"
     },
+    "negative_format": {
+      "description": "Set how negative amounts are written.",
+      "enum": [
+        "minus",
+        "parentheses"
+      ],
+      "examples": [
+        "parentheses"
+      ],
+      "type": "string"
+    },
     "number_format": {
       "description": "Set the number format.",
       "enum": [
@@ -85,16 +96,19 @@
       "type": "string"
     },
     "reset": {
-      "description": "The choices to take back to their defaults: mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format or date_format.",
+      "description": "The choices to take back to their defaults: mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format or negative_format.",
       "examples": [
         [
           "theme"
         ]
       ],
       "items": {
+        "examples": [
+          "theme"
+        ],
         "type": "string"
       },
-      "maxItems": 10,
+      "maxItems": 11,
       "type": [
         "array",
         "null"

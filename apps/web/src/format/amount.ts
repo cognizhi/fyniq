@@ -3,7 +3,7 @@
 // functions only move characters: they never parse the amount into a JavaScript number, so nothing
 // is re-rounded and no figure loses digits beyond 15 significant ones.
 
-import { chosenNumberFormat, separators, separatorsOf, type NumberFormat } from "./locale";
+import { chosenNumberFormat, negativeStyle, separators, separatorsOf, type NumberFormat } from "./locale";
 
 export type Negatives = "minus" | "parentheses";
 
@@ -27,9 +27,9 @@ function parts(value: string): Parts {
 }
 
 // formatAmount shows a decimal string with thousands separators, in the person's number format ("1,234.56" by default;
-// NFR-L10N-01), and their choice for negatives: "−1,234.56" or "(1,234.56)". The sign or the brackets always show, so
+// NFR-L10N-01), and their choice for negatives, "−1,234.56" (the default) or "(1,234.56)", unless the caller names one. The sign or the brackets always show, so
 // colour is never the only cue.
-export function formatAmount(value: string, negatives: Negatives = "minus", as?: NumberFormat): string {
+export function formatAmount(value: string, negatives: Negatives = negativeStyle(), as?: NumberFormat): string {
   const p = parts(value);
   const { group, decimal } = as ? separatorsOf[as] : separators();
   const grouped = p.whole.replace(/\B(?=(\d{3})+(?!\d))/g, group);

@@ -584,7 +584,7 @@ fyniq_api       EXECUTE   user_identities()
 fyniq_api       INSERT    user_membership (user_id)
 fyniq_api       SELECT    user_membership
 fyniq_api       UPDATE    user_membership (status, version)
-fyniq_api       INSERT    user_preference (contrast, date_format, density, ledger_view, mode, motion, number_format, set_at, shortcut_keys, shortcuts_on, theme, user_id)
+fyniq_api       INSERT    user_preference (contrast, date_format, density, ledger_view, mode, motion, negative_format, number_format, set_at, shortcut_keys, shortcuts_on, theme, user_id)
 fyniq_api       SELECT    user_preference
 fyniq_api       EXECUTE   user_recovery_codes()
 fyniq_api       EXECUTE   user_sessions()

@@ -113,6 +113,9 @@
   `profile-and-security.md`'s Keyboard section. Tests `shell/keyboard.test.tsx`, `categorise.test.tsx`. **Left:** the
   shortcut stored server-side with the mode (task 4.1); the mode-toggle shortcut (FR-UX-23).)
 
+  (20 Nov 2026, PRD-001 rev 0.321: the shortcut sheet's on switch and each person's keys are kept on the server with
+  the other preferences, and the mode-toggle shortcut (Alt+Shift+M, FR-UX-23) is built. **Left:** side peeks and the
+  split view, the Trace panel from Home's tiles and the other reports.)
 ## 3. Grids, records and correctness
 
 - [ ] 3.1 The grid (Community edition until the licence arrives) virtualised to 100,000 rows, and statement tables with TanStack. Tests `// req: FR-UX-07` and `// req: NFR-PERF-UI-02` (≥ 50 fps in Playwright tracing)
@@ -130,6 +133,8 @@
   same figures, and under Settings › Profile and security. Guide `banking.md`, compiled. Tests
   `LedgerViewToggle.test.tsx`, `categorise.test.tsx`. **Left:** the view on the grids still to come (journal lines,
   budgets, opening balances) as each is built.)
+  (20 Nov 2026, PRD-001 rev 0.321: the Plain or Accountant view is kept on the server with the other preferences.
+  **Left:** the sample company to explore, the checklist's later steps, the view on the grids still to come.)
 - [ ] 3.3 Favourites, recents and saved views shareable by link, comments with mentions, and no hard delete. Tests `// req: FR-UX-12`, `// req: FR-UX-13` and `// req: FR-UX-14`
   (17 Nov 2026, in part, for the launch gate: no hard delete (FR-UX-14). `TestEachRoleHoldsExactlyItsGrants` refuses a
   DELETE grant to any application role but on five tables named with why (housekeeping swept on its schedule, and an
@@ -171,6 +176,21 @@
   a field is Expert's in Basic now even with a value, unless its account or category requires it or it carries an
   error to fix. Guides `invoices.md`, `bills.md`, `claims-my-claims.md`, compiled. Tests `AdvancedDetails.test.tsx`,
   `invoices.test.tsx`.)
+  (20 Nov 2026, PRD-001 rev 0.321, the server half: `user_preference` (migration 000700; append-only, audited, under
+  row-level security and with the members' foreign key) keeps each person's mode, Plain or Accountant view, theme,
+  contrast, density, motion, shortcuts' switch and keys, number format, date format and way of writing negatives, the
+  same on every device. `GET` and `PATCH /v1/preferences` (`getMyPreferences`, `setMyPreferences`; If-Match,
+  Idempotency-Key, preview; a save names only what it sets and what it resets) and the session carries them with the
+  mode the person starts in and the organisation's time zone, so the first page is drawn as chosen. The Administrator's
+  default per role (FR-UX-27) is the organisation setting `experience.default_mode.<role>` (Basic or Expert, shipped as the
+  PRD's table), the Owner's winning. The mode switches from the command palette ("Switch to Expert mode") and with
+  Alt+Shift+M, a chord that works in both modes. `preferences.ts` adopts the session's preferences and sends each later
+  choice one after another, once more after a stale save; the browser's own copy only draws the sign-in page and the
+  first paint, and a choice made in a browser before the server kept any is sent once. Tests `TestPreferencesAreKeptOnTheServer`,
+  `TestAttackPreferencesKeepTheirHistoryAndTheirTenant`, `TestAStartingModeFollowsTheRolesAndTheOwnerWins`,
+  `preferences.test.tsx`, `AppFrame.test.tsx` (the palette and the chord). **Left:** the disclosure of hidden fields'
+  other half (FR-UX-25 on the lists, banking and reports), and the mode-parity test with the 13 unnumbered
+  `experience/modes` requirements.)
 - [ ] 4.2 Tooltips, `/help` built from `docs/user-guide/`, context-aware help, the first-run tour, practice in the sample company, and the FR-UX-41 banner from the review register. Tests `// req: FR-UX-30`, `// req: FR-UX-32`, `// req: FR-UX-33` (guide half), `// req: FR-UX-34`, `// req: FR-UX-36` and `// req: FR-UX-41`
   (20 Oct 2026, in part: the FR-UX-41 banner, `components/ReviewBanner.tsx`, reads the review register at build time
   and shows on each Settings page whose screen it lists while the area is pending. Test `ReviewBanner.test.tsx`.
@@ -242,6 +262,14 @@
   sticky first column's scrolling when the grid is built.)
 - [ ] 5.3 Externalised strings with per-user formats and the organisation's time zone, and the page-load, interaction and bundle budgets measured in CI. Tests `// req: NFR-L10N-01`, `// req: NFR-PERF-UI-01` and `// req: NFR-PERF-UI-03`
 
+  (20 Nov 2026, PRD-001 rev 0.321, NFR-L10N-01: each person's number format (1,234.56, 1.234,56, 1 234,56, 1 234.56), date
+  format (12 Oct 2026, 12/10/2026, 10/12/2026, 2026-10-12) and way of writing negatives are chosen in Settings › Profile
+  and security and kept on the server; every date and time is written in the organisation's time zone, which the
+  session carries (`format/locale.ts`: only characters move, and a calendar day with no time is never moved by a zone);
+  copying and pasting amounts follow the format (`clipboardText`, `pastedAmount`); the help catalogue is the externalised
+  strings (`i18n/en-SG.json`). Tests `preferences.test.tsx`, `Profile.test.tsx`, `date.test.ts`. **Left:** the screens
+  still writing a date or count with a fixed `en-SG` (the sign-in and install pages, which have no session, and a few
+  weekday and month names), and NFR-PERF-UI-03's initial bundle.)
 ## 6. Screens
 
   (18 Nov 2026, the page-load and interaction budgets, for the launch gate (NFR-PERF-UI-01): `e2e/performance.spec.ts`,

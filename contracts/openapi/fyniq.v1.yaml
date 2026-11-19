@@ -37060,6 +37060,14 @@ components:
           examples:
             - "on"
           type: string
+        negative_format:
+          description: "How negative amounts are written on screen: −1,234.56 (minus) or (1,234.56) (parentheses); the sign or the brackets always show, so colour is never the only cue; absent: minus."
+          enum:
+            - minus
+            - parentheses
+          examples:
+            - minus
+          type: string
         number_format:
           description: "How amounts and counts are written on screen: 1,234.56 (comma_dot), 1.234,56 (dot_comma), 1 234,56 (space_comma) or 1 234.56 (space_dot). Amounts stay exact decimal strings everywhere else (NFR-L10N-01); absent: comma_dot."
           enum:
@@ -42649,6 +42657,14 @@ components:
           examples:
             - reduce
           type: string
+        negative_format:
+          description: Set how negative amounts are written.
+          enum:
+            - minus
+            - parentheses
+          examples:
+            - parentheses
+          type: string
         number_format:
           description: Set the number format.
           enum:
@@ -42660,12 +42676,14 @@ components:
             - dot_comma
           type: string
         reset:
-          description: "The choices to take back to their defaults: mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format or date_format."
+          description: "The choices to take back to their defaults: mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format, date_format or negative_format."
           examples:
             - - theme
           items:
+            examples:
+              - theme
             type: string
-          maxItems: 10
+          maxItems: 11
           type:
             - array
             - "null"

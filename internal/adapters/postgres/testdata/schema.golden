@@ -2649,6 +2649,7 @@ user_preference | shortcuts_on | boolean | null |
 user_preference | shortcut_keys | jsonb | not null | '{}'::jsonb
 user_preference | number_format | text | null | 
 user_preference | date_format | text | null | 
+user_preference | negative_format | text | null | 
 user_preference | set_at | timestamp with time zone | not null | 
 user_recovery_code | id | uuid | not null | uuidv7()
 user_recovery_code | user_id | uuid | not null | 
@@ -6913,6 +6914,7 @@ user_preference | user_preference_keys_object | CHECK (((jsonb_typeof(shortcut_k
 user_preference | user_preference_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
 user_preference | user_preference_mode_known | CHECK (((mode IS NULL) OR (mode = ANY (ARRAY['basic'::text, 'expert'::text]))))
 user_preference | user_preference_motion_known | CHECK (((motion IS NULL) OR (motion = ANY (ARRAY['on'::text, 'reduce'::text]))))
+user_preference | user_preference_negative_known | CHECK (((negative_format IS NULL) OR (negative_format = ANY (ARRAY['minus'::text, 'parentheses'::text]))))
 user_preference | user_preference_number_known | CHECK (((number_format IS NULL) OR (number_format = ANY (ARRAY['comma_dot'::text, 'dot_comma'::text, 'space_comma'::text, 'space_dot'::text]))))
 user_preference | user_preference_organisation_id_not_null | NOT NULL organisation_id
 user_preference | user_preference_pkey | PRIMARY KEY (organisation_id, id)
