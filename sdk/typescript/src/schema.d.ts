@@ -26267,6 +26267,40 @@ export interface components {
              */
             message_id: string;
         };
+        CaptureLineMatch: {
+            /**
+             * @description Its amount as a decimal string, as the bank shows it.
+             * @example -109.00
+             */
+            amount: string;
+            /**
+             * Format: date
+             * @description Its booking date.
+             * @example 2026-10-15
+             */
+            booking_date: string;
+            /**
+             * @description Who the bank says it was with.
+             * @example ATLASSIAN
+             */
+            counterparty?: string;
+            /**
+             * @description Its currency.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: uuid
+             * @description The bank line.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f50
+             */
+            line_id: string;
+            /**
+             * @description true when the counterparty or the description holds the supplier's name.
+             * @example true
+             */
+            name_matches: boolean;
+        };
         CaptureSupplier: {
             /**
              * @description How it matched.
@@ -33055,6 +33089,8 @@ export interface components {
              *     ]
              */
             low_confidence?: string[];
+            /** @description Waiting bank lines of the same amount within five days of its date, for someone who may see bank lines: a suggestion to follow in the bank screen (FR-DOC-12). */
+            matches?: components["schemas"]["CaptureLineMatch"][];
             /**
              * @description Its type, decided from its content.
              * @example application/pdf
@@ -163570,7 +163606,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-20` The batch is not in that state; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-20` The batch is not in that state; `PPL-21` A person held for tax clearance is not paid; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -163704,7 +163740,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BREAKGLASS-03` You have no active break-glass; `BREAKGLASS-04` The batch is not waiting for approval; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `STORAGE-BATCH-01` A payment batch does not change that way; `STORAGE-BATCH-02` The item is paid by an approved payment batch; `STORAGE-BREAKGLASS-01` Break-glass does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BREAKGLASS-03` You have no active break-glass; `BREAKGLASS-04` The batch is not waiting for approval; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PPL-21` A person held for tax clearance is not paid; `STORAGE-BATCH-01` A payment batch does not change that way; `STORAGE-BATCH-02` The item is paid by an approved payment batch; `STORAGE-BREAKGLASS-01` Break-glass does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -164271,7 +164307,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-20` The batch is not in that state; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-20` The batch is not in that state; `PPL-21` A person held for tax clearance is not paid; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -164405,7 +164441,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-17` The batch needs approving again; `PB-18` The batch is released already; `PB-20` The batch is not in that state; `STORAGE-BATCH-01` A payment batch does not change that way; `STORAGE-BATCH-02` The item is paid by an approved payment batch; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-17` The batch needs approving again; `PB-18` The batch is released already; `PB-20` The batch is not in that state; `PPL-21` A person held for tax clearance is not paid; `STORAGE-BATCH-01` A payment batch does not change that way; `STORAGE-BATCH-02` The item is paid by an approved payment batch; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date. */
             409: {
                 headers: {
                     [name: string]: unknown;

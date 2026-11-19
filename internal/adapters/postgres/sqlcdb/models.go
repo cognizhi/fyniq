@@ -1432,6 +1432,7 @@ type FyniqDocumentCapture struct {
 	CreatedAt      time.Time
 	Version        int32
 	NricFlagged    bool
+	StatusAt       *time.Time
 }
 
 type FyniqDocumentLink struct {

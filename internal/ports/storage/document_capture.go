@@ -41,8 +41,10 @@ type DocumentCapture struct {
 	// OwnerUserID is the member whose own address it arrived at: only they see it. Nil: the organisation's address, an upload or a paste.
 	OwnerUserID *uuid.UUID
 	CapturedBy  string
-	// NRICFlagged is whether the file's text shows an NRIC or FIN in full (FR-DOC-09): it is never sent to a model, and its evidence carries the flag.
-	NRICFlagged                 bool
+	// NRICFlagged is whether the file's text shows an NRIC or FIN in full (FR-DOC-09): it is read only with the number hidden, and its evidence carries the flag.
+	NRICFlagged bool
+	// StatusAt is when it last changed status through Status: a document Reading for long is a reading that never ended.
+	StatusAt                    *time.Time
 	Status                      string
 	Kind                        string
 	Reading                     json.RawMessage

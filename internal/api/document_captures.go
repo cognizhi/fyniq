@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/apd/v3"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
@@ -60,6 +61,16 @@ type CaptureSupplier struct {
 	Defaults *CaptureDefaults `json:"defaults,omitempty" doc:"What this supplier's bills have usually used, suggested for the draft (FR-AP-12)."`
 }
 
+// CaptureLineMatch is a bank line a captured receipt or bill may match: the same amount and currency within five days of its date, a suggestion only (FR-DOC-12).
+type CaptureLineMatch struct {
+	LineID       string `json:"line_id" format:"uuid" doc:"The bank line." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f50"`
+	BookingDate  string `json:"booking_date" format:"date" doc:"Its booking date." example:"2026-10-15"`
+	Amount       string `json:"amount" doc:"Its amount as a decimal string, as the bank shows it." example:"-109.00"`
+	Currency     string `json:"currency" doc:"Its currency." example:"SGD"`
+	Counterparty string `json:"counterparty,omitempty" doc:"Who the bank says it was with." example:"ATLASSIAN"`
+	NameMatches  bool   `json:"name_matches" doc:"true when the counterparty or the description holds the supplier's name." example:"true"`
+}
+
 // CaptureDefaults are a supplier's defaults, suggested from its bills and kept on its contact once a person confirms them (FR-AP-12).
 type CaptureDefaults struct {
 	AccountID      string `json:"account_id,omitempty" format:"uuid" doc:"The account most of the supplier's bill lines cost: its contact's default when it has one, else the most used." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40"`
@@ -92,6 +103,7 @@ type DocumentCapture struct {
 	ReadAt        *time.Time         `json:"read_at,omitempty" doc:"When it was last read." example:"2026-11-20T09:00:05Z"`
 	Model         string             `json:"model,omitempty" doc:"The model that read it." example:"claude-opus-5-5"`
 	Readings      int                `json:"readings" doc:"How many times it was read." example:"1"`
+	Matches       []CaptureLineMatch `json:"matches,omitempty" nullable:"false" doc:"Waiting bank lines of the same amount within five days of its date, for someone who may see bank lines: a suggestion to follow in the bank screen (FR-DOC-12)."`
 	Supplier      *CaptureSupplier   `json:"supplier,omitempty" doc:"The supplier contact the reading's supplier matches, when one does."`
 	DuplicateOf   string             `json:"duplicate_of,omitempty" format:"uuid" doc:"The capture of the same file, for a duplicate." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f2f"`
 	Draft         *CaptureDraft      `json:"draft,omitempty" doc:"The draft a person made of it."`
@@ -284,6 +296,61 @@ func supplierOf(ctx context.Context, u storage.UnitOfWork, c storage.DocumentCap
 	return nil, nil
 }
 
+// matchesOf are the waiting bank lines a read document may match: the same amount and currency as its total, booked within five days of its date, the name matches
+// first. Only for someone who may see bank lines; a suggestion, never a match made.
+func matchesOf(ctx context.Context, u storage.UnitOfWork, p authn.Principal, c storage.DocumentCapture) ([]CaptureLineMatch, error) {
+	if len(c.Reading) == 0 || c.Status != storage.CaptureRead || !authz.Decide(authz.ListBankLines, p.Roles, false).Allowed {
+		return nil, nil
+	}
+	var r capdom.Reading
+	if json.Unmarshal(c.Reading, &r) != nil || r.Total.Value == nil || r.Date.Value == nil || r.Currency.Value == nil {
+		return nil, nil
+	}
+	day, err := time.Parse(time.DateOnly, *r.Date.Value)
+	if err != nil {
+		return nil, nil
+	}
+	want, _, err := apd.NewFromString(*r.Total.Value)
+	if err != nil {
+		return nil, nil
+	}
+	from, to := day.AddDate(0, 0, -5), day.AddDate(0, 0, 5)
+	lines, err := u.Banking().Lines(ctx, storage.BankLineFilter{Statuses: []string{storage.LineUnreconciled, storage.LinePossibleDuplicate}, From: &from, To: &to})
+	if err != nil {
+		return nil, err
+	}
+	name := ""
+	if r.Supplier.Value != nil {
+		name = capdom.Name(*r.Supplier.Value)
+	}
+	var out []CaptureLineMatch
+	for _, l := range lines {
+		got, _, err := apd.NewFromString(string(l.Amount))
+		if err != nil || !strings.EqualFold(l.Currency, strings.TrimSpace(*r.Currency.Value)) {
+			continue
+		}
+		got.Abs(got)
+		if got.Cmp(want) != 0 {
+			continue
+		}
+		hit := name != "" && strings.Contains(capdom.Name(l.Counterparty+" "+l.Description), name)
+		out = append(out, CaptureLineMatch{LineID: l.ID.String(), BookingDate: l.BookingDate.Format(time.DateOnly), Amount: string(l.Amount), Currency: l.Currency, Counterparty: l.Counterparty, NameMatches: hit})
+	}
+	slices.SortStableFunc(out, func(a, b CaptureLineMatch) int {
+		if a.NameMatches != b.NameMatches && a.NameMatches {
+			return -1
+		}
+		if a.NameMatches != b.NameMatches {
+			return 1
+		}
+		return 0
+	})
+	if len(out) > 5 {
+		out = out[:5]
+	}
+	return out, nil
+}
+
 // supplierDefaults are what the draft is suggested for a supplier (FR-AP-12): the contact's own default account and GST code when it has them,
 // else the account and GST code most of the lines of its bills use. Nil when there is neither.
 func supplierDefaults(ctx context.Context, u storage.UnitOfWork, c storage.Contact) (*CaptureDefaults, error) {
@@ -357,9 +424,34 @@ func captureKey(org uuid.UUID) string {
 	return "capture/" + org.String() + "/" + uuid.Must(uuid.NewV7()).String()
 }
 
-// mediaReadable is whether the model reads a file of this type: a PDF or a photo.
+// mediaReadable is whether the model reads a file of this type: the text of a PDF, a plain text, CSV or email file. A photo is not: its pixels cannot be
+// masked before the model reads them (AI-02; the owner's decision of 20 Nov 2026).
 func mediaReadable(mt string) bool {
-	return mt == evidence.PDF || mt == "image/png" || mt == "image/jpeg" || mt == "image/webp"
+	return mt == evidence.PDF || mt == evidence.Text || mt == evidence.CSV || mt == evidence.EML
+}
+
+// ReadingGrace is how long a document may be Reading before the next ask ends it as Failed.
+const ReadingGrace = 10 * time.Minute
+
+// maxReadText is the most of a document's text the model is given.
+const maxReadText = 60000
+
+// maskedTextOf is the text of a file as the model reads it, with its bank account numbers, IBANs and NRIC or FIN numbers hidden first (AI-02, the owner's
+// decision of 20 Nov 2026), and how many things were hidden. A PDF whose text Fyniq cannot extract is refused: it cannot be checked, so it does not go to the model.
+func maskedTextOf(mediaType string, data []byte) (string, int, error) {
+	text := string(data)
+	if mediaType == evidence.PDF {
+		var err error
+		if text, err = pdftext.Text(data); err != nil || len(strings.TrimSpace(text)) < 20 {
+			return "", 0, problem(CodeCaptureType, "Fyniq cannot read this PDF's text, so it cannot hide the bank and identity numbers on it before the model sees it, and it is not read.",
+				"Type the bill in by hand, or capture its email or a text copy")
+		}
+	}
+	if len(text) > maxReadText {
+		text = text[:maxReadText]
+	}
+	masked, n := capdom.MaskText(text)
+	return masked, n, nil
 }
 
 // capturing adds file, already checked as any upload is, to the inbox in u; a file the inbox holds already is a duplicate of it.
@@ -500,7 +592,11 @@ func registerDocumentCaptures(a *API) {
 				if err != nil {
 					return err
 				}
-				out.Items = append(out.Items, a.captureOf(c, p.UserID, supplier))
+				item := a.captureOf(c, p.UserID, supplier)
+				if item.Matches, err = matchesOf(ctx, u, p, c); err != nil {
+					return err
+				}
+				out.Items = append(out.Items, item)
 			}
 			return nil
 		})
@@ -527,6 +623,9 @@ func registerDocumentCaptures(a *API) {
 			}
 			supplier, err := supplierOf(ctx, u, c)
 			out, tag = a.captureOf(c, p.UserID, supplier), docCaptureETag(c)
+			if err == nil {
+				out.Matches, err = matchesOf(ctx, u, p, c)
+			}
 			return err
 		})
 		return &captureOutput{Status: http.StatusOK, ETag: tag, Body: out}, err
@@ -593,6 +692,9 @@ func registerDocumentCaptures(a *API) {
 			err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 				supplier, err := supplierOf(ctx, u, c)
 				out = a.captureOf(c, p.UserID, supplier)
+				if err == nil {
+					out.Matches, err = matchesOf(ctx, u, p, c)
+				}
 				return err
 			})
 			return &captureOutput{Status: http.StatusOK, ETag: docCaptureETag(c), Body: out}, err
@@ -789,14 +891,18 @@ func (a *API) readDocument(ctx context.Context, p authn.Principal, id uuid.UUID,
 		if err := checkIfMatch(ifMatch, docCaptureETag(c)); err != nil {
 			return err
 		}
-		if !slices.Contains([]string{storage.CaptureReceived, storage.CaptureFailed, storage.CaptureRead}, c.Status) {
-			return problem(CodeCaptureState, "A document that is "+c.Status+" is not read.", "Only a document waiting in the inbox is read")
+		// A reading that never ended (a crash mid-call) is ended as Failed once it has been Reading for ReadingGrace, so no document is stranded.
+		if c.Status == storage.CaptureReading && c.StatusAt != nil && a.deps.Clock.Now().Sub(*c.StatusAt) > ReadingGrace {
+			if c, err = u.DocumentCaptures().Status(ctx, c.ID, c.Version, storage.CaptureFailed, "The reading did not finish: ask for it again."); err != nil {
+				return err
+			}
 		}
-		if c.NRICFlagged {
-			return problem(CodeCaptureType, "It shows an NRIC or FIN in full, which never goes to a model, so it is not read.", "Mask the number and capture it again, or type the bill in by hand")
+		if !slices.Contains([]string{storage.CaptureReceived, storage.CaptureFailed, storage.CaptureRead}, c.Status) {
+			return problem(CodeCaptureState, "A document that is "+c.Status+" is not read.", "Only a document waiting in the inbox is read; one being read is ended after "+ReadingGrace.String()+" if it never finishes")
 		}
 		if !mediaReadable(c.MediaType) {
-			return problem(CodeCaptureType, "Only a PDF or a photo can be read, and this is "+c.MediaType+".", "Type the bill in by hand")
+			return problem(CodeCaptureType, "Only a PDF with text, or a text or email file, is read, and this is "+c.MediaType+": a photo cannot be checked for bank and identity numbers before the model sees it.",
+				"Type the bill in by hand")
 		}
 		return nil
 	}); err != nil {
@@ -812,6 +918,10 @@ func (a *API) readDocument(ctx context.Context, p authn.Principal, id uuid.UUID,
 	if err != nil {
 		return storage.DocumentCapture{}, problem(CodeUnavailable, "The file could not be read in full.", "Try again")
 	}
+	masked, hidden, err := maskedTextOf(c.MediaType, data)
+	if err != nil {
+		return storage.DocumentCapture{}, err
+	}
 	// From here on every way out ends the reading in a status: Read, or Failed with why.
 	if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		cur, err := u.DocumentCaptures().Lock(ctx, id)
@@ -826,21 +936,15 @@ func (a *API) readDocument(ctx context.Context, p authn.Principal, id uuid.UUID,
 	}); err != nil {
 		return storage.DocumentCapture{}, err
 	}
-	part := ports.ModelPart{Kind: ports.PartImage, MediaType: c.MediaType, Data: data}
-	screened := []string{c.FileName}
-	if c.MediaType == evidence.PDF {
-		part.Kind = ports.PartDocument
-		if text, err := pdftext.Text(data); err == nil {
-			screened = append(screened, text)
-		}
-	}
-	ask, _ := json.Marshal(map[string]any{"file_name": map[string]string{"untrusted_text": c.FileName}, "task": "Read this document into the shape you were given."})
+	ask, _ := json.Marshal(map[string]any{"file_name": map[string]string{"untrusted_text": c.FileName}, "document_text": map[string]string{"untrusted_text": masked},
+		"hidden_before_you_read": hidden, "task": "Read this document into the shape you were given."})
+	screened := []string{c.FileName, masked}
 	if err := a.screen(ctx, false, append(screened, string(ask))...); err != nil {
 		return storage.DocumentCapture{}, a.failCapture(ctx, p, id, "Screening stopped the document before it reached the model: "+plainError(err), err)
 	}
 	res, err := a.router().Run(ctx, p.Organisation, ai.Call{Agent: "document_capture", Classes: []string{"business-figures", "personal-data"}, Actor: "user:" + p.UserID.String(),
 		Request: ports.ModelRequest{System: prompt.Text, MaxTokens: 6000, Output: readingSchema(),
-			Messages: []ports.ModelMessage{{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: string(ask)}, part}}}}})
+			Messages: []ports.ModelMessage{{Role: ports.RoleUser, Parts: []ports.ModelPart{{Kind: ports.PartText, Text: string(ask)}}}}}})
 	if err != nil {
 		pr := modelCallProblem(err)
 		return storage.DocumentCapture{}, a.failCapture(ctx, p, id, pr.Detail, pr)

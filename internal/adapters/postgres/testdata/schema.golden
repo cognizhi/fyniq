@@ -1135,6 +1135,7 @@ document_capture | last_error | text | null |
 document_capture | created_at | timestamp with time zone | not null | 
 document_capture | version | integer | not null | 1
 document_capture | nric_flagged | boolean | not null | false
+document_capture | status_at | timestamp with time zone | null | 
 document_link | organisation_id | uuid | not null | current_org()
 document_link | id | uuid | not null | uuidv7()
 document_link | document_id | uuid | not null | 

@@ -6,17 +6,17 @@ RETURNING id;
 
 -- name: GetDocumentCapture :one
 SELECT id, source, file_name, media_type, size_bytes, sha256, blob_key, message_id, inbound_file_id, owner_user_id, captured_by, status, kind, reading, reading_model,
-  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged
+  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged, status_at
 FROM fyniq.document_capture WHERE id = sqlc.arg(id);
 
 -- name: LockDocumentCapture :one
 SELECT id, source, file_name, media_type, size_bytes, sha256, blob_key, message_id, inbound_file_id, owner_user_id, captured_by, status, kind, reading, reading_model,
-  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged
+  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged, status_at
 FROM fyniq.document_capture WHERE id = sqlc.arg(id) FOR UPDATE;
 
 -- name: ListDocumentCaptures :many
 SELECT id, source, file_name, media_type, size_bytes, sha256, blob_key, message_id, inbound_file_id, owner_user_id, captured_by, status, kind, reading, reading_model,
-  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged
+  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged, status_at
 FROM fyniq.document_capture
 WHERE (sqlc.arg(status)::text = '' OR status = sqlc.arg(status)::text)
   AND (owner_user_id IS NULL OR owner_user_id = sqlc.narg(viewer)::uuid)
@@ -33,7 +33,7 @@ UPDATE fyniq.document_capture SET status = sqlc.arg(status), kind = sqlc.narg(ki
 WHERE id = sqlc.arg(id) AND version = sqlc.arg(version) RETURNING id;
 
 -- name: SetDocumentCaptureStatus :one
-UPDATE fyniq.document_capture SET status = sqlc.arg(status), last_error = sqlc.narg(last_error), version = version + 1
+UPDATE fyniq.document_capture SET status = sqlc.arg(status), last_error = sqlc.narg(last_error), status_at = sqlc.arg(status_at), version = version + 1
 WHERE id = sqlc.arg(id) AND version = sqlc.arg(version) RETURNING id;
 
 -- name: DraftDocumentCapture :one

@@ -2,12 +2,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Ban, ChevronLeft, CircleCheck, CircleDashed, Hourglass, ListChecks, Power, PowerOff, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import { api, etagOf } from "../../api/client";
+import { api, etagOf, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
 import { Button } from "../../components/ui/button";
 import { dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
+import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { roleLabel } from "./words";
@@ -254,11 +255,90 @@ function History() {
   );
 }
 
+
+type QualityMonth = components["schemas"]["QualityMonth"];
+
+// Quality is the month's approval quality (CTL-AI-07, AI-92), for the Owner and the DPO: how the month's AI proposals were decided, from the proposals' own records, and the
+// signed monthly review. A high share approved within seconds of opening is the sign of a stamp, not a read.
+function Quality() {
+  const queries = useQueryClient();
+  const now = new Date();
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [month, setMonth] = useState(months[0] ?? "");
+  const [note, setNote] = useState("");
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const q = useQuery({
+    queryKey: ["ai-quality", month],
+    queryFn: async () => {
+      const r = await api.GET("/v1/ai/approval-quality", { params: { query: { month } } });
+      if (r.error || !r.data) throw r.error ?? new Error("no metrics");
+      return r.data as QualityMonth;
+    },
+  });
+  const sign = async () => {
+    setProblem(null);
+    const r = await api.POST("/v1/ai/approval-reviews", { params: { header: { "Idempotency-Key": newKey() } }, body: { month, note: note.trim() || undefined } });
+    if (r.error) return setProblem(problemOf(r.error));
+    await queries.invalidateQueries({ queryKey: ["ai-quality", month] });
+  };
+  const m = q.data?.metrics;
+  const pct = (x: number) => `${Math.round(x * 100)}%`;
+  return (
+    <div className="fy-stack fy-stack--3">
+      <label className="fy-field self-start">
+        <span className="fy-label">Month</span>
+        <select className="fy-select" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Month">
+          {months.map((x) => (
+            <option key={x} value={x}>
+              {x}
+            </option>
+          ))}
+        </select>
+      </label>
+      {q.isError && <p className="fy-small">The metrics are for the Owner and the DPO.</p>}
+      {m && (
+        <>
+          <dl className="fy-stack fy-stack--2" aria-label="The month's metrics">
+            <div className="fy-row fy-row--between"><dt>Proposals made</dt><dd className="fy-num">{m.made}</dd></div>
+            <div className="fy-row fy-row--between"><dt>Approved</dt><dd className="fy-num">{m.approved}</dd></div>
+            <div className="fy-row fy-row--between"><dt>Rejected</dt><dd className="fy-num">{m.rejected}</dd></div>
+            <div className="fy-row fy-row--between"><dt>Expired, invalid or out of date</dt><dd className="fy-num">{m.expired + m.invalid + m.stale}</dd></div>
+            <div className="fy-row fy-row--between"><dt>Approved within 10 seconds of opening, or without opening</dt><dd className="fy-num">{pct(m.quick_share)}</dd></div>
+            <div className="fy-row fy-row--between"><dt>Median time to a decision</dt><dd className="fy-num">{Math.round(m.median_decision_seconds)} s</dd></div>
+            <div className="fy-row fy-row--between"><dt>Rejections that gave a reason</dt><dd className="fy-num">{pct(m.rejected_with_reason_share)}</dd></div>
+          </dl>
+          {q.data?.signed_at ? (
+            <p className="fy-small" role="status">
+              <Icon of={ShieldCheck} /> Reviewed and signed {dateTime(q.data.signed_at)}. {q.data.note}
+            </p>
+          ) : (
+            <div className="fy-row fy-row--wrap gap-2">
+              <label className="fy-sr" htmlFor="quality-note">
+                Note for the review
+              </label>
+              <input id="quality-note" className="fy-input max-w-64" placeholder="A note, if any" value={note} onChange={(e) => setNote(e.target.value)} />
+              <Button variant="secondary" onClick={() => void sign()}>
+                Sign the review of {month}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+      {problem && <Refusal problem={problem} title="The review was not signed" />}
+    </div>
+  );
+}
+
 // AITasks is the AI tasks page (docs/design/screens AiTasks; §9.6, AI-32): what the assistant may propose for the
 // organisation, the never-list, and every proposal it has made. Nothing changes until a person approves it.
 export function AITasks() {
   const h = helpText("ai-tasks.page");
-  const [tab, setTab] = useState<"proposals" | "catalogue">("proposals");
+  const { session } = useSignedIn();
+  const [tab, setTab] = useState<"proposals" | "catalogue" | "quality">("proposals");
+  const mayReadQuality = (session.roles ?? []).some((r) => r === "owner" || r === "dpo");
   return (
     <div className="fy-page fy-enter">
       <Link className="fy-btn fy-btn--ghost fy-btn--sm -ms-2 self-start" to="/inbox">
@@ -280,8 +360,13 @@ export function AITasks() {
         <button type="button" role="tab" className="fy-tab" aria-selected={tab === "catalogue"} onClick={() => setTab("catalogue")}>
           Catalogue
         </button>
+        {mayReadQuality && (
+          <button type="button" role="tab" className="fy-tab" aria-selected={tab === "quality"} onClick={() => setTab("quality")}>
+            Approval quality
+          </button>
+        )}
       </div>
-      <div role="tabpanel">{tab === "proposals" ? <History /> : <Catalogue />}</div>
+      <div role="tabpanel">{tab === "proposals" ? <History /> : tab === "catalogue" ? <Catalogue /> : <Quality />}</div>
     </div>
   );
 }

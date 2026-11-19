@@ -116,6 +116,13 @@ status: draft
   supplier, an account that cannot be costed, a GST code that is not a purchase code and a category that is not one of your
   claim categories are refused with the reason.
 
+## Approval quality
+
+- The **Approval quality** tab on the AI tasks page, for the Owner and the DPO, shows how each month's AI proposals were decided: how many were made,
+  approved, rejected, expired, invalid or out of date; how many were approved within ten seconds of opening them, or without opening them; the median time
+  to a decision; and how many rejections gave a reason. A high share approved within seconds means proposals are stamped, not read.
+- After a month ends, the Owner or the DPO signs its review (after confirming it is them), with a note. A month is signed once, and the signed review is kept as evidence.
+
 ## Turn a task type on or off
 
 - Every task type starts off. **Turn on…** asks for a second approver, as the setting **AI task types** in

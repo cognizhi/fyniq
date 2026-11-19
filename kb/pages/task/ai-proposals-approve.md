@@ -4,7 +4,7 @@ type: task
 title: Review, approve or reject a change the AI proposed
 summary: Review, approve or reject an AI proposal; the AI tasks page, catalogue and never-list; the tasks and reminders the AI may propose; task types on or off
 sources:
-  - docs/user-guide/ai-proposals.md sha256:48dc75d3946ab79ee61185a37796b00e2e0aaddb938c4607861aeec2992bad28
+  - docs/user-guide/ai-proposals.md sha256:78518f580d96876e20981ce604beae7622722586470679e8a4c43fb0bc84c24f
 data_class: general
 taint: trusted
 status: draft
@@ -113,6 +113,13 @@ aliases:
 - A bill is out of date, and drafts nothing, if the supplier changed after the review. A supplier that is not an active supplier, an account that cannot be costed, a GST code that is not a purchase code and a category that is not a claim category are refused with the reason.
 
 (src: docs/user-guide/ai-proposals.md#review-a-bill-or-an-expense-claim-the-ai-drafted)
+
+## Approval quality
+
+- The Approval quality tab on the AI tasks page, for the Owner and the DPO, shows how each month's AI proposals were decided: made, approved, rejected, expired, invalid or out of date; how many were approved within ten seconds of opening them or without opening them; the median time to a decision; and how many rejections gave a reason. A high share approved within seconds means proposals are stamped, not read.
+- After a month ends the Owner or the DPO signs its review, with a note, after confirming it is them. A month is signed once, and the signed review is kept as evidence.
+
+(src: docs/user-guide/ai-proposals.md#approval-quality)
 
 ## Turn a task type on or off
 

@@ -11,6 +11,7 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { listAccounts } from "../accounting/data";
+import { useCategories } from "../claims/claims";
 
 type Capture = components["schemas"]["DocumentCapture"];
 type Reading = NonNullable<Capture["reading"]>;
@@ -297,6 +298,102 @@ function BillForm({ c, onDone }: { c: Capture; onDone: (said: string) => void })
   );
 }
 
+// ClaimForm is the caller's own claim of one receipt, filled from the reading and theirs to correct (FR-DOC-12): the category is always theirs to choose, the
+// document fact is "none" until they say what the receipt is (an unknown fact claims no input tax, G4-029), and amounts stay decimal strings.
+function ClaimForm({ c, onDone }: { c: Capture; onDone: (said: string) => void }) {
+  const id = useId();
+  const r = c.reading;
+  const categories = useCategories();
+  const [title, setTitle] = useState(text(r?.supplier) ? `${text(r?.supplier)} receipt` : "Receipt");
+  const [day, setDay] = useState(text(r?.date));
+  const [merchant, setMerchant] = useState(text(r?.supplier));
+  const [category, setCategory] = useState("");
+  const [amount, setAmount] = useState(text(r?.total));
+  const [code, setCode] = useState(text(r?.lines?.[0]?.gst_code) || "NR");
+  const [gst, setGst] = useState(text(r?.gst_total) || "0.00");
+  const [document, setDocument] = useState<"none" | "tax_invoice" | "simplified">("none");
+  const currency = text(r?.currency) || "SGD";
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<ApiProblem | null>(null);
+  const save = async () => {
+    setBusy(true);
+    setProblem(null);
+    const res = await api.POST("/v1/captures/{capture_id}/claim", {
+      params: { path: { capture_id: c.id }, header: { "If-Match": `"${c.version}-${c.status}"`, "Idempotency-Key": newKey() } },
+      body: {
+        title: title.trim(),
+        date: day || undefined,
+        lines: [{ kind: "receipt", date: day, merchant: merchant.trim(), category_id: category, description: text(r?.lines?.[0]?.description), amount: { amount: amount.trim(), currency },
+          gst_code: code.trim(), gst: { amount: gst.trim(), currency }, document }],
+      },
+    });
+    setBusy(false);
+    if (res.error) return setProblem(problemOf(res.error));
+    onDone("Your draft claim is saved with the receipt attached. Submit it from My claims.");
+  };
+  return (
+    <section className="fy-card" aria-labelledby={`${id}-h`}>
+      <div className="fy-card__head">
+        <h3 className="fy-h3" id={`${id}-h`}>
+          Make my draft claim
+        </h3>
+      </div>
+      <div className="fy-card__body fy-stack fy-stack--3">
+        <p className="fy-small fy-muted">The claim is yours: you submit it and another person approves it. What the receipt is decides its input tax; say so below.</p>
+        <div className="fy-grid fy-grid--2">
+          <label className="fy-field">
+            <span className="fy-label">Title</span>
+            <input className="fy-input" value={title} onChange={(e) => setTitle(e.target.value)} />
+          </label>
+          <label className="fy-field">
+            <span className="fy-label">Receipt date</span>
+            <input className="fy-input" type="date" value={day} onChange={(e) => setDay(e.target.value)} />
+          </label>
+          <label className="fy-field">
+            <span className="fy-label">Merchant</span>
+            <input className="fy-input" value={merchant} onChange={(e) => setMerchant(e.target.value)} />
+          </label>
+          <label className="fy-field">
+            <span className="fy-label">Claim category</span>
+            <select className="fy-select" value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Claim category">
+              <option value="">Choose the category</option>
+              {(categories.data ?? []).filter((k) => k.active && !k.mileage).map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="fy-field">
+            <span className="fy-label">Amount paid ({currency})</span>
+            <input className="fy-input fy-num" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} aria-label="Amount paid" />
+          </label>
+          <label className="fy-field">
+            <span className="fy-label">GST the receipt states</span>
+            <input className="fy-input fy-num" inputMode="decimal" value={gst} onChange={(e) => setGst(e.target.value)} aria-label="GST the receipt states" />
+          </label>
+          <label className="fy-field">
+            <span className="fy-label">GST code</span>
+            <input className="fy-input" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} aria-label="GST code of the receipt" />
+          </label>
+          <label className="fy-field">
+            <span className="fy-label">What the receipt is</span>
+            <select className="fy-select" value={document} onChange={(e) => setDocument(e.target.value as typeof document)} aria-label="What the receipt is">
+              <option value="none">Not sure, or no tax invoice</option>
+              <option value="tax_invoice">A tax invoice</option>
+              <option value="simplified">A simplified tax invoice</option>
+            </select>
+          </label>
+        </div>
+        {problem && <Refusal problem={problem} title="The draft was not made" />}
+        <Button onClick={() => void save()} disabled={busy || !category || !amount.trim() || !day}>
+          Save draft claim
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 // DocumentInbox is the document inbox (FR-DOC-12, FR-DOC-14, FR-AP-04, FR-AP-12): every file captured by upload, paste or accepted
 // mail, what the model read from it beside the file, the checks, and the draft a person made. The server decides everything: this only
 // lists, asks and shows its answer. Nothing here is a ledger figure.
@@ -330,6 +427,29 @@ export function DocumentInbox() {
       return r.data;
     },
   });
+  const mail = useQuery({
+    queryKey: ["capturable-mail"],
+    retry: false,
+    enabled: mayDraft,
+    queryFn: async () => {
+      const [org, mine] = await Promise.all([
+        api.GET("/v1/organisation/email/inbound-messages", { params: { query: { status: "accepted", page_size: 20 } } }),
+        api.GET("/v1/organisation/email/inbound-messages/mine", { params: { query: { page_size: 20 } } }),
+      ]);
+      return [...(org.data?.items ?? []), ...(mine.data?.items ?? [])].filter((m) => m.kind === "documents" && m.status === "accepted");
+    },
+  });
+  const taken = new Set((list.data ?? []).map((c) => c.message_id).filter(Boolean));
+  const waiting = (mail.data ?? []).filter((m) => !taken.has(m.id) && (m.files ?? []).some((f) => f.kind === "attachment" && !f.removed));
+  const adopt = async (messageId: string, fileId: string, name: string) => {
+    setBusy(messageId);
+    setProblem(null);
+    const r = await api.POST("/v1/captures/from-message", { params: { header: { "Idempotency-Key": newKey() } }, body: { message_id: messageId, file_id: fileId } });
+    if (r.error) return fail(r.error);
+    setOpen(r.data?.id ?? "");
+    await queries.invalidateQueries({ queryKey: ["capturable-mail"] });
+    await refresh(`${name} is captured from your mail. Have it read, then check what was read.`);
+  };
   const chosen = (list.data ?? []).find((c) => c.id === open);
   const refresh = async (message: string) => {
     setSaid(message);
@@ -446,6 +566,30 @@ export function DocumentInbox() {
         <Icon of={Mail} /> Mail from a sender you accept is captured from <Link to="/settings/organisation">the email-in settings</Link>; paste a screenshot anywhere on this page to capture it.
       </p>
 
+      {waiting.length > 0 && mayDraft && (
+        <section className="fy-card" aria-label="Mail waiting to be captured">
+          <div className="fy-card__head">
+            <h2 className="fy-h3">Mail waiting to be captured</h2>
+          </div>
+          <ul className="fy-list fy-card__body">
+            {waiting.map((m) =>
+              (m.files ?? [])
+                .filter((f) => f.kind === "attachment" && !f.removed)
+                .map((f) => (
+                  <li key={f.id} className="fy-row gap-2">
+                    <span className="fy-grow fy-small">
+                      <span className="fy-mono">{f.file_name}</span> from {m.sender}, {dateTime(m.received_at)}
+                    </span>
+                    <Button variant="secondary" size="sm" onClick={() => void adopt(m.id, f.id, f.file_name)} disabled={busy !== ""} aria-label={`Capture ${f.file_name} from ${m.sender}`}>
+                      Capture it
+                    </Button>
+                  </li>
+                )),
+            )}
+          </ul>
+        </section>
+      )}
+
       {said && (
         <div className="fy-banner fy-banner--good" role="status">
           <Icon of={CircleCheck} size={20} />
@@ -513,7 +657,7 @@ export function DocumentInbox() {
               <Icon of={TriangleAlert} size={20} />
               <div className="fy-banner__text">
                 <span className="fy-strong">It shows an NRIC or FIN in full</span>
-                <span className="fy-small">That number never goes to the model, so this document is not read. Mask it and capture it again, or type the bill in.</span>
+                <span className="fy-small">It is read with that number, and any bank account number, hidden first. The file itself is kept as it is.</span>
               </div>
             </div>
           )}
@@ -529,14 +673,31 @@ export function DocumentInbox() {
             </p>
           )}
           <ReadingCard c={chosen} />
+          {(chosen.matches ?? []).length > 0 && (
+            <section className="fy-card" aria-label="Bank lines it may match">
+              <div className="fy-card__head">
+                <h3 className="fy-h3">Bank lines it may match</h3>
+              </div>
+              <ul className="fy-list fy-card__body">
+                {(chosen.matches ?? []).map((m) => (
+                  <li key={m.line_id} className="fy-row gap-2">
+                    <span className="fy-small">
+                      {m.booking_date}, {m.amount} {m.currency}
+                      {m.counterparty ? `, ${m.counterparty}` : ""}
+                      {m.name_matches ? " (the supplier's name matches)" : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="fy-small fy-muted fy-card__body">A suggestion: match it in the bank screen, where the line is reconciled.</p>
+            </section>
+          )}
           {mayDraft && ["received", "reading", "failed", "read"].includes(chosen.status) && (
             <div className="fy-row fy-row--wrap gap-2">
-              {chosen.status !== "reading" && !chosen.nric_flagged && (
-                <Button variant="secondary" onClick={() => void read(chosen)} disabled={busy !== ""}>
-                  <Icon of={Sparkles} />
-                  {chosen.status === "read" ? "Read it again" : "Have it read"}
-                </Button>
-              )}
+              <Button variant="secondary" onClick={() => void read(chosen)} disabled={busy !== ""}>
+                <Icon of={Sparkles} />
+                {chosen.status === "read" ? "Read it again" : chosen.status === "reading" ? "Ask again if it never finished" : "Have it read"}
+              </Button>
               <label className="fy-sr" htmlFor={`${idPrefix}-why`}>
                 Why you dismiss it
               </label>
@@ -547,7 +708,8 @@ export function DocumentInbox() {
               </Button>
             </div>
           )}
-          {mayDraft && chosen.status === "read" && <BillForm key={chosen.id + chosen.version} c={chosen} onDone={(m) => void refresh(m)} />}
+          {mayDraft && chosen.status === "read" && <BillForm key={"b" + chosen.id + chosen.version} c={chosen} onDone={(m) => void refresh(m)} />}
+          {mayDraft && chosen.status === "read" && chosen.kind === "receipt" && <ClaimForm key={"c" + chosen.id + chosen.version} c={chosen} onDone={(m) => void refresh(m)} />}
         </section>
       )}
     </div>

@@ -30,7 +30,7 @@
   own `Undo`, in one transaction, once, only for an Executed proposal whose command implements `Undoer` (AI-UNDO-01 to 04), and keeps who, when,
   why and what was reversed in `ai_proposal_undo` (append-only, FY951), audited; the proposal stays Executed. No real task type implements
   `Undoer` yet: the drafts are not undoable by design, and the posting and master-data types add it as they are built (tests use a test-only
-  undoable type). **Left:** the Undo button on the proposal review (web) and its guide text.
+  undoable type). **Left:** the Undo button on the proposal review (web) and its guide text: nothing to undo until a real type implements `Undoer`, so the screen waits for the first.
 - [ ] 2.1a Each posting or master-data task type's own `Undo`, with its attack test (a reversing entry, a restored master-data version); the
   requirements AI-31 and AI-91 are proved when the first of them is built.
 - [x] 2.2 Tier 3 in the engine (design D5): `proposalSteps` gives a tier-3 request two steps; the engine already refuses a second signature by
@@ -39,7 +39,7 @@
 - [x] 2.3 Approval quality (design D6): `ai_proposal_view` records each person's first look at a review (when they open `getAIProposal`);
   `proposal.MeasureQuality` computes the month's metrics; `GET /v1/ai/approval-quality?month=` (Owner, DPO) and `POST /v1/ai/approval-reviews`
   (Owner, DPO, step-up, after the month, once, with the metrics as signed) keep the review as CTL-AI-07's evidence (control file running).
-  Tests `// req: CTL-AI-07`, `// req: AI-92`. **Left:** the report's screen under Settings, AI, AI tasks.
+  Tests `// req: CTL-AI-07`, `// req: AI-92`. The report and the sign button are the Approval quality tab of the AI tasks page (Owner and DPO).
 
 ## 3. The other tier-1 types
 
@@ -64,3 +64,15 @@
 ## 5. The finish
 
 - [ ] 5.1 The threat model's additions, the guide for what each task type does, the knowledge base, `make evals`.
+
+## Needs human review (owner, before any of this is built)
+
+- **Tier-2 and bank task types** (`bank.categorise_lines`, `bank.match_payments`, `bank.rule_upsert`, `ct.update_contact`, `recur.create_template`,
+  `plan.propose_budget`, `gl.post_journal`, `ar.post_invoice`, `ap.post_bill`) each need executor grants the executor does not hold. The tightest
+  design, to review as one pull request labelled `needs-human-review`:
+  - one migration per task type, granting the executor only the columns its one domain command writes, through a narrow command-specific query (never
+    the API's all-column update: `ct.update_contact` would otherwise hold UPDATE on remittance email and tax residence);
+  - no grant on `journal_entry` beyond what the shared posting function needs, and the posting types last, each with its limit in the file, its approver
+    rule (AI-10) and an `Undoer` (a reversing entry, a restored master-data version) whose attack test proves the undo cannot be run by anyone without the
+    command's right or on a closed period;
+  - the never-list tests run over every new ID and command first, and `bank.rule_upsert` has no auto-apply field.
