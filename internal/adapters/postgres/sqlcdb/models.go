@@ -1371,6 +1371,40 @@ type FyniqDocument struct {
 	PostedAt       *time.Time
 }
 
+type FyniqDocumentCapture struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Source         string
+	FileName       string
+	MediaType      string
+	SizeBytes      int64
+	Sha256         string
+	BlobKey        string
+	MessageID      *uuid.UUID
+	InboundFileID  *uuid.UUID
+	OwnerUserID    *uuid.UUID
+	CapturedBy     string
+	Status         string
+	Kind           *string
+	Reading        []byte
+	ReadingModel   *string
+	ReadingPrompt  *string
+	Readings       int32
+	ReadAt         *time.Time
+	Checks         []byte
+	DuplicateOf    *uuid.UUID
+	DraftKind      *string
+	DraftID        *uuid.UUID
+	DraftedBy      *uuid.UUID
+	DraftedAt      *time.Time
+	DismissedBy    *uuid.UUID
+	DismissedAt    *time.Time
+	DismissReason  *string
+	LastError      *string
+	CreatedAt      time.Time
+	Version        int32
+}
+
 type FyniqDocumentLink struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID

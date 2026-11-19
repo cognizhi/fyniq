@@ -2003,7 +2003,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "description": "The check's code.",
+      "examples": [
+        "CAP-TOTALS"
+      ],
+      "type": "string"
+    },
+    "field": {
+      "description": "The field it is about.",
+      "examples": [
+        "total"
+      ],
+      "type": "string"
+    },
+    "message": {
+      "description": "In plain words.",
+      "examples": [
+        "The lines come to 109.00, but the document's total is 190.00; check each against the document"
+      ],
+      "type": "string"
+    },
+    "severity": {
+      "description": "warning wants the person's eye before the draft is made; info says what the document lacks.",
+      "enum": [
+        "warning",
+        "info"
+      ],
+      "examples": [
+        "warning"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "severity",
+    "message"
+  ],
+  "title": "Check",
+  "type": "object"
+}

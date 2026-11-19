@@ -105,6 +105,8 @@ export const routes = [
   // The approver's queue and a claim opened from it (FR-AP-17, FR-APR-01; p1-expense-claims task 8.2): both modes.
   { kind: "route", id: "claims-review", path: "/purchases/claims", mode: "basic", signedIn: true, help: "claims.review", guide: "claims.approve-team#approve-or-return-a-claim" },
   { kind: "route", id: "claim-review", path: "/purchases/claims/$claimId", mode: "basic", signedIn: true, help: "claims.review-claim", guide: "claims.approve-team#approve-or-return-a-claim" },
+  // The document inbox (FR-DOC-12, FR-DOC-14; p1-document-capture): captured files, what the model read, and the draft a person makes.
+  { kind: "route", id: "document-inbox", path: "/purchases/documents", mode: "basic", signedIn: true, help: "documents.inbox", guide: "documents.inbox" },
   { kind: "route", id: "purchase-orders", path: "/purchases/orders", mode: "basic", signedIn: true, help: "purchases.orders", guide: "purchases.orders" },
   { kind: "route", id: "purchase-order-new", path: "/purchases/orders/new", mode: "basic", signedIn: true, help: "order.new", guide: "purchases.orders#raise-an-order" },
   { kind: "route", id: "purchase-order", path: "/purchases/orders/$orderId", mode: "basic", signedIn: true, help: "purchases.order", guide: "purchases.orders#approve-an-order" },

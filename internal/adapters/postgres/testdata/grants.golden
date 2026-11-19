@@ -222,6 +222,9 @@ fyniq_api       UPDATE    dimension_value (is_active, name, version)
 fyniq_api       INSERT    document (type)
 fyniq_api       SELECT    document
 fyniq_api       UPDATE    document (current_version, posted_at, posted_by, status)
+fyniq_api       INSERT    document_capture (blob_key, captured_by, created_at, duplicate_of, file_name, inbound_file_id, media_type, message_id, owner_user_id, sha256, size_bytes, source, status)
+fyniq_api       SELECT    document_capture
+fyniq_api       UPDATE    document_capture (checks, dismiss_reason, dismissed_at, dismissed_by, draft_id, draft_kind, drafted_at, drafted_by, duplicate_of, kind, last_error, read_at, reading, reading_model, reading_prompt, readings, status, version)
 fyniq_api       INSERT    document_link (created_by, document_id, document_version, expires_at, message_id, token_hash)
 fyniq_api       SELECT    document_link
 fyniq_api       UPDATE    document_link (first_viewed_at, revoked_at, revoked_by)
@@ -648,6 +651,7 @@ fyniq_executor  SELECT    billing_rate
 fyniq_executor  SELECT    brand_version
 fyniq_executor  SELECT    break_glass
 fyniq_executor  SELECT    break_glass_use
+fyniq_executor  SELECT    claim_category
 fyniq_executor  SELECT    close_checklist_entry
 fyniq_executor  SELECT    close_checklist_template
 fyniq_executor  INSERT    compliance_task (created_at, detail, due_on, finding_key, owner_role, owner_user, proposal_id, source, title)
@@ -829,6 +833,7 @@ fyniq_readonly  SELECT    dimension
 fyniq_readonly  SELECT    dimension_set
 fyniq_readonly  SELECT    dimension_value
 fyniq_readonly  SELECT    document
+fyniq_readonly  SELECT    document_capture
 fyniq_readonly  SELECT    document_link
 fyniq_readonly  SELECT    document_number
 fyniq_readonly  SELECT    document_send
@@ -1113,6 +1118,7 @@ fyniq_worker    SELECT    dimension_set
 fyniq_worker    SELECT    dimension_value
 fyniq_worker    SELECT    document
 fyniq_worker    UPDATE    document (posted_at, posted_by, status)
+fyniq_worker    SELECT    document_capture
 fyniq_worker    INSERT    document_link (created_by, document_id, document_version, expires_at, message_id, token_hash)
 fyniq_worker    SELECT    document_link
 fyniq_worker    INSERT    document_number (document_type, id, number)

@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Banknote, CircleCheck, Clock, PencilLine, Plus, ReceiptText, Search, TriangleAlert, Undo2, UserCheck, Wallet, XCircle } from "lucide-react";
+import { Banknote, CircleCheck, Clock, PencilLine, Plus, ReceiptText, Search, TriangleAlert, Undo2, Upload, UserCheck, Wallet, XCircle } from "lucide-react";
 import { useId, useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -158,6 +158,10 @@ export function Bills() {
             <Link className="fy-btn" to="/purchases/credits/new" title={addCredit.tooltip}>
               <Icon of={Plus} />
               {addCredit.label}
+            </Link>
+            <Link className="fy-btn" to="/purchases/documents" title={helpText("documents.inbox").tooltip}>
+              <Icon of={Upload} />
+              {helpText("documents.inbox").label}
             </Link>
           </div>
         )}

@@ -95,6 +95,8 @@ type UnitOfWork interface {
 	EmailSenders() EmailSenders
 	EmailSuppressions() EmailSuppressions
 	CaptureAddresses() CaptureAddresses
+	// DocumentCaptures are the document inbox: the files captured by upload, paste or an accepted email, their reading and their drafts (FR-DOC-12, FR-DOC-14).
+	DocumentCaptures() DocumentCaptures
 	InboundMessages() InboundMessages
 	// PSPEvents are the payment providers' webhook events, kept as received (FR-PSP-01).
 	PSPEvents() PSPEvents
