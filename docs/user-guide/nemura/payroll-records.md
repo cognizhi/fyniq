@@ -26,7 +26,7 @@ that pay was set, never what it was.
    each allowance and fixed deduction. For an allowance say whether it is CPF wages. A fixed deduction such as dormitory fees is never CPF wages. Select **Save the pay record**.
 3. For a company that starts Nemura mid-year, select **Import the year to date**: the ordinary wages and additional wages this employer has counted for the person since 1 January, and the last month
    counted. A month that pays additional wages cannot be calculated without it, and it is imported once for a year.
-4. For a permanent resident in the first two years whose employer and who jointly applied, add the CPF Board's approval to the person's file, then **Record the election** with that document.
+4. For a permanent resident in the first two years whose employer and who jointly applied, add the CPF Board's approval to the person's file, then **Record the election** with that document and choose what the approval is for: **F/G** (full employer rates, graduated employee rates) or **F/F** (full rates for both, so the full table applies, which is 20% from the employee on S$5,000 of wages instead of 5%). The kind never changes: a different kind is a new election from a later day, and the old one ends the day before.
 5. Under **One-off items of a month**, choose the month and **Add a one-off item**: a bonus, a commission or an allowance, with the month of employment it is for and the day it is payable.
 
 ## Calculate a pay run

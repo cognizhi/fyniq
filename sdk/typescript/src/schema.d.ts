@@ -41880,7 +41880,7 @@ export interface components {
              */
             display_name: string;
             /**
-             * @description Their verified sign-in email, shown to an Owner and an Administrator only (rev 0.375); absent for anyone else, and for a member who has none yet.
+             * @description Their verified sign-in email, shown to an Owner and an Administrator only (rev 0.381); absent for anyone else, and for a member who has none yet.
              * @example weiling@example.sg
              */
             email?: string;
@@ -46740,6 +46740,15 @@ export interface components {
              * @example 1
              */
             epoch?: number;
+            /** @description The public half of the key Fyniq's own client signs its token request to Nemura's OAuth server with, as a JWK: Nemura registers it for Fyniq's client. Never the private key. */
+            fyniq_client_public_key?: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description Fyniq's Ed25519 public key for what Fyniq sends (payroll.run.posted, payroll.payments.status), 32 bytes as base64url without padding: Nemura checks every event against it. Give it to Nemura when it approves the link.
+             * @example EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE
+             */
+            fyniq_link_key?: string;
             /** @description The events received, by outcome. */
             inbox: components["schemas"]["PeopleLinkInbox"][];
             /**
@@ -46749,11 +46758,21 @@ export interface components {
              */
             linked_at?: string;
             /**
+             * @description The ID Fyniq's client has at Nemura's OAuth server, as Nemura chose it when it proposed the link.
+             * @example fyniq-link-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
+             */
+            nemura_client_id?: string;
+            /**
              * Format: uuid
              * @description The Nemura organisation it is linked to.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
              */
             nemura_organisation_id?: string;
+            /**
+             * @description The ID the link's client has at Fyniq's OAuth server: what Nemura signs its token request as. Give it to Nemura when it approves the link.
+             * @example 4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11
+             */
+            oauth_client_id?: string;
             /** @description Where each feature lives now. */
             sources: components["schemas"]["PeopleLinkSource"][];
             /**
@@ -46932,6 +46951,11 @@ export interface components {
              * @example EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE
              */
             link_key: string;
+            /**
+             * @description The ID Fyniq's own client will have at Nemura's OAuth server, as Nemura chose it when it proposed the link: shown on Nemura's link page. Fyniq signs in to Nemura as this client to send its events.
+             * @example fyniq-link-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
+             */
+            nemura_client_id: string;
             /**
              * Format: uuid
              * @description The Nemura organisation to link to.

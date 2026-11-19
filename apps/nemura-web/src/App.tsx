@@ -13,6 +13,7 @@ import { Letters } from "./pages/Letters";
 import { MyDetails } from "./pages/MyDetails";
 import { AskQuestion } from "./pages/AskQuestion";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
+import { AskAssistant } from "./pages/AskAssistant";
 import { AssistantSettings } from "./pages/AssistantSettings";
 import { MyPay, Payslip } from "./pages/MyPay";
 import { PayRunApproval } from "./pages/PayRunApproval";
@@ -81,7 +82,8 @@ export function App() {
     if (state.status === "in" && route.id === "my-details") return <MyDetails roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "ask") return <AskQuestion roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "onboarding") return <PeopleOnboarding roles={state.session.roles ?? []} />;
-    if (state.status === "in" && route.id === "assistant") return <AssistantSettings roles={state.session.roles ?? []} member={state.session.member_id} />;
+    if (state.status === "in" && route.id === "ask-assistant") return <AskAssistant roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "assistant") return <AssistantSettings roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "my-pay") return <MyPay roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "payslip") return <Payslip id={matched?.params.id ?? ""} roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "payrun-approval") return <PayRunApproval id={matched?.params.id ?? ""} roles={state.session.roles ?? []} member={state.session.member_id} />;

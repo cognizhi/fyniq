@@ -50,7 +50,7 @@ func (e *env) narrowApprover(membership string, values ...string) string {
 }
 
 // A department's budget holder (Appendix D's Approver, "C dept" on Budgets) reads and plans the lines of their department's values and
-// nothing else of the company's budget (FR-ADM-01, rev 0.375): the draft they read has their department's lines and their totals
+// nothing else of the company's budget (FR-ADM-01, rev 0.381): the draft they read has their department's lines and their totals
 // alone; a save of theirs replaces only those lines and keeps every other line as it was; a line outside their departments, a
 // company line, or a changed name is refused whole; creating, copying, importing or asking for approval, the forecasts and the
 // company's planning summary are refused; and Budget vs Actual adds up their department's budget and actuals only. An Approver

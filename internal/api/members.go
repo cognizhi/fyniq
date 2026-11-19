@@ -53,8 +53,8 @@ type Member struct {
 	Removed      bool         `json:"removed,omitempty" doc:"true in the answer to removeMember: they are no longer a member." example:"false"`
 	// rev 0.373
 	LastSignInAt *time.Time `json:"last_sign_in_at,omitempty" doc:"When they last signed in to Fyniq; absent when they never have (SEC-06)." example:"2026-11-20T09:00:00Z"`
-	// rev 0.375
-	Email string `json:"email,omitempty" doc:"Their verified sign-in email, shown to an Owner and an Administrator only (rev 0.375); absent for anyone else, and for a member who has none yet." example:"weiling@example.sg"`
+	// rev 0.381
+	Email string `json:"email,omitempty" doc:"Their verified sign-in email, shown to an Owner and an Administrator only (rev 0.381); absent for anyone else, and for a member who has none yet." example:"weiling@example.sg"`
 	Passkeys     int        `json:"passkeys" doc:"How many live passkeys they hold: none means they confirm it's you only by signing in again (SEC-01)." example:"1"`
 }
 

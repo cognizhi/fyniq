@@ -28,10 +28,12 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/app"
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/nemura/alert"
 	"github.com/cognizhi/fyniq/internal/nemura/identity"
@@ -139,8 +141,15 @@ func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) strin
 		return a + b, err
 	}
 	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock, Raise: raise}
+	// The events for Fyniq (NM-INT-01): sent to the API and token endpoint the deployment names, and to no other host (design D12).
+	apiURL, tokenURL := getenv("NEMURA_FYNIQ_API_URL"), getenv("NEMURA_FYNIQ_TOKEN_URL")
+	sender := &nemura.LinkSender{Store: store, Clock: deps.Clock, APIURL: strings.TrimSuffix(apiURL, "/"), TokenURL: tokenURL, Audience: getenv("NEMURA_FYNIQ_API_AUDIENCE")}
+	if apiURL != "" && tokenURL != "" {
+		sender.HTTP = linkHTTP(egress.HostOf(apiURL), egress.HostOf(tokenURL))
+	}
 	s.Handle("POST /tasks", &outbox.Handler{Class: outbox.ClassWorker, Store: store, Tokens: tokens, Clock: deps.Clock,
-		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: map[string]outbox.Work{alert.KindNotify: alert.Work(alert.LogNotifier{}, deps.Clock), "people.notice": logNotice, nemura.KindLeaveAccrual: store.LeaveAccrualWork(deps.Clock)}})
+		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: map[string]outbox.Work{alert.KindNotify: alert.Work(alert.LogNotifier{}, deps.Clock), "people.notice": logNotice, nemura.KindLeaveAccrual: store.LeaveAccrualWork(deps.Clock),
+			nemura.KindLinkSend: sender.Work()}})
 	s.Handle("POST /tick", outbox.Tick{Dispatcher: disp, Tokens: tokens, Class: outbox.ClassWorker})
 	return nil
 }

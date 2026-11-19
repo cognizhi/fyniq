@@ -52,9 +52,6 @@ type Sick interface {
 }
 
 func init() {
-	IdempotencyExempt["POST /v1/me/sick-leave"] = "a repeat overlaps the first notification's days, which the database refuses (NM_LEAVE_CONFLICT)"
-	IdempotencyExempt["POST /v1/sick-leave/{id}/certificate"] = "a certificate is given once: a repeat is refused (NM_LEAVE_CONFLICT)"
-	IdempotencyExempt["POST /v1/sick-leave/{id}/verification"] = "a certificate is verified once: a repeat is refused (NM_LEAVE_CONFLICT)"
 }
 
 type sickInput struct {

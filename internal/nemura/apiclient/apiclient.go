@@ -19,6 +19,11 @@ const Audience = "nemura-api"
 // (NM-EXT-04, P2) and the link's arrive then.
 var Scopes = []string{"directory.read"}
 
+// LinkScope is the one scope Fyniq's link client holds at Nemura's own OAuth server: it reaches the link's event inbox and nothing else. It is not in Scopes, so no client
+// registered through the Owner's registration (or its second-approver request) can be given it, and the link's client cannot be given another: the link registers that client itself,
+// with this scope alone (p1-nemura-fyniq-link design D1).
+const LinkScope = "link.events.write"
+
 // TokenLifespan is how long each access token lives (AI-38: at most 60 minutes).
 const TokenLifespan = time.Hour
 
@@ -52,6 +57,11 @@ func Check(name string, scopes []string, alg string, key json.RawMessage) error 
 	if !slices.Contains(Algorithms, alg) {
 		return &Refusal{CodeInvalid, fmt.Sprintf("The algorithm %q is not accepted. Use one of %s.", alg, strings.Join(Algorithms, ", "))}
 	}
+	return CheckKey(key)
+}
+
+// CheckKey validates a public key given as a JWK: it is one, and carries no private part.
+func CheckKey(key json.RawMessage) error {
 	var jwk map[string]any
 	if err := json.Unmarshal(key, &jwk); err != nil || jwk["kty"] == nil {
 		return &Refusal{CodeInvalid, "The key must be a public key as a JWK (RFC 7517). Send the public part of the key pair the system holds."}

@@ -80,10 +80,6 @@ type Onboarding interface {
 }
 
 func init() {
-	IdempotencyExempt["PUT /v1/onboarding/settings"] = "naturally idempotent: the same body leaves the same setting"
-	IdempotencyExempt["POST /v1/onboarding/tasks/{id}/decision"] = "a task is decided once: a repeat is refused (NM_NOT_FOUND)"
-	IdempotencyExempt["PUT /v1/people/{id}/offboarding"] = "naturally idempotent: the same body leaves the same leaving"
-	IdempotencyExempt["POST /v1/people/{id}/offboarding/cancellation"] = "a leaving is cancelled once: a repeat is refused (NM_NOT_FOUND)"
 }
 
 func onboardingError(err error) error {

@@ -167,7 +167,7 @@ func TestTheLinkReceivesFyniqsEventsOnceAndSignsTheHoldsItSends(t *testing.T) {
 			t.Errorf("%s ran %q", x.role, x.stmt)
 		}
 	}
-	// A hold goes to Fyniq signed with Nemura's own key from the hold table's row, at the next sequence; the worker alone reads the key.
+	// A hold goes to Fyniq signed with Nemura's own key from the hold table's row, at the next sequence (the hold's own change queued the first: sequence 2 here); the worker alone reads the key.
 	var hold link.Envelope
 	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
 		_, err := nemura.PutTaxHold(ctx, tx, lt.c.org, now, lt.c.hr, lt.ben, d("2026-06-30"), "resigned")
@@ -192,7 +192,7 @@ func TestTheLinkReceivesFyniqsEventsOnceAndSignsTheHoldsItSends(t *testing.T) {
 	if err := hold.Verify(link.Link{Key: l.Public, Epoch: 1, SourceOrganisation: lt.c.org.String(), TargetOrganisation: fyniqOrg.String(), SourceSystem: "nemura"}, now); err != nil {
 		t.Errorf("the hold verifies with Nemura's public key: %v", err)
 	}
-	if hold.Header.Type != "people.tax_hold.changed" || hold.Header.ObjectVersion != 1 || hold.Header.Sequence != 1 || strings.Contains(string(hold.Payload), "resigned") {
+	if hold.Header.Type != "people.tax_hold.changed" || hold.Header.ObjectVersion != 1 || hold.Header.Sequence != 2 || strings.Contains(string(hold.Payload), "resigned") {
 		t.Errorf("the hold event: %+v %s", hold.Header, hold.Payload)
 	}
 }

@@ -4,7 +4,7 @@ type: task
 title: Set up pay groups and record each person's pay in Nemura
 summary: What the Payroll administrator and the Owner record for payroll, how a pay record, the year to date and a one-off item work, and why nobody else sees pay
 sources:
-  - docs/user-guide/nemura/payroll-records.md sha256:6a9a72543e09b36c5c246814aed1b6b77e4aadc6c258e052524af8690ae11bf6
+  - docs/user-guide/nemura/payroll-records.md sha256:1b5b5864b69221ea217faa5103d905c2035b73f90bed73927f3bdf24da466ace
 data_class: personal
 taint: trusted
 status: published
@@ -33,7 +33,7 @@ aliases:
 1. Make a pay group: its name, the pay day (0 is the last day of the month), the days before the pay day that inputs close and the days before it that the run is approved.
 2. Start a person's pay record: the day, the pay group, the basic monthly salary, the self-help group fund, and each allowance and fixed deduction; say whether an allowance is CPF wages (a fixed deduction never is).
 3. For a company that starts mid-year, import the year to date: the CPF wages already counted since 1 January and the last month counted; once for a year.
-4. For a first- or second-year permanent resident with a joint application, add the CPF Board's approval to the person's file, then record the election.
+4. For a first- or second-year permanent resident with a joint application, add the CPF Board's approval to the person's file, then record the election with its kind: F/G (full employer, graduated employee rates) or F/F (full rates for both, the full table). A different kind is a new election from a later day.
 5. Add a month's one-off items: a bonus, a commission or an allowance, with the month it is for and the day it is payable.
 
 (src: docs/user-guide/nemura/payroll-records.md#steps)

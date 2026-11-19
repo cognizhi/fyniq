@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -19,9 +20,11 @@ import (
 	controls "github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/domain/evidence"
 	"github.com/cognizhi/fyniq/internal/domain/security"
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/kbcompile"
+	"github.com/cognizhi/fyniq/internal/linksend"
 	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
@@ -55,6 +58,13 @@ func main() {
 			kinds[tokens.RemoveClientKind] = tokens.RemoveClientWork(wiring.Hydra(admin)) // FR-INT-02: a revoked API client deleted
 			kit.OAuthClients = wiring.Hydra(admin)                                        // AI-90: the job that removes lapsed AI app registrations
 		}
+		// FR-PPL-04, FR-PPL-15: what became of Nemura's pay runs, sent to Nemura's inbox with the link's token and key; the API, the token endpoint and Nemura's audience are the deployment's settings.
+		nemuraAPI, nemuraToken := os.Getenv("FYNIQ_NEMURA_API_URL"), os.Getenv("FYNIQ_NEMURA_TOKEN_URL")
+		sender := &linksend.Sender{Store: kit.Store, Clock: deps.Clock, APIURL: strings.TrimSuffix(nemuraAPI, "/"), TokenURL: nemuraToken, Audience: os.Getenv("FYNIQ_NEMURA_API_AUDIENCE")}
+		if nemuraAPI != "" && nemuraToken != "" {
+			sender.HTTP = wiring.People(egress.HostOf(nemuraAPI), egress.HostOf(nemuraToken))
+		}
+		kinds[linksend.Kind] = sender.Work()
 		kinds[security.SignInKind] = security.SignInWork(kit.Store, kit.Alerts(deps.Clock)) // SEC-31: an admin's sign-in, checked
 		if c, ok := kit.Committer(deps.Clock); ok {                                         // FR-DOC-13: commit a final record's files to the locked store
 			kinds[evidence.CommitKind] = func(ctx context.Context, org uuid.UUID, _ storage.OutboxRow) error {

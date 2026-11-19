@@ -35,7 +35,7 @@ describe("localisation", () => {
     const used = new Set<string>();
     for (const f of code) for (const m of readFileSync(f, "utf8").matchAll(/"([a-z]+\.[\w.]+)"/g)) used.add(m[1] ?? ""); // a key, passed to t() directly or through a table
     for (const f of code) for (const m of readFileSync(f, "utf8").matchAll(/\bt\("([\w.]+)"/g)) expect(textKeys, m[1]).toContain(m[1]);
-    const dynamic = ["role.", "join.title.", "join.lead.", "join.code.", "signin.error.", "value.", "feature.", "state.", "leave.day.", "calendar.kind.", "gov.scheme.", "gov.state.", "gov.event.", "requests.arrangement.", "requests.outcome.", "ot.kind.", "ot.branch.", "inputs.kind.", "inputs.unit.", "accrual.state.", "letters.state.", "tpl.block.", "deleg.state.", "approval.cause.", "approval.class.", "runs.state.", "runs.field.", "payroll.nature.", "onb.kind.", "onb.letter.", "terms.period.", "steps.kind.", "steps.step.", "steps.change.", "payments.state.", "payments.run."]; // looked up by the person's role, the form's kind or the refusal's code
+    const dynamic = ["role.", "join.title.", "join.lead.", "join.code.", "signin.error.", "value.", "feature.", "state.", "leave.day.", "calendar.kind.", "gov.scheme.", "gov.state.", "gov.event.", "requests.arrangement.", "requests.outcome.", "ot.kind.", "ot.branch.", "inputs.kind.", "inputs.unit.", "accrual.state.", "letters.state.", "tpl.block.", "deleg.state.", "approval.cause.", "approval.class.", "runs.state.", "runs.field.", "payroll.nature.", "onb.kind.", "onb.letter.", "terms.period.", "steps.kind.", "steps.step.", "steps.change.", "payroll.kind.", "payments.state.", "payments.run."]; // looked up by the person's role, the form's kind or the refusal's code
     expect(textKeys.filter((k) => !used.has(k) && !dynamic.some((d) => k.startsWith(d)))).toEqual([]);
   });
 });
@@ -63,5 +63,24 @@ describe("the design tokens", () => {
     expect(tokens).toMatch(/--ai:/);
     const ours = files.map((f) => readFileSync(f, "utf8")).join("\n");
     expect(ours).not.toMatch(/var\(--ai[\w-]*\)/); // AI violet marks AI content, and this app has none yet
+  });
+});
+
+// req: NM-UX-06
+describe("the verification banner on the people team's pages", () => {
+  const sourceText = code.filter((f) => f.endsWith(".tsx")).map((f) => readFileSync(f, "utf8")).join("\n");
+  const bannered = (screen: string) => sourceText.includes(`<ReviewBanner screen="${screen}"`);
+
+  it("is on every page the register lists that is built, and on none of the pages it never lists", async () => {
+    const { review } = await import("./review");
+    const { registry } = await import("./registry");
+    const built = new Set(registry.flatMap((e) => (e.kind === "route" ? [e.screen] : [])));
+    const listed = new Set(review.areas.flatMap((a) => a.screens));
+    const missing = [...listed].filter((s) => built.has(s) && !bannered(s));
+    expect(built.size).toBeGreaterThan(20);
+    expect(missing).toEqual([]);
+    for (const never of review.never) {
+      expect(bannered(never), never).toBe(false);
+    }
   });
 });

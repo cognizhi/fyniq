@@ -4,6 +4,40 @@
 # info.version follows the platform version (release-please updates it).
 components:
   schemas:
+    AIAnswer:
+      additionalProperties: false
+      properties:
+        dropped:
+          description: How many tools the model named that were refused.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        refused:
+          description: "True when the question asks for something the assistant never does: it approves, changes, issues, pays and reads another person's records never."
+          examples:
+            - false
+          type: boolean
+        segments:
+          description: The answer, sentence by sentence.
+          items:
+            $ref: "#/components/schemas/AISegment"
+          type:
+            - array
+            - "null"
+        tools:
+          description: The read tools that ran, all as the person asking.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+      required:
+        - segments
+        - tools
+        - refused
+        - dropped
+      type: object
     AIDecision:
       additionalProperties: false
       properties:
@@ -24,6 +58,79 @@ components:
           type: string
       required:
         - approve
+      type: object
+    AIDraft:
+      additionalProperties: false
+      properties:
+        applied_at:
+          description: When it was attached.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: The draft.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1fa0
+          format: uuid
+          type: string
+        kind:
+          description: A letter's fields or a reply's words.
+          enum:
+            - letter
+            - flex_reply
+          examples:
+            - letter
+          type: string
+        payload:
+          additionalProperties: {}
+          description: The approved text, exactly as approved.
+          type: object
+        proposal_id:
+          description: The proposal it came from.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80
+          format: uuid
+          type: string
+      required:
+        - id
+        - proposal_id
+        - kind
+        - payload
+        - applied_at
+      type: object
+    AIDraftInput:
+      additionalProperties: false
+      properties:
+        request_id:
+          description: "The request the draft is for: still open."
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f90
+          format: uuid
+          type: string
+        task_type:
+          description: "What to draft: a letter for a letter request, or a reply to a flexible-work request."
+          enum:
+            - people.draft_letter
+            - people.draft_fwa_reply
+          examples:
+            - people.draft_letter
+          type: string
+      required:
+        - task_type
+        - request_id
+      type: object
+    AIDraftResult:
+      additionalProperties: false
+      properties:
+        proposal_id:
+          description: The proposal, waiting for a person to decide it.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80
+          format: uuid
+          type: string
+      required:
+        - proposal_id
       type: object
     AIProposal:
       additionalProperties: false
@@ -122,6 +229,25 @@ components:
         - expired
         - created_at
         - expires_at
+      type: object
+    AISegment:
+      additionalProperties: false
+      properties:
+        sources:
+          description: "Where it comes from: your own record, a pack version and its official source, or a rule."
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        text:
+          description: A sentence. Every figure in it came from a tool in this turn; one that did not is replaced by 'an unverified figure'.
+          examples:
+            - You have 8.50 days left.
+          type: string
+      required:
+        - text
+        - sources
       type: object
     AISettings:
       additionalProperties: false
@@ -475,6 +601,32 @@ components:
         - number
         - issued_on
         - expires_on
+      type: object
+    AiAskInputBody:
+      additionalProperties: false
+      properties:
+        question:
+          description: "What to ask: about your own leave balance, your pay day, a rule of the Singapore pack or a line of your payslip."
+          examples:
+            - How much leave do I have left?
+          maxLength: 1000
+          minLength: 1
+          type: string
+      required:
+        - question
+      type: object
+    AiDraftsOutputBody:
+      additionalProperties: false
+      properties:
+        drafts:
+          description: The drafts attached to the request, newest first.
+          items:
+            $ref: "#/components/schemas/AIDraft"
+          type:
+            - array
+            - "null"
+      required:
+        - drafts
       type: object
     AiProposalsOutputBody:
       additionalProperties: false
@@ -1605,6 +1757,14 @@ components:
           examples:
             - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9
           format: uuid
+          type: string
+        kind:
+          description: "What the approval is for: fg (full employer rates, graduated employee rates; the default) or ff (full rates for both: the full table's)."
+          enum:
+            - fg
+            - ff
+          examples:
+            - ff
           type: string
       required:
         - effective_from
@@ -3541,6 +3701,265 @@ components:
         - types
         - fields
       type: object
+    LinkApproveInputBody:
+      additionalProperties: false
+      properties:
+        fyniq_client_public_key:
+          additionalProperties: {}
+          description: "The public half of the key Fyniq's own client signs its token request to Nemura's OAuth server with, as a JWK: Nemura registers it for Fyniq's client. Never the private key."
+          type: object
+        fyniq_link_key:
+          description: "Fyniq's Ed25519 public key for what it sends, 32 bytes as base64url without padding: shown on Fyniq's People and HR page."
+          examples:
+            - EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE
+          maxLength: 43
+          minLength: 43
+          type: string
+        fyniq_oauth_client_id:
+          description: "The ID Nemura's client has at Fyniq's OAuth server: shown on Fyniq's People and HR page."
+          examples:
+            - 4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - fyniq_link_key
+        - fyniq_oauth_client_id
+        - fyniq_client_public_key
+      type: object
+    LinkEvent:
+      additionalProperties: false
+      properties:
+        header:
+          $ref: "#/components/schemas/LinkHeader"
+        payload:
+          additionalProperties: {}
+          description: "The event's data: only the fields PRD-002 Appendix E lists for its type."
+          type: object
+        signature:
+          description: Ed25519 over the canonical header, base64url without padding, with Fyniq's link key (contracts/peoplelink).
+          examples:
+            - EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE5S1xv2o8mZl7sQd0pTuHk3r9iV6bYw4cG1nXfA2JgQ
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - header
+        - signature
+        - payload
+      type: object
+    LinkHeader:
+      additionalProperties: false
+      properties:
+        correlation_id:
+          description: Ties the event to its cause.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+          format: uuid
+          type: string
+        effective_at:
+          description: When the change took effect, RFC 3339 in UTC.
+          examples:
+            - "2026-11-20T09:00:00Z"
+          format: date-time
+          type: string
+        epoch:
+          description: The link's epoch; an earlier or a later one is refused.
+          examples:
+            - 1
+          format: int64
+          minimum: 1
+          type: integer
+        event_id:
+          description: "The event's ID: a repeat does nothing."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+          format: uuid
+          type: string
+        object_id:
+          description: The object's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+          maxLength: 100
+          minLength: 1
+          type: string
+        object_type:
+          description: The kind of object the event is about.
+          examples:
+            - payroll_payment
+          maxLength: 50
+          minLength: 1
+          type: string
+        object_version:
+          description: "The object's version: an older one than applied is ignored."
+          examples:
+            - 2
+          format: int64
+          minimum: 1
+          type: integer
+        payload_sha256:
+          description: The SHA-256 of the payload's canonical JSON (contracts/peoplelink).
+          examples:
+            - 54a65415ad370228851a1da4b31b6fd42dc58b19a50d35cae759325f7388ce64
+          pattern: ^[0-9a-f]{64}$
+          type: string
+        recorded_at:
+          description: When the sender recorded it.
+          examples:
+            - "2026-11-20T09:00:00Z"
+          format: date-time
+          type: string
+        schema_version:
+          description: The payload schema's version.
+          examples:
+            - 1
+          format: int64
+          minimum: 1
+          type: integer
+        sequence:
+          description: The sender's running number on this link.
+          examples:
+            - 41
+          format: int64
+          minimum: 0
+          type: integer
+        signed_at:
+          description: "When it was signed: more than 5 minutes from now is refused."
+          examples:
+            - "2026-11-20T09:00:01Z"
+          format: date-time
+          type: string
+        source_organisation:
+          description: The Fyniq organisation.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+          format: uuid
+          type: string
+        source_system:
+          description: The sending system.
+          enum:
+            - fyniq
+          examples:
+            - fyniq
+          type: string
+        target_organisation:
+          description: The Nemura organisation.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+          format: uuid
+          type: string
+        type:
+          description: "The event type: payroll.run.posted or payroll.payments.status."
+          examples:
+            - payroll.payments.status
+          type: string
+      required:
+        - event_id
+        - type
+        - schema_version
+        - source_system
+        - source_organisation
+        - target_organisation
+        - epoch
+        - sequence
+        - object_type
+        - object_id
+        - object_version
+        - effective_at
+        - recorded_at
+        - signed_at
+        - correlation_id
+        - payload_sha256
+      type: object
+    LinkProposeInputBody:
+      additionalProperties: false
+      properties:
+        fyniq_organisation_id:
+          description: The Fyniq organisation to link to.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+          format: uuid
+          type: string
+      required:
+        - fyniq_organisation_id
+      type: object
+    LinkReceipt:
+      additionalProperties: false
+      properties:
+        event_id:
+          description: The event's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+          format: uuid
+          type: string
+        outcome:
+          description: "applied; ignored_older: the same answer was kept already; duplicate: the event ID was received before."
+          enum:
+            - applied
+            - ignored_older
+            - duplicate
+          examples:
+            - applied
+          type: string
+      required:
+        - event_id
+        - outcome
+      type: object
+    LinkState:
+      additionalProperties: false
+      properties:
+        client_public_key:
+          additionalProperties: {}
+          description: "The public half of the key Nemura's client signs its token request to Fyniq's OAuth server with, as a JWK: give it to Fyniq when it links. Never the private key."
+          type: object
+        epoch:
+          description: "The link's epoch: every event carries it and an earlier one is refused."
+          examples:
+            - 1
+          format: int64
+          type: integer
+        fyniq_oauth_client_id:
+          description: The ID Nemura's client has at Fyniq's OAuth server, once the link is approved.
+          examples:
+            - 4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11
+          type: string
+        fyniq_organisation_id:
+          description: The Fyniq organisation the link is to.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+          format: uuid
+          type: string
+        link_key:
+          description: "Nemura's Ed25519 public key for the link's envelopes, 32 bytes as base64url without padding: give it to Fyniq when it links."
+          examples:
+            - EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE
+          type: string
+        nemura_client_id:
+          description: "The ID Fyniq's client will have at Nemura's OAuth server: give it to Fyniq when it links."
+          examples:
+            - fyniq-link-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
+          type: string
+        nemura_organisation_id:
+          description: "This organisation: what Fyniq is told when it links."
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
+          format: uuid
+          type: string
+        state:
+          description: "none: never linked; proposed: Nemura made its keys and waits for Fyniq's half; active: linked; unlinked is final, and a later link starts at a higher epoch."
+          enum:
+            - none
+            - proposed
+            - active
+            - suspended
+            - unlinking
+            - unlinked
+          examples:
+            - proposed
+          type: string
+      required:
+        - state
+      type: object
     MyDetails:
       additionalProperties: false
       properties:
@@ -3582,6 +4001,12 @@ components:
     MyPayslipsOutputBody:
       additionalProperties: false
       properties:
+        next_pay_day:
+          description: The next day the person is paid, from their pay group's calendar; left out when they have no pay record in force. No amount.
+          examples:
+            - "2026-11-25"
+          format: date
+          type: string
         payslips:
           description: The person's payslips, newest month first.
           items:
@@ -4643,6 +5068,14 @@ components:
           examples:
             - "2026-07-01"
           format: date
+          type: string
+        election_kind:
+          description: "The kind of the election in force: fg (full employer, graduated employee rates) or ff (full rates for both)."
+          enum:
+            - fg
+            - ff
+          examples:
+            - ff
           type: string
         items:
           description: The allowances and fixed deductions.
@@ -7355,8 +7788,10 @@ info:
     Conventions (PRD-002 NM-ARC-03, PRD-001 §8.18.1):
     - Errors are RFC 9457 problem details (application/problem+json) with a stable code from the catalogue at GET /v1/errors, what is
       wrong, and how to fix it; validation errors list every invalid field at once.
-    - Every POST that creates or changes state accepts an Idempotency-Key header: a repeat returns the original response, and the same
-      key with a different request returns 422.
+    - Every write that creates or changes state accepts an Idempotency-Key header, kept 24 hours per person: a repeat returns the first
+      response with Idempotent-Replayed: true, the same key with a different request returns 422, and two identical requests at once run
+      once. A response that may carry pay, a bank account, an NRIC or the text of a question is not stored (only its status is): a repeat
+      of such a write that returned a body answers 409 and the result is read from the record.
     - Versioned records return an ETag; commands that change one require If-Match and return 412 when the record changed since, 428
       without it.
     - Changes inside /v1 are additive: a field, an operation or an enum value may be added, and nothing is removed or changed in meaning.
@@ -7427,6 +7862,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -7496,6 +7941,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e60
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       responses:
         "204":
           description: No Content
@@ -7532,6 +7987,206 @@ paths:
       summary: Revoke an API client
       tags:
         - API clients
+  /v1/assistant/ask:
+    post:
+      description: Answers a question about the signed-in person's own leave balance, their pay day, a rule of the Singapore pack (cited, with a note to confirm it with HR when it has not been verified a second time) or what a line of their payslip is, as a rule with no figure. The read tools run as the person asking, so the assistant reads what they can and nothing else; no pay figure and no sealed field reaches a model, and every figure of the answer came from a tool in this turn. A question that asks it to approve, change, issue, pay or read another person's records is refused in words. The assistant must be on. The question is not stored; the audit event names the tools that ran. It changes nothing.
+      operationId: askAssistant
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiAskInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIAnswer"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Ask the people assistant
+      tags:
+        - Assistant
+  /v1/assistant/drafts:
+    get:
+      description: The approved drafts the executor attached to a letter request or a flexible-work request, for the person who decides it to use. The HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: listAssistantDrafts
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The request.
+          explode: false
+          in: query
+          name: request_id
+          schema:
+            description: The request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f90
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiDraftsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: The drafts attached to a request
+      tags:
+        - Assistant
+    post:
+      description: "Makes a proposal: a draft letter for an open letter request (its fields filled from the values the request holds from the person's record, its purpose quoted) or a draft reply to an open flexible-work request (an acknowledgement that states no decision and no reason). The request's own words are data, never instructions. The assistant and the task type must be on. The proposal waits for a person to approve it within 72 hours; nothing is checked, issued, signed or replied to. The HR officer, the HR administrator and the Owner. It is audited."
+      operationId: draftWithAssistant
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIDraftInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIDraftResult"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Ask the assistant to draft a letter or a reply
+      tags:
+        - Assistant
   /v1/assistant/proposals:
     get:
       description: The drafts the assistant proposed, newest first, with what it proposed, who it acted for and where each is. The HR officer, the HR administrator and the Owner. It changes nothing.
@@ -7658,7 +8313,7 @@ paths:
         - Assistant
   /v1/assistant/proposals/{id}/decision:
     post:
-      description: A named human approves or rejects a pending proposal, never the person the assistant acted for. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. It is audited with the hashes, never the text.
+      description: A named human approves or rejects a pending proposal; a tier 1 draft may be decided by the person who asked for it. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. It is audited with the hashes, never the text.
       operationId: decideAssistantProposal
       parameters:
         - description: The browser's cookies; the session cookie is read from them.
@@ -7678,6 +8333,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -7810,6 +8475,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -7926,6 +8601,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       responses:
         "204":
           description: No Content
@@ -7984,6 +8669,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -8106,6 +8801,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -8286,6 +8991,16 @@ paths:
             examples:
               - leave
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -8421,6 +9136,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -8492,6 +9217,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       responses:
         "204":
           description: No Content
@@ -8550,6 +9285,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e95
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -8668,6 +9413,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e94
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -8948,6 +9703,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       responses:
         "204":
           description: No Content
@@ -9006,6 +9771,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -9130,6 +9905,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -9189,6 +9974,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -9247,6 +10042,16 @@ paths:
             description: The browser's cookies; the session cookie is read from them.
             examples:
               - nemura_session=…
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -9468,6 +10273,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -9542,6 +10357,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -9650,6 +10475,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -9708,6 +10543,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ee0
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       responses:
         "200":
@@ -9819,6 +10664,16 @@ paths:
               - employment_confirmation
             pattern: ^[a-z][a-z0-9_]{1,60}$
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -9883,6 +10738,16 @@ paths:
             examples:
               - employment_confirmation
             pattern: ^[a-z][a-z0-9_]{1,60}$
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -10015,6 +10880,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       responses:
         "200":
@@ -10235,6 +11110,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       responses:
         "201":
           content:
@@ -10297,6 +11182,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -10368,6 +11263,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -10450,6 +11355,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       responses:
         "204":
           description: No Content
@@ -10486,6 +11401,254 @@ paths:
       summary: Withdraw one's own letter request
       tags:
         - Letters
+  /v1/link:
+    get:
+      description: "The state of the organisation's link to Fyniq, its epoch, and what Fyniq needs to link: Nemura's envelope key and the ID Fyniq's client will have here (the client's public key is shown by the proposal only). Only an Owner or an Administrator. Never a private key. It changes nothing."
+      operationId: getLink
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinkState"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Show the link to Fyniq
+      tags:
+        - Link
+  /v1/link/approval:
+    post:
+      description: "The last of three steps: another Owner or an Administrator than the one who proposed, confirmed with a passkey in the last five minutes, gives Fyniq's envelope key, its client's ID and the public half of its client key. Nemura registers Fyniq's client at its own OAuth server with the one scope that reaches the event inbox, under the ID chosen at the proposal, and the link is active at its epoch. Audited. It is on the never-list for the AI and MCP surfaces."
+      operationId: approveLink
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LinkApproveInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinkState"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Approve the link to Fyniq with Fyniq's half
+      tags:
+        - Link
+  /v1/link/events:
+    post:
+      description: "Fyniq's link calls this with its client's bearer token and a signed envelope (PRD-002 NM-INT-10) carrying payroll.run.posted or payroll.payments.status. Nemura checks the token (the audience nemura-api, the scope link.events.write, and that the client is the live link's), then the envelope against the link: both organisations, the epoch, a signing time within five minutes, Fyniq's signature and the payload's digest. A payment's state goes through the one function of the payment events and a run's posting answer is kept for the run to show. Each event is applied once by its ID: a repeat answers duplicate. A refusal after the signature held is kept, by code and never with the payload. Only Fyniq's link client may call it: no session, no person and no ordinary API client; it changes only what the event says. It is on the never-list for the AI and MCP surfaces."
+      operationId: receiveLinkEvent
+      parameters:
+        - description: Bearer, then the access token Fyniq's link client got from Nemura's OAuth server for the audience nemura-api with the scope link.events.write.
+          in: header
+          name: Authorization
+          schema:
+            description: Bearer, then the access token Fyniq's link client got from Nemura's OAuth server for the audience nemura-api with the scope link.events.write.
+            examples:
+              - Bearer ory_at_…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LinkEvent"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinkReceipt"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Receive an event from Fyniq
+      tags:
+        - Link
+  /v1/link/proposal:
+    post:
+      description: The first of three steps (PRD-002 NM-ARC-04). Only an Owner, confirmed with a passkey in the last five minutes, names the Fyniq organisation. Nemura makes its two keys and the ID Fyniq's client will have here and keeps the link as proposed; the answer holds what to give Fyniq. The private keys are kept for the worker and are never shown. Audited. It is on the never-list for the AI and MCP surfaces.
+      operationId: proposeLink
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LinkProposeInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinkState"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Start the link to Fyniq
+      tags:
+        - Link
   /v1/me/details:
     get:
       description: The signed-in person's phone, personal email, address and up to three emergency contacts. It changes nothing.
@@ -10545,6 +11708,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -10593,6 +11766,16 @@ paths:
             description: The browser's cookies; the session cookie is read from them.
             examples:
               - nemura_session=…
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -10659,6 +11842,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -10707,6 +11900,16 @@ paths:
             description: The browser's cookies; the session cookie is read from them.
             examples:
               - nemura_session=…
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -10767,6 +11970,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -10825,6 +12038,16 @@ paths:
             description: The browser's cookies; the session cookie is read from them.
             examples:
               - nemura_session=…
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -10950,6 +12173,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -11008,6 +12241,16 @@ paths:
             description: The browser's cookies; the session cookie is read from them.
             examples:
               - nemura_session=…
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -11241,6 +12484,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -11351,6 +12604,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       responses:
         "204":
           description: No Content
@@ -11393,6 +12656,16 @@ paths:
             description: The browser's cookies; the session cookie is read from them.
             examples:
               - nemura_session=…
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -11546,6 +12819,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -11651,6 +12934,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -11787,6 +13080,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -11904,6 +13207,16 @@ paths:
             examples:
               - sg-people@2026.1
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       responses:
         "201":
           description: Created
@@ -11967,6 +13280,16 @@ paths:
             description: The pack version.
             examples:
               - sg-people@2026.1
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -12233,6 +13556,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -12359,6 +13692,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f42
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       responses:
         "204":
           description: No Content
@@ -12463,6 +13806,16 @@ paths:
             description: The browser's cookies; the session cookie is read from them.
             examples:
               - nemura_session=…
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -12595,6 +13948,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -12730,6 +14093,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -12810,6 +14183,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -12948,6 +14331,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -13018,6 +14411,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -13099,6 +14502,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -13214,6 +14627,16 @@ paths:
             description: The browser's cookies; the session cookie is read from them.
             examples:
               - nemura_session=…
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -13345,6 +14768,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -13494,6 +14927,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -13562,6 +15005,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -13690,6 +15143,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -13814,6 +15277,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -14032,6 +15505,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -14106,6 +15589,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -14265,6 +15758,16 @@ paths:
             maximum: 2200
             minimum: 2000
             type: integer
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       responses:
         "200":
           content:
@@ -14346,6 +15849,16 @@ paths:
             maximum: 2200
             minimum: 2000
             type: integer
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       responses:
         "200":
           content:
@@ -14427,6 +15940,16 @@ paths:
             maximum: 2200
             minimum: 2000
             type: integer
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -14497,6 +16020,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -14572,6 +16105,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -14706,6 +16249,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -14770,6 +16323,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       responses:
         "204":
@@ -14908,6 +16471,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -14978,6 +16551,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -15054,6 +16637,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -15104,7 +16697,7 @@ paths:
         - Payroll
   /v1/people/{id}/pr-election:
     post:
-      description: Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file. The Payroll administrator and the Owner. It is audited.
+      description: "Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file and its kind: fg (graduated employee rates, the default) or ff (full rates for both, so the full table applies). A different kind is a new election from a later day. The Payroll administrator and the Owner. It is audited."
       operationId: setPersonElection
       parameters:
         - description: The browser's cookies; the session cookie is read from them.
@@ -15124,6 +16717,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -15333,6 +16936,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -15476,6 +17089,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -15609,6 +17232,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -15683,6 +17316,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -15801,6 +17444,16 @@ paths:
             examples:
               - nemura_session=…
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -15869,6 +17522,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       requestBody:
         content:
@@ -16186,6 +17849,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -16263,6 +17936,16 @@ paths:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
             format: uuid
             type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
+            type: string
       requestBody:
         content:
           application/json:
@@ -16337,6 +18020,16 @@ paths:
             examples:
               - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80
             format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record."
+          example: 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+          in: header
+          name: Idempotency-Key
+          schema:
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+            maxLength: 255
+            minLength: 0
             type: string
       responses:
         "204":
@@ -16432,5 +18125,7 @@ tags:
     name: Self-service
   - description: Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07).
     name: Letters
+  - description: "The link to Fyniq: the events Fyniq sends back, signed and received once (NM-INT-10, NM-INT-03)."
+    name: Link
   - description: Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02).
     name: Session

@@ -18,12 +18,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/apiclient"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
+	"github.com/cognizhi/fyniq/internal/linksend"
 	"github.com/cognizhi/fyniq/internal/passkey/passkeytest"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -31,6 +33,7 @@ import (
 const nemuraOrigin = "https://people.example.test"
 
 type runWorld struct {
+	readonly            string // the world's database, read-only: what the test reads the outbox with
 	e                   *env
 	org                 uuid.UUID
 	nemura              string
@@ -86,7 +89,7 @@ func payrollWorld(t *testing.T) *runWorld {
 		t.Fatal("member not found")
 		return peoplelink.Party{}, uuid.Nil
 	}
-	w := &runWorld{e: e, org: org, nemura: uuid.NewString(), code: map[uuid.UUID]string{}, pass: pass}
+	w := &runWorld{readonly: s.readonly, e: e, org: org, nemura: uuid.NewString(), code: map[uuid.UUID]string{}, pass: pass}
 	var owner uuid.UUID
 	w.approver, w.approverUser = party(phone)
 	w.preparer, owner = party(desk)
@@ -117,8 +120,16 @@ func payrollWorld(t *testing.T) *runWorld {
 		if err != nil {
 			return err
 		}
-		if _, err := u.PeopleLinks().Link(ctx, storage.PeopleLinkRow{NemuraOrganisationID: uuid.MustParse(w.nemura), NemuraOrigin: nemuraOrigin, LinkKey: pub, ClientID: client.ID,
-			ApprovalID: approval, CreatedBy: "user:" + owner.String(), CreatedAt: e.clock.Now()}); err != nil {
+		linked, err := u.PeopleLinks().Link(ctx, storage.PeopleLinkRow{NemuraOrganisationID: uuid.MustParse(w.nemura), NemuraOrigin: nemuraOrigin, LinkKey: pub, ClientID: client.ID,
+			ApprovalID: approval, CreatedBy: "user:" + owner.String(), CreatedAt: e.clock.Now()})
+		if err != nil {
+			return err
+		}
+		keys, secrets, err := newLinkKeys(linked.ID, "fyniq-link-"+w.nemura) // so the link can answer: what Nemura is told of each run is queued with the run
+		if err != nil {
+			return err
+		}
+		if err := u.PeopleLinks().SaveKeys(ctx, keys, secrets); err != nil {
 			return err
 		}
 		w.tok = e.principal(authn.Principal{Client: client.ClientID, Class: authn.ClassIntegration, Organisation: org, Scoped: true, Link: true, Scopes: apiclient.LinkScopes})
@@ -267,6 +278,16 @@ func TestAnApprovedPayRunPostsOnlyAfterItsAuthorityVerifies(t *testing.T) {
 	if got := w.entryLines(run, 1); got != want1 {
 		t.Fatalf("the entry: %s\nwant %s", got, want1)
 	}
+	// Nemura is told what became of the run, in the same unit of work: the posting's reference, at the link's next sequence number.
+	answers := w.answers(t)
+	if len(answers) != 1 || answers[0].Sequence != 1 || answers[0].ObjectID != run || answers[0].ObjectVersion != 1 || answers[0].Type != linksend.TypeRunPosted {
+		t.Fatalf("the answer queued for Nemura: %+v", answers)
+	}
+	var told linksend.RunPosted
+	_ = json.Unmarshal(answers[0].Payload, &told)
+	if told.Status != "posted" || told.RunID != run || told.Version != 1 || told.PostingRef == "" || told.Code != "" {
+		t.Errorf("the answer: %+v", told)
+	}
 	// The same event again does nothing; a new event with the same envelope is the envelope used twice; version 1 again is stale.
 	if r := w.sendAs(w.tok, v1, func(h *peoplelink.Header) { h.EventID = first.Body["event_id"].(string) }); r.Status != http.StatusOK || r.str("outcome") != "duplicate" {
 		t.Errorf("the event again: %d %s", r.Status, r.Raw)
@@ -288,6 +309,11 @@ func TestAnApprovedPayRunPostsOnlyAfterItsAuthorityVerifies(t *testing.T) {
 		t.Errorf("version 3: %d %s", r.Status, r.Raw)
 	}
 	count = w.entries()
+
+	// A repeat of a used envelope is not answered (it says nothing about a run that is waiting); the version that changed nothing is answered with the entry the run's first version posted.
+	if answers := w.answers(t); len(answers) != 3 {
+		t.Errorf("answers queued after version 1, a repeat, a stale version, version 2 and version 3: %d, want 3 (the repeat and the stale version are not answered)", len(answers))
+	}
 
 	// Each forged authority is refused with its own code and creates nothing.
 	otherRun := uuid.NewString()
@@ -323,6 +349,27 @@ func TestAnApprovedPayRunPostsOnlyAfterItsAuthorityVerifies(t *testing.T) {
 	e.problemIs(w.send(good, func(h *peoplelink.Header) { h.SignedAt = e.clock.Now().Add(-time.Hour).UTC().Format(time.RFC3339) }), "submitPayrollRun", 403, peoplelink.CodeReplay)
 	if w.entries() != count {
 		t.Errorf("a refused run posted: %d entries, were %d", w.entries(), count)
+	}
+	// What was refused after the link's signature held is answered to Nemura with the refusal's code and plain words, never a figure; what was refused before (a bad link signature, an old epoch, a stale
+	// time), an envelope used before and a version no newer than one posted are not answered: they say nothing about a run that is waiting.
+	refusals := map[string]bool{}
+	for _, q := range w.answers(t)[3:] {
+		var r linksend.RunPosted
+		_ = json.Unmarshal(q.Payload, &r)
+		refusals[r.Code] = true
+		if r.Status != "refused" || r.Message == "" || strings.Contains(r.Message, "20000") || strings.Contains(r.Message, "90000") || strings.Contains(r.Message, "5100") {
+			t.Errorf("an answer to Nemura: %+v", r)
+		}
+	}
+	for _, code := range []string{peoplelink.CodeRunEnvelope, peoplelink.CodeRunOrg, peoplelink.CodeRunSegregate, peoplelink.CodeRunRight, peoplelink.CodeRunMapping, peoplelink.CodeRunPasskey, peoplelink.CodeRunApprover} {
+		if !refusals[code] {
+			t.Errorf("a refusal %s was not answered to Nemura: %v", code, refusals)
+		}
+	}
+	for _, code := range []string{peoplelink.CodeEpoch, peoplelink.CodeReplay, peoplelink.CodeSignature, peoplelink.CodeRunUsed, peoplelink.CodeRunStale} {
+		if refusals[code] {
+			t.Errorf("a refusal %s was answered to Nemura: it says nothing about a run that is waiting", code)
+		}
 	}
 	// Only the link's client reaches it.
 	for _, tok := range []string{w.accountant, w.payroll, e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{authz.Owner}})} {
@@ -447,4 +494,38 @@ var matrixPeopleMapping = map[string]func(e *env, tok string) (response, func() 
 	"mapPersonToUser": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/people-link/people/"+uuid.NewString()+"/user", tok, map[string]any{"user_id": matrixApprover(e)}, "Prefer", "return=preview"), nil
 	},
+}
+
+// answers are the events queued for Nemura so far, oldest first, as the worker would read them.
+func (w *runWorld) answers(t *testing.T) []linksend.Queued {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, w.readonly) // the world's own database, which startSessions made fresh
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	tx, err := c.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if _, err := tx.Exec(ctx, "SELECT set_config('app.org_id', $1, true)", w.org.String()); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := tx.Query(ctx, `SELECT payload FROM fyniq.outbox WHERE kind = $1 ORDER BY created_at, id`, linksend.Kind)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var out []linksend.Queued
+	for rows.Next() {
+		var raw []byte
+		var q linksend.Queued
+		if err := rows.Scan(&raw); err != nil || json.Unmarshal(raw, &q) != nil {
+			t.Fatalf("an answer row: %v", err)
+		}
+		out = append(out, q)
+	}
+	return out
 }

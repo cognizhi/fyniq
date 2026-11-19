@@ -32,9 +32,12 @@ type LinkRow struct {
 	ID, FyniqOrganisation uuid.UUID
 	State                 string
 	Epoch, Version        int
-	FyniqKey              ed25519.PublicKey
+	FyniqKey              ed25519.PublicKey // nil while the link is only proposed
 	Public                ed25519.PublicKey // Nemura's own, which Fyniq holds
 	Sequence              int64
+	// PeerClientID is the ID Fyniq's client has at Nemura's own OAuth server (chosen at the proposal); FyniqClientID is the ID Nemura's client has at Fyniq's.
+	PeerClientID, FyniqClientID string
+	ProposedBy                  uuid.UUID
 }
 
 // MakeLink makes the link to a Fyniq organisation: Nemura's own key pair for what it sends, Fyniq's public key for what it receives, active at the next epoch. The caller is an
@@ -74,17 +77,29 @@ func linkError(err error) error {
 func LiveLink(ctx context.Context, tx pgx.Tx) (LinkRow, error) {
 	var l LinkRow
 	var fk, pub []byte
-	err := tx.QueryRow(ctx, `SELECT id, state, epoch, version, fyniq_organisation_id, fyniq_key, link_public, sequence FROM nemura.fyniq_link WHERE state <> 'unlinked'`).
-		Scan(&l.ID, &l.State, &l.Epoch, &l.Version, &l.FyniqOrganisation, &fk, &pub, &l.Sequence)
+	var peer, fyniqClient *string
+	var proposer *uuid.UUID
+	err := tx.QueryRow(ctx, `SELECT id, state, epoch, version, fyniq_organisation_id, fyniq_key, link_public, sequence, peer_client_id, fyniq_client_id, proposed_by FROM nemura.fyniq_link WHERE state <> 'unlinked'`).
+		Scan(&l.ID, &l.State, &l.Epoch, &l.Version, &l.FyniqOrganisation, &fk, &pub, &l.Sequence, &peer, &fyniqClient, &proposer)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return LinkRow{}, &payroll.Refusal{Code: CodeLinkNone, Message: "Nemura is not linked to Fyniq."}
 	}
 	l.FyniqKey, l.Public = fk, pub
+	if peer != nil {
+		l.PeerClientID = *peer
+	}
+	if fyniqClient != nil {
+		l.FyniqClientID = *fyniqClient
+	}
+	if proposer != nil {
+		l.ProposedBy = *proposer
+	}
 	return l, err
 }
 
 // SignOutbound signs an event for Fyniq with the link's key, at the next sequence number, for the worker to send through the outbox (NM-INT-01, NM-INT-10). Pay and bank payloads are
-// built by the caller and never reach a log. It needs the worker's grant on the link's secret.
+// built by the caller and never reach a log. It needs the worker's grant on the link's secret. An event that is queued first and sent later is signed with SignQueued instead, so a retry is the
+// same event.
 func SignOutbound(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, typ, objectType, objectID string, objectVersion int, payload any) (link.Envelope, error) {
 	l, err := LiveLink(ctx, tx)
 	if err != nil {
@@ -92,10 +107,6 @@ func SignOutbound(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, t
 	}
 	if l.State != "active" {
 		return link.Envelope{}, &payroll.Refusal{Code: CodeLinkNone, Message: "The link is not active."}
-	}
-	var priv []byte
-	if err := tx.QueryRow(ctx, `SELECT link_private FROM nemura.fyniq_link_secret WHERE link_id = $1`, l.ID).Scan(&priv); err != nil {
-		return link.Envelope{}, err
 	}
 	var seq int64
 	if err := tx.QueryRow(ctx, `UPDATE nemura.fyniq_link SET sequence = sequence + 1, version = version + 1, changed_at = $2 WHERE id = $1 RETURNING sequence`, l.ID, at).Scan(&seq); err != nil {
@@ -105,14 +116,23 @@ func SignOutbound(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, t
 		map[string]audit.Change{"type": {nil, typ}, "sequence": {nil, seq}}, ""); err != nil { // the event's type and number, never its payload
 		return link.Envelope{}, err
 	}
+	return signQueued(ctx, tx, l, org, at, QueuedEvent{EventID: uuid.NewString(), Sequence: seq, Type: typ, ObjectType: objectType, ObjectID: objectID, ObjectVersion: objectVersion, CorrelationID: uuid.NewString()}, payload)
+}
+
+// signQueued signs a queued event with the link's envelope key: the event ID, the sequence and the correlation ID are the queued ones, only the time is the sending attempt's.
+func signQueued(ctx context.Context, tx pgx.Tx, l LinkRow, org uuid.UUID, at time.Time, q QueuedEvent, payload any) (link.Envelope, error) {
+	var priv []byte
+	if err := tx.QueryRow(ctx, `SELECT link_private FROM nemura.fyniq_link_secret WHERE link_id = $1`, l.ID).Scan(&priv); err != nil {
+		return link.Envelope{}, err
+	}
 	raw, err := json.Marshal(payload)
 	if err != nil {
 		return link.Envelope{}, err
 	}
 	now := at.UTC().Format(time.RFC3339)
-	return link.Sign(ed25519.PrivateKey(priv), link.Header{EventID: uuid.NewString(), Type: typ, SchemaVersion: 1, SourceSystem: "nemura", SourceOrganisation: org.String(),
-		TargetOrganisation: l.FyniqOrganisation.String(), Epoch: l.Epoch, Sequence: seq, ObjectType: objectType, ObjectID: objectID, ObjectVersion: objectVersion, EffectiveAt: now,
-		RecordedAt: now, SignedAt: now, CorrelationID: uuid.NewString()}, raw)
+	return link.Sign(ed25519.PrivateKey(priv), link.Header{EventID: q.EventID, Type: q.Type, SchemaVersion: 1, SourceSystem: "nemura", SourceOrganisation: org.String(),
+		TargetOrganisation: l.FyniqOrganisation.String(), Epoch: l.Epoch, Sequence: q.Sequence, ObjectType: q.ObjectType, ObjectID: q.ObjectID, ObjectVersion: q.ObjectVersion, EffectiveAt: now,
+		RecordedAt: now, SignedAt: now, CorrelationID: q.CorrelationID}, raw)
 }
 
 // TaxHoldEvent is the payload of people.tax_hold.changed (NM-INT-08), built from a row of nemura.tax_hold and nothing else.
@@ -127,24 +147,33 @@ type TaxHoldEvent struct {
 // TaxHoldChanged builds and signs people.tax_hold.changed for a person's latest hold version, to go at once, ahead of ordinary sync (NM-INT-08): the version is the object version.
 // None when the person has no hold.
 func TaxHoldChanged(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, person uuid.UUID) (link.Envelope, bool, error) {
+	ev, version, ok, err := taxHoldEventAt(ctx, tx, person, 0)
+	if err != nil || !ok {
+		return link.Envelope{}, false, err
+	}
+	env, err := SignOutbound(ctx, tx, org, at, "people.tax_hold.changed", "tax_hold", person.String(), version, ev)
+	return env, err == nil, err
+}
+
+// taxHoldEventAt reads the payload from a row of nemura.tax_hold and nothing else: the person's version (the latest when version is 0).
+func taxHoldEventAt(ctx context.Context, tx pgx.Tx, person uuid.UUID, version int) (TaxHoldEvent, int, bool, error) {
 	var ev TaxHoldEvent
-	var version int
 	var evidence *uuid.UUID
 	var from time.Time
-	err := tx.QueryRow(ctx, `SELECT hold_id, version, status, effective_from, evidence_id FROM nemura.tax_hold WHERE person_id = $1 ORDER BY version DESC LIMIT 1`, person).
-		Scan(&ev.HoldID, &version, &ev.Status, &from, &evidence)
+	var got int
+	err := tx.QueryRow(ctx, `SELECT hold_id, version, status, effective_from, evidence_id FROM nemura.tax_hold WHERE person_id = $1 AND ($2 = 0 OR version = $2) ORDER BY version DESC LIMIT 1`, person, version).
+		Scan(&ev.HoldID, &got, &ev.Status, &from, &evidence)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return link.Envelope{}, false, nil
+		return ev, 0, false, nil
 	}
 	if err != nil {
-		return link.Envelope{}, false, err
+		return ev, 0, false, err
 	}
 	ev.PersonID, ev.EffectiveFrom = person, from.Format(time.DateOnly)
 	if evidence != nil {
 		ev.EvidenceRef = evidence.String()
 	}
-	env, err := SignOutbound(ctx, tx, org, at, "people.tax_hold.changed", "tax_hold", person.String(), version, ev)
-	return env, err == nil, err
+	return ev, got, true, nil
 }
 
 type paymentStatusEvent struct {

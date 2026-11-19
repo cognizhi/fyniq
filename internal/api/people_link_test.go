@@ -64,7 +64,7 @@ func TestThePeopleLinkCarriesSignedEventsThroughItsOwnClient(t *testing.T) {
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	expires := e.clock.Now().AddDate(0, 6, 0).UTC().Format(time.RFC3339)
 	body := func() map[string]any {
-		return map[string]any{"nemura_organisation_id": nemura, "nemura_origin": nemuraOrigin, "link_key": base64.RawURLEncoding.EncodeToString(linkPub), "client_name": "Nemura link",
+		return map[string]any{"nemura_organisation_id": nemura, "nemura_origin": nemuraOrigin, "nemura_client_id": "fyniq-link-" + nemura, "link_key": base64.RawURLEncoding.EncodeToString(linkPub), "client_name": "Nemura link",
 			"client_public_key": publicJWK(t, clientKey), "expires_at": expires, "features": []string{"records", "leave"}}
 	}
 	if l := e.call(http.MethodGet, "/v1/people-link", admin, nil); l.Status != http.StatusOK || l.str("state") != "none" {
@@ -101,6 +101,11 @@ func TestThePeopleLinkCarriesSignedEventsThroughItsOwnClient(t *testing.T) {
 		if m["source"] != want {
 			t.Errorf("%v lives in %v, want %s", m["feature"], m["source"], want)
 		}
+	}
+	// Fyniq's half of the link is shown for Nemura to complete its own: the public keys, never a private one, and the clients' IDs (design D9, D10).
+	if k, _ := l.Body["fyniq_client_public_key"].(map[string]any); len(l.str("fyniq_link_key")) != 43 || k["kty"] != "EC" || k["d"] != nil || l.str("nemura_client_id") != "fyniq-link-"+nemura || l.str("oauth_client_id") == "" ||
+		strings.Contains(l.Raw, "link_private") || strings.Contains(l.Raw, "client_private") {
+		t.Errorf("Fyniq's half of the link: %s", l.Raw)
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/people-link", admin, body()), "requestPeopleLink", 409, CodeLinkExists)
 	var client storage.APIClient
@@ -317,7 +322,7 @@ var matrixPeopleLink = map[string]func(e *env, tok string) (response, func() boo
 		e.api.deps.OAuthClients, e.api.deps.APIAudience = fakeOAuthClients{}, apiAudience
 		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		linkPub, _, _ := ed25519.GenerateKey(rand.Reader)
-		return e.call(http.MethodPost, "/v1/people-link", steppedUp(e, tok), map[string]any{"nemura_organisation_id": uuid.NewString(), "nemura_origin": nemuraOrigin,
+		return e.call(http.MethodPost, "/v1/people-link", steppedUp(e, tok), map[string]any{"nemura_organisation_id": uuid.NewString(), "nemura_origin": nemuraOrigin, "nemura_client_id": "fyniq-link-matrix",
 			"link_key": base64.RawURLEncoding.EncodeToString(linkPub), "client_name": "Matrix link", "client_public_key": publicJWK(e.t, key),
 			"expires_at": e.clock.Now().AddDate(0, 6, 0).Format(time.RFC3339), "features": []string{"records"}}, "Prefer", "return=preview"), nil
 	},

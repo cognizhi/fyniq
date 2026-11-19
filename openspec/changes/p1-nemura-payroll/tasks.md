@@ -28,6 +28,10 @@ Load before each slice: `fyniq-accounting-domain` (money, rounding, postings), `
   the run's totals and B.3's entry. It found three engine defects (the wage band on wages paid, advances not kept apart for 1250, no refund in the graduated range), fixed. **Left:** the rules the sources leave
   open, decided in the oracle and marked `[verify]` in `test/differential/README.md` (the year's estimated ordinary wages, the joint election as F/G, SHG and SDL on the gross, final-pay advances `[accountant to confirm]`);
   overrides (FR-PAY-06) are not in the differential.
+  Second review (20 Nov 2026): the rules were re-decided from the CPF Board, MOM and SkillsFuture pages (`test/differential/README.md`, "Payroll months and runs" with each source's URL and quote);
+  a refund's employee share is whole dollars on a whole-dollar total (engine fixed, `fix(engine)`), F/F is built in the engine and oracle, and overrides, ratio amounts (part month, unpaid leave, overtime)
+  and final-pay advances are in the differential with golden runs. **Left:** recording F/F (`nemura.pr_election` has no kind: a migration, the API and the screen); NM-PAY-12 counts calendar days
+  for a part month where MOM's page counts working days (owner decision O5); SDL and SHG on the gross, 29 February and the refund total's rounding `[accountant to confirm]`.
 - [x] 1.6 Verify: the local gates; the foreign worker levy is an expense input (O2), not a calculation.
   Built in slice 1: `internal/domain/rounding/payroll.go`; `internal/nemura/payroll` (`Classify`, `Calculate`, `CheckDeductions`, `Total`, `Postings`, `Diff`); Nemura's copies of `sg-cpf`, `sg-sdl` and
   `sg-shg` (`internal/nemura/packs.StatutoryFiles`, kept equal to Fyniq's by an archtest); `test/differential/payroll.schema.json` and 16 hand-worked golden months, with a property test of a thousand
@@ -105,3 +109,16 @@ Load before each slice: `fyniq-accounting-domain` (money, rounding, postings), `
 | FR-PAY-16 Salary deductions | 1.4 | | final pay on termination `[accountant to confirm]` |
 | FR-EMP-01, FR-EMP-02 | 2.1 | the Nemura side | the department to account mapping: `p1-payroll-link` D8 |
 | RND-CPF, RND-CPF-GRAD, RND-SDL | 1.1 | | the oracle's copy `[oracle]` |
+
+## Left (from the oracle session's review, 20 Nov 2026)
+
+The independent oracle found four disagreements with the engine, which were fixed in the engine with a failing test first (see `git log internal/nemura/payroll`: the refund's whole-dollar employee share, the F/F joint election, and the two aligned on the second review), and recorded what the sources leave open in `test/differential/README.md`. What stays, each tagged:
+
+- **Overrides (FR-PAY-06)** are in the engine and its database tests, but the oracle's generator does not draw them: the differential run does not prove an overridden figure `[oracle]`.
+- **The F/F joint election** is recorded now (migration 000039, `kind` fg or ff, `TestAFirstYearResidentsElectionKindDecidesWhichRatesTheRunUses`): the engine reads it, the differential scenario `joint-application-at-full-rates` covers the engine and the oracle, and S$5,000 of wages is S$250 of employee CPF at F/G and S$1,000 at F/F `[verify: the CPF Board's treatment]`.
+- **Part-month pay (NM-PAY-12):** the PRD counts calendar days of each pay record over the days of the month, MOM's page counts working days. Reported, not changed `[accountant to confirm]`; the method is a named constant (`payroll.PartMonthMethod`) with hand-worked goldens of the adapter's day counts (`TestAPartMonthIsCountedByCalendarDays`), which the differential run does not draw.
+- **Final-pay advances (FR-PAY-16):** the engine lifts the 50% limit in the final month and recovers an advance only as far as consented, but there is no record of an advance and its consent yet: `other_deduction` consent `[accountant to confirm]`.
+- **Wage class of pay for the month before payable by the 14th**, **SDL and SHG on the gross**, **a 29 February birthday on 1 March**, **the graduated band on the wages subject to CPF** and **a first-of-month birthday**: decided in the oracle from the CPF Board, MOM and SkillsFuture pages of 20 Nov 2026 and tagged `[accountant to confirm]` or `[verify]`.
+- **The foreign worker levy** is an expense input (design O2), not calculated.
+- **The DPIA of Nemura's pay processing** is written for the DPO (`compliance/nemura-dpias/pay.md`; kept apart from `compliance/dpias/` because Fyniq's DPIA registry lists that directory exactly).
+- **Mutation coverage of the engine (QA-ENG-04):** `internal/nemura/payroll` is in `MUTATION_PKGS`: 205 of 214 viable mutants killed (efficacy 95.79%, gremlins 0.6.0, 20 Nov 2026) after `boundary_test.go` pinned every limit of a record at its edge, the CPF age at each birthday, the comparison's order and causes, the payslip's headings and the payment moves. Nine survivors are equivalent or unreachable (two comparisons whose branches return equal values, the sort's tie, a panic message); the lines the tests cannot reach are the engine's own arithmetic-error panics and the `differential` runner, which the oracle gate covers.

@@ -1,0 +1,266 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "overrides",
+ "why": "Each figure an override may replace (FR-PAY-06): the CPF total follows its two shares, net pay and the cost follow; SDL overrides add up and round down once; the difference counts an override posted",
+ "month": "2026-06-01",
+ "people": [
+  {
+   "id": "EE",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "overrides": [
+    {
+     "field": "cpf_employee",
+     "value": "999.50",
+     "reason": "Per the CPF Board's own figure"
+    }
+   ]
+  },
+  {
+   "id": "ER",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "overrides": [
+    {
+     "field": "cpf_employer",
+     "value": "800.00",
+     "reason": "Per the CPF Board's own figure"
+    }
+   ]
+  },
+  {
+   "id": "SDL-A",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "overrides": [
+    {
+     "field": "sdl",
+     "value": "5.50",
+     "reason": "Per the CPF Board's own figure"
+    }
+   ]
+  },
+  {
+   "id": "SDL-B",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "overrides": [
+    {
+     "field": "sdl",
+     "value": "7.50",
+     "reason": "Per the CPF Board's own figure"
+    }
+   ]
+  },
+  {
+   "id": "SHG",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20",
+    "shg_fund": "CDAC"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "3000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "overrides": [
+    {
+     "field": "shg",
+     "value": "2.50",
+     "reason": "Per the CPF Board's own figure"
+    }
+   ]
+  },
+  {
+   "id": "all-four",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20",
+    "shg_fund": "CDAC"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "3000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "overrides": [
+    {
+     "field": "cpf_employee",
+     "value": "601.00",
+     "reason": "Per the CPF Board's own figure"
+    },
+    {
+     "field": "cpf_employer",
+     "value": "500.00",
+     "reason": "Per the CPF Board's own figure"
+    },
+    {
+     "field": "sdl",
+     "value": "6.00",
+     "reason": "Per the CPF Board's own figure"
+    },
+    {
+     "field": "shg",
+     "value": "3.00",
+     "reason": "Per the CPF Board's own figure"
+    }
+   ]
+  },
+  {
+   "id": "foreigner-sdl",
+   "person": {
+    "residency": "foreigner",
+    "birth_date": "1990-01-01"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "3000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "overrides": [
+    {
+     "field": "sdl",
+     "value": "1.00",
+     "reason": "Per the CPF Board's own figure"
+    },
+    {
+     "field": "cpf_employee",
+     "value": "10.00",
+     "reason": "Per the CPF Board's own figure"
+    }
+   ]
+  },
+  {
+   "id": "posted",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "posted": {
+    "items": [
+     {
+      "key": "basic",
+      "name": "Basic salary",
+      "amount": "5000.00",
+      "cpf_wages": true,
+      "suggested": "ordinary"
+     }
+    ],
+    "overrides": [
+     {
+      "field": "cpf_employee",
+      "value": "999.50",
+      "reason": "Per the CPF Board's own figure"
+     }
+    ]
+   }
+  },
+  {
+   "id": "both",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "overrides": [
+    {
+     "field": "sdl",
+     "value": "8.00",
+     "reason": "Per the CPF Board's own figure"
+    }
+   ],
+   "posted": {
+    "items": [
+     {
+      "key": "basic",
+      "name": "Basic salary",
+      "amount": "5000.00",
+      "cpf_wages": true,
+      "suggested": "ordinary"
+     }
+    ],
+    "overrides": [
+     {
+      "field": "sdl",
+      "value": "5.00",
+      "reason": "Per the CPF Board's own figure"
+     }
+    ]
+   }
+  }
+ ]
+}

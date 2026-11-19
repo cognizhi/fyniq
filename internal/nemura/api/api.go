@@ -26,8 +26,10 @@ const description = `Nemura's public API: the optional people platform of PRD-00
 Conventions (PRD-002 NM-ARC-03, PRD-001 §8.18.1):
 - Errors are RFC 9457 problem details (application/problem+json) with a stable code from the catalogue at GET /v1/errors, what is
   wrong, and how to fix it; validation errors list every invalid field at once.
-- Every POST that creates or changes state accepts an Idempotency-Key header: a repeat returns the original response, and the same
-  key with a different request returns 422.
+- Every write that creates or changes state accepts an Idempotency-Key header, kept 24 hours per person: a repeat returns the first
+  response with Idempotent-Replayed: true, the same key with a different request returns 422, and two identical requests at once run
+  once. A response that may carry pay, a bank account, an NRIC or the text of a question is not stored (only its status is): a repeat
+  of such a write that returned a body answers 409 and the result is read from the record.
 - Versioned records return an ETag; commands that change one require If-Match and return 412 when the record changed since, 428
   without it.
 - Changes inside /v1 are additive: a field, an operation or an enum value may be added, and nothing is removed or changed in meaning.
@@ -60,6 +62,7 @@ func Config(v string) huma.Config {
 		{Name: "Onboarding", Description: "The task to invite new people to Fyniq, and a leaver's dates, checklist and leave settlement (NM-ONB-02, NM-ONB-03)."},
 		{Name: "Self-service", Description: "A person's own details and requests, and what waits for the people team (NM-ESS-03, NM-ESS-04)."},
 		{Name: "Letters", Description: "Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07)."},
+		{Name: "Link", Description: "The link to Fyniq: the events Fyniq sends back, signed and received once (NM-INT-10, NM-INT-03)."},
 		{Name: "Session", Description: "Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02)."},
 	}
 	return cfg
@@ -137,7 +140,15 @@ type Deps struct {
 	SelfService SelfService
 	Onboarding  Onboarding
 	Payroll     Payroll
+	// LinkAuth and Link are the link's event inbox (PRD-002 NM-INT-10): the bearer token of Fyniq's client, and what receives its events. Nil: the deployment has no link.
+	LinkAuth LinkAuthenticator
+	Link     LinkInbox
+	// LinkAdmin is how the people team proposes and approves the link; nil: the deployment has none.
+	LinkAdmin LinkAdmin
+	// Idempotency stores the Idempotency-Keys of writes; nil turns the header off (a deployment with no database for it never runs).
+	Idempotency Idempotency
 	Assistant   AssistantAdmin
+	Asker       Asker
 	SignIn      SignInInfo
 	Clock       ports.Clock
 	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
@@ -152,7 +163,9 @@ type API struct {
 
 // New registers the API on mux (an http.ServeMux, or the service's httpserver.Server).
 func New(mux humago.Mux, d Deps) *API {
-	a := &API{API: humago.New(mux, Config(version.Version)), d: d}
+	a := &API{d: d}
+	a.API = humago.New(idemMux{Mux: mux, a: a}, Config(version.Version))
+	a.OpenAPI().OnAddOperation = append(a.OpenAPI().OnAddOperation, addIdempotencyHeader)
 	a.register()
 	a.registerSession()
 	a.registerPasskeys()
@@ -172,6 +185,8 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerSelfService()
 	a.registerOnboarding()
 	a.registerPayroll()
+	a.registerLink()
+	a.registerLinkAdmin()
 	a.registerAssistant()
 	a.registerSignIn()
 	return a
