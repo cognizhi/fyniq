@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "project_ids": {
+      "description": "The projects to submit; left out, every project with open entries.",
+      "items": {
+        "description": "A project's ID.",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "title": "TimesheetSubmit",
+  "type": "object"
+}

@@ -111,9 +111,10 @@ Source: PRD-001 §9.7 · Priority M · Phase P1
 - **WHEN** a client that is not on the organisation's allowlist tries to connect
 - **THEN** it cannot connect
 
-#### Scenario: No dynamic client registration
-- **WHEN** a client attempts dynamic client registration
-- **THEN** it is refused, because dynamic client registration is disabled
+#### Scenario: The OAuth server's own registration is off (rev 0.294)
+- **WHEN** a client attempts dynamic client registration at the OAuth server's own endpoint
+- **THEN** it is refused
+- **AND** a client registers only through Fyniq's own endpoint, which AI-90 closes until an Owner enables it
 
 #### Scenario: P1 first-party clients are pre-registered
 - **GIVEN** phase P1
@@ -238,10 +239,19 @@ Source: PRD-001 §9.7 · Priority M · Phase P1
 - **WHEN** a request arrives with an `Origin` header not on the allowlist
 - **THEN** the server rejects it (DNS-rebinding defence)
 
-#### Scenario: Session ID is not authentication
-- **WHEN** a session is created
-- **THEN** its `Mcp-Session-Id` is random and bound to the token's subject and client
-- **AND** it is never accepted as authentication
+#### Scenario: No sessions, the token on every request (rev 0.294)
+- **GIVEN** the MCP revision in force, 2026-07-28, which has no protocol-level sessions
+- **WHEN** a request carries an `Mcp-Session-Id`
+- **THEN** it is ignored and never echoed, and no session ID is minted
+- **AND** the bearer token is checked on every request, so no ID is ever accepted as authentication
+
+#### Scenario: The protocol headers match the body (rev 0.294)
+- **WHEN** a request's `MCP-Protocol-Version`, `Mcp-Method` or `Mcp-Name` header is missing or differs from the body
+- **THEN** it is refused with HeaderMismatch, and a revision the server does not speak is refused naming the one it does
+
+#### Scenario: An earlier revision's handshake only on need (rev 0.294)
+- **WHEN** a real client needs an earlier revision's `initialize` handshake
+- **THEN** a compatibility layer binds a random `Mcp-Session-Id` to the token's subject and client, and never accepts it as authentication
 
 ### Requirement: AI-40 Tool surface
 MCP tools SHALL be generated from the shared registry and annotated, and the never-list of §9.6 SHALL be enforced: there are no approve, reject, execute, export, administration or settings tools (control test CTL-MCP-02).
@@ -385,6 +395,45 @@ Source: PRD-001 §9.7 · Priority S · Phase P2
 - **WHEN** a third-party client is registered
 - **THEN** it is recorded in the data inventory as a processing path
 - **AND** as a transfer where it processes data outside Singapore (CMP-PD-02, CMP-PD-06)
+
+### Requirement: AI-90 Client registration
+A registration endpoint of Fyniq's own (RFC 7591), in front of the OAuth server's admin API, SHALL be closed until an Owner enables it (dual-controlled), check each request against a policy, limit requests by IP, create the client as `agent` class with the narrowest scopes, unusable until an Owner approves it onto the allowlist, and expire and audit registrations.
+
+Source: PRD-001 §9.7 · Priority M · Phase P1
+
+#### Scenario: Closed until an Owner enables it
+- **GIVEN** no Owner has enabled registration
+- **WHEN** a client posts to the registration endpoint
+- **THEN** it is refused and nothing is created
+
+#### Scenario: Exact redirect URIs only
+- **WHEN** a registration names a redirect URI that is not exact https, or a loopback address (the port aside, RFC 8252), or that holds a wildcard, a fragment or another scheme
+- **THEN** the registration is refused naming the field
+
+#### Scenario: Public PKCE clients, nothing fetched
+- **WHEN** a registration asks for a secret, another grant, keys, a key set URL, a software statement or any URL the server would fetch
+- **THEN** it is refused, so registration cannot make the server call out
+
+#### Scenario: Narrowest scopes, agent class, pending
+- **WHEN** a registration is accepted
+- **THEN** the client is `agent` class with only the default read scope
+- **AND** it cannot connect until an Owner approves it onto the allowlist (AI-35)
+
+#### Scenario: Limits by IP, and a cap on pending
+- **WHEN** one address registers too often, or too many registrations are pending
+- **THEN** further requests are refused with `Retry-After`
+
+#### Scenario: Deny list
+- **WHEN** a registration names a redirect host or a client name on the deny list
+- **THEN** it is refused
+
+#### Scenario: Unused registrations expire
+- **WHEN** a registration is never approved, or an approved one is never used, within its period
+- **THEN** its client is removed from the OAuth server
+
+#### Scenario: Every registration is audited
+- **WHEN** a registration is accepted, refused, approved, denied or expires
+- **THEN** it is recorded with the client's name, redirect URIs and the requesting address, never a secret
 
 ### Requirement: AI-47 Outbound agents and tools
 If the assistant calls external MCP servers or agents (e.g. a bank's or payment provider's), it SHALL use only allowlisted servers, read-only by default, with AI exclusions applied to everything sent and every call logged.
