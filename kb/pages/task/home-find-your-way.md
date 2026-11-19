@@ -4,7 +4,7 @@ type: task
 title: The Home page, search and commands, long work, Settings, the version, and signing out
 summary: Home (pulse, tiles, plans, your work, deadlines, set-up), Search and commands (Ctrl+K), Operations, Settings, the version (Help › About), signing out
 sources:
-  - docs/user-guide/home.md sha256:627ba66ca4b0331f3329a8821e9faaa930eafcfec2b84485c1da49bc8579a580
+  - docs/user-guide/home.md sha256:153826350b3502cdcd719ed45b5a0ed4dda6172e2f805ffb43bce0f9bab3dcb6
 data_class: general
 taint: trusted
 status: draft
@@ -80,6 +80,16 @@ aliases:
 - A screen reader hears each in words, such as "Inbox, 3 approvals waiting", and when a count changes it says so once, in words, without moving the focus.
 
 (src: docs/user-guide/home.md#the-sidebars-counts)
+
+## Favourites and saved views
+
+- The star in the header (on a phone, **Favourites and views** under **More**) pins the page the person is on, or saves it as a **view**: the page with the filters, columns and sort its address carries, under a name they choose.
+- They are the person's own, kept with their profile, so they are the same on every device.
+- A view's link is the page's address, so copying it shares no data: whoever opens it sees only what their own roles let them see.
+- A page whose filters are not in its address, such as most lists today, can be pinned, and a view of it keeps the page without filters.
+- A favourite or view in an area the roles no longer reach is left out; taking one away deletes nothing.
+
+(src: docs/user-guide/home.md#favourites-and-saved-views)
 
 ## Your work and upcoming deadlines
 

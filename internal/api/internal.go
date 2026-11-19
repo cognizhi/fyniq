@@ -80,7 +80,7 @@ func (a *API) internalAuthenticate(ctx huma.Context, next func(huma.Context)) {
 		a.mcpAuthenticate(ctx, next, refuse)
 		return
 	}
-	if kbCompilerOps(ctx.Operation().OperationID) { // the knowledge-base compiler's four calls, with its own service token alone (AI-57)
+	if kbCompilerOps(ctx.Operation().OperationID) { // the knowledge-base compiler's five calls, with its own service token alone (AI-57)
 		if a.deps.Services == nil || a.deps.Services.Verify(ctx.Header(ServiceTokenHeader), ServiceKBCompiler) != nil {
 			refuse(http.StatusUnauthorized, problem(CodeUnauthenticated, "The call is not from the knowledge-base compiler.",
 				"Only the compiler job asks for these, with its own service token."))

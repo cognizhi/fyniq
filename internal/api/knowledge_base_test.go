@@ -122,6 +122,9 @@ var matrixKnowledgeBase = map[string]func(e *env, tok string) (response, func() 
 	"resolveKBFinding": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/knowledge-base/findings/0193a3f2-7c1e-7a2b-9c4d-5e6f70819a30/resolve", tok, map[string]any{"resolution": "x"}, "Prefer", "return=preview"), nil
 	},
+	"recompileKnowledgeBase": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/knowledge-base/recompile", tok, nil, "Prefer", "return=preview"), nil
+	},
 	"reviseKBNote": func(e *env, tok string) (response, func() bool) {
 		r := e.call(http.MethodPut, "/v1/knowledge-base/notes/matrix-note", tok, map[string]any{"kind": "note", "title": "t", "body": "b"}, "If-Match", "*", "Prefer", "return=preview")
 		return r, func() bool { return matrixNotesNone(e) }

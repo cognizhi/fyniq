@@ -142,7 +142,24 @@ func TestAPublicationIsLintedThenMadeByAnOwnerAloneOrSignedByAnother(t *testing.
 	if a := e.call(http.MethodPost, "/v1/approvals/"+ask.str("id")+"/approve", other, hashOf(ask), "If-Match", `"1"`); a.Status != 200 {
 		t.Fatalf("approving Standard mode: %d %s", a.Status, a.Raw)
 	}
-	e.problemIs(publish(owner, map[string]int{"org.expense-policy": 2}), "publishKBPages", 409, CodeKBTeam)
+	state := func() (map[string]int, int) {
+		var live map[string]int
+		var snapshots []storage.KBSnapshot
+		e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			if live, err = u.OrganisationKnowledge().Published(ctx); err != nil {
+				return err
+			}
+			snapshots, err = u.OrganisationKnowledge().Snapshots(ctx, 50)
+			return err
+		})
+		return live, len(snapshots)
+	}
+	liveBefore, snapsBefore := state()
+	e.problemIs(publish(owner, map[string]int{"org.expense-policy": 3}), "publishKBPages", 409, CodeKBTeam)
+	// A refused publication changes nothing (K10): no snapshot is made and the assistant still reads what it did.
+	if live, n := state(); live["org.expense-policy"] != liveBefore["org.expense-policy"] || n != snapsBefore {
+		t.Errorf("a refused publication changed what is live: %v, %d snapshots (was %v, %d)", live, n, liveBefore, snapsBefore)
+	}
 	v4 := edit(owner, "org.expense-policy", page(strings.Replace(good, "14 days", "14 days, in writing", 1)), rb.Header.Get("ETag"))
 	if v4.Status != http.StatusCreated {
 		t.Fatalf("the next edit: %d %s", v4.Status, v4.Raw)

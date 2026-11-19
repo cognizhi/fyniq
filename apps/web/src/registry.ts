@@ -53,6 +53,7 @@ export type Entry = RouteFeature | ActionFeature | NavFeature;
 
 export const routes = [
   { kind: "route", id: "home", path: "/", mode: "basic", signedIn: true, help: "home.overview", guide: "home.overview" },
+  { kind: "route", id: "enrol", path: "/sign-in/enrol", mode: "basic", signedIn: true, help: "auth.enrol", guide: "auth.sign-in#set-up-how-you-confirm-its-you" },
   { kind: "route", id: "sign-in", path: "/sign-in", mode: "basic", signedIn: false, help: "auth.sign-in", guide: "auth.sign-in" },
   { kind: "route", id: "install", path: "/install", mode: "basic", signedIn: false, help: "installation.setup", guide: "installation.setup" },
   // The customer's view of a quote or invoice through the secure link its email carried (FR-AR-06, FR-AR-16): no sign-in.
@@ -248,6 +249,7 @@ export const actions = [
   // The heartbeat drill register, a tab of Compliance › Controls (NFR-OBS-02, CTL-RES-05): Expert, as Controls is.
   { kind: "action", id: "compliance.heartbeat-drills", mode: "expert", help: "compliance.heartbeat-drills", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "heartbeat-drills.minutes", mode: "expert", help: "heartbeat-drills.minutes", guide: "compliance.controls#heartbeat-drills" },
+  { kind: "action", id: "shell.saved", mode: "basic", help: "shell.saved", guide: "home.overview#favourites-and-saved-views" },
   { kind: "action", id: "shell.help", mode: "basic", help: "shell.help", guide: "home.overview#see-which-version-you-are-on" },
   // "What happened? Where to record it" on Home (FR-UX-11), from the workbook's Start Here.
   { kind: "action", id: "home.what-happened", mode: "basic", help: "home.what-happened", guide: "home.overview#what-happened-where-to-record-it" },
@@ -534,6 +536,7 @@ export const actions = [
   { kind: "action", id: "data-protection.dpia-approve", mode: "expert", help: "data-protection.dpia-approve", guide: "compliance.data-protection#impact-assessments" },
   { kind: "action", id: "risk.save", mode: "expert", help: "risk.save", guide: "compliance.risks#add-or-change-a-risk" },
   { kind: "action", id: "risk.review", mode: "expert", help: "risk.review", guide: "compliance.risks#review-a-risk" },
+  { kind: "action", id: "kb.recompile", mode: "expert", help: "kb.recompile", guide: "settings.ai-knowledge-base#recompile" },
   { kind: "action", id: "policy.acknowledge", mode: "basic", help: "policy.acknowledge", guide: "compliance.policies#acknowledge-a-policy" },
   { kind: "action", id: "policy.publish", mode: "expert", help: "policy.publish", guide: "compliance.policies#draft-and-publish-a-policy" },
   { kind: "action", id: "statutory-filing.attach-evidence", mode: "basic", help: "statutory-filing.attach-evidence", guide: "compliance.calendar#record-a-filing" },

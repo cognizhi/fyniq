@@ -47,6 +47,19 @@ Asking for or approving a change needs this confirmation in the last 5 minutes.
 
 Each request to confirm works once, for 5 minutes, and only on this site.
 
+## Set up how you confirm it's you
+
+Open **Set up how you confirm it's you** from **Settings › Profile and security**, or go to `/sign-in/enrol`. It walks you through
+three steps, each marked **Done** or **To do** from what Fyniq holds, and each also on **Settings › Profile and security**:
+
+1. **Add a passkey**: your fingerprint, face or PIN on this device. If the browser cannot make passkeys, use the authenticator
+   app your sign-in provider asks for, and add a passkey later from a browser that can.
+2. **Keep your recovery codes**: ten one-time codes, shown once. Print them or keep them in a password manager.
+3. **Add a second authenticator** (recommended): a second passkey on another device, so losing one device does not lock you out.
+
+When steps 1 and 2 are done the page says you are set up. From then on Fyniq asks you to confirm it's you, with your passkey,
+for approvals, releasing payments and changing bank details.
+
 ## Your devices
 
 Each time you sign in, Fyniq emails you, at the address your provider confirmed: when, with which

@@ -603,6 +603,8 @@ fyniq_api       UPDATE    user_membership (status, version)
 fyniq_api       INSERT    user_preference (contrast, date_format, density, ledger_view, mode, motion, negative_format, number_format, set_at, shortcut_keys, shortcuts_on, theme, user_id)
 fyniq_api       SELECT    user_preference
 fyniq_api       EXECUTE   user_recovery_codes()
+fyniq_api       INSERT    user_saved_item (item_key, kind, path, query, set_at, state, title, user_id)
+fyniq_api       SELECT    user_saved_item
 fyniq_api       EXECUTE   user_sessions()
 fyniq_api       EXECUTE   webauthn_approval_answer()
 fyniq_api       EXECUTE   webauthn_approval_challenge_issue()
@@ -953,6 +955,7 @@ fyniq_readonly  SELECT    timesheet_submission
 fyniq_readonly  SELECT    user_help_state
 fyniq_readonly  SELECT    user_membership
 fyniq_readonly  SELECT    user_preference
+fyniq_readonly  SELECT    user_saved_item
 fyniq_readonly  SELECT    withholding_decision
 fyniq_worker    SELECT    access_review_attestation
 fyniq_worker    SELECT    account
@@ -1311,4 +1314,5 @@ fyniq_worker    SELECT    timesheet_submission
 fyniq_worker    SELECT    user_help_state
 fyniq_worker    SELECT    user_membership
 fyniq_worker    SELECT    user_preference
+fyniq_worker    SELECT    user_saved_item
 fyniq_worker    SELECT    withholding_decision

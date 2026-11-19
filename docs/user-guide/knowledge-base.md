@@ -68,10 +68,24 @@ The assistant reads a page only once it is **published**. A draft, whoever wrote
   write and edit but cannot publish.
 - A publication is a numbered snapshot. Snapshots are never changed; to undo one, publish an earlier version again.
 
+## Recompile
+
+- **Recompile** (top right, Owner and Administrator) queues the knowledge-base compiler. It drafts a page from each
+  note that changed since its page was made, checks every draft with the same lint a publication is checked by, and
+  then checks the whole knowledge base. You see the result as new drafts and findings; nothing is published.
+- While the AI is switched off the compiler drafts no pages, but the check still runs, and the message says so.
+- The compiler works under its own identity and can only make drafts and findings. It cannot publish, read your books or
+  overwrite a page a person wrote: a recompile that disagrees with your edit waits beside it.
+- Once a week the same check runs by itself for every organisation, with no AI. If the compiler is not connected in
+  your installation, **Recompile** says so and nothing is queued.
+
 ## Lint findings
 
 - A finding is something a person should look at: a recompile waiting beside a person's edit, a contradiction with a
-  setting, or a source that changed. An open finding on a page stops that page's publication.
+  setting, or a source that changed. An open finding of those kinds stops that page's publication.
+- The weekly check adds advice: a page compiled from an older version of its note (**stale**), a note with no page, an
+  overlay of a page Fyniq has since changed (**superseded**), a link to no page, and a page nothing links to
+  (**orphan**). Advice never stops a publication: the new version is the answer, and you close the finding when it is.
 - **Resolve** closes a finding with a sentence on what was done. It closes once, and who closed it is kept.
 
 ## Who can do what

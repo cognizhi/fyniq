@@ -10,8 +10,10 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/ai"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/kbcompile"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -98,6 +100,26 @@ type (
 		Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
 		Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
 		Body     KBFindingView
+	}
+)
+
+// KBRecompile is what a recompile request queued.
+type KBRecompile struct {
+	Queued   bool   `json:"queued" doc:"The compiler job was queued for this organisation." example:"true"`
+	Compiles bool   `json:"compiles" doc:"Whether it will compile changed notes into page drafts: false while the AI is switched off, when only the lint runs." example:"true"`
+	Note     string `json:"note" doc:"What it will do, in plain words." example:"The compiler will draft pages from the notes that changed and check the whole knowledge base; drafts and findings appear here, and nothing is published."`
+}
+
+type (
+	kbRecompileIn struct {
+		KeyHeader
+		PreferHeader
+	}
+	kbRecompileOut struct {
+		Status   int
+		Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+		Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was queued (FR-INT-14)."`
+		Body     KBRecompile
 	}
 )
 
@@ -301,5 +323,57 @@ func registerKnowledgeAdmin(a *API) {
 				return nil, err
 			}
 			return &kbResolveOut{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
+		})
+
+	register(a, authz.RecompileKnowledgeBase, huma.Operation{
+		OperationID: "recompileKnowledgeBase", Method: http.MethodPost, Path: "/v1/knowledge-base/recompile", Tags: []string{"Knowledge base"}, DefaultStatus: http.StatusAccepted,
+		Summary: "Recompile the organisation's knowledge base",
+		Description: "Queues the compiler job for this organisation (AI-52, AI-55): it drafts a page from each note that changed since its page was compiled, " +
+			"checks every draft with the publication lint (one retry, then a finding), and runs the weekly lint across the whole knowledge base. It runs as the " +
+			"compiler, under its own service identity, and can only make drafts and findings: nothing is published, and a person's edited page is never overwritten. " +
+			"While the AI is switched off only the lint runs (`compiles` is false). Answers 503 KB-COMPILER-03 where no compiler job is connected. Side effects: " +
+			"the audit event kb.recompile_requested and one queued job. Idempotent with Idempotency-Key; Prefer: return=preview queues nothing. On the never-list " +
+			"for MCP and agent clients (§9.6).",
+	}, append([]string{CodeSessionRequired, CodeKBCompilerOff, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid}, locks...),
+		func(ctx context.Context, in *kbRecompileIn) (*kbRecompileOut, error) {
+			p, _ := authn.From(ctx)
+			if p.Class != authn.ClassUser || p.UserID == uuid.Nil {
+				return nil, problem(CodeSessionRequired, "A person signed in asks for a recompile.", "Sign in to Fyniq")
+			}
+			if !a.deps.KBCompiler {
+				return nil, problem(CodeKBCompilerOff, "No compiler job is connected in this installation, so nothing can be recompiled.",
+					"Run `make kb-compile ORG=<organisation>` locally; the cloud job is connected with the deployment")
+			}
+			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (KBRecompile, error) {
+				on, err := ai.SwitchedOn(ctx, u, a.deps.Clock.Now())
+				if err != nil {
+					return KBRecompile{}, err
+				}
+				item, err := kbcompile.RequestItem(p.UserID, on)
+				if err != nil {
+					return KBRecompile{}, err
+				}
+				if a.deps.Outbox != nil {
+					_, err = a.deps.Outbox.Enqueue(ctx, u, p.Organisation, item)
+				} else {
+					_, err = u.Outbox().Enqueue(ctx, item) // no dispatcher here: the tick sends it
+				}
+				if err != nil {
+					return KBRecompile{}, err
+				}
+				if err := u.Audit().Record(ctx, storage.AuditRecord{Action: "kb.recompile_requested", ObjectType: "organisation", ObjectID: p.Organisation,
+					Changes: map[string][2]any{"compiles": {nil, on}}}); err != nil {
+					return KBRecompile{}, err
+				}
+				note := "The compiler will check the whole knowledge base and raise findings; the AI is switched off, so it drafts no pages."
+				if on {
+					note = "The compiler will draft pages from the notes that changed and check the whole knowledge base; drafts and findings appear here, and nothing is published."
+				}
+				return KBRecompile{Queued: true, Compiles: on, Note: note}, nil
+			})
+			if err != nil {
+				return nil, err
+			}
+			return &kbRecompileOut{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 		})
 }

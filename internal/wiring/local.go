@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/egress"
+	"github.com/cognizhi/fyniq/internal/kbcompile"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/render"
 )
@@ -122,6 +123,9 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		AgentModelURL:   apiInternalURL,
 		AgentModelToken: func(context.Context) (string, error) { return tokens.Token(agents.ModelClass) },
 		AgentModelHTTP:  PlatformEgress().Bounded(1<<20, 31*time.Minute).For(egress.HostOf(apiInternalURL)),
+		KBCompilerURL:   apiInternalURL,
+		KBCompilerToken: func(context.Context) (string, error) { return tokens.Token(kbcompile.Class) },
+		KBCompilerHTTP:  PlatformEgress().Bounded(4<<20, 10*time.Minute).For(egress.HostOf(apiInternalURL)),
 		Scheduling:      local.Scheduling{},
 		Logs:            local.LogDir{Dir: cmp.Or(os.Getenv("FYNIQ_LOG_DIR"), filepath.Join(data, "logs"))},
 	}

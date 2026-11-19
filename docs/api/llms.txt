@@ -645,6 +645,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/knowledge-base/pages/{key}/versions` (listKBPageVersions): List a knowledge-base page's versions
 - `POST /v1/knowledge-base/publications` (publishKBPages): Publish knowledge-base pages
 - `POST /v1/knowledge-base/publications/approval` (requestKBPublication): Ask for approval to publish knowledge-base pages
+- `POST /v1/knowledge-base/recompile` (recompileKnowledgeBase): Recompile the organisation's knowledge base
 - `GET /v1/knowledge-base/snapshots` (listKBSnapshots): List the knowledge base's snapshots
 - `GET /v1/kpi-inputs` (listKpiInputs): List the KPIs' entered counts
 - `PUT /v1/kpi-inputs/{month}` (setKpiInput): Enter a month's KPI counts
@@ -958,6 +959,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/sales-reminders/{document_id}/send` (sendSalesReminder): Send a reminder due
 - `POST /v1/sales-reminders/{document_id}/skip` (skipSalesReminder): Skip a reminder due
 - `GET /v1/sales/gst-codes` (getSalesGSTCodes): Get the GST codes for sales
+- `GET /v1/saved-items` (listSavedItems): List your favourites and saved views
+- `POST /v1/saved-items` (saveSavedItem): Save a favourite or a view
+- `DELETE /v1/saved-items/{kind}` (takeAwaySavedItem): Take a favourite or a view away
 - `GET /v1/search` (searchRecords): Search the records
 - `GET /v1/session` (getSession): Get your session
 - `GET /v1/session/devices` (listDevices): List your devices

@@ -3473,6 +3473,19 @@ type FyniqUserRecoveryCode struct {
 	UsedAt    *time.Time
 }
 
+type FyniqUserSavedItem struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Kind           string
+	ItemKey        string
+	State          string
+	Title          string
+	Path           string
+	Query          string
+	SetAt          time.Time
+}
+
 type FyniqUserSession struct {
 	TokenHash    []byte
 	Issuer       string

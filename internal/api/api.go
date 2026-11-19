@@ -53,6 +53,7 @@ type Deps struct {
 	Store        storage.Store
 	Installation storage.Installation // first-run setup and Super admins; nil when there is no database
 	Outbox       *outbox.Dispatcher   // queues background work, such as token revocations; nil when there is none
+	KBCompiler   bool                 // the worker holds the knowledge-base compiler's own service identity, so a recompile can run (local build; release waits for its Cloud Run job [live-verify])
 	Clock        ports.Clock
 	Auth         authn.Authenticator
 	SignIn       ports.SignIn // the providers people sign in with; nil when there are none (the release build until Identity Platform)
@@ -392,6 +393,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerNotifications(a)
 	registerHelpState(a)
 	registerPreferences(a)
+	registerSavedItems(a)
 	registerMCPOptIn(a)
 	registerConnectedApps(a)
 	registerOAuthConsent(a)
