@@ -18,6 +18,9 @@
 - [x] 1.2a (design D3) `Actor.Requester`: the person who asked, beside the approver, for a command that acts for one person.
 - [ ] 1.3 `doc.attach` (AttachDocument): an existing document to a record the person may attach to. Tests
   `// req: ai/task-catalogue doc.attach Attach a document to a record`.
+  **Left:** there is no operation that attaches an existing stored file to another record (evidence is attached by an upload, or a claim's
+  forwarded mail), so the command would need a new domain function and the evidence rules' own checks first; it follows the document
+  inbox, whose captured files are the existing documents it attaches.
 
 ## 2. Undo, tier 3 and approval quality
 
@@ -38,12 +41,22 @@
 ## 3. The other tier-1 types
 
 - [ ] 3.1 `ar.draft_reminders`, `plan.save_scenario`, `rpt.draft_commentary` (design D2).
+  **Left:** `rpt.draft_commentary` has no domain to draft into (board-pack commentary is not built); `plan.save_scenario` saves a simulated
+  forecast whose inputs (a cash projection's assumptions) the proposal would have to carry in full; `ar.draft_reminders` waits for the
+  sales reminder drafts to be a record a person approves. Each needs its record first.
 - [ ] 3.2 `bank.categorise_lines`, `bank.match_payments`, `bank.rule_upsert` (design D7, D8).
+  **Left:** these post to the ledger (bank categorisation and matching, Appendix B.1), so they widen the executor's ledger grants and need
+  their undo (a reversing entry) with their attack tests; they are built together with the tier-2 posting types in a slice of their own.
 
 ## 4. Tier 2
 
 - [ ] 4.1 `ct.update_contact`, `recur.create_template`, `plan.propose_budget` (design D8).
+  **Left:** `ct.update_contact` needs a narrow executor update of the contact's allowed fields (the existing update writes every column, so
+  the executor would need grants on all of them, bank-adjacent remittance email included) and its undo (the previous values); the other two
+  need their domain commands checked against the executor's grants.
 - [ ] 4.2 `gl.post_journal`, `ar.post_invoice`, `ap.post_bill` (design D2, D3, D7).
+  **Left (the riskiest, last by design D2):** they post to the ledger as the approving person, so each widens the executor's ledger grants,
+  carries its limit and its undo, and its attack tests; not started while the owner is away.
 
 ## 5. The finish
 
