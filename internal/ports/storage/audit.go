@@ -220,3 +220,17 @@ func WithLines(ctx context.Context) context.Context { return context.WithValue(c
 
 // FromLines says whether reads as at a revision must sum the lines (WithLines).
 func FromLines(ctx context.Context) bool { b, _ := ctx.Value(linesKey{}).(bool); return b }
+
+type personKey struct{}
+
+// WithPerson names the person a request acts for, so the database applies their department scope to what it reads (FR-ADM-01,
+// rev 0.253). The API attaches it with the principal; a job, a seed or a test names no one and reads unrestricted.
+func WithPerson(ctx context.Context, user uuid.UUID) context.Context {
+	return context.WithValue(ctx, personKey{}, user)
+}
+
+// PersonFrom is the person ctx acts for; uuid.Nil when none.
+func PersonFrom(ctx context.Context) uuid.UUID {
+	u, _ := ctx.Value(personKey{}).(uuid.UUID)
+	return u
+}

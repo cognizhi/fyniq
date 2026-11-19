@@ -211,6 +211,7 @@ fyniq_api       INSERT    data_inventory_review (note, quarter, reviewed_at, rev
 fyniq_api       SELECT    data_inventory_review
 fyniq_api       EXECUTE   decide_installation_change()
 fyniq_api       EXECUTE   decide_join_request()
+fyniq_api       EXECUTE   dept_scope()
 fyniq_api       INSERT    dimension (kind, name, position)
 fyniq_api       SELECT    dimension
 fyniq_api       UPDATE    dimension (is_active, name, version)
@@ -538,6 +539,8 @@ fyniq_api       SELECT    risk_version
 fyniq_api       INSERT    role_assignment (expires_at, membership_id, role)
 fyniq_api       SELECT    role_assignment
 fyniq_api       UPDATE    role_assignment (revoked_at)
+fyniq_api       INSERT    role_assignment_scope (assignment_id, dimension_value_id)
+fyniq_api       SELECT    role_assignment_scope
 fyniq_api       INSERT    sales_reminder (decided_by, document_id, outcome, reason, send_id, step)
 fyniq_api       SELECT    sales_reminder
 fyniq_api       USAGE     schema fyniq
@@ -934,6 +937,7 @@ fyniq_readonly  SELECT    risk
 fyniq_readonly  SELECT    risk_review
 fyniq_readonly  SELECT    risk_version
 fyniq_readonly  SELECT    role_assignment
+fyniq_readonly  SELECT    role_assignment_scope
 fyniq_readonly  SELECT    sales_reminder
 fyniq_readonly  USAGE     schema fyniq
 fyniq_readonly  SELECT    security_incident
@@ -1287,6 +1291,7 @@ fyniq_worker    SELECT    risk
 fyniq_worker    SELECT    risk_review
 fyniq_worker    SELECT    risk_version
 fyniq_worker    SELECT    role_assignment
+fyniq_worker    SELECT    role_assignment_scope
 fyniq_worker    SELECT    sales_reminder
 fyniq_worker    EXECUTE   scheduled_issue_allowed()
 fyniq_worker    USAGE     schema fyniq

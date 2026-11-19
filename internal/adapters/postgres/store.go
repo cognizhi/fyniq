@@ -193,6 +193,11 @@ func (s *Store) Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Conte
 		if err := s.setTenant(ctx, q, org); err != nil {
 			return err
 		}
+		if who := storage.PersonFrom(ctx); who != uuid.Nil {
+			if err := q.SetPerson(ctx, who.String()); err != nil {
+				return err
+			}
+		}
 		u = &unitOfWork{q: q, store: s, org: org}
 		attempts = append(attempts, u)
 		defer func() { u.done = true }()

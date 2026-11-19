@@ -362,6 +362,20 @@ func (r members) Assign(ctx context.Context, membershipID uuid.UUID, role string
 	return storage.RoleAssignment{ID: row.ID, MembershipID: row.MembershipID, Role: row.Role, ExpiresAt: row.ExpiresAt}, nil
 }
 
+func (r members) Narrow(ctx context.Context, assignmentID uuid.UUID, values []uuid.UUID) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	ids := make([]string, 0, len(values))
+	for _, v := range values {
+		if err := r.u.q.InsertRoleAssignmentScope(ctx, sqlcdb.InsertRoleAssignmentScopeParams{AssignmentID: assignmentID, DimensionValueID: v}); err != nil {
+			return mapError(err)
+		}
+		ids = append(ids, v.String())
+	}
+	return r.u.event(ctx, "role_assignment.scoped", "role_assignment_scope", assignmentID, nil, map[string][2]any{"department_values": {nil, ids}})
+}
+
 func (r members) Revoke(ctx context.Context, assignmentID uuid.UUID) error {
 	if err := r.u.check(); err != nil {
 		return err

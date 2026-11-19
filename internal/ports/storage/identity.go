@@ -372,6 +372,10 @@ type Members interface {
 	Assign(ctx context.Context, membershipID uuid.UUID, role string, expires *time.Time) (RoleAssignment, error)
 	// Revoke ends a role assignment; it is never changed.
 	Revoke(ctx context.Context, assignmentID uuid.UUID) error
+	// Narrow limits an Approver assignment to values of the department dimension, once, when the role is given (FR-ADM-01):
+	// a role with no scope reaches none of a dept-qualified cell. Another role, another dimension or a second narrowing is
+	// refused with CodeMembership; the scope is audited role_assignment.scoped.
+	Narrow(ctx context.Context, assignmentID uuid.UUID, departmentValues []uuid.UUID) error
 	// Roles returns the roles a user holds now: live, unexpired assignments of an active membership.
 	Roles(ctx context.Context, userID uuid.UUID, now time.Time) ([]RoleAssignment, error)
 	// List returns the active members with their names and live roles at now, by membership ID (the order they
@@ -401,6 +405,9 @@ type RoleAssignment struct {
 	Role         string
 	ExpiresAt    *time.Time
 	RevokedAt    *time.Time
+	// DepartmentValues are the department values an Approver assignment is narrowed to (FR-ADM-01); none: a role with no
+	// scope, which reaches none of a dept-qualified cell.
+	DepartmentValues []uuid.UUID
 }
 
 // MemberOf is a person's membership by its organisation and user.

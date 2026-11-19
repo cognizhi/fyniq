@@ -68,3 +68,12 @@ SELECT r.organisation_id::uuid AS organisation_id, r.invitation_id::uuid AS invi
 -- name: GetMemberInvitation :one
 SELECT id, display_name, roles, roles_expire_at, created_at, expires_at, accepted_at, withdrawn_at
   FROM fyniq.member_invitation WHERE id = sqlc.arg(id);
+
+-- name: InsertRoleAssignmentScope :exec
+-- A department value an Approver assignment is narrowed to (FR-ADM-01); the database allows a live Approver assignment and
+-- department values only.
+INSERT INTO fyniq.role_assignment_scope (assignment_id, dimension_value_id) VALUES (sqlc.arg(assignment_id), sqlc.arg(dimension_value_id));
+
+-- name: ListRoleAssignmentScopes :many
+-- The department values each Approver assignment is narrowed to (FR-ADM-01).
+SELECT assignment_id, dimension_value_id FROM fyniq.role_assignment_scope ORDER BY created_at, dimension_value_id;
