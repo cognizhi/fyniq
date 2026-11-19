@@ -201,7 +201,7 @@ checks in the checks catalogue, each with a fixture that triggers it (QA-RPT-02)
 Each is built on its recommended default, tagged *provisional until sign-off* in the PRD, as the repository does; the
 owner confirms or changes it.
 
-**A. Who sets person-level cost rates (a new Appendix D row).** Appendix D has no C cell on "Project reports and cost
+**A. Who sets person-level cost rates (a new Appendix D row). DECIDED by the owner (19 Nov 2026), Option 1: a new row "Project cost rates (rev 0.295)"; the Owner and the Payroll administrator enter and see per-person rates, everyone else sees only role-average rates and totals of at least 3 people (FR-PAY-13). Decision C goes with it: before payroll exists the Owner or Payroll administrator types the rates in, and a payroll-derived rate replaces one later.** (Options as first written:) Appendix D has no C cell on "Project reports and cost
 rates", so nobody may write a rate.
 - *Option 1 (recommended):* a new row **"Cost rates, person level (rev 0.N)"**: Owner V/C, Payroll administrator V/C,
   everyone else — (the AI —). Pros: exactly the people FR-PRJ-06 and FR-PAY-13 name for seeing them; no existing grant
