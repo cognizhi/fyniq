@@ -220,6 +220,20 @@ def customer_receipt(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     return settle(r, doc, books, settles="invoice", sign=-1)
 
 
+def dispute_settlement(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
+    """A lost dispute's customer credit settled against a provider's disputes clearing account (``dispute_settlement@1``,
+    FR-PSP-04, rev 0.308, the owner's decision of 19 Nov 2026) [accountant to confirm]: the legs of a customer refund,
+    Dr 1100 with the credit's carrying amount and Cr the disputes clearing account, which holds no money; one credit note, in
+    the base currency, with nothing unapplied and no part in full."""
+    if doc.data["currency"] != r.base:
+        raise Rejected("dispute-settlement-currency")
+    if len(doc.data["parts"]) != 1:
+        raise Rejected("one-credit-only")
+    if doc.data["parts"][0].get("in_full"):
+        raise Rejected("in-full-not-allowed")
+    return settle(r, doc, books, settles="credit_note", sign=1, in_full_allowed=False, unapplied_allowed=False, account_kind="dispute")
+
+
 def customer_deposit(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     d = doc.data
     currency = d["currency"]

@@ -52,6 +52,7 @@ func (a *API) registerInternal(mux humago.Mux) {
 	registerToolCalls(a)
 	registerProposals(a)
 	registerAgentRunModel(a)
+	registerMCPTools(a)
 	registerKBCompiler(a)
 }
 
@@ -73,6 +74,10 @@ func (a *API) internalAuthenticate(ctx huma.Context, next func(huma.Context)) {
 		audit := storage.AuditFrom(ctx.Context())
 		audit.Actor = &storage.Actor{Type: "service", ID: "worker"}
 		next(huma.WithContext(ctx, storage.WithAudit(ctx.Context(), audit)))
+		return
+	}
+	if ctx.Operation().OperationID == "callMCPTool" { // the MCP service's one way in, with its own service token and a delegated token
+		a.mcpAuthenticate(ctx, next, refuse)
 		return
 	}
 	if kbCompilerOps(ctx.Operation().OperationID) { // the knowledge-base compiler's four calls, with its own service token alone (AI-57)

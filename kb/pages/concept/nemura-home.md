@@ -4,7 +4,7 @@ type: concept
 title: Your home page in Nemura
 summary: Which Nemura home page a person lands on after signing in, what Your roles shows and what to do when a role or page looks wrong
 sources:
-  - docs/user-guide/nemura/home.md sha256:e4966072de82d9700ed0700b54954076b7309fbd08dba1c4897925b9d8da14db
+  - docs/user-guide/nemura/home.md sha256:17d4b7336e9d59fbc3fe1deea7909238e5a6a6e9111b58fcbe0935b7cfabc613
 data_class: general
 taint: trusted
 status: published
@@ -34,6 +34,10 @@ aliases:
 4. Leave ([[nemura.my-leave]]), pay and letters appear as the company switches each on.
 
 (src: docs/user-guide/nemura/home.md#steps)
+
+## Today (People home)
+
+- The people team's home shows leave requests waiting, who is away today, certificates to verify, flexible work requests waiting, government-paid leave with no claim filed and what needs a look; each links to its page, and a figure the person may not see shows a dash. (src: docs/user-guide/nemura/home.md#what-it-is)
 
 ## Related
 

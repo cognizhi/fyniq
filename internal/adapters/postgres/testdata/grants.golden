@@ -57,7 +57,7 @@ fyniq_api       UPDATE    ai_price (decided_at, decided_by, status)
 fyniq_api       SELECT    ai_price_catalogues
 fyniq_api       INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_api       SELECT    ai_price_rate
-fyniq_api       INSERT    ai_proposal (agent, evidence, expires_at, item_count, model, payload, payload_sha256, prompt, proposed_at, rationale, requested_by, required_approvals, risk_tier, run_id, task_sha256, task_type, task_version, tools_sha256, turn_id)
+fyniq_api       INSERT    ai_proposal (agent, evidence, expires_at, item_count, mcp_app, model, payload, payload_sha256, prompt, proposed_at, rationale, requested_by, required_approvals, risk_tier, run_id, task_sha256, task_type, task_version, tools_sha256, turn_id)
 fyniq_api       SELECT    ai_proposal
 fyniq_api       UPDATE    ai_proposal (approval_request_id, approved_items, approved_payload, approved_sha256, base_versions, decided_at, decided_by, impact, reason, status, superseded_by, version)
 fyniq_api       INSERT    ai_qualification (agent, cases, connection_id, model, passed, ran_at, ran_by, result, run_id, suite, suite_version, threshold, version)
@@ -344,6 +344,20 @@ fyniq_api       SELECT    ledger_purged_entry
 fyniq_api       SELECT    ledger_revision
 fyniq_api       EXECUTE   link_identity()
 fyniq_api       EXECUTE   lock_ledger()
+fyniq_api       INSERT    mcp_call (app, app_version, at, code, duration_ms, facts, input_sha256, network, outcome, output_sha256, token_id, tool, user_id)
+fyniq_api       SELECT    mcp_call
+fyniq_api       EXECUTE   mcp_client_decide()
+fyniq_api       EXECUTE   mcp_client_register()
+fyniq_api       EXECUTE   mcp_client_status()
+fyniq_api       EXECUTE   mcp_client_touch()
+fyniq_api       EXECUTE   mcp_clients_expire()
+fyniq_api       EXECUTE   mcp_clients_named()
+fyniq_api       EXECUTE   mcp_clients_pending()
+fyniq_api       EXECUTE   mcp_registration_open()
+fyniq_api       INSERT    mcp_seen (first_seen, kind, user_id, value)
+fyniq_api       SELECT    mcp_seen
+fyniq_api       INSERT    mcp_user_optin (opted_in, set_at, user_id)
+fyniq_api       SELECT    mcp_user_optin
 fyniq_api       EXECUTE   member_emails()
 fyniq_api       INSERT    member_invitation (code_hash, created_at, display_name, expires_at, roles, roles_expire_at)
 fyniq_api       SELECT    member_invitation
@@ -468,6 +482,8 @@ fyniq_api       INSERT    psp_account (connector_id, created_at, created_by, dis
 fyniq_api       SELECT    psp_account
 fyniq_api       UPDATE    psp_account (dispute_loss_account_id, disputes_account_id, fee_account_id, payout_account_id, version)
 fyniq_api       SELECT    psp_balance
+fyniq_api       INSERT    psp_dispute_credit (amount, connector_id, created_at, created_by, credit_note_id, currency, dispute_id, refund_id)
+fyniq_api       SELECT    psp_dispute_credit
 fyniq_api       INSERT    psp_dispute_loss (accepted_overstated_revenue, amount, connector_id, created_at, created_by, currency, dispute_id, document_id, reason)
 fyniq_api       SELECT    psp_dispute_loss
 fyniq_api       INSERT    psp_event (api_version, connector_id, event_id, event_type, id, object_id, object_kind, parser_version, payload, payload_sha256, provider, received_at)
@@ -587,6 +603,8 @@ fyniq_api       UPDATE    user_membership (status, version)
 fyniq_api       INSERT    user_preference (contrast, date_format, density, ledger_view, mode, motion, negative_format, number_format, set_at, shortcut_keys, shortcuts_on, theme, user_id)
 fyniq_api       SELECT    user_preference
 fyniq_api       EXECUTE   user_recovery_codes()
+fyniq_api       INSERT    user_saved_item (item_key, kind, path, query, set_at, state, title, user_id)
+fyniq_api       SELECT    user_saved_item
 fyniq_api       EXECUTE   user_sessions()
 fyniq_api       EXECUTE   webauthn_approval_answer()
 fyniq_api       EXECUTE   webauthn_approval_challenge_issue()
@@ -841,6 +859,9 @@ fyniq_readonly  SELECT    kpi_input
 fyniq_readonly  SELECT    ledger_boundary
 fyniq_readonly  SELECT    ledger_purged_entry
 fyniq_readonly  SELECT    ledger_revision
+fyniq_readonly  SELECT    mcp_call
+fyniq_readonly  SELECT    mcp_seen
+fyniq_readonly  SELECT    mcp_user_optin
 fyniq_readonly  SELECT    member_invitation
 fyniq_readonly  SELECT    migration_archive
 fyniq_readonly  SELECT    migration_commit
@@ -892,6 +913,7 @@ fyniq_readonly  SELECT    project_milestone
 fyniq_readonly  SELECT    project_task
 fyniq_readonly  SELECT    psp_account
 fyniq_readonly  SELECT    psp_balance
+fyniq_readonly  SELECT    psp_dispute_credit
 fyniq_readonly  SELECT    psp_dispute_loss
 fyniq_readonly  SELECT    psp_event
 fyniq_readonly  SELECT    psp_payout
@@ -933,6 +955,7 @@ fyniq_readonly  SELECT    timesheet_submission
 fyniq_readonly  SELECT    user_help_state
 fyniq_readonly  SELECT    user_membership
 fyniq_readonly  SELECT    user_preference
+fyniq_readonly  SELECT    user_saved_item
 fyniq_readonly  SELECT    withholding_decision
 fyniq_worker    SELECT    access_review_attestation
 fyniq_worker    SELECT    account
@@ -1144,6 +1167,11 @@ fyniq_worker    EXECUTE   ledger_purge()
 fyniq_worker    SELECT    ledger_purged_entry
 fyniq_worker    SELECT    ledger_revision
 fyniq_worker    EXECUTE   lock_ledger()
+fyniq_worker    SELECT    mcp_call
+fyniq_worker    EXECUTE   mcp_clients_expire()
+fyniq_worker    EXECUTE   mcp_purge_calls()
+fyniq_worker    SELECT    mcp_seen
+fyniq_worker    SELECT    mcp_user_optin
 fyniq_worker    EXECUTE   member_emails()
 fyniq_worker    SELECT    member_invitation
 fyniq_worker    EXECUTE   member_names()
@@ -1218,6 +1246,7 @@ fyniq_worker    SELECT    psp_account
 fyniq_worker    UPDATE    psp_account (sweep_error, swept_at, swept_through)
 fyniq_worker    INSERT    psp_balance (amount, connector_id, currency, taken_at)
 fyniq_worker    SELECT    psp_balance
+fyniq_worker    SELECT    psp_dispute_credit
 fyniq_worker    SELECT    psp_dispute_loss
 fyniq_worker    SELECT    psp_event
 fyniq_worker    UPDATE    psp_event (last_error, parked_reason, processed_at, status)
@@ -1285,4 +1314,5 @@ fyniq_worker    SELECT    timesheet_submission
 fyniq_worker    SELECT    user_help_state
 fyniq_worker    SELECT    user_membership
 fyniq_worker    SELECT    user_preference
+fyniq_worker    SELECT    user_saved_item
 fyniq_worker    SELECT    withholding_decision

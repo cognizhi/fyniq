@@ -4,6 +4,7 @@ package nemura_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/checks"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
 )
@@ -106,6 +108,16 @@ func TestOvertimeIsRecordedPerDayForPartIVAndUsedOnce(t *testing.T) {
 	}
 	if _, over, err := lt.overtime(ot("2026-11-02", leave.Whole(3))); err != nil || over {
 		t.Errorf("the limit is for the month, not for ever: %v %v", over, err)
+	}
+	// N.1 #16 names October, with its 73 hours, and no other month.
+	var months []checks.OvertimeMonth
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		months, err = nemura.OvertimeMonths(ctx, tx)
+		return err
+	})
+	if got := checks.OvertimeOverLimit(months, 72); len(got) != 1 || got[0].Check != 16 || got[0].Status != checks.Warn || !strings.Contains(got[0].Message, "October 2026 is 73.00 hours") {
+		t.Errorf("N.1 #16: %+v", got)
 	}
 	// Decisions: not by the person, a refusal needs a reason, once.
 	decide := func(by uuid.UUID, approve bool, reason string) error {

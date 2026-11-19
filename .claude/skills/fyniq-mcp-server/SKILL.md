@@ -83,8 +83,8 @@ mcp    ──read tool / propose with the exchanged token───────�
 | `fyniq.read.reports` | Report and KPI read tools (default) | `report.pl`, `report.balance_sheet`, `kpi.get`, `metrics.query` |
 | `fyniq.read.sales` / `.purchases` / `.banking` / `.accounting` / `.planning` / `.compliance` | Read tools for that area | `invoice.list`, `bill.get`, `bank.unreconciled_lines`, `gl.lines`, `forecast.scenario` |
 | `fyniq.read.payroll` | Payroll reads, **never by default**; also needs the AI payroll setting and the payroll role (AI-02) | `payrun.summary` |
-| `fyniq.propose.<task_type>` | Calling `propose` with that catalogue task type only | `fyniq.propose.bank.categorise_lines`, `fyniq.propose.gl.post_journal` |
-| `fyniq.read.proposals` | Status of the user's own proposals | `proposal.get`, `proposal.list` |
+| `fyniq.propose.<task_type>` | Calling that task type's tool `propose_<type>` only (a reviewer names the types in `mcp-scopes.json` `propose`) | `fyniq.propose.bank.categorise_lines`, `fyniq.propose.gl.post_journal` |
+| `fyniq.read.proposals` | Status of the user's own proposals this app made | `proposals.get`, `proposals.list` |
 
 The effective permission for each call is the intersection of the scope, the user's current role
 permissions minus the AI exclusions, and the organisation's enabled task types (AI-32). A task
@@ -161,6 +161,7 @@ Defaults are organisation settings within platform maximums; changing them is au
 | Threat | Control | Test |
 |---|---|---|
 | Agent writes directly | Client class `agent` is proposal-only (AI-34) | Every non-propose write with an agent token → 403 (CTL-MCP-01) |
+| An app approves its own proposal | The delegated token reaches no approval; another member signs, or the person on a step-up taken after the app proposed it (tier 1 only); mcp_token requests only for an app's proposal (migration 000587) | `TestAnAIAppProposesAndAPersonApproves`, `TestAttackAnAppsProposal...` |
 | Dangerous tool exposed | Registry minus never-list; pinned hashes (AI-40) | Manifest diff; never-list commands absent; altered definition refused (CTL-MCP-02) |
 | Token passthrough / confused deputy | RFC 8693 exchange; API checks audience (AI-36) | MCP token sent to the API directly → 401 |
 | Audience mix-up, replay | `aud` = MCP resource; `jti` replay cache; ≤ 60 min | Wrong-audience, expired, replayed and revoked tokens → 401 |

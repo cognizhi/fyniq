@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "A view's ID, to rename or change it; a new view when left out. A favourite's ID is its path.",
+      "examples": [
+        "3f9c2b7a-61d0-4b1e-9d1e-0a1b2c3d4e5f"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "kind": {
+      "description": "A favourite pins the page; a view keeps its filters, columns and sort too.",
+      "enum": [
+        "favourite",
+        "view"
+      ],
+      "examples": [
+        "view"
+      ],
+      "type": "string"
+    },
+    "path": {
+      "description": "The page's path in the web app, in an area the caller holds a right in.",
+      "examples": [
+        "/sales/invoices"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "query": {
+      "description": "A view's filters, columns and sort, as the page's address carries them.",
+      "examples": [
+        "?status=overdue\u0026sort=due"
+      ],
+      "maxLength": 255,
+      "type": "string"
+    },
+    "title": {
+      "description": "The name to show.",
+      "examples": [
+        "Overdue this quarter"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "title",
+    "path"
+  ],
+  "title": "SaveItemRequest",
+  "type": "object"
+}

@@ -5,6 +5,7 @@ package hydra
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -12,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -145,7 +147,7 @@ func (a *Admin) ConsentRequest(ctx context.Context, challenge string) (ports.OAu
 	var r request
 	err := a.do(ctx, http.MethodGet, "/admin/oauth2/auth/requests/consent", url.Values{"consent_challenge": {challenge}}, nil, nil, &r)
 	return ports.OAuthConsent{Challenge: r.Challenge, Subject: r.Subject, Skip: r.Skip, Client: r.Client.port(),
-		RequestedScopes: r.RequestedScope, RequestedAudiences: r.RequestedAudiences, Context: r.Context}, err
+		RequestedScopes: r.RequestedScope, RequestedAudiences: r.RequestedAudiences, Context: r.Context, RequestURL: r.RequestURL}, err
 }
 
 // AcceptConsent implements ports.OAuthServer. Consent is never remembered: every grant is asked for.
@@ -241,8 +243,17 @@ type TrustRelationship struct {
 	ExpiresAt       time.Time
 }
 
-// Trust registers a trust relationship and returns its ID.
+// Trust registers a trust relationship and returns its ID. A relationship the issuer already has is replaced, so registering at
+// each start leaves one.
 func (a *Admin) Trust(ctx context.Context, t TrustRelationship) (string, error) {
+	var existing []struct {
+		ID string `json:"id"`
+	}
+	if err := a.do(ctx, http.MethodGet, "/admin/trust/grants/jwt-bearer/issuers", url.Values{"issuer": {t.Issuer}}, nil, nil, &existing); err == nil {
+		for _, g := range existing {
+			_ = a.do(ctx, http.MethodDelete, "/admin/trust/grants/jwt-bearer/issuers/"+url.PathEscape(g.ID), nil, nil, nil, nil)
+		}
+	}
 	body := map[string]any{"issuer": t.Issuer, "allow_any_subject": t.AllowAnySubject, "scope": t.Scopes, "jwk": t.Key,
 		"expires_at": t.ExpiresAt.UTC().Format(time.RFC3339)}
 	if t.Subject != "" {
@@ -258,6 +269,9 @@ func (a *Admin) Trust(ctx context.Context, t TrustRelationship) (string, error) 
 // DelegationClient is the MCP server's confidential client for the JWT-bearer grant: it may ask only
 // for Audiences and Scopes, and its tokens live AccessTokenLifespan.
 type DelegationClient struct {
+	// ID and Secret, when set, are the client's fixed credentials (the local stack's, so the API and the MCP service agree
+	// without sharing a database): registering again replaces the client. Empty: the server chooses them.
+	ID, Secret          string
 	Name                string
 	Audiences, Scopes   []string
 	AccessTokenLifespan time.Duration
@@ -274,6 +288,14 @@ func (a *Admin) CreateDelegationClient(ctx context.Context, c DelegationClient) 
 	var out struct {
 		ID     string `json:"client_id"`
 		Secret string `json:"client_secret"`
+	}
+	if c.ID != "" {
+		body["client_id"], body["client_secret"] = c.ID, c.Secret
+		err = a.do(ctx, http.MethodPut, "/admin/clients/"+url.PathEscape(c.ID), nil, body, nil, &out)
+		if errors.Is(err, ports.ErrNoChallenge) {
+			err = a.do(ctx, http.MethodPost, "/admin/clients", nil, body, nil, &out)
+		}
+		return cmp.Or(out.ID, c.ID), c.Secret, err
 	}
 	err = a.do(ctx, http.MethodPost, "/admin/clients", nil, body, nil, &out)
 	return out.ID, out.Secret, err
@@ -345,6 +367,123 @@ func (a *Admin) RemoveClient(ctx context.Context, clientID string) error {
 	err = a.do(ctx, http.MethodDelete, "/admin/clients/"+url.PathEscape(clientID), nil, nil, nil, nil)
 	if errors.Is(err, ports.ErrNoChallenge) {
 		return nil // gone already
+	}
+	return err
+}
+
+// RegisterPublicClient implements ports.OAuthClients: a public client that must use the authorisation code with PKCE, for one
+// audience, with exact redirect URIs; with a fixed ID it replaces what the server holds under that ID, so registering again
+// is how a change to the first-party clients reaches a running server.
+func (a *Admin) RegisterPublicClient(ctx context.Context, c ports.PublicRegistration) (string, error) {
+	if c.Name == "" || c.Audience == "" || len(c.RedirectURIs) == 0 || c.Class == "" {
+		return "", errors.New("hydra: a public client needs a name, a class, an audience and redirect URIs")
+	}
+	meta := map[string]any{"class": c.Class}
+	if c.App != "" {
+		meta["app"] = c.App
+	}
+	body := map[string]any{"client_name": c.Name, "audience": []string{c.Audience}, "redirect_uris": c.RedirectURIs,
+		"grant_types": []string{"authorization_code", "refresh_token"}, "response_types": []string{"code"},
+		"token_endpoint_auth_method": "none", "scope": strings.Join(c.Scopes, " "), "metadata": meta}
+	method, path := http.MethodPost, "/admin/clients"
+	if c.ID != "" {
+		body["client_id"] = c.ID
+		method, path = http.MethodPut, "/admin/clients/"+url.PathEscape(c.ID)
+	}
+	var out client
+	err := a.do(ctx, method, path, nil, body, nil, &out)
+	if err != nil && c.ID != "" && errors.Is(err, ports.ErrNoChallenge) { // not there yet: create it with its ID
+		err = a.do(ctx, http.MethodPost, "/admin/clients", nil, body, nil, &out)
+	}
+	if err != nil {
+		return "", err
+	}
+	if out.ClientID == "" {
+		return "", errors.New("hydra: the client was registered without an ID")
+	}
+	return out.ClientID, nil
+}
+
+var _ ports.OAuthConsents = (*Admin)(nil)
+
+// RevokeAgentConsents implements ports.OAuthConsents: the subject's consent sessions are listed, and those of an agent-class client
+// are deleted, one client at a time, which revokes every token issued under them.
+func (a *Admin) RevokeAgentConsents(ctx context.Context, subject string) error {
+	if subject == "" {
+		return errors.New("hydra: revoke needs a subject")
+	}
+	var sessions []struct {
+		ConsentRequest struct {
+			Client client `json:"client"`
+		} `json:"consent_request"`
+	}
+	err := a.do(ctx, http.MethodGet, "/admin/oauth2/auth/sessions/consent", url.Values{"subject": {subject}}, nil, nil, &sessions)
+	if errors.Is(err, ports.ErrNoChallenge) {
+		return nil // nothing to revoke
+	}
+	if err != nil {
+		return err
+	}
+	seen := map[string]bool{}
+	for _, s := range sessions {
+		c := s.ConsentRequest.Client
+		if c.Metadata["class"] != "agent" || c.ClientID == "" || seen[c.ClientID] {
+			continue
+		}
+		seen[c.ClientID] = true
+		err := a.do(ctx, http.MethodDelete, "/admin/oauth2/auth/sessions/consent", url.Values{"subject": {subject}, "client": {c.ClientID}}, nil, nil, nil)
+		if err != nil && !errors.Is(err, ports.ErrNoChallenge) {
+			return err
+		}
+	}
+	return nil
+}
+
+// AgentConsents implements ports.OAuthConsents: the subject's consent sessions with agent-class clients, newest grant of each.
+func (a *Admin) AgentConsents(ctx context.Context, subject string) ([]ports.AgentConsent, error) {
+	if subject == "" {
+		return nil, errors.New("hydra: a consent list needs a subject")
+	}
+	var sessions []struct {
+		ConsentRequest struct {
+			Client client `json:"client"`
+		} `json:"consent_request"`
+		GrantScope []string  `json:"grant_scope"`
+		HandledAt  time.Time `json:"handled_at"`
+	}
+	err := a.do(ctx, http.MethodGet, "/admin/oauth2/auth/sessions/consent", url.Values{"subject": {subject}}, nil, nil, &sessions)
+	if errors.Is(err, ports.ErrNoChallenge) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	latest := map[string]ports.AgentConsent{}
+	for _, s := range sessions {
+		c := s.ConsentRequest.Client
+		if c.Metadata["class"] != "agent" || c.ClientID == "" {
+			continue
+		}
+		if old, ok := latest[c.ClientID]; !ok || s.HandledAt.After(old.GrantedAt) {
+			latest[c.ClientID] = ports.AgentConsent{ClientID: c.ClientID, ClientName: c.ClientName, Scopes: s.GrantScope, GrantedAt: s.HandledAt}
+		}
+	}
+	out := make([]ports.AgentConsent, 0, len(latest))
+	for _, c := range latest {
+		out = append(out, c)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].GrantedAt.After(out[j].GrantedAt) })
+	return out, nil
+}
+
+// RevokeClientConsent implements ports.OAuthConsents.
+func (a *Admin) RevokeClientConsent(ctx context.Context, subject, clientID string) error {
+	if subject == "" || clientID == "" {
+		return errors.New("hydra: revoke needs a subject and a client")
+	}
+	err := a.do(ctx, http.MethodDelete, "/admin/oauth2/auth/sessions/consent", url.Values{"subject": {subject}, "client": {clientID}}, nil, nil, nil)
+	if errors.Is(err, ports.ErrNoChallenge) {
+		return nil
 	}
 	return err
 }

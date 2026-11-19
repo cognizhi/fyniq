@@ -105,8 +105,15 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		for _, r := range rep.Runs {
 			out[r.Control+" "+r.Check] = r
 		}
-		if len(out) != 7 {
-			t.Fatalf("want the 7 verifications' runs, got %v", out)
+		// Six that this test breaks, and the three that find nothing in these books: the two of the MCP controls (CTL-MCP-01,
+		// CTL-MCP-03; no AI app made a change and nothing opened MCP) and kb.pages (CTL-AI-08; no page is published).
+		if len(out) != 9 {
+			t.Fatalf("want the 9 verifications' runs, got %v", out)
+		}
+		for _, k := range []string{"CTL-MCP-01 verify mcp.agent-writes", "CTL-MCP-03 verify mcp.enablement"} {
+			if !out[k].OK {
+				t.Errorf("%s found something in books where no AI app did anything: %+v", k, out[k])
+			}
 		}
 		return out
 	}
@@ -267,8 +274,10 @@ func TestEachVerificationFindsItsBreach(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		// CTL-AI-08 verify kb.pages finds nothing here: no page is published, so it is the one run that is ok.
-		if len(latest) != 7 || slices.ContainsFunc(latest, func(r storage.ControlRun) bool { return r.OK && r.Check != "verify kb.pages" }) {
+		// Six fail; the MCP controls' two (no AI app did anything) and CTL-AI-08 verify kb.pages (no page is published) are ok.
+		if len(latest) != 9 || slices.ContainsFunc(latest, func(r storage.ControlRun) bool {
+			return r.OK != (r.Check == "verify kb.pages" || r.Check == "verify mcp.agent-writes" || r.Check == "verify mcp.enablement")
+		}) {
 			t.Errorf("the latest runs: %+v", latest)
 		}
 		return nil

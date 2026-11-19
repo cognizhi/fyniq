@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
+import { HoursWorked } from "../components/TimePanels";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
 import { Shell, admin, team } from "./Shell";
@@ -81,6 +82,7 @@ export function MyRequests({ roles }: { roles: readonly string[] }) {
               </ul>
               <FlexForm sent={(due) => done(undefined, t("requests.sent", { due }))} failed={(e) => done(e, "")} />
             </section>
+            <HoursWorked />
           </>
         )}
       </main>

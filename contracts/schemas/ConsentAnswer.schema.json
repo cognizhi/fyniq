@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "consent_challenge": {
+      "description": "The consent request, from the address the OAuth server sent the browser to.",
+      "examples": [
+        "nRq8"
+      ],
+      "maxLength": 2000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "decision": {
+      "description": "accept to grant what the screen shows; deny to refuse.",
+      "enum": [
+        "accept",
+        "deny"
+      ],
+      "examples": [
+        "accept"
+      ],
+      "type": "string"
+    },
+    "scopes": {
+      "description": "Only these of the scopes the screen showed (and always openid). Omit to grant all that the screen showed; a scope it did not show is never added.",
+      "items": {
+        "description": "A scope an AI app was granted.",
+        "examples": [
+          "fyniq.read.reports"
+        ],
+        "type": "string"
+      },
+      "maxItems": 30,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "consent_challenge",
+    "decision"
+  ],
+  "title": "ConsentAnswer",
+  "type": "object"
+}

@@ -110,6 +110,62 @@ func (q *Queries) InsertPSPBalance(ctx context.Context, arg InsertPSPBalancePara
 	return i, err
 }
 
+const insertPSPDisputeCredit = `-- name: InsertPSPDisputeCredit :one
+INSERT INTO fyniq.psp_dispute_credit (connector_id, dispute_id, credit_note_id, refund_id, currency, amount, created_by, created_at)
+VALUES ($1, $2, $3, $4, $5, $6::numeric,
+  $7, $8)
+RETURNING id, connector_id, dispute_id, credit_note_id, refund_id, currency, amount, created_by, created_at
+`
+
+type InsertPSPDisputeCreditParams struct {
+	ConnectorID  uuid.UUID
+	DisputeID    string
+	CreditNoteID uuid.UUID
+	RefundID     uuid.UUID
+	Currency     string
+	Amount       string
+	CreatedBy    string
+	CreatedAt    time.Time
+}
+
+type InsertPSPDisputeCreditRow struct {
+	ID           uuid.UUID
+	ConnectorID  uuid.UUID
+	DisputeID    string
+	CreditNoteID uuid.UUID
+	RefundID     uuid.UUID
+	Currency     string
+	Amount       string
+	CreatedBy    string
+	CreatedAt    time.Time
+}
+
+func (q *Queries) InsertPSPDisputeCredit(ctx context.Context, arg InsertPSPDisputeCreditParams) (InsertPSPDisputeCreditRow, error) {
+	row := q.db.QueryRow(ctx, insertPSPDisputeCredit,
+		arg.ConnectorID,
+		arg.DisputeID,
+		arg.CreditNoteID,
+		arg.RefundID,
+		arg.Currency,
+		arg.Amount,
+		arg.CreatedBy,
+		arg.CreatedAt,
+	)
+	var i InsertPSPDisputeCreditRow
+	err := row.Scan(
+		&i.ID,
+		&i.ConnectorID,
+		&i.DisputeID,
+		&i.CreditNoteID,
+		&i.RefundID,
+		&i.Currency,
+		&i.Amount,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const insertPSPDisputeLoss = `-- name: InsertPSPDisputeLoss :one
 INSERT INTO fyniq.psp_dispute_loss (connector_id, dispute_id, document_id, currency, amount, accepted_overstated_revenue, reason, created_by, created_at)
 VALUES ($1, $2, $3, $4, $5::numeric,
@@ -417,6 +473,53 @@ func (q *Queries) PSPAccounts(ctx context.Context) ([]PSPAccountsRow, error) {
 			&i.SweptAt,
 			&i.SweepError,
 			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const pSPDisputeCredits = `-- name: PSPDisputeCredits :many
+SELECT id, connector_id, dispute_id, credit_note_id, refund_id, currency, amount, created_by, created_at
+  FROM fyniq.psp_dispute_credit WHERE connector_id = $1 ORDER BY created_at, dispute_id
+`
+
+type PSPDisputeCreditsRow struct {
+	ID           uuid.UUID
+	ConnectorID  uuid.UUID
+	DisputeID    string
+	CreditNoteID uuid.UUID
+	RefundID     uuid.UUID
+	Currency     string
+	Amount       string
+	CreatedBy    string
+	CreatedAt    time.Time
+}
+
+func (q *Queries) PSPDisputeCredits(ctx context.Context, connectorID uuid.UUID) ([]PSPDisputeCreditsRow, error) {
+	rows, err := q.db.Query(ctx, pSPDisputeCredits, connectorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PSPDisputeCreditsRow
+	for rows.Next() {
+		var i PSPDisputeCreditsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ConnectorID,
+			&i.DisputeID,
+			&i.CreditNoteID,
+			&i.RefundID,
+			&i.Currency,
+			&i.Amount,
+			&i.CreatedBy,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}

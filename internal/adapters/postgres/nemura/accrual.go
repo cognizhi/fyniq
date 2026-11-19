@@ -2,7 +2,9 @@ package nemura
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +14,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
+	"github.com/cognizhi/fyniq/internal/nemura/outbox"
+	"github.com/cognizhi/fyniq/internal/ports"
 )
 
 func accrualError(err error) error {
@@ -33,6 +37,15 @@ func accrualError(err error) error {
 // accounting policy asks to recognise by default. The amounts are the pay structure's to put on it and the journal is the Fyniq link's; Nemura keeps the days. A month
 // is drafted once. It returns how many people have days on the draft.
 func DraftLeaveAccrual(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by uuid.UUID, month time.Time) (int, error) {
+	return draftLeaveAccrual(ctx, tx, org, at, &by, month)
+}
+
+// DraftLeaveAccrualAsSystem is the worker's draft: the same accrual, with no member who made it (system_drafted), so a person approves it and the system never does.
+func DraftLeaveAccrualAsSystem(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, month time.Time) (int, error) {
+	return draftLeaveAccrual(ctx, tx, org, at, nil, month)
+}
+
+func draftLeaveAccrual(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by *uuid.UUID, month time.Time) (int, error) {
 	first := time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, time.UTC)
 	last := first.AddDate(0, 1, -1)
 	var drafted bool
@@ -74,11 +87,22 @@ func DraftLeaveAccrual(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Ti
 			continue
 		}
 		id := uuid.Must(uuid.NewV7())
-		if _, err := tx.Exec(ctx, `INSERT INTO nemura.leave_accrual (id, month, person_id, carried_days, annual_left, drafted_by, drafted_at) VALUES ($1, $2, $3, $4::numeric, $5::numeric, $6, $7)`,
-			id, day(first), p, remaining.String(), max(b.Left, 0).String(), by, at); err != nil {
-			return n, accrualError(err)
+		var insertErr error
+		if by == nil { // the worker's role may not name a member as the drafter: the column is not in its grant
+			_, insertErr = tx.Exec(ctx, `INSERT INTO nemura.leave_accrual (id, month, person_id, carried_days, annual_left, system_drafted, drafted_at) VALUES ($1, $2, $3, $4::numeric, $5::numeric, true, $6)`,
+				id, day(first), p, remaining.String(), max(b.Left, 0).String(), at)
+		} else {
+			_, insertErr = tx.Exec(ctx, `INSERT INTO nemura.leave_accrual (id, month, person_id, carried_days, annual_left, drafted_by, drafted_at) VALUES ($1, $2, $3, $4::numeric, $5::numeric, $6, $7)`,
+				id, day(first), p, remaining.String(), max(b.Left, 0).String(), *by, at)
 		}
-		if err := Audit(ctx, tx, org, at, user(by), "nemura.leave_accrual.drafted", audit.Object{Type: "leave_accrual", ID: id}, map[string]audit.Change{"month": {nil, day(first)}, "person": {nil, p.String()}, "carried_days": {nil, remaining.String()}}, ""); err != nil {
+		if insertErr != nil {
+			return n, accrualError(insertErr)
+		}
+		actor := audit.Actor{Type: "system", ID: "nemura-worker"}
+		if by != nil {
+			actor = user(*by)
+		}
+		if err := Audit(ctx, tx, org, at, actor, "nemura.leave_accrual.drafted", audit.Object{Type: "leave_accrual", ID: id}, map[string]audit.Change{"month": {nil, day(first)}, "person": {nil, p.String()}, "carried_days": {nil, remaining.String()}}, ""); err != nil {
 			return n, err
 		}
 		n++
@@ -227,4 +251,47 @@ UNION ALL SELECT start_date, end_date, false, false FROM nemura.gov_leave WHERE 
 	}
 	a.Hours = (a.WorkingDays - a.AwayDays) * a.HoursPerDay / 100
 	return a, nil
+}
+
+// KindLeaveAccrual is the outbox kind of the monthly draft.
+const KindLeaveAccrual = "leave.accrual"
+
+// RaiseLeaveAccrual enqueues, once for each month, the job that drafts the previous month's leave accrual, while the Leave feature is on (NM-LV-09). The business key is
+// the month, so a second sweep, or a restart, enqueues nothing: the draft is idempotent twice over (the outbox key and the table's one draft a month).
+func (s *Store) RaiseLeaveAccrual(ctx context.Context, org uuid.UUID, now time.Time) (int, error) {
+	prev := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC).AddDate(0, -1, 0)
+	var n int
+	err := s.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
+		on, err := FeatureSwitches(ctx, tx)
+		if err != nil || on["leave"].State != "on" {
+			return err
+		}
+		tag, err := tx.Exec(ctx, `INSERT INTO nemura.outbox (worker_class, kind, payload, business_key, max_attempts) VALUES ('worker', $1, jsonb_build_object('month', $2::text), $3, 5)
+ON CONFLICT (organisation_id, kind, business_key) DO NOTHING`, KindLeaveAccrual, prev.Format("2006-01"), "accrual:"+prev.Format("2006-01"))
+		n = int(tag.RowsAffected())
+		return err
+	})
+	return n, err
+}
+
+// LeaveAccrualWork is the worker's delivery of the monthly draft: it drafts the month as the system, and a month already drafted is done, not an error.
+func (s *Store) LeaveAccrualWork(clock ports.Clock) outbox.Work {
+	return func(ctx context.Context, org uuid.UUID, row outbox.Row) error {
+		var p struct{ Month string }
+		if err := json.Unmarshal(row.Payload, &p); err != nil {
+			return fmt.Errorf("the accrual row %s has no month: %w", row.ID, err)
+		}
+		month, err := time.Parse("2006-01", p.Month)
+		if err != nil {
+			return fmt.Errorf("the accrual row %s names no month: %w", row.ID, err)
+		}
+		return s.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
+			_, err := DraftLeaveAccrualAsSystem(ctx, tx, org, clock.Now(), month)
+			var r *leave.Refusal
+			if errors.As(err, &r) && r.Code == leave.CodeConflict {
+				return nil // drafted already: the job is done
+			}
+			return err
+		})
+	}
 }

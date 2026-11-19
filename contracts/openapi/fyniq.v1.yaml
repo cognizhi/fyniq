@@ -16033,6 +16033,81 @@ components:
         - year_end
         - balances
       type: object
+    ConnectedApp:
+      additionalProperties: false
+      properties:
+        allowed:
+          description: Whether the organisation's allowlist names it now.
+          examples:
+            - true
+          type: boolean
+        id:
+          description: "The app's client ID: its name on the allowlist for a first-party app, mcp-… for one that registered itself."
+          examples:
+            - claude-code
+          type: string
+        name:
+          description: The app's name.
+          examples:
+            - Claude Code
+          type: string
+        publisher:
+          description: The publisher Fyniq has verified; absent for an app that registered itself, which Fyniq has not verified.
+          examples:
+            - Anthropic
+          type: string
+        status:
+          description: "first_party: pre-registered by the release; the others are a self-registered app's course."
+          enum:
+            - first_party
+            - pending
+            - approved
+            - denied
+            - expired
+          examples:
+            - first_party
+          type: string
+        verified:
+          description: "Whether Fyniq verified who publishes it: only the apps the release pre-registered."
+          examples:
+            - true
+          type: boolean
+      required:
+        - id
+        - name
+        - verified
+        - allowed
+        - status
+      type: object
+    ConnectedAppsView:
+      additionalProperties: false
+      properties:
+        access:
+          $ref: "#/components/schemas/MCPAccess"
+          description: Your opt-in, the organisation's switch and its allowlist.
+        apps:
+          description: The apps this release pre-registers and those the organisation's allowlist names.
+          items:
+            $ref: "#/components/schemas/ConnectedApp"
+          maxItems: 60
+          type: array
+        connections:
+          description: What you have allowed AI apps.
+          items:
+            $ref: "#/components/schemas/MyConnection"
+          maxItems: 60
+          type: array
+        registration_on:
+          description: Whether an Owner has turned on registration of AI apps (mcp.registration).
+          examples:
+            - false
+          type: boolean
+      required:
+        - access
+        - registration_on
+        - apps
+        - connections
+      type: object
     Connector:
       additionalProperties: false
       properties:
@@ -16394,6 +16469,55 @@ components:
         - events
         - registered_by
       type: object
+    ConsentAnswer:
+      additionalProperties: false
+      properties:
+        consent_challenge:
+          description: The consent request, from the address the OAuth server sent the browser to.
+          examples:
+            - nRq8
+          maxLength: 2000
+          minLength: 1
+          type: string
+        decision:
+          description: accept to grant what the screen shows; deny to refuse.
+          enum:
+            - accept
+            - deny
+          examples:
+            - accept
+          type: string
+        scopes:
+          description: Only these of the scopes the screen showed (and always openid). Omit to grant all that the screen showed; a scope it did not show is never added.
+          items:
+            description: A scope an AI app was granted.
+            examples:
+              - fyniq.read.reports
+            type: string
+          maxItems: 30
+          type:
+            - array
+            - "null"
+      required:
+        - consent_challenge
+        - decision
+      type: object
+    ConsentCategory:
+      additionalProperties: false
+      properties:
+        reaches:
+          description: In plain words.
+          examples:
+            - Reports and key figures
+          type: string
+        scope:
+          examples:
+            - fyniq.read.reports
+          type: string
+      required:
+        - scope
+        - reaches
+      type: object
     ConsentChange:
       additionalProperties: false
       properties:
@@ -16443,6 +16567,123 @@ components:
         - destinations
         - webhooks
       type: object
+    ConsentClient:
+      additionalProperties: false
+      properties:
+        class:
+          description: "Its class: an agent only reads and proposes (AI-34)."
+          enum:
+            - user
+            - integration
+            - agent
+          examples:
+            - agent
+          type: string
+        id:
+          description: The app's client ID.
+          examples:
+            - claude-code
+          type: string
+        name:
+          description: The name it is registered with.
+          examples:
+            - Claude Code
+          type: string
+        proposal_only:
+          description: Whether it can only read and propose.
+          examples:
+            - true
+          type: boolean
+        publisher:
+          description: "The publisher Fyniq verified: only for an app the release pre-registered."
+          examples:
+            - Anthropic
+          type: string
+        redirect_uris:
+          description: "For an app Fyniq has not verified: where it sends you after you answer."
+          items:
+            description: An exact https or loopback redirect URI.
+            examples:
+              - https://acme.example/oauth/callback
+            type: string
+          maxItems: 5
+          type:
+            - array
+            - "null"
+        verified:
+          description: Whether Fyniq verified who publishes it.
+          examples:
+            - true
+          type: boolean
+      required:
+        - id
+        - name
+        - class
+        - verified
+        - proposal_only
+      type: object
+    ConsentDecision:
+      additionalProperties: false
+      properties:
+        audiences:
+          description: Who the token is for.
+          items:
+            description: An exact https or loopback redirect URI.
+            examples:
+              - https://acme.example/oauth/callback
+            type: string
+          maxItems: 3
+          type: array
+        code:
+          description: The stable code of the problem.
+          examples:
+            - MCP-GATE-01
+          type: string
+        problem:
+          description: When set, consent is refused whatever you say, in plain words.
+          examples:
+            - AI apps are not turned on for this organisation.
+          type: string
+        refused_scopes:
+          description: What was asked for and cannot be granted.
+          items:
+            description: A scope an AI app was granted.
+            examples:
+              - fyniq.read.reports
+            type: string
+          maxItems: 30
+          type: array
+        scopes:
+          description: What would be granted.
+          items:
+            description: A scope an AI app was granted.
+            examples:
+              - fyniq.read.reports
+            type: string
+          maxItems: 30
+          type: array
+      required:
+        - scopes
+        - refused_scopes
+        - audiences
+      type: object
+    ConsentExpiry:
+      additionalProperties: false
+      properties:
+        access_token_minutes:
+          examples:
+            - 60
+          format: int64
+          type: integer
+        consent_valid_days:
+          examples:
+            - 90
+          format: int64
+          type: integer
+      required:
+        - consent_valid_days
+        - access_token_minutes
+      type: object
     ConsentInput:
       additionalProperties: false
       properties:
@@ -16476,6 +16717,18 @@ components:
         - purpose_id
         - person
         - event
+      type: object
+    ConsentNext:
+      additionalProperties: false
+      properties:
+        redirect_to:
+          description: "Where to send the browser next: the OAuth server, which carries the app's authorisation on."
+          examples:
+            - http://localhost:8080/oauth/oauth2/auth?consent_verifier=abc
+          format: uri
+          type: string
+      required:
+        - redirect_to
       type: object
     ConsentPurposeInput:
       additionalProperties: false
@@ -16582,6 +16835,38 @@ components:
           type: array
       required:
         - items
+      type: object
+    ConsentScreen:
+      additionalProperties: false
+      properties:
+        client:
+          $ref: "#/components/schemas/ConsentClient"
+        data_categories:
+          description: What each scope reaches, in plain words (an AI app's consent).
+          items:
+            $ref: "#/components/schemas/ConsentCategory"
+          maxItems: 30
+          type:
+            - array
+            - "null"
+        decision:
+          $ref: "#/components/schemas/ConsentDecision"
+        expiry:
+          $ref: "#/components/schemas/ConsentExpiry"
+          description: How long the consent and its tokens last (an AI app's consent).
+        requested_scopes:
+          description: What the app asked for.
+          items:
+            description: A scope an AI app was granted.
+            examples:
+              - fyniq.read.reports
+            type: string
+          maxItems: 30
+          type: array
+      required:
+        - client
+        - requested_scopes
+        - decision
       type: object
     ConsentView:
       additionalProperties: false
@@ -22120,6 +22405,57 @@ components:
         - opening
         - by_origin
         - closing
+      type: object
+    DisputeCreditDraft:
+      additionalProperties: false
+      properties:
+        credit_note_id:
+          description: The issued credit note that credits the disputed charge's invoice, whose credit is settled.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b90
+          format: uuid
+          type: string
+        date:
+          description: The settlement's date; today when left out.
+          examples:
+            - "2026-11-19"
+          format: date
+          type: string
+        money_account_id:
+          description: The provider's clearing money account the dispute is on.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+          format: uuid
+          type: string
+      required:
+        - money_account_id
+        - credit_note_id
+      type: object
+    DisputeCreditSettled:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: What it settled of the credit.
+        dispute_id:
+          description: The provider's ID.
+          examples:
+            - dp_1Q3
+          type: string
+        settlement_id:
+          description: "The refund document: Dr accounts receivable, Cr disputes clearing, under dispute_settlement@1."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b81
+          format: uuid
+          type: string
+        still_held:
+          $ref: "#/components/schemas/Money"
+          description: What the dispute still holds in disputes clearing, such as its fee, for the expense route.
+      required:
+        - dispute_id
+        - settlement_id
+        - amount
+        - still_held
       type: object
     DisputeLossDraft:
       additionalProperties: false
@@ -34220,6 +34556,193 @@ components:
           minimum: 0
           type: integer
       type: object
+    MCPAccess:
+      additionalProperties: false
+      properties:
+        apps:
+          description: "The AI apps the organisation allows (the setting mcp.clients): only these can connect."
+          examples:
+            - - claude-code
+          items:
+            description: An AI app the release has pre-registered, such as claude-code.
+            examples:
+              - claude-code
+            type: string
+          maxItems: 20
+          type: array
+        can_connect:
+          description: "Whether an AI app can connect as you now: the organisation is on, it allows at least one app, and you opted in."
+          examples:
+            - false
+          type: boolean
+        etag:
+          description: The choice's version, for If-Match.
+          examples:
+            - "\"9f1c2b7a\""
+          type: string
+        opted_in:
+          description: "Whether you have opted in to AI apps acting for you over MCP: off until you do."
+          examples:
+            - false
+          type: boolean
+        organisation_on:
+          description: Whether an Owner has turned AI apps through MCP on for the organisation (the setting features.mcp, with a second approver).
+          examples:
+            - false
+          type: boolean
+        set_at:
+          description: When you last chose, if ever.
+          examples:
+            - "2026-11-19T09:30:00Z"
+          format: date-time
+          type: string
+      required:
+        - opted_in
+        - organisation_on
+        - apps
+        - can_connect
+        - etag
+      type: object
+    MCPActivity:
+      additionalProperties: false
+      properties:
+        calls:
+          description: "Newest first: the last 100."
+          items:
+            $ref: "#/components/schemas/MCPCallRow"
+          maxItems: 100
+          type: array
+      required:
+        - calls
+      type: object
+    MCPCallRow:
+      additionalProperties: false
+      properties:
+        app:
+          description: The app.
+          examples:
+            - claude-code
+          type: string
+        app_version:
+          description: As the app reports itself.
+          examples:
+            - claude-code/2.1.327
+          type: string
+        at:
+          description: When.
+          examples:
+            - "2026-11-19T09:30:00Z"
+          format: date-time
+          type: string
+        code:
+          description: The refusal's or failure's code.
+          examples:
+            - MCP-SCOPE-01
+          type: string
+        facts:
+          description: How many figures it returned.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        id:
+          description: The call's ID.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+          format: uuid
+          type: string
+        network:
+          description: The caller's network, never its address.
+          examples:
+            - 203.0.113.0/24
+          type: string
+        outcome:
+          description: What became of it.
+          enum:
+            - read
+            - refused
+            - limited
+            - failed
+          examples:
+            - read
+          type: string
+        tool:
+          description: The tool.
+          examples:
+            - metrics.query
+          type: string
+        user_id:
+          description: Whose app it was.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+          format: uuid
+          type: string
+      required:
+        - id
+        - user_id
+        - app
+        - tool
+        - outcome
+        - facts
+        - at
+      type: object
+    MCPChoice:
+      additionalProperties: false
+      properties:
+        opted_in:
+          description: true to allow AI apps the organisation allows to act for you over MCP; false to stop them at once.
+          examples:
+            - true
+          type: boolean
+      required:
+        - opted_in
+      type: object
+    MCPRegistration:
+      additionalProperties: false
+      properties:
+        id:
+          description: Its client ID.
+          examples:
+            - mcp-0123456789abcdef0123
+          type: string
+        name:
+          description: "The name it gave itself: Fyniq has not verified it."
+          examples:
+            - Acme Books Assistant
+          type: string
+        redirect_uris:
+          description: "Where it sends you to sign in: check this before you allow it."
+          items:
+            description: An exact https or loopback redirect URI.
+            examples:
+              - https://acme.example/oauth/callback
+            type: string
+          maxItems: 5
+          type: array
+        registered_at:
+          description: When it registered.
+          examples:
+            - "2026-11-19T09:30:00Z"
+          format: date-time
+          type: string
+      required:
+        - id
+        - name
+        - redirect_uris
+        - registered_at
+      type: object
+    MCPRegistrations:
+      additionalProperties: false
+      properties:
+        registrations:
+          description: Newest first; an Owner adds one to the apps that may connect to approve it, or denies it.
+          items:
+            $ref: "#/components/schemas/MCPRegistration"
+          maxItems: 100
+          type: array
+      required:
+        - registrations
+      type: object
     ManagementReport:
       additionalProperties: false
       properties:
@@ -36966,6 +37489,47 @@ components:
         - kind
         - from_date
       type: object
+    MyConnection:
+      additionalProperties: false
+      properties:
+        client_id:
+          description: The app's client ID.
+          examples:
+            - claude-code
+          type: string
+        expires_at:
+          description: "When the consent must be renewed: 90 days after you gave it (AI-37)."
+          examples:
+            - "2027-02-17T09:30:00Z"
+          format: date-time
+          type: string
+        granted_at:
+          description: When you allowed it.
+          examples:
+            - "2026-11-19T09:30:00Z"
+          format: date-time
+          type: string
+        name:
+          description: The app's name.
+          examples:
+            - Claude Code
+          type: string
+        scopes:
+          description: What you allowed it.
+          items:
+            description: A scope an AI app was granted.
+            examples:
+              - fyniq.read.reports
+            type: string
+          maxItems: 30
+          type: array
+      required:
+        - client_id
+        - name
+        - scopes
+        - granted_at
+        - expires_at
+      type: object
     MyDirectorAccount:
       additionalProperties: false
       properties:
@@ -37802,6 +38366,72 @@ components:
         - recommended
         - locked
         - etag
+      type: object
+    OAuthClientRegistration:
+      additionalProperties: false
+      properties:
+        client_id:
+          description: The client's ID at Fyniq's OAuth server.
+          examples:
+            - mcp-0123456789abcdef0123
+          type: string
+        client_id_issued_at:
+          description: When it was issued, in seconds since 1970.
+          examples:
+            - 1763517600
+          format: int64
+          type: integer
+        client_name:
+          description: The name it registered with.
+          examples:
+            - Acme Books Assistant
+          type: string
+        grant_types:
+          description: Always the authorisation code and refresh tokens.
+          items:
+            description: An OAuth grant or response type.
+            examples:
+              - authorization_code
+            type: string
+          maxItems: 2
+          type: array
+        redirect_uris:
+          description: The exact redirect URIs it may use.
+          items:
+            description: An exact https or loopback redirect URI.
+            examples:
+              - https://acme.example/oauth/callback
+            type: string
+          maxItems: 5
+          type: array
+        response_types:
+          description: Always code.
+          items:
+            description: An OAuth grant or response type.
+            examples:
+              - authorization_code
+            type: string
+          maxItems: 1
+          type: array
+        scope:
+          description: "What it may ask for: the default read access only."
+          examples:
+            - openid offline_access fyniq.read.reports
+          type: string
+        token_endpoint_auth_method:
+          description: "Always none: a public client with PKCE."
+          examples:
+            - none
+          type: string
+      required:
+        - client_id
+        - client_id_issued_at
+        - client_name
+        - redirect_uris
+        - grant_types
+        - response_types
+        - token_endpoint_auth_method
+        - scope
       type: object
     OffersOutputBody:
       additionalProperties: false
@@ -40742,11 +41372,17 @@ components:
           examples:
             - true
           type: boolean
+        credited:
+          $ref: "#/components/schemas/Money"
+          description: What a customer credit was settled against it.
         dispute_id:
           description: The provider's ID.
           examples:
             - dp_1Q3
           type: string
+        disputed:
+          $ref: "#/components/schemas/Money"
+          description: The disputed amount alone, without the dispute fee.
         held:
           $ref: "#/components/schemas/Money"
           description: What its posted lines have moved into disputes clearing and the provider has not given back.
@@ -40767,12 +41403,19 @@ components:
           examples:
             - false
           type: boolean
+        settlement_id:
+          description: The refund document that settled the customer credit against it (dispute_settlement@1).
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b81
+          format: uuid
+          type: string
         status:
-          description: "open: its money waits; won: the provider gave it all back; written_off: a draft journal was prepared to write it off."
+          description: "open: its money waits; won: the provider gave it all back; written_off: a draft journal was prepared to write it off; credited: a customer credit was settled against all of it."
           enum:
             - open
             - won
             - written_off
+            - credited
           examples:
             - open
           type: string
@@ -40783,6 +41426,8 @@ components:
         - status
         - all_posted
         - over_limit
+        - disputed
+        - credited
       type: object
     PaymentProviderEvent:
       additionalProperties: false
@@ -42997,6 +43642,16 @@ components:
           description: What went wrong this time, in plain English.
           examples:
             - The journal is posted, not a draft.
+          type: string
+        error:
+          description: An OAuth error code, on a client registration's refusal (RFC 7591).
+          examples:
+            - invalid_redirect_uri
+          type: string
+        error_description:
+          description: The same, in words.
+          examples:
+            - The redirect URI is not exact.
           type: string
         errors:
           description: Every invalid field, all at once.
@@ -48488,6 +49143,107 @@ components:
           type: string
       required:
         - as_at
+        - items
+      type: object
+    SaveItemRequest:
+      additionalProperties: false
+      properties:
+        id:
+          description: A view's ID, to rename or change it; a new view when left out. A favourite's ID is its path.
+          examples:
+            - 3f9c2b7a-61d0-4b1e-9d1e-0a1b2c3d4e5f
+          maxLength: 200
+          type: string
+        kind:
+          description: A favourite pins the page; a view keeps its filters, columns and sort too.
+          enum:
+            - favourite
+            - view
+          examples:
+            - view
+          type: string
+        path:
+          description: The page's path in the web app, in an area the caller holds a right in.
+          examples:
+            - /sales/invoices
+          maxLength: 200
+          type: string
+        query:
+          description: A view's filters, columns and sort, as the page's address carries them.
+          examples:
+            - ?status=overdue&sort=due
+          maxLength: 255
+          type: string
+        title:
+          description: The name to show.
+          examples:
+            - Overdue this quarter
+          maxLength: 80
+          minLength: 1
+          type: string
+      required:
+        - kind
+        - title
+        - path
+      type: object
+    SavedItem:
+      additionalProperties: false
+      properties:
+        id:
+          description: "The item's ID: a favourite's address, or a view's own ID; send it to take the item away."
+          examples:
+            - 3f9c2b7a-61d0-4b1e-9d1e-0a1b2c3d4e5f
+          type: string
+        kind:
+          description: A page pinned, or a page with the filters, columns and sort its address carries.
+          enum:
+            - favourite
+            - view
+          examples:
+            - view
+          type: string
+        path:
+          description: The page's path in the web app.
+          examples:
+            - /sales/invoices
+          type: string
+        query:
+          description: A view's filters, columns and sort, as the page's address carries them; the link to share is path and query.
+          examples:
+            - ?status=overdue&sort=due
+          type: string
+        saved_at:
+          description: When it was last saved.
+          examples:
+            - "2026-11-20T09:30:00Z"
+          format: date-time
+          type: string
+        title:
+          description: The name the caller gave it.
+          examples:
+            - Overdue this quarter
+          type: string
+      required:
+        - id
+        - kind
+        - title
+        - path
+        - saved_at
+      type: object
+    SavedItemPage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The caller's favourites and views in this page, in the order they were saved; those in an area the caller no longer holds a right in are left out (SEC-34).
+          items:
+            $ref: "#/components/schemas/SavedItem"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEifQ
+          type: string
+      required:
         - items
       type: object
     Schedule:
@@ -100958,6 +101714,562 @@ paths:
       x-fyniq-permission:
         capability: "Data protection (PDPA): the data inventory, DPIAs, consent records, access and correction requests, breaches, transfers and the approval of shredding (rev 0.244)"
         right: C
+  /v1/connected-apps:
+    get:
+      description: "The Connected apps page (AI-44): your opt-in, the organisation's switch and its allowlist, the apps it can allow (those the release pre-registers and any that registered themselves and were listed), and what you have allowed each. Read-only; no side effects."
+      operationId: getConnectedApps
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectedAppsView"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `MCP-APPS-01` Not a person who is a member."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: See the AI apps that work for you
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - MCP-APPS-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Own MCP connection (opt in, consent, revoke) (rev 0.2)
+        right: V
+  /v1/connected-apps/activity:
+    get:
+      description: "The trail of AI apps' calls (AI-44): which app, which tool, what became of it, and from which network, newest first, the last 100. Yours; with all=true, everyone's in the organisation, for the people who may see Connected apps. It holds no token, argument or result. Read-only; no side effects."
+      operationId: listMCPActivity
+      parameters:
+        - description: Every person's calls in the organisation, for an Owner; otherwise your own.
+          explode: false
+          in: query
+          name: all
+          schema:
+            description: Every person's calls in the organisation, for an Owner; otherwise your own.
+            examples:
+              - false
+            type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MCPActivity"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: See what AI apps did
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "The trail is the latest 100 calls, read whole: the full record is in the activity log's export (AI-44)."
+      x-fyniq-permission:
+        capability: Own MCP connection (opt in, consent, revoke) (rev 0.2)
+        right: V
+  /v1/connected-apps/connections/{client_id}:
+    delete:
+      description: "Revokes what you allowed one AI app: its access and refresh tokens end at once (AI-44). Only your own; idempotent. Side effects: the app's tokens at the OAuth server. Never on the AI's or MCP's tool list."
+      operationId: revokeMyConnection
+      parameters:
+        - description: The app's client ID.
+          in: path
+          name: client_id
+          required: true
+          schema:
+            description: The app's client ID.
+            examples:
+              - claude-code
+            maxLength: 64
+            pattern: ^[a-z0-9][a-z0-9-]*$
+            type: string
+      responses:
+        "204":
+          description: No Content
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `MCP-APPS-01` Not a person who is a member."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Disconnect an AI app
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - MCP-APPS-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Prefer: A revocation is idempotent and takes effect at once; a preview would only repeat the answer (AI-44).
+      x-fyniq-permission:
+        capability: Own MCP connection (opt in, consent, revoke) (rev 0.2)
+        right: C
+  /v1/connected-apps/registrations:
+    get:
+      description: "The self-registered apps nobody has approved yet (AI-90), only while registration is on for the organisation: each one's name, which Fyniq has not verified, and where it sends people to sign in. An Owner approves one by adding its ID to the apps that may connect, or denies it. Read-only; no side effects."
+      operationId: listMCPRegistrations
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MCPRegistrations"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: See the AI apps waiting for an Owner
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: The registrations waiting for an Owner are capped at 100 and read whole, like a short inbox (AI-90).
+      x-fyniq-permission:
+        capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
+        right: V
+  /v1/connected-apps/registrations/{client_id}/deny:
+    post:
+      description: "Denies a pending registration, once: the app is removed from the OAuth server and can never connect (AI-90). Never held back for a second person: it narrows. Side effects: the registration's status and the client at the OAuth server. Never on the AI's or MCP's tool list."
+      operationId: denyMCPRegistration
+      parameters:
+        - description: The app's client ID.
+          in: path
+          name: client_id
+          required: true
+          schema:
+            description: The app's client ID.
+            examples:
+              - claude-code
+            maxLength: 64
+            pattern: ^[a-z0-9][a-z0-9-]*$
+            type: string
+      responses:
+        "204":
+          description: No Content
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `MCP-APPS-02` No registration is waiting under that ID."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Deny a registered AI app
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - MCP-APPS-02
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: A denial happens once and a second call answers that nothing is waiting, so a retry is safe without a key (AI-90).
+        Prefer: A denial narrows and takes effect at once, never held back for a second person (AI-90).
+      x-fyniq-permission:
+        capability: "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)"
+        right: A
   /v1/connector-catalogue:
     get:
       description: "Every connector compiled into this release (FR-INT-25): what it implements and who may make it act, the data classes it sends out and where, its destinations, the secrets it needs (never their values), its webhooks, health check, test action and local substitute, and the JSON Schema of its configuration. Grouped by capability. Read-only; no side effects."
@@ -167431,6 +168743,301 @@ paths:
       x-fyniq-permission:
         capability: Cap table, holders, investors, equity transactions (rev 0.3)
         right: V
+  /v1/me/mcp:
+    get:
+      description: "Whether AI apps, such as Claude Code or Claude Desktop, can work with the books as you (AI-35): your own opt-in, which is off until you choose, and the organisation's switch and allowlist, which an Owner sets with a second approver. Everything an app does as you is still limited to what you may see, and it can only propose changes, which a person approves in Fyniq (AI-16). Read-only; no side effects."
+      operationId: getMyMCP
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MCPAccess"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The choice's version, for If-Match.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get whether AI apps may work for you over MCP
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Own MCP connection (opt in, consent, revoke) (rev 0.2)
+        right: V
+    put:
+      description: "Opts you in to AI apps acting for you over MCP, or out (AI-35). Opting out stops every app's next call at once. It only records your choice: an app still needs the organisation's switch, its place on the allowlist and your consent to its scopes, and it can only read what you may and propose what a person approves. Only a person chooses, never a client, an integration or an AI (never-list, §9.6). Side effects: your choice and its audit event. Needs If-Match with the choice's etag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: setMyMCP
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MCPChoice"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MCPAccess"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The choice's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `MCP-OPT-01` Not a person who may choose whether AI apps work for them."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Allow or stop AI apps working for you over MCP
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - MCP-OPT-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Own MCP connection (opt in, consent, revoke) (rev 0.2)
+        right: C
   /v1/me/option-grants:
     get:
       description: "The caller's own recorded grants (FR-EQ-19, Appendix D \"own grants\"): those whose holder is the contact they sign in as (linkContactMember), with what has vested today. An Employee reads their own grants this way, and nobody else's. A caller who signs in as no holder gets linked false and no grant. Read-only; no side effects."
@@ -177371,6 +178978,343 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: Own notifications and preferences (rev 0.6)
+        right: C
+  /v1/oauth/consent:
+    get:
+      description: "The consent screen's first step (AI-37): the app that asks to connect, whether Fyniq has verified who publishes it (an unverified app shows where it sends you), what it asks for and what would be granted, what each scope reaches, and how long it lasts; or why it cannot be granted (an organisation that has not turned AI apps on, an app that is not allowed, your own opt-in, a second factor you must pass first). Only your own signed-in session reaches it. Read-only; no side effects."
+      operationId: getOAuthConsent
+      parameters:
+        - description: The consent request.
+          explode: false
+          in: query
+          name: consent_challenge
+          required: true
+          schema:
+            description: The consent request.
+            examples:
+              - nRq8
+            maxLength: 2000
+            minLength: 1
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsentScreen"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `MCP-CONSENT-02` The request to connect is for another person."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `MCP-CONSENT-01` The request to connect is gone; `MCP-CONSENT-03` Consent is not available here."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: See what an app asks to do for you
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - MCP-CONSENT-01
+        - MCP-CONSENT-02
+        - MCP-CONSENT-03
+      x-fyniq-permission:
+        capability: (your session)
+        right: V
+    post:
+      description: "The consent screen's second step (AI-37): records your answer to the app's request and says where to send the browser next. Allowing grants only what the screen showed, checked again here against every gate; a gate that refuses is answered to the app as a refusal. Only your own signed-in session reaches it. Side effects: the OAuth server's consent record. Never on the AI's or MCP's tool list."
+      operationId: answerOAuthConsent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsentAnswer"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsentNext"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `MCP-CONSENT-02` The request to connect is for another person."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `MCP-CONSENT-01` The request to connect is gone; `MCP-CONSENT-03` Consent is not available here."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Allow or refuse an app
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - MCP-CONSENT-01
+        - MCP-CONSENT-02
+        - MCP-CONSENT-03
+      x-fyniq-exempt:
+        Idempotency-Key: A consent request belongs to one authorisation request of the app, which the OAuth server binds to the browser, so a stored response would only replay a grant (AI-37).
+        Prefer: A preview would show a grant that is not recorded (AI-37).
+      x-fyniq-permission:
+        capability: (your session)
+        right: C
+  /v1/oauth/register:
+    post:
+      description: "Lets an AI app ask to be registered as an OAuth client (AI-90). Closed until an Owner turns it on with a second approver, and while the MCP server is off. Every request is checked against the policy: a public client with PKCE, exact https or loopback redirect URIs, nothing the server would fetch or trust, and a name that cannot pass for Fyniq or a known app. The client is created as an agent with the default read scope alone, unverified, and cannot connect until an Owner adds it to the apps that may connect. Limited by network and in total. Side effects: the client at the OAuth server and its record. Not idempotent: each call is a new client. Never on the AI's or MCP's tool list."
+      operationId: registerOAuthClient
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: "The client's metadata (RFC 7591): client_name, redirect_uris and, optionally, grant_types, response_types, token_endpoint_auth_method, scope and application_type. Anything else is refused."
+              examples:
+                - client_name: Acme Books Assistant
+                  redirect_uris:
+                    - https://acme.example/oauth/callback
+                  token_endpoint_auth_method: none
+              type: object
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthClientRegistration"
+          description: Created
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `MCP-REG-02` The registration breaks the policy."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `MCP-REG-01` AI apps cannot register here."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests; `MCP-REG-03` Too many registrations."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "502":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Gateway: `MCP-REG-04` The sign-in service did not take the registration."
+      summary: Register an AI app (RFC 7591)
+      tags:
+        - Connected apps
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - MCP-REG-01
+        - MCP-REG-02
+        - MCP-REG-03
+        - MCP-REG-04
+      x-fyniq-exempt:
+        Idempotency-Key: RFC 7591 clients send none, and each call is meant to make a new client, limited by network (AI-90).
+        Prefer: A preview would show a client ID that does not exist and spend the network's registration allowance (AI-90).
+      x-fyniq-permission:
+        capability: (your session)
         right: C
   /v1/opening-balances:
     get:
@@ -194957,6 +196901,211 @@ paths:
       x-fyniq-permission:
         capability: Bank transactions, categorise
         right: V
+  /v1/payment-providers/disputes/{dispute_id}/credit-settlement:
+    post:
+      description: "Settles the credit an issued credit note left with a customer against the money a lost dispute holds in disputes clearing (FR-PSP-04, dispute_settlement@1): Dr accounts receivable with the credit, Cr disputes clearing, as a refund records money paid back, with the disputes clearing account in the place of the money account. The credit note is issued first, under Invoices, with its own approval: it reverses the invoice's revenue and GST. The credit may not exceed the disputed amount, and is in the base currency; what is left in disputes clearing (the dispute fee) is written off by the draft journal of prepareDisputeLoss. Once per dispute. Needs the right to post on Invoices. [accountant to confirm the GST of the credit note.] Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: settleDisputeCredit
+      parameters:
+        - description: The provider's ID of the dispute.
+          in: path
+          name: dispute_id
+          required: true
+          schema:
+            description: The provider's ID of the dispute.
+            examples:
+              - dp_1Q3
+            maxLength: 255
+            minLength: 1
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisputeCreditDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisputeCreditSettled"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisputeCreditSettled"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PSP-05` The dispute cannot be written off now; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APPLY-03` Not an issued credit note or a receipt with an amount unapplied; `APPLY-05` More than the invoice has open or the credit has left; `PSP-08` The credit cannot settle the dispute."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Settle a customer's credit against a lost dispute
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - APPLY-03
+        - APPLY-05
+        - PSP-05
+        - PSP-08
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Invoices, credit notes
+        right: P
   /v1/payment-providers/disputes/{dispute_id}/loss:
     post:
       description: "Prepares a draft journal for a dispute the provider has lost for the organisation (FR-PSP-04): Dr the provider account's dispute loss account, Cr disputes clearing, for what the dispute holds. It posts nothing: the draft is posted under Journals with that row's own approval. Up to the limit psp.dispute_expense_limit (S$100 by default) nothing more is needed; above it the request must confirm that the invoice's revenue stays as invoiced and give a reason. Once per dispute; every line of the dispute must have posted first. Needs a right on Journals. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
@@ -215008,6 +217157,491 @@ paths:
       x-fyniq-permission:
         capability: Invoices, credit notes
         right: V
+  /v1/saved-items:
+    get:
+      description: The caller's own favourites (pages they pinned) and saved views (a page with the filters, columns and sort its address carries), the same on every device (FR-UX-12), a page at a time (cursor pagination). An item in an area the caller no longer holds a right in is left out, as every output follows the roles held now (SEC-34). Read-only; no side effects.
+      operationId: listSavedItems
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only favourites, or only views; both when left out.
+          explode: false
+          in: query
+          name: kind
+          schema:
+            description: Only favourites, or only views; both when left out.
+            enum:
+              - favourite
+              - view
+            examples:
+              - view
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedItemPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List your favourites and saved views
+      tags:
+        - Session
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Own notifications and preferences (rev 0.6)
+        right: V
+    post:
+      description: "Saves the caller's own favourite (a page) or view (a page with its filters, columns and sort), or changes a view's name or filters when its ID is sent (FR-UX-12). An item is an address and a name, never a record's content; the page it opens shows what the caller's roles let them see. The page must be in an area the caller holds a right in. At most 50 of each kind. Side effects: the item and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: saveSavedItem
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveItemRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedItem"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SVD-01` Not the address of a page; `SVD-02` A page outside your access; `SVD-03` Not a name; `SVD-04` Not filters of an address; `SVD-05` Too many items; `SVD-06` Not a person with favourites and views of their own."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Save a favourite or a view
+      tags:
+        - Session
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - SVD-01
+        - SVD-02
+        - SVD-03
+        - SVD-04
+        - SVD-05
+        - SVD-06
+      x-fyniq-permission:
+        capability: Own notifications and preferences (rev 0.6)
+        right: C
+  /v1/saved-items/{kind}:
+    delete:
+      description: "Takes one of the caller's own favourites or views away, by its ID in the query (FR-UX-12). Nothing is deleted: the item's history stays in the audit trail, and saving the page again brings it back. Side effects: the change and its audit event. Idempotent with Idempotency-Key."
+      operationId: takeAwaySavedItem
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+        - description: The item's kind.
+          in: path
+          name: kind
+          required: true
+          schema:
+            description: The item's kind.
+            enum:
+              - favourite
+              - view
+            examples:
+              - view
+            type: string
+        - description: "The item's ID: a favourite's path, or a view's ID."
+          explode: false
+          in: query
+          name: id
+          schema:
+            description: "The item's ID: a favourite's path, or a view's ID."
+            examples:
+              - 3f9c2b7a-61d0-4b1e-9d1e-0a1b2c3d4e5f
+            maxLength: 200
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedItem"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `SVD-01` Not the address of a page; `SVD-02` A page outside your access; `SVD-03` Not a name; `SVD-04` Not filters of an address; `SVD-05` Too many items; `SVD-06` Not a person with favourites and views of their own."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Take a favourite or a view away
+      tags:
+        - Session
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - SVD-01
+        - SVD-02
+        - SVD-03
+        - SVD-04
+        - SVD-05
+        - SVD-06
+      x-fyniq-permission:
+        capability: Own notifications and preferences (rev 0.6)
+        right: C
   /v1/search:
     get:
       description: Finds documents, contacts, accounts and items (FR-UX-02; PRD-001 rev 0.190). Text is looked for, case aside, in a document's number, reference, memo, notes, title, lines and party, and in a contact's name, UEN or tax ID and emails, an account's or item's code and name. An amount, exact (1,234.56) or above or below a bound (> 5k), is looked for, without its sign, in a document's live posted lines, in each line's currency; a bare whole number is looked for as both. Each kind of record is searched only by whoever views its Appendix D row without a qualifier, and an Employee finds their own claims, so results, counts and details never show a record the caller may not see (SEC-34). Read-only; no side effects.
@@ -226939,6 +229573,8 @@ tags:
     name: Search
   - description: Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05).
     name: Notifications
+  - description: "AI apps working for a person over MCP: the person's own opt-in, which is off until they choose, and the organisation's switch and allowlist (AI-35). Never reachable by an AI app or an integration: a person chooses (§9.6)."
+    name: Connected apps
   - description: "Each person's first-run tour state: the tour's only write (FR-UX-34, G4-104)."
     name: Help
   - description: "Banners under the header: those each person sees now, and the announcements the Owner and Administrator publish to their organisation (FR-NTF-03)."

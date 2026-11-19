@@ -143,3 +143,12 @@ Source: PRD-002 §N.1
 #### Scenario: Final pay due
 - **WHEN** a leaver's final salary is due in 2 working days
 - **THEN** the check shows ⏰
+
+### Requirement: N.1 #16 Overtime beyond the monthly limit
+The system SHALL flag a Part IV employee's overtime in a month that is beyond the country pack's monthly limit, so HR acts on it with an exemption or a change of pattern; the hours stay recorded and are paid (NM-TIM-04).
+
+Source: PRD-002 §N.1
+
+#### Scenario: A month beyond the limit
+- **WHEN** a person's recorded overtime in October passes the pack's monthly limit
+- **THEN** the check shows ⚠ naming the month and the hours

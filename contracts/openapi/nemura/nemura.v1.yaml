@@ -3217,6 +3217,14 @@ components:
           examples:
             - "0.00"
           type: string
+        unpaid_decision:
+          description: How the days beyond the ceiling were decided, once the people team has decided.
+          enum:
+            - unpaid
+            - annual
+          examples:
+            - unpaid
+          type: string
         verified:
           description: Whether the people team verified the certificate.
           examples:

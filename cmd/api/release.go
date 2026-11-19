@@ -37,7 +37,7 @@ func init() {
 	newAuthenticator = func(clock ports.Clock, sessions storage.Sessions) authn.Authenticator {
 		r := authn.Release{}
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
-			in := &authn.Introspector{OAuth: wiring.Hydra(admin), Audience: os.Getenv("FYNIQ_API_AUDIENCE"), Clock: clock, TTL: authn.MaxCache}
+			in := &authn.Introspector{OAuth: wiring.Hydra(admin), Audience: os.Getenv("FYNIQ_API_AUDIENCE"), Clock: clock, TTL: authn.MaxCache, Delegation: delegation(sessions, clock)}
 			if routes, ok := sessions.(storage.APIClientRoutes); ok { // FR-INT-02: the API clients Fyniq registered
 				in.Clients = routes
 			}
@@ -80,7 +80,7 @@ func init() {
 		}
 		return c.origin
 	}
-	registerOAuth = func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions) {
+	registerOAuth = func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, store storage.Store) {
 		admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL")
 		if admin == "" || sessions == nil {
 			return
@@ -89,8 +89,13 @@ func init() {
 			return // nobody can sign in, so nobody can consent
 		}
 		signedIn := authn.Release{Sessions: authn.Sessions{Store: sessions, Clock: clock, Cookie: authn.SessionCookie(true)}}
-		oauthflow.Flow{OAuth: wiring.Hydra(admin), SignedIn: signedIn, Clock: clock, APIAudience: os.Getenv("FYNIQ_API_AUDIENCE"),
-			MCPAudience: os.Getenv("FYNIQ_MCP_AUDIENCE"), Log: logging.New(os.Stderr, slog.LevelInfo), SignInPage: "/", Base: "/api"}.Register(s)
+		log, mcpAudience, oauth := logging.New(os.Stderr, slog.LevelInfo), os.Getenv("FYNIQ_MCP_AUDIENCE"), wiring.Hydra(admin)
+		gate, publishers := mcpConsent(oauth, mcpAudience, store, clock, log)
+		registerMetadata(s, store, clock)
+		flow := oauthflow.Flow{OAuth: oauth, SignedIn: signedIn, Clock: clock, APIAudience: os.Getenv("FYNIQ_API_AUDIENCE"), MCPAudience: mcpAudience,
+			MCP: gate, Publishers: publishers, Log: log, SignInPage: "/", Base: "/api"}
+		consentFlow = &flow
+		flow.Register(s)
 	}
 }
 

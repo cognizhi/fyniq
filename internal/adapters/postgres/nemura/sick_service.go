@@ -63,7 +63,7 @@ func (l SickService) List(ctx context.Context, s api.Session, all, unverified bo
 		rows, err := Sick(ctx, tx, SickScope{Member: s.Member, All: all, Unverified: unverified}, nil)
 		for _, r := range rows {
 			out = append(out, api.SickNotification{SickNotified: api.SickNotified{ID: r.ID.String(), Days: r.Days.String(), Paid: r.Paid.String(), Unpaid: r.Unpaid.String(), Late: r.Late},
-				PersonID: r.Person.String(), Person: r.PersonName, Kind: r.Kind, From: day(r.From), To: day(r.To), Note: r.Note, Certificate: r.Certificate != nil, Issuer: r.Issuer, Verified: r.Verified})
+				PersonID: r.Person.String(), Person: r.PersonName, Kind: r.Kind, From: day(r.From), To: day(r.To), Note: r.Note, Certificate: r.Certificate != nil, Issuer: r.Issuer, Verified: r.Verified, Treatment: r.Treatment})
 		}
 		return err
 	})

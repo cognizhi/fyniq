@@ -441,6 +441,7 @@ type FyniqAiProposal struct {
 	ProposedAt        time.Time
 	ExpiresAt         time.Time
 	Version           int32
+	McpApp            *string
 }
 
 type FyniqAiQualification struct {
@@ -2099,6 +2100,51 @@ type FyniqLedgerRevision struct {
 	Revision       int64
 }
 
+type FyniqMcpCall struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	App            string
+	AppVersion     string
+	TokenID        string
+	Tool           string
+	InputSha256    string
+	OutputSha256   string
+	Facts          int32
+	DurationMs     int32
+	Outcome        string
+	Code           string
+	Network        string
+	At             time.Time
+}
+
+type FyniqMcpClient struct {
+	ClientID     string
+	Name         string
+	RedirectUris []string
+	Status       string
+	Network      string
+	RegisteredAt time.Time
+	DecidedAt    *time.Time
+	LastUsedAt   *time.Time
+}
+
+type FyniqMcpSeen struct {
+	OrganisationID uuid.UUID
+	UserID         uuid.UUID
+	Kind           string
+	Value          string
+	FirstSeen      time.Time
+}
+
+type FyniqMcpUserOptin struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	OptedIn        bool
+	SetAt          time.Time
+}
+
 type FyniqMemberInvitation struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2820,6 +2866,19 @@ type FyniqPspBalance struct {
 	TakenAt        time.Time
 }
 
+type FyniqPspDisputeCredit struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectorID    uuid.UUID
+	DisputeID      string
+	CreditNoteID   uuid.UUID
+	RefundID       uuid.UUID
+	Currency       string
+	Amount         string
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
 type FyniqPspDisputeLoss struct {
 	OrganisationID            uuid.UUID
 	ID                        uuid.UUID
@@ -3412,6 +3471,19 @@ type FyniqUserRecoveryCode struct {
 	CodeHash  []byte
 	CreatedAt time.Time
 	UsedAt    *time.Time
+}
+
+type FyniqUserSavedItem struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Kind           string
+	ItemKey        string
+	State          string
+	Title          string
+	Path           string
+	Query          string
+	SetAt          time.Time
 }
 
 type FyniqUserSession struct {

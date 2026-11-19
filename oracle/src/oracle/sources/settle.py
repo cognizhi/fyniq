@@ -96,13 +96,14 @@ def settle(
     sign: int,
     in_full_allowed: bool = True,
     unapplied_allowed: bool = True,
+    account_kind: str = "money",
 ) -> Posting:
     """Post a settlement of documents of type ``settles``; ``sign`` is +1 when the control account is
     debited (paying bills or claims) and -1 when it is credited (receiving for invoices)."""
     d = doc.data
     currency = d["currency"]
     r.minor(currency)
-    held = r.money_account(d["account"])
+    held = r.dispute_account(d["account"]) if account_kind == "dispute" else r.money_account(d["account"])
     if held not in (currency, r.base):
         raise Rejected("money-account-currency")
     base_account_for_foreign = held == r.base and currency != r.base

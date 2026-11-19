@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
 import { FlexReplies } from "../components/FlexReplies";
+import { Accrual, OvertimeApprovals, PayInputs, UnpaidSickDays } from "../components/TimePanels";
 import { LeaveCalendar } from "../components/LeaveCalendar";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
@@ -167,6 +168,10 @@ export function TeamLeave({ roles }: { roles: readonly string[] }) {
           </section>
         )}
         {replier && <FlexReplies />}
+        <OvertimeApprovals />
+        {peopleTeam && <UnpaidSickDays />}
+        {team(roles) && <PayInputs />}
+        {team(roles) && <Accrual writes={peopleTeam} />}
         <LeaveCalendar />
       </main>
     </Shell>

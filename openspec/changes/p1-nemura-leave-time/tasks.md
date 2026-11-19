@@ -60,22 +60,26 @@ Load before each slice: `fyniq-feature-change`, `fyniq-sg-statutory` (1, 3), `fy
   N.1 #5; migration 000019; screens `nm-my-requests` and the replies on `nm-team-leave`. `// req: NM-LV-10`
   Also in `sg-people@2026.3`: unpaid infant care leave (12 days a year per parent, 3 months' service, a citizen child under 2, at most 24 days per child), read from
   MOM on 20 Nov 2026. Left: infant care leave as a ledger type with its entitlement (it needs the child's age at each day), and letter requests on `nm-my-requests`.
-- [~] 3.4 N.1 #4 (a negative balance, a request waiting more than 3 working days) is built, with #10; the people home's leave tiles (`nm-people-home`) are left.
+- [x] 3.4 N.1 #4 (a negative balance, a request waiting more than 3 working days) and #10, and the people home's leave tiles (`nm-people-home`).
 
 ## 4. Into pay and the books (slice 4)
 
 - [x] 4.1 Unpaid leave and encashment as pay-run inputs (NM-LV-08): the days of a sick notification beyond the ceiling decided once as unpaid or taken from annual
   leave; encashment taking days from the ledger (never beyond the balance) with its pay input; each input linked to its source, listed for the pay run
   (`GET /v1/pay-inputs`, NM-PAY-02) and used once (migration 000020). Built as the inputs; proved with payroll. Left: the correction of leave an approved pay run
-  already used becoming an input of the next run (NM-PAY-09: it needs the pay run); a screen for the decision and for encashment; unpaid leave requests as a type.
+  already used becoming an input of the next run (NM-PAY-09: it needs the pay run); unpaid leave requests as a type. The decision on sick days beyond the limit,
+  encashment and the open inputs have their panels (`nm-team-leave`, `nm-my-leave`, guide and kb pages).
 - [x] 4.2 The month-end leave liability accrual as a draft for approval (NM-LV-09): the carried-forward annual leave still untaken per person, drafted once a month,
   approved once by someone other than the drafter, never edited (migration 000021); available hours for Fyniq (`GET /v1/people/{id}/availability`: working days by
   pattern less holidays less leave, sick leave and government-paid leave). Proved with the link. Left: the amounts (the pay structure's), the journal and its export
-  (the link's), the accountant's materiality floor, the scheduled monthly run (a worker job with its own grants), a screen.
+  (the link's), the accountant's materiality floor. The worker drafts the previous month by itself while Leave is on (an outbox row once a month; migration 000022
+  grants the worker that one insert and no member as drafter); the panel is on `nm-team-leave`.
 - [x] 4.3 Part IV overtime and hours worked, rest-day and public-holiday work, without clocking (NM-TIM-02, NM-TIM-04): recorded per day, approved by someone other
   than the person, used once by a pay run (migration 000020); the monthly limit (72) and the 1.5 times rate from `sg-people@2026.4` (MOM's page, researched);
-  work beyond the limit stays recorded and is flagged. Left: the basic-salary thresholds check (salary is the pay structure's), rest-day pay by branch and public-
-  holiday pay (payroll), the N.1 finding for work beyond the limit (a PRD row to add), the screens, importing the hours.
+  work beyond the limit stays recorded and is flagged, with N.1 #16 (PRD-002 rev 0.10); `sg-people@2026.5` adds normal hours (44 a week; 9 or 8 a day) and rest-day
+  pay by branch and adoption leave from MOM; the hours are entered on `nm-my-requests`, approved on `nm-team-leave`. Left: the basic-salary thresholds check (salary is
+  the pay structure's), computing rest-day and public-holiday pay (payroll), importing the hours, recording adoption leave (it needs the formal-intent-to-adopt date,
+  which the dependants do not hold), Part IV's key employment terms.
 - [x] 4.4 Verify: the local gates for each slice. Tags are only on what its tests fully prove; the requirements that need payroll or the link (NM-LV-08, NM-LV-09,
   NM-TIM-02, NM-TIM-04) are built as inputs and drafts, and their coverage rows say what waits.
 
@@ -100,4 +104,4 @@ Load before each slice: `fyniq-feature-change`, `fyniq-sg-statutory` (1, 3), `fy
 | NM-TIM-01 Working patterns | 1.2, 4.2 | complete, with available hours as an API | Fyniq reading it: `p1-nemura-fyniq-link` |
 | NM-TIM-02 Overtime for Part IV | 4.3 | the records, the rate and the limit from the pack | the salary thresholds check and the pay: `p1-nemura-payroll` |
 | NM-TIM-04 Hours worked and special days | 4.3 | the records | the pay run: `p1-nemura-payroll` |
-| Screens nm-apply-leave, nm-my-leave, nm-team-leave, nm-report-sick, nm-govt-claims, nm-people-home | 1.4, 2.3, 2.4, 3.2, 3.4 | built, except the leave tiles of nm-people-home | the people home (slice 3.4 left) |
+| Screens nm-apply-leave, nm-my-leave, nm-team-leave, nm-report-sick, nm-govt-claims, nm-people-home | 1.4, 2.3, 2.4, 3.2, 3.4 | complete (the leave tiles are on People home) | |

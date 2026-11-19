@@ -121,6 +121,7 @@ export const routes = [
   { kind: "route", id: "categorise", path: "/banking/categorise", mode: "basic", signedIn: true, help: "banking.categorise", guide: "banking.accounts#categorise-the-waiting-lines" },
   { kind: "route", id: "bank-rules", path: "/banking/rules", mode: "expert", signedIn: true, help: "banking.rules", guide: "banking.accounts#bank-rules" },
   { kind: "route", id: "auto-reconciled", path: "/banking/auto-reconciled", mode: "basic", signedIn: true, help: "banking.auto-reconciled", guide: "banking.accounts#what-fyniq-reconciled-by-itself" },
+  { kind: "route", id: "provider-payouts", path: "/banking/payouts", mode: "expert", signedIn: true, help: "banking.payouts", guide: "banking.accounts#payment-provider-payouts" },
   { kind: "route", id: "bank-reconciliation", path: "/banking/reconciliations/$accountId/$periodId", mode: "expert", signedIn: true, help: "banking.reconciliation", guide: "banking.accounts#reconcile-an-account-for-a-month" },
   { kind: "route", id: "accounting", path: "/accounting", mode: "expert", signedIn: true, help: "nav.accounting", guide: "accounting.journals" },
   { kind: "route", id: "journals", path: "/accounting/journals", mode: "expert", signedIn: true, help: "accounting.journals", guide: "accounting.journals" },
@@ -209,6 +210,10 @@ export const routes = [
   { kind: "route", id: "settings-ai-routes", path: "/settings/ai/routes", mode: "expert", signedIn: true, help: "settings.ai-routes", guide: "settings.ai-routes" },
   { kind: "route", id: "settings-ai-route", path: "/settings/ai/routes/$agent", mode: "expert", signedIn: true, help: "settings.ai-route", guide: "settings.ai-routes#change-an-agents-route" },
   { kind: "route", id: "settings-ai-activity", path: "/settings/ai/activity", mode: "expert", signedIn: true, help: "settings.ai-activity", guide: "settings.ai-activity" },
+  // The page an AI app's request to connect lands on (AI-37; Hydra's consent URL): signed in, then Allow or Deny.
+  { kind: "route", id: "oauth-consent", path: "/auth/consent", mode: "basic", signedIn: true, help: "oauth.consent", guide: "settings.connected-apps#when-an-app-asks-to-connect" },
+  // Settings › Connected apps (AI-44, AI-35, AI-90): the AI apps that work for a person, and the registrations waiting for an Owner.
+  { kind: "route", id: "settings-connected-apps", path: "/settings/connected-apps", mode: "basic", signedIn: true, help: "settings.connected-apps", guide: "settings.connected-apps" },
   { kind: "route", id: "settings-ai-knowledge-base", path: "/settings/ai/knowledge-base", mode: "expert", signedIn: true, help: "settings.ai-knowledge-base", guide: "settings.ai-knowledge-base" },
   { kind: "route", id: "settings-ai-plan", path: "/settings/profile/ai-plan", mode: "basic", signedIn: true, help: "settings.ai-plan", guide: "settings.ai-activity#your-own-ai-plan" },
   // Settings › Import (FR-MIG-01…03; p1-workbook-migration task 9.1): the move from the workbook, M1 to M6, and the generic import.
@@ -244,6 +249,7 @@ export const actions = [
   // The heartbeat drill register, a tab of Compliance › Controls (NFR-OBS-02, CTL-RES-05): Expert, as Controls is.
   { kind: "action", id: "compliance.heartbeat-drills", mode: "expert", help: "compliance.heartbeat-drills", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "heartbeat-drills.minutes", mode: "expert", help: "heartbeat-drills.minutes", guide: "compliance.controls#heartbeat-drills" },
+  { kind: "action", id: "shell.saved", mode: "basic", help: "shell.saved", guide: "home.overview#favourites-and-saved-views" },
   { kind: "action", id: "shell.help", mode: "basic", help: "shell.help", guide: "home.overview#see-which-version-you-are-on" },
   // "What happened? Where to record it" on Home (FR-UX-11), from the workbook's Start Here.
   { kind: "action", id: "home.what-happened", mode: "basic", help: "home.what-happened", guide: "home.overview#what-happened-where-to-record-it" },
@@ -684,6 +690,9 @@ export const actions = [
   { kind: "action", id: "bank-line.accept", mode: "basic", help: "bank-line.accept", guide: "banking.accounts#categorise-the-waiting-lines" },
   { kind: "action", id: "bank-line.change", mode: "basic", help: "bank-line.change", guide: "banking.accounts#categorise-the-waiting-lines" },
   { kind: "action", id: "banking.reconcile-now", mode: "basic", help: "banking.reconcile-now", guide: "banking.accounts#categorise-the-waiting-lines" },
+  { kind: "action", id: "psp.dispute-loss", mode: "expert", help: "psp.dispute-loss", guide: "banking.accounts#a-lost-dispute" },
+  { kind: "action", id: "psp.dispute-credit", mode: "expert", help: "psp.dispute-credit", guide: "banking.accounts#a-lost-dispute" },
+  { kind: "action", id: "psp.event-resolve", mode: "expert", help: "psp.event-resolve", guide: "banking.accounts#payment-provider-payouts" },
   { kind: "action", id: "bank-rule.auto-apply", mode: "expert", help: "bank-rule.auto-apply", guide: "banking.accounts#bank-rules" },
   { kind: "action", id: "bank-reconciliation.sign", mode: "expert", help: "bank-reconciliation.sign", guide: "banking.accounts#reconcile-an-account-for-a-month" },
   { kind: "action", id: "bank-reconciliation.override", mode: "expert", help: "bank-reconciliation.override", guide: "banking.accounts#reconcile-an-account-for-a-month" },
@@ -795,6 +804,7 @@ export const nav = [
 export const settingsNav = [
   { kind: "nav", id: "settings.profile", route: "/settings/profile", icon: UserRound, group: "you", roles: "all", mode: "basic", help: "settings.profile", guide: "preferences.security" },
   { kind: "nav", id: "settings.notifications", route: "/settings/notifications", icon: Bell, group: "you", roles: "all", mode: "basic", help: "settings.notifications", guide: "settings.notifications" },
+  { kind: "nav", id: "settings.connected-apps", route: "/settings/connected-apps", icon: Plug, group: "you", roles: ["owner", "administrator", "controller", "accountant", "bookkeeper", "ar_specialist", "ap_specialist", "payroll_administrator", "payment_releaser", "approver", "tax_agent", "dpo"], mode: "basic", help: "settings.connected-apps", guide: "settings.connected-apps" },
   { kind: "nav", id: "settings.ai-activity", route: "/settings/ai/activity", icon: ScrollText, group: "you", roles: "all", mode: "expert", help: "settings.ai-activity", guide: "settings.ai-activity" },
   // The organisation's pages show to the roles that may view them (Appendix D, V or more); the API decides the rest.
   { kind: "nav", id: "settings.organisation", route: "/settings/organisation", icon: Building, group: "organisation", roles: "all", mode: "expert", help: "settings.organisation", guide: "settings.organisation" },

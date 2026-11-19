@@ -3576,6 +3576,12 @@ export interface components {
              */
             unpaid_days: string;
             /**
+             * @description How the days beyond the ceiling were decided, once the people team has decided.
+             * @example unpaid
+             * @enum {string}
+             */
+            unpaid_decision?: "unpaid" | "annual";
+            /**
              * @description Whether the people team verified the certificate.
              * @example false
              */

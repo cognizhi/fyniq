@@ -3,7 +3,7 @@ key: nemura.requests
 title: See your requests and make a flexible work request
 mode: basic
 roles: [employee, line_manager, hr_officer, hr_admin, payroll_admin, owner]
-requirements: [NM-LV-10, NM-LV-04, NM-ESS-04]
+requirements: [NM-LV-10, NM-LV-04, NM-ESS-04, NM-TIM-04]
 ---
 
 # See your requests and make a flexible work request
@@ -27,6 +27,14 @@ shows the day the written reply is due. A clarification or a change of type does
 3. To make a request, fill in **Make a formal flexible work request**: what you want to change, the day it would start, the day
    it would end (leave it empty if open) and why. Select **Send the request**.
 4. You can **Withdraw** a request while it waits for a reply.
+
+## Hours worked on special days
+
+If you are a Part IV employee, **Hours worked on special days** (under your requests) is where you enter overtime, work on a rest
+day and work on a public holiday, one day at a time, without clocking. For rest-day work, say whether it was at the employer's
+request or yours: the pay differs. Your manager or the people team approves each day, and a pay run uses it once. Overtime beyond
+the monthly limit in the country pack stays recorded and is paid, and the people team is told so it can act on it. A person who is
+not a Part IV employee on that day is refused.
 
 ## What happens next
 

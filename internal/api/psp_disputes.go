@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/customercredit"
 	"github.com/cognizhi/fyniq/internal/domain/journal"
 	"github.com/cognizhi/fyniq/internal/domain/ledger"
 	"github.com/cognizhi/fyniq/internal/domain/money"
@@ -24,6 +26,7 @@ const (
 	CodePSPDisputeState = "PSP-05" // the dispute is not one whose money waits in disputes clearing and is posted, or no accounts are set
 	CodePSPDisputeLimit = "PSP-06" // above the expense limit, written off without a reason and the acknowledgement
 	CodePSPEventState   = "PSP-07" // the event is not parked or failed
+	CodePSPCredit       = "PSP-08" // the credit cannot settle the dispute: not an issued credit note, more than the disputed amount, or another currency
 )
 
 // PaymentProviderDispute is a dispute's money in the provider's disputes clearing account.
@@ -31,10 +34,13 @@ type PaymentProviderDispute struct {
 	DisputeID      string `json:"dispute_id" doc:"The provider's ID." example:"dp_1Q3"`
 	MoneyAccountID string `json:"money_account_id" format:"uuid" doc:"The provider's clearing money account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
 	Held           Money  `json:"held" doc:"What its posted lines have moved into disputes clearing and the provider has not given back."`
-	Status         string `json:"status" enum:"open,won,written_off" doc:"open: its money waits; won: the provider gave it all back; written_off: a draft journal was prepared to write it off." example:"open"`
+	Status         string `json:"status" enum:"open,won,written_off,credited" doc:"open: its money waits; won: the provider gave it all back; written_off: a draft journal was prepared to write it off; credited: a customer credit was settled against all of it." example:"open"`
 	AllPosted      bool   `json:"all_posted" doc:"Whether every statement line of the dispute has posted; a draft is prepared only when they all have." example:"true"`
 	OverLimit      bool   `json:"over_limit" doc:"Whether it is above the limit up to which a lost dispute is written off as an expense without a reason (psp.dispute_expense_limit)." example:"false"`
 	DocumentID     string `json:"loss_document_id,omitempty" format:"uuid" doc:"The draft journal prepared to write it off." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b80"`
+	Disputed       Money  `json:"disputed" doc:"The disputed amount alone, without the dispute fee."`
+	Credited       Money  `json:"credited" doc:"What a customer credit was settled against it."`
+	RefundID       string `json:"settlement_id,omitempty" format:"uuid" doc:"The refund document that settled the customer credit against it (dispute_settlement@1)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b81"`
 }
 
 type pspDisputesOutput struct {
@@ -96,6 +102,35 @@ type resolveEventOutput struct {
 	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
 	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
 	Body     PaymentProviderEvent
+}
+
+// DisputeCreditDraft settles a customer's credit against a lost dispute.
+type DisputeCreditDraft struct {
+	MoneyAccountID string `json:"money_account_id" format:"uuid" doc:"The provider's clearing money account the dispute is on." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
+	CreditNoteID   string `json:"credit_note_id" format:"uuid" doc:"The issued credit note that credits the disputed charge's invoice, whose credit is settled." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b90"`
+	Date           string `json:"date,omitempty" format:"date" doc:"The settlement's date; today when left out." example:"2026-11-19"`
+}
+
+type settleDisputeCreditInput struct {
+	PSPDisputePath
+	KeyHeader
+	PreferHeader
+	Body DisputeCreditDraft
+}
+
+// DisputeCreditSettled is the settlement of a credit against a lost dispute.
+type DisputeCreditSettled struct {
+	DisputeID string `json:"dispute_id" doc:"The provider's ID." example:"dp_1Q3"`
+	RefundID  string `json:"settlement_id" format:"uuid" doc:"The refund document: Dr accounts receivable, Cr disputes clearing, under dispute_settlement@1." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b81"`
+	Amount    Money  `json:"amount" doc:"What it settled of the credit."`
+	StillHeld Money  `json:"still_held" doc:"What the dispute still holds in disputes clearing, such as its fee, for the expense route."`
+}
+
+type disputeCreditOutput struct {
+	Status   int
+	Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+	Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
+	Body     DisputeCreditSettled
 }
 
 func pspEventOf(e storage.PSPEvent) PaymentProviderEvent {
@@ -164,9 +199,13 @@ func registerPaymentProviderDisputes(a *API) {
 				}
 				for _, d := range ds {
 					item := PaymentProviderDispute{DisputeID: d.DisputeID, MoneyAccountID: m.ID.String(), Held: Money{Amount: d.Held.String(), Currency: d.Currency},
-						Status: d.Status, AllPosted: d.Posted, OverLimit: cur == base && mustCmp(d.Held, limit) > 0}
+						Status: d.Status, AllPosted: d.Posted, OverLimit: cur == base && mustCmp(d.Held, limit) > 0,
+						Disputed: Money{Amount: d.Gross.String(), Currency: d.Currency}, Credited: Money{Amount: d.Credited.String(), Currency: d.Currency}}
 					if d.LossDocument != nil {
 						item.DocumentID = d.LossDocument.DocumentID.String()
+					}
+					if d.Credit != nil {
+						item.RefundID = d.Credit.RefundID.String()
 					}
 					items = append(items, item)
 				}
@@ -288,6 +327,118 @@ func registerPaymentProviderDisputes(a *API) {
 			return nil, err
 		}
 		return &disputeLossOutput{Status: w.Status, Applied: applied(w), Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
+	})
+
+	register(a, authz.SettleDisputeCredit, huma.Operation{
+		OperationID: "settleDisputeCredit", Method: http.MethodPost, Path: "/v1/payment-providers/disputes/{dispute_id}/credit-settlement", Tags: []string{"Banking"},
+		Summary: "Settle a customer's credit against a lost dispute", DefaultStatus: http.StatusCreated,
+		Description: "Settles the credit an issued credit note left with a customer against the money a lost dispute holds in disputes clearing (FR-PSP-04, " +
+			"dispute_settlement@1): Dr accounts receivable with the credit, Cr disputes clearing, as a refund records money paid back, with the disputes " +
+			"clearing account in the place of the money account. The credit note is issued first, under Invoices, with its own approval: it reverses the " +
+			"invoice's revenue and GST. The credit may not exceed the disputed amount, and is in the base currency; what is left in disputes clearing " +
+			"(the dispute fee) is written off by the draft journal of prepareDisputeLoss. Once per dispute. Needs the right to post on Invoices. " +
+			"[accountant to confirm the GST of the credit note.] Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.",
+	}, append([]string{CodePSPDisputeState, CodePSPCredit, storage.CodeDuplicate, customercredit.CodeCredit, customercredit.CodeTooMuch}, writes...), func(ctx context.Context, in *settleDisputeCreditInput) (*disputeCreditOutput, error) {
+		p, _ := authn.From(ctx)
+		account, err := parseID("body.money_account_id", in.Body.MoneyAccountID)
+		if err != nil {
+			return nil, err
+		}
+		credit, err := parseID("body.credit_note_id", in.Body.CreditNoteID)
+		if err != nil {
+			return nil, err
+		}
+		date, bad := optionalDate("body.date", in.Body.Date)
+		if bad != nil {
+			return nil, invalid(fieldProblems(bad))
+		}
+		w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusCreated, func(ctx context.Context, u storage.UnitOfWork) (DisputeCreditSettled, error) {
+			if err := checkConflicts(ctx, u, p, "Posting"); err != nil {
+				return DisputeCreditSettled{}, err
+			}
+			refuse := func(code, detail, fix string) (DisputeCreditSettled, error) {
+				return DisputeCreditSettled{}, problem(code, detail, fix)
+			}
+			x, err := u.PSP().Account(ctx, account)
+			if err != nil {
+				return DisputeCreditSettled{}, err
+			}
+			if x.DisputesAccountID == nil {
+				return refuse(CodePSPDisputeState, "The provider account names no disputes account.", "Set it on the provider account first")
+			}
+			m, err := u.Banking().MoneyAccount(ctx, account)
+			if err != nil {
+				return DisputeCreditSettled{}, err
+			}
+			cur, err := money.Lookup(m.Currency)
+			if err != nil {
+				return DisputeCreditSettled{}, err
+			}
+			set, err := journal.LoadSettings(ctx, u)
+			if err != nil {
+				return DisputeCreditSettled{}, err
+			}
+			if cur != set.Base {
+				return refuse(CodePSPCredit, "A dispute in "+cur.Code+" cannot be settled against a customer credit by this operation.", "Write it off with a journal under Journals")
+			}
+			byRef, err := pspnet.Lines(ctx, u, m)
+			if err != nil {
+				return DisputeCreditSettled{}, err
+			}
+			ds, err := pspnet.Disputes(ctx, u, x, cur, byRef)
+			if err != nil {
+				return DisputeCreditSettled{}, err
+			}
+			var d *pspnet.Dispute
+			for i := range ds {
+				if ds[i].DisputeID == in.DisputeID {
+					d = &ds[i]
+				}
+			}
+			switch {
+			case d == nil:
+				return DisputeCreditSettled{}, problem(CodeNotFound, "The provider account has no such dispute.", "Choose a dispute from the list")
+			case d.Credit != nil:
+				return DisputeCreditSettled{}, problem(storage.CodeDuplicate, "A customer credit was settled against this dispute already.", "Write off what is left with prepareDisputeLoss")
+			case d.Status != pspnet.DisputeOpen:
+				return refuse(CodePSPDisputeState, "The dispute is "+d.Status+": it holds nothing to settle a credit against.", "Only an open dispute is settled")
+			case !d.Posted:
+				return refuse(CodePSPDisputeState, "Some statement lines of the dispute have not posted.", "Reconcile now, then settle the credit")
+			}
+			c, err := customercredit.CreditOf(ctx, u, credit, set)
+			var ce *customercredit.Error
+			if errors.As(err, &ce) {
+				return DisputeCreditSettled{}, problem(ce.Code, ce.Message, ce.Fix)
+			}
+			if err != nil {
+				return DisputeCreditSettled{}, err
+			}
+			if c.Doc.Type != storage.DocumentCreditNote || c.Left.Currency() != cur || mustCmp(c.Left, d.Gross) > 0 || c.Left.Sign() <= 0 {
+				return refuse(CodePSPCredit, "The credit cannot settle this dispute: it must be an issued credit note in "+cur.Code+" and not more than the disputed "+d.Gross.String()+".",
+					"Credit the invoice of the disputed charge, issue the credit note, and settle it")
+			}
+			now := a.deps.Clock.Now()
+			day := dayOnly(now)
+			if date != nil {
+				day = *date
+			}
+			r, err := a.customerRefunds.RecordIn(ctx, u, customercredit.RefundDraft{CreditID: credit, Date: day, AccountID: *x.DisputesAccountID, Amount: c.Left,
+				Reference: "Lost dispute " + in.DisputeID})
+			if err != nil {
+				return DisputeCreditSettled{}, customerRefundProblems(err)
+			}
+			if _, err := u.PSP().RecordDisputeCredit(ctx, storage.NewPSPDisputeCredit{ConnectorID: x.ConnectorID, DisputeID: in.DisputeID, CreditNoteID: credit,
+				RefundID: r.Refund.ID, Currency: cur.Code, Amount: storage.Decimal(c.Left.String()), At: now}); err != nil {
+				return DisputeCreditSettled{}, err
+			}
+			rest, _ := d.Held.Sub(c.Left)
+			return DisputeCreditSettled{DisputeID: in.DisputeID, RefundID: r.Refund.ID.String(), Amount: Money{Amount: c.Left.String(), Currency: cur.Code},
+				StillHeld: Money{Amount: rest.String(), Currency: cur.Code}}, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &disputeCreditOutput{Status: w.Status, Applied: applied(w), Replayed: replayedHeader(w.Replayed), Body: w.Body}, nil
 	})
 
 	register(a, authz.ResolvePaymentProviderEvent, huma.Operation{

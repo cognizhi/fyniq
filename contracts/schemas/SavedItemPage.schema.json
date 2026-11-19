@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The caller's favourites and views in this page, in the order they were saved; those in an area the caller no longer holds a right in are left out (SEC-34).",
+      "items": {
+        "$ref": "SavedItem.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Send it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjEifQ"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "SavedItemPage",
+  "type": "object"
+}
