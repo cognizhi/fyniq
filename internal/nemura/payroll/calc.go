@@ -89,6 +89,7 @@ type Result struct {
 	SDL                 *apd.Decimal
 	SHG                 *apd.Decimal
 	Deductions          *apd.Decimal
+	Advances            *apd.Decimal // of the deductions, the advances recovered, which B.3 posts to 1250 and not to a deduction's own account (FR-PAY-18)
 	Reimbursements      *apd.Decimal
 	Held                *apd.Decimal
 	Net                 *apd.Decimal // gross − employee CPF − SHG − deductions
@@ -168,7 +169,7 @@ func step(r *Result, rule, format string, a ...any) {
 // disburse follow. The month's whole figures are returned, so a later run or correction of the same month recomputes and the caller posts the difference (Diff).
 func Calculate(m Month, p Packs) (Result, error) {
 	r := Result{Month: firstOf(m.Month), Gross: zero(), OrdinaryWages: zero(), AdditionalWages: zero(), OWSubject: zero(), AWSubject: zero(), SDL: zero(), SHG: zero(),
-		Deductions: zero(), Reimbursements: zero(), Held: zero(), CPFGroup: "none"}
+		Deductions: zero(), Advances: zero(), Reimbursements: zero(), Held: zero(), CPFGroup: "none"}
 	r.CPF = rounding.Contributions{Total: zero(), Employee: zero(), Employer: zero()}
 	r.PackVersions = []string{p.CPF.ID, p.SDL.ID, p.SHG.ID}
 	month := r.Month
@@ -201,6 +202,9 @@ func Calculate(m Month, p Packs) (Result, error) {
 	}
 	for _, d := range m.Deductions {
 		r.Deductions = add(r.Deductions, d.Amount)
+		if d.IsAdvance {
+			r.Advances = add(r.Advances, d.Amount)
+		}
 	}
 	r.DeductionViolations = CheckDeductions(r.Gross, m.Deductions, m.Final)
 	for _, v := range r.DeductionViolations {
@@ -240,8 +244,8 @@ func cpf(r *Result, m Month, p Packs) error {
 		return err
 	}
 	r.AWSubject = aw
-	tw := add(nonNeg(r.OrdinaryWages), nonNeg(r.AdditionalWages)) // total wages of the month, for the wage band
 	subject := add(r.OWSubject, r.AWSubject)
+	tw := subject // the month's total wages, for the wage band: the wages subject to CPF, as the sg-cpf pack defines them, so a true-up's shortfall is in them and additional wages above the ceiling are not
 	step(r, "FR-PAY-02", "Wages subject to CPF %s = ordinary %s + additional %s; the group is %s and the age %d.", cents(subject), cents(r.OWSubject), cents(r.AWSubject), group, age)
 	if tw.Cmp(D("750")) <= 0 {
 		a, err := pack.CPFLowWagesOn(p.CPF, r.Month, group, age, tw)
@@ -250,7 +254,7 @@ func cpf(r *Result, m Month, p Packs) error {
 		}
 		r.CPF = rounding.CPFGraduated(a.Total, a.Employee)
 		step(r, "RND-CPF-GRAD", "Total wages %s are in the graduated range: total %s, employee %s, employer %s.", cents(tw), r.CPF.Total.Text('f'), r.CPF.Employee.Text('f'), r.CPF.Employer.Text('f'))
-		return nil
+		return refundTask(r, p, group, age, D("750.01")) // the refund is of additional wages counted at the rates above the graduated range
 	}
 	rates, err := pack.CPFRatesOn(p.CPF, r.Month, group, age, tw)
 	if err != nil {
@@ -258,14 +262,25 @@ func cpf(r *Result, m Month, p Packs) error {
 	}
 	r.CPF = rounding.CPF(subject, rates.Employer, rates.Employee)
 	step(r, "RND-CPF", "Rates employer %s and employee %s: total %s, employee %s, employer %s.", rates.Employer.Text('f'), rates.Employee.Text('f'), r.CPF.Total.Text('f'), r.CPF.Employee.Text('f'), r.CPF.Employer.Text('f'))
-	if r.Refund != nil && r.Refund.Wages.Sign() > 0 {
-		total := add(rates.Employer, rates.Employee)
-		r.Refund.Total = mul(r.Refund.Wages, total)
-		ee := mul(r.Refund.Wages, rates.Employee)
-		r.Refund.Employee = floorCents(ee)
-		r.Flags = append(r.Flags, Flag{"CPF_REFUND", false, fmt.Sprintf("Additional wages counted beyond the annual ceiling: %s of wages. Apply to the CPF Board for a refund; the employee's share, %s, is repaid to the employee.",
-			cents(r.Refund.Wages), r.Refund.Employee.Text('f'))})
+	return refundTask(r, p, group, age, tw)
+}
+
+// refundTask works out the refund task of a month whose true-up found additional wages counted beyond the annual ceiling (FR-PAY-14), at the rates of the person's group and age
+// for wages of wage, whatever band the month's own wages are in.
+func refundTask(r *Result, p Packs, group string, age int, wage *apd.Decimal) error {
+	if r.Refund == nil || r.Refund.Wages.Sign() <= 0 {
+		return nil
 	}
+	rates, err := pack.CPFRatesOn(p.CPF, r.Month, group, age, wage)
+	if err != nil {
+		return fmt.Errorf("sg-cpf rates: %w", err)
+	}
+	total := add(rates.Employer, rates.Employee)
+	r.Refund.Total = mul(r.Refund.Wages, total)
+	ee := mul(r.Refund.Wages, rates.Employee)
+	r.Refund.Employee = floorCents(ee)
+	r.Flags = append(r.Flags, Flag{"CPF_REFUND", false, fmt.Sprintf("Additional wages counted beyond the annual ceiling: %s of wages. Apply to the CPF Board for a refund; the employee's share, %s, is repaid to the employee.",
+		cents(r.Refund.Wages), r.Refund.Employee.Text('f'))})
 	return nil
 }
 
