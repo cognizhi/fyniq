@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cognizhi/fyniq/internal/domain/comment"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/preference"
 	"github.com/cognizhi/fyniq/internal/domain/saveditem"
@@ -480,6 +481,10 @@ var codeFacts = map[string]struct {
 	saveditem.CodeTitle:           {422, "Not a name"},
 	saveditem.CodeQuery:           {422, "Not filters of an address"},
 	saveditem.CodeLimit:           {422, "Too many items"},
+	comment.CodeBody:              {422, "Not a comment"},
+	comment.CodeMentions:          {422, "A mention that does not fit"},
+	comment.CodeRecord:            {422, "A record that takes no comments"},
+	comment.CodeNoUser:            {422, "Not a person who comments"},
 	CodePreferenceNoUser:          {422, "Not a person with preferences of their own"},
 	preference.CodeValue:          {422, "Not a value for this preference"},
 	preference.CodeKeys:           {422, "Not valid shortcut keys"},

@@ -324,6 +324,34 @@ func TestAQualifiedViewReadsTheReportsOfItsArea(t *testing.T) {
 	if !authz.DeptOnly([]authz.Role{authz.Approver}, authz.Reports) || authz.DeptOnly([]authz.Role{authz.Approver, authz.Accountant}, authz.Reports) || authz.DeptOnly([]authz.Role{authz.Accountant}, authz.Reports) {
 		t.Error("only a view through the department cell alone is a department's view")
 	}
+	// The budgets: the Approver's "C dept" reads and plans their department's lines only; a role that holds it unqualified is not narrowed by it.
+	for _, c := range []struct {
+		what  string
+		roles []authz.Role
+		need  authz.Right
+		want  bool
+	}{
+		{"an Approver plans", []authz.Role{authz.Approver}, authz.Create, true},
+		{"an Approver reads", []authz.Role{authz.Approver, authz.Employee}, authz.View, true},
+		{"an Approver who is an Accountant plans the company's", []authz.Role{authz.Approver, authz.Accountant}, authz.Create, false},
+		{"an Approver who is an Auditor reads the company's but plans their department's", []authz.Role{authz.Approver, authz.Auditor}, authz.View, false},
+		{"an Approver who is an Auditor plans their department's", []authz.Role{authz.Approver, authz.Auditor}, authz.Create, true},
+		{"an Accountant", []authz.Role{authz.Accountant}, authz.Create, false},
+	} {
+		if got := authz.DeptOnlyNeed(c.roles, authz.Budgets, c.need); got != c.want {
+			t.Errorf("%s: department-only is %v, want %v", c.what, got, c.want)
+		}
+	}
+	for _, p := range []authz.Policy{authz.ListBudgets, authz.GetBudget, authz.ReplaceBudget, authz.GetBudgetVsActual} {
+		if d := authz.Decide(p, []authz.Role{authz.Approver, authz.Employee}, false); !d.Allowed {
+			t.Errorf("%s: the Approver's department cell does not admit them", p.Operation)
+		}
+	}
+	for _, p := range []authz.Policy{authz.CreateBudget, authz.CopyBudget, authz.ImportBudget, authz.RequestBudgetApproval, authz.GetPlanningSummary, authz.ListForecasts, authz.GetCashProjection} {
+		if d := authz.Decide(p, []authz.Role{authz.Approver, authz.Employee}, false); d.Allowed {
+			t.Errorf("%s: the Approver's department cell admits what is the company's", p.Operation)
+		}
+	}
 	for _, p := range authz.Policies {
 		if len(p.Qualified) > 0 && !p.Unqualified {
 			t.Errorf("%s names qualifiers but is not Unqualified: naming them would not narrow it", p.Operation)

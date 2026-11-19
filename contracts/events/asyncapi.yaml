@@ -43,6 +43,11 @@ channels:
     messages:
       fyniq.cash.buffer_recovered.v1:
         $ref: '#/components/messages/fyniq.cash.buffer_recovered.v1'
+  fyniq.comment.mention.v1:
+    address: fyniq.comment.mention.v1
+    messages:
+      fyniq.comment.mention.v1:
+        $ref: '#/components/messages/fyniq.comment.mention.v1'
   fyniq.compliance.control_failed.v1:
     address: fyniq.compliance.control_failed.v1
     messages:
@@ -249,6 +254,13 @@ components:
       contentType: application/json
       payload:
         $ref: 'schemas/fyniq.cash.buffer_recovered.v1.schema.json'
+    fyniq.comment.mention.v1:
+      name: fyniq.comment.mention.v1
+      title: fyniq.comment.mention.v1
+      summary: "Fires when: Someone mentioned you in a comment"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.comment.mention.v1.schema.json'
     fyniq.compliance.control_failed.v1:
       name: fyniq.compliance.control_failed.v1
       title: fyniq.compliance.control_failed.v1

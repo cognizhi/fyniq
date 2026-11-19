@@ -539,3 +539,36 @@ func mustDocument(t *testing.T, lt *leaveTeam, now time.Time) uuid.UUID {
 	}
 	return doc
 }
+
+// The link's page reads the same steps the ceremony takes: nothing before a proposal, the proposal with Nemura's envelope key and the client's ID (and the client's public key once, in the answer to the
+// proposal), then the active link with Fyniq's client; and none of them shows a private key.
+// part of NM-ARC-04 (the page's door over the ceremony)
+// asvs: V8.2.1, V6.4.1
+func TestTheLinkPageShowsTheProposalAndTheActiveLinkWithoutAnyPrivateKey(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := today.Add(10 * time.Hour)
+	oauth := &fakeOAuth{}
+	svc := nemura.LinkAdminService{LinkService: nemura.LinkService{Store: store(t, "nemura_api"), OAuth: oauth, Clock: clock.NewFrozen(now)}}
+	owner := api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now}
+	if v, err := svc.Current(ctx, owner); err != nil || v.State != "" {
+		t.Fatalf("before any proposal: %+v %v", v, err)
+	}
+	fyniqOrg := uuid.New()
+	v, err := svc.Propose(ctx, owner, fyniqOrg)
+	if err != nil || v.State != "proposed" || v.FyniqOrganisation != fyniqOrg || len(v.LinkKey) != 32 || !strings.Contains(string(v.ClientKey), "EC") || strings.Contains(string(v.ClientKey), `"d"`) || v.PeerClientID == "" {
+		t.Fatalf("the proposal: %+v %v", v, err)
+	}
+	if cur, err := svc.Current(ctx, owner); err != nil || cur.State != "proposed" || len(cur.ClientKey) != 0 || cur.PeerClientID != v.PeerClientID {
+		t.Errorf("the proposal read again: %+v %v", cur, err)
+	}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		_, err := nemura.GrantRole(ctx, tx, lt.c.org, now, lt.c.owner, lt.c.hr, authz.Administrator, today, nil)
+		return err
+	})
+	fyniqPub, _, _ := ed25519.GenerateKey(rand.Reader)
+	got, err := svc.Approve(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr, StepUpAt: &now}, fyniqPub, "fyniq-client-9", json.RawMessage(jwk))
+	if err != nil || got.State != "active" || got.FyniqClientID != "fyniq-client-9" || got.Epoch != 1 {
+		t.Errorf("the approval: %+v %v", got, err)
+	}
+}

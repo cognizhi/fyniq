@@ -427,9 +427,24 @@ func (r members) Roles(ctx context.Context, userID uuid.UUID, now time.Time) ([]
 	if err != nil {
 		return nil, mapError(err)
 	}
+	var scoped map[uuid.UUID][]uuid.UUID
+	for _, a := range rows {
+		if a.Role != "approver" {
+			continue
+		}
+		scopes, err := r.u.q.ListRoleAssignmentScopes(ctx) // read once, and only for a person who holds the Approver role
+		if err != nil {
+			return nil, mapError(err)
+		}
+		scoped = map[uuid.UUID][]uuid.UUID{}
+		for _, s := range scopes {
+			scoped[s.AssignmentID] = append(scoped[s.AssignmentID], s.DimensionValueID)
+		}
+		break
+	}
 	out := make([]storage.RoleAssignment, len(rows))
 	for i, a := range rows {
-		out[i] = storage.RoleAssignment{ID: a.ID, MembershipID: a.MembershipID, Role: a.Role, ExpiresAt: a.ExpiresAt, RevokedAt: a.RevokedAt}
+		out[i] = storage.RoleAssignment{ID: a.ID, MembershipID: a.MembershipID, Role: a.Role, ExpiresAt: a.ExpiresAt, RevokedAt: a.RevokedAt, DepartmentValues: scoped[a.ID]}
 	}
 	return out, nil
 }

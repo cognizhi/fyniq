@@ -1008,6 +1008,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show the link to Fyniq
+         * @description The state of the organisation's link to Fyniq, its epoch, and what Fyniq needs to link: Nemura's envelope key and the ID Fyniq's client will have here (the client's public key is shown by the proposal only). Only an Owner or an Administrator. Never a private key. It changes nothing.
+         */
+        get: operations["getLink"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/link/approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve the link to Fyniq with Fyniq's half
+         * @description The last of three steps: another Owner or an Administrator than the one who proposed, confirmed with a passkey in the last five minutes, gives Fyniq's envelope key, its client's ID and the public half of its client key. Nemura registers Fyniq's client at its own OAuth server with the one scope that reaches the event inbox, under the ID chosen at the proposal, and the link is active at its epoch. Audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["approveLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/link/events": {
         parameters: {
             query?: never;
@@ -1022,6 +1062,26 @@ export interface paths {
          * @description Fyniq's link calls this with its client's bearer token and a signed envelope (PRD-002 NM-INT-10) carrying payroll.run.posted or payroll.payments.status. Nemura checks the token (the audience nemura-api, the scope link.events.write, and that the client is the live link's), then the envelope against the link: both organisations, the epoch, a signing time within five minutes, Fyniq's signature and the payload's digest. A payment's state goes through the one function of the payment events and a run's posting answer is kept for the run to show. Each event is applied once by its ID: a repeat answers duplicate. A refusal after the signature held is kept, by code and never with the payload. Only Fyniq's link client may call it: no session, no person and no ordinary API client; it changes only what the event says. It is on the never-list for the AI and MCP surfaces.
          */
         post: operations["receiveLinkEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/link/proposal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the link to Fyniq
+         * @description The first of three steps (PRD-002 NM-ARC-04). Only an Owner, confirmed with a passkey in the last five minutes, names the Fyniq organisation. Nemura makes its two keys and the ID Fyniq's client will have here and keeps the link as proposed; the answer holds what to give Fyniq. The private keys are kept for the worker and are never shown. Audited. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["proposeLink"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5180,6 +5240,22 @@ export interface components {
             /** @description The catalogue with the company's settings. */
             types: components["schemas"]["LetterType"][] | null;
         };
+        LinkApproveInputBody: {
+            /** @description The public half of the key Fyniq's own client signs its token request to Nemura's OAuth server with, as a JWK: Nemura registers it for Fyniq's client. Never the private key. */
+            fyniq_client_public_key: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description Fyniq's Ed25519 public key for what it sends, 32 bytes as base64url without padding: shown on Fyniq's People and HR page.
+             * @example EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE
+             */
+            fyniq_link_key: string;
+            /**
+             * @description The ID Nemura's client has at Fyniq's OAuth server: shown on Fyniq's People and HR page.
+             * @example 4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11
+             */
+            fyniq_oauth_client_id: string;
+        };
         LinkEvent: {
             header: components["schemas"]["LinkHeader"];
             /** @description The event's data: only the fields PRD-002 Appendix E lists for its type. */
@@ -5286,6 +5362,14 @@ export interface components {
              */
             type: string;
         };
+        LinkProposeInputBody: {
+            /**
+             * Format: uuid
+             * @description The Fyniq organisation to link to.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+             */
+            fyniq_organisation_id: string;
+        };
         LinkReceipt: {
             /**
              * Format: uuid
@@ -5299,6 +5383,51 @@ export interface components {
              * @enum {string}
              */
             outcome: "applied" | "ignored_older" | "duplicate";
+        };
+        LinkState: {
+            /** @description The public half of the key Nemura's client signs its token request to Fyniq's OAuth server with, as a JWK: give it to Fyniq when it links. Never the private key. */
+            client_public_key?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: int64
+             * @description The link's epoch: every event carries it and an earlier one is refused.
+             * @example 1
+             */
+            epoch?: number;
+            /**
+             * @description The ID Nemura's client has at Fyniq's OAuth server, once the link is approved.
+             * @example 4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11
+             */
+            fyniq_oauth_client_id?: string;
+            /**
+             * Format: uuid
+             * @description The Fyniq organisation the link is to.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+             */
+            fyniq_organisation_id?: string;
+            /**
+             * @description Nemura's Ed25519 public key for the link's envelopes, 32 bytes as base64url without padding: give it to Fyniq when it links.
+             * @example EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE
+             */
+            link_key?: string;
+            /**
+             * @description The ID Fyniq's client will have at Nemura's OAuth server: give it to Fyniq when it links.
+             * @example fyniq-link-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
+             */
+            nemura_client_id?: string;
+            /**
+             * Format: uuid
+             * @description This organisation: what Fyniq is told when it links.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
+             */
+            nemura_organisation_id?: string;
+            /**
+             * @description none: never linked; proposed: Nemura made its keys and waits for Fyniq's half; active: linked; unlinked is final, and a later link starts at a higher epoch.
+             * @example proposed
+             * @enum {string}
+             */
+            state: "none" | "proposed" | "active" | "suspended" | "unlinking" | "unlinked";
         };
         MyDetails: {
             /**
@@ -11918,6 +12047,155 @@ export interface operations {
             };
         };
     };
+    getLink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkState"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    approveLink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkApproveInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkState"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     receiveLinkEvent: {
         parameters: {
             query?: never;
@@ -11941,6 +12219,87 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LinkReceipt"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    proposeLink: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkProposeInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkState"];
                 };
             };
             /** @description Unauthorized */

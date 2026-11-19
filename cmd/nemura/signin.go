@@ -117,6 +117,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	if provider != nil {
 		d.SignIn = signInInfo{provider: provider, store: store}
 	}
+	d.LinkAdmin = nemura.LinkAdminService{LinkService: nemura.LinkService{Store: store, OAuth: oauth, Clock: deps.Clock}} // an Owner proposes and another approves; approving needs the OAuth server
 	// The link's inbox takes Fyniq's client's bearer token, checked with Nemura's own OAuth server; without one there is no inbox (the link needs the server for its client anyway).
 	if server, ok := oauth.(ports.OAuthServer); ok {
 		d.LinkAuth = &linkauth.Introspector{OAuth: server, Routes: store, Audience: apiclient.Audience, Clock: deps.Clock, TTL: linkauth.MaxCache}

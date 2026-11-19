@@ -71,12 +71,14 @@ const (
 	CodeFeatureObligations = features.CodeObligations
 	CodeFeatureInvalid     = features.CodeInvalid
 	CodePolicyBelow        = policy.CodeBelowStatute
-	CodeLeaverAccount      = "NM_LEAVER_ACCOUNT" // a leaver's account is for their own documents only
-	CodeUnavailable        = "NM_UNAVAILABLE"    // the service is not configured for this here
-	CodeNoPasskey          = "NM_NO_PASSKEY"     // #nosec G101 -- a problem code's name: no passkey to confirm with
-	CodeLinkNone           = "NM_LINK_NONE"      // there is no active link, or the call is not from the link's client at its epoch
-	CodeLinkClient         = "NM_LINK_CLIENT"    // the token is valid but not the link's client's, or lacks the link scope
-	CodeLinkRefused        = "NM_LINK_REFUSED"   // the signed event was refused: its own code says why
+	CodeLeaverAccount      = "NM_LEAVER_ACCOUNT"       // a leaver's account is for their own documents only
+	CodeUnavailable        = "NM_UNAVAILABLE"          // the service is not configured for this here
+	CodeNoPasskey          = "NM_NO_PASSKEY"           // #nosec G101 -- a problem code's name: no passkey to confirm with
+	CodeLinkNone           = "NM_LINK_NONE"            // there is no active link, or the call is not from the link's client at its epoch
+	CodeLinkClient         = "NM_LINK_CLIENT"          // the token is valid but not the link's client's, or lacks the link scope
+	CodeLinkApprover       = "NM_LINK_SECOND_APPROVER" // an Owner starts the link and another Owner or Administrator approves it
+	CodeLinkState          = "NM_LINK_STATE"           // the link is in a state that does not allow that
+	CodeLinkRefused        = "NM_LINK_REFUSED"         // the signed event was refused: its own code says why
 )
 
 // Catalogue is every stable code the API returns, in order. It is served at GET /v1/errors.
@@ -122,6 +124,8 @@ var Catalogue = []Code{
 	{CodeClientExists, http.StatusConflict, "An API client has that name", "Choose another name, or revoke the first client."},
 	{CodeLinkNone, http.StatusConflict, "Nemura is not linked to Fyniq", "Link the organisation to Fyniq first, or call with the client of the link that is live now."},
 	{CodeLinkClient, http.StatusForbidden, "Not the link's client", "Call with the token the link's own client got for the audience nemura-api and the scope link.events.write."},
+	{CodeLinkApprover, http.StatusForbidden, "The link needs a second person", "An Owner starts the link, and an Owner or Administrator other than them approves it, each with a passkey confirmed in the last five minutes."},
+	{CodeLinkState, http.StatusConflict, "The link is not in a state for that", "A link is proposed once and approved once; unlink first to start again."},
 	{CodeLinkRefused, http.StatusUnprocessableEntity, "The event was refused", "Send the event as Fyniq signed it, within five minutes, at the link's epoch, with only the fields PRD-002 Appendix E lists; the field's code says which check failed."},
 }
 

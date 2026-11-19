@@ -207,6 +207,8 @@ function Invite({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [name, setName] = useState("");
   const [roles, setRoles] = useState<Set<string>>(new Set());
   const [ends, setEnds] = useState("");
+  const departments = useDepartments();
+  const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [errors, setErrors] = useState<{ name?: string; roles?: string; ends?: string }>({});
@@ -216,6 +218,7 @@ function Invite({ open, onClose }: { open: boolean; onClose: () => void }) {
     setName("");
     setRoles(new Set());
     setEnds("");
+    setPicked([]);
     setProblem(null);
     setErrors({});
     setMade(null);
@@ -232,7 +235,12 @@ function Invite({ open, onClose }: { open: boolean; onClose: () => void }) {
     if (Object.keys(errs).length) return;
     setBusy(true);
     setProblem(null);
-    const body = { display_name: name.trim(), roles: assignable.map(([r]) => r).filter((r) => roles.has(r)), ...(ends ? { roles_expire_at: endOfDay(ends) } : {}) };
+    const body = {
+      display_name: name.trim(),
+      roles: assignable.map(([r]) => r).filter((r) => roles.has(r)),
+      ...(ends ? { roles_expire_at: endOfDay(ends) } : {}),
+      ...(roles.has("approver") && picked.length ? { department_value_ids: picked } : {}),
+    };
     const out = await guarded(confirm, () => api.POST("/v1/members/invitations", { body }));
     setBusy(false);
     if (!out.data) {
@@ -287,6 +295,19 @@ function Invite({ open, onClose }: { open: boolean; onClose: () => void }) {
             <span className="fy-error" id={`${nameId}-roles-error`}>
               {errors.roles}
             </span>
+          )}
+          {roles.has("approver") && (
+            <fieldset className="fy-fieldset">
+              <legend className="fy-label">Departments this Approver acts for</legend>
+              <p className="fy-help">Their views and approvals reach only these departments' records, lines and budgets. With none chosen, they reach none of them.</p>
+              {(departments.data ?? []).length === 0 && <p className="fy-small fy-secondary">The organisation has no department values yet: add them under Accounting › Dimensions.</p>}
+              {(departments.data ?? []).map((d) => (
+                <label key={d.id} className="fy-row gap-2">
+                  <input type="checkbox" checked={picked.includes(d.id)} onChange={(e) => setPicked(e.target.checked ? [...picked, d.id] : picked.filter((x) => x !== d.id))} />
+                  {d.name}
+                </label>
+              ))}
+            </fieldset>
           )}
           <div className="fy-field">
             <label className="fy-label" htmlFor={endId}>
@@ -674,6 +695,7 @@ export function Members() {
                     </span>
                     <Roles roles={m.roles ?? []} />
                     <span className="fy-list__meta whitespace-normal">
+                      {m.email ? `${m.email} · ` : ""}
                       {m.last_sign_in_at ? `Last signed in ${dateTime(m.last_sign_in_at)}` : "Has not signed in yet"}
                       {" · "}
                       {m.passkeys > 0 ? `${m.passkeys} ${m.passkeys === 1 ? "passkey" : "passkeys"}` : "No passkey: confirms it's you by signing in again"}
@@ -728,7 +750,7 @@ export function Members() {
                 </span>
                 <span className="fy-list__main">
                   <span className="fy-list__title whitespace-normal">{i.display_name}</span>
-                  <Roles roles={(i.roles ?? []).map((role) => ({ role, expires_at: i.roles_expire_at }))} />
+                  <Roles roles={(i.roles ?? []).map((role) => ({ role, expires_at: i.roles_expire_at, department_value_ids: role === "approver" ? i.department_value_ids : undefined }))} />
                 </span>
                 <span className="fy-chip fy-chip--neutral">
                   <Icon of={CalendarClock} />

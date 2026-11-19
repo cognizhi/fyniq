@@ -2210,17 +2210,18 @@ type FyniqMcpUserOptin struct {
 }
 
 type FyniqMemberInvitation struct {
-	OrganisationID uuid.UUID
-	ID             uuid.UUID
-	CodeHash       []byte
-	DisplayName    string
-	Roles          []string
-	RolesExpireAt  *time.Time
-	CreatedAt      time.Time
-	ExpiresAt      time.Time
-	AcceptedAt     *time.Time
-	AcceptedBy     *uuid.UUID
-	WithdrawnAt    *time.Time
+	OrganisationID     uuid.UUID
+	ID                 uuid.UUID
+	CodeHash           []byte
+	DisplayName        string
+	Roles              []string
+	RolesExpireAt      *time.Time
+	CreatedAt          time.Time
+	ExpiresAt          time.Time
+	AcceptedAt         *time.Time
+	AcceptedBy         *uuid.UUID
+	WithdrawnAt        *time.Time
+	DepartmentValueIds []uuid.UUID
 }
 
 type FyniqMigrationArchive struct {
@@ -3149,6 +3150,17 @@ type FyniqRateLimitWindow struct {
 	Kind           string
 	WindowStart    time.Time
 	Used           int32
+}
+
+type FyniqRecordComment struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	RecordType     string
+	RecordID       uuid.UUID
+	Author         uuid.UUID
+	Body           string
+	Mentions       []uuid.UUID
+	CreatedAt      time.Time
 }
 
 type FyniqRecoveryConfirmation struct {

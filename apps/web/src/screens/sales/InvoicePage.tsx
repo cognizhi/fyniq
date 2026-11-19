@@ -4,6 +4,7 @@ import { Banknote, Mail, Pencil, Save, Send, Undo2, UserCheck, X } from "lucide-
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
+import { CommentsOnDemand } from "../../components/RecordComments";
 import { Refusal } from "../../components/Refusal";
 import { ReviewBanner } from "../../components/ReviewBanner";
 import { Button } from "../../components/ui/button";
@@ -767,6 +768,7 @@ export function InvoicePage() {
       {invoice && one.data && !editing && (
         <EvidencePanel record={{ kind: "invoice", id: invoice.id, etag: one.data.etag }} draft={invoice.status === "draft"} mayAttach={roles.some((r) => invoiceAttachers.includes(r))} onChanged={setStatus} />
       )}
+      {invoice && !editing && !form && <CommentsOnDemand recordType={invoice.kind === "credit_note" ? "credit_note" : "invoice"} recordId={invoice.id} />}
       {invoice && emailing && one.data && (
         <EmailDialog
           open={emailing}

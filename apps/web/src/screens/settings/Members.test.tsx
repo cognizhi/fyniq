@@ -127,6 +127,35 @@ describe("Members and roles", () => {
     expect(seen.find((x) => x.method === "POST")?.body).toEqual({ role: "approver", department_value_ids: ["v-eng"] });
   });
 
+  // req: FR-ADM-01
+  it("narrows the Approver role an invitation gives to departments, and says so in the list of invitations", async () => {
+    const seen = page({
+      "GET /v1/members/invitations": { status: 200, body: { items: [{ ...invitation, id: "i-3", display_name: "Mei Lim", roles: ["approver"], department_value_ids: ["v-eng"] }] } },
+      "GET /v1/dimensions": { status: 200, body: { items: [{ id: "d1", kind: "department", name: "Department" }] } },
+      "GET /v1/dimension-values": { status: 200, body: { items: [{ id: "v-eng", dimension_id: "d1", code: "ENG", name: "Engineering", active: true, version: 1 }, { id: "v-ops", dimension_id: "d1", code: "OPS", name: "Operations", active: true, version: 1 }] } },
+      "POST /v1/members/invitations": { status: 202, body: request },
+    });
+    renderPage(Members, { path: "/settings/members" });
+    expect(await within(await screen.findByRole("list", { name: "Invitations not yet used" })).findByText(/Approver for Engineering/)).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "Invite" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByRole("group", { name: "Departments this Approver acts for" })).toBeNull();
+    fireEvent.change(within(dialog).getByLabelText(/Name/), { target: { value: "Mei Lim" } });
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: /Approver/ }));
+    const group = await within(dialog).findByRole("group", { name: "Departments this Approver acts for" });
+    fireEvent.click(within(group).getByRole("checkbox", { name: "Operations" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Create invitation" }));
+    await within(dialog).findByText(/ABCDE-FGHIJ-KLMNO/);
+    expect(seen.find((x) => x.method === "POST" && x.path === "/v1/members/invitations")?.body).toEqual({ display_name: "Mei Lim", roles: ["approver"], department_value_ids: ["v-ops"] });
+  });
+
+  // req: FR-ADM-01
+  it("shows a member's email to those the API gives it to, beside the sign-in and passkey line", async () => {
+    page({ "GET /v1/members": { status: 200, body: { items: [{ id: "m-9", user_id: "u-9", display_name: "Kai Lim", email: "kai@example.sg", roles: [{ role: "bookkeeper" }], expired_roles: [], passkeys: 1 }] } } });
+    renderPage(Members, { path: "/settings/members" });
+    expect(await screen.findByText(/kai@example\.sg · Has not signed in yet/)).toBeTruthy();
+  });
+
   it("ends a role after the person confirms it's you", async () => {
     let n = 0;
     page({ "DELETE /v1/members/m-3/roles/accountant": () => (++n === 1 ? problem(403, "API-AUTHZ-05") : { status: 200, body: { ...grace, roles: [] } }) });

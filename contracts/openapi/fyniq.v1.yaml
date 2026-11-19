@@ -35601,6 +35601,11 @@ components:
           examples:
             - Wei Ling Tan
           type: string
+        email:
+          description: Their verified sign-in email, shown to an Owner and an Administrator only (rev 0.381); absent for anyone else, and for a member who has none yet.
+          examples:
+            - weiling@example.sg
+          type: string
         expired_roles:
           description: "Roles that ended at their end date and that nobody ended: they grant nothing. Give the role again with a new end date, or remove the member (C.2 #6)."
           items:
@@ -35727,6 +35732,15 @@ components:
             - "2026-10-20T09:00:00Z"
           format: date-time
           type: string
+        department_value_ids:
+          description: "The department values the Approver role it gives is narrowed to (FR-ADM-01); none: not narrowed."
+          items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+            type: string
+          type:
+            - array
+            - "null"
         display_name:
           description: Who it is for.
           examples:
@@ -35787,6 +35801,15 @@ components:
             - "2026-10-20T09:00:00Z"
           format: date-time
           type: string
+        department_value_ids:
+          description: "The department values the Approver role it gives is narrowed to (FR-ADM-01); none: not narrowed."
+          items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+            type: string
+          type:
+            - array
+            - "null"
         display_name:
           description: Who it is for.
           examples:
@@ -35905,6 +35928,40 @@ components:
           type: string
       required:
         - role
+      type: object
+    Mentionable:
+      additionalProperties: false
+      properties:
+        id:
+          description: The member's user ID, to send as a mention.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+        name:
+          description: Their name.
+          examples:
+            - Wei Ling Tan
+          type: string
+      required:
+        - id
+        - name
+      type: object
+    MentionablePage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The members who may see the record, by name; the caller is left out.
+          items:
+            $ref: "#/components/schemas/Mentionable"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEifQ
+          type: string
+      required:
+        - items
       type: object
     MetricFact:
       additionalProperties: false
@@ -38575,6 +38632,16 @@ components:
     NewMemberInvitation:
       additionalProperties: false
       properties:
+        department_value_ids:
+          description: "For an invitation that gives the Approver role: the department values to narrow it to (FR-ADM-01, rev 0.253), fixed from the first minute. Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another set of roles is refused."
+          items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+            type: string
+          maxItems: 20
+          type:
+            - array
+            - "null"
         display_name:
           description: The name of the person you invite.
           examples:
@@ -38651,6 +38718,29 @@ components:
         - challenge_id
         - name
         - credential
+      type: object
+    NewRecordComment:
+      additionalProperties: false
+      properties:
+        body:
+          description: The comment, as plain text; 2,000 characters at most.
+          examples:
+            - "@Wei Ling the GST on this line looks high: please check the supplier's invoice."
+          maxLength: 2000
+          minLength: 1
+          type: string
+        mention_ids:
+          description: "The members to mention, by user ID (listRecordMentionable): each must be able to see the record, or the comment is refused. They are told."
+          items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+            type: string
+          maxItems: 10
+          type:
+            - array
+            - "null"
+      required:
+        - body
       type: object
     NewSuperAdmin:
       additionalProperties: false
@@ -47706,6 +47796,70 @@ components:
           description: The next page's cursor; absent on the last page.
           examples:
             - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4c10
+          type: string
+      required:
+        - items
+      type: object
+    RecordComment:
+      additionalProperties: false
+      properties:
+        author:
+          $ref: "#/components/schemas/Person"
+          description: Who wrote it.
+        body:
+          description: What they wrote, as plain text with line breaks.
+          examples:
+            - "The GST on this line looks high: please check the supplier's invoice."
+          type: string
+        created_at:
+          description: When it was written.
+          examples:
+            - "2026-11-20T09:30:00Z"
+          format: date-time
+          type: string
+        id:
+          description: The comment's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5a01
+          format: uuid
+          type: string
+        mentions:
+          description: "The members it mentions: each could see the record when it was written, and was told."
+          items:
+            $ref: "#/components/schemas/Person"
+          type: array
+        record_id:
+          description: The record it is on.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
+          format: uuid
+          type: string
+        record_type:
+          description: The kind of record it is on.
+          examples:
+            - bill
+          type: string
+      required:
+        - id
+        - record_type
+        - record_id
+        - author
+        - body
+        - mentions
+        - created_at
+      type: object
+    RecordCommentPage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The record's comments in this page, oldest first.
+          items:
+            $ref: "#/components/schemas/RecordComment"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEifQ
           type: string
       required:
         - items
@@ -85420,6 +85574,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: Budgets, forecasts
+        note: A department's budget holder (C dept) reads their department's lines and totals only.
         right: V
     post:
       description: "Drafts a budget version for a financial year (FR-PLN-01, design D6): monthly amounts by postable income and expense account and dimension value, one amount for each month of the year, signed as the P&L shows it. Ask for its approval with requestBudgetApproval: approved, it is recorded and locked. It posts nothing. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
@@ -85736,6 +85891,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: Budgets, forecasts
+        note: A department's budget holder (C dept) reads their department's lines and totals only.
         right: V
     put:
       description: "Saves a new version of a budget not recorded yet (FR-PLN-01); a recorded one is locked (BUDGET-11): copy it into a revised version instead. A change while its approval waits makes that approval stale. Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
@@ -85948,6 +86104,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: Budgets, forecasts
+        note: A department's budget holder (C dept) replaces their department's lines only; every other line stays as it was.
         right: C
   /v1/budgets/{budget_id}/approval:
     post:
@@ -173851,7 +174008,7 @@ paths:
         right: C
   /v1/members:
     get:
-      description: The organisation's active members, in the order they joined, with their names and live roles (FR-ADM-01). Read-only; no side effects.
+      description: The organisation's active members, in the order they joined, with their names, live roles, last sign-in and passkey count, and for an Owner and an Administrator their verified sign-in email (FR-ADM-01, SEC-06). Read-only; no side effects.
       operationId: listMembers
       parameters:
         - description: How many items per page, up to 500.
@@ -215820,6 +215977,571 @@ paths:
       x-fyniq-permission:
         capability: Invoices, credit notes
         right: V
+  /v1/records/{record_type}/{record_id}/comments:
+    get:
+      description: The comments on an invoice, credit note, bill, vendor credit, journal, expense claim, quote, sales order, purchase order or contact, oldest first, a page at a time (FR-UX-13). Whoever may see the record reads them; for a record the caller may not see, the answer is 404, as it is for one that does not exist (SEC-34). Read-only; no side effects.
+      operationId: listRecordComments
+      parameters:
+        - description: The kind of record.
+          in: path
+          name: record_type
+          required: true
+          schema:
+            description: The kind of record.
+            enum:
+              - invoice
+              - credit_note
+              - bill
+              - vendor_credit
+              - journal
+              - expense_claim
+              - quote
+              - sales_order
+              - purchase_order
+              - contact
+            examples:
+              - bill
+            type: string
+        - description: The record's ID.
+          in: path
+          name: record_id
+          required: true
+          schema:
+            description: The record's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
+            format: uuid
+            type: string
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordCommentPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid; `CMT-03` A record that takes no comments."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List a record's comments
+      tags:
+        - Records
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CMT-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Own notifications and preferences (rev 0.6)
+        note: Needs a view of the record's own Appendix D row without a qualifier; a record the caller may not see is not found.
+        right: V
+    post:
+      description: "Adds a comment, as the caller, to the record's thread, and mentions members by user ID (FR-UX-13). Whoever may see the record comments; each person mentioned must be able to see it too, or the comment is refused, as though they were not a member, and only those mentioned are told. A comment is never changed or removed: answer a mistake with another comment. Side effects: the comment, its audit event and a notification to each person mentioned. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: addRecordComment
+      parameters:
+        - description: The kind of record.
+          in: path
+          name: record_type
+          required: true
+          schema:
+            description: The kind of record.
+            enum:
+              - invoice
+              - credit_note
+              - bill
+              - vendor_credit
+              - journal
+              - expense_claim
+              - quote
+              - sales_order
+              - purchase_order
+              - contact
+            examples:
+              - bill
+            type: string
+        - description: The record's ID.
+          in: path
+          name: record_id
+          required: true
+          schema:
+            description: The record's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewRecordComment"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordComment"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordComment"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `CMT-01` Not a comment; `CMT-02` A mention that does not fit; `CMT-03` A record that takes no comments; `CMT-04` Not a person who comments."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Comment on a record
+      tags:
+        - Records
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CMT-01
+        - CMT-02
+        - CMT-03
+        - CMT-04
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Own notifications and preferences (rev 0.6)
+        note: Needs a view of the record's own row; only a member who may see the record is mentioned, and only they are told.
+        right: C
+  /v1/records/{record_type}/{record_id}/mentionable:
+    get:
+      description: The active members who may see the record, by name (FR-UX-13), the caller left out, a page at a time; q keeps those whose name, or a word of it, starts with it. Only members who may open the record are listed, so a name is never offered for a record its owner may not see; for a record the caller may not see, the answer is 404. Read-only; no side effects.
+      operationId: listRecordMentionable
+      parameters:
+        - description: The kind of record.
+          in: path
+          name: record_type
+          required: true
+          schema:
+            description: The kind of record.
+            enum:
+              - invoice
+              - credit_note
+              - bill
+              - vendor_credit
+              - journal
+              - expense_claim
+              - quote
+              - sales_order
+              - purchase_order
+              - contact
+            examples:
+              - bill
+            type: string
+        - description: The record's ID.
+          in: path
+          name: record_id
+          required: true
+          schema:
+            description: The record's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e30
+            format: uuid
+            type: string
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only members whose name starts with, or has a word that starts with, this; every one who may see the record when left out.
+          explode: false
+          in: query
+          name: q
+          schema:
+            description: Only members whose name starts with, or has a word that starts with, this; every one who may see the record when left out.
+            examples:
+              - wei
+            maxLength: 100
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentionablePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid; `CMT-03` A record that takes no comments."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the members who may be mentioned on a record
+      tags:
+        - Records
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CMT-03
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Own notifications and preferences (rev 0.6)
+        note: "Lists only the members who may see the record: a name is never offered for a record its owner may not open."
+        right: V
   /v1/recurring-bills:
     get:
       description: "The organisation's recurring bills by name, a page at a time (FR-AP-09; PRD-001 rev 0.84): each one's schedule, next occurrence, content and statuses. Read-only; no side effects."
@@ -219734,6 +220456,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: Budgets, forecasts
+        note: A department's budget holder (C dept) reads their department's budget and actuals only.
         right: V
   /v1/reports/general-ledger:
     get:
@@ -235485,6 +236208,8 @@ tags:
     name: Assistant
   - description: "The generic import (FR-MIG-03): each entity's template, laid out as the workbook's sheet for it, as CSV or XLSX, and the import of a file filled in it, with its dry run; each row entered through its own command, in any organisation, under the entity's own right."
     name: Import
+  - description: "What belongs to any record: the comments and @mentions on a record, which only members who may see it read, write or are offered (FR-UX-13)."
+    name: Records
   - description: "Planning ahead: the driver-based forecast and its scenarios, worked from the books and the statutory packs (FR-PLN-02, FR-PLN-03); budgets, the short-term cash flow and feasibility as they arrive. Nothing here posts (FR-PLN-08)."
     name: Planning
   - description: "The audit trail (PRD-001 §11.5): the explorer and its export (FR-CTL-03, AUD-07), and Verify integrity for a range of days (AUD-03). Every saved change, sign-in, sensitive read and export is in it."

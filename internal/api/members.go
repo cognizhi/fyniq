@@ -53,6 +53,8 @@ type Member struct {
 	Removed      bool         `json:"removed,omitempty" doc:"true in the answer to removeMember: they are no longer a member." example:"false"`
 	// rev 0.373
 	LastSignInAt *time.Time `json:"last_sign_in_at,omitempty" doc:"When they last signed in to Fyniq; absent when they never have (SEC-06)." example:"2026-11-20T09:00:00Z"`
+	// rev 0.381
+	Email string `json:"email,omitempty" doc:"Their verified sign-in email, shown to an Owner and an Administrator only (rev 0.381); absent for anyone else, and for a member who has none yet." example:"weiling@example.sg"`
 	Passkeys     int        `json:"passkeys" doc:"How many live passkeys they hold: none means they confirm it's you only by signing in again (SEC-01)." example:"1"`
 }
 
@@ -62,15 +64,22 @@ type MemberPage struct {
 	NextCursor string   `json:"next_cursor,omitempty" doc:"Send it as cursor for the next page; absent on the last page." example:"eyJhZnRlciI6IjAxOTI4ZjZlIn0"`
 }
 
+// TransformSchema implements huma.SchemaTransformer: an example for each department value (NFR-API-01).
+func (MemberInvitation) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	itemExamples(s, map[string]any{"department_value_ids": "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"})
+	return s
+}
+
 // MemberInvitation is an invitation to the organisation, without its code.
 type MemberInvitation struct {
-	ID            string     `json:"id" format:"uuid" doc:"The invitation's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"`
-	DisplayName   string     `json:"display_name" doc:"Who it is for." example:"Wei Ling Tan"`
-	Roles         []RoleName `json:"roles" doc:"The roles they will hold."`
-	RolesExpireAt *time.Time `json:"roles_expire_at,omitempty" doc:"When those roles end, for an external user." example:"2027-03-31T00:00:00Z"`
-	CreatedAt     time.Time  `json:"created_at" doc:"When it was made." example:"2026-10-20T09:00:00Z"`
-	ExpiresAt     time.Time  `json:"expires_at" doc:"When it stops working, if unused." example:"2026-10-27T09:00:00Z"`
-	WithdrawnAt   *time.Time `json:"withdrawn_at,omitempty" doc:"When it was withdrawn." example:"2026-10-21T09:00:00Z"`
+	ID                 string     `json:"id" format:"uuid" doc:"The invitation's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f20"`
+	DisplayName        string     `json:"display_name" doc:"Who it is for." example:"Wei Ling Tan"`
+	Roles              []RoleName `json:"roles" doc:"The roles they will hold."`
+	RolesExpireAt      *time.Time `json:"roles_expire_at,omitempty" doc:"When those roles end, for an external user." example:"2027-03-31T00:00:00Z"`
+	DepartmentValueIDs []string   `json:"department_value_ids,omitempty" doc:"The department values the Approver role it gives is narrowed to (FR-ADM-01); none: not narrowed."`
+	CreatedAt          time.Time  `json:"created_at" doc:"When it was made." example:"2026-10-20T09:00:00Z"`
+	ExpiresAt          time.Time  `json:"expires_at" doc:"When it stops working, if unused." example:"2026-10-27T09:00:00Z"`
+	WithdrawnAt        *time.Time `json:"withdrawn_at,omitempty" doc:"When it was withdrawn." example:"2026-10-21T09:00:00Z"`
 }
 
 // MemberInvitationPage is a page of the pending invitations, oldest first.
@@ -81,9 +90,16 @@ type MemberInvitationPage struct {
 
 // NewMemberInvitation is who to invite, with their roles.
 type NewMemberInvitation struct {
-	DisplayName   string     `json:"display_name" maxLength:"200" doc:"The name of the person you invite." example:"Wei Ling Tan"`
-	Roles         []RoleName `json:"roles" minItems:"1" maxItems:"16" doc:"The roles they will hold (PRD-001 §6.2)."`
-	RolesExpireAt *time.Time `json:"roles_expire_at,omitempty" doc:"For an external user, such as an auditor: when their roles end. Never on the Owner role." example:"2027-03-31T00:00:00Z"`
+	DisplayName        string     `json:"display_name" maxLength:"200" doc:"The name of the person you invite." example:"Wei Ling Tan"`
+	Roles              []RoleName `json:"roles" minItems:"1" maxItems:"16" doc:"The roles they will hold (PRD-001 §6.2)."`
+	RolesExpireAt      *time.Time `json:"roles_expire_at,omitempty" doc:"For an external user, such as an auditor: when their roles end. Never on the Owner role." example:"2027-03-31T00:00:00Z"`
+	DepartmentValueIDs []string   `json:"department_value_ids,omitempty" maxItems:"20" doc:"For an invitation that gives the Approver role: the department values to narrow it to (FR-ADM-01, rev 0.253), fixed from the first minute. Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another set of roles is refused."`
+}
+
+// TransformSchema implements huma.SchemaTransformer: an example for each department value (NFR-API-01).
+func (NewMemberInvitation) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	itemExamples(s, map[string]any{"department_value_ids": "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"})
+	return s
 }
 
 // MemberInvitationCode is a new invitation with its code, shown once.
@@ -240,6 +256,9 @@ func invitationOf(i storage.MemberInvitation) MemberInvitation {
 		CreatedAt: i.CreatedAt.UTC(), ExpiresAt: i.ExpiresAt.UTC(), WithdrawnAt: i.WithdrawnAt}
 	for _, r := range i.Roles {
 		out.Roles = append(out.Roles, RoleName(r))
+	}
+	for _, v := range i.DepartmentValues {
+		out.DepartmentValueIDs = append(out.DepartmentValueIDs, v.String())
 	}
 	return out
 }
@@ -447,16 +466,27 @@ func registerMembers(a *API) {
 	register(a, authz.ListMembers, huma.Operation{
 		OperationID: "listMembers", Method: http.MethodGet, Path: "/v1/members", Tags: []string{"Members"},
 		Summary:     "List the members",
-		Description: "The organisation's active members, in the order they joined, with their names and live roles (FR-ADM-01). Read-only; no side effects.",
+		Description: "The organisation's active members, in the order they joined, with their names, live roles, last sign-in and passkey count, and for an Owner and an Administrator their verified sign-in email (FR-ADM-01, SEC-06). Read-only; no side effects.",
 	}, []string{CodeCursor}, func(ctx context.Context, in *memberListInput) (*memberListOutput, error) {
 		p, _ := authn.From(ctx)
 		var all []Member
 		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 			ms, err := u.Members().List(ctx, a.deps.Clock.Now())
-			for _, m := range ms {
-				all = append(all, memberOf(m))
+			if err != nil {
+				return err
 			}
-			return err
+			var emails map[uuid.UUID]string
+			if slices.Contains(p.Roles, authz.Owner) || slices.Contains(p.Roles, authz.Administrator) { // the Auditor and the DPO read the list, not the addresses
+				if emails, err = u.InboundMessages().MemberEmails(ctx); err != nil {
+					return err
+				}
+			}
+			for _, m := range ms {
+				x := memberOf(m)
+				x.Email = emails[m.UserID]
+				all = append(all, x)
+			}
+			return nil
 		})
 		if err != nil {
 			return nil, err
@@ -512,14 +542,21 @@ func registerMembers(a *API) {
 			if bad := memberProblems(append(member.CheckName(name), member.CheckRoles(roles, b.RolesExpireAt, now)...)); len(bad) > 0 {
 				return nil, invalid(bad)
 			}
+			departments, err := invitationDepartments(roles, b.DepartmentValueIDs)
+			if err != nil {
+				return nil, err
+			}
 			code, hash := setupcode.New()
 			out := &invitationCodeOutput{Status: http.StatusCreated}
-			err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 				wait, err := needsApproval(ctx, u)
 				if err != nil {
 					return err
 				}
 				if err := invitationConflict(ctx, u, name, roles); err != nil {
+					return err
+				}
+				if err := a.checkDepartments(ctx, u, departments); err != nil {
 					return err
 				}
 				if wait {
@@ -531,16 +568,25 @@ func registerMembers(a *API) {
 					for i, r := range roles {
 						rs[i] = r
 					}
+					execute := map[string]any{"display_name": name, "roles": rs, "roles_expire_at": expires, "code_hash": hex.EncodeToString(hash)}
+					diff := []ApprovalDiff{{Field: "display_name", After: name}, {Field: "roles", After: strings.Join(roles, ", ")}}
+					if len(departments) > 0 { // the scope is part of what is signed
+						ids := make([]any, len(departments))
+						for i, d := range departments {
+							ids[i] = d.String()
+						}
+						execute["department_value_ids"] = ids
+						diff = append(diff, ApprovalDiff{Field: "department_value_ids", After: strings.Join(idStrings(departments), ", ")})
+					}
 					v, err := a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectInvitation, ObjectKey: hex.EncodeToString(hash),
 						Operation: approval.OpInvite, Summary: "Invite " + name + " as " + strings.Join(roles, ", "),
-						Execute: map[string]any{"display_name": name, "roles": rs, "roles_expire_at": expires, "code_hash": hex.EncodeToString(hash)},
-						Diff:    []ApprovalDiff{{Field: "display_name", After: name}, {Field: "roles", After: strings.Join(roles, ", ")}}})
+						Execute: execute, Diff: diff})
 					v.InvitationCode = code
 					out.Status, out.Body = http.StatusAccepted, v
 					return err
 				}
 				inv, err := u.MemberInvitations().Create(ctx, storage.NewMemberInvitation{CodeHash: hash, DisplayName: name, Roles: roles,
-					RolesExpireAt: b.RolesExpireAt, ExpiresAt: now.Add(InvitationTTL), CreatedAt: now})
+					RolesExpireAt: b.RolesExpireAt, ExpiresAt: now.Add(InvitationTTL), CreatedAt: now, DepartmentValues: departments})
 				if err != nil {
 					return err
 				}
@@ -607,19 +653,8 @@ func registerMembers(a *API) {
 				if err != nil {
 					return nil, err
 				}
-				for _, d := range departments {
-					v, err := u.Dimensions().GetValue(ctx, d)
-					var dim storage.Dimension
-					if err == nil {
-						dim, err = u.Dimensions().Get(ctx, v.DimensionID)
-					}
-					if errors.Is(err, ports.ErrNotFound) || (err == nil && dim.Kind != storage.DimensionDepartment) {
-						return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.department_value_ids", Message: d.String() + " is not a value of the department dimension",
-							Fix: "Send the IDs of the department's values"}})
-					}
-					if err != nil {
-						return nil, err
-					}
+				if err := a.checkDepartments(ctx, u, departments); err != nil {
+					return nil, err
 				}
 				wait, err := needsApproval(ctx, u)
 				if err != nil {
@@ -841,4 +876,42 @@ func roleDepartments(role string, ids []string) ([]uuid.UUID, error) {
 		out = append(out, v)
 	}
 	return out, nil
+}
+
+// checkDepartments refuses a scope that names anything but values of the department dimension.
+func (a *API) checkDepartments(ctx context.Context, u storage.UnitOfWork, departments []uuid.UUID) error {
+	for _, d := range departments {
+		v, err := u.Dimensions().GetValue(ctx, d)
+		var dim storage.Dimension
+		if err == nil {
+			dim, err = u.Dimensions().Get(ctx, v.DimensionID)
+		}
+		if errors.Is(err, ports.ErrNotFound) || (err == nil && dim.Kind != storage.DimensionDepartment) {
+			return invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.department_value_ids", Message: d.String() + " is not a value of the department dimension",
+				Fix: "Send the IDs of the department's values"}})
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// invitationDepartments reads the department values an invitation narrows its Approver role to: only an invitation that gives
+// the Approver role has any.
+func invitationDepartments(roles []string, ids []string) ([]uuid.UUID, error) {
+	role := ""
+	if slices.Contains(roles, string(authz.Approver)) {
+		role = string(authz.Approver)
+	}
+	return roleDepartments(role, ids)
+}
+
+// idStrings are ids as text.
+func idStrings(ids []uuid.UUID) []string {
+	out := make([]string, len(ids))
+	for i, id := range ids {
+		out[i] = id.String()
+	}
+	return out
 }

@@ -270,6 +270,14 @@
     "status": "draft"
   },
   {
+    "file": "comments-and-mentions.md",
+    "key": "records.comments",
+    "roles": [
+      "all"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "company-secretary.md",
     "key": "compliance.secretary",
     "roles": [

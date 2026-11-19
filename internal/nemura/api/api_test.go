@@ -548,6 +548,19 @@ func (f fakeLinkAuth) Authenticate(context.Context, string) (linkauth.Caller, er
 	return linkauth.Caller{}, f.err
 }
 
+// fakeLinkAdmin shows a proposed link, or answers with its error.
+type fakeLinkAdmin struct{ err error }
+
+func (f fakeLinkAdmin) Current(context.Context, Session) (LinkView, error) {
+	return LinkView{State: "proposed", Epoch: 1, PeerClientID: "fyniq-link-x"}, f.err
+}
+func (f fakeLinkAdmin) Propose(_ context.Context, _ Session, org uuid.UUID) (LinkView, error) {
+	return LinkView{State: "proposed", Epoch: 1, FyniqOrganisation: org, LinkKey: make([]byte, 32), ClientKey: json.RawMessage(`{"kty":"EC"}`), PeerClientID: "fyniq-link-x"}, f.err
+}
+func (f fakeLinkAdmin) Approve(context.Context, Session, []byte, string, json.RawMessage) (LinkView, error) {
+	return LinkView{State: "active", Epoch: 1}, f.err
+}
+
 type fakeLink struct{ err error }
 
 func (f fakeLink) Receive(context.Context, linkauth.Caller, []byte) (string, error) {
@@ -556,6 +569,8 @@ func (f fakeLink) Receive(context.Context, linkauth.Caller, []byte) (string, err
 	}
 	return "applied", nil
 }
+
+var linkApprovalBody = `{"fyniq_link_key":"` + strings.Repeat("A", 43) + `","fyniq_oauth_client_id":"client-1","fyniq_client_public_key":{"kty":"EC","crv":"P-256","x":"a","y":"b"}}`
 
 // linkEventBody is a well-formed envelope: the fakes decide what becomes of it.
 const linkEventBody = `{"header":{"event_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e70","type":"payroll.run.posted","schema_version":1,"source_system":"fyniq","source_organisation":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71","target_organisation":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e72","epoch":1,"sequence":1,"object_type":"payroll_run","object_id":"run-1","object_version":1,"effective_at":"2099-01-01T09:00:00Z","recorded_at":"2099-01-01T09:00:00Z","signed_at":"2099-01-01T09:00:00Z","correlation_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73","payload_sha256":"54a65415ad370228851a1da4b31b6fd42dc58b19a50d35cae759325f7388ce64"},"signature":"x","payload":{}}`
@@ -577,7 +592,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -801,6 +816,8 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodeLetterConflict:     {method: "POST", path: "/v1/letters/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/check", signedIn: true, err: &letters.Refusal{Code: letters.CodeConflict, Message: "That request is checked."}},
 		CodeLinkNone:           {method: "POST", path: "/v1/link/events", body: linkEventBody, bearer: true, inboxErr: &payroll.Refusal{Code: "NM_LINK_NONE", Message: "Nemura is not linked to Fyniq."}},
 		CodeLinkClient:         {method: "POST", path: "/v1/link/events", body: linkEventBody, bearer: true, authErr: linkauth.ErrNotLink},
+		CodeLinkApprover:       {method: "POST", path: "/v1/link/proposal", body: `{"fyniq_organisation_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"}`, signedIn: true, owner: true, stepUp: true, err: &payroll.Refusal{Code: "NM_LINK_SECOND_APPROVER", Message: "A second approver decides."}},
+		CodeLinkState:          {method: "POST", path: "/v1/link/approval", body: linkApprovalBody, signedIn: true, owner: true, stepUp: true, err: &payroll.Refusal{Code: "NM_LINK_STATE", Message: "There is no proposed link to approve."}},
 		CodeLinkRefused:        {method: "POST", path: "/v1/link/events", body: linkEventBody, bearer: true, inboxErr: &link.Refusal{Code: link.CodeSignature, Message: "the signature does not verify"}},
 		CodeClientExists:       {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
 	}
@@ -1283,6 +1300,60 @@ func TestNoOperationCarriesAFieldOfTheCompanysFinances(t *testing.T) {
 			if strings.Contains(strings.ToLower(p), f) {
 				t.Errorf("the property %q names the company's finances (%s)", p, f)
 			}
+		}
+	}
+}
+
+// The link's pages are for the Owner and the Administrator, and only an Owner starts it (PRD-002 NM-ARC-04): a person with no such role is refused each, an Administrator reads and approves but cannot propose, no
+// session is refused, and what a proposal shows is public keys and IDs, never a private key.
+// part of NM-ARC-04 (who may reach the link's pages; the second approver and the fresh passkey are the service's, tested with the database)
+// asvs: V8.2.1, V8.3.1
+func TestTheLinkPagesAreForTheOwnerAndAdministratorAndShowNoPrivateKey(t *testing.T) {
+	call := func(roles []authz.Role, method, path, body string, cookie bool) (int, string) {
+		testRoles = roles
+		defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		if body != "" {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if cookie {
+			req.Header.Set("Cookie", "nemura_session=good-token")
+		}
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code, rec.Body.String()
+	}
+	propose := `{"fyniq_organisation_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"}`
+	owner, admin, hr := []authz.Role{authz.Owner}, []authz.Role{authz.Administrator}, []authz.Role{authz.HRAdmin, authz.PayrollAdmin}
+	for name, c := range map[string]struct {
+		roles        []authz.Role
+		method, path string
+		body         string
+		cookie       bool
+		want         int
+	}{
+		"no session reads":               {owner, "GET", "/v1/link", "", false, 401},
+		"no session proposes":            {owner, "POST", "/v1/link/proposal", propose, false, 401},
+		"HR and payroll read":            {hr, "GET", "/v1/link", "", true, 403},
+		"HR and payroll propose":         {hr, "POST", "/v1/link/proposal", propose, true, 403},
+		"HR and payroll approve":         {hr, "POST", "/v1/link/approval", linkApprovalBody, true, 403},
+		"an Administrator reads":         {admin, "GET", "/v1/link", "", true, 200},
+		"an Administrator proposes":      {admin, "POST", "/v1/link/proposal", propose, true, 403},
+		"an Administrator approves":      {admin, "POST", "/v1/link/approval", linkApprovalBody, true, 200},
+		"an Owner reads":                 {owner, "GET", "/v1/link", "", true, 200},
+		"an Owner proposes":              {owner, "POST", "/v1/link/proposal", propose, true, 201},
+		"a key that is not 32 bytes":     {owner, "POST", "/v1/link/approval", strings.Replace(linkApprovalBody, strings.Repeat("A", 43), strings.Repeat("A", 46), 1), true, 422},
+		"a proposal for no organisation": {owner, "POST", "/v1/link/proposal", `{"fyniq_organisation_id":"nope"}`, true, 422},
+	} {
+		if status, body := call(c.roles, c.method, c.path, c.body, c.cookie); status != c.want {
+			t.Errorf("%s: %d %s", name, status, body)
+		}
+	}
+	_, body := call(owner, "POST", "/v1/link/proposal", propose, true)
+	for _, leak := range []string{`"d"`, "private", "client_private", "link_private"} {
+		if strings.Contains(body, leak) {
+			t.Errorf("a proposal shows %q: %s", leak, body)
 		}
 	}
 }

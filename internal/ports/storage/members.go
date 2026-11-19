@@ -30,6 +30,8 @@ type MemberInvitation struct {
 	ExpiresAt     time.Time
 	AcceptedAt    *time.Time
 	WithdrawnAt   *time.Time
+	// DepartmentValues are the department values the Approver role it gives is narrowed to (FR-ADM-01); none: not narrowed.
+	DepartmentValues []uuid.UUID
 }
 
 // NewMemberInvitation is what MemberInvitations.Create needs.
@@ -42,6 +44,9 @@ type NewMemberInvitation struct {
 	// CreatedAt is when it is made, by the clock that set ExpiresAt: the database compares the two, so they must not
 	// come from two clocks (DEV-05; rev 0.75's fix, as 000016 for idempotency keys). Required.
 	CreatedAt time.Time
+	// DepartmentValues narrow the Approver role the invitation gives to these values of the department dimension; they are applied
+	// when it is redeemed (FR-ADM-01). Only with the Approver role.
+	DepartmentValues []uuid.UUID
 }
 
 // MemberInvitations are the organisation's invitations. Every change is audited.

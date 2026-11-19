@@ -4,7 +4,7 @@ type: task
 title: Remove someone from the company, or give an external person a new end date
 summary: When an external person's roles end, removing a member with another Owner's approval, and succeeding an Owner who is permanently unavailable
 sources:
-  - docs/user-guide/members-and-roles.md sha256:b5b345dfad89716bcc0efe851b882f253eca8f16468106a0b99d3f97d684ccd4
+  - docs/user-guide/members-and-roles.md sha256:1faa11eb485d6e58f44b430e804de5639a3a53be80a35e11446ed8bc1dc3b42e
 data_class: general
 taint: trusted
 status: published

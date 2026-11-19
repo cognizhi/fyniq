@@ -4,7 +4,7 @@ type: concept
 title: Members, roles and the first founder's setup
 summary: What roles do, why the Owner sets up members alone until a second person joins, and why role changes then need a second approver
 sources:
-  - docs/user-guide/members-and-roles.md sha256:b5b345dfad89716bcc0efe851b882f253eca8f16468106a0b99d3f97d684ccd4
+  - docs/user-guide/members-and-roles.md sha256:1faa11eb485d6e58f44b430e804de5639a3a53be80a35e11446ed8bc1dc3b42e
 data_class: general
 taint: trusted
 status: published
@@ -54,16 +54,19 @@ aliases:
 
 - Beside each person, the list says when they last signed in, or that they have not yet, and how many passkeys they hold.
 - A person with no passkey confirms it's you by signing in again each time, so ask them to add one under Profile and security.
+- An Owner and an Administrator also see each person's sign-in email there; the Auditor and the DPO, who read the list, do not.
 
 (src: docs/user-guide/members-and-roles.md#who-has-signed-in-and-who-has-a-passkey)
 
 ## Narrow an Approver to departments
 
-- When giving the **Approver** role, **Departments this Approver acts for** lists the organisation's department values: tick the ones the role reaches.
+- When giving the **Approver** role, or inviting someone with it, **Departments this Approver acts for** lists the organisation's department values: tick the ones the role reaches; the other Owner approves them with the invitation.
 - Their views and approvals that Fyniq limits by department then reach only those departments' records, lines and budgets; the profit and loss they open counts only those lines (the balance sheet, cash flow, trial balance, budget comparatives and exports are the whole company's, so they are not shown to them).
-- An Approver role given with no department reaches none of them, so tick at least one; the choice is fixed when the role is given, so to change it end the role and give it again.
+- A department's budget holder sees only their department's lines of a budget, with those lines' totals and their department's Budget vs Actual, and plans by saving their own lines: the draft's other lines stay as they were. Drafting, copying, importing and asking for approval, the forecasts and the planning summary are not theirs.
+- An Approver role given with no department reaches none of a budget or a report, so tick at least one; the choice is fixed when the role is given, so to change it end the role and give it again.
 - The people's list shows it beside the role, such as "Approver for Engineering"; the assistant and connected apps acting for that person are limited the same way.
-- A person who holds any other role besides Employee is not narrowed by this: that role's own rights decide.
+- A person who holds any other role that already reaches the same records, such as an Accountant, is not narrowed by this: that role's own rights decide.
+- An Approver narrowed to departments also reaches only their departments' bills, invoices and expense claims and the requests for them: a record is in a department when its lines carry that department's values, and one whose lines carry none is in no department. They are told of a request, and may sign it, only when it is theirs; the company's payables and receivables, bill reminders and the files of a bill or invoice are not shown to them, and their own claims stay theirs.
 
 (src: docs/user-guide/members-and-roles.md#narrow-an-approver-to-departments)
 

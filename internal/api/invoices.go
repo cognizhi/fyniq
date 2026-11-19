@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/salesdoc"
 	"github.com/cognizhi/fyniq/internal/domain/team"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -1219,12 +1220,18 @@ func registerInvoices(a *API) {
 			if err != nil {
 				return err
 			}
+			reach, err := reachOf(ctx, u, p, authz.Invoices, authz.View) // an Approver narrowed to departments reads their departments' invoices only
+			if err != nil {
+				return err
+			}
 			for _, d := range docs {
 				i, err := a.invoiceOf(ctx, u, v, d, false)
 				if err != nil {
 					return err
 				}
-				out.Body.Items = append(out.Body.Items, i)
+				if reach.holds(invoiceValues(i)) {
+					out.Body.Items = append(out.Body.Items, i)
+				}
 			}
 			return nil
 		})
@@ -1294,7 +1301,17 @@ func registerInvoices(a *API) {
 				return err
 			}
 			i, err = a.invoiceOf(ctx, u, v, doc, true)
-			return err
+			if err != nil {
+				return err
+			}
+			reach, err := reachOf(ctx, u, p, authz.Invoices, authz.View)
+			if err != nil {
+				return err
+			}
+			if !reach.holds(invoiceValues(i)) {
+				return ports.ErrNotFound
+			}
+			return nil
 		})
 		if err != nil {
 			return nil, err
@@ -1610,4 +1627,13 @@ func registerInvoices(a *API) {
 		}
 		return &invoiceRequestOutput{Status: w.Status, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 	})
+}
+
+// invoiceValues are the dimension values on an invoice's lines.
+func invoiceValues(i Invoice) []uuid.UUID {
+	var out []uuid.UUID
+	for _, l := range i.Lines {
+		out = append(out, refValues(l.DimensionValueIDs)...)
+	}
+	return out
 }

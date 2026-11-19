@@ -1738,6 +1738,7 @@ member_invitation | expires_at | timestamp with time zone | not null |
 member_invitation | accepted_at | timestamp with time zone | null | 
 member_invitation | accepted_by | uuid | null | 
 member_invitation | withdrawn_at | timestamp with time zone | null | 
+member_invitation | department_value_ids | uuid[] | not null | '{}'::uuid[]
 migration_archive | organisation_id | uuid | not null | current_org()
 migration_archive | id | uuid | not null | uuidv7()
 migration_archive | run_id | uuid | not null | 
@@ -2464,6 +2465,14 @@ rate_limit_window | client_id | text | not null |
 rate_limit_window | kind | text | not null | 
 rate_limit_window | window_start | timestamp with time zone | not null | 
 rate_limit_window | used | integer | not null | 1
+record_comment | organisation_id | uuid | not null | current_org()
+record_comment | id | uuid | not null | uuidv7()
+record_comment | record_type | text | not null | 
+record_comment | record_id | uuid | not null | 
+record_comment | author | uuid | not null | 
+record_comment | body | text | not null | 
+record_comment | mentions | uuid[] | not null | '{}'::uuid[]
+record_comment | created_at | timestamp with time zone | not null | 
 recovery_confirmation | id | uuid | not null | uuidv7()
 recovery_confirmation | user_id | uuid | not null | 
 recovery_confirmation | confirmed_by | uuid | not null | 
@@ -5591,6 +5600,8 @@ member_invitation | member_invitation_accepted_by_fkey | FOREIGN KEY (accepted_b
 member_invitation | member_invitation_code_hash_not_null | NOT NULL code_hash
 member_invitation | member_invitation_code_key | UNIQUE (organisation_id, code_hash)
 member_invitation | member_invitation_created_at_not_null | NOT NULL created_at
+member_invitation | member_invitation_department_scope | CHECK (((cardinality(department_value_ids) = 0) OR (('approver'::text = ANY (roles)) AND (cardinality(department_value_ids) <= 20))))
+member_invitation | member_invitation_department_value_ids_not_null | NOT NULL department_value_ids
 member_invitation | member_invitation_display_name_not_null | NOT NULL display_name
 member_invitation | member_invitation_expires_at_not_null | NOT NULL expires_at
 member_invitation | member_invitation_expiry_after_creation | CHECK (((expires_at > created_at) AND ((roles_expire_at IS NULL) OR (roles_expire_at > created_at))))
@@ -6800,6 +6811,20 @@ rate_limit_window | rate_limit_window_pkey | PRIMARY KEY (organisation_id, id)
 rate_limit_window | rate_limit_window_used_not_null | NOT NULL used
 rate_limit_window | rate_limit_window_used_positive | CHECK ((used > 0))
 rate_limit_window | rate_limit_window_window_start_not_null | NOT NULL window_start
+record_comment | record_comment_author_fkey | FOREIGN KEY (organisation_id, author) REFERENCES user_membership(organisation_id, user_id)
+record_comment | record_comment_author_not_null | NOT NULL author
+record_comment | record_comment_body_length | CHECK (((char_length(body) >= 1) AND (char_length(body) <= 2000)))
+record_comment | record_comment_body_not_null | NOT NULL body
+record_comment | record_comment_created_at_not_null | NOT NULL created_at
+record_comment | record_comment_id_not_null | NOT NULL id
+record_comment | record_comment_mentions_limit | CHECK ((cardinality(mentions) <= 10))
+record_comment | record_comment_mentions_not_null | NOT NULL mentions
+record_comment | record_comment_organisation_id_not_null | NOT NULL organisation_id
+record_comment | record_comment_pkey | PRIMARY KEY (organisation_id, id)
+record_comment | record_comment_record_id_not_null | NOT NULL record_id
+record_comment | record_comment_record_type_not_null | NOT NULL record_type
+record_comment | record_comment_type_known | CHECK ((record_type = ANY (ARRAY['invoice'::text, 'credit_note'::text, 'bill'::text, 'vendor_credit'::text, 'journal'::text, 'expense_claim'::text, 'quote'::text, 'sales_order'::text, 'purchase_order'::text, 'contact'::text])))
+record_comment | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 recovery_confirmation | recovery_confirmation_another | CHECK ((confirmed_by <> user_id))
 recovery_confirmation | recovery_confirmation_by_fkey | FOREIGN KEY (confirmed_by) REFERENCES app_user(user_id)
 recovery_confirmation | recovery_confirmation_code_hash_not_null | NOT NULL code_hash
@@ -7675,6 +7700,7 @@ CREATE INDEX psp_event_status ON fyniq.psp_event USING btree (organisation_id, s
 CREATE INDEX psp_txn_payout ON fyniq.psp_txn USING btree (organisation_id, connector_id, payout_id) WHERE (payout_id IS NOT NULL)
 CREATE INDEX psp_txn_source ON fyniq.psp_txn USING btree (organisation_id, connector_id, source_kind, source_id)
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
+CREATE INDEX record_comment_thread ON fyniq.record_comment USING btree (organisation_id, record_type, record_id, created_at, id)
 CREATE INDEX report_export_expiring ON fyniq.report_export USING btree (organisation_id, status, expires_at)
 CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organisation_id, requested_by, requested_at DESC)
 CREATE INDEX review_log_entry_logged ON fyniq.review_log_entry USING btree (organisation_id, logged_at)
@@ -8083,6 +8109,7 @@ CREATE UNIQUE INDEX quote_outcome_once ON fyniq.quote_outcome USING btree (organ
 CREATE UNIQUE INDEX quote_outcome_pkey ON fyniq.quote_outcome USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
 CREATE UNIQUE INDEX rate_limit_window_pkey ON fyniq.rate_limit_window USING btree (organisation_id, id)
+CREATE UNIQUE INDEX record_comment_pkey ON fyniq.record_comment USING btree (organisation_id, id)
 CREATE UNIQUE INDEX recovery_confirmation_hash ON fyniq.recovery_confirmation USING btree (code_hash)
 CREATE UNIQUE INDEX recovery_confirmation_pkey ON fyniq.recovery_confirmation USING btree (id)
 CREATE UNIQUE INDEX recurring_bill_pkey ON fyniq.recurring_bill USING btree (organisation_id, id)
@@ -8258,6 +8285,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_balance DEFERR
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_dispute_credit DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_dispute_credit', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_dispute_loss DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_dispute_loss', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.quote_outcome DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('quote_outcome', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.record_comment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('record_comment', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_bill_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'recurring_bill_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_invoice_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'recurring_invoice_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_journal_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'recurring_journal_id')
@@ -8775,6 +8803,8 @@ CREATE TRIGGER psp_payout_no_truncate BEFORE TRUNCATE ON fyniq.psp_payout FOR EA
 CREATE TRIGGER psp_txn_guard BEFORE DELETE OR UPDATE ON fyniq.psp_txn FOR EACH ROW EXECUTE FUNCTION psp_txn_guard()
 CREATE TRIGGER psp_txn_no_truncate BEFORE TRUNCATE ON fyniq.psp_txn FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER quote_outcome_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.quote_outcome FOR EACH ROW EXECUTE FUNCTION quote_outcome_guard()
+CREATE TRIGGER record_comment_guard BEFORE DELETE OR UPDATE ON fyniq.record_comment FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER record_comment_no_truncate BEFORE TRUNCATE ON fyniq.record_comment FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER recurring_bill_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_bill_version FOR EACH ROW EXECUTE FUNCTION recurring_bill_version_immutable()
 CREATE TRIGGER recurring_invoice_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_invoice_version FOR EACH ROW EXECUTE FUNCTION recurring_invoice_version_immutable()
 CREATE TRIGGER recurring_invoice_version_no_truncate BEFORE TRUNCATE ON fyniq.recurring_invoice_version FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -9037,6 +9067,7 @@ psp_payout | tenant_isolation | * | (organisation_id = current_org()) | (organis
 psp_txn | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 quote_outcome | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+record_comment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_bill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_bill_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_invoice | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -9290,6 +9321,7 @@ psp_payout | enabled | forced
 psp_txn | enabled | forced
 quote_outcome | enabled | forced
 rate_limit_window | enabled | forced
+record_comment | enabled | forced
 recovery_confirmation | disabled | not forced
 recurring_bill | enabled | forced
 recurring_bill_version | enabled | forced

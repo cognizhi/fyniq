@@ -111,6 +111,8 @@ type UnitOfWork interface {
 	Preferences() Preferences
 	// SavedItems are each person's own favourites and saved views (FR-UX-12).
 	SavedItems() SavedItems
+	// RecordComments are the comments and @mentions on records (FR-UX-13).
+	RecordComments() RecordComments
 	// PeopleLinks are the link to Nemura, the inbox of its events and the employee projection (FR-PPL-06, 15, 16).
 	PeopleLinks() PeopleLinks
 	// PayrollRuns are the pay-run mapping and the receipts of the runs posted from the people platform (FR-PPL-04, 09, 11).
