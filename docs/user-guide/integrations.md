@@ -147,7 +147,10 @@ anything.
 - **A lost dispute.** Fyniq posts nothing by itself: the amount stays in the disputes account. A person with a right on
   journals asks for a draft journal that writes it off to the dispute losses account, once per dispute, and posts it like any
   other journal. Up to S$100 that is all; above it you confirm that the invoice's revenue stays as invoiced and say why.
-  Crediting the invoice instead is not built yet; ask your accountant which is right.
+  When the invoice is known, credit it instead: issue the credit note under Sales, then settle its credit against the dispute
+  on **Payouts** (Banking, Expert mode). The credit clears against the money the dispute holds, once per dispute and in the
+  company's currency; a journal never touches accounts receivable by hand. What stays held, the dispute fee, is written off
+  with a draft journal. Ask your accountant which route is right and how the credit note's GST is treated.
 - **Events Fyniq could not read.** A person who has dealt with a set-aside event marks it done, with a reason.
 - **Checks.** A settled payout, with what it settles, must come to nothing in the provider's account. What the books hold
   in it should equal what the provider says it holds for you. A sweep that fell behind shows with the other bank syncs.

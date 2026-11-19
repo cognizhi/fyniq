@@ -245,6 +245,8 @@ A scenario with a P1 document must have `settings` and `as_of`, or it is invalid
   left out takes that default.
 - `settings.money_accounts` maps each bank, card, wallet or cash account to the currency it holds
   (FR-BNK-01); each must be in `accounts` and its currency in `currencies`.
+- `settings.dispute_accounts` maps each payment provider's disputes clearing account to the currency it is kept in (FR-PSP-04, rev 0.308);
+  each must be in `accounts` and its currency in `currencies`, and none is a money account: a `dispute_settlement` credits it.
 - `settings.period_end_rates` gives each currency's rate for a month's last day, as a rate or as a quote stored under
   `RND-RATE`, which the month-end revaluation reads (section "Month-end revaluation").
 - `settings.gst` holds the registration, `registered_from` and `registered_to` (both inclusive; no
@@ -422,7 +424,10 @@ purchase codes are refused) is rejected, as is a part-payment deposit whose code
 
 A `customer_receipt` is a settlement (the shape of a payment of bills) of posted invoices on 1100,
 mirrored: 1100 is credited, the money account debited, a part in full is a loss on 7030, and `unapplied`
-stays a credit with the customer. A `write_off` (`invoice`, `amount` at most what is open, `account` the
+stays a credit with the customer. A `dispute_settlement` (`dispute_settlement@1`, FR-PSP-04, rev 0.308 [accountant to confirm]) settles one issued `credit_note`
+(the part's `document`, in the base currency, nothing unapplied, no part in full) against an account of `settings.dispute_accounts`, a payment
+provider's disputes clearing account, which holds no money (it is not a money account): Dr 1100 with the credit's carrying amount, Cr that
+account, the legs of a customer refund. A `write_off` (`invoice`, `amount` at most what is open, `account` the
 reason's) credits 1100 at the invoice's stored rate (all that is left of its line when it takes all that
 is open) and debits the account with that carrying amount, in the base currency.
 

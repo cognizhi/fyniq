@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "audiences": {
+      "description": "Who the token is for.",
+      "items": {
+        "description": "An exact https or loopback redirect URI.",
+        "examples": [
+          "https://acme.example/oauth/callback"
+        ],
+        "type": "string"
+      },
+      "maxItems": 3,
+      "type": "array"
+    },
+    "code": {
+      "description": "The stable code of the problem.",
+      "examples": [
+        "MCP-GATE-01"
+      ],
+      "type": "string"
+    },
+    "problem": {
+      "description": "When set, consent is refused whatever you say, in plain words.",
+      "examples": [
+        "AI apps are not turned on for this organisation."
+      ],
+      "type": "string"
+    },
+    "refused_scopes": {
+      "description": "What was asked for and cannot be granted.",
+      "items": {
+        "description": "A scope an AI app was granted.",
+        "examples": [
+          "fyniq.read.reports"
+        ],
+        "type": "string"
+      },
+      "maxItems": 30,
+      "type": "array"
+    },
+    "scopes": {
+      "description": "What would be granted.",
+      "items": {
+        "description": "A scope an AI app was granted.",
+        "examples": [
+          "fyniq.read.reports"
+        ],
+        "type": "string"
+      },
+      "maxItems": 30,
+      "type": "array"
+    }
+  },
+  "required": [
+    "scopes",
+    "refused_scopes",
+    "audiences"
+  ],
+  "title": "ConsentDecision",
+  "type": "object"
+}

@@ -134,6 +134,7 @@ const (
 	DisputeOpen       = "open"        // its money waits in disputes clearing
 	DisputeWon        = "won"         // the provider gave it all back: nothing is held
 	DisputeWrittenOff = "written_off" // a draft journal was prepared to write it off as a lost dispute
+	DisputeCredited   = "credited"    // the customer's credit was settled against it: nothing is left held
 )
 
 // Dispute is a dispute's money in disputes clearing, as its posted statement lines hold it.
@@ -146,8 +147,14 @@ type Dispute struct {
 	// Posted is whether every line of the dispute has posted; until then Held is not final.
 	Posted bool
 	Status string
+	// Gross is the disputed amount alone (the withdrawal's lines, without the dispute fee), positive when money was taken.
+	Gross money.Money
+	// Credited is what a customer credit was settled against it (dispute_settlement@1): Held is net of it.
+	Credited money.Money
 	// LossDocument is the draft journal prepared to write it off, when one was.
 	LossDocument *storage.PSPDisputeLoss
+	// Credit is the settlement of a customer credit against it, when there is one.
+	Credit *storage.PSPDisputeCredit
 }
 
 // Disputes are a provider account's disputes by the provider's ID, oldest first. A dispute's balance transactions are the
@@ -165,6 +172,14 @@ func Disputes(ctx context.Context, u storage.UnitOfWork, a storage.PSPAccount, c
 	for _, l := range losses {
 		lost[l.DisputeID] = l
 	}
+	credits, err := u.PSP().DisputeCredits(ctx, a.ConnectorID)
+	if err != nil {
+		return nil, err
+	}
+	credited := map[string]storage.PSPDisputeCredit{}
+	for _, c := range credits {
+		credited[c.DisputeID] = c
+	}
 	byID := map[string]*Dispute{}
 	var order []string
 	for _, t := range txns {
@@ -177,7 +192,7 @@ func Disputes(ctx context.Context, u storage.UnitOfWork, a storage.PSPAccount, c
 		}
 		d, ok := byID[id]
 		if !ok {
-			d = &Dispute{DisputeID: id, Currency: cur.Code, Held: money.Zero(cur), Posted: true}
+			d = &Dispute{DisputeID: id, Currency: cur.Code, Held: money.Zero(cur), Gross: money.Zero(cur), Credited: money.Zero(cur), Posted: true}
 			byID[id] = d
 			order = append(order, id)
 		}
@@ -185,7 +200,7 @@ func Disputes(ctx context.Context, u storage.UnitOfWork, a storage.PSPAccount, c
 		if f, err := money.ParseStored(string(t.Fee), cur); err == nil && !f.IsZero() {
 			refs = append(refs, t.TxnID+FeeSuffix)
 		}
-		for _, ref := range refs {
+		for i, ref := range refs {
 			l, ok := byRef[ref]
 			if !ok || !Posted(l.Status) {
 				d.Posted = false
@@ -198,14 +213,31 @@ func Disputes(ctx context.Context, u storage.UnitOfWork, a storage.PSPAccount, c
 			if d.Held, err = d.Held.Sub(amt); err != nil {
 				return nil, err
 			}
+			if i == 0 { // the gross line: the fee is the second
+				if d.Gross, err = d.Gross.Sub(amt); err != nil {
+					return nil, err
+				}
+			}
 		}
 	}
 	out := make([]Dispute, 0, len(order))
 	for _, id := range order {
 		d := *byID[id]
+		if c, ok := credited[id]; ok {
+			amt, err := money.ParseStored(string(c.Amount), cur)
+			if err != nil {
+				return nil, err
+			}
+			d.Credit, d.Credited = &c, amt
+			if d.Held, err = d.Held.Sub(amt); err != nil {
+				return nil, err
+			}
+		}
 		switch l, isLost := lost[id]; {
 		case isLost:
 			d.Status, d.LossDocument = DisputeWrittenOff, &l
+		case d.Credit != nil && d.Held.Sign() <= 0:
+			d.Status = DisputeCredited
 		case d.Held.Sign() <= 0:
 			d.Status = DisputeWon
 		default:

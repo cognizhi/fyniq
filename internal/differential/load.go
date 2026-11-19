@@ -304,6 +304,17 @@ func p1Format(s Scenario) string {
 				return fmt.Sprintf("settings.accounts.%s names account %s, which is not in accounts", k, code)
 			}
 		}
+		for code, cur := range st.DisputeAccounts {
+			if _, ok := codes[code]; !ok {
+				return fmt.Sprintf("settings.dispute_accounts names account %s, which is not in accounts", code)
+			}
+			if _, ok := s.Currencies[cur]; !ok {
+				return fmt.Sprintf("settings.dispute_accounts gives account %s the currency %s, which is not in currencies", code, cur)
+			}
+			if _, both := st.MoneyAccounts[code]; both {
+				return fmt.Sprintf("settings.dispute_accounts names account %s, which is a money account", code)
+			}
+		}
 		for code, cur := range st.MoneyAccounts {
 			if _, ok := codes[code]; !ok {
 				return fmt.Sprintf("settings.money_accounts names account %s, which is not in accounts", code)

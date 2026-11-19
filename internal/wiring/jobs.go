@@ -40,6 +40,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/unusual"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/logging"
+	"github.com/cognizhi/fyniq/internal/mcpregister"
 	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/notify/reminders"
@@ -84,6 +85,10 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		agents.ScheduleJob: func(ctx context.Context) error { // AI-62: each enabled agent's slots due before the next tick
 			_, err := agents.Scheduler{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Skills: agents.Default()}.ScheduleAll(ctx)
+			return err
+		},
+		mcpregister.ExpireJob: func(ctx context.Context) error { // AI-90: the AI apps' registrations that lapsed
+			_, err := mcpregister.Expire(ctx, k.Store, k.OAuthClients, clock.Now(), slog.Default())
 			return err
 		},
 		proposal.ExpireJob: func(ctx context.Context) error { // §9.5: the AI's proposals past their expiry, undecided

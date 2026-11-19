@@ -10,5 +10,14 @@ evidence: "Test report"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-mcp-first-party"
+    status: running
+    how: "test TestAnMCPCallReachesTheDataOnlyAsTheDelegatedPerson"
+    evidence: "an MCP token is audience-bound and checked on every call; a revoked token, an API-audience token and the MCP token at the API are refused; the person's opt-out stops the very next call; delegated tokens live at most 5 minutes; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestAnOptOutRevokesTheAIAppsTokensAndNothingElse"
+    evidence: "an opt-out revokes the access and refresh tokens the person's AI apps hold, at the pinned Hydra, and no other token; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestOnlyATokenForThisServerIsAccepted"
+    evidence: "only a token for the MCP server alone, of an agent-class client, live now and consented within 90 days is accepted; CI artefact test-report (90 days)"
