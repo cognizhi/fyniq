@@ -1,14 +1,10 @@
-<!-- fyniq-screen {"nav": "banking", "title": "Payouts", "mode": "expert", "heights": {"compact": 2500, "medium": 1900, "expanded": 1500}} -->
+<!-- fyniq-screen {"nav": "banking", "title": "Payouts", "mode": "expert", "heights": {"compact": 3200, "medium": 2500, "expanded": 2000}} -->
 <div class="fy-page fy-enter">
   <div class="fy-pagehead">
     <div class="fy-pagehead__text">
       <span class="fy-eyebrow">Banking</span>
       <h1 class="fy-h1">Payment provider payouts</h1>
       <p class="fy-secondary">Each payout broken into the charges, refunds, disputes and fees it settles. Each provider's clearing account must come back to zero.</p>
-    </div>
-    <div class="fy-pagehead__actions fy-from-medium">
-      <button class="fy-btn fy-btn--ghost" type="button"><i data-icon="refresh-cw"></i>Sync now</button>
-      <a class="fy-btn fy-btn--secondary" href="#settings/connectors/new?kind=provider"><i data-icon="plug"></i>Connect provider</a>
     </div>
   </div>
 
@@ -45,8 +41,7 @@
         <table class="fy-table fy-table--compact">
           <tbody>
             <tr><td>Clearing balance</td><td class="fy-num"><a href="#accounting/ledger/stripe-clearing-sgd">1,846.20</a></td></tr>
-            <tr><td>Stripe's unpaid balance</td><td class="fy-num">1,846.20</td></tr>
-            <tr><td class="fy-strong">Difference</td><td class="fy-num fy-strong">0.00</td></tr>
+            <tr><td>Stripe's balance, not yet paid out</td><td class="fy-num">1,846.20</td></tr>
           </tbody>
         </table>
         <span class="fy-small fy-muted">Daily completeness sweep ran at 03:00 and found nothing missing.</span>
@@ -67,8 +62,7 @@
         <table class="fy-table fy-table--compact">
           <tbody>
             <tr><td>Clearing balance</td><td class="fy-num"><a href="#accounting/ledger/hitpay-clearing-sgd">12.00</a></td></tr>
-            <tr><td>HitPay's unpaid balance</td><td class="fy-num">0.00</td></tr>
-            <tr><td class="fy-strong">Difference</td><td class="fy-num fy-strong">12.00</td></tr>
+            <tr><td>HitPay's balance, not yet paid out</td><td class="fy-num">0.00</td></tr>
           </tbody>
         </table>
         <span class="fy-small fy-muted">Complete to 11 Oct. One event of a type Fyniq doesn't know is parked: <a href="#banking/payouts/hitpay/parked">review it</a>.</span>
@@ -165,24 +159,52 @@
           <p class="fy-plain fy-basic-only fy-small"><i data-icon="info"></i>The S$5,414.27 that reached DBS and the S$35.73 fee together clear the S$5,450.00 the customer paid.</p>
         </div>
       </section>
-
-      <section class="fy-card" aria-labelledby="tax-title">
-        <div class="fy-card__head"><h2 class="fy-h3" id="tax-title">Fee tax invoices</h2></div>
-        <ul class="fy-list">
-          <li>
-            <a class="fy-list__item" href="#documents/stripe-tax-invoice-2026-09">
-              <span class="fy-list__icon fy-list__icon--good"><i data-icon="file-check" class="fy-i--20"></i></span>
-              <span class="fy-list__main"><span class="fy-list__title">Stripe, September 2026</span><span class="fy-list__meta">Fees 184.20 + GST 16.58 · agrees to September's fees</span></span>
-              <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Matched</span>
-            </a>
-          </li>
-          <li class="fy-list__item">
-            <span class="fy-list__icon"><i data-icon="file-question-mark" class="fy-i--20"></i></span>
-            <span class="fy-list__main"><span class="fy-list__title">HitPay, September 2026</span><span class="fy-list__meta">Whether HitPay charges GST on fees: ask your tax agent</span></span>
-          </li>
-        </ul>
-        <div class="fy-card__foot"><span class="fy-small fy-muted">Fees are expensed once, from each payout. A matched tax invoice only moves the GST to input tax<span class="fy-expert-only"> (<span class="fy-mono">2200</span>)</span>.</span></div>
-      </section>
     </aside>
   </div>
+
+  <section class="fy-card" aria-labelledby="dp-title">
+    <div class="fy-card__head"><h2 class="fy-h3" id="dp-title">Disputes</h2></div>
+    <div style="overflow-x: auto">
+    <table class="fy-table fy-table--cards" aria-label="Disputes">
+      <thead><tr><th scope="col">Dispute</th><th scope="col">Status</th><th scope="col" class="fy-num" style="text-align: right">Disputed</th><th scope="col" class="fy-num" style="text-align: right">Held</th><th scope="col">Settle a lost one</th></tr></thead>
+      <tbody>
+        <tr>
+          <td data-card="title"><span class="fy-mono">dp_1Q3</span><span class="fy-small fy-muted" style="display: block">Stripe · SGD</span></td>
+          <td data-card="status"><span class="fy-chip fy-chip--warning">Open</span></td>
+          <td data-card="amount" class="fy-num">209.00 SGD</td>
+          <td data-card="amount" class="fy-num">224.00 SGD</td>
+          <td><span class="fy-row fy-row--wrap"><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button"><i data-icon="receipt-text"></i>Settle a credit note</button><button class="fy-btn fy-btn--ghost fy-btn--sm" type="button"><i data-icon="file-minus"></i>Write it off</button></span></td>
+        </tr>
+        <tr>
+          <td data-card="title"><span class="fy-mono">dp_1P9</span><span class="fy-small fy-muted" style="display: block">Stripe · SGD</span></td>
+          <td data-card="status"><span class="fy-chip fy-chip--neutral">Credited</span></td>
+          <td data-card="amount" class="fy-num">109.00 SGD</td>
+          <td data-card="amount" class="fy-num">15.00 SGD<span class="fy-small fy-muted" style="display: block">109.00 SGD credited</span></td>
+          <td><a class="fy-small" href="#accounting/journals/j-0042">Open the draft journal</a></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section class="fy-card" aria-labelledby="ev-title">
+    <div class="fy-card__head">
+      <h2 class="fy-h3" id="ev-title">Events waiting for a person</h2>
+      <span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>1 parked</span>
+    </div>
+    <div style="overflow-x: auto">
+    <table class="fy-table fy-table--cards" aria-label="Parked events">
+      <thead><tr><th scope="col">Received</th><th scope="col">Event</th><th scope="col">Why it is parked</th><th scope="col">Deal with it</th></tr></thead>
+      <tbody>
+        <tr>
+          <td data-card="meta">11 Oct</td>
+          <td data-card="title">HitPay <span class="fy-mono">refund.fee</span></td>
+          <td data-card="meta">Fyniq does not know this event type</td>
+          <td><button class="fy-btn fy-btn--secondary fy-btn--sm" type="button">Mark as dealt with</button></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="fy-small fy-muted fy-card__body">A parked event posts nothing. The books follow the provider's statement lines; mark it once you have looked at it.</p>
+  </section>
 </div>

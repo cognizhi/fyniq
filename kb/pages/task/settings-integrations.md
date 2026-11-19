@@ -4,7 +4,7 @@ type: task
 title: Install, configure, test and run connectors, such as the email providers
 summary: Connectors and the catalogue: install, configure, secrets, test, enable, pause, upgrade, approve; email senders; Stripe and HitPay payment providers
 sources:
-  - docs/user-guide/integrations.md sha256:bbc48fc8bb02a5e682f2ff83d1a13443b2d56d3540242a0f57a418c0500747f4
+  - docs/user-guide/integrations.md sha256:0e764a09d95d1888355a4d2db1f542e46f4e9d46a91b5f86f47c3406cfdee30e
 data_class: general
 taint: trusted
 status: draft
@@ -160,9 +160,8 @@ aliases:
   one) and a payout as a transfer to the bank, which the bank's own line completes, within the S$500 limit for a single
   line: a larger payout waits for you, with what it settles listed. A charge waits for its invoice. Fees carry no claimable
   GST until the provider's monthly tax invoice is matched.
-- Someone with a right on bank connections names the bank for payouts, the fee account and the disputes account; until a
-  screen arrives this is the payment providers API.
-- Nothing is posted for a lost dispute by itself: its amount stays in the disputes account. A person with a right on journals asks for a draft journal that writes it off to the dispute losses account, once per dispute, and posts it like any other journal. Up to S$100 that is all; above it the person confirms that the invoice's revenue stays as invoiced and says why. Crediting the invoice instead is not built yet.
+- Someone with a right on bank connections names the bank for payouts, the fee account and the disputes account; this is the payment providers API, and Payouts (Banking, Expert mode, [[banking.payouts]]) shows the result.
+- Nothing is posted for a lost dispute by itself: its amount stays in the disputes account. A person with a right on journals asks for a draft journal that writes it off to the dispute losses account, once per dispute, and posts it like any other journal. Up to S$100 that is all; above it the person confirms that the invoice's revenue stays as invoiced and says why. When the invoice is known, the person credits it instead: the credit note is issued under Sales, then its credit is settled against the dispute on Payouts (Banking, Expert mode), clearing against the money the dispute holds, once per dispute and in the company's currency; a journal never touches accounts receivable by hand. What stays held, the dispute fee, is written off with a draft journal. The credit note's GST is for the accountant to confirm.
 - A person who has dealt with a set-aside event marks it done, with a reason.
 - Checks: a settled payout with what it settles comes to nothing in the provider's account; what the books hold equals what
   the provider holds for you; a sweep that fell behind shows with the other bank syncs. A webhook of an unknown type is kept

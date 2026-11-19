@@ -20,9 +20,12 @@ var customerRefundID = uuid.MustParse("0192f1a0-0000-7000-8000-0000000ef120")
 // refunding is the chart a customer refund posts against: the sales chart and the two money accounts.
 func refunding() Settings {
 	s := selling()
-	s.Accounts[current.ID], s.Accounts[wallet.ID] = current, wallet
+	s.Accounts[current.ID], s.Accounts[wallet.ID], s.Accounts[disputesClearing.ID] = current, wallet, disputesClearing
 	return s
 }
+
+// disputesClearing is a provider's disputes clearing account: an asset that holds no money.
+var disputesClearing = Account{ID: uuid.MustParse("00000000-0000-4000-8000-0000000d1055"), Code: "1055", Active: true}
 
 func customerRefund(t testing.TB, from Account, amount string, cur money.Currency, credit, rate *money.Rate) CustomerRefund {
 	r := CustomerRefund{ID: customerRefundID, Version: 1, Date: day, Memo: "Acme Analytics, refund of CN-0001", Account: from.ID, Currency: cur, Rate: rate,
@@ -133,6 +136,9 @@ func TestEveryCustomerRefundRuleVersionReplaysItsGoldenEntries(t *testing.T) {
 			{"half a part payment in SGD", depositRefund(t, current, "545.00", sgd, nil, "545.00", "45.00")},
 			{"a USD security deposit from the wallet, a gain", depositRefund(t, wallet, "100.00", usd, usdRate(t, "1.30"), "140.00", "0.00")},
 		},
+		RuleDisputeSettlement: {
+			{"an SGD credit settled against disputes clearing", customerRefund(t, disputesClearing, "109.00", sgd, nil, nil)},
+		},
 		RuleCustomerRefund: {
 			{"an SGD credit from the current account", customerRefund(t, current, "109.00", sgd, nil, nil)},
 			{"a USD credit from the wallet, a gain", customerRefund(t, wallet, "100.00", usd, usdRate(t, "1.36"), usdRate(t, "1.30"))},
@@ -229,5 +235,26 @@ func TestPostDepositRefund(t *testing.T) {
 		if _, _, err := PostDepositRefund(c.r, c.s); !slices.Equal(codes(err), sortedCopy(c.want)) {
 			t.Errorf("%s: %v", name, err)
 		}
+	}
+}
+
+// Worked by hand (FR-PSP-04, rev 0.308): a lost dispute's credit of S$109.00 settled against disputes clearing: Dr 1100 109.00,
+// Cr 1055 109.00, under dispute_settlement@1; the same account refused by the refund rule, which wants money; and a credit in
+// another currency refused.
+// req: ledger/posting-rules Customer refunds and deposits
+func TestPostDisputeSettlement(t *testing.T) {
+	s := refunding()
+	e, x, err := PostDisputeSettlement(customerRefund(t, disputesClearing, "109.00", sgd, nil, nil), s)
+	if err != nil || legs(s, e) != "1100 109.00 SGD = 109.00; 1055 -109.00 SGD = -109.00" || settlements([]Settlement{x}) != "c2110 109.00 = 109.00 fx 0.00" ||
+		e.RuleVersion != RuleDisputeSettlement || e.Source.Type != SourceCustomerRefund ||
+		e.PostingIdentity != DisputeSettlementIdentity(customerRefundID, 1, RuleDisputeSettlement) {
+		t.Fatalf("the settlement: %s; %v", legs(s, e), err)
+	}
+	if _, _, err := PostCustomerRefund(customerRefund(t, disputesClearing, "109.00", sgd, nil, nil), s); err == nil {
+		t.Error("the refund rule took an account that holds no money")
+	}
+	if _, _, err := PostDisputeSettlement(customerRefund(t, disputesClearing, "100.00", usd, usdRate(t, "1.30"), usdRate(t, "1.30")), s); err == nil ||
+		!slices.Contains(codes(err), CodeLineCurrency) {
+		t.Errorf("a credit in USD: %v", err)
 	}
 }

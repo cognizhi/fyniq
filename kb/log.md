@@ -653,3 +653,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | docs/user-guide/organisation-settings.md, integrations.md → settings.organisation (lost disputes: the expense limit setting), settings.integrations (a lost dispute's draft journal, resolving a set-aside event; p1-payment-providers, PRD rev 0.305)
 
 ## [2026-11-19] compile | kb/pages/task/settings-change.md re-hashed to the guide's new section (lost disputes); the page's content is unchanged
+
+## [2026-11-19] compile | docs/user-guide/banking.md → banking.payouts (the Payouts screen and the credit-note route for a lost dispute; p1-payment-providers task 4.5, 4.6), the other banking pages re-hashed; docs/user-guide/integrations.md → settings.integrations (the credit-note route)

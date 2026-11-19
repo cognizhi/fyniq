@@ -468,6 +468,8 @@ fyniq_api       INSERT    psp_account (connector_id, created_at, created_by, dis
 fyniq_api       SELECT    psp_account
 fyniq_api       UPDATE    psp_account (dispute_loss_account_id, disputes_account_id, fee_account_id, payout_account_id, version)
 fyniq_api       SELECT    psp_balance
+fyniq_api       INSERT    psp_dispute_credit (amount, connector_id, created_at, created_by, credit_note_id, currency, dispute_id, refund_id)
+fyniq_api       SELECT    psp_dispute_credit
 fyniq_api       INSERT    psp_dispute_loss (accepted_overstated_revenue, amount, connector_id, created_at, created_by, currency, dispute_id, document_id, reason)
 fyniq_api       SELECT    psp_dispute_loss
 fyniq_api       INSERT    psp_event (api_version, connector_id, event_id, event_type, id, object_id, object_kind, parser_version, payload, payload_sha256, provider, received_at)
@@ -890,6 +892,7 @@ fyniq_readonly  SELECT    project_milestone
 fyniq_readonly  SELECT    project_task
 fyniq_readonly  SELECT    psp_account
 fyniq_readonly  SELECT    psp_balance
+fyniq_readonly  SELECT    psp_dispute_credit
 fyniq_readonly  SELECT    psp_dispute_loss
 fyniq_readonly  SELECT    psp_event
 fyniq_readonly  SELECT    psp_payout
@@ -1215,6 +1218,7 @@ fyniq_worker    SELECT    psp_account
 fyniq_worker    UPDATE    psp_account (sweep_error, swept_at, swept_through)
 fyniq_worker    INSERT    psp_balance (amount, connector_id, currency, taken_at)
 fyniq_worker    SELECT    psp_balance
+fyniq_worker    SELECT    psp_dispute_credit
 fyniq_worker    SELECT    psp_dispute_loss
 fyniq_worker    SELECT    psp_event
 fyniq_worker    UPDATE    psp_event (last_error, parked_reason, processed_at, status)

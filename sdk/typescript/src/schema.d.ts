@@ -13285,6 +13285,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payment-providers/disputes/{dispute_id}/credit-settlement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Settle a customer's credit against a lost dispute
+         * @description Settles the credit an issued credit note left with a customer against the money a lost dispute holds in disputes clearing (FR-PSP-04, dispute_settlement@1): Dr accounts receivable with the credit, Cr disputes clearing, as a refund records money paid back, with the disputes clearing account in the place of the money account. The credit note is issued first, under Invoices, with its own approval: it reverses the invoice's revenue and GST. The credit may not exceed the disputed amount, and is in the base currency; what is left in disputes clearing (the dispute fee) is written off by the draft journal of prepareDisputeLoss. Once per dispute. Needs the right to post on Invoices. [accountant to confirm the GST of the credit note.] Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
+         */
+        post: operations["settleDisputeCredit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payment-providers/disputes/{dispute_id}/loss": {
         parameters: {
             query?: never;
@@ -31550,6 +31570,43 @@ export interface components {
             /** @description The balance before the statement's first day. */
             opening: components["schemas"]["Money"];
         };
+        DisputeCreditDraft: {
+            /**
+             * Format: uuid
+             * @description The issued credit note that credits the disputed charge's invoice, whose credit is settled.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b90
+             */
+            credit_note_id: string;
+            /**
+             * Format: date
+             * @description The settlement's date; today when left out.
+             * @example 2026-11-19
+             */
+            date?: string;
+            /**
+             * Format: uuid
+             * @description The provider's clearing money account the dispute is on.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+             */
+            money_account_id: string;
+        };
+        DisputeCreditSettled: {
+            /** @description What it settled of the credit. */
+            amount: components["schemas"]["Money"];
+            /**
+             * @description The provider's ID.
+             * @example dp_1Q3
+             */
+            dispute_id: string;
+            /**
+             * Format: uuid
+             * @description The refund document: Dr accounts receivable, Cr disputes clearing, under dispute_settlement@1.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b81
+             */
+            settlement_id: string;
+            /** @description What the dispute still holds in disputes clearing, such as its fee, for the expense route. */
+            still_held: components["schemas"]["Money"];
+        };
         DisputeLossDraft: {
             /**
              * @description Above the limit, confirms the loss is written off as an expense although the invoice's revenue stays as invoiced until it is credited.
@@ -44466,11 +44523,15 @@ export interface components {
              * @example true
              */
             all_posted: boolean;
+            /** @description What a customer credit was settled against it. */
+            credited: components["schemas"]["Money"];
             /**
              * @description The provider's ID.
              * @example dp_1Q3
              */
             dispute_id: string;
+            /** @description The disputed amount alone, without the dispute fee. */
+            disputed: components["schemas"]["Money"];
             /** @description What its posted lines have moved into disputes clearing and the provider has not given back. */
             held: components["schemas"]["Money"];
             /**
@@ -44491,11 +44552,17 @@ export interface components {
              */
             over_limit: boolean;
             /**
-             * @description open: its money waits; won: the provider gave it all back; written_off: a draft journal was prepared to write it off.
+             * Format: uuid
+             * @description The refund document that settled the customer credit against it (dispute_settlement@1).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b81
+             */
+            settlement_id?: string;
+            /**
+             * @description open: its money waits; won: the provider gave it all back; written_off: a draft journal was prepared to write it off; credited: a customer credit was settled against all of it.
              * @example open
              * @enum {string}
              */
-            status: "open" | "won" | "written_off";
+            status: "open" | "won" | "written_off" | "credited";
         };
         PaymentProviderEvent: {
             /**
@@ -158514,6 +158581,163 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    settleDisputeCredit: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path: {
+                /** @description The provider's ID of the dispute. */
+                dispute_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisputeCreditDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisputeCreditSettled"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisputeCreditSettled"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PSP-05` The dispute cannot be written off now; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APPLY-03` Not an issued credit note or a receipt with an amount unapplied; `APPLY-05` More than the invoice has open or the credit has left; `PSP-08` The credit cannot settle the dispute. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

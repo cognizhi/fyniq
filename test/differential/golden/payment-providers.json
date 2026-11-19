@@ -28,6 +28,9 @@
      "percent": "9"
     }
    ]
+  },
+  "dispute_accounts": {
+   "1055": "SGD"
   }
  },
  "accounts": [
@@ -319,6 +322,114 @@
      "account": "1055",
      "currency": "SGD",
      "amount": "-65.00"
+    }
+   ]
+  },
+  {
+   "type": "invoice",
+   "id": "INV-0001",
+   "version": 1,
+   "date": "2026-10-14",
+   "currency": "SGD",
+   "lines": [
+    {
+     "account": "4010",
+     "amount": "100.00",
+     "gst_code": "OS"
+    }
+   ]
+  },
+  {
+   "type": "customer_receipt",
+   "id": "RC-0001",
+   "version": 1,
+   "date": "2026-10-15",
+   "account": "1050",
+   "currency": "SGD",
+   "parts": [
+    {
+     "document": "INV-0001",
+     "amount": "100.00"
+    }
+   ]
+  },
+  {
+   "type": "bank_transaction",
+   "id": "STR-D3",
+   "version": 1,
+   "date": "2026-10-22",
+   "account": "1050",
+   "currency": "SGD",
+   "amount": "-100.00",
+   "parts": [
+    {
+     "account": "1055",
+     "amount": "-100.00",
+     "gst_code": "NA"
+    }
+   ]
+  },
+  {
+   "type": "bank_transaction",
+   "id": "STR-D3F",
+   "version": 1,
+   "date": "2026-10-22",
+   "account": "1050",
+   "currency": "SGD",
+   "amount": "-15.00",
+   "parts": [
+    {
+     "account": "1055",
+     "amount": "-15.00",
+     "gst_code": "NA"
+    }
+   ]
+  },
+  {
+   "type": "credit_note",
+   "id": "CN-0001",
+   "version": 1,
+   "date": "2026-10-29",
+   "currency": "SGD",
+   "invoice": "INV-0001",
+   "lines": [
+    {
+     "account": "4010",
+     "amount": "100.00",
+     "gst_code": "OS"
+    }
+   ]
+  },
+  {
+   "type": "dispute_settlement",
+   "id": "DS-0001",
+   "version": 1,
+   "date": "2026-10-29",
+   "account": "1055",
+   "currency": "SGD",
+   "parts": [
+    {
+     "document": "CN-0001",
+     "amount": "100.00"
+    }
+   ]
+  },
+  {
+   "type": "manual_journal",
+   "id": "JNL-0002",
+   "version": 1,
+   "date": "2026-10-29",
+   "memo": "Dispute dp_3: its fee written off from disputes clearing",
+   "lines": [
+    {
+     "account": "5045",
+     "currency": "SGD",
+     "amount": "15.00"
+    },
+    {
+     "account": "1055",
+     "currency": "SGD",
+     "amount": "-15.00"
     }
    ]
   }
