@@ -62,6 +62,16 @@ A wrong, used, withdrawn or expired code is refused, and nothing changes. Ask fo
 - In Standard mode, a role that conflicts with the person's other roles needs a reason, and an
   invitation cannot give roles that conflict ([Choose how strictly duties are separated](team-mode.md)).
 
+## Narrow an Approver to departments
+
+When you give the **Approver** role, **Departments this Approver acts for** lists the organisation's department values: tick
+the ones their role reaches. Their views and approvals that Fyniq limits by department then reach only those departments'
+records, lines and budgets, and what they read adds up only those: a report's totals count the lines of those departments
+and nothing else. An Approver role given with no department reaches none of them, so tick at least one. The choice is fixed
+when the role is given: to change it, end the role and give it again. The people's list shows it beside the role, such as
+"Approver for Engineering". The same limit applies to the assistant and to connected apps acting for that person. A person who
+holds any other role besides Employee is not narrowed by this: that role's own rights decide.
+
 ## When an external person's roles end
 
 A role given with an end date, such as an auditor's, stops working by itself at the end of that day.
