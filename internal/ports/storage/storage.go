@@ -87,6 +87,8 @@ type UnitOfWork interface {
 	PrivateEndpoints() PrivateEndpoints
 	ReviewLog() ReviewLog
 	Packs() Packs
+	// KnowledgeBase is the platform knowledge base the release loaded, read through the reader filter (AI-54).
+	KnowledgeBase() KnowledgeBase
 	EmailMessages() EmailMessages
 	EmailSenders() EmailSenders
 	EmailSuppressions() EmailSuppressions

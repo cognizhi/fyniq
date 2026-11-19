@@ -1490,6 +1490,37 @@ journal_line | recorded_at | timestamp with time zone | not null | now()
 journal_line | party_id | uuid | null | 
 journal_line | dimension_set_id | uuid | null | 
 journal_line | instrument_id | uuid | null | 
+kb_platform_page | key | text | not null | 
+kb_platform_page | type | text | not null | 
+kb_platform_page | title | text | not null | 
+kb_platform_page | summary | text | not null | 
+kb_platform_page | aliases | text[] | not null | '{}'::text[]
+kb_platform_page | body | text | not null | 
+kb_platform_page | sources | jsonb | not null | 
+kb_platform_page | data_class | text | not null | 
+kb_platform_page | taint | text | not null | 
+kb_platform_page | status | text | not null | 
+kb_platform_page | compiled_by | text | not null | 
+kb_platform_page | compiled_at | date | not null | 
+kb_platform_page | digest | text | not null | 
+kb_platform_page | search | tsvector | not null | 
+kb_platform_page_source | page_key | text | not null | 
+kb_platform_page_source | file | text | not null | 
+kb_platform_page_source | sha256 | text | not null | 
+kb_platform_page_source | roles | text[] | not null | 
+kb_platform_page_source | draft | boolean | not null | 
+kb_platform_release | singleton | boolean | not null | true
+kb_platform_release | version | text | not null | 
+kb_platform_release | schema | text | not null | 
+kb_platform_release | digest | text | not null | 
+kb_platform_release | loaded_at | timestamp with time zone | not null | now()
+kb_platform_source | file | text | not null | 
+kb_platform_source | key | text | not null | 
+kb_platform_source | title | text | not null | 
+kb_platform_source | roles | text[] | not null | 
+kb_platform_source | status | text | not null | 
+kb_platform_source | body | text | not null | 
+kb_platform_source | search | tsvector | not null | 
 kpi_input | organisation_id | uuid | not null | current_org()
 kpi_input | id | uuid | not null | uuidv7()
 kpi_input | month | date | not null | 
@@ -4815,6 +4846,59 @@ journal_line | journal_line_party_fkey | FOREIGN KEY (organisation_id, party_id)
 journal_line | journal_line_pkey | PRIMARY KEY (organisation_id, id)
 journal_line | journal_line_posting_date_not_null | NOT NULL posting_date
 journal_line | journal_line_recorded_at_not_null | NOT NULL recorded_at
+kb_platform_page | kb_platform_page_aliases_not_null | NOT NULL aliases
+kb_platform_page | kb_platform_page_body_not_null | NOT NULL body
+kb_platform_page | kb_platform_page_class | CHECK ((data_class = ANY (ARRAY['general'::text, 'personal'::text, 'payroll'::text, 'equity'::text, 'identity'::text])))
+kb_platform_page | kb_platform_page_compiled_at_not_null | NOT NULL compiled_at
+kb_platform_page | kb_platform_page_compiled_by_not_null | NOT NULL compiled_by
+kb_platform_page | kb_platform_page_data_class_not_null | NOT NULL data_class
+kb_platform_page | kb_platform_page_digest | CHECK ((digest ~ '^[0-9a-f]{64}$'::text))
+kb_platform_page | kb_platform_page_digest_not_null | NOT NULL digest
+kb_platform_page | kb_platform_page_key_format | CHECK ((key ~ '^[a-z0-9][a-z0-9.-]{0,99}$'::text))
+kb_platform_page | kb_platform_page_key_not_null | NOT NULL key
+kb_platform_page | kb_platform_page_pkey | PRIMARY KEY (key)
+kb_platform_page | kb_platform_page_search_not_null | NOT NULL search
+kb_platform_page | kb_platform_page_sources | CHECK (((jsonb_typeof(sources) = 'array'::text) AND (jsonb_array_length(sources) > 0)))
+kb_platform_page | kb_platform_page_sources_not_null | NOT NULL sources
+kb_platform_page | kb_platform_page_status | CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text])))
+kb_platform_page | kb_platform_page_status_not_null | NOT NULL status
+kb_platform_page | kb_platform_page_summary_not_null | NOT NULL summary
+kb_platform_page | kb_platform_page_taint | CHECK ((taint = ANY (ARRAY['trusted'::text, 'untrusted'::text])))
+kb_platform_page | kb_platform_page_taint_not_null | NOT NULL taint
+kb_platform_page | kb_platform_page_text | CHECK ((((length(title) >= 1) AND (length(title) <= 200)) AND ((length(summary) >= 1) AND (length(summary) <= 160))))
+kb_platform_page | kb_platform_page_title_not_null | NOT NULL title
+kb_platform_page | kb_platform_page_trusted | CHECK ((taint = 'trusted'::text))
+kb_platform_page | kb_platform_page_type | CHECK ((type = ANY (ARRAY['concept'::text, 'task'::text, 'reference'::text, 'policy'::text, 'decision'::text])))
+kb_platform_page | kb_platform_page_type_not_null | NOT NULL type
+kb_platform_page_source | kb_platform_page_source_draft_not_null | NOT NULL draft
+kb_platform_page_source | kb_platform_page_source_file_not_null | NOT NULL file
+kb_platform_page_source | kb_platform_page_source_page | FOREIGN KEY (page_key) REFERENCES kb_platform_page(key) ON DELETE CASCADE
+kb_platform_page_source | kb_platform_page_source_page_key_not_null | NOT NULL page_key
+kb_platform_page_source | kb_platform_page_source_pkey | PRIMARY KEY (page_key, file)
+kb_platform_page_source | kb_platform_page_source_roles | CHECK ((cardinality(roles) >= 1))
+kb_platform_page_source | kb_platform_page_source_roles_not_null | NOT NULL roles
+kb_platform_page_source | kb_platform_page_source_sha | CHECK ((sha256 ~ '^[0-9a-f]{64}$'::text))
+kb_platform_page_source | kb_platform_page_source_sha256_not_null | NOT NULL sha256
+kb_platform_release | kb_platform_release_digest | CHECK ((digest ~ '^[0-9a-f]{64}$'::text))
+kb_platform_release | kb_platform_release_digest_not_null | NOT NULL digest
+kb_platform_release | kb_platform_release_loaded_at_not_null | NOT NULL loaded_at
+kb_platform_release | kb_platform_release_one | CHECK (singleton)
+kb_platform_release | kb_platform_release_pkey | PRIMARY KEY (singleton)
+kb_platform_release | kb_platform_release_schema_not_null | NOT NULL schema
+kb_platform_release | kb_platform_release_singleton_not_null | NOT NULL singleton
+kb_platform_release | kb_platform_release_text | CHECK ((((length(version) >= 1) AND (length(version) <= 100)) AND (schema ~ '^kb-schema@[0-9]+$'::text)))
+kb_platform_release | kb_platform_release_version_not_null | NOT NULL version
+kb_platform_source | kb_platform_source_body_not_null | NOT NULL body
+kb_platform_source | kb_platform_source_file | CHECK ((file ~ '^docs/user-guide/[a-z0-9/_.-]+\.md$'::text))
+kb_platform_source | kb_platform_source_file_not_null | NOT NULL file
+kb_platform_source | kb_platform_source_key_not_null | NOT NULL key
+kb_platform_source | kb_platform_source_pkey | PRIMARY KEY (file)
+kb_platform_source | kb_platform_source_roles | CHECK ((cardinality(roles) >= 1))
+kb_platform_source | kb_platform_source_roles_not_null | NOT NULL roles
+kb_platform_source | kb_platform_source_search_not_null | NOT NULL search
+kb_platform_source | kb_platform_source_status | CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text])))
+kb_platform_source | kb_platform_source_status_not_null | NOT NULL status
+kb_platform_source | kb_platform_source_title_not_null | NOT NULL title
 kpi_input | kpi_input_customers_together | CHECK ((((paying_customers IS NULL) = (new_customers IS NULL)) AND ((new_customers IS NULL) = (lost_customers IS NULL))))
 kpi_input | kpi_input_entered_at_not_null | NOT NULL entered_at
 kpi_input | kpi_input_entered_by | CHECK (((length(btrim(entered_by)) >= 1) AND (length(btrim(entered_by)) <= 200)))
@@ -6526,6 +6610,9 @@ CREATE INDEX journal_line_account_amount ON fyniq.journal_line USING btree (orga
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
 CREATE INDEX journal_line_instrument_idx ON fyniq.journal_line USING btree (organisation_id, instrument_id, posting_date) WHERE (instrument_id IS NOT NULL)
 CREATE INDEX journal_line_party_idx ON fyniq.journal_line USING btree (organisation_id, party_id, posting_date) WHERE (party_id IS NOT NULL)
+CREATE INDEX kb_platform_page_search ON fyniq.kb_platform_page USING gin (search)
+CREATE INDEX kb_platform_page_title_trgm ON fyniq.kb_platform_page USING gin (lower(title) fyniq_ext.gin_trgm_ops)
+CREATE INDEX kb_platform_source_search ON fyniq.kb_platform_source USING gin (search)
 CREATE INDEX ledger_purged_entry_source_idx ON fyniq.ledger_purged_entry USING btree (organisation_id, source_id)
 CREATE INDEX migration_archive_run ON fyniq.migration_archive USING btree (organisation_id, run_id)
 CREATE INDEX migration_commit_approval ON fyniq.migration_commit USING btree (organisation_id, approval_id)
@@ -6807,6 +6894,10 @@ CREATE UNIQUE INDEX journal_entry_reverses_key ON fyniq.journal_entry USING btre
 CREATE UNIQUE INDEX journal_entry_revision_key ON fyniq.journal_entry USING btree (organisation_id, ledger_revision)
 CREATE UNIQUE INDEX journal_line_entry_line_key ON fyniq.journal_line USING btree (organisation_id, entry_id, line_no)
 CREATE UNIQUE INDEX journal_line_pkey ON fyniq.journal_line USING btree (organisation_id, id)
+CREATE UNIQUE INDEX kb_platform_page_pkey ON fyniq.kb_platform_page USING btree (key)
+CREATE UNIQUE INDEX kb_platform_page_source_pkey ON fyniq.kb_platform_page_source USING btree (page_key, file)
+CREATE UNIQUE INDEX kb_platform_release_pkey ON fyniq.kb_platform_release USING btree (singleton)
+CREATE UNIQUE INDEX kb_platform_source_pkey ON fyniq.kb_platform_source USING btree (file)
 CREATE UNIQUE INDEX kpi_input_id_key ON fyniq.kpi_input USING btree (organisation_id, id)
 CREATE UNIQUE INDEX kpi_input_pkey ON fyniq.kpi_input USING btree (organisation_id, month)
 CREATE UNIQUE INDEX ledger_boundary_boundary_key ON fyniq.ledger_boundary USING btree (organisation_id, boundary)
@@ -7880,6 +7971,10 @@ join_domain | disabled | not forced
 join_request | enabled | forced
 journal_entry | enabled | forced
 journal_line | enabled | forced
+kb_platform_page | disabled | not forced
+kb_platform_page_source | disabled | not forced
+kb_platform_release | disabled | not forced
+kb_platform_source | disabled | not forced
 kpi_input | enabled | forced
 ledger_boundary | enabled | forced
 ledger_purged_entry | enabled | forced
@@ -8189,6 +8284,13 @@ journal_immutable() → trigger | security invoker | v | search_path=pg_catalog,
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0f5bd691e4430aa3432cee16293c5fe1
 journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 55a3d18429a41eae4bbb8231d3bf02d4
 journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b9269db42a6b251fcf5f6ec4576b4fb8
+kb_platform_index(p_roles text[], p_classes text[]) → TABLE(key text, type text, title text, summary text, status text, data_class text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 7b424e41cfdc6ce4aae26d2373cd74dd
+kb_platform_info() → TABLE(version text, schema text, digest text, loaded_at timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02dda96e1273c149a12b7ce0e8a0f6a3
+kb_platform_load(p_release jsonb) → void | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ba55718a26c440e56e79a88cac713b2c
+kb_platform_page_get(p_key text, p_roles text[], p_classes text[]) → TABLE(key text, type text, title text, summary text, aliases text[], body text, sources jsonb, data_class text, taint text, status text, compiled_by text, compiled_at date, digest text, release text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 48a894936c19062794fbaa3f5dc98592
+kb_platform_page_guides(p_key text, p_roles text[], p_classes text[]) → TABLE(file text, key text, title text, draft boolean) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | aa653b92242d6fed6ef0deae9052d670
+kb_platform_readable(p_key text, p_roles text[], p_classes text[]) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4c28f1c52571c14662d29634d2f7861c
+kb_platform_search(p_terms text[], p_roles text[], p_classes text[], p_scope text, p_limit integer) → TABLE(kind text, key text, title text, summary text, snippet text, rank real, draft boolean) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4dd60b9e92df8a4e6c5b45a7ac270599
 kpi_input_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9f9ba3f0de039e4e5e95975fec3d4493
 last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2

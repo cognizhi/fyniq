@@ -11,11 +11,17 @@ tools and the same `propose` tool** as the in-app assistant (PRD-001 rev 0.2 §9
 by design (any MCP client can be connected) and closed by default (nothing connects until the
 Owner allows it).
 
-> **Status:** no code exists yet. This skill states the target design (§9.7, ADR-T3 §12.2.1,
-> Appendix F.7a). Commands marked *(P0)* or *(P1)* arrive in that phase. MCP specification
-> details are flagged **[verify against the MCP spec revision in force]**: the 2025-06-18
-> revision made servers OAuth resource servers (RFC 9728 metadata, RFC 8707 audience binding);
-> the 2025-11-25 revision added Client ID Metadata Documents.
+> **Status (19 Nov 2026):** `cmd/mcp` serves the launch shell (`internal/mcpshell`): no tool, every call refused with
+> `MCP-OFF-01`. Built already: the consent app (`internal/oauthflow`), the MCP-audience refusal and the delegation tokens in
+> `internal/authn`, option (b) delegation (`internal/mcpdelegation`, ADR-T3 spike), the tool registry and `callAITool`. The
+> server, the gates, the scope map, the manifest, Connected apps and the suite are the planned change
+> `openspec/changes/p1-mcp-first-party` (read its design.md first; it lists what is verified and what is decided). Statements
+> below describe the target design (§9.7, ADR-T3 §12.2.1, Appendix F.7a) until a slice of that change builds them.
+> MCP specification details are flagged **[verify against the MCP spec revision in force]**. The revision in force on
+> 19 Nov 2026 is **2026-07-28**: it removes protocol-level sessions (`Mcp-Session-Id`) and the GET stream, requires
+> `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` headers checked against the body (`-32020`), makes `server/discover`
+> mandatory, deprecates dynamic client registration and has the authorisation server send `iss` (RFC 9207). The session rows
+> below describe the 2025-11-25 and earlier shape and apply only to a compatibility layer.
 
 ## Non-negotiables
 
