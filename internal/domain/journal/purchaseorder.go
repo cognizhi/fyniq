@@ -223,8 +223,12 @@ func (s PurchaseOrders) Bill(ctx context.Context, org, id uuid.UUID, quantities 
 					gst = sub[0].GST
 				}
 			}
-			d.Lines = append(d.Lines, bill.Line{AccountID: l.AccountID, Description: l.Description, Net: net, GSTCode: l.GSTCode, GST: gst,
-				Order: &bill.OrderRef{PurchaseOrderID: id, Line: n, Quantity: q}})
+			line := bill.Line{AccountID: l.AccountID, Description: l.Description, Net: net, GSTCode: l.GSTCode, GST: gst,
+				Order: &bill.OrderRef{PurchaseOrderID: id, Line: n, Quantity: q}}
+			if o.ProjectID != uuid.Nil { // the order's project is each line's project value (FR-PRJ-08)
+				line.Values = []uuid.UUID{o.ProjectID}
+			}
+			d.Lines = append(d.Lines, line)
 		}
 		for n := range quantities {
 			if n < 1 || n > len(o.Lines) {

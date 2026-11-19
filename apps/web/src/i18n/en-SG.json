@@ -1451,6 +1451,10 @@
       "label": "Input tax",
       "tooltip": "What the GST claim rests on: the document, the supplier's registration and whom it is addressed to."
     },
+    "project.billable": {
+      "label": "Bill to the customer",
+      "tooltip": "A cost of a project can be billed on to its customer, with a markup on the cost. The project's Unbilled tab then lists it once it is posted, at its cost plus the markup."
+    },
     "bill.business-share": {
       "label": "Business share (%)",
       "tooltip": "How much of the purchase is used for the business; only that share of the GST is claimed. Leave blank for all of it."
@@ -2218,6 +2222,58 @@
     "project.task-add": {
       "label": "Add a task",
       "tooltip": "Time is logged against a task of a project, such as Data migration. A task is never deleted: put it out of use when it is done."
+    },
+    "time.my-time": {
+      "label": "My time",
+      "tooltip": "Your own week of time by project and task: log it in the grid or with the timer, then send each week to the project's manager. Only you see and change it."
+    },
+    "time.timesheet": {
+      "label": "Timesheet",
+      "tooltip": "Your week, and the weeks your team sent you to approve for the projects you manage."
+    },
+    "time.grid": {
+      "label": "Your week",
+      "tooltip": "Time in hours and minutes by project, task and day, such as 2:15 or 2.25. Save it as often as you like; submitted and approved time cannot change."
+    },
+    "time.timer": {
+      "label": "Timer",
+      "tooltip": "Start the timer on a project and task and stop it when you finish: its time becomes a draft entry on the day it started, to the nearest minute, at least one."
+    },
+    "time.submit": {
+      "label": "Send the week for approval",
+      "tooltip": "Sends each project's part of the week to that project's managers. Submitted time is locked until they approve it or return it with a comment."
+    },
+    "time.approve": {
+      "label": "Time to approve",
+      "tooltip": "Weeks your team sent for approval on projects you manage. Approving locks the entries; returning one sends it back with your comment. You never approve your own time."
+    },
+    "time.correct": {
+      "label": "Correct approved time",
+      "tooltip": "Approved time never changes. A correction adds a reversing entry with the opposite time, and you enter the right time as a new entry; both are approved again."
+    },
+    "time.missing": {
+      "label": "Days with no time",
+      "tooltip": "Working days up to today with no time entered, less public holidays. Enter the time, or ignore a day you did not work."
+    },
+    "rates.cost-page": {
+      "label": "Cost rates",
+      "tooltip": "What an hour of each person's time costs, and the organisation's standard rate. Only the Owner and the Payroll administrator see a person's rate."
+    },
+    "rates.cost": {
+      "label": "Enter a cost rate",
+      "tooltip": "A person's cost of an hour from a day, grouped under a role. A rate never changes: a later day's replaces it. Until payroll fills it in, you type it."
+    },
+    "rates.billing": {
+      "label": "Billing rates",
+      "tooltip": "The price of an hour for the project, a role or a person, in the project's currency. The rate in force on the day of the time is used."
+    },
+    "rates.time-cost": {
+      "label": "Time at cost",
+      "tooltip": "Approved time this month valued by the server for you: each person's own rate only if you may see it, else the average of a role with three people or more, else the standard rate, else hours only."
+    },
+    "reports.projects": {
+      "label": "Project reports",
+      "tooltip": "What each project earns and costs, from posted ledger lines and approved time: revenue less time at cost less direct costs, with utilisation and realisation. The cost is valued for you: a person's own rate only if you may see it."
     },
     "claim.line-dimensions": {
       "label": "Team or project",

@@ -8,6 +8,7 @@ PostgreSQL 17+ that passes the conformance and attack suites (NFR-PORT-02).
 | Path | What |
 |---|---|
 | `migrations/NNNNNN_name.sql` | goose migrations, embedded in the `migrate` binary (`embed.go`). Forward only: a merged migration is never edited; a change is a new migration (§12.10) |
+| `nemura/` | Nemura's own database (PRD-002 ADR-N1): its migrations in `nemura/migrations/` (a stream of its own, numbered from 000001, embedded by `nemura/embed.go` and applied by the `nemura` image's `migrate` role), its roles `nemura_*`, and its schema and grants golden files in `../internal/adapters/postgres/nemura/testdata/`. Never Fyniq's tables or database; `make db-lint` lints both streams |
 | `../internal/adapters/postgres/` | The only Go code that holds SQL (NFR-PORT-01): the storage adapter, its sqlc queries (`queries/`, generated `sqlcdb/`), the migration runner and the test suites |
 | `../internal/adapters/postgres/testdata/schema.golden` | The schema after every migration: tables, constraints, indexes, triggers, policies, functions |
 | `../internal/adapters/postgres/testdata/grants.golden` | Every privilege each role holds (SEC-03) |

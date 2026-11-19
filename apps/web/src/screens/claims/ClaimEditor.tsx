@@ -16,6 +16,7 @@ import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { EvidencePanel } from "../accounting/JournalEvidence";
 import { DimensionFields, useDimensionDetails } from "../accounting/lines";
+import { BillableFields, markupError } from "../projects/BillableFields";
 import { ConfirmDecision } from "../approvals/Decide";
 import { money, StageChip, useCategories, useClaimGSTCodes, type Claim, type ClaimLine } from "./claims";
 
@@ -37,6 +38,8 @@ export interface ReceiptForm {
   receipt_id: string;
   duplicate_reason: string;
   dimension_value_ids: string[]; // its dimension values (FR-DIM-02): at most one of each dimension
+  billable?: boolean; // a cost of a project billed on to its customer (FR-PRJ-08)
+  markup_percent?: string;
 }
 
 export interface ClaimForm {
@@ -88,6 +91,8 @@ export function formOf(c: Claim, base: string): ClaimForm {
         receipt_id: l.receipt_id ?? "",
         duplicate_reason: l.duplicate_reason ?? "",
         dimension_value_ids: [...(l.dimension_value_ids ?? [])],
+        billable: l.billable ?? false,
+        markup_percent: l.markup_percent ?? "",
       })),
   };
 }
@@ -103,6 +108,8 @@ export function checkClaim(f: ClaimForm, base: string): { draft?: Draft; errors:
     const gst = typed(l.gst);
     const paid = typed(l.paid);
     if (!l.category_id) errors[`lines.${i}.category_id`] = "Choose what the expense was for.";
+    const markupProblem = markupError(l.billable, l.markup_percent);
+    if (markupProblem) errors[`lines.${i}.markup_percent`] = markupProblem;
     if (amount === null || amount === "") errors[`lines.${i}.amount`] = "Enter the amount on the receipt, such as 27.30.";
     if (gst === null) errors[`lines.${i}.gst`] = "Enter the GST on the receipt as an amount, or leave it empty.";
     if (paid === null) errors[`lines.${i}.paid`] = "Enter what left your account in the base currency, or leave it empty.";
@@ -121,6 +128,8 @@ export function checkClaim(f: ClaimForm, base: string): { draft?: Draft; errors:
       receipt_id: l.receipt_id || undefined,
       duplicate_reason: l.duplicate_reason.trim() || undefined,
       dimension_value_ids: l.dimension_value_ids.length ? [...l.dimension_value_ids] : undefined,
+      billable: l.billable ? true : undefined,
+      markup_percent: l.billable && l.markup_percent?.trim() ? l.markup_percent.trim() : undefined,
     });
   });
   for (const { claimed_km: _km, rate: _rate, amount: _amount, ...trip } of f.trips) lines.push(trip); // what RND-MILEAGE made is the server's
@@ -420,6 +429,13 @@ export function ClaimEditor() {
                   set={(ids) => setLine(i, { dimension_value_ids: ids })}
                   className="fy-field"
                   expertOnly
+                />
+                <BillableFields
+                  ids={l.dimension_value_ids}
+                  billable={l.billable}
+                  markup={l.markup_percent}
+                  onChange={(n) => setLine(i, n)}
+                  error={errors[`lines.${i}.markup_percent`]}
                 />
                 <Field id={`${id}-${i}-amount`} label={`Amount on the receipt (${l.currency})`} error={errors[`lines.${i}.amount`]}>
                   <input className="fy-input fy-num" inputMode="decimal" value={l.amount} onChange={(e) => setLine(i, { amount: e.target.value })} />
