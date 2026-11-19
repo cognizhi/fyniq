@@ -56,14 +56,19 @@ func TestAnAIAppRegistersOnlyThroughTheClosedPolicyCheckedEndpoint(t *testing.T)
 		t.Fatalf("the deployment's switch off: %d %v", status, out)
 	}
 	s.api.deps.MCPServerOn = true
-	pending := func() int {
+	// The registrations waiting for an Owner, by client ID: a registration made here also ends the ones that lapsed (the hourly
+	// job's work, which the API does as well), so the count can fall while the test runs; what matters is which clients are there.
+	pending := func() map[string]bool {
 		n, err := e.store.PendingClients(context.Background())
 		if err != nil {
 			t.Fatal(err)
 		}
-		return len(n)
+		ids := map[string]bool{}
+		for _, c := range n {
+			ids[c.ID] = true
+		}
+		return ids
 	}
-	base := pending()
 	// An Owner opens it (the setting, in force today).
 	y, m, d := e.clock.Now().In(appclock.Singapore).Date()
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
@@ -76,8 +81,8 @@ func TestAnAIAppRegistersOnlyThroughTheClosedPolicyCheckedEndpoint(t *testing.T)
 	if status != 201 || !strings.HasPrefix(id, "mcp-") || out["token_endpoint_auth_method"] != "none" || out["scope"] != "openid offline_access fyniq.read.reports" || out["client_secret"] != nil {
 		t.Fatalf("a good registration: %d %v", status, out)
 	}
-	if pending() != base+1 {
-		t.Errorf("pending: %d, was %d", pending(), base)
+	if !pending()[id] {
+		t.Errorf("the registration %s is not among the pending ones", id)
 	}
 	// At the OAuth server it is an agent-class public client for the MCP audience, with the default scope and the exact redirect.
 	resp, err := http.Get(s.admin.BaseURL + "/admin/clients/" + id)
@@ -137,8 +142,10 @@ func TestAnAIAppRegistersOnlyThroughTheClosedPolicyCheckedEndpoint(t *testing.T)
 			t.Errorf("%s: %d %v", name, status, out)
 		}
 	}
-	if pending() != before {
-		t.Errorf("a refused registration created a client: %d pending, was %d", pending(), before)
+	for id := range pending() {
+		if !before[id] {
+			t.Errorf("a refused registration created a client: %s", id)
+		}
 	}
 	// Claude Code's own loopback registration, and a real Claude connector on its host, are accepted.
 	if status, out, _ := post(`{"client_name":"Claude Code (fyniq)","redirect_uris":["http://localhost:3118/callback"],"application_type":"native"}`); status != 201 {
