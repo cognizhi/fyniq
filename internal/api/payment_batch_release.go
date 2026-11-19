@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
@@ -26,7 +27,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
 	"github.com/cognizhi/fyniq/internal/domain/paymentfile"
+	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/team"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -388,6 +391,10 @@ func (a *API) releaseBatch(ctx context.Context, u storage.UnitOfWork, p authn.Pr
 func (a *API) writeRelease(ctx context.Context, u storage.UnitOfWork, p authn.Principal, doc storage.Document, b paymentbatch.Batch, v batchView,
 	approvalID, breakGlassID uuid.UUID) (map[uuid.UUID]string, error) {
 	id := doc.ID
+	// FR-PPL-13, FR-PPL-10: a person held for tax clearance (IRAS Form IR21) is paid nothing, by an approval or by break-glass.
+	if err := heldPayees(ctx, u, b); err != nil {
+		return nil, err
+	}
 	// The file its money account gives now (rev 0.157; design D1, D2): one its bank takes and Fyniq writes, else nothing
 	// is released. Each payee's number is opened here, and the file sealed before the transaction ends.
 	provider, err := banking.ProviderOfAccount(ctx, u, *b.Account)
@@ -544,7 +551,7 @@ func BatchApprovalCodes() []string {
 // batchCheckCodes are the codes of a batch's own checks, which a release runs again.
 func batchCheckCodes() []string {
 	return []string{paymentbatch.CodeCurrency, paymentbatch.CodeNothingOpen, paymentbatch.CodeOwedLess, paymentbatch.CodeInAnother, paymentbatch.CodeNoAccount,
-		paymentbatch.CodeWithholding, payee.CodeFrozen}
+		paymentbatch.CodeWithholding, payee.CodeFrozen, peoplelink.CodeHold}
 }
 
 func registerPaymentBatchRelease(a *API) {
@@ -810,4 +817,31 @@ func registerPaymentBatchRelease(a *API) {
 			return &batchWriteOutput{Status: w.Status, ETag: etag(w.Body.Version, string(storage.DocumentReversed)), Replayed: replayedHeader(w.Replayed),
 				Applied: applied(w), Body: w.Body}, nil
 		})
+}
+
+// heldPayees refuses a release that would pay a person Nemura holds for tax clearance (FR-PPL-13, FR-PAY-10): the projection keeps each person's hold state and version, and a held
+// person's lines are not released, by an approval or by break-glass (FR-PPL-10). The batch waits until the hold is lifted by Nemura, after IRAS's notice or directive, or the line is taken
+// out. Left (p1-payroll-link 6.3): asking Nemura at the release when its answer may be newer than the projection, and releasing the rest of the batch.
+func heldPayees(ctx context.Context, u storage.UnitOfWork, b paymentbatch.Batch) error {
+	var held []string
+	for _, pay := range b.Payments {
+		if !pay.Payee.IsPerson() {
+			continue
+		}
+		p, err := u.PeopleLinks().PersonOfUser(ctx, pay.Payee.PersonID)
+		if errors.Is(err, ports.ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		if p.Held {
+			held = append(held, p.DisplayName)
+		}
+	}
+	if len(held) > 0 {
+		return problem(peoplelink.CodeHold, "These people are held for tax clearance, so nothing is released to them: "+strings.Join(held, ", ")+".",
+			"Take their lines out of the batch, or wait for Nemura to lift the hold after IRAS's notice or directive")
+	}
+	return nil
 }

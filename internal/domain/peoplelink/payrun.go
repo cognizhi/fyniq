@@ -25,6 +25,7 @@ const (
 	CodeRunUsed      = "PPL-17" // the approval envelope was used before
 	CodeRunStale     = "PPL-18" // a version no newer than one already posted
 	CodeRunApprover  = "PPL-19" // the approver has no sign-in identity here, or no passkey to sign with
+	CodeHold         = "PPL-21" // a payment to a person held for tax clearance is not released (FR-PPL-13)
 	CodeRunPosting   = "PPL-20" // the posting is refused; Fyniq's ledger code and reason go back to Nemura
 )
 
