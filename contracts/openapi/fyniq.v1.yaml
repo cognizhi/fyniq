@@ -13146,6 +13146,11 @@ components:
           examples:
             - false
           type: boolean
+        save_defaults:
+          description: Keep the first line's account and GST code as the supplier's defaults on its contact (FR-AP-12), for the bills made from it from now on; needs the right to change contacts, else it is refused, and a default the contact already has is left.
+          examples:
+            - true
+          type: boolean
         supplier_id:
           description: "The supplier: a contact marked as a vendor."
           examples:
@@ -13161,6 +13166,35 @@ components:
       required:
         - currency
         - lines
+      type: object
+    CaptureDefaults:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: "The account most of the supplier's bill lines cost: its contact's default when it has one, else the most used."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40
+          format: uuid
+          type: string
+        from_bills:
+          description: How many of the supplier's bills the suggestion rests on; 0 when only the contact's own defaults are shown.
+          examples:
+            - 5
+          format: int64
+          type: integer
+        gst_code:
+          description: "The GST code most of its lines use: its contact's default when it has one, else the most used."
+          examples:
+            - TX
+          type: string
+        saved_on_contact:
+          description: true when the contact already holds these as its defaults.
+          examples:
+            - false
+          type: boolean
+      required:
+        - from_bills
+        - saved_on_contact
       type: object
     CaptureDismissal:
       additionalProperties: false
@@ -13236,6 +13270,9 @@ components:
           examples:
             - uen
           type: string
+        defaults:
+          $ref: "#/components/schemas/CaptureDefaults"
+          description: What this supplier's bills have usually used, suggested for the draft (FR-AP-12).
         id:
           description: The contact's ID.
           examples:

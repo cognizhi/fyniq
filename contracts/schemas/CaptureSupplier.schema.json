@@ -13,6 +13,10 @@
       ],
       "type": "string"
     },
+    "defaults": {
+      "$ref": "CaptureDefaults.schema.json",
+      "description": "What this supplier's bills have usually used, suggested for the draft (FR-AP-12)."
+    },
     "id": {
       "description": "The contact's ID.",
       "examples": [

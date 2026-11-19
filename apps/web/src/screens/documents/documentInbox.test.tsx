@@ -47,7 +47,7 @@ const capture = (extra: Record<string, unknown> = {}) => ({
   checks: [{ code: "CAP-TOTALS", field: "total", severity: "warning", message: "The lines come to 109.00, but the document's total is 190.00; check each against the document" }],
   model: "claude-opus-5-5",
   readings: 1,
-  supplier: { id: "s1", name: "Atlassian Pty Ltd", by: "name" },
+  supplier: { id: "s1", name: "Atlassian Pty Ltd", by: "name", defaults: { account_id: "a6120", gst_code: "TX", from_bills: 2, saved_on_contact: false } },
   version: 4,
   ...extra,
 });
@@ -85,11 +85,12 @@ describe("Purchases › Document inbox", () => {
     });
     renderPage(DocumentInbox, { path: "/purchases/documents", session: accountant, organisation, mode: "basic" });
     fireEvent.click(await screen.findByRole("button", { name: "Open AU-2001.pdf" }));
-    const save = await screen.findByRole("button", { name: "Save draft bill" });
-    expect((save as HTMLButtonElement).disabled).toBe(true); // no account chosen yet: the account is always the person's
+    await screen.findByRole("button", { name: "Save draft bill" });
+    expect(screen.getByText("Suggested from Atlassian Pty Ltd's 2 posted bills.")).toBeTruthy(); // the supplier's usual account, for the person to check
     await screen.findByRole("option", { name: "6120 Software" });
     fireEvent.change(screen.getByLabelText("Account of line 1"), { target: { value: "a6120" } });
     fireEvent.change(screen.getByLabelText("Net of line 1"), { target: { value: "100.00" } });
+    fireEvent.click(screen.getByLabelText(/Keep the first line's account and GST code as Atlassian Pty Ltd's defaults/));
     await waitFor(() => expect((screen.getByRole("button", { name: "Save draft bill" }) as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(screen.getByRole("button", { name: "Save draft bill" }));
     await waitFor(() => expect(seen.some((s) => s.path === "/v1/captures/c1/bill")).toBe(true));
@@ -101,6 +102,7 @@ describe("Purchases › Document inbox", () => {
       date: "2026-10-14",
       currency: "SGD",
       lines: [{ account_id: "a6120", description: "Confluence, October", gst_code: "TX", net: { amount: "100.00", currency: "SGD" }, gst: { amount: "9.00", currency: "SGD" } }],
+      save_defaults: true,
     });
     expect(await screen.findByText(/The draft bill is saved with the document attached/)).toBeTruthy();
   });

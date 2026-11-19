@@ -26186,6 +26186,11 @@ export interface components {
              */
             opening_item?: boolean;
             /**
+             * @description Keep the first line's account and GST code as the supplier's defaults on its contact (FR-AP-12), for the bills made from it from now on; needs the right to change contacts, else it is refused, and a default the contact already has is left.
+             * @example true
+             */
+            save_defaults?: boolean;
+            /**
              * Format: uuid
              * @description The supplier: a contact marked as a vendor.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
@@ -26196,6 +26201,30 @@ export interface components {
              * @example AU-1182
              */
             supplier_ref?: string;
+        };
+        CaptureDefaults: {
+            /**
+             * Format: uuid
+             * @description The account most of the supplier's bill lines cost: its contact's default when it has one, else the most used.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40
+             */
+            account_id?: string;
+            /**
+             * Format: int64
+             * @description How many of the supplier's bills the suggestion rests on; 0 when only the contact's own defaults are shown.
+             * @example 5
+             */
+            from_bills: number;
+            /**
+             * @description The GST code most of its lines use: its contact's default when it has one, else the most used.
+             * @example TX
+             */
+            gst_code?: string;
+            /**
+             * @description true when the contact already holds these as its defaults.
+             * @example false
+             */
+            saved_on_contact: boolean;
         };
         CaptureDismissal: {
             /**
@@ -26245,6 +26274,8 @@ export interface components {
              * @enum {string}
              */
             by: "uen" | "name";
+            /** @description What this supplier's bills have usually used, suggested for the draft (FR-AP-12). */
+            defaults?: components["schemas"]["CaptureDefaults"];
             /**
              * Format: uuid
              * @description The contact's ID.

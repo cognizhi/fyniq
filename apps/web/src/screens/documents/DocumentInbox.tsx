@@ -158,8 +158,15 @@ function BillForm({ c, onDone }: { c: Capture; onDone: (said: string) => void })
   const [due, setDue] = useState(text(r?.due_date));
   const [currency, setCurrency] = useState(text(r?.currency) || "SGD");
   const [lines, setLines] = useState<DraftLine[]>(
-    (r?.lines ?? []).map((l) => ({ account_id: "", description: text(l.description), net: text(l.net), gst_code: text(l.gst_code), gst: text(l.gst) || "0.00" })),
+    (r?.lines ?? []).map((l) => ({
+      account_id: c.supplier?.defaults?.account_id ?? "", // the supplier's usual account, suggested from its bills (FR-AP-12): the person still checks it
+      description: text(l.description),
+      net: text(l.net),
+      gst_code: text(l.gst_code) || c.supplier?.defaults?.gst_code || "",
+      gst: text(l.gst) || "0.00",
+    })),
   );
+  const [saveDefaults, setSaveDefaults] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
@@ -179,6 +186,7 @@ function BillForm({ c, onDone }: { c: Capture; onDone: (said: string) => void })
         currency,
         lines: lines.map((l) => ({ account_id: l.account_id, description: l.description.trim(), gst_code: l.gst_code.trim(), net: money(l.net), gst: money(l.gst) })),
         duplicate_reason: reason.trim() || undefined,
+        save_defaults: saveDefaults || undefined,
       },
     });
     setBusy(false);
@@ -261,6 +269,19 @@ function BillForm({ c, onDone }: { c: Capture; onDone: (said: string) => void })
             </div>
           </fieldset>
         ))}
+        {c.supplier?.defaults && (
+          <p className="fy-small fy-muted">
+            {c.supplier.defaults.from_bills > 0
+              ? `Suggested from ${c.supplier.name}'s ${c.supplier.defaults.from_bills} posted bill${c.supplier.defaults.from_bills === 1 ? "" : "s"}.`
+              : `${c.supplier.name}'s own defaults.`}
+          </p>
+        )}
+        {c.supplier && !c.supplier.defaults?.saved_on_contact && (
+          <label className="fy-row gap-2">
+            <input type="checkbox" checked={saveDefaults} onChange={(e) => setSaveDefaults(e.target.checked)} />
+            <span className="fy-small">Keep the first line's account and GST code as {c.supplier.name}'s defaults</span>
+          </label>
+        )}
         <label className="fy-field">
           <span className="fy-label">If it duplicates a bill already entered, why you enter it anyway</span>
           <input className="fy-input" value={reason} onChange={(e) => setReason(e.target.value)} />

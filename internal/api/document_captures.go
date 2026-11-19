@@ -53,9 +53,18 @@ type CaptureDraft struct {
 
 // CaptureSupplier is the supplier contact a reading's supplier matches: by its UEN, else by its name.
 type CaptureSupplier struct {
-	ID   string `json:"id" format:"uuid" doc:"The contact's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f31"`
-	Name string `json:"name" doc:"Its legal name." example:"Acme Software Pte Ltd"`
-	By   string `json:"by" enum:"uen,name" doc:"How it matched." example:"uen"`
+	ID       string           `json:"id" format:"uuid" doc:"The contact's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f31"`
+	Name     string           `json:"name" doc:"Its legal name." example:"Acme Software Pte Ltd"`
+	By       string           `json:"by" enum:"uen,name" doc:"How it matched." example:"uen"`
+	Defaults *CaptureDefaults `json:"defaults,omitempty" doc:"What this supplier's bills have usually used, suggested for the draft (FR-AP-12)."`
+}
+
+// CaptureDefaults are a supplier's defaults, suggested from its bills and kept on its contact once a person confirms them (FR-AP-12).
+type CaptureDefaults struct {
+	AccountID      string `json:"account_id,omitempty" format:"uuid" doc:"The account most of the supplier's bill lines cost: its contact's default when it has one, else the most used." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40"`
+	GSTCode        string `json:"gst_code,omitempty" doc:"The GST code most of its lines use: its contact's default when it has one, else the most used." example:"TX"`
+	FromBills      int    `json:"from_bills" doc:"How many of the supplier's bills the suggestion rests on; 0 when only the contact's own defaults are shown." example:"5"`
+	SavedOnContact bool   `json:"saved_on_contact" doc:"true when the contact already holds these as its defaults." example:"false"`
 }
 
 // DocumentCapture is one file of the document inbox.
@@ -121,6 +130,7 @@ type CaptureDismissal struct {
 type CaptureBillDraft struct {
 	BillDraft
 	DuplicateReason string `json:"duplicate_reason,omitempty" maxLength:"500" doc:"Why the bill is entered though it duplicates one (the same supplier, number and total within 60 days): the audit trail keeps it (FR-AP-12). Without it, a duplicate is refused." example:"The supplier sent a corrected invoice"`
+	SaveDefaults    bool   `json:"save_defaults,omitempty" doc:"Keep the first line's account and GST code as the supplier's defaults on its contact (FR-AP-12), for the bills made from it from now on; needs the right to change contacts, else it is refused, and a default the contact already has is left." example:"true"`
 }
 
 // CaptureDrafted is what a draft made of a captured document.
@@ -255,15 +265,76 @@ func supplierOf(ctx context.Context, u storage.UnitOfWork, c storage.DocumentCap
 			if !h.Vendor || !h.Active {
 				continue
 			}
-			if uen != "" && strings.ToUpper(strings.ReplaceAll(h.UENOrTaxID, " ", "")) == uen {
-				return &CaptureSupplier{ID: h.ID.String(), Name: h.LegalName, By: "uen"}, nil
+			by := ""
+			switch {
+			case uen != "" && strings.ToUpper(strings.ReplaceAll(h.UENOrTaxID, " ", "")) == uen:
+				by = "uen"
+			case name != "" && capdom.Name(h.LegalName) == capdom.Name(name):
+				by = "name"
 			}
-			if name != "" && capdom.Name(h.LegalName) == capdom.Name(name) {
-				return &CaptureSupplier{ID: h.ID.String(), Name: h.LegalName, By: "name"}, nil
+			if by == "" {
+				continue
 			}
+			defaults, err := supplierDefaults(ctx, u, h)
+			return &CaptureSupplier{ID: h.ID.String(), Name: h.LegalName, By: by, Defaults: defaults}, err
 		}
 	}
 	return nil, nil
+}
+
+// supplierDefaults are what the draft is suggested for a supplier (FR-AP-12): the contact's own default account and GST code when it has them,
+// else the account and GST code most of the lines of its bills use. Nil when there is neither.
+func supplierDefaults(ctx context.Context, u storage.UnitOfWork, c storage.Contact) (*CaptureDefaults, error) {
+	out := &CaptureDefaults{}
+	if c.DefaultAccountID != nil {
+		out.AccountID = c.DefaultAccountID.String()
+	}
+	out.GSTCode = c.DefaultGSTCode
+	docs, err := u.Documents().OfContact(ctx, c.ID, 200)
+	if err != nil {
+		return nil, err
+	}
+	accounts, codes := map[string]int{}, map[string]int{}
+	for _, d := range docs {
+		if d.Type != storage.DocumentBill || d.Status != storage.DocumentPosted {
+			continue
+		}
+		var p struct {
+			Lines []struct {
+				AccountID uuid.UUID `json:"account_id"`
+				GSTCode   string    `json:"gst_code"`
+			} `json:"lines"`
+		}
+		if json.Unmarshal(d.Payload, &p) != nil || len(p.Lines) == 0 {
+			continue
+		}
+		out.FromBills++
+		for _, l := range p.Lines {
+			accounts[l.AccountID.String()]++
+			codes[l.GSTCode]++
+		}
+	}
+	most := func(m map[string]int) string {
+		best := ""
+		for k, n := range m {
+			if k != "" && (best == "" || n > m[best] || n == m[best] && k < best) {
+				best = k
+			}
+		}
+		return best
+	}
+	saved := out.AccountID != "" || out.GSTCode != ""
+	if out.AccountID == "" {
+		out.AccountID = most(accounts)
+	}
+	if out.GSTCode == "" {
+		out.GSTCode = most(codes)
+	}
+	if out.AccountID == "" && out.GSTCode == "" {
+		return nil, nil
+	}
+	out.SavedOnContact = saved && c.DefaultAccountID != nil && c.DefaultGSTCode != ""
+	return out, nil
 }
 
 // visibleCapture is a capture the caller may see: the organisation's, or one that arrived at their own email-in address; any other is not found.
@@ -778,6 +849,34 @@ func (a *API) readDocument(ctx context.Context, p authn.Principal, id uuid.UUID,
 	return out, nil
 }
 
+// saveSupplierDefaults keeps the confirmed bill's first line's account and GST code as its supplier's defaults, where the contact has none (FR-AP-12):
+// as the person, who must hold the right to change contacts. A default the contact already holds is never replaced.
+func saveSupplierDefaults(ctx context.Context, u storage.UnitOfWork, p authn.Principal, d bill.Draft) error {
+	if !authz.Decide(authz.UpdateContact, p.Roles, false).Allowed {
+		return problem(CodeForbidden, "Saving a supplier's defaults changes its contact, which your roles may not do.", "Make the draft without saving the defaults, or ask someone who may change contacts")
+	}
+	if len(d.Lines) == 0 {
+		return nil
+	}
+	c, err := u.Contacts().Get(ctx, d.SupplierID)
+	if err != nil {
+		return err
+	}
+	details, changed := c.ContactDetails, false
+	if details.DefaultAccountID == nil {
+		id := d.Lines[0].AccountID
+		details.DefaultAccountID, changed = &id, true
+	}
+	if details.DefaultGSTCode == "" && d.Lines[0].GSTCode != "" {
+		details.DefaultGSTCode, changed = d.Lines[0].GSTCode, true
+	}
+	if !changed {
+		return nil
+	}
+	_, err = u.Contacts().Update(ctx, c.ID, c.Version, details, c.Active)
+	return err
+}
+
 // draftFromCapture makes the draft a person asked for from a read capture, as the person, and attaches the file to it as evidence (design D4).
 func (a *API) draftFromCapture(ctx context.Context, captureID, ifMatch, key, prefer string, body any, kind string) (*captureDraftedOutput, error) {
 	id, err := parseID("capture_id", captureID)
@@ -831,6 +930,11 @@ func (a *API) draftFromCapture(ctx context.Context, captureID, ifMatch, key, pre
 			checked, err := journal.CheckBill(ctx, u, doc)
 			if err != nil {
 				return CaptureDrafted{}, err
+			}
+			if b.SaveDefaults {
+				if err := saveSupplierDefaults(ctx, u, p, d); err != nil {
+					return CaptureDrafted{}, err
+				}
 			}
 			for _, w := range checked.Prepared.Warnings {
 				if w.Code != bill.WarnDuplicate {

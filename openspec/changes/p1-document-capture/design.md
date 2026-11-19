@@ -81,8 +81,10 @@ Decisions here are on the recommended option while the owner is away, owner to c
   person may override with a reason (audited), as for any duplicate warning.
 
 **D7. Supplier defaults (FR-AP-12).**
-- From the supplier's approved bills the inbox suggests the expense account, GST code, dimensions and terms most used;
-  a person confirming them saves a supplier rule (`supplier_rule`, versioned, audited), applied as the draft's defaults.
+- (As built; the first plan was a new `supplier_rule` table.) A contact already holds a default account and GST code. From the supplier's
+  posted bills the capture suggests the account and GST code its lines used most, the contact's own first; a person confirming the
+  draft with `save_defaults` keeps the first line's as the contact's defaults, as them and audited, where it has none. A default the
+  contact holds is never replaced by a suggestion.
 
 **D8. Matching a receipt to bank and card lines.**
 - A suggestion only: unreconciled bank lines of the same amount and currency within 5 days of the receipt's date, ranked
