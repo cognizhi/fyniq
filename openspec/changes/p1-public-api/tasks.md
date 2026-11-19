@@ -82,5 +82,14 @@
   `sdk/typescript/src/index.test.ts` runs the client against a fake API and checks the packed files. **Left:** publishing
   to a registry and the SDK's own version in release-please (the package stays `private` at 0.0.0) are P2 and the
   owner's call; the Go and Python SDKs are P2.)
-- [ ] 3.4 Create `contracts/events/` with a schema per event version. A test fails on an emitted event type without a schema or a version (`// req: platform/release-and-versioning Event schema versions`)
+- [x] 3.4 Create `contracts/events/` with a schema per event version. A test fails on an emitted event type without a schema or a version (`// req: platform/release-and-versioning Event schema versions`)
+  (18 Nov 2026: the events the code emits are the notification types, the one event stream (FR-NTF-05: `notify.Emit`
+  accepts only `notify.Catalogue`'s). `contracts/events/schemas/fyniq.<object>.<event>.v1.schema.json` holds each
+  one's data (IDs and the time, never the title: a title may hold names and amounts), and `asyncapi.yaml` is the
+  AsyncAPI 3 document that lists them, both written by `go test ./internal/notify -run TestTheEventCatalogue -update`
+  for a new type. `TestTheEventCatalogue` fails on an emitted type without a schema or a `.vN` version, on a schema
+  for a type nothing emits, and on a stale AsyncAPI document; `TestTheEventCheckRefusesPlantedEvents` plants each
+  fault. The package is `contracts/events` (embedded); no service imports it yet, so the images are unchanged.
+  **Left:** the CloudEvents envelope and webhook delivery are P2 (FR-INT-12); an event type that is not a
+  notification type joins the catalogue with its own emitter.)
 - [ ] 3.5 Finish with `make check` and `make test`

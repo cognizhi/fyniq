@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "can_approve": {
+      "description": "true when their roles hold the right to approve time (the Approver or the Controller); a manager without it cannot approve until they are given the role.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "display_name": {
+      "description": "Their name.",
+      "examples": [
+        "Priya Nair"
+      ],
+      "type": "string"
+    },
+    "manager": {
+      "description": "true for a manager: a member who approves the project's time (FR-PRJ-07). Naming a manager gives no right of its own: the person must hold the Approver or Controller role.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "user_id": {
+      "description": "The member's user ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "display_name",
+    "manager",
+    "can_approve"
+  ],
+  "title": "ProjectPerson",
+  "type": "object"
+}

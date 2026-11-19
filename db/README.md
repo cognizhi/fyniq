@@ -92,6 +92,14 @@ digest), read by every service through `ai_price_catalogues` and written only by
 `record_ai_price_catalogue`; no role holds a grant on the table, and a download never changes or goes.
 The agents that call a model (000356, AI-74): `ai_agent` (each agent, the data classes it may ever handle and the model
 line its presets pin), written only by the migrations, read by every service through `ai_agents`.
+
+The platform knowledge base (000560, AI-50, AI-54, AI-56, AI-58): `kb_platform_release` (the release loaded),
+`kb_platform_page` (each compiled page, its search vector and its file's SHA-256), `kb_platform_page_source` (each guide
+page a page cites, with that page's audience) and `kb_platform_source` (the user guide's raw text, what `kb.search` falls
+back to). Written only by the migrator, which loads the release's set whole in one transaction (`cmd/migrate`); no
+application role holds any grant on them. The API alone runs the reader-filter functions (`kb_platform_index`,
+`kb_platform_page_get`, `kb_platform_page_guides`, `kb_platform_search`, `kb_platform_readable`, `kb_platform_info`), which are
+SECURITY DEFINER and apply the reader's roles and data classes in the query. There is no vector column or index (AI-58).
 The registry of email-in address names (000102, FR-INT-22): `capture_name` (a name, its owning organisation for good,
 and its live address there and that address's member, if any), written only by `capture_address`'s trigger and read only through `capture_route`, which
 the receiver of inbound mail calls before any tenant is set; no role holds a grant on it, and a name never passes to

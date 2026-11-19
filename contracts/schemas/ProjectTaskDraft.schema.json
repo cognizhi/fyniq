@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billable": {
+      "description": "Left out, billable.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "name": {
+      "description": "Its name, unique among the project's live tasks.",
+      "examples": [
+        "Data migration"
+      ],
+      "maxLength": 100,
+      "type": "string"
+    },
+    "project_id": {
+      "description": "The project it is added to: a project with a record, not closed.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "name"
+  ],
+  "title": "ProjectTaskDraft",
+  "type": "object"
+}
