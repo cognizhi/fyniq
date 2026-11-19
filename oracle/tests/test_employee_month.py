@@ -679,3 +679,60 @@ def test_the_difference_of_a_later_run_counts_an_override_on_either_side():  # r
     out = em.payroll_run({"schema": "fyniq-payroll-run@1", "name": "later", "month": "2026-06-01", "people": [entry]})
     d = {k: Decimal(v) for k, v in out["people"][0]["difference"].items()}
     assert d["cpf_employee"] == Decimal("0.50") and d["net"] == Decimal("-0.50") and d["gross"] == 0
+
+
+# --- amounts worked out by a ratio (NM-PAY-12, RND-PAY-RATIO) -------------------------------------------------------------------------
+
+
+def derived(kind, key="x", name="Item", cpf_wages=True, **fields):
+    return {"key": key, "name": name, "cpf_wages": cpf_wages, "derive": {"kind": kind, **fields}}
+
+
+def test_a_part_month_is_the_calendar_days_over_the_days_of_the_month_rounded_once():  # req: NM-PAY-12
+    # A joiner from the 15th of a 31-day month: 17 days. 3,000.00 x 17 / 31 = 1,645.16129..., so 1,645.16 (nothing rounded before).
+    got = work(items=[derived("part_month", key="basic", base="3000.00", days=17, of=31)])
+    assert figures(got, "gross", "ow_subject") == {"gross": Decimal("1645.16"), "ow_subject": Decimal("1645.16")}
+    # CPF is worked out on the part month's pay, once: 37% of 1,645.16 = 608.7092, 609 in all; the employee's 20% = 329.03, 329.
+    assert figures(got, "cpf_total", "cpf_employee") == {"cpf_total": 609, "cpf_employee": 329}
+
+
+def test_a_ratio_rounds_half_away_from_zero_once():  # req: NM-PAY-12
+    # 0.05 x 1 / 2 = 0.025: 0.03, half away from zero; the unpaid-leave deduction is the same amount, negative.
+    assert Decimal(work(items=[derived("part_month", base="0.05", days=1, of=2)])["gross"]) == Decimal("0.03")
+    assert Decimal(work(items=[derived("unpaid_leave", monthly="0.05", days="1", working_days=2)])["gross"]) == Decimal("-0.03")
+
+
+def test_unpaid_leave_is_the_days_share_of_the_months_working_days_and_a_half_day_counts():  # req: NM-PAY-12, FR-PAY-01
+    # 3,000.00 x 0.5 / 22 working days = 68.1818...: 68.18, taken off the basic salary of 3,000: gross 2,931.82.
+    got = work(items=basic("3000.00") + [derived("unpaid_leave", key="u", monthly="3000.00", days="0.5", working_days=22)])
+    assert Decimal(got["gross"]) == Decimal("2931.82")
+
+
+def test_overtime_is_twelve_months_over_fifty_two_weeks_times_the_multiple_times_the_hours():  # req: NM-PAY-12
+    # 3,000.00 a month, a 44-hour week: the hourly basic rate is 12 x 3,000 / (52 x 44) = 15.734...; 10 hours at 1.5 times:
+    # 36,000 x 1.5 x 10 / 2,288 = 236.0139...: 236.01, rounded once (not 15.73 x 15 = 235.95).
+    got = work(items=basic("3000.00") + [derived("overtime", key="ot", monthly="3000.00", weekly_hours="44", multiple="1.5", hours="10")])
+    assert Decimal(got["gross"]) == Decimal("3236.01")
+
+
+def test_each_pay_records_part_month_is_rounded_on_its_own_and_the_amounts_added():  # req: NM-PAY-12 [accountant to confirm: the PRD says "rounded once"]
+    # A pay change in the month is two pay records, each its calendar days over the days of the month (NM-PAY-12); each record's amount is worked out exactly and rounded
+    # once, and the month's pay is the amounts added. Three records of 0.02 x 1 / 3 = 0.00666...: 0.01 each, 0.03 in all (rounded once over the three it would be 0.02).
+    parts = [derived("part_month", key=f"r{i}", base="0.02", days=1, of=3) for i in range(3)]
+    assert Decimal(work(items=parts)["gross"]) == Decimal("0.03")
+
+
+def test_the_golden_final_pay_advances_by_hand():  # req: FR-PAY-16 [accountant to confirm]
+    # test/differential/payroll-runs/final-pay-advances.json, worked from MOM's rule in the PRD: on termination the 50% limit is lifted and an advance is recovered
+    # from final pay only as far as the employee consented in writing; the 12-instalment and 25% limits are the accountant's question there, so not applied. In an
+    # ordinary month an advance is at most 25% of the salary (1,000 of 4,000) and 12 instalments.
+    doc = json.loads((ROOT / "test" / "differential" / "payroll-runs" / "final-pay-advances.json").read_text())
+    people = {p["id"]: p["violations"] for p in em.payroll_run(doc)["people"]}
+    assert people == {
+        "final-consent": [],
+        "final-no-consent": [{"key": "adv", "rule": "advance-final-consent"}],
+        "final-13th-instalment": [],
+        "final-damage-over-half": [],
+        "ordinary-same-advance": [{"key": "adv", "rule": "advance-quarter"}],
+        "ordinary-quarter": [{"key": "adv2", "rule": "advance-instalments"}, {"key": "adv2", "rule": "advance-quarter"}],
+    }

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/cockroachdb/apd/v3"
@@ -31,14 +32,28 @@ func (e *InvalidError) Error() string { return e.Reason }
 
 func invalid(format string, a ...any) error { return &InvalidError{Reason: fmt.Sprintf(format, a...)} }
 
+// deriveDoc is an amount the document gives as a ratio (NM-PAY-12): the runner works it out with the engine's own ratio functions.
+type deriveDoc struct {
+	Kind        string          `json:"kind"`
+	Base        string          `json:"base"`
+	Monthly     string          `json:"monthly"`
+	Days        json.RawMessage `json:"days"`
+	Of          int             `json:"of"`
+	WorkingDays int             `json:"working_days"`
+	WeeklyHours string          `json:"weekly_hours"`
+	Multiple    string          `json:"multiple"`
+	Hours       string          `json:"hours"`
+}
+
 type itemDoc struct {
-	Key       string `json:"key"`
-	Name      string `json:"name"`
-	Amount    string `json:"amount"`
-	CPFWages  bool   `json:"cpf_wages"`
-	ForMonth  string `json:"for_month"`
-	PayableOn string `json:"payable_on"`
-	Suggested string `json:"suggested"`
+	Key       string     `json:"key"`
+	Name      string     `json:"name"`
+	Derive    *deriveDoc `json:"derive"`
+	Amount    string     `json:"amount"`
+	CPFWages  bool       `json:"cpf_wages"`
+	ForMonth  string     `json:"for_month"`
+	PayableOn string     `json:"payable_on"`
+	Suggested string     `json:"suggested"`
 }
 
 type ytdDoc struct {
@@ -181,7 +196,7 @@ func person(p personDoc) (payroll.Person, error) {
 func month(first, payDay time.Time, p payroll.Person, f factsDoc) (payroll.Month, error) {
 	m := payroll.Month{Month: first, PayDay: payDay, Person: p, LastMonth: f.LastMonth, Final: f.Final}
 	for _, it := range f.Items {
-		amt, err := money(it.Amount)
+		amt, err := it.amount()
 		if err != nil {
 			return m, err
 		}
@@ -229,6 +244,59 @@ func month(first, payDay time.Time, p payroll.Person, f factsDoc) (payroll.Month
 		m.Held = h
 	}
 	return m, nil
+}
+
+// amount is the item's amount: as written, or worked out by the engine's ratio functions (an unpaid-leave deduction is negative).
+func (it itemDoc) amount() (*apd.Decimal, error) {
+	d := it.Derive
+	if d == nil {
+		return money(it.Amount)
+	}
+	days := func() (*apd.Decimal, error) {
+		v, _, err := apd.NewFromString(strings.Trim(string(d.Days), `"`))
+		return v, err
+	}
+	switch d.Kind {
+	case "part_month":
+		base, err := money(d.Base)
+		if err != nil {
+			return nil, err
+		}
+		n, err := days()
+		if err != nil {
+			return nil, invalid("item %s: the days of a part month", it.Key)
+		}
+		whole, err := n.Int64()
+		if err != nil {
+			return nil, invalid("item %s: the days of a part month are whole", it.Key)
+		}
+		return payroll.Ratio(base, int(whole), d.Of), nil
+	case "unpaid_leave":
+		monthly, err := money(d.Monthly)
+		if err != nil {
+			return nil, err
+		}
+		n, err := days()
+		if err != nil {
+			return nil, invalid("item %s: the days of unpaid leave", it.Key)
+		}
+		cut := payroll.RatioDays(monthly, n, d.WorkingDays)
+		cut.Negative = !cut.Negative
+		if cut.IsZero() {
+			cut.Negative = false
+		}
+		return cut, nil
+	case "overtime":
+		monthly, err1 := money(d.Monthly)
+		weekly, err2 := money(d.WeeklyHours)
+		multiple, err3 := money(d.Multiple)
+		hours, err4 := money(d.Hours)
+		if err := errors.Join(err1, err2, err3, err4); err != nil {
+			return nil, err
+		}
+		return payroll.OvertimePay(monthly, weekly, multiple, hours), nil
+	}
+	return nil, invalid("item %s: %q is not a ratio", it.Key, d.Kind)
 }
 
 func text(d *apd.Decimal) string {

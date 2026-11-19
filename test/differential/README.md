@@ -1647,7 +1647,7 @@ The oracle's half of Nemura's payroll engine (`oracle/src/oracle/employee_month.
 documents carry the facts:
 
 - `fyniq-payroll-month@1` (`payroll.schema.json`, golden months in `payrolls/`, worked by hand): one employee-month and the
-  figures `expect` names. Optional `pay_day`, `deductions`, `final` and `held` state a month's deductions (FR-PAY-16) and held monies.
+  figures `expect` names. Optional `pay_day`, `deductions`, `final`, `held` and `overrides` state a month's deductions (FR-PAY-16), held monies and overrides (FR-PAY-06).
 - `fyniq-payroll-run@1` (`payroll-run.schema.json`): a run of one `month`: each of `people` (an `id`, the `person`, the month's `items`, `ytd`,
   `last_month`, `reimbursements`, `deductions`, `final`, `held`), and for a later run or correction the same person's facts as last
   `posted`. Its result, `fyniq-payroll-run-result@1`, has per person every figure of the month as a decimal string (`gross`,
@@ -1709,7 +1709,16 @@ Rules the sources leave open, decided in the oracle and marked for confirmation 
   "Monthly gross rate of pay / Total number of working days in that month x Total number of days the employee actually worked in that month", working days
   "excludes rest days and non-working days, but includes public holidays" (https://www.mom.gov.sg/employment-practices/salary/monthly-and-daily-salary). The two differ for
   a joiner or a leaver. This is the owner's decision (O5 of `p1-nemura-payroll`); it is reported, not changed. `[accountant to confirm]`
-- **Not covered here:** the foreign worker levy (O2).
+- **Overrides** (FR-PAY-06; the PRD says only "with a reason and an approval; flagged"): an override replaces one of `cpf_employee`, `cpf_employer`, `sdl`, `shg`
+  with the person's figure, taken as given with no dollar rounding; the CPF total follows its two shares, net pay, the amount to disburse and the employer's cost
+  follow from the figures they are made of, and a run's SDL payable adds the overridden amounts and rounds down once. A reason is 10 to 500 characters. `[accountant to confirm]`
+  the unrounded figure. `overrides` is in the person's facts and in `posted`.
+- **Amounts by a ratio** (NM-PAY-12): an item gives `derive` instead of `amount`: `part_month` (`base` x `days` / `of`, the calendar days), `unpaid_leave` (`monthly` x `days` /
+  `working_days`, a half day is `0.5`, taken off) or `overtime` (12 x `monthly` x `multiple` x `hours` / (52 x `weekly_hours`)), each exact and rounded once to the cent, half away
+  from zero. Each pay record's (each item's) amount is rounded on its own and the month's pay is their sum; the PRD's "rounded once" is read that way. `[accountant to confirm]`
+  The differential works the primitives (the engine's `Ratio`, `RatioDays` and `OvertimePay`); which days a joiner, a leaver or a pay change counts, and a person's working days,
+  are the adapter's (`internal/adapters/postgres/nemura`), not run here.
+- **Not covered here:** the foreign worker levy (O2); which days the adapter counts for a part month, and the F/F election's storage (`nemura.pr_election` has no kind).
 
 ## Commands
 
