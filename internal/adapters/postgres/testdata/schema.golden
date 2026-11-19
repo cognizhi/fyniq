@@ -8771,9 +8771,7 @@ audit_recovery | tenant_isolation | * | (organisation_id = current_org()) | (org
 audit_recovery_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_request_detail | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 authz_refusal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
-balance | department_scope | r | ((( SELECT dept_scope() AS dept_scope) IS NULL) OR (dimension_set_id IN ( SELECT ds.id
-   FROM dimension_set ds
-  WHERE (ds.value_ids && ( SELECT dept_scope() AS dept_scope))))) | <nil>
+balance | department_scope | r | ((( SELECT dept_scope() AS dept_scope) IS NULL) OR (dimension_set_id IN ( SELECT ds.id FROM dimension_set ds WHERE (ds.value_ids && ( SELECT dept_scope() AS dept_scope))))) | <nil>
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_feed | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_gap | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8842,9 +8840,7 @@ item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_
 item_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 join_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
-journal_line | department_scope | r | ((( SELECT dept_scope() AS dept_scope) IS NULL) OR (dimension_set_id IN ( SELECT ds.id
-   FROM dimension_set ds
-  WHERE (ds.value_ids && ( SELECT dept_scope() AS dept_scope))))) | <nil>
+journal_line | department_scope | r | ((( SELECT dept_scope() AS dept_scope) IS NULL) OR (dimension_set_id IN ( SELECT ds.id FROM dimension_set ds WHERE (ds.value_ids && ( SELECT dept_scope() AS dept_scope))))) | <nil>
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 kb_lint_finding | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 kb_note | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())

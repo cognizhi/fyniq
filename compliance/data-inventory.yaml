@@ -7,7 +7,7 @@
 schema: fyniq-data-inventory@1
 classes:
   - key: members
-    what: "Members' names, sign-in email addresses, roles, invitations and requests to join, and the email addresses notifications go to"
+    what: "Members' names, sign-in email addresses, roles, invitations and requests to join, and the email addresses notifications go to; where Nemura is linked, each person's name and work email as the people platform sends them (the people projection, FR-PPL-06)"
     why: "To let people sign in and do their work, to name who did what, and to tell them what waits for them"
     where: "The database, in Singapore (Cloud SQL, asia-southeast1; locally the developer's database)"
     who: "Appendix D's Users, roles, team mode; every member sees colleagues' names; notifications reach their own member"
@@ -15,7 +15,7 @@ classes:
     protection: "The audit trail's personal values are shreddable per person and financial year (§11.8)"
     transfers: "Emails go through the deployment's email provider, and sign-in through its sign-in providers: the flows email and sign-in"
     columns: [app_user.display_name, user_identity.email, user_session.email, member_invitation.display_name, join_request.display_name,
-      join_request.email, notification.email, notification_preference.email]
+      join_request.email, notification.email, notification_preference.email, person_projection.display_name, person_projection.work_email]
   - key: sign-in-security
     what: "Each sign-in's IP address and browser, sessions, passkeys and recovery codes"
     why: "To keep accounts secure and to investigate a security event"
