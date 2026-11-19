@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { t } from "./i18n";
 import { NewPerson } from "./pages/NewPerson";
+import { Packs } from "./pages/Packs";
+import { Policy } from "./pages/Policy";
 import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
 import { Home } from "./pages/Home";
@@ -51,6 +53,8 @@ export function App() {
     if (!route) return <NotFound home={landing} />;
     if (state.status === "in" && route.id === "people-directory") return <Directory roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "person-new") return <NewPerson roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "packs") return <Packs roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "policy") return <Policy roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "features") return <Features roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "person") return <Person id={matched?.params.id ?? ""} roles={state.session.roles ?? []} />;
     if (state.status === "in") return <Home session={state.session} screen={route.id === "people-home" ? "people" : "me"} />;

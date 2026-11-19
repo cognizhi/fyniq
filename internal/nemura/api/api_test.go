@@ -20,8 +20,10 @@ import (
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/nemura/apiclient"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
+	"github.com/cognizhi/fyniq/internal/nemura/checks"
 	"github.com/cognizhi/fyniq/internal/nemura/features"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
+	"github.com/cognizhi/fyniq/internal/nemura/policy"
 )
 
 var update = flag.Bool("update", false, "rewrite contracts/openapi/nemura/nemura.v1.yaml from the code (make openapi)")
@@ -160,6 +162,26 @@ func (f fakeRestricted) Bank(context.Context, Session, uuid.UUID) (BankChange, e
 	return BankChange{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73", State: "proposed"}, f.err
 }
 
+// fakePacks answers the packs, the policy and the checks with whatever the test says.
+type fakePacks struct{ err error }
+
+func (f fakePacks) Versions(context.Context, Session) ([]PackVersion, error) {
+	return []PackVersion{{ID: "sg-people@2026.1", Values: []PackValue{}, Sources: []PackSource{}}}, f.err
+}
+func (f fakePacks) Accept(context.Context, Session, string) error { return f.err }
+func (f fakePacks) Decide(context.Context, Session, string, string, string, string) error {
+	return f.err
+}
+func (f fakePacks) SetPolicy(context.Context, Session, time.Time, policy.Rules) ([]string, error) {
+	return nil, f.err
+}
+func (f fakePacks) Policy(context.Context, Session, time.Time) (policy.Rules, string, bool, error) {
+	return policy.Rules{}, "", false, f.err
+}
+func (f fakePacks) Checks(context.Context, Session, time.Time) ([]checks.Finding, error) {
+	return []checks.Finding{{Check: 3, Area: "People", Status: checks.Fail, Subject: "x", Message: "m"}}, f.err
+}
+
 // fakeClients registers whatever it is told and answers with clientsErr.
 type fakeClients struct{ err error }
 
@@ -170,18 +192,18 @@ func (f fakeClients) List(context.Context, Session) ([]Client, error)  { return 
 func (f fakeClients) Revoke(context.Context, Session, uuid.UUID) error { return f.err }
 
 var (
-	passkeyErr, clientsErr, peopleErr, featuresErr, restrictedErr error
-	peopleOwn, peopleReport                                       bool
-	peopleClassified                                              *bool
-	testRoles                                                     = []authz.Role{authz.HRAdmin}
-	testStepUp                                                    bool
-	testNow                                                       = time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)
+	passkeyErr, clientsErr, peopleErr, featuresErr, restrictedErr, packsErr error
+	peopleOwn, peopleReport                                                 bool
+	peopleClassified                                                        *bool
+	testRoles                                                               = []authz.Role{authz.HRAdmin}
+	testStepUp                                                              bool
+	testNow                                                                 = time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)
 )
 
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr}, Restricted: fakeRestricted{err: restrictedErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -338,6 +360,7 @@ func TestEveryWriteAcceptsAnIdempotencyKey(t *testing.T) {
 // Every code of the catalogue is triggered by an operation, returns RFC 9457 problem details with the code, a plain detail and a
 // fix, and the catalogue is served as the document says.
 // req: NM-ARC-03
+const policyBody = `{"effective_from":"2026-12-01","rules":{"annual_leave_days":[7],"sick_outpatient_days":[5,8,11,14],"sick_hospital_days":[15,30,45,60],"childcare_citizen_days":6,"extended_childcare_days":2,"childcare_non_citizen_days":2}}`
 const personBody = `{"id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","person":{"legal_name":"Ana Tan","employment_start":"2026-01-05"},"job":{"job_title":"CEO","worksite":"SG","employment_type":"full_time"}}`
 const jobBody = `{"effective_from":"2026-09-01","job":{"job_title":"CEO","worksite":"SG","employment_type":"full_time"}}`
 
@@ -361,6 +384,7 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodeStepUp:             {method: "DELETE", path: "/v1/api-clients/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e60", signedIn: true, owner: true},
 		CodeClientInvalid:      {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeInvalid, Message: "The scope \"x\" does not exist."}},
 		CodeUnavailable:        {method: "GET", path: "/v1/api-clients", signedIn: true, owner: true, err: ErrUnavailable},
+		CodePolicyBelow:        {method: "PUT", path: "/v1/policy", body: policyBody, signedIn: true, err: &people.Refusal{Code: policy.CodeBelowStatute, Message: "The policy gives less than the statute."}},
 		CodeFeatureRequired:    {method: "PUT", path: "/v1/features/leave", body: `{"state":"off"}`, signedIn: true, err: &features.Refusal{Code: features.CodeRequired, Message: "Payroll needs Leave."}},
 		CodeFeatureUnavailable: {method: "PUT", path: "/v1/features/hiring", body: `{"state":"on"}`, signedIn: true, err: &features.Refusal{Code: features.CodeUnavailable, Message: "Hiring is built in P2."}},
 		CodeFeatureObligations: {method: "PUT", path: "/v1/features/leave", body: `{"state":"off"}`, signedIn: true, err: &features.Refusal{Code: features.CodeObligations, Message: "Work is still open."}},
@@ -377,13 +401,13 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 			t.Errorf("%s is in the catalogue and no test triggers it", c.Code)
 			continue
 		}
-		passkeyErr, clientsErr, peopleErr, featuresErr = tr.err, tr.err, tr.err, tr.err
+		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr = tr.err, tr.err, tr.err, tr.err, tr.err
 		if tr.owner {
 			testRoles = []authz.Role{authz.Owner}
 		}
 		testStepUp = tr.stepUp
 		_, mux := testAPI(t)
-		passkeyErr, clientsErr, peopleErr, featuresErr, testRoles, testStepUp = nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false
+		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, testRoles, testStepUp = nil, nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false
 		req := httptest.NewRequest(tr.method, tr.path, strings.NewReader(tr.body))
 		if tr.body != "" {
 			req.Header.Set("Content-Type", "application/json")
@@ -759,5 +783,42 @@ func TestRestrictedPeopleDataIsReachedByTheRightRolesAndConfirmedWithAPasskey(t 
 	defer func() { restrictedErr = nil }()
 	if got := do(admin, false, "PUT", id+"/nric", nric); got != http.StatusServiceUnavailable {
 		t.Errorf("no key service: %d", got)
+	}
+}
+
+// Packs, policy and checks are seen by whoever may see the settings and changed only by the HR administrator and the Owner; a policy below the statute is
+// refused with its code (NM-PACK-04).
+// req: NM-PACK-04
+// asvs: V8.2.1
+func TestOnlyTheHRAdministratorAndTheOwnerChangePacksAndPolicies(t *testing.T) {
+	do := func(roles []authz.Role, method, path, body string) int {
+		testRoles = roles
+		defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for _, tc := range []struct {
+		roles       []authz.Role
+		read, write int
+	}{
+		{[]authz.Role{authz.Employee}, 403, 403}, {[]authz.Role{authz.LineManager}, 403, 403}, {[]authz.Role{authz.HROfficer}, 200, 403},
+		{[]authz.Role{authz.PayrollAdmin}, 200, 403}, {[]authz.Role{authz.HRAdmin}, 200, 204}, {[]authz.Role{authz.Owner}, 200, 204},
+	} {
+		for _, p := range []string{"/v1/packs", "/v1/policy", "/v1/checks"} {
+			if got := do(tc.roles, "GET", p, ""); got != tc.read {
+				t.Errorf("%v reading %s: %d, want %d", tc.roles, p, got, tc.read)
+			}
+		}
+		if got := do(tc.roles, "POST", "/v1/packs/sg-people@2026.1/acceptances", ""); got != map[int]int{204: 201, 403: 403}[tc.write] {
+			t.Errorf("%v accepting: %d", tc.roles, got)
+		}
+		if got := do(tc.roles, "PUT", "/v1/policy", policyBody); got != map[int]int{204: 200, 403: 403}[tc.write] {
+			t.Errorf("%v setting a policy: %d", tc.roles, got)
+		}
 	}
 }

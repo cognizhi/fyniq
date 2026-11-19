@@ -108,6 +108,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The people checks
+         * @description Runs the people checks that need only the people record and the packs on a day (today when none is given): a work pass about to expire or expired with no renewal or leaving date (N.1 #3), next year's public-holiday calendar missing from 1 December (#8), and a policy that needs a researched value with no recorded decision (#13). Whoever sees the settings. It changes nothing.
+         */
+        get: operations["listChecks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/errors": {
         parameters: {
             query?: never;
@@ -202,6 +222,66 @@ export interface paths {
         get: operations["getInfo"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/packs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The country packs
+         * @description Lists each version of Nemura's packs with its sources (official page, section, day read and quote), who verified it, and the values that are only researched with the company's decisions on them. Whoever sees the settings. It changes nothing.
+         */
+        get: operations["listPacks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/packs/{version}/acceptances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a pack version
+         * @description Records that the organisation accepts a version of a pack. Accepting verifies nothing: the pack's publisher does (NM-PACK-07). The HR administrator or the Owner. It is audited.
+         */
+        post: operations["acceptPack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/packs/{version}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide to use a researched value
+         * @description Records the company's decision, with its reason, to use a value that is only researched, so a calculation may read it (NM-PACK-07). A verified value needs none. The HR administrator or the Owner. It is audited.
+         */
+        post: operations["decidePackValue"];
         delete?: never;
         options?: never;
         head?: never;
@@ -488,6 +568,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The company's leave policy
+         * @description Returns the company's leave policy in force on a day (today when none is given) and the pack version it was checked against. Whoever sees the settings. It changes nothing.
+         */
+        get: operations["getPolicy"];
+        /**
+         * Set the company's leave policy
+         * @description Starts the company's leave policy on a day, ending the one in force. It is checked rule by rule against the statute of the pack in force: a policy that gives less on any rule is refused (NM_POLICY_BELOW_STATUTE) with every rule it breaks; one that gives more says so. The HR administrator or the Owner. It is audited.
+         */
+        put: operations["setPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/session": {
         parameters: {
             query?: never;
@@ -705,6 +809,10 @@ export interface components {
             /** @description The new job record. */
             job: components["schemas"]["JobInput"];
         };
+        ChecksOutputBody: {
+            /** @description What the people checks found, ✖ first. */
+            findings: components["schemas"]["Finding"][] | null;
+        };
         Classification: {
             /**
              * Format: date
@@ -868,6 +976,23 @@ export interface components {
              * @example The number does not match the bank letter.
              */
             reason?: string;
+        };
+        DecideInputBody: {
+            /**
+             * @description The row's key.
+             * @example 1
+             */
+            key: string;
+            /**
+             * @description Why the company uses the researched value.
+             * @example We read MOM's page and it matches our contracts.
+             */
+            reason: string;
+            /**
+             * @description The table of the pack.
+             * @example annual_leave
+             */
+            table: string;
         };
         Dependant: {
             /**
@@ -1084,6 +1209,35 @@ export interface components {
              */
             message: string;
         };
+        Finding: {
+            /**
+             * @description People or Packs.
+             * @example People
+             */
+            area: string;
+            /**
+             * Format: int64
+             * @description The row of Appendix C N.1.
+             * @example 3
+             */
+            check: number;
+            /**
+             * @description What is wrong and how to fix it, in plain words.
+             * @example A work pass expires on 2026-12-20: record the renewed pass or the leaving date.
+             */
+            message: string;
+            /**
+             * @description Fail blocks, warn needs a look, due is coming up.
+             * @example fail
+             * @enum {string}
+             */
+            status: "fail" | "warn" | "due";
+            /**
+             * @description What it is about: a person's ID or a pack version.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            subject: string;
+        };
         InfoOutputBody: {
             /**
              * @description The service this answers as.
@@ -1185,6 +1339,111 @@ export interface components {
              */
             nric: string;
         };
+        PackSource: {
+            /**
+             * @description The source's id in the pack.
+             * @example mom-annual-leave
+             */
+            id: string;
+            /**
+             * @description What the page says, as read.
+             * @example Within 7 days after the end of the salary period.
+             */
+            quote: string;
+            /**
+             * Format: date
+             * @description The day the page was read.
+             * @example 2026-11-19
+             */
+            retrieved: string;
+            /**
+             * @description The section the values come from.
+             * @example Eligibility and entitlement
+             */
+            section: string;
+            /**
+             * @description The page's title.
+             * @example MOM: Annual leave, eligibility and entitlement
+             */
+            title: string;
+            /**
+             * Format: uri
+             * @description The official page.
+             * @example https://www.mom.gov.sg/employment-practices/leave/annual-leave/eligibility-and-entitlement
+             */
+            url: string;
+        };
+        PackValue: {
+            /**
+             * @description Whether the company recorded a decision to use it.
+             * @example false
+             */
+            decided: boolean;
+            /**
+             * @description The row's key in the table.
+             * @example 1
+             */
+            key: string;
+            /**
+             * @description Researched: read from the official page. Verified: checked by a second person on the publisher's side.
+             * @example researched
+             * @enum {string}
+             */
+            status: "researched" | "verified";
+            /**
+             * @description The table of the pack.
+             * @example annual_leave
+             */
+            table: string;
+        };
+        PackVersion: {
+            /**
+             * @description Whether this organisation accepted it; accepting verifies nothing.
+             * @example false
+             */
+            accepted: boolean;
+            /**
+             * Format: date
+             * @description Its first day.
+             * @example 2026-01-01
+             */
+            effective_from: string;
+            /**
+             * @description The version.
+             * @example sg-people@2026.1
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description How many of its values are only researched.
+             * @example 52
+             */
+            researched_values: number;
+            /**
+             * Format: date
+             * @description The day its sources must be checked again.
+             * @example 2027-01-31
+             */
+            review_date: string;
+            /** @description The official pages. */
+            sources: components["schemas"]["PackSource"][] | null;
+            /**
+             * @description What it holds.
+             * @example Singapore people facts
+             */
+            title: string;
+            /** @description The values that are only researched, with the company's decisions. */
+            values: components["schemas"]["PackValue"][] | null;
+            /**
+             * @description Who verified it, or that no one has yet.
+             * @example none yet
+             */
+            verifier: string;
+        };
+        PacksOutputBody: {
+            /** @description Every version of Nemura's packs. */
+            packs: components["schemas"]["PackVersion"][] | null;
+        };
         Pass: {
             /**
              * Format: date
@@ -1264,6 +1523,67 @@ export interface components {
              * @example ana@acme.example
              */
             work_email?: string;
+        };
+        PolicyOutputBody: {
+            /**
+             * @description Whether the company has a policy on the day.
+             * @example true
+             */
+            in_force: boolean;
+            /**
+             * @description The pack version it was checked against.
+             * @example sg-people@2026.1
+             */
+            pack_version?: string;
+            /** @description The entitlements. */
+            rules: components["schemas"]["PolicyRules"];
+        };
+        PolicyRules: {
+            /**
+             * @description Paid days a year by year of service from the first; the last repeats.
+             * @example [
+             *       14
+             *     ]
+             */
+            annual_leave_days: number[] | null;
+            /**
+             * Format: int64
+             * @description Childcare leave days a year for a citizen child under 7.
+             * @example 6
+             */
+            childcare_citizen_days: number;
+            /**
+             * Format: int64
+             * @description Childcare leave days a year for a child who is not a citizen.
+             * @example 2
+             */
+            childcare_non_citizen_days: number;
+            /**
+             * Format: int64
+             * @description Extended childcare days a year for a citizen child aged 7 to 12.
+             * @example 2
+             */
+            extended_childcare_days: number;
+            /**
+             * @description Hospitalisation leave days at 3, 4, 5 and 6 or more months of service.
+             * @example [
+             *       15,
+             *       30,
+             *       45,
+             *       60
+             *     ]
+             */
+            sick_hospital_days: number[] | null;
+            /**
+             * @description Outpatient sick leave days at 3, 4, 5 and 6 or more months of service.
+             * @example [
+             *       5,
+             *       8,
+             *       11,
+             *       14
+             *     ]
+             */
+            sick_outpatient_days: number[] | null;
         };
         Problem: {
             /**
@@ -1462,6 +1782,20 @@ export interface components {
              * @enum {string}
              */
             state: "on" | "off" | "external";
+        };
+        SetPolicyInputBody: {
+            /**
+             * Format: date
+             * @description The day the policy starts; the one in force ends that day.
+             * @example 2026-12-01
+             */
+            effective_from: string;
+            /** @description The company's entitlements. */
+            rules: components["schemas"]["PolicyRules"];
+        };
+        SetPolicyOutputBody: {
+            /** @description Rules where the policy gives more than the statute. */
+            notes: string[] | null;
         };
         SignInOutputBody: {
             /** @description The providers people may sign in with, in the order to offer them. */
@@ -1885,6 +2219,68 @@ export interface operations {
             };
         };
     };
+    listChecks: {
+        parameters: {
+            query?: {
+                /** @description The day to check on; today when empty. */
+                as_of?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChecksOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listErrorCodes: {
         parameters: {
             query?: never;
@@ -2116,6 +2512,225 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPacks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PacksOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    acceptPack: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The pack version. */
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decidePackValue: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The pack version. */
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3406,6 +4021,140 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPolicy: {
+        parameters: {
+            query?: {
+                /** @description The day to show the policy on; today when empty. */
+                as_of?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPolicyInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetPolicyOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

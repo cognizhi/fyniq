@@ -98,6 +98,8 @@ var NotPersonal = map[string]string{
 	"api_client.name":              "the name of a system that calls the API (a company or product), not a person",
 	"person_job.job_title":         "the title of a role, not a person's data on its own",
 	"person_job.department":        "the name of a department",
+	"pack_decision.table_name":     "the name of a table of a statutory pack, not a person",
+	"pack_decision.reason":         "the company's reason for using a researched value, written for the record; it names no person by design",
 	"outbox.payload":               "the task's payload: ids only, never pay or bank details (ADR-N5)",
 }
 

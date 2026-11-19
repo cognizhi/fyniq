@@ -198,6 +198,19 @@ components:
         - effective_from
         - job
       type: object
+    ChecksOutputBody:
+      additionalProperties: false
+      properties:
+        findings:
+          description: What the people checks found, ✖ first.
+          items:
+            $ref: "#/components/schemas/Finding"
+          type:
+            - array
+            - "null"
+      required:
+        - findings
+      type: object
     Classification:
       additionalProperties: false
       properties:
@@ -440,6 +453,31 @@ components:
           type: string
       required:
         - approve
+      type: object
+    DecideInputBody:
+      additionalProperties: false
+      properties:
+        key:
+          description: The row's key.
+          examples:
+            - "1"
+          type: string
+        reason:
+          description: Why the company uses the researched value.
+          examples:
+            - We read MOM's page and it matches our contracts.
+          maxLength: 2000
+          minLength: 10
+          type: string
+        table:
+          description: The table of the pack.
+          examples:
+            - annual_leave
+          type: string
+      required:
+        - table
+        - key
+        - reason
       type: object
     Dependant:
       additionalProperties: false
@@ -773,6 +811,46 @@ components:
         - message
         - fix
       type: object
+    Finding:
+      additionalProperties: false
+      properties:
+        area:
+          description: People or Packs.
+          examples:
+            - People
+          type: string
+        check:
+          description: The row of Appendix C N.1.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        message:
+          description: What is wrong and how to fix it, in plain words.
+          examples:
+            - "A work pass expires on 2026-12-20: record the renewed pass or the leaving date."
+          type: string
+        status:
+          description: Fail blocks, warn needs a look, due is coming up.
+          enum:
+            - fail
+            - warn
+            - due
+          examples:
+            - fail
+          type: string
+        subject:
+          description: "What it is about: a person's ID or a pack version."
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          type: string
+      required:
+        - check
+        - area
+        - status
+        - subject
+        - message
+      type: object
     InfoOutputBody:
       additionalProperties: false
       properties:
@@ -913,6 +991,160 @@ components:
       required:
         - nric
       type: object
+    PackSource:
+      additionalProperties: false
+      properties:
+        id:
+          description: The source's id in the pack.
+          examples:
+            - mom-annual-leave
+          type: string
+        quote:
+          description: What the page says, as read.
+          examples:
+            - Within 7 days after the end of the salary period.
+          type: string
+        retrieved:
+          description: The day the page was read.
+          examples:
+            - "2026-11-19"
+          format: date
+          type: string
+        section:
+          description: The section the values come from.
+          examples:
+            - Eligibility and entitlement
+          type: string
+        title:
+          description: The page's title.
+          examples:
+            - "MOM: Annual leave, eligibility and entitlement"
+          type: string
+        url:
+          description: The official page.
+          examples:
+            - https://www.mom.gov.sg/employment-practices/leave/annual-leave/eligibility-and-entitlement
+          format: uri
+          type: string
+      required:
+        - id
+        - title
+        - url
+        - section
+        - retrieved
+        - quote
+      type: object
+    PackValue:
+      additionalProperties: false
+      properties:
+        decided:
+          description: Whether the company recorded a decision to use it.
+          examples:
+            - false
+          type: boolean
+        key:
+          description: The row's key in the table.
+          examples:
+            - "1"
+          type: string
+        status:
+          description: "Researched: read from the official page. Verified: checked by a second person on the publisher's side."
+          enum:
+            - researched
+            - verified
+          examples:
+            - researched
+          type: string
+        table:
+          description: The table of the pack.
+          examples:
+            - annual_leave
+          type: string
+      required:
+        - table
+        - key
+        - status
+        - decided
+      type: object
+    PackVersion:
+      additionalProperties: false
+      properties:
+        accepted:
+          description: Whether this organisation accepted it; accepting verifies nothing.
+          examples:
+            - false
+          type: boolean
+        effective_from:
+          description: Its first day.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        id:
+          description: The version.
+          examples:
+            - sg-people@2026.1
+          type: string
+        researched_values:
+          description: How many of its values are only researched.
+          examples:
+            - 52
+          format: int64
+          type: integer
+        review_date:
+          description: The day its sources must be checked again.
+          examples:
+            - "2027-01-31"
+          format: date
+          type: string
+        sources:
+          description: The official pages.
+          items:
+            $ref: "#/components/schemas/PackSource"
+          type:
+            - array
+            - "null"
+        title:
+          description: What it holds.
+          examples:
+            - Singapore people facts
+          type: string
+        values:
+          description: The values that are only researched, with the company's decisions.
+          items:
+            $ref: "#/components/schemas/PackValue"
+          type:
+            - array
+            - "null"
+        verifier:
+          description: Who verified it, or that no one has yet.
+          examples:
+            - none yet
+          type: string
+      required:
+        - id
+        - title
+        - effective_from
+        - review_date
+        - verifier
+        - accepted
+        - researched_values
+        - values
+        - sources
+      type: object
+    PacksOutputBody:
+      additionalProperties: false
+      properties:
+        packs:
+          description: Every version of Nemura's packs.
+          items:
+            $ref: "#/components/schemas/PackVersion"
+          type:
+            - array
+            - "null"
+      required:
+        - packs
+      type: object
     Pass:
       additionalProperties: false
       properties:
@@ -1024,6 +1256,100 @@ components:
       required:
         - legal_name
         - employment_start
+      type: object
+    PolicyOutputBody:
+      additionalProperties: false
+      properties:
+        in_force:
+          description: Whether the company has a policy on the day.
+          examples:
+            - true
+          type: boolean
+        pack_version:
+          description: The pack version it was checked against.
+          examples:
+            - sg-people@2026.1
+          type: string
+        rules:
+          $ref: "#/components/schemas/PolicyRules"
+          description: The entitlements.
+      required:
+        - in_force
+        - rules
+      type: object
+    PolicyRules:
+      additionalProperties: false
+      properties:
+        annual_leave_days:
+          description: Paid days a year by year of service from the first; the last repeats.
+          examples:
+            - - 14
+          items:
+            format: int64
+            type: integer
+          maxItems: 60
+          minItems: 1
+          type:
+            - array
+            - "null"
+        childcare_citizen_days:
+          description: Childcare leave days a year for a citizen child under 7.
+          examples:
+            - 6
+          format: int64
+          minimum: 0
+          type: integer
+        childcare_non_citizen_days:
+          description: Childcare leave days a year for a child who is not a citizen.
+          examples:
+            - 2
+          format: int64
+          minimum: 0
+          type: integer
+        extended_childcare_days:
+          description: Extended childcare days a year for a citizen child aged 7 to 12.
+          examples:
+            - 2
+          format: int64
+          minimum: 0
+          type: integer
+        sick_hospital_days:
+          description: Hospitalisation leave days at 3, 4, 5 and 6 or more months of service.
+          examples:
+            - - 15
+              - 30
+              - 45
+              - 60
+          items:
+            format: int64
+            type: integer
+          maxItems: 4
+          minItems: 4
+          type:
+            - array
+            - "null"
+        sick_outpatient_days:
+          description: Outpatient sick leave days at 3, 4, 5 and 6 or more months of service.
+          examples:
+            - - 5
+              - 8
+              - 11
+              - 14
+          items:
+            format: int64
+            type: integer
+          maxItems: 4
+          minItems: 4
+          type:
+            - array
+            - "null"
+      required:
+        - annual_leave_days
+        - sick_outpatient_days
+        - sick_hospital_days
+        - childcare_citizen_days
+        - extended_childcare_days
+        - childcare_non_citizen_days
       type: object
     Problem:
       additionalProperties: false
@@ -1304,6 +1630,35 @@ components:
           type: string
       required:
         - state
+      type: object
+    SetPolicyInputBody:
+      additionalProperties: false
+      properties:
+        effective_from:
+          description: The day the policy starts; the one in force ends that day.
+          examples:
+            - "2026-12-01"
+          format: date
+          type: string
+        rules:
+          $ref: "#/components/schemas/PolicyRules"
+          description: The company's entitlements.
+      required:
+        - effective_from
+        - rules
+      type: object
+    SetPolicyOutputBody:
+      additionalProperties: false
+      properties:
+        notes:
+          description: Rules where the policy gives more than the statute.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+      required:
+        - notes
       type: object
     SignInOutputBody:
       additionalProperties: false
@@ -1692,6 +2047,63 @@ paths:
       summary: Approve or refuse a bank account change
       tags:
         - People
+  /v1/checks:
+    get:
+      description: "Runs the people checks that need only the people record and the packs on a day (today when none is given): a work pass about to expire or expired with no renewal or leaving date (N.1 #3), next year's public-holiday calendar missing from 1 December (#8), and a policy that needs a researched value with no recorded decision (#13). Whoever sees the settings. It changes nothing."
+      operationId: listChecks
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The day to check on; today when empty.
+          explode: false
+          in: query
+          name: as_of
+          schema:
+            description: The day to check on; today when empty.
+            examples:
+              - "2026-12-01"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecksOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: The people checks
+      tags:
+        - Packs
   /v1/errors:
     get:
       description: Lists every stable error code the API returns, with its HTTP status, its title and the usual fix. It needs no sign-in and changes nothing; a code never changes meaning inside /v1.
@@ -1885,6 +2297,187 @@ paths:
       summary: What this service is
       tags:
         - Platform
+  /v1/packs:
+    get:
+      description: Lists each version of Nemura's packs with its sources (official page, section, day read and quote), who verified it, and the values that are only researched with the company's decisions on them. Whoever sees the settings. It changes nothing.
+      operationId: listPacks
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PacksOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: The country packs
+      tags:
+        - Packs
+  /v1/packs/{version}/acceptances:
+    post:
+      description: "Records that the organisation accepts a version of a pack. Accepting verifies nothing: the pack's publisher does (NM-PACK-07). The HR administrator or the Owner. It is audited."
+      operationId: acceptPack
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The pack version.
+          in: path
+          name: version
+          required: true
+          schema:
+            description: The pack version.
+            examples:
+              - sg-people@2026.1
+            type: string
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Accept a pack version
+      tags:
+        - Packs
+  /v1/packs/{version}/decisions:
+    post:
+      description: Records the company's decision, with its reason, to use a value that is only researched, so a calculation may read it (NM-PACK-07). A verified value needs none. The HR administrator or the Owner. It is audited.
+      operationId: decidePackValue
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The pack version.
+          in: path
+          name: version
+          required: true
+          schema:
+            description: The pack version.
+            examples:
+              - sg-people@2026.1
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecideInputBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Decide to use a researched value
+      tags:
+        - Packs
   /v1/passkeys:
     post:
       description: Checks the browser's answer to the registration challenge and keeps the passkey for the signed-in person, with its audit event. The challenge is used once, whatever the answer; a wrong answer is NM_PASSKEY_REFUSED and an unknown or used challenge is NM_PASSKEY_NO_CEREMONY.
@@ -3045,6 +3638,121 @@ paths:
       summary: Record a work pass
       tags:
         - People
+  /v1/policy:
+    get:
+      description: Returns the company's leave policy in force on a day (today when none is given) and the pack version it was checked against. Whoever sees the settings. It changes nothing.
+      operationId: getPolicy
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The day to show the policy on; today when empty.
+          explode: false
+          in: query
+          name: as_of
+          schema:
+            description: The day to show the policy on; today when empty.
+            examples:
+              - "2026-12-01"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: The company's leave policy
+      tags:
+        - Packs
+    put:
+      description: "Starts the company's leave policy on a day, ending the one in force. It is checked rule by rule against the statute of the pack in force: a policy that gives less on any rule is refused (NM_POLICY_BELOW_STATUTE) with every rule it breaks; one that gives more says so. The HR administrator or the Owner. It is audited."
+      operationId: setPolicy
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetPolicyInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetPolicyOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Set the company's leave policy
+      tags:
+        - Packs
   /v1/session:
     get:
       description: Returns the person the session cookie names, the organisation they are in, the roles they hold today and the page they land on. Roles are read again on each request, so a change is seen at once. It changes nothing; without a valid session it is NM_UNAUTHENTICATED.
@@ -3225,5 +3933,7 @@ tags:
     name: People
   - description: "Each optional feature of an organisation: on, off or held by another system (NM-FEAT-01 to 05)."
     name: Features
+  - description: Country packs with their sources, the company's policy on top and the people checks (NM-PACK-01 to 08).
+    name: Packs
   - description: Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02).
     name: Session

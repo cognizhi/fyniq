@@ -662,3 +662,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | docs/user-guide/nemura/features.md → nemura.features (the feature switches, p1-nemura-records-packs slice 3)
 
 ## [2026-11-19] compile | docs/user-guide/nemura/people.md → nemura.people (Add a person)
+
+## [2026-11-19] compile | docs/user-guide/nemura/packs.md → nemura.packs (the country pack and leave policy, p1-nemura-records-packs slice 4)

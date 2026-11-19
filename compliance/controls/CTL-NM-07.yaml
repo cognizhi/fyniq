@@ -10,5 +10,6 @@ evidence: "Pack record with its verifier and date"
 owner: Owner
 checks:
   - frequency: E
-    status: planned
-    arrives: "p1-nemura-records-packs (slice 4: Checks N.1 #13 and the pack screen's verification record)"
+    status: running
+    how: "test TestEachPeopleCheckIsTriggeredByAFixture"
+    evidence: "Checks N.1 #13 lists a live calculation that reads a researched value with no recorded company decision, and a decision or a verification clears it; CI artefact test-report (90 days). The verification record itself (the verifier and date in the pack) is the publishers' step before the first paid person"

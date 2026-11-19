@@ -3,7 +3,7 @@
 Each numbered group is one pull request (a "slice"), in this order, and each ends with the gates green: `make check`, `make test`
 and, for a slice that touches an image, `make images`. A slice never leaves a test red or a requirement tagged that its tests do
 not fully prove. `[live-verify]` marks what only the cloud can show. Slices 1 to 3 need no owner decision; slice 4 needed design O1 and O2, which the
-owner decided on 19 Nov 2026 (O1 A, O2 A now and B before the first paid person; CTL-NM-07 tracks the move). Slice 4 is not built yet.
+owner decided on 19 Nov 2026 (O1 A, O2 A now and B before the first paid person; CTL-NM-07 tracks the move). Slice 4 is built in part (see its notes).
 
 Load before each slice: `fyniq-feature-change` (every slice), `fyniq-accounting-domain` is not needed (no money here),
 `fyniq-sg-statutory` (4), `fyniq-security-compliance` (2), `fyniq-api-integrations` (every API operation),
@@ -68,20 +68,25 @@ Load before each slice: `fyniq-feature-change` (every slice), `fyniq-accounting-
 
 ## 4. Packs, worksites, policy and the first checks (slice 4; waits for design O1 and O2)
 
-- [ ] 4.1 Nemura's pack mechanism (D2): files, loader, global read-only tables, the researched, verified and released states, the
+- [x] 4.1 Nemura's pack mechanism (D2): files, loader, global read-only tables, the researched, verified and released states, the
   source requirements (URL, section, quote, retrieval date), the refusal of an unverified value in a decision (`to confirm`).
   `// req: NM-PACK-01, NM-PACK-02, NM-PACK-07`
+  (Built, 19 Nov 2026: `internal/domain/pack/people.go` registers the `sg-people` schema and its pure rules and runs its pinned cases under the shared validator (O1); the status of each value is `researched` or `verified`, never a `[verify]` tag (which Fyniq's loader refuses); `internal/nemura/packs` embeds the files; migration 000014 holds an organisation's acceptance of a version (it verifies nothing), its recorded decisions on researched values (with a reason) and its policy; `GET /v1/packs`, `POST /v1/packs/{version}/acceptances` and `/decisions`. A version is read from the embedded files at start, not copied into global tables (nothing to copy until a second version exists). `TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass`, `TestAWrongValueOrStatusIsRefused`, `TestACompanyAcceptsAPackDecidesOnResearchedValuesAndSetsAPolicyAgainstTheStatute`; `// req: NM-PACK-01, NM-PACK-02`.)
 - [ ] 4.2 The Singapore pack `sg-people@2026.1` from PRD-002 Appendix A, each value with its official source fetched on the day
   and hand-pinned tests worked from the page (annual and sick leave, public holidays 2026 and 2027, childcare, infant care,
   maternity, paternity and shared parental leave, Part IV, salary timing, KETs, payslips, records, retirement and
   re-employment, flexible work). A value the page does not settle stays `[verify]`. `// req: NM-PACK-06`
+  (Built in part, 19 Nov 2026: `sg-people@2026.1` holds annual and sick leave, the public holidays of 2026 and 2027, childcare leave, when salary and overtime are paid, employment records and the retirement and re-employment ages, from seven MOM pages fetched on 19 Nov 2026, each with its quote and 25 hand-pinned cases; every value is researched (O2). **Left, so unticked:** maternity, paternity and shared parental leave, infant care, Part IV hours, KETs and payslip timing (a later version, `sg-people@2026.2`, with `p1-nemura-leave-time`), and the 2029 ages for the cohorts MOM's page does not name. `// req: NM-PACK-06` is not tagged until Appendix A is covered.)
 - [ ] 4.3 Worksites (Singapore only) pick the pack and the calendar; next year's calendar and the message for dates beyond it.
   `// req: NM-PACK-03, NM-PACK-05`
+  (Built in part, 19 Nov 2026: a worksite outside Singapore is refused (`people.SupportedCountries`), and N.1 #8's calendar check from 1 December. **Left, so unticked:** the message for a leave request or pay calculation beyond the loaded calendar (leave and payroll), and the worksite's region calendar. `// req: NM-PACK-03` is not tagged.)
 - [ ] 4.4 Company policy on top, effective-dated, checked rule by rule (D7) with `NM_POLICY_BELOW_STATUTE` and the "gives more"
   note; screens `nm-country-pack` and `nm-leave-policy`. `// req: NM-PACK-04, NM-PACK-08`
+  (Built in part, 19 Nov 2026: `internal/nemura/policy` checks annual leave by year of service, sick leave by months of service and the three childcare leave rules against the statute rule by rule, refusing with `NM_POLICY_BELOW_STATUTE` naming each rule and its source and noting where it gives more; `PUT` and `GET /v1/policy`; screens `nm-country-pack` and `nm-leave-policy`, guide and kb pages. **Left, so unticked:** the rules the pack has no value for yet: the waiting period of annual leave, carry-forward for Part IV, half working days, proration and the family leave schemes of the later version; and the leave types of `p1-nemura-leave-time`. `// req: NM-PACK-04, NM-PACK-08` are tagged on the tests that prove what is built.)
 - [ ] 4.5 The checks (Appendix C N.1) built on these objects: #3 (work pass), #8 (calendar by 1 December; a `[verify]` value in a
   live policy), #12 (records past retention, the engine exists) and #13 (a live calculation needs an unverified value with no
   recorded decision), each triggered by a fixture. The others stay with their changes.
+  (Built in part, 19 Nov 2026: `internal/nemura/checks` and `GET /v1/checks` for N.1 #3 (work pass), #8 (next year's calendar from 1 December) and #13 (a researched value in use with no recorded decision), each triggered by a fixture (`TestEachPeopleCheckIsTriggeredByAFixture`). **Left, so unticked:** #12 (records past retention) in the checks list, and the control CTL-NM-07's check, which is #13's.)
 - [ ] 4.6 Verify: `make check`, `make test`, `make images`, `make kb-lint`, the controls for the pack and policy gates.
 
 ## Coverage

@@ -5,6 +5,7 @@ package people
 import (
 	"fmt"
 	"net/mail"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -28,6 +29,10 @@ func (r *Refusal) Error() string { return r.Code + ": " + r.Message }
 func invalid(format string, a ...any) *Refusal {
 	return &Refusal{CodeInvalid, fmt.Sprintf(format, a...)}
 }
+
+// SupportedCountries are the countries a worksite may be in: the worksite picks the pack and the holiday calendar, and Nemura has the Singapore pack only
+// (NM-PACK-03; several countries are P3).
+var SupportedCountries = []string{"SG"}
 
 // EmploymentTypes are the kinds of employment of NM-PPL-01. A person's legal classification (NM-PPL-08) is separate: a contractor is
 // "contract" here and a contract for service there.
@@ -119,6 +124,9 @@ func (j Job) Check() error {
 	}
 	if len(j.Worksite) < 2 || len(j.Worksite) > 11 || strings.ToUpper(j.Worksite) != j.Worksite {
 		return invalid("The worksite %q is not a country code such as SG, optionally with a region (MY-JHR).", j.Worksite)
+	}
+	if country, _, _ := strings.Cut(j.Worksite, "-"); !slices.Contains(SupportedCountries, country) {
+		return invalid("The worksite %q is in a country Nemura has no pack for yet: this release supports %s.", j.Worksite, strings.Join(SupportedCountries, ", "))
 	}
 	return nil
 }

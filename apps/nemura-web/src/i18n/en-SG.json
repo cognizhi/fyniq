@@ -159,7 +159,48 @@
     "new.submit": "Add person",
     "new.saving": "Saving",
     "new.failed": "We could not add the person. Check your connection and try again.",
-    "new.add": "Add a person"
+    "new.add": "Add a person",
+    "nav.packs": "Country pack",
+    "nav.policy": "Leave policy",
+    "packs.title": "Country pack",
+    "packs.lead": "The statutory facts Nemura uses, each with the official page it comes from. A value that is only researched has not been checked by a second person: your company decides whether to use it.",
+    "packs.from": "In force from",
+    "packs.review": "Sources checked again by",
+    "packs.verifier": "Verified by",
+    "packs.researched": "Researched values",
+    "packs.accept": "Accept this version",
+    "packs.accepted": "Accepted by your company",
+    "packs.sources": "Official sources",
+    "packs.read": "Read on",
+    "packs.values": "Values to decide on",
+    "packs.decided": "Decided",
+    "packs.undecided": "Not decided",
+    "packs.reason": "Why your company uses it",
+    "packs.decide": "Record decision",
+    "packs.notice": "Accepting a version verifies nothing: the pack's publisher does.",
+    "packs.none": "You may not see the packs.",
+    "packs.loading": "Loading the packs",
+    "packs.failed": "We could not save that. Check your connection and try again.",
+    "packs.saved": "Saved.",
+    "policy.title": "Leave policy",
+    "policy.lead": "Your company's entitlements. Each is checked against the statute: giving less is refused, giving more is welcome.",
+    "policy.from": "Starts on",
+    "policy.annual": "Annual leave days by year of service",
+    "policy.annual.help": "Separate days with commas: the first year, the second, and so on. The last repeats.",
+    "policy.outpatient": "Outpatient sick leave days at 3, 4, 5 and 6 months",
+    "policy.hospital": "Hospitalisation leave days at 3, 4, 5 and 6 months",
+    "policy.childcare": "Childcare leave, citizen child under 7",
+    "policy.extended": "Extended childcare leave, citizen child 7 to 12",
+    "policy.noncitizen": "Childcare leave, non-citizen child",
+    "policy.submit": "Set policy",
+    "policy.saving": "Saving",
+    "policy.saved": "The policy is set.",
+    "policy.none": "No policy is set yet.",
+    "checks.title": "What needs a look",
+    "checks.none": "Nothing needs a look.",
+    "packs.table": "Table",
+    "packs.key": "Key",
+    "packs.status": "Status"
   },
   "help": {
     "signin.page": {
@@ -201,6 +242,14 @@
     "new.page": {
       "label": "Add a person",
       "tooltip": "Adds a person with their first job from their start date. Only the HR officer and the HR administrator add people."
+    },
+    "packs.page": {
+      "label": "Country pack",
+      "tooltip": "The statutory facts Nemura uses, with the official page of each. Researched values have not been checked by a second person; your company records a decision to use them."
+    },
+    "policy.page": {
+      "label": "Leave policy",
+      "tooltip": "Your company's leave entitlements on top of the statute. A policy that gives less than the statute for any rule is refused, naming the rule."
     }
   }
 }

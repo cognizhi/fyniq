@@ -37,7 +37,7 @@ aliases:
 
 ## Related
 
-- Find colleagues in [[nemura.people]]; the HR administrator and the Owner switch features in [[nemura.features]]. (src: docs/user-guide/nemura/home.md#what-it-is)
+- Find colleagues in [[nemura.people]]; the HR administrator and the Owner switch features in [[nemura.features]]; the country pack and leave policy are in [[nemura.packs]]. (src: docs/user-guide/nemura/home.md#what-it-is)
 
 ## When it looks wrong
 

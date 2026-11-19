@@ -16,6 +16,8 @@ export function Shell({ children, directory, features }: { children: ReactNode; 
             <a href="/">{t("nav.home")}</a>
             {directory && <a href="/people/directory">{t("nav.directory")}</a>}
             {features && <a href="/settings/features">{t("nav.features")}</a>}
+            {directory && <a href="/settings/packs">{t("nav.packs")}</a>}
+            {directory && <a href="/settings/policy">{t("nav.policy")}</a>}
           </nav>
         </span>
         <form method="post" action="/api/auth/signout">

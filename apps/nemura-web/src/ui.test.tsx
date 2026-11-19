@@ -5,6 +5,8 @@ import { App } from "./App";
 import { ReviewBanner } from "./components/ReviewBanner";
 import { Home } from "./pages/Home";
 import { NewPerson } from "./pages/NewPerson";
+import { Packs } from "./pages/Packs";
+import { Policy } from "./pages/Policy";
 import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
 import { Join } from "./pages/Join";
@@ -349,5 +351,51 @@ describe("adding a person", () => {
     render(<NewPerson roles={["employee"]} />);
     expect(screen.getByRole("alert")).toBeTruthy();
     expect((screen.getByRole("button", { name: "Add person" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+// req: NM-PACK-02, NM-PACK-04, NM-PACK-07
+describe("the country pack and the leave policy", () => {
+  const pack = { packs: [{ id: "sg-people@2026.1", title: "Singapore people facts", effective_from: "2026-01-01", review_date: "2027-01-31", verifier: "none yet", accepted: false, researched_values: 2,
+    values: [{ table: "annual_leave", key: "1", status: "researched", decided: false }, { table: "timing", key: "salary_days_after_period", status: "researched", decided: true }],
+    sources: [{ id: "mom-paying-salary", title: "MOM: Paying salary", url: "https://www.mom.gov.sg/employment-practices/salary/paying-salary", section: "When to pay salary", retrieved: "2026-11-19", quote: "Within 7 days after the end of the salary period." }] }] };
+
+  it("shows each version's sources and researched values, and records a decision with a reason", async () => {
+    answer("GET /v1/packs", { status: 200, body: pack });
+    answer("POST /v1/packs/sg-people%402026.1/decisions", { status: 201 });
+    const { container } = render(<Packs roles={["hr_admin"]} />);
+    await screen.findByText("sg-people@2026.1");
+    expect(screen.getByText(/Within 7 days after the end/)).toBeTruthy();
+    expect(screen.getByText("Decided")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("annual_leave/1: Why your company uses it"), { target: { value: "We read MOM's page and it matches." } });
+    fireEvent.click(screen.getByRole("button", { name: "Record decision" }));
+    await waitFor(() => expect(calls).toContain("POST /v1/packs/sg-people%402026.1/decisions"));
+  });
+
+  it("offers no change to someone who may only read", async () => {
+    answer("GET /v1/packs", { status: 200, body: pack });
+    render(<Packs roles={["hr_officer"]} />);
+    await screen.findByText("sg-people@2026.1");
+    expect(screen.queryByRole("button", { name: "Record decision" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Accept this version" })).toBeNull();
+  });
+
+  it("sets a policy and shows the API's plain refusal naming each rule", async () => {
+    answer("GET /v1/policy", { status: 200, body: { in_force: false, rules: { annual_leave_days: [], sick_outpatient_days: [], sick_hospital_days: [], childcare_citizen_days: 0, extended_childcare_days: 0, childcare_non_citizen_days: 0 } } });
+    answer("GET /v1/checks", { status: 200, body: { findings: [{ check: 13, area: "Packs", status: "fail", subject: "sg-people@2026.1", message: "The company policy needs a researched value with no decision." }] } });
+    answer("PUT /v1/policy", { status: 422, body: { code: "NM_POLICY_BELOW_STATUTE", detail: "Annual leave in year 1 of service gives 6, below the statutory 7." } });
+    const { container } = render(<Policy roles={["hr_admin"]} />);
+    expect(await screen.findByText(/needs a researched value/)).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Starts on"), { target: { value: "2026-12-01" } });
+    fireEvent.change(screen.getByLabelText("Annual leave days by year of service"), { target: { value: "6" } });
+    fireEvent.change(screen.getByLabelText("Outpatient sick leave days at 3, 4, 5 and 6 months"), { target: { value: "5, 8, 11, 14" } });
+    fireEvent.change(screen.getByLabelText("Hospitalisation leave days at 3, 4, 5 and 6 months"), { target: { value: "15, 30, 45, 60" } });
+    for (const [label, v] of [["Childcare leave, citizen child under 7", "6"], ["Extended childcare leave, citizen child 7 to 12", "2"], ["Childcare leave, non-citizen child", "2"]]) fireEvent.change(screen.getByLabelText(label as string), { target: { value: v } });
+    fireEvent.submit(container.querySelector("form.fy-stack") as HTMLFormElement);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/below the statutory 7/);
   });
 });

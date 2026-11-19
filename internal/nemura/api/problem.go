@@ -7,6 +7,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/nemura/features"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
+	"github.com/cognizhi/fyniq/internal/nemura/policy"
 )
 
 // Problem is an RFC 9457 problem details object (NM-ARC-03; PRD-001 FR-INT-07): a stable code from the catalogue, what went
@@ -69,6 +70,7 @@ const (
 	CodeFeatureUnavailable = features.CodeUnavailable
 	CodeFeatureObligations = features.CodeObligations
 	CodeFeatureInvalid     = features.CodeInvalid
+	CodePolicyBelow        = policy.CodeBelowStatute
 	CodeUnavailable        = "NM_UNAVAILABLE" // the service is not configured for this here
 	CodeNoPasskey          = "NM_NO_PASSKEY"  // #nosec G101 -- a problem code's name: no passkey to confirm with
 )
@@ -89,6 +91,7 @@ var Catalogue = []Code{
 	{CodeFeatureUnavailable, http.StatusConflict, "That feature cannot be switched on yet", "It arrives in a later release, or needs an approval that is not built yet."},
 	{CodeFeatureObligations, http.StatusConflict, "Work is still open in this feature", "Record how each open thing will be handled, then switch the feature off."},
 	{CodeFeatureInvalid, http.StatusUnprocessableEntity, "The feature or its state is not valid", "Use a feature from GET /v1/features, a state of on, off or external, and a system name only for external."},
+	{CodePolicyBelow, http.StatusUnprocessableEntity, "The policy gives less than the statute", "Raise each rule the message names to at least the statutory value."},
 	{CodeUnavailable, http.StatusServiceUnavailable, "Not available here", "This deployment has not set it up: ask whoever runs Nemura."},
 	{CodeRoleRequired, http.StatusForbidden, "Not allowed for your roles", "Ask the Owner to do it, or to change your roles."},
 	{CodeStepUp, http.StatusForbidden, "Confirm it is you", "Confirm with your passkey (POST /v1/session/step-up), then try again within five minutes."},
