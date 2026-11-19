@@ -4,7 +4,14 @@ import { describe, expect, it } from "vitest";
 import { App } from "./App";
 import { ReviewBanner } from "./components/ReviewBanner";
 import { Home } from "./pages/Home";
+import { NewPerson } from "./pages/NewPerson";
+import { Packs } from "./pages/Packs";
+import { Policy } from "./pages/Policy";
+import { Features } from "./pages/Features";
+import { Directory } from "./pages/Directory";
 import { Join } from "./pages/Join";
+import { Person } from "./pages/Person";
+import { matchRoute } from "./registry";
 import { SignIn, signInURL } from "./pages/SignIn";
 import { reviewsFor, review, type Register } from "./review";
 import { SessionProvider } from "./session";
@@ -12,6 +19,11 @@ import { answer, calls } from "./test/setup";
 
 const providers = { providers: [{ id: "local", name: "Local sign-in" }, { id: "google", name: "Google" }], setup_done: true };
 const session = { landing: "/me", member_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45", organisation_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44", roles: ["employee"] };
+
+async function userType(input: HTMLInputElement, text: string): Promise<void> {
+  const { fireEvent } = await import("@testing-library/react");
+  fireEvent.change(input, { target: { value: text } });
+}
 
 async function violations(container: HTMLElement): Promise<string[]> {
   const r = await axe.run(container, { rules: { "color-contrast": { enabled: false } } }); // jsdom draws no colours: contrast is `make check-tokens`'s
@@ -200,5 +212,190 @@ describe("the Needs additional verification banner", () => {
   it("renders nothing when nothing awaits review", () => {
     const { container } = render(<ReviewBanner screen="nm-checks" register={register} />);
     expect(container.innerHTML).toBe("");
+  });
+});
+
+// req: NM-PPL-06, NM-PPL-01, NM-PPL-08
+describe("the people pages", () => {
+  const ana = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", name: "Ana Tan", job_title: "CEO", department: "Management", work_email: "ana@acme.example" };
+  const ben = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e62", name: "Ben Lim", preferred_name: "Benny", job_title: "Engineer", department: "Engineering", manager_id: ana.id, manager_name: "Ana Tan" };
+
+  it("lists everyone, filters by any word, and links a name only for the people team", async () => {
+    answer("GET /v1/people", { status: 200, body: { people: [ana, ben] } });
+    const { container, unmount } = render(<Directory roles={["employee"]} />);
+    await screen.findByText("Ben Lim");
+    expect(screen.queryByRole("link", { name: "Ben Lim" })).toBeNull();
+    expect(await violations(container)).toEqual([]);
+    unmount();
+    render(<Directory roles={["hr_officer"]} />);
+    expect((await screen.findByRole("link", { name: "Ben Lim" })).getAttribute("href")).toBe(`/people/${ben.id}`);
+    const filter = screen.getByLabelText("Find a person") as HTMLInputElement;
+    await userType(filter, "engin");
+    expect(screen.queryByRole("link", { name: "Ana Tan" })).toBeNull();
+    expect(screen.getByText("Ben Lim")).toBeTruthy();
+    await userType(filter, "nobody");
+    expect(await screen.findByText("No one matches that.")).toBeTruthy();
+  });
+
+  it("says so when nobody works here, and when the API cannot be reached", async () => {
+    answer("GET /v1/people", { status: 200, body: { people: [] } });
+    const { unmount } = render(<Directory roles={["hr_admin"]} />);
+    expect(await screen.findByText(/Nobody works here yet/)).toBeTruthy();
+    unmount();
+    answer("GET /v1/people", { status: 500, body: { code: "X" } });
+    render(<Directory roles={["hr_admin"]} />);
+    expect(await screen.findByRole("alert")).toBeTruthy();
+  });
+
+  it("shows a record with its job history and, only when the API sends it, the classification", async () => {
+    const rec = { id: ben.id, legal_name: "Ben Lim", preferred_name: "Benny", work_email: "ben@acme.example", employment_start: "2026-02-01", has_login: true,
+      jobs: [{ effective_from: "2026-02-01", effective_to: "2026-04-01", job_title: "Engineer", department: "Engineering", worksite: "SG", employment_type: "full_time" }, { effective_from: "2026-04-01", job_title: "Senior Engineer", worksite: "SG", employment_type: "full_time" }] };
+    answer(`GET /v1/people/${ben.id}`, { status: 200, body: { ...rec, classification: { contract_type: "service", ea_covered: true, part_iv_class: "none", residency: "permanent_resident", pr_start_date: "2090-01-01", birth_date: "1990-05-06" } } });
+    const { container, unmount } = render(<Person id={ben.id} roles={["hr_admin"]} />);
+    expect(await screen.findByRole("heading", { name: "Ben Lim (Benny)" })).toBeTruthy();
+    expect(screen.getAllByRole("row")).toHaveLength(3);
+    expect(screen.getByText("Current")).toBeTruthy();
+    expect(screen.getByText("Permanent resident")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    unmount();
+    answer(`GET /v1/people/${ben.id}`, { status: 200, body: rec });
+    render(<Person id={ben.id} roles={["line_manager"]} />);
+    await screen.findByRole("heading", { name: "Ben Lim (Benny)" });
+    expect(screen.queryByText("Legal classification")).toBeNull();
+    expect(screen.queryByText("Date of birth")).toBeNull();
+  });
+
+  it("does not say whether a person exists when the record is refused", async () => {
+    answer(`GET /v1/people/${ben.id}`, { status: 404, body: { code: "NM_PERSON_NOT_FOUND" } });
+    render(<Person id={ben.id} roles={["employee"]} />);
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toMatch(/no such person, or you may not see/);
+  });
+
+  it("finds the route of a path, the exact one before a parameter", () => {
+    expect(matchRoute("/people/directory")?.route.id).toBe("people-directory");
+    expect(matchRoute("/people")?.route.id).toBe("people-home");
+    expect(matchRoute(`/people/${ben.id}`)?.params.id).toBe(ben.id);
+    expect(matchRoute("/people/a/b")).toBeUndefined();
+    expect(matchRoute("/nowhere")).toBeUndefined();
+  });
+});
+
+// req: NM-FEAT-01, NM-FEAT-03
+describe("the feature switches", () => {
+  const list = { features: [
+    { id: "leave", name: "Leave", phase: "P1", state: "on", needs: [] },
+    { id: "payroll", name: "Payroll", phase: "P1", state: "off", needs: ["leave"] },
+    { id: "hiring", name: "Hiring", phase: "P2", state: "off", needs: [] },
+  ] };
+
+  it("lists each feature with its state and what it needs, and says which are later", async () => {
+    answer("GET /v1/features", { status: 200, body: list });
+    const { container } = render(<Features roles={["hr_admin"]} />);
+    await screen.findByText("Payroll");
+    expect(screen.getByText(/Built in P2/)).toBeTruthy();
+    expect(screen.getAllByRole("combobox")).toHaveLength(3);
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("shows the API's plain answer when a switch is refused, and applies one that is allowed", async () => {
+    answer("GET /v1/features", { status: 200, body: list });
+    answer("PUT /v1/features/payroll", { status: 409, body: { code: "NM_FEATURE_UNAVAILABLE", detail: "Payroll needs the Owner and a second approver to switch on." } });
+    render(<Features roles={["owner"]} />);
+    await screen.findByText("Payroll");
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Payroll: State"), { target: { value: "on" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Apply" })[1] as HTMLElement);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/second approver/);
+    answer("PUT /v1/features/hiring", { status: 204 });
+    fireEvent.change(screen.getByLabelText("Hiring: State"), { target: { value: "external" } });
+    fireEvent.change(screen.getByLabelText("Hiring: System that holds the data"), { target: { value: "Acme HR" } });
+    fireEvent.click(screen.getAllByRole("button", { name: "Apply" })[2] as HTMLElement);
+    await waitFor(() => expect(calls).toContain("PUT /v1/features/hiring"));
+  });
+
+  it("is read-only for someone who may only look, and says so when the API refuses the list", async () => {
+    answer("GET /v1/features", { status: 200, body: list });
+    const { unmount } = render(<Features roles={["hr_officer"]} />);
+    await screen.findByText("Payroll");
+    expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
+    for (const box of screen.getAllByRole("combobox")) expect((box as HTMLSelectElement).disabled).toBe(true);
+    unmount();
+    answer("GET /v1/features", { status: 403, body: { code: "NM_ROLE_REQUIRED" } });
+    render(<Features roles={["employee"]} />);
+    expect(await screen.findByRole("alert")).toBeTruthy();
+  });
+});
+
+// req: NM-PPL-01
+describe("adding a person", () => {
+  it("sends the form with a new ID and the first job, goes to the record, and shows the API's refusal in plain words", async () => {
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e62", name: "Ana Tan" }] } });
+    answer("POST /v1/people", { status: 422, body: { code: "NM_PERSON_INVALID", detail: "The legal name is required: enter it." } });
+    const { container } = render(<NewPerson roles={["hr_officer"]} />);
+    await screen.findByRole("option", { name: "Ana Tan" });
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Legal name"), { target: { value: "Ben Lim" } });
+    fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2026-02-01" } });
+    fireEvent.change(screen.getByLabelText("Job title"), { target: { value: "Engineer" } });
+    fireEvent.submit(container.querySelector("form.fy-stack") as HTMLFormElement);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/legal name is required/);
+    answer("POST /v1/people", { status: 201 });
+    fireEvent.submit(container.querySelector("form.fy-stack") as HTMLFormElement);
+    await waitFor(() => expect(window.location.pathname).toMatch(/^\/people\/[0-9a-f-]{36}$/));
+  });
+
+  it("says who may add people, and disables the button for anyone else", async () => {
+    answer("GET /v1/people", { status: 200, body: { people: [] } });
+    render(<NewPerson roles={["employee"]} />);
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Add person" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+// req: NM-PACK-02, NM-PACK-04, NM-PACK-07
+describe("the country pack and the leave policy", () => {
+  const pack = { packs: [{ id: "sg-people@2026.1", title: "Singapore people facts", effective_from: "2026-01-01", review_date: "2027-01-31", verifier: "none yet", accepted: false, researched_values: 2,
+    values: [{ table: "annual_leave", key: "1", status: "researched", decided: false }, { table: "timing", key: "salary_days_after_period", status: "researched", decided: true }],
+    sources: [{ id: "mom-paying-salary", title: "MOM: Paying salary", url: "https://www.mom.gov.sg/employment-practices/salary/paying-salary", section: "When to pay salary", retrieved: "2026-11-19", quote: "Within 7 days after the end of the salary period." }] }] };
+
+  it("shows each version's sources and researched values, and records a decision with a reason", async () => {
+    answer("GET /v1/packs", { status: 200, body: pack });
+    answer("POST /v1/packs/sg-people%402026.1/decisions", { status: 201 });
+    const { container } = render(<Packs roles={["hr_admin"]} />);
+    await screen.findByText("sg-people@2026.1");
+    expect(screen.getByText(/Within 7 days after the end/)).toBeTruthy();
+    expect(screen.getByText("Decided")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("annual_leave/1: Why your company uses it"), { target: { value: "We read MOM's page and it matches." } });
+    fireEvent.click(screen.getByRole("button", { name: "Record decision" }));
+    await waitFor(() => expect(calls).toContain("POST /v1/packs/sg-people%402026.1/decisions"));
+  });
+
+  it("offers no change to someone who may only read", async () => {
+    answer("GET /v1/packs", { status: 200, body: pack });
+    render(<Packs roles={["hr_officer"]} />);
+    await screen.findByText("sg-people@2026.1");
+    expect(screen.queryByRole("button", { name: "Record decision" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Accept this version" })).toBeNull();
+  });
+
+  it("sets a policy and shows the API's plain refusal naming each rule", async () => {
+    answer("GET /v1/policy", { status: 200, body: { in_force: false, rules: { annual_leave_days: [], sick_outpatient_days: [], sick_hospital_days: [], childcare_citizen_days: 0, extended_childcare_days: 0, childcare_non_citizen_days: 0 } } });
+    answer("GET /v1/checks", { status: 200, body: { findings: [{ check: 13, area: "Packs", status: "fail", subject: "sg-people@2026.1", message: "The company policy needs a researched value with no decision." }] } });
+    answer("PUT /v1/policy", { status: 422, body: { code: "NM_POLICY_BELOW_STATUTE", detail: "Annual leave in year 1 of service gives 6, below the statutory 7." } });
+    const { container } = render(<Policy roles={["hr_admin"]} />);
+    expect(await screen.findByText(/needs a researched value/)).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Starts on"), { target: { value: "2026-12-01" } });
+    fireEvent.change(screen.getByLabelText("Annual leave days by year of service"), { target: { value: "6" } });
+    fireEvent.change(screen.getByLabelText("Outpatient sick leave days at 3, 4, 5 and 6 months"), { target: { value: "5, 8, 11, 14" } });
+    fireEvent.change(screen.getByLabelText("Hospitalisation leave days at 3, 4, 5 and 6 months"), { target: { value: "15, 30, 45, 60" } });
+    for (const [label, v] of [["Childcare leave, citizen child under 7", "6"], ["Extended childcare leave, citizen child 7 to 12", "2"], ["Childcare leave, non-citizen child", "2"]]) fireEvent.change(screen.getByLabelText(label as string), { target: { value: v } });
+    fireEvent.submit(container.querySelector("form.fy-stack") as HTMLFormElement);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/below the statutory 7/);
   });
 });

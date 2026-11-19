@@ -458,6 +458,8 @@ func Load(fsys fs.FS, dir string) (Version, error) {
 		out = append(out, checkSDL(dir, v)...)
 	case "sg-shg":
 		out = append(out, checkSHG(dir, v)...)
+	case "sg-people":
+		out = append(out, checkPeople(dir, v)...)
 	}
 	if len(out) > 0 {
 		return Version{}, out

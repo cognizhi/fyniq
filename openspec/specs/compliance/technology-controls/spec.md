@@ -639,3 +639,16 @@ Source: PRD-001 §F.9
 #### Scenario: Framework mapping
 - **WHEN** the control is listed in the control registry
 - **THEN** it is mapped to SOC2 A1.2 and CC7.4
+
+### Requirement: CTL-NM-07 Pack values are verified before the first paid person
+Every pack value a Nemura calculation uses SHALL be verified by the publishers before the first paid person's leave or pay is calculated, and until then each calculation SHALL need the company's recorded decision (NM-PACK-07). The control is checked on the event, with the pack record, its verifier and its date kept as evidence.
+
+Source: PRD-001 §F.9
+
+#### Scenario: A live calculation needs an unverified value
+- **WHEN** a live calculation needs a pack value that is not verified
+- **THEN** Checks N.1 #13 lists it unless the company has recorded a decision, and the pack record keeps the verifier and the date once it is verified
+
+#### Scenario: Framework mapping
+- **WHEN** the control is listed in the control registry
+- **THEN** it is mapped to SOC2 PI1 and ISO 5.36
