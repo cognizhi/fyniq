@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The draft bill or claim.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What was drafted.",
+      "enum": [
+        "bill",
+        "claim"
+      ],
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "id"
+  ],
+  "title": "CaptureDraft",
+  "type": "object"
+}

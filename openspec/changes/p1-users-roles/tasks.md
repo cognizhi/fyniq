@@ -17,6 +17,10 @@
   for a person inherit it (`TestAPrincipalNamesItsPersonForTheDatabase`). Roles' own rights and limits were tested above.
   Field masking is the API's. **Left:** the department-qualified endpoints (reports, budgets, approvals by department) and
   documents' own lines; this task stays open until they are built.)
+  (20 Nov 2026, PRD-001 rev 0.374: the department-qualified P&L: `getFinancialStatement` admits a person whose view of the reports is their
+  department's (`authz.DeptOnly`) for the P&L only, the database adding up the lines of their scope's values; everything the
+  filter does not reach is refused. `TestADepartmentsApproverReadsTheirDepartmentsProfitAndLoss`. **Left:** the Approver's budgets
+  (C dept) and approvals by department (a bill's lines against the scope), documents' own lines; this task stays open.)
 - [x] 1.3 SOD-1…10, evaluated at action time from the record's history. Tests `// req: SOD-1` through `// req: SOD-10`, one conflict each, blocked in Standard mode
   (20 Oct 2026, provisional (PRD rev 0.42): SOD-6 is the conflict a combination of roles makes, derived from Appendix D
   (`authz.RoleConflicts`: the Administrator with any role holding P, A or R on a transaction row; the Owner role alone

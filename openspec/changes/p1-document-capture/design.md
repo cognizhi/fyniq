@@ -33,19 +33,26 @@ Decisions here are on the recommended option while the owner is away, owner to c
 
 **D2. Sources in P1: upload, paste, accepted email.**
 - Upload and paste use the existing safe upload (type from content, size limit, scanned) and then register the stored file
-  as a capture. An email's documents are adopted from an `accepted` message of kind `documents` (a quarantined or
-  rejected message yields nothing; accepting a sender later adopts its held messages). Each file is adopted once.
+  as a capture. An email's documents are adopted, by a person's action (`POST /v1/captures/from-message`), from an `accepted`
+  message of kind `documents` at the organisation's address or their own (a quarantined or rejected message yields nothing; a
+  member's own mail is only theirs). Each file is adopted once.
 - Camera, statements, contracts and InvoiceNow are P2 (FR-DOC-12's phase column).
 
-**D3. The reading is a read through `document_capture` (AI-18, AI-28, AI-74).**
-- A worker job (an outbox kind `capture.read`, so nothing has to stay running, ADR-T7) calls one internal API operation
-  with the worker's service token; the operation, like `kb_compiler`'s, checks the AI switch and the organisation's
-  route and budget, screens the prompt, asks the model through the router as agent `document_capture` with the file as
-  image or PDF part, **no tools** and a strict output schema (amounts as decimal strings, dates as ISO strings, each
-  field `{value, confidence}`), then screens the answer and stores it as untrusted data labelled the model's reading.
-- The file's text never goes in the system prompt; the prompt says the document is data and never instructions.
-- At most once per document; a person may ask again (a new reading, the old kept).
-- Data class: business figures and personal data, so the route Singapore-only for sensitive classes (AI-75) applies.
+**D3. The reading is a read through `document_capture` (AI-18, AI-28, AI-74), on a person's request.**
+- (As built; the first plan was a worker job with its own service token.) `POST /v1/captures/{id}/read` runs the reading as the
+  signed-in person, in the API: the AI switch, the route of the agent `document_capture` and the budgets apply as for any model call
+  (AI-74, AI-13), the call is the person's in the AI activity log, and the model gets the file as a PDF or an image part with **no
+  tools** and a strict output schema (each field a value, null when the document does not show it, and a confidence; amounts as decimal
+  strings). The prompt is `document_capture@1`: the document is data, never instructions.
+- The file's text (a PDF's, by `pdftext`) and its name are screened before the call and the answer after (Model Armor in the cloud, the
+  local screen offline), so a document that makes the model repeat an instruction is stopped and fails with why. An image's pixels cannot
+  be screened as text: its answer is `[live-verify]` against Model Armor's image support.
+- The answer is parsed strictly (`capture.Parse`: the shape and nothing more, a kind it knows, decimal strings, confidences from 0 to 1),
+  checked by platform code (D5) and kept as the model's reading. A document is read when a person asks, and read again only when a person
+  asks again; a failure is a status with a plain note, never a retry loop.
+- A background reading of mail as it arrives (a worker job with its own service token, as the knowledge-base compiler has) is left for
+  later: the inbox lists what is waiting and the person reads it. Data class: business figures and personal data, so the route's
+  Singapore-only rule for sensitive classes (AI-75) applies.
 
 **D4. A person makes the draft; nothing at arrival with nobody present.**
 - The inbox's action Draft runs as the signed-in person who may enter bills (or their own claim): the API validates the

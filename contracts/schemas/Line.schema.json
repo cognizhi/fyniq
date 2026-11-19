@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Text.schema.json"
+    },
+    "description": {
+      "$ref": "Text.schema.json"
+    },
+    "gst": {
+      "$ref": "Text.schema.json"
+    },
+    "gst_code": {
+      "$ref": "Text.schema.json"
+    },
+    "net": {
+      "$ref": "Text.schema.json"
+    }
+  },
+  "required": [
+    "description",
+    "net",
+    "gst_code",
+    "gst",
+    "amount"
+  ],
+  "title": "Line",
+  "type": "object"
+}

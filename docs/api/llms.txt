@@ -180,6 +180,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/cap-table/acra-reconciliation` (getAcraReconciliation): Get the register against ACRA's
 - `GET /v1/cap-table/export` (exportCapTable): Export the cap table
 - `GET /v1/cap-table/statutory-tests` (getStatutoryTests): Get the cap table's statutory tests
+- `GET /v1/captures` (listCaptures): List the document inbox
+- `POST /v1/captures` (captureDocument): Capture a bill or a receipt
+- `POST /v1/captures/from-message` (captureFromMessage): Capture a file of accepted mail
+- `GET /v1/captures/{capture_id}` (getCapture): Get a captured document
+- `POST /v1/captures/{capture_id}/bill` (draftBillFromCapture): Make a draft bill from a read document
+- `POST /v1/captures/{capture_id}/claim` (draftClaimFromCapture): Make a draft expense claim from a read receipt
+- `POST /v1/captures/{capture_id}/dismiss` (dismissCapture): Dismiss a captured document
+- `GET /v1/captures/{capture_id}/file` (getCaptureFile): Download a captured file
+- `POST /v1/captures/{capture_id}/read` (readCapture): Have the model read a captured document
 - `GET /v1/card-lines` (listCardLines): List the lines of your company cards
 - `POST /v1/card-lines/{line_id}/complete` (completeCardLine): Complete a line of your company card
 - `GET /v1/card-lines/{line_id}/evidence` (listCardLineEvidence): List the receipts of a line of your company card

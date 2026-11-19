@@ -21154,6 +21154,229 @@ A pack's values in force on a day (ENG-31): from the organisation's active versi
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`
 
+## Document inbox
+
+Bills and receipts captured by upload, paste or accepted email, read by the model into a reading a person checks, and drafted by a person; the AI reads and writes nothing (FR-DOC-12, FR-DOC-14, FR-AP-04, FR-AP-12).
+
+### `GET /v1/captures`
+
+**List the document inbox** (`listCaptures`)
+
+The captured files the caller may see, newest first: the organisation's and the caller's own, never another member's (FR-DOC-14), each with its status and, once read, the model's reading apart from the file. Read-only; no side effects.
+
+- **Permission:** View on Bills, vendor credits
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `status` (query): Only captures in this status.
+- **Responses:**
+  - `200` OK [`DocumentCapturePage`](../../contracts/schemas/DocumentCapturePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/captures`
+
+**Capture a bill or a receipt** (`captureDocument`)
+
+Adds a file to the document inbox (FR-DOC-12, FR-DOC-14): an upload or a paste, checked as any upload is (its type from its content, a malware scan, image metadata stripped, FR-DOC-08), kept in the staging store with its hash. The same file already in the inbox is a duplicate of it, with a link, and is not read again. Nothing is read or drafted here: readCapture asks the model, and draftBillFromCapture or draftClaimFromCapture makes a draft. Side effects: the capture and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Bills, vendor credits. Adds a file to the document inbox. The AI and MCP clients capture nothing: a person uploads or pastes it, or adopts a file of accepted mail.
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`DocumentCapture`](../../contracts/schemas/DocumentCapture.schema.json)
+  - `201` Created [`DocumentCapture`](../../contracts/schemas/DocumentCapture.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-RATE-01`, `API-UNAVAILABLE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/captures/from-message`
+
+**Capture a file of accepted mail** (`captureFromMessage`)
+
+Adopts an attachment of accepted mail into the document inbox (FR-DOC-12, FR-INT-22): from the organisation's email-in address, or from the caller's own. A quarantined or rejected message is never captured, and a member's own mail is only theirs to adopt; any other is EML-10. The file is checked again as any upload is, and each attachment is adopted once. Side effects: the capture and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Bills, vendor credits. Adopts a file of accepted mail at the organisation's, or the caller's own, email-in address into the document inbox.
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`CaptureFromMessage`](../../contracts/schemas/CaptureFromMessage.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`DocumentCapture`](../../contracts/schemas/DocumentCapture.schema.json)
+  - `201` Created [`DocumentCapture`](../../contracts/schemas/DocumentCapture.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EML-10` Not an attachment of accepted mail at your own address.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `EML-10`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/captures/{capture_id}`
+
+**Get a captured document** (`getCapture`)
+
+A captured file with the model's reading, its confidences and the platform's checks, apart from the file, and the supplier contact it matches. The reading is data to check against the document: it never decides a figure or a GST eligibility. Read-only; no side effects.
+
+- **Permission:** View on Bills, vendor credits
+- **Parameters:**
+  - `capture_id` (path, required): The capture's ID.
+- **Responses:**
+  - `200` OK [`DocumentCapture`](../../contracts/schemas/DocumentCapture.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/captures/{capture_id}/bill`
+
+**Make a draft bill from a read document** (`draftBillFromCapture`)
+
+Saves a draft bill from a read document, from the bill as the caller corrected it (FR-AP-04, FR-AP-12): the same draft, checks and audit as saveBill, made as the caller, with the file attached to it as its evidence and the capture marked drafted. Nothing is posted: the bill follows its approval policy when a person posts it (AI-30), and its input tax stays as the caller's facts decide (FR-AP-20), never from an extracted amount (G4-029). A bill that duplicates one (the same supplier, number and total within 60 days) is refused unless duplicate_reason says why (CAP-02). Side effects: the draft bill, its evidence, the capture's status and their audit events. Needs If-Match with the capture's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing.
+
+- **Permission:** Create on Bills, vendor credits. Makes a draft bill from a read document, as the caller, from the reading as they corrected it. The AI and MCP clients only propose a draft (ap.draft_bill).
+- **Parameters:**
+  - `capture_id` (path, required): The capture's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`CaptureBillDraft`](../../contracts/schemas/CaptureBillDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`CaptureDrafted`](../../contracts/schemas/CaptureDrafted.schema.json)
+  - `201` Created [`CaptureDrafted`](../../contracts/schemas/CaptureDrafted.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAP-01` The document is not in a state that allows that; `CAP-02` The bill duplicates one already entered.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `CAP-01`, `CAP-02`
+
+### `POST /v1/captures/{capture_id}/claim`
+
+**Make a draft expense claim from a read receipt** (`draftClaimFromCapture`)
+
+Saves the caller's own draft claim from a read receipt, from the claim as they corrected it (FR-DOC-12): the same draft, checks and audit as createExpenseClaim, with the file attached to the claim as its evidence and the capture marked drafted. Nothing is submitted: the claimant submits it and another person approves it (FR-AP-17). The claimant is always the caller. Side effects: the draft claim, its evidence, the capture's status and their audit events. Needs If-Match with the capture's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing.
+
+- **Permission:** Create on Expense claims. Makes the caller's own draft claim from a read receipt.
+- **Parameters:**
+  - `capture_id` (path, required): The capture's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`ExpenseClaimDraft`](../../contracts/schemas/ExpenseClaimDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`CaptureDrafted`](../../contracts/schemas/CaptureDrafted.schema.json)
+  - `201` Created [`CaptureDrafted`](../../contracts/schemas/CaptureDrafted.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAP-01` The document is not in a state that allows that.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `CAP-01`, `CLAIM-09`
+
+### `POST /v1/captures/{capture_id}/dismiss`
+
+**Dismiss a captured document** (`dismissCapture`)
+
+Ends a document nobody will draft, with a reason (FR-DOC-14): a dismissal is a status, and the file is kept as captured files are. A drafted or dismissed document is final. Side effects: the status and its audit event. Needs If-Match with the capture's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Bills, vendor credits
+- **Parameters:**
+  - `capture_id` (path, required): The capture's ID.
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`CaptureDismissal`](../../contracts/schemas/CaptureDismissal.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`DocumentCapture`](../../contracts/schemas/DocumentCapture.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAP-01` The document is not in a state that allows that; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `CAP-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/captures/{capture_id}/file`
+
+**Download a captured file** (`getCaptureFile`)
+
+The file as captured, as an attachment named file_name and of its type, never shown inline and never cached: it is untrusted data (AI-18), shown beside the reading so a person can check it. Read-only; no side effects.
+
+- **Permission:** View on Bills, vendor credits. Downloads the captured file as an attachment, never shown inline: it is untrusted (AI-18).
+- **Parameters:**
+  - `capture_id` (path, required): The capture's ID.
+- **Responses:**
+  - `200` The file itself, of its captured type, as an attachment with its name.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`
+
+### `POST /v1/captures/{capture_id}/read`
+
+**Have the model read a captured document** (`readCapture`)
+
+Asks the model to read the file (FR-DOC-12, AI-28), as the caller, through the route of the agent document_capture, the AI switch and the budgets applying (AI-74, AI-13): the file goes as a PDF or an image part with no tools and a strict output schema, its text screened first when it has any and the answer screened after (AI-18). The reading comes back with each field's confidence and the platform's checks, as data labelled the model's, and nothing is drafted or changed. Only a PDF or a photo is read; a document read already is read again only on request. A failure is a status with why, never a retry loop. Side effects: the model call's record in the AI activity log and the capture's reading with its audit event. Needs If-Match with the capture's ETag.
+
+- **Permission:** Create on Bills, vendor credits. Asks the model to read the document, as the caller, within the AI switch and the budgets: a read, with no write (AI-18, AI-28).
+- **Parameters:**
+  - `capture_id` (path, required): The capture's ID.
+  - `If-Match` (header): The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+- **Responses:**
+  - `200` OK [`DocumentCapture`](../../contracts/schemas/DocumentCapture.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `CAP-01` The document is not in a state that allows that; `STORAGE-LOCK-01` Another change is in progress.
+  - `412` Precondition Failed: `API-IF-MATCH-01` The record changed.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `CAP-03` That kind of file cannot be read; `CAP-04` The document could not be read.
+  - `428` Precondition Required: `API-IF-MATCH-02` If-Match required.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `API-UNAVAILABLE-01`, `CAP-01`, `CAP-03`, `CAP-04`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ## Evidence
 
 Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07).
