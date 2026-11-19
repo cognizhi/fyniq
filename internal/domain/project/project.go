@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/rounding"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -27,6 +28,8 @@ const (
 	CodePeople   = "PRJ-07" // a person who is not an active member, named twice, or a project with no manager
 	CodeTask     = "PRJ-08" // a task name that is empty, too long or another live task's
 	CodeOff      = "PRJ-09" // Projects and time are switched off (FR-ORG-06)
+	CodeMarkup   = "PRJ-10" // a markup that is not a percentage from 0 to 999.99, or on a line that is not billable
+	CodeLine     = "PRJ-11" // a billable or marked-up line that carries no project, or a project that is closed or not a project
 )
 
 // MaxBudgetMinutes is the largest hours budget, as the database keeps it.
@@ -216,4 +219,19 @@ func day(s string) (*time.Time, error) {
 		return nil, err
 	}
 	return &t, nil
+}
+
+// CheckBillableLine says what is wrong with a line's billing on to a customer (FR-PRJ-08): a markup is a percentage from 0 to 999.99, it
+// belongs to a billable line, and a billable line carries a project value; nil when it is fine. field names the line, such as
+// "body.lines[1]".
+func CheckBillableLine(field string, billable bool, markup string, hasProject bool) *Problem {
+	switch {
+	case markup != "" && !rounding.IsMarkup(markup):
+		return &Problem{CodeMarkup, field + ".markup_percent", fmt.Sprintf("%q is not a percentage from 0 to 999.99 with at most two decimals", markup), "Enter the markup as a percentage, such as 10 or 12.5"}
+	case markup != "" && !billable:
+		return &Problem{CodeMarkup, field + ".markup_percent", "a markup belongs to a billable line", "Mark the line billable, or leave the markup out"}
+	case billable && !hasProject:
+		return &Problem{CodeLine, field + ".billable", "a billable line names the project it is billed for", "Choose the project's value in the line's dimensions, or clear billable"}
+	}
+	return nil
 }

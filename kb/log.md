@@ -633,6 +633,11 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-18] edit | added aliases for users' own wording to 17 pages after the QA-AI-06 retrieval baseline (a retrieval miss is fixed in the compile step, AI-58)
 
 ## [2026-11-19] compile | docs/user-guide/knowledge-base.md, docs/user-guide/ai-settings.md → settings.ai-knowledge-base, settings.ai (the knowledge-base administration page and its link)
+
 ## [2026-11-19] compile | docs/user-guide/projects-projects.md → projects.projects (the projects screens, p1-projects slice 1)
 
 ## [2026-11-19] compile | docs/user-guide/knowledge-base.md → settings.ai-knowledge-base (an overlay is flagged when Fyniq changes the page it replaces)
+
+## [2026-11-19] compile | docs/user-guide/projects-time.md → projects.time (time entry, timer and approval, p1-projects slice 2)
+
+## [2026-11-19] compile | docs/user-guide/projects-rates.md → projects.rates (rates and time at cost, p1-projects slice 3)

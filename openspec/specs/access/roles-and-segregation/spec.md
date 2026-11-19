@@ -1177,6 +1177,19 @@ Source: PRD-001 §D
 - **WHEN** a role acts on project reports and cost rates
 - **THEN** the Administrator, the Bookkeeper, the AP specialist, the Payment releaser, the Employee, the Board viewer and the Compliance officer / DPO have no right over it (—)
 
+### Requirement: Permission matrix: Project cost rates, person level
+In Standard mode, each role SHALL hold only the rights over project cost rates, person level, that the permission matrix gives it.
+
+Source: PRD-001 §D
+
+#### Scenario: Create or prepare
+- **WHEN** a role acts on project cost rates, person level
+- **THEN** the Owner and the Payroll administrator can create or prepare (C)
+
+#### Scenario: No access
+- **WHEN** a role acts on project cost rates, person level
+- **THEN** every other role and the AI assistant have no right over it (—)
+
 ### Requirement: Permission matrix: Bank data, payment-provider and ticketing connections
 In Standard mode, each role SHALL hold only the rights over bank data, payment-provider and ticketing connections that the permission matrix gives it.
 
