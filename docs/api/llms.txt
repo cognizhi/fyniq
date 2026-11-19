@@ -841,6 +841,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/payment-providers/events` (listPaymentProviderEvents): List the payment providers' webhook events
 - `POST /v1/payment-providers/events/{event_id}/resolution` (resolvePaymentProviderEvent): Mark a parked provider event as dealt with
 - `GET /v1/payment-providers/payouts` (listPaymentProviderPayouts): List the payment providers' payouts
+- `GET /v1/people-link` (getPeopleLink): Show the link to the people platform and where each feature lives
+- `POST /v1/people-link` (requestPeopleLink): Ask to link the organisation to a Nemura organisation
+- `POST /v1/people-link/hold-events` (receivePeopleHoldEvent): Receive a tax-clearance hold event from Nemura
+- `POST /v1/people-link/projection-events` (receivePeopleProjectionEvent): Receive a person or bank-details event from Nemura
+- `POST /v1/people-link/unlink` (requestPeopleUnlink): Ask to end the link to the people platform
 - `GET /v1/periods` (listPeriods): List the periods
 - `GET /v1/periods/{period_id}` (getPeriod): Get a period
 - `POST /v1/periods/{period_id}/accountant-review` (openAccountantReview): Open the accountant's review of a closed month

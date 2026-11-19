@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "header": {
+      "$ref": "PeopleLinkHeader.schema.json"
+    },
+    "payload": {
+      "additionalProperties": {},
+      "description": "The event's data: only the fields PRD-002 Appendix E lists for its type.",
+      "type": "object"
+    },
+    "signature": {
+      "description": "Ed25519 over the canonical header, base64url without padding, with the link key (contracts/peoplelink).",
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "header",
+    "signature",
+    "payload"
+  ],
+  "title": "PeopleLinkEvent",
+  "type": "object"
+}

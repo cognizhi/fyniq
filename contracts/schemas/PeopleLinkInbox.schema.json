@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "count": {
+      "description": "How many.",
+      "format": "int64",
+      "type": "integer"
+    },
+    "last_at": {
+      "description": "When the last arrived.",
+      "format": "date-time",
+      "type": "string"
+    },
+    "outcome": {
+      "description": "What became of them.",
+      "enum": [
+        "applied",
+        "ignored_older",
+        "refused"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "outcome",
+    "count"
+  ],
+  "title": "PeopleLinkInbox",
+  "type": "object"
+}

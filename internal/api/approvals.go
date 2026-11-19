@@ -837,6 +837,15 @@ func (a *API) envelopeOf(ctx context.Context, u storage.UnitOfWork, org uuid.UUI
 		for k, v := range deps {
 			e.Dependencies[k] = v
 		}
+	case approval.ObjectPeopleLink: // the link's state and epoch, "none" before it exists (FR-PPL-16)
+		version, deps, err := peopleLinkDependencies(ctx, u)
+		if err != nil {
+			return nil, err
+		}
+		e.ObjectVersion = version
+		for k, v := range deps {
+			e.Dependencies[k] = v
+		}
 	case approval.ObjectAIProposal: // the proposal's status and payload's hash (AI-P5)
 		version, deps, err := aiProposalDependencies(ctx, u, c.ObjectKey)
 		if err != nil {
@@ -1981,6 +1990,8 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 		return a.executeKBPublication(ctx, u, r, s, signer)
 	case approval.OpAPIClientCreate: // FR-INT-02: the integration client registered with the OAuth server, then recorded
 		return a.executeAPIClient(ctx, u, r, s)
+	case approval.OpPeopleLink, approval.OpPeopleUnlink: // FR-PPL-01, FR-PPL-16: the link made, or ended once its work in flight is settled
+		return a.executePeopleLink(ctx, u, r, s)
 	case approval.OpAPIClientReclass: // FR-INT-02: the personal access token reclassed from agent to integration
 		return a.executePersonalReclass(ctx, u, r, s)
 	case approval.OpAIProposalExecute: // AI-P5: Approved, and queued for the executor, which runs it as the approver

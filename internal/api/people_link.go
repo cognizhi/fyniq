@@ -1,0 +1,612 @@
+package api
+
+import (
+	"bytes"
+	"context"
+	"crypto/ed25519"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"slices"
+	"time"
+
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
+
+	"github.com/cognizhi/fyniq/internal/authn"
+	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/apiclient"
+	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
+	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
+)
+
+// ------------------------------------------------------------------ the link to Nemura (PRD-001 §8.26, FR-PPL-01, 06, 15, 16; p1-payroll-link)
+//
+// Settings → People and HR shows where each feature lives and the link's state, epoch and health (FR-PPL-01, FR-PPL-08). Linking and
+// unlinking are dual controlled: an Admin or the Owner asks, the Owner and a second approver approve (golden rule 6), and only then is the
+// link's client registered with the OAuth server and the link recorded. Nemura calls back with that client, holding Appendix E's scopes and
+// nothing else, and every event it sends is an envelope signed with the link key (FR-PPL-15): the receiving operations check the
+// envelope against the link as Fyniq holds it, never against anything the message carries, apply the event once, and keep an older
+// version of a person from undoing a newer one. A pay or bank detail never reaches a log, the inbox or a task.
+
+// The codes of the link's own refusals.
+const (
+	CodeNoLink      = "PPL-07" // the organisation has no active link
+	CodeLinkClient  = "PPL-08" // the call did not come through the link's client
+	CodeLinkMinimum = "PPL-09" // the payload carries a field Appendix E does not list
+	CodeLinkExists  = "PPL-10" // the organisation is linked already
+)
+
+// linkFixes say how to fix each of the link's refusals (ENG-23).
+var linkFixes = map[string]string{
+	peoplelink.CodeMalformed: "Send the envelope of PRD-002 NM-INT-10 with a payload in the shape of the event's schema",
+	peoplelink.CodeSignature: "Sign the header with the link key the organisation approved",
+	peoplelink.CodeDigest:    "Send the payload whose canonical SHA-256 the signed header carries",
+	peoplelink.CodeReplay:    "Sign the event again with a current time and send it within 5 minutes",
+	peoplelink.CodeEpoch:     "Send the link's current epoch, shown on getPeopleLink",
+	peoplelink.CodeOrg:       "Send the event from the linked Nemura organisation to this organisation",
+	CodeLinkMinimum:          "Send only the fields Appendix E lists: never NRIC or FIN, medical, disciplinary or review data",
+}
+
+func linkRefusal(code, detail string) *Problem { return problem(code, detail, linkFixes[code]) }
+
+// PeopleLinkSource is where one feature lives (FR-PPL-01).
+type PeopleLinkSource struct {
+	Feature       string    `json:"feature" enum:"records,payroll,leave,letters" doc:"The feature."`
+	Source        string    `json:"source" enum:"nemura,external,none" doc:"Where it lives: Nemura, an external system, or nowhere (payroll posted by manual journal)."`
+	EffectiveFrom string    `json:"effective_from" format:"date" doc:"The day it started there; the start day of a change of source (FR-PPL-16)."`
+	SetAt         time.Time `json:"set_at" doc:"When it was set."`
+}
+
+// PeopleLinkInbox counts the events the link received by outcome (FR-PPL-08).
+type PeopleLinkInbox struct {
+	Outcome string     `json:"outcome" enum:"applied,ignored_older,refused" doc:"What became of them."`
+	Count   int        `json:"count" doc:"How many."`
+	LastAt  *time.Time `json:"last_at,omitempty" doc:"When the last arrived."`
+}
+
+// PeopleLink is the organisation's link to the people platform and where each feature lives.
+type PeopleLink struct {
+	State                string             `json:"state" enum:"none,active,suspended,unlinking,unlinked" doc:"none: never linked; unlinked is final, and a later link starts at a higher epoch."`
+	Epoch                int                `json:"epoch,omitempty" doc:"The link's epoch: every event carries it and an earlier one is refused (FR-PPL-16)."`
+	NemuraOrganisationID string             `json:"nemura_organisation_id,omitempty" format:"uuid" doc:"The Nemura organisation it is linked to."`
+	ClientID             string             `json:"client_id,omitempty" format:"uuid" doc:"The API client Nemura calls with: its scopes are Appendix E's and no other."`
+	Version              int                `json:"version,omitempty" doc:"The link's version."`
+	LinkedAt             *time.Time         `json:"linked_at,omitempty" doc:"When it was linked."`
+	Sources              []PeopleLinkSource `json:"sources" nullable:"false" doc:"Where each feature lives now."`
+	Inbox                []PeopleLinkInbox  `json:"inbox" nullable:"false" doc:"The events received, by outcome."`
+}
+
+// PeopleLinkRequest asks to link the organisation to a Nemura organisation.
+type PeopleLinkRequest struct {
+	NemuraOrganisationID string         `json:"nemura_organisation_id" format:"uuid" doc:"The Nemura organisation to link to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
+	LinkKey              string         `json:"link_key" minLength:"43" maxLength:"43" doc:"Nemura's Ed25519 public key for the link's envelopes, 32 bytes as base64url without padding: shown on Nemura's link page. Every event is checked against it." example:"EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE"`
+	ClientName           string         `json:"client_name" minLength:"1" maxLength:"80" doc:"The name of the client Nemura calls with." example:"Nemura link"`
+	ClientPublicKey      map[string]any `json:"client_public_key" doc:"The public half of the key Nemura's client signs its private_key_jwt assertions with, as a JWK: an EC P-256 key or an RSA key of 2048 bits or more. Never the private key."`
+	ExpiresAt            time.Time      `json:"expires_at" doc:"When the client stops, within a year (SEC-07); link again before then." example:"2027-11-17T00:00:00Z"`
+	Features             []string       `json:"features" minItems:"1" maxItems:"4" uniqueItems:"true" enum:"records,payroll,leave,letters" doc:"The features that live in Nemura from now on: Fyniq never loads them itself (FR-PPL-01)."`
+}
+
+// PeopleUnlinkRequest asks to end the link.
+type PeopleUnlinkRequest struct {
+	Reason string `json:"reason" minLength:"1" maxLength:"500" doc:"Why the link ends, for the access review." example:"The company moved to another payroll provider."`
+}
+
+// PeopleLinkHeader is the header of an envelope (PRD-002 NM-INT-10): what the event says about itself, signed with the link key.
+type PeopleLinkHeader struct {
+	EventID            string `json:"event_id" format:"uuid" doc:"The event's ID: a repeat does nothing."`
+	Type               string `json:"type" doc:"The event type, such as people.person.upserted." example:"people.person.upserted"`
+	SchemaVersion      int    `json:"schema_version" minimum:"1" doc:"The payload schema's version."`
+	SourceSystem       string `json:"source_system" enum:"nemura" doc:"The sending system."`
+	SourceOrganisation string `json:"source_organisation" format:"uuid" doc:"The Nemura organisation."`
+	TargetOrganisation string `json:"target_organisation" format:"uuid" doc:"This organisation."`
+	Epoch              int    `json:"epoch" minimum:"1" doc:"The link's epoch; an earlier or a later one is refused."`
+	Sequence           int64  `json:"sequence" minimum:"0" doc:"The sender's running number on this link, for gap repair and the reconciliation checkpoint."`
+	ObjectType         string `json:"object_type" minLength:"1" maxLength:"50" doc:"The kind of object the event is about."`
+	ObjectID           string `json:"object_id" minLength:"1" maxLength:"100" doc:"The object's ID."`
+	ObjectVersion      int    `json:"object_version" minimum:"1" doc:"The object's version: an older one than applied is ignored."`
+	EffectiveAt        string `json:"effective_at" format:"date-time" doc:"When the change took effect, RFC 3339 in UTC."`
+	RecordedAt         string `json:"recorded_at" format:"date-time" doc:"When the sender recorded it."`
+	SignedAt           string `json:"signed_at" format:"date-time" doc:"When it was signed: more than 5 minutes from now is refused."`
+	CorrelationID      string `json:"correlation_id" format:"uuid" doc:"Ties the event to its cause."`
+	PayloadSHA256      string `json:"payload_sha256" pattern:"^[0-9a-f]{64}$" doc:"The SHA-256 of the payload's canonical JSON (contracts/peoplelink)."`
+}
+
+// PeopleLinkEvent is an event or call between the apps: the envelope of NM-INT-10.
+type PeopleLinkEvent struct {
+	Header    PeopleLinkHeader `json:"header"`
+	Signature string           `json:"signature" minLength:"1" maxLength:"200" doc:"Ed25519 over the canonical header, base64url without padding, with the link key (contracts/peoplelink)."`
+	Payload   map[string]any   `json:"payload" doc:"The event's data: only the fields PRD-002 Appendix E lists for its type."`
+}
+
+// PeopleLinkReceipt says what became of an event.
+type PeopleLinkReceipt struct {
+	EventID string `json:"event_id" format:"uuid" doc:"The event's ID."`
+	Outcome string `json:"outcome" enum:"applied,ignored_older,duplicate" doc:"applied; ignored_older: a version no newer than the one applied, recorded and changing nothing; duplicate: the event ID was received before."`
+}
+
+type (
+	peopleLinkOutput struct {
+		Body PeopleLink
+	}
+	peopleLinkRequestInput struct {
+		KeyHeader
+		PreferHeader
+		Body PeopleLinkRequest
+	}
+	peopleUnlinkRequestInput struct {
+		KeyHeader
+		PreferHeader
+		Body PeopleUnlinkRequest
+	}
+	peopleLinkAskOutput struct {
+		Status   int
+		Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+		Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
+		Body     Approval
+	}
+	peopleEventInput struct {
+		RawBody []byte
+		Body    PeopleLinkEvent
+	}
+	peopleEventOutput struct{ Body PeopleLinkReceipt }
+)
+
+// linkFeatures are the features People and HR settings place.
+var linkFeatures = []string{storage.FeatureRecords, storage.FeaturePayroll, storage.FeatureLeave, storage.FeatureLetters}
+
+func peopleLinkOut(l storage.PeopleLinkRow, ok bool, sources []storage.PeopleSource, inbox []storage.InboxCount) PeopleLink {
+	out := PeopleLink{State: "none", Sources: []PeopleLinkSource{}, Inbox: []PeopleLinkInbox{}}
+	if ok {
+		linked := l.CreatedAt
+		out.State, out.Epoch, out.NemuraOrganisationID, out.Version, out.LinkedAt = l.State, l.Epoch, l.NemuraOrganisationID.String(), l.Version, &linked
+		if l.ClientID != uuid.Nil {
+			out.ClientID = l.ClientID.String()
+		}
+	}
+	for _, f := range linkFeatures { // every feature shows where it lives: nowhere until a source is set
+		src := PeopleLinkSource{Feature: f, Source: storage.SourceNone}
+		for _, s := range sources {
+			if s.Feature == f {
+				src = PeopleLinkSource{Feature: f, Source: s.Source, EffectiveFrom: s.EffectiveFrom.Format(time.DateOnly), SetAt: s.SetAt}
+			}
+		}
+		out.Sources = append(out.Sources, src)
+	}
+	for _, c := range inbox {
+		row := PeopleLinkInbox{Outcome: c.Outcome, Count: c.N}
+		if !c.LastAt.IsZero() {
+			t := c.LastAt
+			row.LastAt = &t
+		}
+		out.Inbox = append(out.Inbox, row)
+	}
+	return out
+}
+
+func registerPeopleLink(a *API) {
+	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
+
+	register(a, authz.GetPeopleLink, huma.Operation{
+		OperationID: "getPeopleLink", Method: http.MethodGet, Path: "/v1/people-link", Tags: []string{"People"},
+		Summary: "Show the link to the people platform and where each feature lives",
+		Description: "Settings → People and HR (FR-PPL-01, FR-PPL-08): where each feature (people records, payroll, leave, letters) lives, whether the " +
+			"organisation is linked to a Nemura organisation, the link's state and epoch, and how many events the link received by outcome " +
+			"(applied, ignored as older, refused). Never a key or a token. Read-only; no side effects.",
+	}, locks, func(ctx context.Context, _ *struct{}) (*peopleLinkOutput, error) {
+		p, _ := authn.From(ctx)
+		var out PeopleLink
+		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			sources, err := u.PeopleLinks().Sources(ctx)
+			if err != nil {
+				return err
+			}
+			l, err := u.PeopleLinks().Live(ctx)
+			if errors.Is(err, ports.ErrNotFound) {
+				out = peopleLinkOut(storage.PeopleLinkRow{}, false, sources, nil)
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			inbox, err := u.PeopleLinks().InboxCounts(ctx, l.ID)
+			out = peopleLinkOut(l, true, sources, inbox)
+			return err
+		})
+		return &peopleLinkOutput{Body: out}, err
+	})
+
+	register(a, authz.RequestPeopleLink, huma.Operation{
+		OperationID: "requestPeopleLink", Method: http.MethodPost, Path: "/v1/people-link", Tags: []string{"People"}, DefaultStatus: http.StatusAccepted,
+		Summary: "Ask to link the organisation to a Nemura organisation",
+		Description: "Asks to link the organisation to a Nemura organisation (FR-PPL-01, FR-PPL-16, PRD-002 NM-ARC-04): you give Nemura's link key (the " +
+			"public key every event is checked against), the public key of the client Nemura calls with, its expiry within a year, and the " +
+			"features that live in Nemura. It is dual controlled (golden rule 6): the answer is the approval request, which the Owner approves " +
+			"with a second approver; only then is the client registered with the OAuth server, holding Appendix E's scopes and no other, and the " +
+			"link recorded at the next epoch with each feature's source. Fyniq never loads a feature that lives in Nemura. Side effects: the " +
+			"approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. Needs a " +
+			"person signed in with step-up. On the never-list for the AI and MCP (§9.6).",
+	}, append(append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeSessionRequired, CodeStepUpRequired, CodeUnavailable,
+		approval.CodePending, CodeLinkExists, CodeInvalid, apiclient.CodeName, apiclient.CodeExpiry, apiclient.CodeKey}, locks...), storage.CodePeopleLink), func(ctx context.Context, in *peopleLinkRequestInput) (*peopleLinkAskOutput, error) {
+		if a.deps.OAuthClients == nil || a.deps.APIAudience == "" {
+			return nil, problem(CodeUnavailable, "This installation has no OAuth server configured, so it cannot link to the people platform.",
+				"Ask the operator to configure the OAuth server (FYNIQ_OAUTH_ADMIN_URL and FYNIQ_API_AUDIENCE).")
+		}
+		org, err := parseID("body.nemura_organisation_id", in.Body.NemuraOrganisationID)
+		if err != nil {
+			return nil, err
+		}
+		key, err := linkKey(in.Body.LinkKey)
+		if err != nil {
+			return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.link_key", Message: err.Error(), Fix: "Copy the link key from Nemura's link page: 32 bytes as base64url, 43 characters"}})
+		}
+		for _, f := range in.Body.Features {
+			if !slices.Contains(linkFeatures, f) {
+				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.features", Message: fmt.Sprintf("%q is not a feature", f), Fix: "Choose records, payroll, leave or letters"}})
+			}
+		}
+		clientKey, err := json.Marshal(in.Body.ClientPublicKey)
+		if err != nil || len(in.Body.ClientPublicKey) == 0 {
+			clientKey = nil
+		}
+		now := a.deps.Clock.Now()
+		checked, err := apiclient.CheckLink(apiclient.Link{Name: in.Body.ClientName, ExpiresAt: in.Body.ExpiresAt, Key: clientKey}, now)
+		if err != nil {
+			return nil, clientProblem(err)
+		}
+		public, err := apiclient.PublicJWK(clientKey, checked.Alg)
+		if err != nil {
+			return nil, err
+		}
+		p, _ := authn.From(ctx)
+		features := slices.Clone(in.Body.Features)
+		slices.Sort(features)
+		resp, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
+			if _, err := u.PeopleLinks().Live(ctx); err == nil {
+				return Approval{}, problem(CodeLinkExists, "The organisation is linked already.", "Unlink first, then link again: a link is never changed in place.")
+			} else if !errors.Is(err, ports.ErrNotFound) {
+				return Approval{}, err
+			}
+			change := map[string]any{"id": uuid.NewString(), "nemura_organisation_id": org.String(), "link_key": base64.RawURLEncoding.EncodeToString(key),
+				"client_name": checked.Name, "client_public_key": string(public), "alg": checked.Alg, "key_thumbprint": checked.Thumbprint,
+				"expires_at": checked.ExpiresAt.UTC().Format(time.RFC3339), "features": anyList(features)}
+			diff := []ApprovalDiff{{Field: "nemura_organisation_id", After: org.String()}, {Field: "features in Nemura", After: fmt.Sprint(features)},
+				{Field: "scopes", After: fmt.Sprint(apiclient.LinkScopes)}, {Field: "client key thumbprint", After: checked.Thumbprint},
+				{Field: "expires_at", After: checked.ExpiresAt.UTC().Format(time.RFC3339)}}
+			return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectPeopleLink, ObjectKey: p.Organisation.String(), Operation: approval.OpPeopleLink,
+				Summary: "Link the organisation to the Nemura organisation " + org.String(), Execute: change, Diff: diff})
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &peopleLinkAskOutput{Status: resp.Status, Replayed: replayedHeader(resp.Replayed), Applied: applied(resp), Body: resp.Body}, nil
+	})
+
+	register(a, authz.RequestPeopleUnlink, huma.Operation{
+		OperationID: "requestPeopleUnlink", Method: http.MethodPost, Path: "/v1/people-link/unlink", Tags: []string{"People"}, DefaultStatus: http.StatusAccepted,
+		Summary: "Ask to end the link to the people platform",
+		Description: "Asks to end the link (FR-PPL-16, PRD-002 NM-INT-11). It is dual controlled like linking: the Owner and a second approver approve. " +
+			"Unlinking first settles work in flight (runs approved and not posted, salary payments with an unknown outcome, open tax-clearance " +
+			"holds, events waiting) and only then revokes the link's client; events and credentials of the ended epoch are refused from then. " +
+			"Both sides keep their data. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key. Needs a " +
+			"person signed in with step-up. On the never-list for the AI and MCP (§9.6).",
+	}, append(append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeSessionRequired, CodeStepUpRequired, CodeUnavailable,
+		approval.CodePending, CodeNoLink}, locks...), storage.CodePeopleLink), func(ctx context.Context, in *peopleUnlinkRequestInput) (*peopleLinkAskOutput, error) {
+		p, _ := authn.From(ctx)
+		resp, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
+			l, err := u.PeopleLinks().Live(ctx)
+			if errors.Is(err, ports.ErrNotFound) {
+				return Approval{}, problem(CodeNoLink, "The organisation has no link to end.", "Nothing to do.")
+			}
+			if err != nil {
+				return Approval{}, err
+			}
+			change := map[string]any{"link_id": l.ID.String(), "epoch": l.Epoch, "reason": in.Body.Reason}
+			diff := []ApprovalDiff{{Field: "state", Before: l.State, After: "unlinked"}, {Field: "reason", After: in.Body.Reason}}
+			return a.requestApproval(ctx, u, pendingChange{ObjectType: approval.ObjectPeopleLink, ObjectKey: p.Organisation.String(), Operation: approval.OpPeopleUnlink,
+				Summary: "End the link to the Nemura organisation " + l.NemuraOrganisationID.String(), Execute: change, Diff: diff})
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &peopleLinkAskOutput{Status: resp.Status, Replayed: replayedHeader(resp.Replayed), Applied: applied(resp), Body: resp.Body}, nil
+	})
+
+	eventCodes := append(append([]string{CodeNoLink, CodeLinkClient, CodeLinkMinimum, peoplelink.CodeMalformed, peoplelink.CodeSignature, peoplelink.CodeDigest, peoplelink.CodeReplay,
+		peoplelink.CodeEpoch, peoplelink.CodeOrg}, locks...), storage.CodePeopleLink)
+	// An event carries its own ID, which the inbox dedupes (FR-PPL-15), so a repeat does nothing without an Idempotency-Key; and a preview
+	// would apply nothing the sender could rely on, since only the signed envelope is evidence.
+	byID := func(op huma.Operation) huma.Operation {
+		op = exempt(op, "Idempotency-Key", "The event's ID is its idempotency key: the inbox receives each ID once and a repeat answers duplicate (FR-PPL-15, NM-INT-10).")
+		return exempt(op, "Prefer", "An event is a signed message between the apps, not a person's command: a preview of it would prove nothing (FR-INT-14).")
+	}
+	register(a, authz.ReceivePeopleProjectionEvent, byID(huma.Operation{
+		OperationID: "receivePeopleProjectionEvent", Method: http.MethodPost, Path: "/v1/people-link/projection-events", Tags: []string{"People"},
+		Summary: "Receive a person or bank-details event from Nemura",
+		Description: "Nemura's `people.person.upserted` and `people.bank_details.changed` (PRD-002 Appendix E): an envelope (NM-INT-10) whose header the link " +
+			"key signed, with the payload's canonical SHA-256 in it. It needs the link's client and the scope people.projection.write, and the " +
+			"envelope is checked against the link as Fyniq holds it: its organisations, its epoch, a signing time within 5 minutes, its signature " +
+			"and its digest; nothing the message carries decides who may send it. An event received before does nothing (duplicate); a version " +
+			"no newer than the one applied is ignored and recorded (a late version 1 never sets the manager back); a payload with a field " +
+			"Appendix E does not list is refused (NM-INT-05). Side effects: the projection's change and its audit event, by field name and " +
+			"never by value, and the inbox row (identities and a digest, never the payload). Pay and bank details are never logged. Only the " +
+			"link's client may call it; on the never-list for the AI and MCP (§9.6).",
+	}), eventCodes, func(ctx context.Context, in *peopleEventInput) (*peopleEventOutput, error) {
+		return a.receivePeopleEvent(ctx, in, peoplelink.TypePersonUpserted, peoplelink.TypeBankDetailsChange)
+	})
+	register(a, authz.ReceivePeopleHoldEvent, byID(huma.Operation{
+		OperationID: "receivePeopleHoldEvent", Method: http.MethodPost, Path: "/v1/people-link/hold-events", Tags: []string{"People"},
+		Summary: "Receive a tax-clearance hold event from Nemura",
+		Description: "Nemura's `people.tax_hold.changed` (PRD-002 NM-INT-08, Appendix E): a person held from a date, or released after IRAS's notice or " +
+			"directive recorded with evidence. It needs the link's client and the scope people.holds.write and is checked, applied once and " +
+			"versioned exactly as receivePeopleProjectionEvent is. A held person's lines are not released (FR-PPL-13); only Nemura's release " +
+			"clears a hold. Only the link's client may call it; on the never-list for the AI and MCP (§9.6).",
+	}), eventCodes, func(ctx context.Context, in *peopleEventInput) (*peopleEventOutput, error) {
+		return a.receivePeopleEvent(ctx, in, peoplelink.TypeTaxHoldChanged)
+	})
+}
+
+// linkKey reads Nemura's Ed25519 public key: 32 bytes, base64url without padding.
+func linkKey(s string) (ed25519.PublicKey, error) {
+	b, err := base64.RawURLEncoding.DecodeString(s)
+	if err != nil || len(b) != ed25519.PublicKeySize {
+		return nil, errors.New("is not an Ed25519 public key: 32 bytes as base64url without padding")
+	}
+	return ed25519.PublicKey(b), nil
+}
+
+// receivePeopleEvent checks and applies one event of the types it names.
+func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, types ...string) (*peopleEventOutput, error) {
+	p, _ := authn.From(ctx)
+	// The envelope as it came, its payload as raw bytes: the digest is over those bytes, never over a re-encoding.
+	var env peoplelink.Envelope
+	dec := json.NewDecoder(bytes.NewReader(in.RawBody))
+	if err := dec.Decode(&env); err != nil {
+		return nil, problem(peoplelink.CodeMalformed, "The envelope is not well formed.", "Send the envelope of PRD-002 NM-INT-10.")
+	}
+	if !slices.Contains(types, env.Header.Type) {
+		return nil, problem(peoplelink.CodeMalformed, fmt.Sprintf("This operation takes %v, not %q.", types, env.Header.Type), "Send the event to the operation that takes its type.")
+	}
+	now := a.deps.Clock.Now()
+	var receipt PeopleLinkReceipt
+	var refused error
+	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		l, err := u.PeopleLinks().Live(ctx)
+		if errors.Is(err, ports.ErrNotFound) || (err == nil && l.State != storage.LinkActive) {
+			refused = problem(CodeNoLink, "The organisation has no active link to the people platform.", "Ask the Owner to link Nemura in Settings, People and HR.")
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		client, err := u.APIClients().Get(ctx, l.ClientID)
+		if err != nil {
+			return err
+		}
+		if client.ClientID != p.Client {
+			refused = problem(CodeLinkClient, "The event came through a client that is not the link's.", "Call with the client the link registered.")
+			return nil
+		}
+		link := peoplelink.Link{Key: ed25519.PublicKey(l.LinkKey), Epoch: l.Epoch, SourceOrganisation: l.NemuraOrganisationID.String(),
+			TargetOrganisation: p.Organisation.String(), SourceSystem: "nemura"}
+		if err := env.Verify(link, now); err != nil {
+			var r *peoplelink.Refusal
+			if errors.As(err, &r) {
+				a.deps.Log.WarnContext(ctx, "people_link.refused", "code", r.Code, "type", env.Header.Type, "organisation", p.Organisation.String()) // never the payload
+				refused = linkRefusal(r.Code, r.Message+".")
+				return nil
+			}
+			return err
+		}
+		eventID, err := uuid.Parse(env.Header.EventID)
+		if err != nil {
+			refused = linkRefusal(peoplelink.CodeMalformed, "The event ID is not an ID.")
+			return nil
+		}
+		entry := storage.InboxEntry{EventID: eventID, LinkID: l.ID, Epoch: env.Header.Epoch, Sequence: env.Header.Sequence, Type: env.Header.Type,
+			ObjectType: env.Header.ObjectType, ObjectID: env.Header.ObjectID, ObjectVersion: env.Header.ObjectVersion, PayloadSHA256: env.Header.PayloadSHA256, ReceivedAt: now}
+		next, ignored, perr := a.applyPeopleEvent(ctx, u, env, now)
+		switch {
+		case perr != nil:
+			var r *peoplelink.Refusal
+			if !errors.As(perr, &r) {
+				return perr
+			}
+			entry.Outcome, entry.Code = peoplelink.OutcomeRefused, r.Code
+			if _, err := u.PeopleLinks().Receive(ctx, entry); err != nil { // the signature held, so the refusal is kept
+				return err
+			}
+			refused = linkRefusal(r.Code, r.Message+".")
+			return nil
+		case ignored:
+			entry.Outcome = peoplelink.OutcomeIgnoredOlder
+		default:
+			entry.Outcome = peoplelink.OutcomeApplied
+		}
+		fresh, err := u.PeopleLinks().Receive(ctx, entry)
+		if err != nil {
+			return err
+		}
+		receipt = PeopleLinkReceipt{EventID: env.Header.EventID, Outcome: entry.Outcome}
+		if !fresh {
+			receipt.Outcome = "duplicate" // nothing was saved yet: the person is written only below
+			return nil
+		}
+		if !ignored {
+			return u.PeopleLinks().SavePerson(ctx, next)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if refused != nil {
+		return nil, refused
+	}
+	return &peopleEventOutput{Body: receipt}, nil
+}
+
+// applyPeopleEvent applies a verified event of one of the projection's types to the person it is about, with the payload read strictly:
+// a field Appendix E does not list is refused (NM-INT-05).
+func (a *API) applyPeopleEvent(ctx context.Context, u storage.UnitOfWork, env peoplelink.Envelope, now time.Time) (peoplelink.Person, bool, error) {
+	strict := func(v any) error {
+		d := json.NewDecoder(bytes.NewReader(env.Payload))
+		d.DisallowUnknownFields()
+		if err := d.Decode(v); err != nil {
+			return &peoplelink.Refusal{Code: CodeLinkMinimum, Message: "the payload has a field, or a value, that PRD-002 Appendix E does not list for " + env.Header.Type}
+		}
+		return nil
+	}
+	var personID uuid.UUID
+	switch env.Header.Type {
+	case peoplelink.TypePersonUpserted:
+		var ev peoplelink.PersonUpserted
+		if err := strict(&ev); err != nil {
+			return peoplelink.Person{}, false, err
+		}
+		personID = ev.PersonID
+		cur, err := u.PeopleLinks().Person(ctx, personID)
+		if err != nil {
+			return peoplelink.Person{}, false, err
+		}
+		return peoplelink.ApplyPerson(cur, ev, env.Header.ObjectVersion, now)
+	case peoplelink.TypeBankDetailsChange:
+		var ev peoplelink.BankDetailsChanged
+		if err := strict(&ev); err != nil {
+			return peoplelink.Person{}, false, err
+		}
+		cur, err := u.PeopleLinks().Person(ctx, ev.PersonID)
+		if err != nil {
+			return peoplelink.Person{}, false, err
+		}
+		return peoplelink.ApplyBankDetails(cur, ev, env.Header.ObjectVersion, now)
+	case peoplelink.TypeTaxHoldChanged:
+		var ev peoplelink.TaxHoldChanged
+		if err := strict(&ev); err != nil {
+			return peoplelink.Person{}, false, err
+		}
+		cur, err := u.PeopleLinks().Person(ctx, ev.PersonID)
+		if err != nil {
+			return peoplelink.Person{}, false, err
+		}
+		return peoplelink.ApplyTaxHold(cur, ev, env.Header.ObjectVersion, now)
+	}
+	return peoplelink.Person{}, false, &peoplelink.Refusal{Code: peoplelink.CodeMalformed, Message: "the event type is not one the projection applies"}
+}
+
+// executePeopleLink runs an approved link or unlink as its requester asked (FR-PPL-01, FR-PPL-16): to link, the client is registered with the
+// OAuth server and recorded with the link's scopes and no others, the link is recorded at the next epoch and each feature's source is set;
+// to unlink, work in flight settles first (nothing is in flight until payroll arrives), then the link ends and its client is revoked.
+func (a *API) executePeopleLink(ctx context.Context, u storage.UnitOfWork, r storage.ApprovalRequest, s stored) error {
+	now := a.deps.Clock.Now()
+	str := func(k string) string { v, _ := s.Execute[k].(string); return v }
+	switch r.Operation {
+	case approval.OpPeopleLink:
+		id, err := uuid.Parse(str("id"))
+		if err != nil {
+			return err
+		}
+		org, err := uuid.Parse(str("nemura_organisation_id"))
+		if err != nil {
+			return err
+		}
+		key, err := linkKey(str("link_key"))
+		if err != nil {
+			return err
+		}
+		expires, err := time.Parse(time.RFC3339, str("expires_at"))
+		if err != nil {
+			return err
+		}
+		checked, err := apiclient.CheckLink(apiclient.Link{Name: str("client_name"), ExpiresAt: expires, Key: json.RawMessage(str("client_public_key"))}, now)
+		if err != nil {
+			return clientProblem(err)
+		}
+		if checked.Thumbprint != str("key_thumbprint") {
+			return errors.New("people link: the key is not the one asked for")
+		}
+		if a.deps.OAuthClients == nil || a.deps.APIAudience == "" {
+			return problem(CodeUnavailable, "This installation has no OAuth server configured, so it cannot link to the people platform.",
+				"Ask the operator to configure the OAuth server (FYNIQ_OAUTH_ADMIN_URL and FYNIQ_API_AUDIENCE).")
+		}
+		organisation, err := u.Organisation(ctx)
+		if err != nil {
+			return err
+		}
+		clientID := "preview-" + id.String()
+		if !storage.IsPreview(ctx) {
+			clientID, err = a.deps.OAuthClients.RegisterIntegration(ctx, ports.IntegrationRegistration{Name: checked.Name, Class: authn.ClassIntegration,
+				Audience: a.deps.APIAudience, Scopes: checked.Scopes, Key: json.RawMessage(str("client_public_key")), Alg: checked.Alg,
+				TokenLifespan: IntegrationClientTokenLifespan, Organisation: organisation.ID.String()})
+			if err != nil {
+				return fmt.Errorf("register the link's client with the OAuth server: %w", err)
+			}
+			registered := clientID
+			u.AfterRollback(func(ctx context.Context) { _ = a.deps.OAuthClients.RemoveClient(ctx, registered) })
+		}
+		client, err := u.APIClients().Create(ctx, storage.APIClient{ID: uuid.Must(uuid.NewV7()), Kind: storage.APIClientLink, ClientID: clientID, Name: checked.Name,
+			Class: authn.ClassIntegration, OwnerID: r.RequestedBy, Scopes: checked.Scopes, IPAllow: []string{}, KeyThumbprint: checked.Thumbprint,
+			ExpiresAt: expires, ApprovalID: &r.ID, CreatedBy: "user:" + r.RequestedBy.String(), CreatedAt: now})
+		if err != nil {
+			return err
+		}
+		if _, err := u.PeopleLinks().Link(ctx, storage.PeopleLinkRow{NemuraOrganisationID: org, LinkKey: key, ClientID: client.ID, ApprovalID: r.ID,
+			CreatedBy: "user:" + r.RequestedBy.String(), CreatedAt: now}); err != nil {
+			return err
+		}
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+		features, _ := s.Execute["features"].([]any)
+		for _, f := range features {
+			if err := u.PeopleLinks().SetSource(ctx, storage.PeopleSource{Feature: fmt.Sprint(f), Source: storage.SourceNemura, EffectiveFrom: today, ApprovalID: r.ID, SetAt: now}); err != nil {
+				return err
+			}
+		}
+		return nil
+	case approval.OpPeopleUnlink:
+		l, err := u.PeopleLinks().Live(ctx)
+		if err != nil {
+			return err
+		}
+		if l.State == storage.LinkActive || l.State == storage.LinkSuspended {
+			if l, err = u.PeopleLinks().SetState(ctx, l.ID, l.Version, storage.LinkUnlinking, l.ClientID, now); err != nil {
+				return err
+			}
+		}
+		// Settle first: runs approved and not posted, salary payments with an unknown outcome, open holds and events waiting hold the link in
+		// unlinking (FR-PPL-16). None exists until payroll arrives; each will count itself here.
+		if inFlight := a.peopleLinkInFlight(ctx, u); inFlight > 0 {
+			return nil
+		}
+		client, err := u.APIClients().Get(ctx, l.ClientID)
+		if err != nil {
+			return err
+		}
+		if _, err := u.APIClients().Revoke(ctx, client.ID, client.Version, "user:"+r.RequestedBy.String(), "The link ended: "+str("reason"), now); err != nil {
+			return err
+		}
+		if _, err := u.PeopleLinks().SetState(ctx, l.ID, l.Version, storage.LinkUnlinked, uuid.Nil, now); err != nil {
+			return err
+		}
+		return a.removeOAuthClient(ctx, u, client.ClientID)
+	}
+	return fmt.Errorf("people link: no operation %q", r.Operation)
+}
+
+// peopleLinkInFlight is the work a link must settle before it ends (FR-PPL-16).
+func (a *API) peopleLinkInFlight(context.Context, storage.UnitOfWork) int { return 0 }
+
+// peopleLinkDependencies are the link's state and epoch: what a request to link or unlink depends on, "none" before a link exists.
+func peopleLinkDependencies(ctx context.Context, u storage.UnitOfWork) (int, map[string]any, error) {
+	l, err := u.PeopleLinks().Live(ctx)
+	if errors.Is(err, ports.ErrNotFound) {
+		return 0, map[string]any{"state": "none", "epoch": 0}, nil
+	}
+	if err != nil {
+		return 0, nil, err
+	}
+	return l.Version, map[string]any{"state": l.State, "epoch": l.Epoch}, nil
+}

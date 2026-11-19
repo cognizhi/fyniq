@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "effective_from": {
+      "description": "The day it started there; the start day of a change of source (FR-PPL-16).",
+      "format": "date",
+      "type": "string"
+    },
+    "feature": {
+      "description": "The feature.",
+      "enum": [
+        "records",
+        "payroll",
+        "leave",
+        "letters"
+      ],
+      "type": "string"
+    },
+    "set_at": {
+      "description": "When it was set.",
+      "format": "date-time",
+      "type": "string"
+    },
+    "source": {
+      "description": "Where it lives: Nemura, an external system, or nowhere (payroll posted by manual journal).",
+      "enum": [
+        "nemura",
+        "external",
+        "none"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "feature",
+    "source",
+    "effective_from",
+    "set_at"
+  ],
+  "title": "PeopleLinkSource",
+  "type": "object"
+}

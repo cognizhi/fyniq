@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/domain/preference"
 	"github.com/cognizhi/fyniq/internal/domain/saveditem"
 	"github.com/cognizhi/fyniq/internal/mcpgate"
@@ -259,6 +260,17 @@ var codeFacts = map[string]struct {
 	storage.CodeMigration:         {409, "The migration keeps its record, in an organisation without posted entries"},
 	storage.CodeAIConnection:      {409, "An AI connection keeps each version, and is switched off, never removed"},
 	storage.CodeAPIClient:         {409, "An API client is kept, revoked once, and never rewritten"},
+	storage.CodePeopleLink:        {409, "The link or a person of the projection moved against its course"},
+	peoplelink.CodeMalformed:      {422, "The event is not well formed"},
+	peoplelink.CodeSignature:      {403, "The event's signature does not verify with the link key"},
+	peoplelink.CodeDigest:         {403, "The event's payload is not the one its signed header names"},
+	peoplelink.CodeReplay:         {403, "The event was signed more than 5 minutes from now"},
+	peoplelink.CodeEpoch:          {403, "The event is of another epoch of the link"},
+	peoplelink.CodeOrg:            {403, "The event is not from the linked organisation to this one"},
+	CodeNoLink:                    {409, "The organisation has no active link to the people platform"},
+	CodeLinkClient:                {403, "The event came through a client that is not the link's"},
+	CodeLinkMinimum:               {422, "The event carries more than the people platform shares (PRD-002 Appendix E)"},
+	CodeLinkExists:                {409, "The organisation is linked already"},
 	apiclient.CodeName:            {422, "The client's name is not valid"},
 	apiclient.CodeScope:           {422, "Not a scope an API client may be granted"},
 	apiclient.CodeNetwork:         {422, "Not a network in CIDR form"},
@@ -1190,6 +1202,17 @@ var storageFixes = map[string]string{
 	storage.CodeMigration:            "Start the migration in a new organisation without posted entries; upload the workbook again once the last validation is done",
 	storage.CodeAIConnection:         "Read the connection again and ask for its next version; switch it off instead of removing it",
 	storage.CodeAPIClient:            "Revoke the client once; register a new one for any other change",
+	storage.CodePeopleLink:           "Read the link again; unlink before linking again, and send each person's versions in order",
+	peoplelink.CodeMalformed:         "Send the envelope of PRD-002 NM-INT-10 with a payload in the shape of the event's schema",
+	peoplelink.CodeSignature:         "Sign the header with the link key the organisation approved",
+	peoplelink.CodeDigest:            "Send the payload whose canonical SHA-256 the signed header carries",
+	peoplelink.CodeReplay:            "Sign the event again with a current time; send it within 5 minutes",
+	peoplelink.CodeEpoch:             "Send the link's current epoch, shown on getPeopleLink",
+	peoplelink.CodeOrg:               "Send the event from the linked Nemura organisation to this organisation",
+	CodeNoLink:                       "Ask the Owner to link Nemura in Settings, People and HR",
+	CodeLinkClient:                   "Call with the client the link registered",
+	CodeLinkMinimum:                  "Send only the fields Appendix E lists: never NRIC or FIN, medical, disciplinary or review data",
+	CodeLinkExists:                   "Unlink first, then link again: a link is never changed in place",
 	storage.CodeHeartbeatDrill:       "Record the next drill instead",
 	storage.CodeTransfer:             "Save a transfer's next version over the one you read; for another flow, retire it and record a new one",
 	storage.CodeShredding:            "Approve a listed run once, at the version you read; the daily run then shreds it, register first",

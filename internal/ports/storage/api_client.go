@@ -16,6 +16,8 @@ const CodeAPIClient = "STORAGE-API-CLIENT-01"
 const (
 	APIClientIntegration = "integration"
 	APIClientPersonal    = "personal"
+	// APIClientLink is the one client Nemura calls with, holding Appendix E's scopes (p1-payroll-link design D1); the link registers it.
+	APIClientLink = "link"
 )
 
 // APIClient is an OAuth client of the organisation, as Fyniq holds it (ADR-T3): the OAuth server holds the client and
