@@ -342,7 +342,50 @@
     "calendar.kind.sick": "S",
     "calendar.kind.holiday": "H",
     "calendar.key": "A is away, L is leave, P is a request waiting, S is sick leave and H is a public holiday.",
-    "calendar.restDay": "rest day"
+    "calendar.restDay": "rest day",
+    "nav.gov": "Government-paid leave",
+    "gov.title": "Government-paid leave",
+    "gov.lead": "Each block of maternity, paternity or shared parental leave with its claim deadline and the employer's claims. Claims are filed on the Government-Paid Leave portal by a person; Nemura keeps the record and moves no money.",
+    "gov.loading": "Loading the blocks.",
+    "gov.none": "No government-paid leave is recorded.",
+    "gov.failed": "We could not show that. Check your connection and try again.",
+    "gov.saved": "Saved.",
+    "gov.scheme.maternity": "Maternity leave",
+    "gov.scheme.paternity": "Paternity leave",
+    "gov.scheme.shared_parental": "Shared parental leave",
+    "gov.block": "{person}: {scheme}, {from} to {to} ({days} days)",
+    "gov.deadline": "File the claim by {date}.",
+    "gov.guide": "The scheme's cap suggests the Government reimburses at most S$ {amount}; the portal decides.",
+    "gov.claims": "Claims",
+    "gov.noClaims": "No claim is filed yet.",
+    "gov.claim": "S$ {amount} filed on {on}, S$ {received} received: {state}",
+    "gov.over": "Above what the scheme's cap suggests.",
+    "gov.state.filed": "filed, waiting",
+    "gov.state.part_paid": "part paid",
+    "gov.state.paid": "paid in full",
+    "gov.state.rejected": "rejected",
+    "gov.fileTitle": "Record a claim filed on the portal",
+    "gov.amount": "Amount claimed (S$)",
+    "gov.filedOn": "Filed on",
+    "gov.reference": "The portal's reference",
+    "gov.file": "Record claim",
+    "gov.eventFor": "Answer to the claim filed on {on}",
+    "gov.eventKind": "What the portal answered",
+    "gov.event.receipt": "Received",
+    "gov.event.rejection": "Rejected",
+    "gov.eventAmount": "Amount received (S$)",
+    "gov.eventOn": "On",
+    "gov.eventSave": "Record answer",
+    "gov.recordTitle": "Record a block of leave",
+    "gov.person": "Person",
+    "gov.child": "Child",
+    "gov.childLine": "{relationship}, born {born}",
+    "gov.scheme": "Scheme",
+    "gov.order": "The child's order (1 for a first child)",
+    "gov.from": "First day",
+    "gov.to": "Last day",
+    "gov.record": "Record leave",
+    "gov.choose": "Choose"
   },
   "help": {
     "signin.page": {
@@ -408,6 +451,10 @@
     "sick.page": {
       "label": "Tell us you're sick",
       "tooltip": "Tell the company you are sick: no approval. Paid days come out of the sick leave limit in force each day; give the medical certificate when you are back."
+    },
+    "gov.page": {
+      "label": "Government-paid leave",
+      "tooltip": "Maternity, paternity and shared parental leave under the country pack's rules, with the employer's reimbursement claims and their deadlines. Nothing here moves money."
     }
   }
 }

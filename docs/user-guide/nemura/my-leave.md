@@ -38,6 +38,8 @@ calendar year. Annual leave is counted in your working days, set by your **worki
   administrator can then select **Work out annual leave** to record the year's entitlement (run again, it writes only
   the difference, as a correction), **Carry unused days forward**, and **Set pattern** to start a new working pattern
   on a day. A working pattern is history: setting a new one ends the old one the day before.
+- Maternity, paternity and shared parental leave are recorded separately, with the employer's reimbursement claim: see
+  [Record government-paid leave](leave-government-paid.md).
 - Nothing is edited or deleted. Every grant, correction, carry-forward and expiry is a new entry in the person's leave
   ledger, and each is audited.
 

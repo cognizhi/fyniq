@@ -6,6 +6,7 @@ import { ReviewBanner } from "./components/ReviewBanner";
 import { Home } from "./pages/Home";
 import { NewPerson } from "./pages/NewPerson";
 import { ApplyLeave } from "./pages/ApplyLeave";
+import { GovernmentLeave } from "./pages/GovernmentLeave";
 import { MyLeave } from "./pages/MyLeave";
 import { ReportSick } from "./pages/ReportSick";
 import { TeamLeave } from "./pages/TeamLeave";
@@ -625,5 +626,58 @@ describe("the team calendar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Next month" }));
     await screen.findByText("Nobody you may see is in the calendar.");
     expect(calls.filter((c) => c === "GET /v1/leave-calendar").length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// req: NM-LV-07, NM-LV-14
+describe("government-paid leave and its claims", () => {
+  const block = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e94", person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", person_name: "Ben Lim", scheme: "paternity", from: "2026-06-10", to: "2026-07-07", days: 28,
+    claim_deadline: "2026-10-07", guide_maximum: "10000.00", claims: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e95", amount: "6000.00", received: "2500.00", filed_on: "2026-07-20", reference: "GPL-001", state: "part_paid", over_guide: false }] };
+
+  it("shows each block with its deadline, the guide maximum and its claims, and records a receipt", async () => {
+    answer("GET /v1/government-paid-leave", { status: 200, body: { blocks: [block] } });
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: block.person_id, name: "Ben Lim", job_title: "Engineer" }] } });
+    answer(`POST /v1/government-paid-claims/${block.claims[0]?.id}/events`, { status: 201 });
+    const { container } = render(<GovernmentLeave roles={["hr_admin"]} />);
+    expect(await screen.findByText("File the claim by 2026-10-07.")).toBeTruthy();
+    expect(screen.getByText(/at most S\$ 10000\.00; the portal decides/)).toBeTruthy();
+    expect(screen.getByText(/S\$ 6000\.00 filed on 2026-07-20, S\$ 2500\.00 received: part paid/)).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Amount received (S$)"), { target: { value: "3500.00" } });
+    fireEvent.change(screen.getByLabelText("On"), { target: { value: "2026-08-20" } });
+    fireEvent.submit(screen.getByRole("form", { name: /Answer to the claim filed on 2026-07-20/ }));
+    expect(await screen.findByText("Saved.")).toBeTruthy();
+    expect(calls).toContain(`POST /v1/government-paid-claims/${block.claims[0]?.id}/events`);
+  });
+
+  it("records a block for a child and shows the API's refusal in words", async () => {
+    answer("GET /v1/government-paid-leave", { status: 200, body: { blocks: [] } });
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: block.person_id, name: "Ben Lim" }] } });
+    answer(`GET /v1/people/${block.person_id}/dependants`, { status: 200, body: { dependants: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71", relationship: "child", birth_date: "2026-06-10", adoption_intent: false, citizenship: "citizen", effective_from: "2026-07-01" }] } });
+    answer(`POST /v1/people/${block.person_id}/government-paid-leave`, { status: 422, body: { code: "NM_LEAVE_INVALID", detail: "The person had served fewer than 3 months before the child's birth." } });
+    render(<GovernmentLeave roles={["hr_officer"]} />);
+    await screen.findByText("No government-paid leave is recorded.");
+    const { fireEvent } = await import("@testing-library/react");
+    await screen.findByRole("option", { name: "Ben Lim" });
+    fireEvent.change(screen.getByLabelText("Person"), { target: { value: block.person_id } });
+    await screen.findByRole("option", { name: "child, born 2026-06-10" });
+    fireEvent.change(screen.getByLabelText("Child"), { target: { value: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71" } });
+    fireEvent.change(screen.getByLabelText("First day"), { target: { value: "2026-06-10" } });
+    fireEvent.change(screen.getByLabelText("Last day"), { target: { value: "2026-07-07" } });
+    fireEvent.submit(screen.getByRole("heading", { name: "Record a block of leave" }).closest("form") as HTMLFormElement);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/fewer than 3 months/);
+  });
+
+  it("offers Payroll no way to change anything", async () => {
+    answer("GET /v1/government-paid-leave", { status: 200, body: { blocks: [block] } });
+    render(<GovernmentLeave roles={["payroll_admin"]} />);
+    await screen.findByText("File the claim by 2026-10-07.");
+    expect(screen.queryByRole("button", { name: "Record claim" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Record leave" })).toBeNull();
+  });
+
+  it("is routed from the address", () => {
+    expect(matchRoute("/people/leave/government-paid")?.route.id).toBe("government-leave");
   });
 });

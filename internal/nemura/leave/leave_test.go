@@ -266,3 +266,96 @@ func TestSickLeaveSharesOneCeilingAndStepsUpWithService(t *testing.T) {
 		t.Error("the 48 hours")
 	}
 }
+
+// A government-paid scheme is read from the pack by the child's birth date, with the child's citizenship and the person's service checked, the dates held to the
+// scheme's window and weeks, the claim deadline three months after the last day, and the reimbursement a guide capped per period and in all (NM-LV-07, NM-LV-14).
+// req: NM-LV-07, NM-LV-14
+func TestGovernmentPaidSchemesAreReadFromThePackByBirthDate(t *testing.T) {
+	v := version(t)
+	born := d("2026-06-10")
+	key := func(scheme string, order int, b time.Time) string {
+		k, err := leave.SchemeKey(v, scheme, order, b)
+		if err != nil {
+			return err.Error()
+		}
+		return k
+	}
+	if key(leave.Maternity, 2, born) != "maternity_citizen_1st_2nd" || key(leave.Maternity, 3, born) != "maternity_citizen_3rd_plus" || key(leave.Paternity, 1, born) != "paternity_citizen" ||
+		key(leave.SharedParental, 1, born) != "shared_parental_10_weeks" || key(leave.SharedParental, 1, d("2026-03-31")) != "shared_parental_6_weeks" {
+		t.Errorf("scheme keys: %s %s %s %s %s", key(leave.Maternity, 2, born), key(leave.Maternity, 3, born), key(leave.Paternity, 1, born), key(leave.SharedParental, 1, born), key(leave.SharedParental, 1, d("2026-03-31")))
+	}
+	if _, err := leave.SchemeKey(v, leave.SharedParental, 1, d("2025-03-31")); err == nil {
+		t.Error("shared parental leave for a child born before the scheme")
+	}
+	if _, err := leave.SchemeKey(v, leave.Maternity, 0, born); err == nil {
+		t.Error("maternity with no child order")
+	}
+	if _, err := leave.SchemeKey(v, "adoption", 1, born); err == nil {
+		t.Error("an unknown scheme")
+	}
+	mat, err := leave.RuleOf(v, "maternity_citizen_1st_2nd", born)
+	if err != nil || mat.TotalWeeks != 16 || mat.EmployerWeeks != 8 || mat.GovernmentWeeks != 8 || mat.CapTotal != 20000 {
+		t.Fatalf("maternity rule: %+v %v", mat, err)
+	}
+	pat, _ := leave.RuleOf(v, "paternity_citizen", born)
+	act, _ := leave.RuleOf(v, "maternity_employment_act", born)
+	if act.EmployerWeeks != 0 || act.TotalWeeks != 12 {
+		t.Errorf("a figure the page does not state is read as zero, never guessed: %+v", act)
+	}
+	// Eligibility: a citizen child and three months' service before the birth.
+	if err := leave.Eligible(mat, d("2026-01-05"), born, true); err != nil {
+		t.Errorf("eligible: %v", err)
+	}
+	if leave.Eligible(mat, d("2026-01-05"), born, false) == nil || leave.Eligible(mat, d("2026-04-01"), born, true) == nil {
+		t.Error("a non-citizen child or under three months' service was eligible")
+	}
+	// Windows: maternity from 4 weeks before the birth; paternity from the birth to 12 months; the weeks in all.
+	if leave.Window(leave.Maternity, mat, born, d("2026-05-13"), d("2026-08-31"), 0) != nil {
+		t.Error("maternity from exactly 28 days before")
+	}
+	if leave.Window(leave.Maternity, mat, born, d("2026-05-12"), d("2026-06-01"), 0) == nil {
+		t.Error("maternity earlier than 28 days before the birth")
+	}
+	if leave.Window(leave.Maternity, mat, born, d("2026-06-10"), d("2026-09-29"), 0) != nil || leave.Window(leave.Maternity, mat, born, d("2026-06-10"), d("2026-09-30"), 0) == nil {
+		t.Error("16 weeks is 112 days, the 113th is beyond")
+	}
+	if leave.Window(leave.Paternity, pat, born, d("2026-06-09"), d("2026-06-20"), 0) == nil || leave.Window(leave.Paternity, pat, born, d("2026-06-10"), d("2027-06-10"), 0) == nil {
+		t.Error("paternity before the birth, or after 12 months")
+	}
+	if leave.Window(leave.Paternity, pat, born, d("2026-06-10"), d("2026-07-07"), 0) != nil || leave.Window(leave.Paternity, pat, born, d("2026-06-10"), d("2026-07-07"), 1) == nil {
+		t.Error("paternity 28 days, and one day already taken makes it too many")
+	}
+	if leave.Window(leave.Paternity, pat, born, d("2026-07-01"), d("2026-06-01"), 0) == nil {
+		t.Error("backwards")
+	}
+	// The deadline is three months after the last day; the claim is capped per 4 weeks and in all.
+	if got := leave.ClaimDeadline(mat, d("2026-09-29")).Format(time.DateOnly); got != "2026-12-29" {
+		t.Errorf("deadline %s", got)
+	}
+	// 16 weeks: the Government pays the last 8, S$10,000 for each 4 weeks, S$20,000 in all.
+	if c, ok := leave.MaxClaim(mat, 112); !ok || c != 2000000 {
+		t.Errorf("maternity cap %s", c)
+	}
+	if c, _ := leave.MaxClaim(mat, 70); c != 500000 {
+		t.Errorf("a shorter block: %s", c)
+	}
+	// Paternity: S$2,500 a week, S$10,000 at most: 4 weeks is exactly the cap, two weeks half.
+	if c, _ := leave.MaxClaim(pat, 28); c != 1000000 {
+		t.Errorf("paternity %s", c)
+	}
+	if c, _ := leave.MaxClaim(pat, 14); c != 500000 {
+		t.Errorf("two weeks of paternity %s", c)
+	}
+	if _, ok := leave.MaxClaim(act, 84); ok {
+		t.Error("a scheme with no cap in the pack has a cap")
+	}
+	// Money is exact cents.
+	if c, err := leave.ParseCents("2500.5"); err != nil || c != 250050 || c.String() != "2500.50" {
+		t.Errorf("cents %v %v", c, err)
+	}
+	for _, bad := range []string{"", "-1", "1.234", "x", "+5"} {
+		if _, err := leave.ParseCents(bad); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+}

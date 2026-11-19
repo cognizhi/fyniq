@@ -47,12 +47,16 @@ Load before each slice: `fyniq-feature-change`, `fyniq-sg-statutory` (1, 3), `fy
 
 ## 3. Government-paid leave and flexible work (slice 3)
 
-- [ ] 3.1 Per-scheme rules from the pack (NM-LV-14, D7): shared parental split and its changes, the unit and period, the cap; the dependants of
-  `p1-nemura-records-packs` decide eligibility. `// req: NM-LV-14`
-- [ ] 3.2 The government-paid portion and the employer's reimbursement claim with its deadline and evidence (NM-LV-07); N.1 #10; screen `nm-govt-claims`.
-  The portal filing is a person's, `[live-verify]`.
+- [x] 3.1 Per-scheme rules from the pack (NM-LV-14, D7) for maternity, paternity and shared parental leave: the rule for the child's birth date (the employer's and
+  the Government's weeks, the caps, the claim window), the child's citizenship and the person's service before the birth, the scheme's window and weeks, a continuous
+  block counted in calendar days, never overlapping other leave (migration 000018). `// req: NM-LV-14`
+  Left: the shared parental split between the parents and its changes; childcare and extended childcare (their caps are not in the pack yet: `sg-people@2026.3`);
+  adoption leave; ledger entries for the schemes' entitlements (NM-LV-13), which wait for a way to carry a block over a year end.
+- [x] 3.2 The government-paid portion and the employer's reimbursement claim with its deadline (NM-LV-07): claims with amount, day and the portal's reference, partial
+  and repeated claims, receipts and rejections as separate records, the guide maximum from the caps, N.1 #10; screen `nm-govt-claims`. The portal filing is a person's,
+  `[live-verify]`. Left: the claim's evidence file (the restricted document framework takes it when the screen asks for one).
 - [ ] 3.3 Flexible work requests with the two-month reply deadline and the written reply (NM-LV-10); N.1 #5 for this part.
-- [ ] 3.4 N.1 #4 (a negative balance, a request waiting more than 3 working days) and the people home's leave tiles (`nm-people-home`).
+- [~] 3.4 N.1 #4 (a negative balance, a request waiting more than 3 working days) is built, with #10; the people home's leave tiles (`nm-people-home`) are left.
 
 ## 4. Into pay and the books (slice 4)
 
@@ -84,4 +88,4 @@ Load before each slice: `fyniq-feature-change`, `fyniq-sg-statutory` (1, 3), `fy
 | NM-TIM-01 Working patterns | 1.2 | complete | available hours in Fyniq: `p1-nemura-fyniq-link` |
 | NM-TIM-02 Overtime for Part IV | 4.3 | the records and the rates | the pay run: `p1-nemura-payroll` |
 | NM-TIM-04 Hours worked and special days | 4.3 | the records | the pay run: `p1-nemura-payroll` |
-| Screens nm-apply-leave, nm-my-leave, nm-team-leave, nm-report-sick, nm-govt-claims, nm-people-home | 1.4, 2.3, 2.4, 3.2, 3.4 | complete | |
+| Screens nm-apply-leave, nm-my-leave, nm-team-leave, nm-report-sick, nm-govt-claims, nm-people-home | 1.4, 2.3, 2.4, 3.2, 3.4 | built, except the leave tiles of nm-people-home | the people home (slice 3.4 left) |

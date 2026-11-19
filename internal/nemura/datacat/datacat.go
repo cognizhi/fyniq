@@ -66,11 +66,11 @@ var Categories = []Category{
 		Columns:    []string{"person_dependant.birth_date"},
 	},
 	{
-		Key: "leave-records", What: "A person's working pattern, their leave ledger (each grant, use, reservation and correction by type and year, with its note) and their leave requests, with the person's note and the approver's reason",
+		Key: "leave-records", What: "A person's working pattern, their leave ledger (each grant, use, reservation and correction by type and year, with its note) their leave requests, with the person's note and the approver's reason, and their government-paid leave with the claims filed for it and what the portal answered",
 		Purpose:    "To keep an exact balance of leave, to show how it was worked out, and to meet the employer's record-keeping duties for leave (Employment Act)",
 		Capability: "Leave records (own and reports)",
 		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "MOM: employment records, leave included, of a former employee are kept for 1 year after they leave"},
-		Columns:    []string{"leave_ledger.note", "leave_request.note", "leave_request.decision_reason"},
+		Columns:    []string{"leave_ledger.note", "leave_request.note", "leave_request.decision_reason", "gov_claim_event.note"},
 	},
 	{
 		Key: "sick-leave", What: "A person's notice that they were sick: the days, whether outpatient or hospitalisation, their note, and a pointer to the medical certificate (a restricted document) with who issued it and who verified it",
