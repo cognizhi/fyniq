@@ -545,6 +545,10 @@ func TestPayIsForThePayrollAdministratorAndTheOwnerAlone(t *testing.T) {
 		{"POST", "/v1/people/" + person + "/pr-election", `{"effective_from":"2026-02-10","evidence_document_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9"}`},
 		{"POST", "/v1/people/" + person + "/pay/year-to-date", `{"year":2026,"ow":"25000.00","aw_subject":"0.00","aw_paid":"0.00","through_month":"2026-05-01"}`},
 		{"GET", "/v1/payroll/one-offs?month=2026-06-01", ""},
+		{"POST", "/v1/payroll/runs", `{"month":"2026-06-01","pay_group_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30"}`}, {"GET", "/v1/payroll/runs?month=2026-06-01", ""}, {"GET", "/v1/payroll/runs/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43", ""},
+		{"POST", "/v1/payroll/runs/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43/versions", `{"reason":"A bonus was missed."}`},
+		{"POST", "/v1/payroll/runs/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43/overrides", `{"person_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","field":"cpf_employee","value":"999.00","reason":"The CPF Board's own figure."}`},
+		{"POST", "/v1/payroll/overrides/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f42/withdrawal", ""}, {"GET", "/v1/payroll/runs/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43/changes", ""},
 		{"POST", "/v1/people/" + person + "/pay/one-offs", `{"month":"2026-06-01","item":{"key":"bonus-2026","name":"Annual bonus","nature":"bonus","amount":"5000.00","cpf_wages":true}}`},
 	}
 	for _, roles := range [][]authz.Role{{authz.Employee}, {authz.LineManager}, {authz.HROfficer}, {authz.HRAdmin}, {authz.Administrator}} {
@@ -559,6 +563,32 @@ func TestPayIsForThePayrollAdministratorAndTheOwnerAlone(t *testing.T) {
 			if got := do(roles, c.method, c.path, c.body); got >= 300 {
 				t.Errorf("%v could not %s %s: %d", roles, c.method, c.path, got)
 			}
+		}
+	}
+	approve := `{"version":2,"digest":"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"}`
+	approval := "/v1/payroll/runs/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43/approval"
+	doFresh := func(roles []authz.Role, fresh bool) int {
+		testRoles, testStepUp = roles, fresh
+		defer func() { testRoles, testStepUp = []authz.Role{authz.HRAdmin}, false }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest("POST", approval, strings.NewReader(approve))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for _, roles := range [][]authz.Role{{authz.Employee}, {authz.HROfficer}, {authz.HRAdmin}, {authz.Administrator}} {
+		if got := doFresh(roles, true); got != 403 {
+			t.Errorf("%v approving a pay run: %d, want 403", roles, got)
+		}
+	}
+	for _, roles := range [][]authz.Role{{authz.PayrollAdmin}, {authz.Owner}} {
+		if got := doFresh(roles, false); got != 403 {
+			t.Errorf("%v approving without a fresh passkey: %d, want 403", roles, got)
+		}
+		if got := doFresh(roles, true); got != 204 {
+			t.Errorf("%v approving with a fresh passkey: %d, want 204", roles, got)
 		}
 	}
 	if got := do([]authz.Role{authz.PayrollAdmin}, "POST", "/v1/people/"+person+"/pay", `{"effective_from":"2026-07-01","pay":{"pay_group_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30","basic_monthly":"4500.005"}}`); got != 422 {

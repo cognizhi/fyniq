@@ -2566,6 +2566,43 @@ type FyniqPaymentBatchRelease struct {
 	BreakGlassID   *uuid.UUID
 }
 
+type FyniqPayrollMapping struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Version        int32
+	SetBy          string
+	SetAt          time.Time
+}
+
+type FyniqPayrollMappingEntry struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	MappingID      uuid.UUID
+	Key            string
+	AccountID      uuid.UUID
+}
+
+type FyniqPayrollRunReceipt struct {
+	OrganisationID  uuid.UUID
+	ID              uuid.UUID
+	LinkID          uuid.UUID
+	Epoch           int32
+	SourceSystem    string
+	RunID           uuid.UUID
+	Version         int32
+	WageMonth       time.Time
+	EnvelopeSha256  string
+	ApproverIssuer  string
+	ApproverSubject string
+	PreparerIssuer  string
+	PreparerSubject string
+	MappingVersion  int32
+	EntryID         *uuid.UUID
+	Totals          []byte
+	ReceivedAt      time.Time
+	CreatedXact     int64
+}
+
 type FyniqPdAnonymisation struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2688,6 +2725,7 @@ type FyniqPeopleLink struct {
 	CreatedBy            string
 	CreatedAt            time.Time
 	ChangedAt            time.Time
+	NemuraOrigin         string
 }
 
 type FyniqPeopleLinkInbox struct {
@@ -3269,6 +3307,13 @@ type FyniqRoleAssignment struct {
 	ExpiresAt      *time.Time
 	CreatedAt      time.Time
 	RevokedAt      *time.Time
+}
+
+type FyniqRoleAssignmentScope struct {
+	OrganisationID   uuid.UUID
+	AssignmentID     uuid.UUID
+	DimensionValueID uuid.UUID
+	CreatedAt        time.Time
 }
 
 type FyniqSalesReminder struct {

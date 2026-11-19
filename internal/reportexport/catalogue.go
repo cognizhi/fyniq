@@ -31,9 +31,9 @@ var Exported = []string{
 	"period_close_check", "period_reopen", "period_variance_explanation", "policy_acknowledgement", "policy_draft",
 	"policy_version", "project", "project_member", "project_task", "billing_rate", "person_cost_rate", "project_billed_item", "project_milestone", "quote_outcome", "time_entry", "time_timer", "timesheet_submission", "recurring_bill", "recurring_bill_version", "recurring_invoice",
 	"recurring_invoice_version", "recurring_journal", "recurring_journal_version", "report_export", "restore_drill",
-	"review_log_entry", "review_log_review", "risk", "risk_review", "risk_version", "role_assignment", "sales_reminder",
+	"review_log_entry", "review_log_review", "risk", "risk_review", "risk_version", "role_assignment", "role_assignment_scope", "sales_reminder",
 	"security_incident", "security_incident_step", "share_issue", "sod_override", "statement_mapping",
-	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "user_preference", "user_saved_item", "withholding_decision", "people_source", "person_projection",
+	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "user_preference", "user_saved_item", "withholding_decision", "people_source", "person_projection", "payroll_mapping", "payroll_mapping_entry", "payroll_run_receipt",
 	"psp_account", "psp_balance", "psp_dispute_credit", "psp_dispute_loss", "psp_event", "psp_payout", "psp_txn",
 }
 

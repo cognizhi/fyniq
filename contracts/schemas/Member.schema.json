@@ -27,6 +27,22 @@
       "format": "uuid",
       "type": "string"
     },
+    "last_sign_in_at": {
+      "description": "When they last signed in to Fyniq; absent when they never have (SEC-06).",
+      "examples": [
+        "2026-11-20T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "passkeys": {
+      "description": "How many live passkeys they hold: none means they confirm it's you only by signing in again (SEC-01).",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
     "removed": {
       "description": "true in the answer to removeMember: they are no longer a member.",
       "examples": [
@@ -58,7 +74,8 @@
     "user_id",
     "display_name",
     "roles",
-    "expired_roles"
+    "expired_roles",
+    "passkeys"
   ],
   "title": "Member",
   "type": "object"

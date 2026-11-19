@@ -80,6 +80,33 @@ type SuperAdmins interface {
 	// Super admin's confirmation, or a deployment recovery. The signed-in identity replaces their
 	// others, and their recovery codes are replaced with ten new ones.
 	Recover(ctx context.Context, r Recovery) (Recovered, error)
+	// List is the active Super admins, longest-serving first (the super-admin console).
+	List(ctx context.Context) ([]SuperAdminInfo, error)
+	// Health is the platform's health across every organisation: the platform jobs' latest beats and the outbox's backlog.
+	// Counts, times and names only (FR-ADM-07).
+	Health(ctx context.Context) (PlatformHealth, error)
+}
+
+// SuperAdminInfo is a Super admin as the console lists them.
+type SuperAdminInfo struct {
+	UserID      uuid.UUID
+	DisplayName string
+	AddedAt     time.Time
+}
+
+// Heartbeat is a platform job's latest beat.
+type Heartbeat struct {
+	Name     string
+	LastBeat time.Time
+	Detail   string
+}
+
+// PlatformHealth is what the super-admin console shows of the platform.
+type PlatformHealth struct {
+	Heartbeats    []Heartbeat
+	OutboxPending int64
+	OutboxDead    int64
+	OldestPending *time.Time
 }
 
 // AcceptInvitation is what SuperAdmins.AcceptInvitation needs.
@@ -372,6 +399,10 @@ type Members interface {
 	Assign(ctx context.Context, membershipID uuid.UUID, role string, expires *time.Time) (RoleAssignment, error)
 	// Revoke ends a role assignment; it is never changed.
 	Revoke(ctx context.Context, assignmentID uuid.UUID) error
+	// Narrow limits an Approver assignment to values of the department dimension, once, when the role is given (FR-ADM-01):
+	// a role with no scope reaches none of a dept-qualified cell. Another role, another dimension or a second narrowing is
+	// refused with CodeMembership; the scope is audited role_assignment.scoped.
+	Narrow(ctx context.Context, assignmentID uuid.UUID, departmentValues []uuid.UUID) error
 	// Roles returns the roles a user holds now: live, unexpired assignments of an active membership.
 	Roles(ctx context.Context, userID uuid.UUID, now time.Time) ([]RoleAssignment, error)
 	// List returns the active members with their names and live roles at now, by membership ID (the order they
@@ -401,6 +432,9 @@ type RoleAssignment struct {
 	Role         string
 	ExpiresAt    *time.Time
 	RevokedAt    *time.Time
+	// DepartmentValues are the department values an Approver assignment is narrowed to (FR-ADM-01); none: a role with no
+	// scope, which reaches none of a dept-qualified cell.
+	DepartmentValues []uuid.UUID
 }
 
 // MemberOf is a person's membership by its organisation and user.

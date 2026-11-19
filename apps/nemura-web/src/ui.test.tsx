@@ -24,6 +24,8 @@ import { Person } from "./pages/Person";
 import { TermsPanel } from "./components/TermsPanel";
 import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
+import { PayRunApproval } from "./pages/PayRunApproval";
+import { PayRuns } from "./components/PayRuns";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
 import { Delegations } from "./components/Delegations";
@@ -1218,5 +1220,92 @@ describe("payroll records", () => {
     fireEvent.submit(screen.getByRole("form", { name: "Add a one-off item" }));
     expect(await screen.findByText("The item is added.")).toBeTruthy();
     expect(bodies.get(`POST /v1/people/${person}/pay/one-offs`)).toMatchObject({ item: { key: "bonus-2026", nature: "bonus", amount: "5000.00", cpf_wages: true } });
+  });
+});
+
+// req: FR-PAY-01, FR-PAY-06, NM-PAY-09
+describe("pay runs", () => {
+  const person = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61";
+  const gid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30";
+  const rid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43";
+  const version = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f41", version: 1, state: "calculated", digest: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", prepared_by: person, prepared_at: "2026-11-20T10:00:00Z", people: 1, flags_failing: 0, flags_warning: 1,
+    pack_versions: ["sg-cpf@2026.2"], totals: { gross: "5000.00", cpf_employee: "1000.00", cpf_employer: "850.00", sdl_payable: "11.00", shg: "0.00", deductions: "0.00", reimbursements: "0.00", net: "4000.00", disburse: "4000.00", employer_cost: "5861.00" } };
+  const run = { id: rid, month: "2026-06-01", pay_group_id: gid, pay_group: "Monthly", pay_day: "2026-06-25", latest: version };
+
+  it("calculates a run, shows each person's month with what to look at, overrides a figure with a reason and calculates the next version", async () => {
+    answer("GET /v1/payroll/runs", { status: 200, body: { runs: [] } });
+    answer("POST /v1/payroll/runs", { status: 201, body: run });
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: { ...run, versions: [version], overrides: [], lines: [{ person_id: person, person: "Ben Lim", gross: "5000.00", ow_subject: "5000.00", aw_subject: "0.00", cpf_total: "1850.00", cpf_employee: "1000.00", cpf_employer: "850.00", sdl: "11.25", shg: "0.00", deductions: "0.00", reimbursements: "0.00",
+      held: "0.00", net: "4000.00", disburse: "4000.00", employer_cost: "5861.25", items: [], working: [], flags: [{ code: "WAGE_CLASS", fail: false, message: "Commission: the facts decide." }] }] } });
+    answer(`POST /v1/payroll/runs/${rid}/overrides`, { status: 201, body: { id: gid } });
+    answer(`POST /v1/payroll/runs/${rid}/versions`, { status: 201, body: { ...run, latest: { ...version, version: 2 } } });
+    const { container } = render(<PayRuns month="2026-06-01" groups={[{ id: gid, name: "Monthly", pay_day: 25, cutoff_days: 7, approval_days: 3 }]} people={[{ id: person, name: "Ben Lim" }]} />);
+    expect(await screen.findByText("No run for this month yet.")).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.submit(screen.getByRole("form", { name: "Calculate a run" }));
+    expect(await screen.findByText("The run is calculated: version 1.")).toBeTruthy();
+    expect(bodies.get("POST /v1/payroll/runs")).toMatchObject({ month: "2026-06-01", pay_group_id: gid });
+    expect(await screen.findByText(/Version 1, calculated\. Digest 9f86d081884c\. 0 failing and 1 to look at\./)).toBeTruthy();
+    expect(screen.getByText("Look at: Commission: the facts decide.")).toBeTruthy();
+    expect(screen.getByText(/Gross 5000.00; employee CPF 1000.00; employer CPF 850.00; SDL payable 11.00; net 4000.00; employer cost 5861.00/)).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    fireEvent.change(screen.getByLabelText("The figure to put in place (dollars)"), { target: { value: "999.00" } });
+    fireEvent.change(screen.getByLabelText("Why the calculated figure is wrong"), { target: { value: "The CPF Board's own figure." } });
+    fireEvent.submit(screen.getByRole("form", { name: "Override a figure" }));
+    expect(await screen.findByText("The override is added. Calculate the next version to apply it.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/payroll/runs/${rid}/overrides`)).toMatchObject({ person_id: person, field: "cpf_employee", value: "999.00" });
+    fireEvent.click(screen.getByRole("button", { name: "Calculate the next version" }));
+    expect(await screen.findByText("The next version is calculated; the one before is superseded.")).toBeTruthy();
+  });
+});
+
+// req: FR-PAY-07, NM-ROLE-04, NM-PAY-11
+describe("approving a pay run", () => {
+  const rid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43";
+  const preparer = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45";
+  const other = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e46";
+  const digest = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
+  const totals = { gross: "10000.00", cpf_employee: "2000.00", cpf_employer: "1700.00", sdl_payable: "22.00", shg: "0.00", deductions: "0.00", reimbursements: "0.00", net: "8000.00", disburse: "8000.00", employer_cost: "11722.00" };
+  const version = (n: number, failing: number) => ({ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f41", version: n, state: "calculated", digest, prepared_by: preparer, prepared_at: "2026-11-20T10:00:00Z", people: 2, flags_failing: failing, flags_warning: 1, pack_versions: [], totals });
+  const run = (failing: number) => ({ id: rid, month: "2026-06-01", pay_group_id: "g", pay_group: "Monthly", pay_day: "2026-06-25", latest: version(2, failing), versions: [version(2, failing)], overrides: [{ id: "o", person_id: "p", person: "Ben Lim", field: "cpf_employee", value: "999.00", reason: "The CPF Board's own figure." }],
+    lines: [{ person_id: "p", person: "Ben Lim", gross: "5000.00", ow_subject: "5000.00", aw_subject: "0.00", cpf_total: "1850.00", cpf_employee: "999.00", cpf_employer: "850.00", sdl: "11.25", shg: "0.00", deductions: "0.00", reimbursements: "0.00", held: "0.00", net: "4001.00", disburse: "4001.00", employer_cost: "5861.25",
+      items: [{ key: "basic", name: "Basic salary", class: "ordinary", amount: "5000.00" }], working: [{ rule: "RND-CPF", text: "Rates employer 0.17 and employee 0.20." }], flags: [{ code: "OVERRIDE", fail: false, message: "cpf_employee is overridden." }] }] });
+  const changes = { has_previous: true, gross_now: "10000.00", gross_previous: "5000.00", net_now: "8000.00", net_previous: "4000.00", employer_cost_now: "11722.00", employer_cost_previous: "5861.00",
+    changes: [{ person_id: "p", person: "Ben Lim", cause: "one_off", item: "bonus-2026", amount: "5000.00" }], unexplained: [{ person_id: "q", person: "Eve Ong", why: "CPF changed with no change in wages." }] };
+
+  it("shows the digest, the flags, the override, what changed and the unexplained, and approves with a passkey over the digest", async () => {
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: run(0) });
+    answer(`GET /v1/payroll/runs/${rid}/changes`, { status: 200, body: changes });
+    answer(`POST /v1/payroll/runs/${rid}/approval`, { status: 204, body: undefined });
+    stepUp.result = undefined;
+    const { container } = render(<PayRunApproval id={rid} roles={["owner"]} member={other} />);
+    expect(await screen.findByText(`Digest of this version, which your passkey confirms: ${digest}`)).toBeTruthy();
+    expect(screen.getByText("Look at: Ben Lim: cpf_employee is overridden.")).toBeTruthy();
+    expect(screen.getByText(/Ben Lim: cpf_employee set to 999.00. Reason: The CPF Board's own figure./)).toBeTruthy();
+    expect(await screen.findByText("Ben Lim: one-off item 5000.00 (bonus-2026)")).toBeTruthy();
+    expect(screen.getByText("Eve Ong: CPF changed with no change in wages.")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Confirm with my passkey and approve version 2" }));
+    expect(await screen.findByText("Approved. The inputs it used are marked used by this run.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/payroll/runs/${rid}/approval`)).toMatchObject({ version: 2, digest });
+  });
+
+  it("says that the preparer cannot approve and draws no button; a version with a failing check cannot be approved either", async () => {
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: run(0) });
+    answer(`GET /v1/payroll/runs/${rid}/changes`, { status: 200, body: { ...changes, has_previous: false } });
+    const first = render(<PayRunApproval id={rid} roles={["owner"]} member={preparer} />);
+    expect(await screen.findByText(/You prepared this version: another Payroll administrator or the Owner approves it\./)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Confirm with my passkey/ })).toBeNull();
+    first.unmount();
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: run(2) });
+    render(<PayRunApproval id={rid} roles={["owner"]} member={other} />);
+    expect(await screen.findByText(/This version has 2 failing checks/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Confirm with my passkey/ })).toBeNull();
+  });
+
+  it("is refused in words to anyone but the Payroll administrator and the Owner", () => {
+    render(<PayRunApproval id={rid} roles={["hr_admin"]} member={other} />);
+    expect(screen.getByRole("alert").textContent).toContain("Only the Payroll administrator and the Owner");
   });
 });

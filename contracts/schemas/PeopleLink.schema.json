@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "client_id": {
+      "description": "The API client Nemura calls with: its scopes are Appendix E's and no other.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "epoch": {
+      "description": "The link's epoch: every event carries it and an earlier one is refused (FR-PPL-16).",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "inbox": {
+      "description": "The events received, by outcome.",
+      "items": {
+        "$ref": "PeopleLinkInbox.schema.json"
+      },
+      "type": "array"
+    },
+    "linked_at": {
+      "description": "When it was linked.",
+      "examples": [
+        "2026-11-20T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "nemura_organisation_id": {
+      "description": "The Nemura organisation it is linked to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "sources": {
+      "description": "Where each feature lives now.",
+      "items": {
+        "$ref": "PeopleLinkSource.schema.json"
+      },
+      "type": "array"
+    },
+    "state": {
+      "description": "none: never linked; unlinked is final, and a later link starts at a higher epoch.",
+      "enum": [
+        "none",
+        "active",
+        "suspended",
+        "unlinking",
+        "unlinked"
+      ],
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The link's version.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "state",
+    "sources",
+    "inbox"
+  ],
+  "title": "PeopleLink",
+  "type": "object"
+}

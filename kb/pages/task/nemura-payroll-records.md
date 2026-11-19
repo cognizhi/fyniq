@@ -4,7 +4,7 @@ type: task
 title: Set up pay groups and record each person's pay in Nemura
 summary: What the Payroll administrator and the Owner record for payroll, how a pay record, the year to date and a one-off item work, and why nobody else sees pay
 sources:
-  - docs/user-guide/nemura/payroll-records.md sha256:5929244f7df47a45d1f8dea7ab75a2303a63a84c58ee1af5278b85c46e3c19fe
+  - docs/user-guide/nemura/payroll-records.md sha256:6a9a72543e09b36c5c246814aed1b6b77e4aadc6c258e052524af8690ae11bf6
 data_class: personal
 taint: trusted
 status: published
@@ -38,9 +38,18 @@ aliases:
 
 (src: docs/user-guide/nemura/payroll-records.md#steps)
 
+## Calculate a pay run
+
+- Choose the wage month and calculate the run for a pay group: every person with pay in the group is worked out exactly from their pay record and the inputs (a part month by the days each pay record covers, the one-off items, unpaid leave by the month's working days, approved overtime), each amount rounded once to the cent, and each person's month shows its items with their sources, its working and what to look at.
+- A missing fact stops the run and names the person; a ✖ blocks approval and a ⚠ is shown to the approver.
+- An override replaces one figure of one person's month (employee or employer CPF, SDL or the fund) with a reason of at least ten characters; it applies from the next calculation and is flagged. A version is read-only with a digest; the next version supersedes it, and after an approved version it is a correction with a reason.
+- Overtime on a rest day or public holiday is added as a one-off item, not guessed. (src: docs/user-guide/nemura/payroll-records.md#calculate-a-pay-run)
+
 ## What happens next
 
 - A pay record is history: a change starts a new one from a later day. A one-off item's class follows its facts, not its name; for the month and payable by the 14th of the next month is ordinary wages, otherwise additional. A one-off is used by one run once. (src: docs/user-guide/nemura/payroll-records.md#what-happens-next)
+
+- The run is approved by another person, who reads it against last month's and confirms with a passkey: see [[nemura.payroll-approval]]. (src: docs/user-guide/nemura/payroll-records.md#related)
 
 ## When it looks wrong
 

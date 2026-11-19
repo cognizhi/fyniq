@@ -13,6 +13,7 @@ import { Letters } from "./pages/Letters";
 import { MyDetails } from "./pages/MyDetails";
 import { AskQuestion } from "./pages/AskQuestion";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
+import { PayRunApproval } from "./pages/PayRunApproval";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleRequests } from "./pages/PeopleRequests";
 import { LetterTemplates } from "./pages/LetterTemplates";
@@ -78,6 +79,7 @@ export function App() {
     if (state.status === "in" && route.id === "my-details") return <MyDetails roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "ask") return <AskQuestion roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "onboarding") return <PeopleOnboarding roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "payrun-approval") return <PayRunApproval id={matched?.params.id ?? ""} roles={state.session.roles ?? []} member={state.session.member_id} />;
     if (state.status === "in" && route.id === "payroll-hr") return <PayrollHR roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "people-requests") return <PeopleRequests roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "letters") return <Letters roles={state.session.roles ?? []} />;

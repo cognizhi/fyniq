@@ -330,7 +330,25 @@ func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.
 // fakeLetters answers letters with whatever the test says.
 type fakePayroll struct{ err error }
 
-func (f fakePayroll) Groups(context.Context, Session) ([]PayGroup, error) { return nil, f.err }
+func (f fakePayroll) Approve(context.Context, Session, uuid.UUID, int, string) error { return f.err }
+func (f fakePayroll) Changes(context.Context, Session, uuid.UUID) (RunChanges, error) {
+	return RunChanges{}, f.err
+}
+func (f fakePayroll) StartRun(context.Context, Session, time.Time, uuid.UUID) (Run, error) {
+	return Run{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"}, f.err
+}
+func (f fakePayroll) Runs(context.Context, Session, time.Time) ([]Run, error) { return nil, f.err }
+func (f fakePayroll) RunDetail(context.Context, Session, uuid.UUID) (RunDetail, error) {
+	return RunDetail{}, f.err
+}
+func (f fakePayroll) Recalculate(context.Context, Session, uuid.UUID, string) (Run, error) {
+	return Run{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"}, f.err
+}
+func (f fakePayroll) AddOverride(context.Context, Session, uuid.UUID, uuid.UUID, string, string, string) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f42", f.err
+}
+func (f fakePayroll) WithdrawOverride(context.Context, Session, uuid.UUID) error { return f.err }
+func (f fakePayroll) Groups(context.Context, Session) ([]PayGroup, error)        { return nil, f.err }
 func (f fakePayroll) CreateGroup(context.Context, Session, PayGroupInput) (string, error) {
 	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30", f.err
 }

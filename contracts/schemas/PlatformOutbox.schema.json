@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "dead": {
+      "description": "Work that failed its attempts and needs someone.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "oldest_pending": {
+      "description": "Since when the oldest waiting work has waited.",
+      "examples": [
+        "2026-11-20T09:20:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "pending": {
+      "description": "Work waiting or running.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "pending",
+    "dead"
+  ],
+  "title": "PlatformOutbox",
+  "type": "object"
+}

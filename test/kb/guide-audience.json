@@ -608,6 +608,14 @@
     "status": "draft"
   },
   {
+    "file": "installation-console.md",
+    "key": "settings.console",
+    "roles": [
+      "super_admin"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "integrations.md",
     "key": "settings.integrations",
     "roles": [

@@ -127,7 +127,7 @@ const (
 // registration (FR-INT-02, p1-public-api task 3.1).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
 	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts, CapTable,
-	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile, ConnectedApps, KnowledgeBase}
+	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile, ConnectedApps, KnowledgeBase, PeopleAndHR}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -330,6 +330,9 @@ type Policy struct {
 	// ByRecord operations reach records of several kinds, whose own Appendix D rows decide past the policy: a record the
 	// caller may not see is not found, as a search leaves it out (an evidence file, rev 0.188).
 	ByRecord bool
+	// LinkScope marks an operation only the link's client may call, holding this scope (PRD-002 Appendix E; p1-payroll-link design D1): no
+	// role decides it, and the link's client reaches nothing else.
+	LinkScope string
 }
 
 // The policies of the P0 endpoints. A cell's qualifier is carried, not enforced: the amount limit
@@ -602,6 +605,18 @@ var (
 	GetIntegrationClient    = Policy{Operation: "getIntegrationClient", Capability: ConnectedApps, Need: View}
 	CreateIntegrationClient = Policy{Operation: "createIntegrationClient", Capability: ConnectedApps, Need: Create}
 	RevokeIntegrationClient = Policy{Operation: "revokeIntegrationClient", Capability: ConnectedApps, Need: Create}
+	// The link to the people platform (FR-PPL-01, FR-PPL-16): a person with C on "People and HR" asks, the Owner and a second approver approve; the
+	// link's client alone calls the event operations, with the scope each names (PRD-002 Appendix E).
+	GetPeopleLink                = Policy{Operation: "getPeopleLink", Capability: PeopleAndHR, Need: View}
+	RequestPeopleLink            = Policy{Operation: "requestPeopleLink", Capability: PeopleAndHR, Need: Create}
+	RequestPeopleUnlink          = Policy{Operation: "requestPeopleUnlink", Capability: PeopleAndHR, Need: Create}
+	ReceivePeopleProjectionEvent = Policy{Operation: "receivePeopleProjectionEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.projection.write"}
+	ListPeopleProjection         = Policy{Operation: "listPeopleProjection", Capability: PeopleAndHR, Need: View}
+	MapPersonToUser              = Policy{Operation: "mapPersonToUser", Capability: PeopleAndHR, Need: Create}
+	GetPayrollMapping            = Policy{Operation: "getPayrollMapping", Capability: PayRuns, Need: View}
+	SetPayrollMapping            = Policy{Operation: "setPayrollMapping", Capability: PayRuns, Need: Create}
+	SubmitPayrollRun             = Policy{Operation: "submitPayrollRun", Capability: PeopleAndHR, Need: Create, LinkScope: "payroll.journal.submit"}
+	ReceivePeopleHoldEvent       = Policy{Operation: "receivePeopleHoldEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.holds.write"}
 	// Personal access tokens (FR-INT-02): a member makes, lists and revokes their own under "Own MCP connection"; an
 	// Administrator lists and revokes any, and asks to reclass one, under "Connected apps".
 	CreatePersonalAccessToken         = Policy{Operation: "createPersonalAccessToken", Capability: OwnMCPConnection, Need: Create}
@@ -1402,6 +1417,8 @@ var (
 		Note: superAdminNote + " The other Super admin confirms; nobody confirms their own recovery."}
 	ListInstallationAnnouncements = Policy{Operation: "listInstallationAnnouncements", Capability: SuperAdmins, Need: View, NoOrganisation: true,
 		Note: superAdminNote}
+	GetPlatformHealth               = Policy{Operation: "getPlatformHealth", Capability: SuperAdmins, Need: View, NoOrganisation: true, Note: superAdminNote}
+	ListSuperAdmins                 = Policy{Operation: "listSuperAdmins", Capability: SuperAdmins, Need: View, NoOrganisation: true, Note: superAdminNote}
 	PublishInstallationAnnouncement = Policy{Operation: "publishInstallationAnnouncement", Capability: SuperAdmins, Need: Create,
 		NoOrganisation: true, Note: superAdminNote}
 	WithdrawInstallationAnnouncement = Policy{Operation: "withdrawInstallationAnnouncement", Capability: SuperAdmins, Need: Create,
@@ -2003,7 +2020,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,
@@ -2016,7 +2033,7 @@ var Policies = index(CaptureDocument, CaptureFromMessage, ListCaptures, GetCaptu
 	ListDimensions, CreateDimension, ReplaceDimension, ListDimensionValues, CreateDimensionValue, ReplaceDimensionValue, ListContacts, GetContact, GetContactSummary,
 	CreateContact, UpdateContact, ListCustomerGroups, GetCustomerGroup, CreateCustomerGroup, ReplaceCustomerGroup, ListMembers, ListMemberInvitations, CreateMemberInvitation, WithdrawMemberInvitation, AssignRole,
 	RevokeRole, RemoveMember, SearchEvidence, GetEvidenceRules, GetEvidenceFile, GetEvidencePreview, CreateEvidenceDownload, GetEvidenceDownload, SearchRecords, ListOwnerSuccessions, StartOwnerSuccession, AddOwnerSuccessionEvidence, ListOwnerSuccessionEvidence,
-	ObjectToOwnerSuccession, WithdrawOwnerSuccession, CompleteOwnerSuccession, GetAccessReview, ExportAccessReview, AttestAccessReview, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, GetHelpState, SetTourState, GetMyPreferences, SetMyPreferences, ListSavedItems, SaveSavedItem, TakeAwaySavedItem, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit, GetOAuthConsent, AnswerOAuthConsent, GetConnectedApps, RevokeMyConnection, ListMCPActivity, ListMCPRegistrations, DenyMCPRegistration, ListMCPConnections, RevokeMemberConnection, GetMyMCP, SetMyMCP, RegisterOAuthClient,
+	ObjectToOwnerSuccession, WithdrawOwnerSuccession, CompleteOwnerSuccession, GetAccessReview, ExportAccessReview, AttestAccessReview, AcceptMemberInvitation, SendTestEmail, GetEmailMessage, GetEmailSettings, SetEmailSender, ListEmailSuppressions, ReleaseEmailSuppression, GetCaptureAddresses, SetOrganisationCaptureAddress, SetMyCaptureAddress, SetBankCaptureAddress, ListInboundMessages, ListMyInboundMessages, DecideCaptureSender, DecideMyCaptureSender, DecideBankSender, ListNotifications, ReadNotification, UnreadNotification, ArchiveNotification, ReadAllNotifications, GetNotificationPreferences, SetNotificationPreference, SetQuietHours, SendTestNotification, GetHelpState, SetTourState, GetMyPreferences, SetMyPreferences, GetPlatformHealth, ListSuperAdmins, ListSavedItems, SaveSavedItem, TakeAwaySavedItem, ListEmailMessages, ListBanners, DismissBanner, ListAnnouncements, PublishAnnouncement, WithdrawAnnouncement, ListInstallationAnnouncements, PublishInstallationAnnouncement, WithdrawInstallationAnnouncement, ListItems, GetItem, CreateItem, UpdateItem, GetAccount, CreateJournal, BulkCreateJournals, GetJournal, ListJournals, ListWaitingReversals, GetAccounting, RecordAccountingFramework, ConfirmAccountingFramework, RecordAccountingPolicy, ApproveAccountingPolicy, ListRecurringJournals, GetRecurringJournal, CreateRecurringJournal, ReplaceRecurringJournal, PauseRecurringJournal, ResumeRecurringJournal, ReplaceJournal, PostJournal, ReverseJournal, RequestJournalPost, RequestJournalReversal, EditJournal, RequestJournalEdit, GetOAuthConsent, AnswerOAuthConsent, GetConnectedApps, RevokeMyConnection, ListMCPActivity, ListMCPRegistrations, DenyMCPRegistration, ListMCPConnections, RevokeMemberConnection, GetMyMCP, SetMyMCP, RegisterOAuthClient,
 
 	GetOpeningBalances, ReplaceOpeningBalances, PostOpeningBalances, RequestOpeningBalancesEdit,
 	ListPeriods, GetPeriod, OpenFinancialYear, GetGeneralLedger, GetLedgerEntry, GetSchedules, GetFinancialStatement, ExportFinancialStatement, RequestReportExport, ListReportExports, GetReportExport, GetReportExportFile, GetSalesByCustomer, GetSalesByItem, GetSpendBySupplier, GetTopExpenses, GetKpis, QueryMetrics, ListKpiInputs, SetKpiInput, ListChecks, GetCheck, RunChecks, SetCheckOwner, ReviewCheckItem, ReplayBackgroundWork, GetPeriodClose, RunCloseChecks, ClosePeriod, RequestPeriodReopen,

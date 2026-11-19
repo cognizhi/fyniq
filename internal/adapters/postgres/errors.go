@@ -165,6 +165,9 @@ var fyCodes = map[string]string{
 	"FY267": storage.CodeBanking,
 
 	"FY268": storage.CodeSuccession,
+	"FY700": storage.CodeMembership, // a department scope never changes or goes (000702)
+	"FY701": storage.CodeMembership, // only a live Approver role is narrowed to departments (000702)
+	"FY702": storage.CodeMembership, // a scope names department values (000702)
 	"FY269": storage.CodeVersion,            // an invitation's registry entry never changes (000236)
 	"FY270": storage.CodeIdentityStepUp,     // a sign-in linked or removed without a recent second factor (000239)
 	"FY271": storage.CodeIdentity,           // a sign-in linked already, or the last or current one removed (000239)
@@ -249,6 +252,7 @@ var fyCodes = map[string]string{
 	"FY355": storage.CodeStatementsApproval, // a statements approval outside its rules (000394)
 	"FY420": storage.CodeAPIClient,          // an API client removed, rewritten, revoked twice or changed after its revocation (000432)
 	"FY900": storage.CodePeopleLink,         // the link deleted, started out of epoch order, moved between states it may not, or a person moved to an older version (000900)
+	"FY901": storage.CodePayrollRun,         // a payroll entry with no receipt from its own transaction (000903)
 	"FY060": storage.CodeAudit,
 	"FY061": storage.CodeAudit,
 	"FY070": storage.CodeOutbox,

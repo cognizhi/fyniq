@@ -203,6 +203,12 @@ func (rp *RelyingParty) Verify(u User, challenge, response []byte) (Asserted, er
 // exactly challenge and this origin; its authenticator data is for this relying party, with the person present and
 // verified; and the passkey's public key verifies its signature over the authenticator data and the client data's hash.
 func (rp *RelyingParty) Reverify(k storage.Passkey, challenge []byte, a storage.PasskeyAssertion) error {
+	return rp.ReverifyAt(rp.origin, k, challenge, a)
+}
+
+// ReverifyAt checks a kept assertion as Reverify does, for one made at another origin of the same relying party: one relying-party ID serves both
+// apps, each at its own origin, so Fyniq checks a Nemura approval against the origin the link was approved with (PRD-002 question 10).
+func (rp *RelyingParty) ReverifyAt(origin string, k storage.Passkey, challenge []byte, a storage.PasskeyAssertion) error {
 	var cd struct {
 		Type      string `json:"type"`
 		Challenge string `json:"challenge"`
@@ -216,7 +222,7 @@ func (rp *RelyingParty) Reverify(k storage.Passkey, challenge []byte, a storage.
 		return errors.Join(ErrRefused, fmt.Errorf("the client data is a %q, not an assertion", cd.Type))
 	case cd.Challenge != base64.RawURLEncoding.EncodeToString(challenge):
 		return errors.Join(ErrRefused, errors.New("the client data signs another challenge"))
-	case cd.Origin != rp.origin:
+	case cd.Origin != origin:
 		return errors.Join(ErrRefused, fmt.Errorf("the client data comes from %q", cd.Origin))
 	}
 	var ad protocol.AuthenticatorData

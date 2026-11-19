@@ -8,6 +8,15 @@
   or the order differs from the PRD; `TestAnUnknownAreaDenies` refuses every principal on an area Appendix D does not
   name. The per-area matrix tests run each operation's area in `TestAuthorisationMatrix`.)
 - [ ] 1.2 The roles of §6 and their combinations, attribute conditions and field masking, checked in the API and by row-level security scope predicates on sensitive tables. Tests on every role's rights and limits, `// req: access/roles-and-segregation <role> role`, and the permission model test
+  (20 Nov 2026, with 2.1: attribute conditions for the Approver's department cells (PRD-001 rev 0.371) are enforced twice: the API's policy
+  table still refuses a department-qualified read it has no endpoint for, and the database holds a restrictive policy on journal
+  lines and balances for the API's role that reaches only the rows of the department values the person's Approver role is
+  narrowed to (`TestAttackADepartmentScopeBindsWhatTheAPIReads`: no scope reaches none; any other role beyond Employee leaves
+  the person unrestricted here; the worker, the executor and the read-only role are unfiltered; the tenant policy is never
+  widened; a scope is fixed, audited, and names department values of a live Approver assignment only). The AI and MCP calls
+  for a person inherit it (`TestAPrincipalNamesItsPersonForTheDatabase`). Roles' own rights and limits were tested above.
+  Field masking is the API's. **Left:** the department-qualified endpoints (reports, budgets, approvals by department) and
+  documents' own lines; this task stays open until they are built.)
 - [x] 1.3 SOD-1…10, evaluated at action time from the record's history. Tests `// req: SOD-1` through `// req: SOD-10`, one conflict each, blocked in Standard mode
   (20 Oct 2026, provisional (PRD rev 0.42): SOD-6 is the conflict a combination of roles makes, derived from Appendix D
   (`authz.RoleConflicts`: the Administrator with any role holding P, A or R on a transaction row; the Owner role alone
@@ -59,6 +68,11 @@
   decision: department scopes are built in P1, a role narrowed to department values reaching only those records, lines
   and budgets under Appendix D's "dept" cells; entity scopes with multi-entity (P3). **Left:** department scopes and
   invitation emails.)
+  (20 Nov 2026, department scopes built in part, PRD-001 rev 0.371: `POST /v1/members/{member_id}/roles` takes `department_value_ids`
+  for the Approver role (each a value of the department dimension, checked when asked, carried by the approval request and
+  fixed for the assignment: migration 000702), the members list shows them and Settings › Members and roles offers the
+  department values when the Approver role is chosen. **Left:** an invitation's scope, invitation emails
+  (`p1-templates-email`).)
 - [x] 2.2 Mandatory MFA: TOTP through the `SignIn` port's fake, WebAuthn passkeys in the API, no SMS. Tests `// req: FR-ADM-02` (P1 part) and `// req: SEC-01`, with a replayed assertion refused; sign-in and step-up allow password managers, paste and passkeys (the sign-in half of NFR-A11Y-05, which `p1-app-shell` closes)
   (20 Oct 2026, provisional (PRD rev 0.43): TOTP stays with the sign-in provider; the local sign-in page's second factor
   is its fake, ticked by default. Passkeys in the API (`internal/passkey`, go-webauthn v0.18.2; attestation "none", user
@@ -207,6 +221,15 @@
   recovery codes, and a second authenticator (recommended), each Done or To do from what the API holds, and "You are set up"
   when the first two are done; guide `sign-in.md` (Set up how you confirm it's you), compiled into `auth.sign-in`; test
   `enrol.test.tsx`. Not a first-run tour step: the founder's tour is at its seven.)
+  (20 Nov 2026, super-admin-console built, PRD-001 rev 0.372: `GET /v1/installation/health` and `GET /v1/installation/super-admins` for a
+  Super admin (counts, times and names only, through definer functions: migration 000703), and Settings › Installation console
+  (`AdminConsole.tsx`): healthy or degraded and why, the platform jobs' beats, the outbox's backlog, the Super admins with the
+  warning while there is one; guide `installation-console.md`, compiled into `settings.console`. Tests
+  `TestTheSuperAdminConsoleReadsHealthAndSuperAdmins`, `adminConsole.test.tsx`. Not shown: installation email senders, whose
+  SPF, DKIM and DMARC status has its own page.)
+  (20 Nov 2026, members columns, PRD-001 rev 0.373: last sign-in and live passkeys beside each member (`member_activity()`, migration 000704).
+  **Left, an owner question:** the member's email (personal data the Auditor and the DPO would see on the list); the default experience
+  mode per invitation, an invitation's department scope, MFA status beyond passkeys (TOTP is the provider's).)
 - [x] 4.2 Run the walkthrough test for each role (QA-UI-08) on the workspaces these rights produce
   (20 Nov 2026, found built: `apps/web/journeys/walkthroughs.spec.ts` runs QA-UI-08 for each of the sixteen roles of §7.1
   in an organisation of its own: landing page, sidebar, Home blocks, Inbox, the "not part of your access" page and

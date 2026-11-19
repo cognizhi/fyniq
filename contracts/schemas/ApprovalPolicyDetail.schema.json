@@ -103,7 +103,8 @@
         "statements_approval",
         "corporate_document",
         "api_client",
-        "kb_publication"
+        "kb_publication",
+        "people_link"
       ]
     },
     "row": {

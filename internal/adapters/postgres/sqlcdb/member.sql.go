@@ -188,6 +188,22 @@ func (q *Queries) InsertMemberInvitation(ctx context.Context, arg InsertMemberIn
 	return i, err
 }
 
+const insertRoleAssignmentScope = `-- name: InsertRoleAssignmentScope :exec
+INSERT INTO fyniq.role_assignment_scope (assignment_id, dimension_value_id) VALUES ($1, $2)
+`
+
+type InsertRoleAssignmentScopeParams struct {
+	AssignmentID     uuid.UUID
+	DimensionValueID uuid.UUID
+}
+
+// A department value an Approver assignment is narrowed to (FR-ADM-01); the database allows a live Approver assignment and
+// department values only.
+func (q *Queries) InsertRoleAssignmentScope(ctx context.Context, arg InsertRoleAssignmentScopeParams) error {
+	_, err := q.db.Exec(ctx, insertRoleAssignmentScope, arg.AssignmentID, arg.DimensionValueID)
+	return err
+}
+
 const listMembers = `-- name: ListMembers :many
 SELECT m.id, m.user_id, m.status, m.version, m.created_at
   FROM fyniq.user_membership m
@@ -219,6 +235,36 @@ func (q *Queries) ListMembers(ctx context.Context) ([]ListMembersRow, error) {
 			&i.Version,
 			&i.CreatedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRoleAssignmentScopes = `-- name: ListRoleAssignmentScopes :many
+SELECT assignment_id, dimension_value_id FROM fyniq.role_assignment_scope ORDER BY created_at, dimension_value_id
+`
+
+type ListRoleAssignmentScopesRow struct {
+	AssignmentID     uuid.UUID
+	DimensionValueID uuid.UUID
+}
+
+// The department values each Approver assignment is narrowed to (FR-ADM-01).
+func (q *Queries) ListRoleAssignmentScopes(ctx context.Context) ([]ListRoleAssignmentScopesRow, error) {
+	rows, err := q.db.Query(ctx, listRoleAssignmentScopes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRoleAssignmentScopesRow
+	for rows.Next() {
+		var i ListRoleAssignmentScopesRow
+		if err := rows.Scan(&i.AssignmentID, &i.DimensionValueID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -275,6 +321,37 @@ SELECT pg_advisory_xact_lock(hashtextextended('fyniq.members:' || fyniq.current_
 func (q *Queries) LockMembers(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, lockMembers)
 	return err
+}
+
+const memberActivity = `-- name: MemberActivity :many
+SELECT r.user_id::uuid AS user_id, coalesce(r.last_sign_in_at, 'epoch'::timestamptz)::timestamptz AS last_sign_in_at, r.passkeys::bigint AS passkeys FROM fyniq.member_activity() r
+`
+
+type MemberActivityRow struct {
+	UserID       uuid.UUID
+	LastSignInAt time.Time
+	Passkeys     int64
+}
+
+// When each member last signed in and how many passkeys they hold (the members' list).
+func (q *Queries) MemberActivity(ctx context.Context) ([]MemberActivityRow, error) {
+	rows, err := q.db.Query(ctx, memberActivity)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MemberActivityRow
+	for rows.Next() {
+		var i MemberActivityRow
+		if err := rows.Scan(&i.UserID, &i.LastSignInAt, &i.Passkeys); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const memberNames = `-- name: MemberNames :many

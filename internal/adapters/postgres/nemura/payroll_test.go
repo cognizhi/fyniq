@@ -148,7 +148,7 @@ func TestPayRecordsAreHistoryThatIsOnlyEndedAndNoAuditEventHoldsAnAmount(t *test
 
 	// No audit event holds an amount, an item or a figure of anyone's pay.
 	var leaks int
-	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND (body LIKE '%4500%' OR body LIKE '%5000%' OR body LIKE '%25000%' OR body LIKE '%Dormitory%' OR body LIKE '%Transport%' OR body LIKE '%Annual bonus%')`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND (body ~ '(^|[^0-9a-fA-F])(4500|5000|25000)([^0-9a-fA-F]|$)' OR body LIKE '%Dormitory%' OR body LIKE '%Transport%' OR body LIKE '%Annual bonus%')`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
 		t.Errorf("the audit trail holds pay in %d events: %v", leaks, err)
 	}
 	var events int

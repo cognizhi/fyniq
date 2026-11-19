@@ -33,3 +33,8 @@ UPDATE fyniq.organisation SET legal_name = sqlc.narg(legal_name), uen = sqlc.nar
   dpo_user_id = sqlc.narg(dpo_user_id), dpo_name = sqlc.narg(dpo_name), dpo_email = sqlc.narg(dpo_email),
   version = version + 1
 RETURNING organisation_id, name, base_currency, base_minor_units, version, legal_name, uen, registered_address, mailing_address, email, phone, website, bank_name, bank_account_name, bank_account_number, paynow_uen, document_footer, fy_start_month, books_start, first_year_end, time_zone, dpo_user_id, dpo_name, dpo_email;
+
+-- name: SetPerson :exec
+-- The person a request acts for (FR-ADM-01, department scopes): transaction-scoped like the tenant. The database reads their
+-- department restriction from their live role assignments; no person named, no restriction (jobs, tests, bootstrap).
+SELECT set_config('app.user_id', sqlc.arg(user_id)::text, true), set_config('app.dept_reads', sqlc.arg(dept_reads)::text, true);

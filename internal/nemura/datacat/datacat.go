@@ -95,12 +95,13 @@ var Categories = []Category{
 			"details_change.new_legal_name", "details_change.note", "details_change.decision_reason", "hr_question.question", "hr_question.reply"},
 	},
 	{
-		Key: "pay-records", What: "A person's pay: their pay group, basic monthly salary, self-help group fund, allowances and fixed deductions, the one-off items of a month (bonuses, commissions), a permanent resident's joint election, and the year to date of CPF wages",
+		Key: "pay-records", What: "A person's pay: their pay group, basic monthly salary, self-help group fund, allowances and fixed deductions, the one-off items of a month (bonuses, commissions), a permanent resident's joint election, the year to date of CPF wages, and each pay run's lines, overrides and reasons",
 		Purpose:    "To work out each person's pay, CPF, SDL and self-help group fund exactly and to show where every figure came from (Employment Act; CPF Act)",
 		Capability: "Pay, pay history, pay runs",
 		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"},
 		Columns: []string{"person_pay.basic_monthly", "person_pay.shg_fund", "person_pay.pay_group_id", "person_pay_item.pay_id", "person_pay_item.name", "person_pay_item.amount", "pay_one_off.name", "pay_one_off.amount", "pay_one_off.note",
-			"cpf_ytd.ow", "cpf_ytd.aw_subject", "cpf_ytd.aw_paid"},
+			"cpf_ytd.ow", "cpf_ytd.aw_subject", "cpf_ytd.aw_paid",
+			"pay_run.pay_group_id", "pay_run_version.reason", "pay_run_override.reason", "pay_run_override.value", "pay_run_line.gross", "pay_run_line.cpf_employee", "pay_run_line.cpf_employer", "pay_run_line.net", "pay_run_line.items"},
 	},
 	{
 		Key: "key-employment-terms", What: "A person's key employment terms: main duties, notice period, medical benefits and a fixed-term contract's end, and the pay terms (salary period, basic salary, fixed allowances and deductions, overtime period, other pay)",

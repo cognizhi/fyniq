@@ -509,3 +509,111 @@ func TestPayRecordsAreWholeOrRefusedWithTheFieldNamed(t *testing.T) {
 		t.Error("a one-off for a month that is not the first")
 	}
 }
+
+// Amounts worked out by a ratio are exact and rounded once to the cent, half away from zero (NM-PAY-12): a joiner who starts on 11 June earns 20 of 30 days of S$4,500; 7 of 31 days of S$4,000
+// is 903.2258…, so 903.23; an unpaid day of 22 working days of S$4,500 is 204.5454…, so 204.55; three hours of overtime at 1.5 times on S$4,500 over 44 hours is 243,000 ÷ 2,288 = 106.2062…, so 106.21.
+// req: NM-PAY-12
+func TestAmountsWorkedOutByARatioAreRoundedOnceToTheCent(t *testing.T) {
+	for _, tc := range []struct {
+		name, want string
+		got        *apd.Decimal
+	}{
+		{"a part month of 20 of 30 days", "3000.00", Ratio(D("4500.00"), 20, 30)},
+		{"7 of 31 days", "903.23", Ratio(D("4000.00"), 7, 31)},
+		{"a full month", "4500.00", Ratio(D("4500.00"), 31, 31)},
+		{"an unpaid day of 22 working days", "204.55", Ratio(D("4500.00"), 1, 22)},
+		{"a half cent rounds up", "0.01", Ratio(D("0.01"), 1, 2)},
+		{"three hours of overtime", "106.21", OvertimePay(D("4500.00"), D("44"), D("1.5"), D("3"))},
+		{"no overtime hours", "0.00", OvertimePay(D("4500.00"), D("44"), D("1.5"), D("0"))},
+	} {
+		if text(tc.got) != tc.want {
+			t.Errorf("%s: %s, want %s", tc.name, text(tc.got), tc.want)
+		}
+	}
+	if RatioName != "RND-PAY-RATIO" {
+		t.Error("the policy's name")
+	}
+}
+
+// An override replaces one calculated figure with a reason and is flagged: the CPF total follows its shares, net pay and the amount to disburse follow, the original is in the working, and a
+// reason under ten characters or a figure with a fraction of a cent is refused (FR-PAY-06).
+// req: FR-PAY-06
+func TestAnOverrideReplacesOneFigureWithAReasonAndIsFlagged(t *testing.T) {
+	r, err := Calculate(Month{Month: day("2026-06-01"), Person: citizen(), Items: []Item{basic("5000.00")}, YTD: YearToDate{Known: true, OW: D("25000"), AWSubject: D("0"), AWPaid: D("0")}}, statutory(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	o := Override{Field: FieldCPFEmployee, Value: D("999.00"), Reason: "The CPF Board's own figure for the month."}
+	if err := o.Check(); err != nil {
+		t.Fatal(err)
+	}
+	got := o.Apply(r)
+	if text(got.CPF.Employee) != "999.00" || text(got.CPF.Employer) != "850" || text(got.CPF.Total) != "1849.00" || text(got.Net) != "4001.00" || text(got.Disburse) != "4001.00" || text(got.EmployerCost) != "5861.25" {
+		t.Errorf("after the override: employee %s employer %s total %s net %s disburse %s", text(got.CPF.Employee), text(got.CPF.Employer), text(got.CPF.Total), text(got.Net), text(got.Disburse))
+	}
+	flagged := false
+	for _, f := range got.Flags {
+		flagged = flagged || f.Code == "OVERRIDE" && strings.Contains(f.Message, "The CPF Board's own figure")
+	}
+	if !flagged || len(got.Overridden) != 1 || got.Overridden[0] != FieldCPFEmployee || !strings.Contains(got.Working[len(got.Working)-1].Text, "replaces the calculated 1000") {
+		t.Errorf("flags %+v overridden %v working %+v", got.Flags, got.Overridden, got.Working[len(got.Working)-1])
+	}
+	if text(r.CPF.Employee) != "1000" {
+		t.Error("the original result changed")
+	}
+	for _, bad := range []Override{{Field: "gross", Value: D("1.00"), Reason: "A long enough reason."}, {Field: FieldSDL, Value: D("1.00"), Reason: "short"}, {Field: FieldSDL, Value: D("1.005"), Reason: "A long enough reason."}, {Field: FieldSDL, Value: D("-1.00"), Reason: "A long enough reason."}} {
+		if bad.Check() == nil {
+			t.Errorf("%+v passed", bad)
+		}
+	}
+}
+
+// The run is set against last month's with every difference explained by its cause and the item it comes from: a joiner and a leaver, a pay change, a one-off item, unpaid leave, overtime; and
+// a person whose CPF changed with no change in their wages is listed for the approver (NM-PAY-11).
+// req: NM-PAY-11
+func TestTheRunIsComparedWithLastMonthWithEveryDifferenceExplained(t *testing.T) {
+	line := func(id, name, gross, cpf string, items ...ItemFacts) LineFacts {
+		return LineFacts{Person: id, Name: name, Gross: D(gross), Net: D(gross), CPF: D(cpf), Cost: D(gross), Items: items}
+	}
+	item := func(key, src, amount string) ItemFacts {
+		return ItemFacts{Key: key, SourceType: src, Class: "ordinary", Amount: D(amount)}
+	}
+	prev := []LineFacts{
+		line("ana", "Ana Tan", "5000.00", "1850", item("basic", "person_pay", "5000.00")),
+		line("ben", "Ben Lim", "4000.00", "1480", item("basic", "person_pay", "4000.00")),
+		line("cy", "Cy Wong", "3000.00", "1110", item("basic", "person_pay", "3000.00")),
+		line("eve", "Eve Ong", "3500.00", "1295", item("basic", "person_pay", "3500.00")),
+	}
+	now := []LineFacts{
+		line("ana", "Ana Tan", "10000.00", "3700", item("basic", "person_pay", "5000.00"), ItemFacts{Key: "bonus", SourceType: "pay_one_off", Class: "additional", Amount: D("5000.00")}),
+		line("ben", "Ben Lim", "4500.00", "1665", item("basic", "person_pay", "4500.00")),
+		line("cy", "Cy Wong", "2795.45", "1034", item("basic", "person_pay", "3000.00"), item("unpaid-1a2b3c4d", "pay_input", "-204.55")),
+		line("dee", "Dee Foo", "2000.00", "740", item("basic", "person_pay", "2000.00")),
+		line("eve", "Eve Ong", "3500.00", "1190", item("basic", "person_pay", "3500.00")),
+	}
+	got := Compare(now, prev)
+	if text(got.GrossNow) != "22795.45" || text(got.GrossPrev) != "15500.00" {
+		t.Errorf("gross %s against %s", text(got.GrossNow), text(got.GrossPrev))
+	}
+	causes := map[string]string{}
+	for _, c := range got.Changes {
+		causes[c.Name+"/"+c.Cause+"/"+c.Key] = text(c.Amount)
+	}
+	for k, want := range map[string]string{"Ana Tan/one_off/bonus": "5000.00", "Ben Lim/pay_change/basic": "500.00", "Cy Wong/unpaid_leave/unpaid-1a2b3c4d": "-204.55", "Dee Foo/joiner/": "2000.00", "Eve Ong/cpf/": "-105"} {
+		if causes[k] != want {
+			t.Errorf("%s: %q, want %s (all: %v)", k, causes[k], want, causes)
+		}
+	}
+	if len(got.Unexplained) != 1 || got.Unexplained[0].Name != "Eve Ong" || !strings.Contains(got.Unexplained[0].Why, "no change in wages") {
+		t.Errorf("unexplained: %+v", got.Unexplained)
+	}
+	// A person who left is a leaver with the whole of last month's gross pay.
+	left := Compare(now[:1], prev[:2])
+	found := false
+	for _, c := range left.Changes {
+		found = found || c.Cause == CauseLeaver && c.Name == "Ben Lim" && text(c.Amount) == "-4000.00"
+	}
+	if !found {
+		t.Errorf("a leaver: %+v", left.Changes)
+	}
+}

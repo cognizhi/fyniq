@@ -179,6 +179,10 @@
       "label": "Sign-in providers",
       "tooltip": "A Super admin turns each way to sign in on or off, and sets the email domains it accepts."
     },
+    "settings.console": {
+      "label": "Installation console",
+      "tooltip": "The platform's health across every organisation, and the installation's Super admins. For a Super admin only; no organisation's records."
+    },
     "sign-in-provider.change": {
       "label": "Save",
       "tooltip": "Apply the change; with two Super admins it waits for the other's approval."

@@ -14,6 +14,9 @@ type Member struct {
 	Roles       []RoleAssignment // live: unrevoked and unexpired, by role
 	Since       time.Time        // when they joined
 	Expired     []RoleAssignment // past their expiry and never revoked, by role: they grant nothing (C.2 #6)
+	// LastSignInAt is when they last signed in; nil when they never have. Passkeys is how many live passkeys they hold.
+	LastSignInAt *time.Time
+	Passkeys     int
 }
 
 // MemberInvitation is an invitation to the organisation (FR-ADM-01). Its code is never stored: only its SHA-256.

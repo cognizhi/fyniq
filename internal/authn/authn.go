@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // The client classes of AI-34. An agent-class client is proposal-only; the API treats it as the AI
@@ -66,6 +67,9 @@ type Principal struct {
 	// Scoped is set for an API client Fyniq registered, an integration client or a personal access token (FR-INT-02):
 	// its Scopes then narrow its member's Roles to whole areas (authz.ScopeAllows), never widen them.
 	Scoped bool
+	// Link is set for the link's client, Nemura calling Fyniq (PRD-002 Appendix E): its scopes are the link's, it acts for no member, and
+	// it reaches only the operations that name a link scope; every other operation refuses it.
+	Link bool
 	// AllowedIPs are the networks a scoped client may call from (SEC-07); none: anywhere.
 	AllowedIPs []netip.Prefix
 	// ReadsPerMinute and WritesPerMinute are a scoped client's own rate limits (FR-INT-16); 0: the platform's.
@@ -133,6 +137,9 @@ type principalKey struct{}
 
 // WithPrincipal attaches the caller to ctx.
 func WithPrincipal(ctx context.Context, p Principal) context.Context {
+	if p.UserID != uuid.Nil {
+		ctx = storage.WithPerson(ctx, p.UserID) // the database applies the person's department scope (FR-ADM-01)
+	}
 	return context.WithValue(ctx, principalKey{}, p)
 }
 

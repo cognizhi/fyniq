@@ -99,6 +99,7 @@ type Result struct {
 	Working             []Step
 	PackVersions        []string
 	DeductionViolations []Violation
+	Overridden          []string // the figures an override replaced
 }
 
 // ErrNeedsYearToDate is the refusal for a month that pays additional wages with no year to date for the person: it is ✖ until the year to date is imported or built up (FR-PAY-14).

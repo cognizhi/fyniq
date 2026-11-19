@@ -176,6 +176,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "settings-announcements": lazyRouteComponent(() => import("./screens/settings/Announcements"), "Announcements"),
   "settings-integrations": lazyRouteComponent(() => import("./screens/settings/Integrations"), "Integrations"),
   "settings-brand": lazyRouteComponent(() => import("./screens/settings/Brand"), "BrandPage"),
+  "settings-console": lazyRouteComponent(() => import("./screens/settings/AdminConsole"), "AdminConsole"),
   "settings-sign-in-providers": lazyRouteComponent(() => import("./screens/settings/SignInProviders"), "SignInProviders"),
   "settings-integration": lazyRouteComponent(() => import("./screens/settings/IntegrationDetail"), "IntegrationDetail"),
   "settings-template": lazyRouteComponent(() => import("./screens/settings/TemplateEditor"), "TemplateEditor"),

@@ -100,6 +100,33 @@ describe("Members and roles", () => {
     expect(post?.headers.get("Idempotency-Key")).toBeTruthy();
   });
 
+  // req: SEC-06
+  it("says when each member last signed in and whether they hold a passkey", async () => {
+    page({ "GET /v1/members": { status: 200, body: { items: [{ id: "m-9", user_id: "u-9", display_name: "Kai Lim", roles: [{ role: "bookkeeper" }], expired_roles: [], passkeys: 2, last_sign_in_at: "2026-11-19T09:00:00Z" },
+      { id: "m-10", user_id: "u-10", display_name: "Nia Ong", roles: [{ role: "auditor" }], expired_roles: [], passkeys: 0 }] } } });
+    renderPage(Members, { path: "/settings/members" });
+    expect(await screen.findByText(/Last signed in 19 Nov 2026, 17:00 · 2 passkeys/)).toBeTruthy();
+    expect(screen.getByText(/Has not signed in yet · No passkey/)).toBeTruthy();
+  });
+
+  // req: FR-ADM-01
+  it("narrows an Approver's role to departments, and says so beside the role", async () => {
+    const seen = page({
+      "GET /v1/dimensions": { status: 200, body: { items: [{ id: "d1", kind: "department", name: "Department" }] } },
+      "GET /v1/dimension-values": { status: 200, body: { items: [{ id: "v-eng", dimension_id: "d1", code: "ENG", name: "Engineering", active: true, version: 1 }, { id: "v-ops", dimension_id: "d1", code: "OPS", name: "Operations", active: true, version: 1 }] } },
+      "POST /v1/members/m-2/roles": { status: 202, body: { ...waiting, id: "a-12", summary: "Give Ben Ong the Approver role" } },
+    });
+    renderPage(Members, { path: "/settings/members" });
+    fireEvent.click(await screen.findByRole("button", { name: "Change roles: Ben Ong" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Role to add"), { target: { value: "approver" } });
+    const group = await within(dialog).findByRole("group", { name: "Departments this Approver acts for" });
+    fireEvent.click(within(group).getByRole("checkbox", { name: "Engineering" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add role" }));
+    await within(dialog).findByText(/Give Ben Ong the Approver role/);
+    expect(seen.find((x) => x.method === "POST")?.body).toEqual({ role: "approver", department_value_ids: ["v-eng"] });
+  });
+
   it("ends a role after the person confirms it's you", async () => {
     let n = 0;
     page({ "DELETE /v1/members/m-3/roles/accountant": () => (++n === 1 ? problem(403, "API-AUTHZ-05") : { status: 200, body: { ...grace, roles: [] } }) });

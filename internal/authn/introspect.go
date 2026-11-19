@@ -252,14 +252,14 @@ func clientPrincipal(c storage.APIClientAccess, in ports.Introspection, now time
 		return refuse("was revoked")
 	case !now.Before(c.ExpiresAt):
 		return refuse("has expired")
-	case !c.OwnerActive || len(c.Roles) == 0:
+	case c.Kind != storage.APIClientLink && (!c.OwnerActive || len(c.Roles) == 0): // the link's client acts for no member
 		return refuse("acts for a member who is no longer an active member with a role")
 	case in.Subject != in.ClientID:
 		return refuse("presented a token issued to someone else")
 	case c.Class != ClassIntegration && c.Class != ClassAgent:
 		return refuse("has no client class (AI-34)")
 	}
-	p := Principal{Via: ViaToken, Subject: in.ClientID, UserID: c.OwnerID, Client: in.ClientID, Class: c.Class, Organisation: c.Organisation,
+	p := Principal{Link: c.Kind == storage.APIClientLink, Via: ViaToken, Subject: in.ClientID, UserID: c.OwnerID, Client: in.ClientID, Class: c.Class, Organisation: c.Organisation,
 		Scoped: true, ReadsPerMinute: c.ReadsPerMinute, WritesPerMinute: c.WritesPerMinute, Scopes: []string{}}
 	for _, s := range in.Scopes { // what the token was granted and the record still holds
 		if slices.Contains(c.Scopes, s) {
@@ -267,9 +267,12 @@ func clientPrincipal(c storage.APIClientAccess, in ports.Introspection, now time
 		}
 	}
 	for _, r := range c.Roles {
-		if _, known := authz.Roles[authz.Role(r)]; known {
+		if _, known := authz.Roles[authz.Role(r)]; known && !p.Link {
 			p.Roles = append(p.Roles, authz.Role(r))
 		}
+	}
+	if p.Link {
+		p.UserID = uuid.Nil // it acts for no one: the member who approved the link is only its record's owner
 	}
 	for _, a := range c.IPAllow {
 		prefix, err := netip.ParsePrefix(a)
