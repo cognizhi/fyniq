@@ -1,4 +1,4 @@
-// AI-55 is only part proved here: the recompile button waits for the job's trigger (p1-knowledge-base task 8.2), so no `req:` tag.
+// AI-55 is only part proved here: the P2 proposed-pages state is not built, so no `req:` tag.
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { answer, ownerSession, problem } from "../../test/api";
@@ -65,6 +65,20 @@ describe("Settings › AI › Knowledge base", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Roll back to v1" }));
     await waitFor(() => expect(seen.some((x) => x.path.endsWith("/rollback"))).toBe(true));
     expect(seen.find((x) => x.path.endsWith("/rollback"))?.body).toEqual({ version: 1 });
+    await noViolations();
+  });
+
+  it("asks for a recompile with an idempotency key and says what it will do, and says plainly where no compiler is connected", async () => {
+    const seen = base({
+      "POST /v1/knowledge-base/recompile": { status: 202, body: { queued: true, compiles: true, note: "The compiler will draft pages from the notes that changed and check the whole knowledge base; drafts and findings appear here, and nothing is published." } },
+    });
+    renderPage(KnowledgeBase, { path: "/settings/ai/knowledge-base" });
+    fireEvent.click(await screen.findByRole("button", { name: "Recompile" }));
+    expect(await screen.findByText(/nothing is published/)).toBeTruthy();
+    expect(seen.find((x) => x.path.endsWith("/recompile"))?.headers.get("Idempotency-Key")).toBeTruthy();
+    base({ "POST /v1/knowledge-base/recompile": problem(503, "KB-COMPILER-03", "No compiler job is connected in this installation, so nothing can be recompiled.") });
+    fireEvent.click(screen.getByRole("button", { name: "Recompile" }));
+    expect(await screen.findByText(/No compiler job is connected/)).toBeTruthy();
     await noViolations();
   });
 

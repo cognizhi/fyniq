@@ -15,7 +15,7 @@ import (
 // ServiceTokenHeader carries the compiler's service token to the API.
 const ServiceTokenHeader = "X-Fyniq-Service-Token" // #nosec G101 -- a header's name, not a credential
 
-// Class is the class of the compiler's service tokens: the API's four compiler operations and nothing else (AI-57).
+// Class is the class of the compiler's service tokens: the API's compiler operations and nothing else (AI-57).
 const Class = "kb_compiler"
 
 // APIClient is Client over the API's internal operations (design D7): the compiler's service token, the API's internal URL, and
@@ -96,6 +96,15 @@ func (c APIClient) SubmitDraft(ctx context.Context, org uuid.UUID, note string, 
 }
 
 // RaiseFinding implements Client.
+// Lint has the API run the weekly deterministic lint across the organisation's knowledge base, raising its findings.
+func (c APIClient) Lint(ctx context.Context, org uuid.UUID) (found, raised int, err error) {
+	var out struct{ Found, Raised int }
+	if err := c.post(ctx, "lint", map[string]any{"organisation_id": org}, &out); err != nil {
+		return 0, 0, err
+	}
+	return out.Found, out.Raised, nil
+}
+
 func (c APIClient) RaiseFinding(ctx context.Context, org uuid.UUID, f Finding) error {
 	var out struct{}
 	return c.post(ctx, "findings", map[string]any{"organisation_id": org, "kind": f.Kind, "page_key": f.PageKey, "version": f.Version, "detail": f.Detail}, &out)

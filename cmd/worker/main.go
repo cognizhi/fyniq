@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/httpserver"
+	"github.com/cognizhi/fyniq/internal/kbcompile"
 	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
@@ -84,6 +85,7 @@ func main() {
 		kinds[pspevents.Kind] = events.Work()
 		kinds[psp.Kind] = kit.PSPRunner(deps.Clock).Work()       // FR-PSP-06: a provider's sweep, after its events                       // FR-PSP-01: a provider's event worked: its object fetched and posted
 		kinds[notify.FanoutKind] = kit.Fanout(deps.Clock).Work() // FR-NTF-05: one event, every person it concerns
+		kinds[kbcompile.Kind] = kit.KBCompile()                  // AI-52, AI-55: a person's Recompile, as the compiler under its own token
 		kinds[agents.RunKind] = kit.AgentRuns(deps.Clock).Work   // AI-64, AI-65: a scheduled agent's run at its slot
 		kinds[notify.RelayKind] = kit.Relays(deps.Clock).Work()  // FR-ADM-07: the installation's notices, in each Super admin's organisation
 		for kind, work := range kit.CheckKinds(deps.Clock) {     // FR-CTL-01: the checks after a change, and Run now

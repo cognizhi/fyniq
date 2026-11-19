@@ -47,6 +47,10 @@ var PlatformSchedules = []Schedule{
 	{Job: "ai.conversations.purge", Every: 24 * time.Hour, Offset: 17*time.Hour + 55*time.Minute, Lease: time.Hour, Stale: 50 * time.Hour},
 	// Every 15 minutes, the AI's proposals that waited past their expiry undecided (§9.5; p1-ai-proposals-core design D9).
 	{Job: "ai.proposals.expire", Every: 15 * time.Minute, Offset: 7 * time.Minute, Lease: 10 * time.Minute, Stale: time.Hour},
+	// Weekly on Sundays at 02:00 Singapore time (Saturday 18:00 UTC; the epoch was a Thursday), the deterministic lint across every
+	// organisation's knowledge base: stale pages, notes with no page, overlays Fyniq has since changed, links to no page and orphans, raised
+	// as findings for the Owner and the Administrator (AI-52, AI-56; p1-knowledge-base task 6.3).
+	{Job: "kb.lint", Every: 7 * 24 * time.Hour, Offset: 66 * time.Hour, Lease: time.Hour, Stale: 8 * 24 * time.Hour},
 	// Hourly, the AI apps' registrations that lapsed (a week unapproved, a month unused) ended and their clients removed from the
 	// OAuth server (AI-90; p1-mcp-first-party design D14).
 	{Job: "mcp.registrations.expire", Every: time.Hour, Offset: 17 * time.Minute, Lease: 10 * time.Minute, Stale: 3 * time.Hour},

@@ -62,6 +62,8 @@ type Client interface {
 	SubmitDraft(ctx context.Context, org uuid.UUID, note string, version int, d Draft) error
 	// RaiseFinding records a finding for a person to resolve.
 	RaiseFinding(ctx context.Context, org uuid.UUID, f Finding) error
+	// Lint has the API run the weekly deterministic lint of the whole knowledge base and raise its findings (task 6.3).
+	Lint(ctx context.Context, org uuid.UUID) (found, raised int, err error)
 }
 
 // Report is what a run did.
@@ -86,6 +88,12 @@ func FindingKind(rule string) string {
 		return "missing_cross_reference"
 	}
 	return "front_matter"
+}
+
+// RunLint is the weekly pass: the deterministic lint across the organisation's whole knowledge base, its findings raised for the Owner and
+// the Administrator. A model's contradiction pass is the other half of it `[live-verify]`.
+func RunLint(ctx context.Context, c Client, org uuid.UUID) (found, raised int, err error) {
+	return c.Lint(ctx, org)
 }
 
 // Run compiles every note of the organisation that changed.

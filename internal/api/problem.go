@@ -313,6 +313,7 @@ var codeFacts = map[string]struct {
 	CodeKBPage:                    {422, "Not a page or version a publication takes"},
 	CodeKBCompilerNote:            {409, "The note is not there, or changed since the work was listed"},
 	CodeKBCompilerPage:            {502, "The model's answer is not a page"},
+	CodeKBCompilerOff:             {503, "The knowledge-base compiler is not connected in this installation"},
 	CodeScreenIncomplete:          {503, "Screening did not finish"},
 	CodeToolElse:                  {422, "Not a tool the API runs"},
 	CodeToolRefused:               {422, "The tool's read was refused"},

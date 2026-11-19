@@ -843,6 +843,10 @@
       "label": "Enter a price",
       "tooltip": "The Owner's own price, per million tokens in the provider's currency, for a model no source prices; it applies once a second approver approves it."
     },
+    "kb.recompile": {
+      "label": "Recompile",
+      "tooltip": "Queue the compiler: it drafts a page from each note that changed and checks the whole knowledge base, raising findings. It never publishes, and never overwrites a page a person wrote."
+    },
     "settings.ai-knowledge-base": {
       "label": "Knowledge base",
       "tooltip": "The pages the assistant reads for know-how: Fyniq's and your organisation's. Write the notes they are made from, compare versions, and publish. Nothing changes for the assistant until a person publishes."

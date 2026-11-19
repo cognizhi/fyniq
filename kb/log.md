@@ -706,6 +706,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | leave.apply recompiled, leave.approve new (p1-nemura-leave-time slice 2.1, 2.2)
 
+## [2026-11-20] compile | settings.ai-knowledge-base recompiled: Recompile and the weekly check (p1-knowledge-base 6.3, 8.1, 8.2)
+
 ## [2026-11-20] compile | leave.report-sick recompiled (p1-nemura-leave-time 2.4)
 
 ## [2026-11-20] compile | leave.approve and nemura.my-leave: the month at a glance, certificates to verify (p1-nemura-leave-time 2.3, 2.4)
