@@ -2,9 +2,9 @@
 key: purchases.payment-batches
 type: task
 title: Pay suppliers and claims in a payment batch
-summary: Prepare a batch of approved bills, claims and repayments to directors, have another person approve it, release it, pay it from the payment list, and see it paid
+summary: Prepare a batch of approved bills, claims and repayments to directors, have another person approve it, release it, pay it from its payment file, and see it paid
 sources:
-  - docs/user-guide/payment-batches.md sha256:6a26e184cabb7b1a8eef0b8c0f1a10de1247c804db40d247b7b5fb45db9e2455
+  - docs/user-guide/payment-batches.md sha256:e5c77bc5278bf0febf601075fb70c22707e0d5c133be9bb9ccf295ac8fd6a8cc
 data_class: general
 taint: trusted
 status: draft
@@ -21,6 +21,9 @@ aliases:
   - repay a director
   - release payments
   - payment list
+  - payment file
+  - Wise batch file
+  - DBS UFF
   - FAST
   - GIRO
   - remittance advice
@@ -74,7 +77,7 @@ aliases:
 
 ## Release a batch
 
-- The Payment releaser selects **Release** and confirms it's you: each payment is recorded as recording it by hand does, dated the payment date, and the payment list is written.
+- The Payment releaser selects **Release** and confirms it's you: each payment is recorded as recording it by hand does, dated the payment date, and the file the bank account is set to is written: the payment list unless Wise's batch payment file or DBS IDEAL's UFF has been chosen for it ([[banking.accounts]]).
 - Standard mode: the releaser is a third person who neither prepared, asked for nor approved the batch, nor a payee's bank account change.
 - Founder mode: the founder who prepared or approved it may release it; never one person alone, since another approved it, and the release is listed for the weekly review.
 - When the other founder can't be reached, an Owner who holds the Payment releaser role can release a batch waiting for approval under break-glass, within its limits ([[settings.team-mode]]).
@@ -83,9 +86,9 @@ aliases:
 
 ## Pay it in the bank
 
-- **Download payment list** and confirm it's you: it holds each payee's full account number, and each download is recorded.
-- Key each payment into the bank's bulk payment screen; check the bank's count and total against the list's last row.
-- Delete the file once the bank has it; the batch's page shows the list's SHA-256 to check a copy.
+- Select the download button, which names the file (**Download payment list**, **Download Wise batch file** or **Download DBS UFF file**) and confirm it's you: the file holds each payee's full account number, and each download is recorded.
+- The payment list: key each payment into the bank's bulk payment screen and check the bank's count and total against the list's last row. Wise's batch payment file or DBS IDEAL's UFF: upload it to Wise or in DBS IDEAL and check the count and total the bank shows.
+- Delete the file once the bank has it; the batch's page shows the file's name and SHA-256 to check a copy. The file is the one the account was set to at release: a later change of the setting never changes a released batch's file.
 
 (src: docs/user-guide/payment-batches.md#pay-it-in-the-bank)
 

@@ -1,0 +1,211 @@
+case,month,group,age,wage,want_total,want_employee,why,source
+CPF-L-001,2026-06,sc_spr3,30,50.00,0,0,"55 & below: $50 or less is nil",cpf-table-1-2026
+CPF-L-002,2026-06,sc_spr3,30,50.01,8.5017,0,"55 & below: 17% of $50.01, nothing by the employee",cpf-table-1-2026
+CPF-L-003,2026-06,sc_spr3,30,400.00,68,0,"55 & below: 17% of $400.00, nothing by the employee",cpf-table-1-2026
+CPF-L-004,2026-06,sc_spr3,30,500.00,85,0,"55 & below: 17% of $500.00, nothing by the employee",cpf-table-1-2026
+CPF-L-005,2026-06,sc_spr3,30,500.01,85.0077,0.006,"55 & below: 17% (TW) + 0.6 (TW - $500) with TW = $500.01; the employee pays 0.6 (TW - $500)",cpf-table-1-2026
+CPF-L-006,2026-06,sc_spr3,30,600.00,162,60,"55 & below: 17% (TW) + 0.6 (TW - $500) with TW = $600.00; the employee pays 0.6 (TW - $500)",cpf-table-1-2026
+CPF-L-007,2026-06,sc_spr3,30,750.00,277.5,150,"55 & below: 17% (TW) + 0.6 (TW - $500) with TW = $750.00; the employee pays 0.6 (TW - $500)",cpf-table-1-2026
+CPF-L-008,2026-06,sc_spr3,57,50.00,0,0,"above 55 to 60: $50 or less is nil",cpf-table-1-2026
+CPF-L-009,2026-06,sc_spr3,57,50.01,8.0016,0,"above 55 to 60: 16% of $50.01, nothing by the employee",cpf-table-1-2026
+CPF-L-010,2026-06,sc_spr3,57,400.00,64,0,"above 55 to 60: 16% of $400.00, nothing by the employee",cpf-table-1-2026
+CPF-L-011,2026-06,sc_spr3,57,500.00,80,0,"above 55 to 60: 16% of $500.00, nothing by the employee",cpf-table-1-2026
+CPF-L-012,2026-06,sc_spr3,57,500.01,80.007,0.0054,"above 55 to 60: 16% (TW) + 0.54 (TW - $500) with TW = $500.01; the employee pays 0.54 (TW - $500)",cpf-table-1-2026
+CPF-L-013,2026-06,sc_spr3,57,600.00,150,54,"above 55 to 60: 16% (TW) + 0.54 (TW - $500) with TW = $600.00; the employee pays 0.54 (TW - $500)",cpf-table-1-2026
+CPF-L-014,2026-06,sc_spr3,57,750.00,255,135,"above 55 to 60: 16% (TW) + 0.54 (TW - $500) with TW = $750.00; the employee pays 0.54 (TW - $500)",cpf-table-1-2026
+CPF-L-015,2027-06,sc_spr3,57,50.00,0,0,"above 55 to 60: $50 or less is nil",cpf-table-1-2027
+CPF-L-016,2027-06,sc_spr3,57,50.01,8.25165,0,"above 55 to 60: 16.5% of $50.01, nothing by the employee",cpf-table-1-2027
+CPF-L-017,2027-06,sc_spr3,57,400.00,66,0,"above 55 to 60: 16.5% of $400.00, nothing by the employee",cpf-table-1-2027
+CPF-L-018,2027-06,sc_spr3,57,500.00,82.5,0,"above 55 to 60: 16.5% of $500.00, nothing by the employee",cpf-table-1-2027
+CPF-L-019,2027-06,sc_spr3,57,500.01,82.50735,0.0057,"above 55 to 60: 16.5% (TW) + 0.57 (TW - $500) with TW = $500.01; the employee pays 0.57 (TW - $500)",cpf-table-1-2027
+CPF-L-020,2027-06,sc_spr3,57,600.00,156,57,"above 55 to 60: 16.5% (TW) + 0.57 (TW - $500) with TW = $600.00; the employee pays 0.57 (TW - $500)",cpf-table-1-2027
+CPF-L-021,2027-06,sc_spr3,57,750.00,266.25,142.5,"above 55 to 60: 16.5% (TW) + 0.57 (TW - $500) with TW = $750.00; the employee pays 0.57 (TW - $500)",cpf-table-1-2027
+CPF-L-022,2026-06,sc_spr3,62,50.00,0,0,"above 60 to 65: $50 or less is nil",cpf-table-1-2026
+CPF-L-023,2026-06,sc_spr3,62,50.01,6.25125,0,"above 60 to 65: 12.5% of $50.01, nothing by the employee",cpf-table-1-2026
+CPF-L-024,2026-06,sc_spr3,62,400.00,50,0,"above 60 to 65: 12.5% of $400.00, nothing by the employee",cpf-table-1-2026
+CPF-L-025,2026-06,sc_spr3,62,500.00,62.5,0,"above 60 to 65: 12.5% of $500.00, nothing by the employee",cpf-table-1-2026
+CPF-L-026,2026-06,sc_spr3,62,500.01,62.505,0.00375,"above 60 to 65: 12.5% (TW) + 0.375 (TW - $500) with TW = $500.01; the employee pays 0.375 (TW - $500)",cpf-table-1-2026
+CPF-L-027,2026-06,sc_spr3,62,600.00,112.5,37.5,"above 60 to 65: 12.5% (TW) + 0.375 (TW - $500) with TW = $600.00; the employee pays 0.375 (TW - $500)",cpf-table-1-2026
+CPF-L-028,2026-06,sc_spr3,62,750.00,187.5,93.75,"above 60 to 65: 12.5% (TW) + 0.375 (TW - $500) with TW = $750.00; the employee pays 0.375 (TW - $500)",cpf-table-1-2026
+CPF-L-029,2027-06,sc_spr3,62,50.00,0,0,"above 60 to 65: $50 or less is nil",cpf-table-1-2027
+CPF-L-030,2027-06,sc_spr3,62,50.01,6.5013,0,"above 60 to 65: 13% of $50.01, nothing by the employee",cpf-table-1-2027
+CPF-L-031,2027-06,sc_spr3,62,400.00,52,0,"above 60 to 65: 13% of $400.00, nothing by the employee",cpf-table-1-2027
+CPF-L-032,2027-06,sc_spr3,62,500.00,65,0,"above 60 to 65: 13% of $500.00, nothing by the employee",cpf-table-1-2027
+CPF-L-033,2027-06,sc_spr3,62,500.01,65.0052,0.0039,"above 60 to 65: 13% (TW) + 0.39 (TW - $500) with TW = $500.01; the employee pays 0.39 (TW - $500)",cpf-table-1-2027
+CPF-L-034,2027-06,sc_spr3,62,600.00,117,39,"above 60 to 65: 13% (TW) + 0.39 (TW - $500) with TW = $600.00; the employee pays 0.39 (TW - $500)",cpf-table-1-2027
+CPF-L-035,2027-06,sc_spr3,62,750.00,195,97.5,"above 60 to 65: 13% (TW) + 0.39 (TW - $500) with TW = $750.00; the employee pays 0.39 (TW - $500)",cpf-table-1-2027
+CPF-L-036,2026-06,sc_spr3,68,50.00,0,0,"above 65 to 70: $50 or less is nil",cpf-table-1-2026
+CPF-L-037,2026-06,sc_spr3,68,50.01,4.5009,0,"above 65 to 70: 9% of $50.01, nothing by the employee",cpf-table-1-2026
+CPF-L-038,2026-06,sc_spr3,68,400.00,36,0,"above 65 to 70: 9% of $400.00, nothing by the employee",cpf-table-1-2026
+CPF-L-039,2026-06,sc_spr3,68,500.00,45,0,"above 65 to 70: 9% of $500.00, nothing by the employee",cpf-table-1-2026
+CPF-L-040,2026-06,sc_spr3,68,500.01,45.00315,0.00225,"above 65 to 70: 9% (TW) + 0.225 (TW - $500) with TW = $500.01; the employee pays 0.225 (TW - $500)",cpf-table-1-2026
+CPF-L-041,2026-06,sc_spr3,68,600.00,76.5,22.5,"above 65 to 70: 9% (TW) + 0.225 (TW - $500) with TW = $600.00; the employee pays 0.225 (TW - $500)",cpf-table-1-2026
+CPF-L-042,2026-06,sc_spr3,68,750.00,123.75,56.25,"above 65 to 70: 9% (TW) + 0.225 (TW - $500) with TW = $750.00; the employee pays 0.225 (TW - $500)",cpf-table-1-2026
+CPF-L-043,2026-06,sc_spr3,72,50.00,0,0,"above 70: $50 or less is nil",cpf-table-1-2026
+CPF-L-044,2026-06,sc_spr3,72,50.01,3.75075,0,"above 70: 7.5% of $50.01, nothing by the employee",cpf-table-1-2026
+CPF-L-045,2026-06,sc_spr3,72,400.00,30,0,"above 70: 7.5% of $400.00, nothing by the employee",cpf-table-1-2026
+CPF-L-046,2026-06,sc_spr3,72,500.00,37.5,0,"above 70: 7.5% of $500.00, nothing by the employee",cpf-table-1-2026
+CPF-L-047,2026-06,sc_spr3,72,500.01,37.50225,0.0015,"above 70: 7.5% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-1-2026
+CPF-L-048,2026-06,sc_spr3,72,600.00,60,15,"above 70: 7.5% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-1-2026
+CPF-L-049,2026-06,sc_spr3,72,750.00,93.75,37.5,"above 70: 7.5% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-1-2026
+CPF-L-050,2026-06,spr1_gg,30,50.00,0,0,"55 & below: $50 or less is nil",cpf-table-2-2026
+CPF-L-051,2026-06,spr1_gg,30,50.01,2.0004,0,"55 & below: 4% of $50.01, nothing by the employee",cpf-table-2-2026
+CPF-L-052,2026-06,spr1_gg,30,400.00,16,0,"55 & below: 4% of $400.00, nothing by the employee",cpf-table-2-2026
+CPF-L-053,2026-06,spr1_gg,30,500.00,20,0,"55 & below: 4% of $500.00, nothing by the employee",cpf-table-2-2026
+CPF-L-054,2026-06,spr1_gg,30,500.01,20.0019,0.0015,"55 & below: 4% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-2-2026
+CPF-L-055,2026-06,spr1_gg,30,600.00,39,15,"55 & below: 4% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-2-2026
+CPF-L-056,2026-06,spr1_gg,30,750.00,67.5,37.5,"55 & below: 4% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-2-2026
+CPF-L-057,2026-06,spr1_gg,57,50.00,0,0,"above 55 to 60: $50 or less is nil",cpf-table-2-2026
+CPF-L-058,2026-06,spr1_gg,57,50.01,2.0004,0,"above 55 to 60: 4% of $50.01, nothing by the employee",cpf-table-2-2026
+CPF-L-059,2026-06,spr1_gg,57,400.00,16,0,"above 55 to 60: 4% of $400.00, nothing by the employee",cpf-table-2-2026
+CPF-L-060,2026-06,spr1_gg,57,500.00,20,0,"above 55 to 60: 4% of $500.00, nothing by the employee",cpf-table-2-2026
+CPF-L-061,2026-06,spr1_gg,57,500.01,20.0019,0.0015,"above 55 to 60: 4% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-2-2026
+CPF-L-062,2026-06,spr1_gg,57,600.00,39,15,"above 55 to 60: 4% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-2-2026
+CPF-L-063,2026-06,spr1_gg,57,750.00,67.5,37.5,"above 55 to 60: 4% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-2-2026
+CPF-L-064,2026-06,spr1_gg,62,50.00,0,0,"above 60 to 65: $50 or less is nil",cpf-table-2-2026
+CPF-L-065,2026-06,spr1_gg,62,50.01,1.75035,0,"above 60 to 65: 3.5% of $50.01, nothing by the employee",cpf-table-2-2026
+CPF-L-066,2026-06,spr1_gg,62,400.00,14,0,"above 60 to 65: 3.5% of $400.00, nothing by the employee",cpf-table-2-2026
+CPF-L-067,2026-06,spr1_gg,62,500.00,17.5,0,"above 60 to 65: 3.5% of $500.00, nothing by the employee",cpf-table-2-2026
+CPF-L-068,2026-06,spr1_gg,62,500.01,17.50185,0.0015,"above 60 to 65: 3.5% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-2-2026
+CPF-L-069,2026-06,spr1_gg,62,600.00,36,15,"above 60 to 65: 3.5% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-2-2026
+CPF-L-070,2026-06,spr1_gg,62,750.00,63.75,37.5,"above 60 to 65: 3.5% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-2-2026
+CPF-L-071,2026-06,spr1_gg,66,50.00,0,0,"above 65: $50 or less is nil",cpf-table-2-2026
+CPF-L-072,2026-06,spr1_gg,66,50.01,1.75035,0,"above 65: 3.5% of $50.01, nothing by the employee",cpf-table-2-2026
+CPF-L-073,2026-06,spr1_gg,66,400.00,14,0,"above 65: 3.5% of $400.00, nothing by the employee",cpf-table-2-2026
+CPF-L-074,2026-06,spr1_gg,66,500.00,17.5,0,"above 65: 3.5% of $500.00, nothing by the employee",cpf-table-2-2026
+CPF-L-075,2026-06,spr1_gg,66,500.01,17.50185,0.0015,"above 65: 3.5% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-2-2026
+CPF-L-076,2026-06,spr1_gg,66,600.00,36,15,"above 65: 3.5% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-2-2026
+CPF-L-077,2026-06,spr1_gg,66,750.00,63.75,37.5,"above 65: 3.5% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-2-2026
+CPF-L-078,2026-06,spr2_gg,30,50.00,0,0,"55 & below: $50 or less is nil",cpf-table-3-2026
+CPF-L-079,2026-06,spr2_gg,30,50.01,4.5009,0,"55 & below: 9% of $50.01, nothing by the employee",cpf-table-3-2026
+CPF-L-080,2026-06,spr2_gg,30,400.00,36,0,"55 & below: 9% of $400.00, nothing by the employee",cpf-table-3-2026
+CPF-L-081,2026-06,spr2_gg,30,500.00,45,0,"55 & below: 9% of $500.00, nothing by the employee",cpf-table-3-2026
+CPF-L-082,2026-06,spr2_gg,30,500.01,45.0054,0.0045,"55 & below: 9% (TW) + 0.45 (TW - $500) with TW = $500.01; the employee pays 0.45 (TW - $500)",cpf-table-3-2026
+CPF-L-083,2026-06,spr2_gg,30,600.00,99,45,"55 & below: 9% (TW) + 0.45 (TW - $500) with TW = $600.00; the employee pays 0.45 (TW - $500)",cpf-table-3-2026
+CPF-L-084,2026-06,spr2_gg,30,750.00,180,112.5,"55 & below: 9% (TW) + 0.45 (TW - $500) with TW = $750.00; the employee pays 0.45 (TW - $500)",cpf-table-3-2026
+CPF-L-085,2026-06,spr2_gg,57,50.00,0,0,"above 55 to 60: $50 or less is nil",cpf-table-3-2026
+CPF-L-086,2026-06,spr2_gg,57,50.01,3.0006,0,"above 55 to 60: 6% of $50.01, nothing by the employee",cpf-table-3-2026
+CPF-L-087,2026-06,spr2_gg,57,400.00,24,0,"above 55 to 60: 6% of $400.00, nothing by the employee",cpf-table-3-2026
+CPF-L-088,2026-06,spr2_gg,57,500.00,30,0,"above 55 to 60: 6% of $500.00, nothing by the employee",cpf-table-3-2026
+CPF-L-089,2026-06,spr2_gg,57,500.01,30.00435,0.00375,"above 55 to 60: 6% (TW) + 0.375 (TW - $500) with TW = $500.01; the employee pays 0.375 (TW - $500)",cpf-table-3-2026
+CPF-L-090,2026-06,spr2_gg,57,600.00,73.5,37.5,"above 55 to 60: 6% (TW) + 0.375 (TW - $500) with TW = $600.00; the employee pays 0.375 (TW - $500)",cpf-table-3-2026
+CPF-L-091,2026-06,spr2_gg,57,750.00,138.75,93.75,"above 55 to 60: 6% (TW) + 0.375 (TW - $500) with TW = $750.00; the employee pays 0.375 (TW - $500)",cpf-table-3-2026
+CPF-L-092,2026-06,spr2_gg,62,50.00,0,0,"above 60 to 65: $50 or less is nil",cpf-table-3-2026
+CPF-L-093,2026-06,spr2_gg,62,50.01,1.75035,0,"above 60 to 65: 3.5% of $50.01, nothing by the employee",cpf-table-3-2026
+CPF-L-094,2026-06,spr2_gg,62,400.00,14,0,"above 60 to 65: 3.5% of $400.00, nothing by the employee",cpf-table-3-2026
+CPF-L-095,2026-06,spr2_gg,62,500.00,17.5,0,"above 60 to 65: 3.5% of $500.00, nothing by the employee",cpf-table-3-2026
+CPF-L-096,2026-06,spr2_gg,62,500.01,17.5026,0.00225,"above 60 to 65: 3.5% (TW) + 0.225 (TW - $500) with TW = $500.01; the employee pays 0.225 (TW - $500)",cpf-table-3-2026
+CPF-L-097,2026-06,spr2_gg,62,600.00,43.5,22.5,"above 60 to 65: 3.5% (TW) + 0.225 (TW - $500) with TW = $600.00; the employee pays 0.225 (TW - $500)",cpf-table-3-2026
+CPF-L-098,2026-06,spr2_gg,62,750.00,82.5,56.25,"above 60 to 65: 3.5% (TW) + 0.225 (TW - $500) with TW = $750.00; the employee pays 0.225 (TW - $500)",cpf-table-3-2026
+CPF-L-099,2026-06,spr2_gg,66,50.00,0,0,"above 65: $50 or less is nil",cpf-table-3-2026
+CPF-L-100,2026-06,spr2_gg,66,50.01,1.75035,0,"above 65: 3.5% of $50.01, nothing by the employee",cpf-table-3-2026
+CPF-L-101,2026-06,spr2_gg,66,400.00,14,0,"above 65: 3.5% of $400.00, nothing by the employee",cpf-table-3-2026
+CPF-L-102,2026-06,spr2_gg,66,500.00,17.5,0,"above 65: 3.5% of $500.00, nothing by the employee",cpf-table-3-2026
+CPF-L-103,2026-06,spr2_gg,66,500.01,17.50185,0.0015,"above 65: 3.5% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-3-2026
+CPF-L-104,2026-06,spr2_gg,66,600.00,36,15,"above 65: 3.5% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-3-2026
+CPF-L-105,2026-06,spr2_gg,66,750.00,63.75,37.5,"above 65: 3.5% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-3-2026
+CPF-L-106,2026-06,spr1_fg,30,50.00,0,0,"55 & below: $50 or less is nil",cpf-table-4-2026
+CPF-L-107,2026-06,spr1_fg,30,50.01,8.5017,0,"55 & below: 17% of $50.01, nothing by the employee",cpf-table-4-2026
+CPF-L-108,2026-06,spr1_fg,30,400.00,68,0,"55 & below: 17% of $400.00, nothing by the employee",cpf-table-4-2026
+CPF-L-109,2026-06,spr1_fg,30,500.00,85,0,"55 & below: 17% of $500.00, nothing by the employee",cpf-table-4-2026
+CPF-L-110,2026-06,spr1_fg,30,500.01,85.0032,0.0015,"55 & below: 17% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-111,2026-06,spr1_fg,30,600.00,117,15,"55 & below: 17% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-112,2026-06,spr1_fg,30,750.00,165,37.5,"55 & below: 17% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-113,2026-06,spr1_fg,57,50.00,0,0,"above 55 to 60: $50 or less is nil",cpf-table-4-2026
+CPF-L-114,2026-06,spr1_fg,57,50.01,8.0016,0,"above 55 to 60: 16% of $50.01, nothing by the employee",cpf-table-4-2026
+CPF-L-115,2026-06,spr1_fg,57,400.00,64,0,"above 55 to 60: 16% of $400.00, nothing by the employee",cpf-table-4-2026
+CPF-L-116,2026-06,spr1_fg,57,500.00,80,0,"above 55 to 60: 16% of $500.00, nothing by the employee",cpf-table-4-2026
+CPF-L-117,2026-06,spr1_fg,57,500.01,80.0031,0.0015,"above 55 to 60: 16% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-118,2026-06,spr1_fg,57,600.00,111,15,"above 55 to 60: 16% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-119,2026-06,spr1_fg,57,750.00,157.5,37.5,"above 55 to 60: 16% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-120,2027-06,spr1_fg,57,50.00,0,0,"above 55 to 60: $50 or less is nil",cpf-table-4-2027
+CPF-L-121,2027-06,spr1_fg,57,50.01,8.25165,0,"above 55 to 60: 16.5% of $50.01, nothing by the employee",cpf-table-4-2027
+CPF-L-122,2027-06,spr1_fg,57,400.00,66,0,"above 55 to 60: 16.5% of $400.00, nothing by the employee",cpf-table-4-2027
+CPF-L-123,2027-06,spr1_fg,57,500.00,82.5,0,"above 55 to 60: 16.5% of $500.00, nothing by the employee",cpf-table-4-2027
+CPF-L-124,2027-06,spr1_fg,57,500.01,82.50315,0.0015,"above 55 to 60: 16.5% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-4-2027
+CPF-L-125,2027-06,spr1_fg,57,600.00,114,15,"above 55 to 60: 16.5% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2027
+CPF-L-126,2027-06,spr1_fg,57,750.00,161.25,37.5,"above 55 to 60: 16.5% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2027
+CPF-L-127,2026-06,spr1_fg,62,50.00,0,0,"above 60 to 65: $50 or less is nil",cpf-table-4-2026
+CPF-L-128,2026-06,spr1_fg,62,50.01,6.25125,0,"above 60 to 65: 12.5% of $50.01, nothing by the employee",cpf-table-4-2026
+CPF-L-129,2026-06,spr1_fg,62,400.00,50,0,"above 60 to 65: 12.5% of $400.00, nothing by the employee",cpf-table-4-2026
+CPF-L-130,2026-06,spr1_fg,62,500.00,62.5,0,"above 60 to 65: 12.5% of $500.00, nothing by the employee",cpf-table-4-2026
+CPF-L-131,2026-06,spr1_fg,62,500.01,62.50275,0.0015,"above 60 to 65: 12.5% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-132,2026-06,spr1_fg,62,600.00,90,15,"above 60 to 65: 12.5% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-133,2026-06,spr1_fg,62,750.00,131.25,37.5,"above 60 to 65: 12.5% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-134,2027-06,spr1_fg,62,50.00,0,0,"above 60 to 65: $50 or less is nil",cpf-table-4-2027
+CPF-L-135,2027-06,spr1_fg,62,50.01,6.5013,0,"above 60 to 65: 13% of $50.01, nothing by the employee",cpf-table-4-2027
+CPF-L-136,2027-06,spr1_fg,62,400.00,52,0,"above 60 to 65: 13% of $400.00, nothing by the employee",cpf-table-4-2027
+CPF-L-137,2027-06,spr1_fg,62,500.00,65,0,"above 60 to 65: 13% of $500.00, nothing by the employee",cpf-table-4-2027
+CPF-L-138,2027-06,spr1_fg,62,500.01,65.0028,0.0015,"above 60 to 65: 13% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-4-2027
+CPF-L-139,2027-06,spr1_fg,62,600.00,93,15,"above 60 to 65: 13% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2027
+CPF-L-140,2027-06,spr1_fg,62,750.00,135,37.5,"above 60 to 65: 13% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2027
+CPF-L-141,2026-06,spr1_fg,68,50.00,0,0,"above 65 to 70: $50 or less is nil",cpf-table-4-2026
+CPF-L-142,2026-06,spr1_fg,68,50.01,4.5009,0,"above 65 to 70: 9% of $50.01, nothing by the employee",cpf-table-4-2026
+CPF-L-143,2026-06,spr1_fg,68,400.00,36,0,"above 65 to 70: 9% of $400.00, nothing by the employee",cpf-table-4-2026
+CPF-L-144,2026-06,spr1_fg,68,500.00,45,0,"above 65 to 70: 9% of $500.00, nothing by the employee",cpf-table-4-2026
+CPF-L-145,2026-06,spr1_fg,68,500.01,45.0024,0.0015,"above 65 to 70: 9% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-146,2026-06,spr1_fg,68,600.00,69,15,"above 65 to 70: 9% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-147,2026-06,spr1_fg,68,750.00,105,37.5,"above 65 to 70: 9% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-148,2026-06,spr1_fg,72,50.00,0,0,"above 70: $50 or less is nil",cpf-table-4-2026
+CPF-L-149,2026-06,spr1_fg,72,50.01,3.75075,0,"above 70: 7.5% of $50.01, nothing by the employee",cpf-table-4-2026
+CPF-L-150,2026-06,spr1_fg,72,400.00,30,0,"above 70: 7.5% of $400.00, nothing by the employee",cpf-table-4-2026
+CPF-L-151,2026-06,spr1_fg,72,500.00,37.5,0,"above 70: 7.5% of $500.00, nothing by the employee",cpf-table-4-2026
+CPF-L-152,2026-06,spr1_fg,72,500.01,37.50225,0.0015,"above 70: 7.5% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-153,2026-06,spr1_fg,72,600.00,60,15,"above 70: 7.5% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-154,2026-06,spr1_fg,72,750.00,93.75,37.5,"above 70: 7.5% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-4-2026
+CPF-L-155,2026-06,spr2_fg,30,50.00,0,0,"55 & below: $50 or less is nil",cpf-table-5-2026
+CPF-L-156,2026-06,spr2_fg,30,50.01,8.5017,0,"55 & below: 17% of $50.01, nothing by the employee",cpf-table-5-2026
+CPF-L-157,2026-06,spr2_fg,30,400.00,68,0,"55 & below: 17% of $400.00, nothing by the employee",cpf-table-5-2026
+CPF-L-158,2026-06,spr2_fg,30,500.00,85,0,"55 & below: 17% of $500.00, nothing by the employee",cpf-table-5-2026
+CPF-L-159,2026-06,spr2_fg,30,500.01,85.0062,0.0045,"55 & below: 17% (TW) + 0.45 (TW - $500) with TW = $500.01; the employee pays 0.45 (TW - $500)",cpf-table-5-2026
+CPF-L-160,2026-06,spr2_fg,30,600.00,147,45,"55 & below: 17% (TW) + 0.45 (TW - $500) with TW = $600.00; the employee pays 0.45 (TW - $500)",cpf-table-5-2026
+CPF-L-161,2026-06,spr2_fg,30,750.00,240,112.5,"55 & below: 17% (TW) + 0.45 (TW - $500) with TW = $750.00; the employee pays 0.45 (TW - $500)",cpf-table-5-2026
+CPF-L-162,2026-06,spr2_fg,57,50.00,0,0,"above 55 to 60: $50 or less is nil",cpf-table-5-2026
+CPF-L-163,2026-06,spr2_fg,57,50.01,8.0016,0,"above 55 to 60: 16% of $50.01, nothing by the employee",cpf-table-5-2026
+CPF-L-164,2026-06,spr2_fg,57,400.00,64,0,"above 55 to 60: 16% of $400.00, nothing by the employee",cpf-table-5-2026
+CPF-L-165,2026-06,spr2_fg,57,500.00,80,0,"above 55 to 60: 16% of $500.00, nothing by the employee",cpf-table-5-2026
+CPF-L-166,2026-06,spr2_fg,57,500.01,80.00535,0.00375,"above 55 to 60: 16% (TW) + 0.375 (TW - $500) with TW = $500.01; the employee pays 0.375 (TW - $500)",cpf-table-5-2026
+CPF-L-167,2026-06,spr2_fg,57,600.00,133.5,37.5,"above 55 to 60: 16% (TW) + 0.375 (TW - $500) with TW = $600.00; the employee pays 0.375 (TW - $500)",cpf-table-5-2026
+CPF-L-168,2026-06,spr2_fg,57,750.00,213.75,93.75,"above 55 to 60: 16% (TW) + 0.375 (TW - $500) with TW = $750.00; the employee pays 0.375 (TW - $500)",cpf-table-5-2026
+CPF-L-169,2027-06,spr2_fg,57,50.00,0,0,"above 55 to 60: $50 or less is nil",cpf-table-5-2027
+CPF-L-170,2027-06,spr2_fg,57,50.01,8.25165,0,"above 55 to 60: 16.5% of $50.01, nothing by the employee",cpf-table-5-2027
+CPF-L-171,2027-06,spr2_fg,57,400.00,66,0,"above 55 to 60: 16.5% of $400.00, nothing by the employee",cpf-table-5-2027
+CPF-L-172,2027-06,spr2_fg,57,500.00,82.5,0,"above 55 to 60: 16.5% of $500.00, nothing by the employee",cpf-table-5-2027
+CPF-L-173,2027-06,spr2_fg,57,500.01,82.5054,0.00375,"above 55 to 60: 16.5% (TW) + 0.375 (TW - $500) with TW = $500.01; the employee pays 0.375 (TW - $500)",cpf-table-5-2027
+CPF-L-174,2027-06,spr2_fg,57,600.00,136.5,37.5,"above 55 to 60: 16.5% (TW) + 0.375 (TW - $500) with TW = $600.00; the employee pays 0.375 (TW - $500)",cpf-table-5-2027
+CPF-L-175,2027-06,spr2_fg,57,750.00,217.5,93.75,"above 55 to 60: 16.5% (TW) + 0.375 (TW - $500) with TW = $750.00; the employee pays 0.375 (TW - $500)",cpf-table-5-2027
+CPF-L-176,2026-06,spr2_fg,62,50.00,0,0,"above 60 to 65: $50 or less is nil",cpf-table-5-2026
+CPF-L-177,2026-06,spr2_fg,62,50.01,6.25125,0,"above 60 to 65: 12.5% of $50.01, nothing by the employee",cpf-table-5-2026
+CPF-L-178,2026-06,spr2_fg,62,400.00,50,0,"above 60 to 65: 12.5% of $400.00, nothing by the employee",cpf-table-5-2026
+CPF-L-179,2026-06,spr2_fg,62,500.00,62.5,0,"above 60 to 65: 12.5% of $500.00, nothing by the employee",cpf-table-5-2026
+CPF-L-180,2026-06,spr2_fg,62,500.01,62.5035,0.00225,"above 60 to 65: 12.5% (TW) + 0.225 (TW - $500) with TW = $500.01; the employee pays 0.225 (TW - $500)",cpf-table-5-2026
+CPF-L-181,2026-06,spr2_fg,62,600.00,97.5,22.5,"above 60 to 65: 12.5% (TW) + 0.225 (TW - $500) with TW = $600.00; the employee pays 0.225 (TW - $500)",cpf-table-5-2026
+CPF-L-182,2026-06,spr2_fg,62,750.00,150,56.25,"above 60 to 65: 12.5% (TW) + 0.225 (TW - $500) with TW = $750.00; the employee pays 0.225 (TW - $500)",cpf-table-5-2026
+CPF-L-183,2027-06,spr2_fg,62,50.00,0,0,"above 60 to 65: $50 or less is nil",cpf-table-5-2027
+CPF-L-184,2027-06,spr2_fg,62,50.01,6.5013,0,"above 60 to 65: 13% of $50.01, nothing by the employee",cpf-table-5-2027
+CPF-L-185,2027-06,spr2_fg,62,400.00,52,0,"above 60 to 65: 13% of $400.00, nothing by the employee",cpf-table-5-2027
+CPF-L-186,2027-06,spr2_fg,62,500.00,65,0,"above 60 to 65: 13% of $500.00, nothing by the employee",cpf-table-5-2027
+CPF-L-187,2027-06,spr2_fg,62,500.01,65.00355,0.00225,"above 60 to 65: 13% (TW) + 0.225 (TW - $500) with TW = $500.01; the employee pays 0.225 (TW - $500)",cpf-table-5-2027
+CPF-L-188,2027-06,spr2_fg,62,600.00,100.5,22.5,"above 60 to 65: 13% (TW) + 0.225 (TW - $500) with TW = $600.00; the employee pays 0.225 (TW - $500)",cpf-table-5-2027
+CPF-L-189,2027-06,spr2_fg,62,750.00,153.75,56.25,"above 60 to 65: 13% (TW) + 0.225 (TW - $500) with TW = $750.00; the employee pays 0.225 (TW - $500)",cpf-table-5-2027
+CPF-L-190,2026-06,spr2_fg,68,50.00,0,0,"above 65 to 70: $50 or less is nil",cpf-table-5-2026
+CPF-L-191,2026-06,spr2_fg,68,50.01,4.5009,0,"above 65 to 70: 9% of $50.01, nothing by the employee",cpf-table-5-2026
+CPF-L-192,2026-06,spr2_fg,68,400.00,36,0,"above 65 to 70: 9% of $400.00, nothing by the employee",cpf-table-5-2026
+CPF-L-193,2026-06,spr2_fg,68,500.00,45,0,"above 65 to 70: 9% of $500.00, nothing by the employee",cpf-table-5-2026
+CPF-L-194,2026-06,spr2_fg,68,500.01,45.0024,0.0015,"above 65 to 70: 9% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-5-2026
+CPF-L-195,2026-06,spr2_fg,68,600.00,69,15,"above 65 to 70: 9% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-5-2026
+CPF-L-196,2026-06,spr2_fg,68,750.00,105,37.5,"above 65 to 70: 9% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-5-2026
+CPF-L-197,2026-06,spr2_fg,72,50.00,0,0,"above 70: $50 or less is nil",cpf-table-5-2026
+CPF-L-198,2026-06,spr2_fg,72,50.01,3.75075,0,"above 70: 7.5% of $50.01, nothing by the employee",cpf-table-5-2026
+CPF-L-199,2026-06,spr2_fg,72,400.00,30,0,"above 70: 7.5% of $400.00, nothing by the employee",cpf-table-5-2026
+CPF-L-200,2026-06,spr2_fg,72,500.00,37.5,0,"above 70: 7.5% of $500.00, nothing by the employee",cpf-table-5-2026
+CPF-L-201,2026-06,spr2_fg,72,500.01,37.50225,0.0015,"above 70: 7.5% (TW) + 0.15 (TW - $500) with TW = $500.01; the employee pays 0.15 (TW - $500)",cpf-table-5-2026
+CPF-L-202,2026-06,spr2_fg,72,600.00,60,15,"above 70: 7.5% (TW) + 0.15 (TW - $500) with TW = $600.00; the employee pays 0.15 (TW - $500)",cpf-table-5-2026
+CPF-L-203,2026-06,spr2_fg,72,750.00,93.75,37.5,"above 70: 7.5% (TW) + 0.15 (TW - $500) with TW = $750.00; the employee pays 0.15 (TW - $500)",cpf-table-5-2026
+CPF-L-204,2026-06,sc_spr3,30,600.00,162,60,"55 & below, TW $600: 17% x 600 = 102, plus 0.6 x 100 = 60, so 162 in all and 60 by the employee, 102 by the employer",cpf-table-1-2026
+CPF-L-205,2026-06,spr1_gg,62,650.00,45.25,22.5,"60 to 65, 1st-year G/G, TW $650: 3.5% x 650 = 22.75, plus 0.15 x 150 = 22.50, so 45.25 in all",cpf-table-2-2026
+CPF-L-206,2026-06,spr2_gg,40,700.00,153,90,"2nd-year G/G, 55 & below, TW $700: 9% x 700 = 63, plus 0.45 x 200 = 90, so 153 in all",cpf-table-3-2026
+CPF-L-207,2027-06,sc_spr3,58,600.00,156,57,"above 55 to 60 from 2027, TW $600: 16.5% x 600 = 99, plus 0.57 x 100 = 57, so 156 in all",cpf-table-1-2027
+CPF-L-208,2026-06,sc_spr3,30,750.01,none,none,"above the graduated range: read with the rates (> $750)",cpf-table-1-2026
+CPF-L-209,2025-12,sc_spr3,30,600.00,none,none,"wages earned before 2026 are not held by this version",cpf-table-1-2026
+CPF-L-210,2026-06,spr3,30,600.00,none,none,"a group the pack does not hold",cpf-table-1-2026
