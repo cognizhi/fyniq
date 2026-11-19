@@ -13,7 +13,9 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
+	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
 	"github.com/cognizhi/fyniq/internal/nemura/packs"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
@@ -313,4 +315,62 @@ func TestUnusedAnnualLeaveCarriesForwardAndLapses(t *testing.T) {
 		}
 		return nil
 	})
+}
+
+// The leave service shows a person's pattern and balance with the steps and sources of the entitlement, grants once, carries forward, and says plainly when a year
+// has no pack or a person has no classification.
+// req: NM-LV-02, NM-TIM-01
+func TestTheLeaveServiceShowsTheBalanceWithItsWorking(t *testing.T) {
+	ctx := context.Background()
+	c := newCompany(t)
+	now := today.Add(9 * time.Hour)
+	packs, err := nemura.NewPacksService(store(t, "nemura_api"), clock.NewFrozen(now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := nemura.LeaveService{Store: store(t, "nemura_api"), Clock: clock.NewFrozen(now), Packs: packs}
+	s := api.Session{Organisation: c.org, Member: c.owner}
+	ana := addEmployee(t, c, "Ana Tan", "2099-01-01")
+	year := today.Year()
+	if err := svc.SetPattern(ctx, s, ana, d("2099-01-01"), leave.Pattern{Weekdays: []int{1, 2, 3, 4, 5}, HoursPerWeek: 440}); err != nil {
+		t.Fatal(err)
+	}
+	v, err := svc.View(ctx, s, ana, year)
+	if err != nil || v.Pattern == nil || v.Pattern.HoursPerWeek != "44.0" || len(v.Types) != 1 || len(v.Types[0].Basis) == 0 || v.Types[0].Balance.Left != "0.00" {
+		t.Fatalf("before the grant: %+v %v", v, err)
+	}
+	g, err := svc.Grant(ctx, s, ana, year)
+	if err != nil || g.Days != "7.00" || g.Written != "7.00" || len(g.Sources) == 0 {
+		t.Fatalf("grant: %+v %v", g, err)
+	}
+	if g, _ := svc.Grant(ctx, s, ana, year); g.Written != "0.00" {
+		t.Errorf("a second grant wrote %s", g.Written)
+	}
+	v, _ = svc.View(ctx, s, ana, year)
+	if v.Types[0].Balance.Entitled != "7.00" || v.Types[0].Balance.Left != "7.00" {
+		t.Errorf("balance %+v", v.Types[0].Balance)
+	}
+	if carried, err := svc.CarryForward(ctx, s, ana, year); err != nil || carried != "7.00" {
+		t.Errorf("carry: %s %v", carried, err)
+	}
+	if v, _ = svc.View(ctx, s, ana, year+1); v.Types[0].CarryEnd != time.Date(year+2, time.January, 1, 0, 0, 0, 0, time.UTC).AddDate(0, 0, -1).Format(time.DateOnly) {
+		t.Errorf("carried until %s", v.Types[0].CarryEnd)
+	}
+	if _, err := svc.Grant(ctx, s, ana, 2025); leaveCode(err) != leave.CodeInvalid {
+		t.Errorf("a year before any pack: %v", err)
+	}
+	if _, err := svc.Own(ctx, s); personRefusal(err) != people.CodeNotFound {
+		t.Errorf("an owner with no person record: %v", err)
+	}
+	var none uuid.UUID
+	c.must(func(ctx context.Context, tx pgx.Tx) error {
+		none, err = nemura.AddPerson(ctx, tx, c.org, now, c.owner, people.Person{LegalName: "No Class", EmploymentStart: d("2099-01-05")}, people.Job{Title: "X", Worksite: "SG", EmploymentType: "full_time"}, nil)
+		return err
+	})
+	if v, err := svc.View(ctx, s, none, year); err != nil || len(v.Types) != 0 {
+		t.Errorf("a person with no classification: %+v %v", v, err)
+	}
+	if _, err := svc.View(ctx, s, uuid.New(), year); personRefusal(err) != people.CodeNotFound {
+		t.Errorf("no such person: %v", err)
+	}
 }

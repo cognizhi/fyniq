@@ -9,16 +9,22 @@ Load before each slice: `fyniq-feature-change`, `fyniq-sg-statutory` (1, 3), `fy
 
 ## 1. Working patterns, leave types and the ledger (slice 1)
 
-- [ ] 1.1 `sg-people@2026.2`: maternity, paternity, shared parental, infant care, extended childcare and adoption leave from MOM and MSF (days or weeks,
-  who pays, the reimbursement cap, the claim window), each with its source, quote and pinned cases; researched. `// req: NM-PACK-06` once Appendix A is covered.
-- [ ] 1.2 Migration: `working_pattern` (effective-dated hours and days per week), `leave_type` (from the pack by key, or the company's), `leave_ledger`
-  (append-only, D1) and the per-person-and-type head row for the lock (D2); forced RLS, audit, goldens. Tests: no edit or delete, no negative
-  balance for a type that forbids it. `// req: NM-LV-13, NM-TIM-01`
-- [ ] 1.3 Entitlement and balance (NM-LV-02): grants and accruals from the pack and the policy by year of service and the legal classification, proration
-  in the first and last year, carry-forward and expiry (O1), the four sums and the calculation on request; counting basis per type (NM-LV-11).
-  `// req: NM-LV-01, NM-LV-02, NM-LV-11`
-- [ ] 1.4 API and the screen `nm-my-leave`, guide and kb pages; the data inventory and retention rows.
-- [ ] 1.5 Verify: `make check`, `make test`, `make openapi`, `make api-check`.
+- [x] 1.1 `sg-people@2026.2`: maternity, paternity and shared parental leave from MOM and MSF (weeks, who pays, the reimbursement cap, the claim window), each
+  with its source, quote and pinned cases, keyed by the child's birth date; researched; the first version kept. `// req: NM-PACK-06` once Appendix A is covered.
+  Left: unpaid infant care leave (MOM's page was not found at the address tried on 20 Nov: find it), adoption leave, Part IV and the key employment terms,
+  in `sg-people@2026.3`; extended childcare is in 2026.1 already.
+- [x] 1.2 Migration 000015: `working_pattern` (effective-dated weekdays and hours), `leave_ledger` (append-only, D1) and the per-person-type-year head row for
+  the lock (D2, taken through `lock_leave_head`); forced RLS, audit, goldens; the worker holds no write grant yet. Tests: no edit, delete or truncate, no
+  negative balance for a type that forbids it, ten requests at once for the last day book one. `// req: NM-LV-13, NM-TIM-01`
+  Left: `leave_type` as a table (a company's own types) arrives with the policy form; annual leave is the one type until then.
+- [x] 1.3 Entitlement and balance (NM-LV-02) for annual leave: the grant from the pack and the policy by year of service and the legal classification,
+  MOM's completed-months proration in the first and last year, carry-forward and expiry at O1's default (12 months), the sums and the calculation shown with its
+  sources; counting basis in the view. `// req: NM-LV-01, NM-LV-02`
+  Left: the policy form's carry-forward and encashment fields (O1's default is the code's constant until then); childcare and parental leave grants
+  by dependants (slice 3); NM-LV-11 for the other types.
+- [x] 1.4 API (`getLeave`, `getMyLeave`, `setWorkingPattern`, `grantAnnualLeave`, `carryForwardLeave`, `NM_FEATURE_OFF`) and the screen `nm-my-leave`, guide
+  and kb pages; the data inventory row.
+- [x] 1.5 Verify: local gates for the touched packages, `make check`, `make api-check`, `make db-lint`, web typecheck and unit tests.
 
 ## 2. Applying, approving, the calendar and sick leave (slice 2)
 

@@ -14,6 +14,7 @@ export function Shell({ children, directory, features }: { children: ReactNode; 
           </span>
           <nav aria-label={t("app.name")} className="fy-row" style={{ gap: "var(--space-3)" }}>
             <a href="/">{t("nav.home")}</a>
+            <a href="/me/leave">{t("nav.leave")}</a>
             {directory && <a href="/people/directory">{t("nav.directory")}</a>}
             {features && <a href="/settings/features">{t("nav.features")}</a>}
             {directory && <a href="/settings/packs">{t("nav.packs")}</a>}

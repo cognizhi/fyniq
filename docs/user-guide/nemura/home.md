@@ -21,7 +21,7 @@ lands on **My home**; the people team lands on **People home**. Neither shows th
 
 1. Read **Your roles** on the page. They decide what you can see and do.
 2. If it says you have no role yet, ask the Owner to give you one.
-3. Your leave, pay and letters appear here as your company switches each on.
+3. Your leave (see [See your leave balance](my-leave.md)), pay and letters appear here as your company switches each on.
 
 ## Common problems
 
@@ -31,3 +31,4 @@ lands on **My home**; the people team lands on **People home**. Neither shows th
 ## Related
 
 - [Sign in to Nemura](sign-in.md)
+- [See your leave balance and how it was worked out](my-leave.md)

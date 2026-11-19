@@ -127,8 +127,9 @@ CREATE POLICY tenant_isolation ON nemura.leave_ledger USING (organisation_id = n
 
 GRANT SELECT ON nemura.working_pattern, nemura.leave_head, nemura.leave_ledger TO nemura_api, nemura_worker, nemura_readonly;
 GRANT INSERT (id, person_id, effective_from, weekdays, hours_per_week), UPDATE (effective_to) ON nemura.working_pattern TO nemura_api;
-GRANT INSERT (person_id, type_key, leave_year) ON nemura.leave_head TO nemura_api, nemura_worker;
-GRANT INSERT (id, person_id, type_key, leave_year, kind, amount, negative_ok, expires_on, request_id, source, note, created_by) ON nemura.leave_ledger TO nemura_api, nemura_worker;
+GRANT INSERT (person_id, type_key, leave_year) ON nemura.leave_head TO nemura_api;
+GRANT INSERT (id, person_id, type_key, leave_year, kind, amount, negative_ok, expires_on, request_id, source, note, created_by) ON nemura.leave_ledger TO nemura_api;
+-- The worker writes none yet: the year-end carry-forward and the month-end accrual arrive as jobs with their own grants (slice 4).
 -- The lock of the head: SELECT ... FOR UPDATE needs an UPDATE privilege on one column, which a head row has none to give; the lock is taken through this function.
 -- +goose StatementBegin
 CREATE FUNCTION nemura.lock_leave_head(p_person uuid, p_type text, p_year integer) RETURNS void
@@ -142,4 +143,4 @@ END
 $$;
 -- +goose StatementEnd
 REVOKE ALL ON FUNCTION nemura.lock_leave_head(uuid, text, integer) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION nemura.lock_leave_head(uuid, text, integer) TO nemura_api, nemura_worker;
+GRANT EXECUTE ON FUNCTION nemura.lock_leave_head(uuid, text, integer) TO nemura_api;

@@ -145,22 +145,28 @@ func LeaveBalance(ctx context.Context, tx pgx.Tx, person uuid.UUID, typeKey stri
 
 func annualSource(year int) string { return fmt.Sprintf("annual-leave:%d", year) }
 
+// AnnualEntitlement works out a person's annual leave for a calendar year without writing anything: the person's start, leaving date and legal
+// classification, the pack's days and the company's. A person with no legal classification is refused with the field named.
+func AnnualEntitlement(ctx context.Context, tx pgx.Tx, person uuid.UUID, year int, at time.Time, v pack.Version, policyDays []int) (leave.Entitlement, error) {
+	p, err := PersonOn(ctx, tx, person, at)
+	if err != nil {
+		return leave.Entitlement{}, err
+	}
+	c, ok, err := ClassificationOn(ctx, tx, person, time.Date(year, time.December, 31, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		return leave.Entitlement{}, err
+	}
+	if !ok {
+		return leave.Entitlement{}, &people.Refusal{Code: people.CodeInvalid, Message: "The person has no legal classification: set it on their record before annual leave is granted."}
+	}
+	return leave.AnnualGrant(v, leave.Service{Start: p.Start, Leaving: p.LeavingDate, Employee: c.ContractType == "service", EACovered: c.EACovered}, policyDays, year)
+}
+
 // GrantAnnualLeave works out a person's annual leave for a calendar year from the pack and the company's policy (NM-LV-02) and writes it to the ledger: a grant
 // the first time, and afterwards only the difference as a correction, so running it twice changes nothing and a changed policy or start date is a visible
 // entry. It returns the entitlement with its working, and the amount written (zero when the ledger was already right).
 func GrantAnnualLeave(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, person uuid.UUID, year int, v pack.Version, policyDays []int) (leave.Entitlement, leave.Days, error) {
-	p, err := PersonOn(ctx, tx, person, at)
-	if err != nil {
-		return leave.Entitlement{}, 0, err
-	}
-	c, ok, err := ClassificationOn(ctx, tx, person, time.Date(year, time.December, 31, 0, 0, 0, 0, time.UTC))
-	if err != nil {
-		return leave.Entitlement{}, 0, err
-	}
-	if !ok {
-		return leave.Entitlement{}, 0, &people.Refusal{Code: people.CodeInvalid, Message: "The person has no legal classification: set it on their record before annual leave is granted."}
-	}
-	g, err := leave.AnnualGrant(v, leave.Service{Start: p.Start, Leaving: p.LeavingDate, Employee: c.ContractType == "service", EACovered: c.EACovered}, policyDays, year)
+	g, err := AnnualEntitlement(ctx, tx, person, year, at, v, policyDays)
 	if err != nil {
 		return g, 0, err
 	}

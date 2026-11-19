@@ -5,6 +5,7 @@ import { App } from "./App";
 import { ReviewBanner } from "./components/ReviewBanner";
 import { Home } from "./pages/Home";
 import { NewPerson } from "./pages/NewPerson";
+import { MyLeave } from "./pages/MyLeave";
 import { Packs } from "./pages/Packs";
 import { Policy } from "./pages/Policy";
 import { Features } from "./pages/Features";
@@ -397,5 +398,69 @@ describe("the country pack and the leave policy", () => {
     for (const [label, v] of [["Childcare leave, citizen child under 7", "6"], ["Extended childcare leave, citizen child 7 to 12", "2"], ["Childcare leave, non-citizen child", "2"]]) fireEvent.change(screen.getByLabelText(label as string), { target: { value: v } });
     fireEvent.submit(container.querySelector("form.fy-stack") as HTMLFormElement);
     expect((await screen.findByRole("alert")).textContent).toMatch(/below the statutory 7/);
+  });
+});
+
+// req: NM-LV-02, NM-TIM-01, NM-LV-13
+describe("my leave", () => {
+  const view = { person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", year: 2026, working_pattern: { effective_from: "2026-01-05", weekdays: [1, 2, 3, 4, 5], hours_per_week: "44.0" },
+    types: [{ key: "annual", name: "Annual leave", counting: "working_days", balance: { entitled: "7.00", taken: "2.00", booked: "1.00", expired: "0.00", encashed: "0.00", left: "4.00" },
+      basis: ["Year of service 1: 7 days a year, 12 completed months of 12."], sources: ["sg-people@2026.2 annual_leave"], carried_until: "2027-12-31" }] };
+  const year = String(new Date().getFullYear());
+
+  it("shows the balance with the steps of the calculation and where the days come from", async () => {
+    answer(`GET /v1/me/leave/${year}`, { status: 200, body: { ...view, year: Number(year) } });
+    const { container } = render(<MyLeave roles={["employee"]} />);
+    expect(await screen.findByText("Year of service 1: 7 days a year, 12 completed months of 12.")).toBeTruthy();
+    expect(screen.getByRole("table", { name: "Balance of Annual leave" }).textContent).toContain("4.00");
+    expect(screen.getByText(/From 2026-01-05: Monday, Tuesday, Wednesday, Thursday, Friday, 44.0 hours a week/)).toBeTruthy();
+    expect(screen.getByText(/Where the days come from: sg-people@2026.2 annual_leave/)).toBeTruthy();
+    expect(screen.getByText(/can be taken until 2027-12-31/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Work out annual leave" })).toBeNull();
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("says plainly that leave is off, and moves between years", async () => {
+    answer(`GET /v1/me/leave/${year}`, { status: 409, body: { code: "NM_FEATURE_OFF", detail: "Leave is switched off for this organisation: an Owner switches it on." } });
+    render(<MyLeave roles={["employee"]} />);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/switched off/);
+    const { fireEvent } = await import("@testing-library/react");
+    answer(`GET /v1/me/leave/${Number(year) - 1}`, { status: 200, body: { ...view, year: Number(year) - 1, types: [] } });
+    fireEvent.click(screen.getByRole("button", { name: "Previous year" }));
+    expect(await screen.findByText("No leave has been granted for this year yet.")).toBeTruthy();
+  });
+
+  it("lets the people team work out a year, carry days forward and set the pattern, and shows a refusal in words", async () => {
+    const id = view.person_id;
+    answer(`GET /v1/people/${id}/leave/${year}`, { status: 200, body: { ...view, year: Number(year) } });
+    answer(`POST /v1/people/${id}/leave/${year}/annual-grant`, { status: 200, body: { days: "7.00", written: "7.00", basis: [], sources: [] } });
+    answer(`POST /v1/people/${id}/leave/${year}/carry-forward`, { status: 200, body: { carried: "4.00" } });
+    answer(`PUT /v1/people/${id}/working-pattern`, { status: 409, body: { code: "NM_LEAVE_CONFLICT", detail: "The person already has a working pattern on those days: start the new one on or after the day the last one ends." } });
+    const { container } = render(<MyLeave roles={["hr_admin"]} personId={id} />);
+    await screen.findByRole("button", { name: "Work out annual leave" });
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Work out annual leave" }));
+    expect(await screen.findByText("Recorded 7.00 days for the year.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Carry unused days forward" }));
+    expect(await screen.findByText("Carried 4.00 days into the next year.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Starts on"), { target: { value: "2026-01-05" } });
+    fireEvent.submit(container.querySelector("form.fy-stack[aria-labelledby='pattern-form-h']") as HTMLFormElement);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/already has a working pattern/);
+    expect(calls).toContain(`PUT /v1/people/${id}/working-pattern`);
+  });
+
+  it("offers an employee no way to change anyone's leave", async () => {
+    const id = view.person_id;
+    answer(`GET /v1/people/${id}/leave/${year}`, { status: 200, body: { ...view, year: Number(year) } });
+    render(<MyLeave roles={["manager"]} personId={id} />);
+    await screen.findByText("Annual leave");
+    expect(screen.queryByRole("button", { name: "Carry unused days forward" })).toBeNull();
+  });
+
+  it("is routed from the address", () => {
+    expect(matchRoute("/me/leave")?.route.id).toBe("my-leave");
+    expect(matchRoute("/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave")?.route.id).toBe("person-leave");
+    expect(matchRoute("/people/directory")?.route.id).toBe("people-directory");
   });
 });

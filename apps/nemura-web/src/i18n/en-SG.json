@@ -200,7 +200,51 @@
     "checks.none": "Nothing needs a look.",
     "packs.table": "Table",
     "packs.key": "Key",
-    "packs.status": "Status"
+    "packs.status": "Status",
+    "nav.leave": "My leave",
+    "leave.title": "My leave",
+    "leave.personTitle": "Leave",
+    "leave.lead": "Your balance for the year and how it was worked out. The days come from the country pack and your company's policy.",
+    "leave.loading": "Loading the leave balance.",
+    "leave.year": "Leave year",
+    "leave.previous": "Previous year",
+    "leave.next": "Next year",
+    "leave.pattern": "Working pattern",
+    "leave.noPattern": "No working pattern is set.",
+    "leave.patternFrom": "From {from}: {days}, {hours} hours a week.",
+    "leave.noTypes": "No leave has been granted for this year yet.",
+    "leave.entitled": "Entitled",
+    "leave.taken": "Taken",
+    "leave.booked": "Booked",
+    "leave.expired": "Expired",
+    "leave.encashed": "Encashed",
+    "leave.left": "Left",
+    "leave.carriedUntil": "Carried-forward days can be taken until {date}.",
+    "leave.working": "How it was worked out",
+    "leave.sources": "Where the days come from: {sources}",
+    "leave.balanceOf": "Balance of {type}",
+    "leave.units": "Days",
+    "leave.manage": "For the people team",
+    "leave.grant": "Work out annual leave",
+    "leave.carry": "Carry unused days forward",
+    "leave.granted": "Recorded {written} days for the year.",
+    "leave.carried": "Carried {carried} days into the next year.",
+    "leave.patternTitle": "Set the working pattern",
+    "leave.patternStart": "Starts on",
+    "leave.patternHours": "Hours a week",
+    "leave.patternDays": "Days worked",
+    "leave.patternSave": "Set pattern",
+    "leave.patternSaved": "Working pattern set.",
+    "leave.failed": "We could not save that. Check your connection and try again.",
+    "leave.back": "Back to the person",
+    "leave.day.1": "Monday",
+    "leave.day.2": "Tuesday",
+    "leave.day.3": "Wednesday",
+    "leave.day.4": "Thursday",
+    "leave.day.5": "Friday",
+    "leave.day.6": "Saturday",
+    "leave.day.7": "Sunday",
+    "person.leave": "Leave and working pattern"
   },
   "help": {
     "signin.page": {
@@ -250,6 +294,10 @@
     "policy.page": {
       "label": "Leave policy",
       "tooltip": "Your company's leave entitlements on top of the statute. A policy that gives less than the statute for any rule is refused, naming the rule."
+    },
+    "leave.page": {
+      "label": "My leave",
+      "tooltip": "Your leave balance for the year: entitled, taken, booked and left, with the steps of the calculation and where each figure comes from."
     }
   }
 }

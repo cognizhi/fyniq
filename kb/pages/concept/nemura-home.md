@@ -4,7 +4,7 @@ type: concept
 title: Your home page in Nemura
 summary: Which Nemura home page a person lands on after signing in, what Your roles shows and what to do when a role or page looks wrong
 sources:
-  - docs/user-guide/nemura/home.md sha256:c3db5c8e9d4caab15bf1406f555c63db7786fcd3411184cc0f9074989009d89e
+  - docs/user-guide/nemura/home.md sha256:e4966072de82d9700ed0700b54954076b7309fbd08dba1c4897925b9d8da14db
 data_class: general
 taint: trusted
 status: published
@@ -31,7 +31,7 @@ aliases:
 1. Sign in first: [[nemura.sign-in]].
 2. Read **Your roles**; they decide what the person can see and do.
 3. With no role yet, ask the Owner for one.
-4. Leave, pay and letters appear as the company switches each on.
+4. Leave ([[nemura.my-leave]]), pay and letters appear as the company switches each on.
 
 (src: docs/user-guide/nemura/home.md#steps)
 
