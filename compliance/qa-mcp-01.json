@@ -243,6 +243,26 @@
       "tests": [
         "TestAnAIAppsUnusualUseRaisesAnAlertOncePerWindow"
       ]
+    },
+    {
+      "id": "switch-or-allowlist-ends-tokens",
+      "threat": "A token outlives the organisation's decision to switch AI apps off or take the app off its allowlist",
+      "requirements": "AI-35, AI-38",
+      "control": "The change ends the tokens of the members' apps at the OAuth server once it commits (the whole switch, or that one app), and the per-call gate refuses the next call at once",
+      "tests": [
+        "TestTheSwitchOrTheAllowlistTakingAnAppAwayEndsItsTokens",
+        "TestAnOptOutRevokesTheAIAppsTokensAndNothingElse"
+      ]
+    },
+    {
+      "id": "injection-in-organisation-text",
+      "threat": "Injected text in an organisation's own fields (a note, an account name) reaches tools/list",
+      "requirements": "AI-40",
+      "control": "Definitions are the release's own text; the listing is the same whatever the organisation holds",
+      "tests": [
+        "TestAnMCPCallReachesTheDataOnlyAsTheDelegatedPerson",
+        "TestDefinitionsHoldOnlyTheContractsText"
+      ]
     }
   ]
 }

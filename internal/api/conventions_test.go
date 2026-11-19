@@ -92,7 +92,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "withdrawAIPrice Idempotency-Key", "withdrawAIPrice Prefer")                                                                                               // AI-82: withdrawn once, at once
 	want = append(want, "registerOAuthClient Idempotency-Key", "registerOAuthClient Prefer")                                                                                       // AI-90: RFC 7591's client sends none
 	want = append(want, "answerOAuthConsent Idempotency-Key", "answerOAuthConsent Prefer")                                                                                         // AI-37: a consent request is answered once and is then gone
-	want = append(want, "revokeMyConnection Prefer", "listMCPRegistrations cursor", "listMCPActivity cursor", "denyMCPRegistration Idempotency-Key", "denyMCPRegistration Prefer") // Connected apps (AI-44, AI-90)
+	want = append(want, "revokeMyConnection Prefer", "listMCPRegistrations cursor", "listMCPActivity cursor", "denyMCPRegistration Idempotency-Key", "denyMCPRegistration Prefer", "listMCPConnections cursor", "revokeMemberConnection Idempotency-Key", "revokeMemberConnection Prefer") // Connected apps (AI-44, AI-90)
 	want = append(want, "createPersonalAccessToken Idempotency-Key", "createPersonalAccessToken Prefer")                                                                           // FR-INT-02: its secret is shown once
 	slices.Sort(want)
 	var got []string

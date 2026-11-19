@@ -218,6 +218,18 @@ func restrictedError(err error) error {
 }
 
 func (a *API) registerRestricted() {
+	// ownDocuments is for the two operations a leaver keeps: a person's documents, which the service limits to what the caller's roles and their own record may see.
+	ownDocuments := func(ctx context.Context, cookie, id string) (Session, uuid.UUID, error) {
+		s, err := a.signedInOrLeaver(ctx, cookie)
+		if err != nil {
+			return s, uuid.Nil, err
+		}
+		pid, err := uuid.Parse(id)
+		if err != nil {
+			return s, uuid.Nil, Err(CodePersonNotFound, "There is no such person in this organisation.")
+		}
+		return s, pid, nil
+	}
 	person := func(ctx context.Context, cookie, id string, write bool) (Session, uuid.UUID, error) {
 		var s Session
 		var pid uuid.UUID
@@ -400,7 +412,7 @@ func (a *API) registerRestricted() {
 		Description: "Lists the person's documents that the caller's roles may see: a role sees a document only when it is named a viewer, and the person sees theirs when employee is named. It changes nothing.",
 		Errors:      []int{401, 404},
 	}, func(ctx context.Context, in *idInput) (*documentsOutput, error) {
-		s, id, err := person(ctx, in.Cookie, in.ID, false)
+		s, id, err := ownDocuments(ctx, in.Cookie, in.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -420,7 +432,7 @@ func (a *API) registerRestricted() {
 		Description: "Returns a document's file to a caller who may see it, and audits the read. A document the caller may not see answers as if it did not exist.",
 		Errors:      []int{401, 404, 503},
 	}, func(ctx context.Context, in *documentInput) (*documentOutput, error) {
-		s, id, err := person(ctx, in.Cookie, in.ID, false)
+		s, id, err := ownDocuments(ctx, in.Cookie, in.ID)
 		if err != nil {
 			return nil, err
 		}

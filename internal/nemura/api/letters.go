@@ -89,7 +89,10 @@ type Letters interface {
 	Templates(ctx context.Context, s Session, key string) ([]LetterTemplate, error)
 	SaveDraft(ctx context.Context, s Session, key string, blocks []LetterBlock, note string) (string, error)
 	Publish(ctx context.Context, s Session, draft uuid.UUID) (int, error)
-	Request(ctx context.Context, s Session, typ, purpose string) (id, due string, err error)
+	Request(ctx context.Context, s Session, typ, purpose string) (id, due string, issued bool, err error)
+	Delegations(ctx context.Context, s Session) ([]Delegation, error)
+	Delegate(ctx context.Context, s Session, typ string, monthly int, endsOn time.Time) (id string, err error)
+	Revoke(ctx context.Context, s Session, id uuid.UUID, reason string) error
 	RequestFor(ctx context.Context, s Session, person uuid.UUID, typ, purpose string) (id, due string, err error)
 	Terms(ctx context.Context, s Session, person uuid.UUID, on time.Time, pay bool) (Terms, bool, error)
 	SetTerms(ctx context.Context, s Session, person uuid.UUID, from time.Time, base *TermsBase, pay *TermsPay) error
@@ -104,6 +107,8 @@ type Letters interface {
 }
 
 func init() {
+	IdempotencyExempt["POST /v1/letters/delegations"] = "a type has one live delegation: a repeat is refused (NM_LETTER_CONFLICT)"
+	IdempotencyExempt["POST /v1/letters/delegations/{id}/revocation"] = "a delegation is revoked once: a repeat is refused (NM_LETTER_CONFLICT)"
 	IdempotencyExempt["POST /v1/people/{id}/terms"] = "a repeat starts terms on the current ones' own start day, which is refused (NM_LETTER_CONFLICT)"
 	IdempotencyExempt["POST /v1/people/{id}/letters"] = "each request is its own record with its own date: the people team may ask for the same letter twice"
 	IdempotencyExempt["PUT /v1/letters/settings"] = "naturally idempotent: the same body leaves the same letterhead"
@@ -233,8 +238,9 @@ type letterAskInput struct {
 
 type letterAskOutput struct {
 	Body struct {
-		ID  string `json:"id" format:"uuid" doc:"The new request." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0"`
-		Due string `json:"due_on" format:"date" doc:"The day it is due." example:"2026-11-25"`
+		ID     string `json:"id" format:"uuid" doc:"The new request." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0"`
+		Due    string `json:"due_on" format:"date" doc:"The day it is due." example:"2026-11-25"`
+		Issued bool   `json:"issued" doc:"True when a delegation of the signatory issued the letter at once: it is already under the person's requests, signed." example:"false"`
 	}
 }
 
@@ -305,6 +311,7 @@ type letterDownloadInput struct {
 
 func (a *API) registerLetters() {
 	a.registerTerms()
+	a.registerDelegations()
 	staff := func(ctx context.Context, cookie string, need func(letterPowers) bool, why string) (Session, letterPowers, error) {
 		s, err := a.signedIn(ctx, cookie)
 		if err != nil {
@@ -435,19 +442,19 @@ func (a *API) registerLetters() {
 		if err != nil {
 			return nil, err
 		}
-		id, due, err := a.d.Letters.Request(ctx, s, in.Body.Type, in.Body.Purpose)
+		id, due, issued, err := a.d.Letters.Request(ctx, s, in.Body.Type, in.Body.Purpose)
 		if err != nil {
 			return nil, lettersError(err)
 		}
 		out := &letterAskOutput{}
-		out.Body.ID, out.Body.Due = id, due
+		out.Body.ID, out.Body.Due, out.Body.Issued = id, due, issued
 		return out, nil
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "listLetters", Method: "GET", Path: "/v1/letters", Tags: []string{"Letters"}, Summary: "Letter requests the caller may read",
 		Description: "The caller's own requests; the HR officer, the HR administrator and the Owner read everyone's, those still open first by due day. It changes nothing.", Errors: []int{401},
 	}, func(ctx context.Context, in *letterListInput) (*letterListOutput, error) {
-		s, err := a.signedIn(ctx, in.Cookie)
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}
@@ -558,7 +565,7 @@ func (a *API) registerLetters() {
 		OperationID: "getLetterFile", Method: "GET", Path: "/v1/letters/{id}/file", Tags: []string{"Letters"}, Summary: "An issued letter",
 		Description: "The issued PDF, after its bytes are checked against the hash kept as evidence: a changed byte is never served. The person the letter is about, the people team and the Owner. It changes nothing.", Errors: []int{401, 404, 409, 503},
 	}, func(ctx context.Context, in *letterIDInput) (*letterFileOutput, error) {
-		s, err := a.signedIn(ctx, in.Cookie)
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}
@@ -581,7 +588,7 @@ func (a *API) registerLetters() {
 		Description: "Makes a link that delivers the one letter for seven days: its token is shown once and only its hash is kept. The person the letter is about, the people team and the Owner. It is audited.", Errors: []int{401, 404, 409},
 		DefaultStatus: 201,
 	}, func(ctx context.Context, in *letterIDInput) (*letterLinkOutput, error) {
-		s, err := a.signedIn(ctx, in.Cookie)
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}
@@ -779,5 +786,122 @@ func (a *API) registerTerms() {
 		out := &letterAskOutput{}
 		out.Body.ID, out.Body.Due = rid, due
 		return out, nil
+	})
+}
+
+// Delegation is a signatory's standing permission to issue one type of letter at once (NM-LTR-04).
+type Delegation struct {
+	ID              string   `json:"id" format:"uuid" doc:"The delegation." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10"`
+	Type            string   `json:"type" doc:"The letter type." example:"employment_confirmation"`
+	Who             string   `json:"who" enum:"active_employees" doc:"Who may ask: active employees not serving notice." example:"active_employees"`
+	Fields          []string `json:"fields" doc:"The fields the approved template shows; never salary."`
+	MonthlyLimit    int      `json:"monthly_limit" doc:"How many letters may be issued under it in a calendar month." example:"50"`
+	IssuedThisMonth int      `json:"issued_this_month" doc:"How many it has issued this month." example:"3"`
+	CreatedOn       string   `json:"created_on" format:"date" doc:"The day it was made." example:"2026-11-20"`
+	EndsOn          string   `json:"ends_on" format:"date" doc:"The day it ends: at most twelve months after it was made." example:"2027-11-20"`
+	State           string   `json:"state" enum:"active,revoked,ended,replaced" doc:"Active; revoked by a signatory; ended on its date; or replaced because the template changed." example:"active"`
+	RevokedReason   string   `json:"revoked_reason,omitempty" doc:"Why it was revoked." example:"No longer needed."`
+}
+
+type delegationsOutput struct {
+	Body struct {
+		Delegations []Delegation `json:"delegations" doc:"The delegations, newest first."`
+	}
+}
+
+type delegateInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	Body   struct {
+		Type         string `json:"type" doc:"The letter type to delegate." example:"employment_confirmation"`
+		MonthlyLimit int    `json:"monthly_limit" minimum:"1" maximum:"1000" doc:"How many letters may be issued under it in a calendar month." example:"50"`
+		EndsOn       string `json:"ends_on" format:"date" doc:"The day it ends: after today and at most twelve months from today." example:"2027-11-20"`
+	}
+}
+
+type delegationRevokeInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The delegation." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10"`
+	Body   struct {
+		Reason string `json:"reason,omitempty" maxLength:"500" doc:"Why it is revoked." example:"No longer needed."`
+	}
+}
+
+func (a *API) registerDelegations() {
+	signatory := func(ctx context.Context, cookie string, fresh bool) (Session, error) {
+		s, err := a.signedIn(ctx, cookie)
+		if err != nil {
+			return s, err
+		}
+		p, err := a.letterPowers(ctx, s)
+		if err != nil {
+			return s, err
+		}
+		if !p.Sign {
+			return s, Err(CodeRoleRequired, "Only the Owner, who signs letters, delegates or revokes automatic issue.")
+		}
+		if fresh && !s.Fresh(a.d.Clock.Now()) {
+			return s, Err(CodeStepUp, "Confirm it is you with your passkey, then try again: a delegation lets letters go out in your name.")
+		}
+		return s, nil
+	}
+	huma.Register(a.API, huma.Operation{
+		OperationID: "listLetterDelegations", Method: "GET", Path: "/v1/letters/delegations", Tags: []string{"Letters"}, Summary: "Delegations of automatic issue",
+		Description: "The signatory's delegations of automatic issue with their state and how many letters each has issued this month. The HR administrator and the Owner. It changes nothing.", Errors: []int{401, 403},
+	}, func(ctx context.Context, in *lettersInput) (*delegationsOutput, error) {
+		s, err := a.signedIn(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		p, err := a.letterPowers(ctx, s)
+		if err != nil {
+			return nil, err
+		}
+		if !p.Admin {
+			return nil, Err(CodeRoleRequired, "Only the HR administrator and the Owner see the delegations.")
+		}
+		list, err := a.d.Letters.Delegations(ctx, s)
+		if err != nil {
+			return nil, lettersError(err)
+		}
+		out := &delegationsOutput{}
+		out.Body.Delegations = list
+		if list == nil {
+			out.Body.Delegations = []Delegation{}
+		}
+		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "createLetterDelegation", Method: "POST", Path: "/v1/letters/delegations", Tags: []string{"Letters"}, Summary: "Delegate automatic issue of a letter type",
+		Description: "The signatory lets one letter type be issued at once, signed as them, to active employees not serving notice: it covers the template version published now, a monthly limit and an end date at most twelve months away. A letter that shows pay is never delegated, a type has one live delegation, and a change to the template ends it. The Owner, after a passkey confirmation in the last five minutes. It is audited.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 201,
+	}, func(ctx context.Context, in *delegateInput) (*createdOutput, error) {
+		s, err := signatory(ctx, in.Cookie, true)
+		if err != nil {
+			return nil, err
+		}
+		ends, err := date("ends_on", in.Body.EndsOn, true)
+		if err != nil {
+			return nil, err
+		}
+		id, err := a.d.Letters.Delegate(ctx, s, in.Body.Type, in.Body.MonthlyLimit, *ends)
+		if err != nil {
+			return nil, lettersError(err)
+		}
+		out := &createdOutput{}
+		out.Body.ID = id
+		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "revokeLetterDelegation", Method: "POST", Path: "/v1/letters/delegations/{id}/revocation", Tags: []string{"Letters"}, Summary: "Revoke a delegation",
+		Description: "Ends a delegation from now, once; letters already issued under it stay as they are. The Owner. It is audited.", Errors: []int{401, 403, 404, 409}, DefaultStatus: 204,
+	}, func(ctx context.Context, in *delegationRevokeInput) (*struct{}, error) {
+		s, err := signatory(ctx, in.Cookie, false)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such delegation.")
+		}
+		return nil, lettersErrorOrNil(a.d.Letters.Revoke(ctx, s, id, in.Body.Reason))
 	})
 }

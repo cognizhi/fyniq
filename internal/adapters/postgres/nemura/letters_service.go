@@ -120,9 +120,10 @@ func (l LettersService) pack(at time.Time) pack.Version {
 	return v
 }
 
-func (l LettersService) Request(ctx context.Context, s api.Session, typ, purpose string) (string, string, error) {
+func (l LettersService) Request(ctx context.Context, s api.Session, typ, purpose string) (string, string, bool, error) {
 	var id uuid.UUID
 	var due time.Time
+	var issued bool
 	err := l.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
 		var person uuid.UUID
 		if err := tx.QueryRow(ctx, "SELECT id FROM nemura.person WHERE member_id = $1", s.Member).Scan(&person); err != nil {
@@ -130,9 +131,14 @@ func (l LettersService) Request(ctx context.Context, s api.Session, typ, purpose
 		}
 		var err error
 		id, due, err = RequestLetter(ctx, tx, s.Organisation, l.Clock.Now(), s.Member, l.pack(l.Clock.Now()), LetterAsk{Person: person, Type: typ, Purpose: purpose})
+		if err != nil {
+			return err
+		}
+		// A signatory's delegation issues a standard letter at once; otherwise it waits for the people team (NM-LTR-04).
+		issued, err = AutoIssue(ctx, tx, s.Organisation, l.Clock.Now(), id, l.Renderer, l.Blobs)
 		return err
 	})
-	return id.String(), day(due), err
+	return id.String(), day(due), issued, err
 }
 
 // RequestFor is the people team asking for a letter about a person (NM-LTR-06 for the key employment terms).
@@ -359,4 +365,36 @@ func (l LettersService) ByLink(ctx context.Context, token string) (string, []byt
 		return err
 	})
 	return ref, pdf, err
+}
+
+// Delegations lists the delegations of automatic issue with their state.
+func (l LettersService) Delegations(ctx context.Context, s api.Session) ([]api.Delegation, error) {
+	out := []api.Delegation{}
+	err := l.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		rows, err := Delegations(ctx, tx, l.Clock.Now())
+		for _, d := range rows {
+			out = append(out, api.Delegation{ID: d.ID.String(), Type: d.Type, Who: d.Who, Fields: d.Fields, MonthlyLimit: d.MonthlyLimit, IssuedThisMonth: d.IssuedMonth, CreatedOn: day(d.CreatedOn),
+				EndsOn: day(d.EndsOn), State: d.State, RevokedReason: d.RevokedReason})
+		}
+		return err
+	})
+	return out, err
+}
+
+// Delegate records a delegation the signatory made with a fresh passkey.
+func (l LettersService) Delegate(ctx context.Context, s api.Session, typ string, monthly int, endsOn time.Time) (string, error) {
+	var id uuid.UUID
+	err := l.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		id, err = CreateDelegation(ctx, tx, s.Organisation, l.Clock.Now(), s.Member, typ, monthly, endsOn)
+		return err
+	})
+	return id.String(), err
+}
+
+// Revoke ends a delegation.
+func (l LettersService) Revoke(ctx context.Context, s api.Session, id uuid.UUID, reason string) error {
+	return l.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		return RevokeDelegation(ctx, tx, s.Organisation, l.Clock.Now(), s.Member, id, reason)
+	})
 }

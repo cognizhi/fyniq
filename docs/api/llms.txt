@@ -287,7 +287,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `PUT /v1/compliance/transfers/{transfer_id}` (reviseTransfer): Change an overseas transfer
 - `GET /v1/connected-apps` (getConnectedApps): See the AI apps that work for you
 - `GET /v1/connected-apps/activity` (listMCPActivity): See what AI apps did
+- `GET /v1/connected-apps/connections` (listMCPConnections): See what everyone allowed AI apps
 - `DELETE /v1/connected-apps/connections/{client_id}` (revokeMyConnection): Disconnect an AI app
+- `DELETE /v1/connected-apps/people/{user_id}/connections/{client_id}` (revokeMemberConnection): Disconnect a person's AI app
 - `GET /v1/connected-apps/registrations` (listMCPRegistrations): See the AI apps waiting for an Owner
 - `POST /v1/connected-apps/registrations/{client_id}/deny` (denyMCPRegistration): Deny a registered AI app
 - `GET /v1/connector-catalogue` (listConnectorCatalogue): List the connectors of this release

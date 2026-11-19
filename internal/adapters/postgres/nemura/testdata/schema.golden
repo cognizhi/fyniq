@@ -25,6 +25,7 @@ leave_head | nemura_migrator | true | true
 leave_ledger | nemura_migrator | true | true
 leave_request | nemura_migrator | true | true
 legal_hold | nemura_migrator | true | true
+letter_delegation | nemura_migrator | true | true
 letter_issued | nemura_migrator | true | true
 letter_link | nemura_migrator | true | true
 letter_request | nemura_migrator | true | true
@@ -315,6 +316,20 @@ legal_hold | reason | text | true |
 legal_hold | placed_by | uuid | true | 
 legal_hold | placed_on | date | true | 
 legal_hold | released_on | date | false | 
+letter_delegation | organisation_id | uuid | true | nemura.current_org()
+letter_delegation | id | uuid | true | uuidv7()
+letter_delegation | type_key | text | true | 
+letter_delegation | template_id | uuid | true | 
+letter_delegation | who | text | true | 'active_employees'::text
+letter_delegation | fields | text[] | true | 
+letter_delegation | monthly_limit | integer | true | 
+letter_delegation | created_on | date | true | 
+letter_delegation | ends_on | date | true | 
+letter_delegation | created_by | uuid | true | 
+letter_delegation | created_at | timestamp with time zone | true | 
+letter_delegation | revoked_at | timestamp with time zone | false | 
+letter_delegation | revoked_by | uuid | false | 
+letter_delegation | revoked_reason | text | false | 
 letter_issued | organisation_id | uuid | true | nemura.current_org()
 letter_issued | id | uuid | true | uuidv7()
 letter_issued | request_id | uuid | true | 
@@ -1063,6 +1078,27 @@ legal_hold | legal_hold_reason_not_null | NOT NULL reason
 legal_hold | legal_hold_record_type_format | CHECK (((record_type ~ '^[a-z][a-z0-9_-]*$'::text) AND (length(record_type) <= 60)))
 legal_hold | legal_hold_record_type_not_null | NOT NULL record_type
 legal_hold | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+letter_delegation | letter_delegation_created_at_not_null | NOT NULL created_at
+letter_delegation | letter_delegation_created_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+letter_delegation | letter_delegation_created_by_not_null | NOT NULL created_by
+letter_delegation | letter_delegation_created_on_not_null | NOT NULL created_on
+letter_delegation | letter_delegation_ends | CHECK (((ends_on > created_on) AND (ends_on <= ((created_on + '1 year'::interval))::date)))
+letter_delegation | letter_delegation_ends_on_not_null | NOT NULL ends_on
+letter_delegation | letter_delegation_fields_not_null | NOT NULL fields
+letter_delegation | letter_delegation_id_not_null | NOT NULL id
+letter_delegation | letter_delegation_limit | CHECK (((monthly_limit >= 1) AND (monthly_limit <= 1000)))
+letter_delegation | letter_delegation_monthly_limit_not_null | NOT NULL monthly_limit
+letter_delegation | letter_delegation_no_pay | CHECK ((type_key <> ALL (ARRAY['salary_certificate'::text, 'pay_change_letter'::text, 'kets'::text])))
+letter_delegation | letter_delegation_organisation_id_not_null | NOT NULL organisation_id
+letter_delegation | letter_delegation_pkey | PRIMARY KEY (organisation_id, id)
+letter_delegation | letter_delegation_revoked_by_fkey | FOREIGN KEY (organisation_id, revoked_by) REFERENCES nemura.member(organisation_id, id)
+letter_delegation | letter_delegation_revoked_whole | CHECK ((((revoked_at IS NULL) = (revoked_by IS NULL)) AND (COALESCE(length(revoked_reason), 0) <= 500)))
+letter_delegation | letter_delegation_template_fkey | FOREIGN KEY (organisation_id, template_id) REFERENCES nemura.letter_template_version(organisation_id, id)
+letter_delegation | letter_delegation_template_id_not_null | NOT NULL template_id
+letter_delegation | letter_delegation_type_key_not_null | NOT NULL type_key
+letter_delegation | letter_delegation_who_known | CHECK ((who = 'active_employees'::text))
+letter_delegation | letter_delegation_who_not_null | NOT NULL who
+letter_delegation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 letter_issued | letter_issued_authority_not_null | NOT NULL authority
 letter_issued | letter_issued_blob_key_not_null | NOT NULL blob_key
 letter_issued | letter_issued_data_not_null | NOT NULL data
@@ -1629,6 +1665,8 @@ CREATE INDEX leave_request_person_idx ON nemura.leave_request USING btree (organ
 CREATE UNIQUE INDEX leave_request_pkey ON nemura.leave_request USING btree (organisation_id, id)
 CREATE INDEX leave_request_state_idx ON nemura.leave_request USING btree (organisation_id, state, start_date)
 CREATE UNIQUE INDEX legal_hold_pkey ON nemura.legal_hold USING btree (organisation_id, id)
+CREATE UNIQUE INDEX letter_delegation_pkey ON nemura.letter_delegation USING btree (organisation_id, id)
+CREATE INDEX letter_delegation_type_idx ON nemura.letter_delegation USING btree (organisation_id, type_key, ends_on) WHERE (revoked_at IS NULL)
 CREATE UNIQUE INDEX letter_issued_pkey ON nemura.letter_issued USING btree (organisation_id, id)
 CREATE UNIQUE INDEX letter_issued_reference_once ON nemura.letter_issued USING btree (organisation_id, reference)
 CREATE UNIQUE INDEX letter_issued_request_once ON nemura.letter_issued USING btree (organisation_id, request_id)
@@ -1743,6 +1781,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.leave_l
 CREATE TRIGGER leave_request_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.leave_request FOR EACH ROW EXECUTE FUNCTION nemura.leave_request_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.leave_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('leave_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.legal_hold DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('legal_hold', 'id')
+CREATE TRIGGER letter_delegation_guard BEFORE DELETE OR UPDATE ON nemura.letter_delegation FOR EACH ROW EXECUTE FUNCTION nemura.letter_delegation_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_delegation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_delegation', 'id')
 CREATE TRIGGER letter_issued_append_only BEFORE DELETE OR UPDATE ON nemura.letter_issued FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('An issued letter')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.letter_issued DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_issued', 'id')
 CREATE TRIGGER letter_link_append_only BEFORE DELETE OR UPDATE ON nemura.letter_link FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('A letter link')
@@ -1831,6 +1871,7 @@ leave_head | tenant_isolation | (organisation_id = nemura.current_org()) | (orga
 leave_ledger | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 legal_hold | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+letter_delegation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 letter_issued | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 letter_link | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 letter_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -2290,6 +2331,21 @@ BEGIN
   END IF;
   IF OLD.settled_at IS NOT NULL AND NEW.settled_at IS DISTINCT FROM OLD.settled_at THEN
     RAISE EXCEPTION 'A settled request stays settled' USING ERRCODE = 'NM144';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.letter_delegation_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.type_key IS DISTINCT FROM OLD.type_key OR NEW.template_id IS DISTINCT FROM OLD.template_id OR NEW.who IS DISTINCT FROM OLD.who
+     OR NEW.fields IS DISTINCT FROM OLD.fields OR NEW.monthly_limit IS DISTINCT FROM OLD.monthly_limit OR NEW.created_on IS DISTINCT FROM OLD.created_on OR NEW.ends_on IS DISTINCT FROM OLD.ends_on
+     OR NEW.created_by IS DISTINCT FROM OLD.created_by OR NEW.created_at IS DISTINCT FROM OLD.created_at OR OLD.revoked_at IS NOT NULL OR NEW.revoked_at IS NULL THEN
+    RAISE EXCEPTION 'A delegation keeps its terms and is revoked once' USING ERRCODE = 'NM169';
   END IF;
   RETURN NEW;
 END

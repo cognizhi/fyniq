@@ -61,7 +61,7 @@ Source: PRD-002 §10 · Priority M · Phase P1
 - **THEN** they see "You don't have Fyniq access yet" with a button that asks HR, never a refused page
 
 ### Requirement: NM-ESS-06 After leaving
-A leaver SHALL keep a narrow, authenticated account for their own documents for the record-keeping period, with re-issue on request, and email links SHALL only deliver documents.
+A leaver SHALL keep a narrow, authenticated account that holds no role and keeps only their own documents and letters and a question to the people team, for 12 months after the last day, with re-issue on request; email links SHALL only deliver documents.
 
 Source: PRD-002 §10 · Priority M · Phase P1
 

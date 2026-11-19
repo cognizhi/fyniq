@@ -71,8 +71,9 @@ const (
 	CodeFeatureObligations = features.CodeObligations
 	CodeFeatureInvalid     = features.CodeInvalid
 	CodePolicyBelow        = policy.CodeBelowStatute
-	CodeUnavailable        = "NM_UNAVAILABLE" // the service is not configured for this here
-	CodeNoPasskey          = "NM_NO_PASSKEY"  // #nosec G101 -- a problem code's name: no passkey to confirm with
+	CodeLeaverAccount      = "NM_LEAVER_ACCOUNT" // a leaver's account is for their own documents only
+	CodeUnavailable        = "NM_UNAVAILABLE"    // the service is not configured for this here
+	CodeNoPasskey          = "NM_NO_PASSKEY"     // #nosec G101 -- a problem code's name: no passkey to confirm with
 )
 
 // Catalogue is every stable code the API returns, in order. It is served at GET /v1/errors.
@@ -97,6 +98,7 @@ var Catalogue = []Code{
 	{CodeLeaveConflict, http.StatusConflict, "That overlaps leave or a pattern already recorded", "Start the new record on or after the day the last one ends."},
 	{CodeFeatureOff, http.StatusConflict, "That feature is switched off", "Switch the feature on under Settings, Features; its records are kept while it is off."},
 	{CodeLetterInvalid, http.StatusUnprocessableEntity, "The letter is not valid", "Correct what the message names and send it again."},
+	{CodeLeaverAccount, http.StatusForbidden, "That is not part of your account now", "After the last day an account keeps the person's own documents and letters, and a way to ask the people team a question."},
 	{CodeRequestInvalid, http.StatusUnprocessableEntity, "The request is not valid", "Correct what the message names and send it again."},
 	{CodeRequestConflict, http.StatusConflict, "That cannot happen to the request now", "A request keeps its words and its evidence and is decided or answered once: make a new request instead."},
 	{CodeLetterConflict, http.StatusConflict, "That cannot happen to the letter now", "A published template, a checked letter and an issued letter are evidence: change them with a new version, a new request or a new letter."},

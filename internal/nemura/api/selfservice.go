@@ -268,7 +268,7 @@ func (a *API) registerSelfService() {
 		OperationID: "askHRQuestion", Method: "POST", Path: "/v1/me/questions", Tags: []string{"Self-service"}, Summary: "Ask the people team a question",
 		Description: "Asks the people team a question in writing. Another member of the people team answers it within three working days, and the answer shows on the person's requests. It is audited.", Errors: []int{401, 404, 422}, DefaultStatus: 201,
 	}, func(ctx context.Context, in *questionInput) (*letterAskOutput, error) {
-		s, err := a.signedIn(ctx, in.Cookie)
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}
@@ -284,7 +284,7 @@ func (a *API) registerSelfService() {
 		OperationID: "listMyRequests", Method: "GET", Path: "/v1/me/requests", Tags: []string{"Self-service"}, Summary: "All my requests and where each is",
 		Description: "The signed-in person's letters, flexible work requests, changes of details and questions, newest first, each with its step (received, with HR, ready, or closed), its due day and the reply. It changes nothing.", Errors: []int{401, 404},
 	}, func(ctx context.Context, in *selfInput) (*requestsOutput, error) {
-		s, err := a.signedIn(ctx, in.Cookie)
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}
@@ -303,7 +303,7 @@ func (a *API) registerSelfService() {
 		OperationID: "withdrawMyRequest", Method: "POST", Path: "/v1/me/requests/{id}/withdrawal", Tags: []string{"Self-service"}, Summary: "Withdraw a request of mine",
 		Description: "Withdraws a change of details or a question of the signed-in person that nobody has decided or answered. A letter is withdrawn on its own operation. It is audited.", Errors: []int{401, 404}, DefaultStatus: 204,
 	}, func(ctx context.Context, in *selfRequestIDInput) (*struct{}, error) {
-		s, err := a.signedIn(ctx, in.Cookie)
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}

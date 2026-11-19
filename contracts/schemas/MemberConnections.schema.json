@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "connections": {
+      "description": "Each person's allowed AI apps, by person.",
+      "items": {
+        "$ref": "MemberConnection.schema.json"
+      },
+      "maxItems": 600,
+      "type": "array"
+    }
+  },
+  "required": [
+    "connections"
+  ],
+  "title": "MemberConnections",
+  "type": "object"
+}

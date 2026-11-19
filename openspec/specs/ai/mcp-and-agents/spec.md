@@ -216,6 +216,11 @@ Source: PRD-001 §9.7 · Priority M · Phase P1
 - **WHEN** a refresh token has not been used for 14 days, or 90 days have passed since it was first issued
 - **THEN** it expires
 
+#### Scenario: A switch or an allowlist change ends the tokens (rev 0.340)
+- **WHEN** the organisation turns AI apps off, or takes one app off the allowed list
+- **THEN** every member's AI app tokens, or that one app's, are revoked once the change commits
+- **AND** the next call is refused at once, as the gate asks the switch and the allowlist on every call
+
 #### Scenario: Revocation within 60 seconds
 - **WHEN** a user's role changes, the user is deactivated, the client is removed or a kill switch is used
 - **THEN** all of that user's tokens are revoked within 60 seconds

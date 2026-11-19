@@ -11,6 +11,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/identity"
+	"github.com/cognizhi/fyniq/internal/nemura/selfservice"
 )
 
 // SetSetupCode sets the one-time first-run setup code's hash, as the migrator at deployment; a new code replaces an unused one and
@@ -165,6 +166,9 @@ func StartSession(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, m
 type Session struct {
 	ID, Organisation, Member uuid.UUID
 	StepUpAt                 *time.Time
+	Leaver                   bool       // the person's last day has passed (NM-ESS-06)
+	LeaverUntil              *time.Time // the day the leaver's account ends
+	Person                   uuid.UUID  // the person record the login is linked to, when there is one
 }
 
 // Authenticate finds the session a token opens on a moment: not expired, not revoked, and its member not deactivated. Every failure is
@@ -176,12 +180,31 @@ func (s *Store) Authenticate(ctx context.Context, token string, now time.Time) (
 	}
 	var out Session
 	err = s.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
-		err := tx.QueryRow(ctx, `SELECT s.id, s.organisation_id, s.member_id, s.step_up_at FROM nemura.session s JOIN nemura.member m ON m.organisation_id = s.organisation_id AND m.id = s.member_id
-WHERE s.token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > $2 AND m.deactivated_at IS NULL`, hash, now).Scan(&out.ID, &out.Organisation, &out.Member, &out.StepUpAt)
+		var last *time.Time
+		var person *uuid.UUID
+		err := tx.QueryRow(ctx, `SELECT s.id, s.organisation_id, s.member_id, s.step_up_at, p.leaving_date, p.id
+FROM nemura.session s JOIN nemura.member m ON m.organisation_id = s.organisation_id AND m.id = s.member_id
+LEFT JOIN nemura.person p ON p.organisation_id = s.organisation_id AND p.member_id = s.member_id
+WHERE s.token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > $2 AND m.deactivated_at IS NULL`, hash, now).Scan(&out.ID, &out.Organisation, &out.Member, &out.StepUpAt, &last, &person)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return identity.Refused()
 		}
-		return err
+		if err != nil {
+			return err
+		}
+		if person != nil {
+			out.Person = *person
+		}
+		// After the last day the account is a leaver's: narrow, for their own documents, and it ends with the record-keeping period.
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+		if last != nil && last.Before(today) {
+			until := selfservice.LeaverUntil(*last)
+			if !until.After(today) {
+				return identity.Refused()
+			}
+			out.Leaver, out.LeaverUntil = true, &until
+		}
+		return nil
 	})
 	return out, err
 }

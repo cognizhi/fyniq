@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
+import { Delegations } from "../components/Delegations";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
 import { Shell, admin, team } from "./Shell";
@@ -50,6 +51,7 @@ export function LetterTemplates({ roles }: { roles: readonly string[] }) {
             ))}
           </ul>
         </section>
+        {approver && <Delegations types={types} signatory={roles.includes("owner")} />}
         <section className="fy-stack fy-stack--2" aria-labelledby="editor-h">
           <label className="fy-field">
             <span>{t("tpl.choose")}</span>

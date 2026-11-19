@@ -41,7 +41,7 @@ Source: PRD-002 §11 · Priority M · Phase P1
 - **THEN** NM-LTR-07's evidence is kept
 
 ### Requirement: NM-LTR-04 Standard letters without waiting
-Letter types an authorised signatory delegates for automatic issue SHALL be generated and signed as soon as they are requested, within the delegation's type, template version, fields, requesters, limit and end date, and logged with the exact bytes and the requester.
+Letter types an authorised signatory delegates for automatic issue SHALL be generated and signed as soon as they are requested, within the delegation's type, template version, requesters, limit and end date (never a letter that shows pay), and logged with the exact bytes and the requester; the signatory's own letter waits for the people team.
 
 Source: PRD-002 §11 · Priority S · Phase P1
 

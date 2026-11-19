@@ -61,6 +61,17 @@ type AccessReviewConnector struct {
 	InstalledAt time.Time   `json:"installed_at" doc:"When." example:"2026-10-01T09:00:00Z"`
 }
 
+// AccessReviewClient is an integration client of the organisation: an OAuth client that reaches its data as a member (FR-INT-02, SEC-07).
+type AccessReviewClient struct {
+	ClientID  string      `json:"client_id" doc:"Its OAuth client ID." example:"fy-int-0193a3c2"`
+	Name      string      `json:"name" doc:"Its name." example:"Reporting export"`
+	Class     string      `json:"class" enum:"integration,agent" doc:"Its client class (AI-34)." example:"integration"`
+	Owner     string      `json:"owner" doc:"The member it acts for, whose rights it never exceeds; empty when that person is no longer a member." example:"Ah Kow"`
+	Scopes    []ScopeName `json:"scopes" doc:"What it may read or write."`
+	ExpiresAt time.Time   `json:"expires_at" doc:"When it stops working." example:"2027-01-01T00:00:00Z"`
+	Status    string      `json:"status" enum:"live,expired" doc:"live while it works; expired once its end date has passed and nobody revoked it." example:"live"`
+}
+
 // AccessReviewQuarter is a calendar quarter of the review.
 type AccessReviewQuarter struct {
 	Quarter string `json:"quarter" format:"date" doc:"Its first day." example:"2026-07-01"`
@@ -84,7 +95,8 @@ type AccessReview struct {
 	TeamMode     string                    `json:"team_mode" enum:"founder,standard,enterprise" doc:"The team mode in force (§6.4)." example:"founder"`
 	Members      []AccessReviewMember      `json:"members" doc:"The active members, in the order they joined."`
 	Invitations  []MemberInvitation        `json:"invitations" doc:"The pending invitations: who will join, with which roles."`
-	Connectors   []AccessReviewConnector   `json:"connectors" doc:"The organisation's installed connectors. OAuth clients join with Connected apps (AI-46)."`
+	Connectors   []AccessReviewConnector   `json:"connectors" doc:"The organisation's installed connectors."`
+	Clients      []AccessReviewClient      `json:"integration_clients" doc:"The organisation's integration clients that are not revoked, each with its owner, class, scopes and end date (CTL-API-02)."`
 	ToAttest     *AccessReviewQuarter      `json:"to_attest,omitempty" doc:"The latest calendar quarter that has ended, while it is not attested; absent when it is, or no quarter has ended since the organisation began."`
 	Overdue      *AccessReviewQuarter      `json:"overdue,omitempty" doc:"A quarter whose review is past its due date with neither its attestation nor a later one (C.2 #7)."`
 	Attestations []AccessReviewAttestation `json:"attestations" doc:"The quarters attested, latest first."`
@@ -157,7 +169,7 @@ func (a *API) accessReviewOf(ctx context.Context, u storage.UnitOfWork) (AccessR
 		return AccessReview{}, "", err
 	}
 	out := AccessReview{AsAt: now.UTC(), TeamMode: mode, Members: []AccessReviewMember{}, Invitations: []MemberInvitation{},
-		Connectors: []AccessReviewConnector{}, Attestations: []AccessReviewAttestation{}}
+		Connectors: []AccessReviewConnector{}, Clients: []AccessReviewClient{}, Attestations: []AccessReviewAttestation{}}
 	names := map[uuid.UUID]string{}
 	since := today
 	for _, m := range ms {
@@ -190,6 +202,21 @@ func (a *API) accessReviewOf(ctx context.Context, u storage.UnitOfWork) (AccessR
 			}
 		}
 		out.Connectors = append(out.Connectors, rc)
+	}
+	clients, err := u.APIClients().List(ctx, storage.APIClientIntegration)
+	if err != nil {
+		return AccessReview{}, "", err
+	}
+	for _, c := range clients {
+		if c.RevokedAt != nil {
+			continue
+		}
+		status := "live"
+		if !c.Live(now) {
+			status = "expired"
+		}
+		out.Clients = append(out.Clients, AccessReviewClient{ClientID: c.ClientID, Name: c.Name, Class: c.Class, Owner: names[c.OwnerID], Scopes: named(c.Scopes, asScopeName),
+			ExpiresAt: c.ExpiresAt.UTC(), Status: status})
 	}
 	var quarters []time.Time
 	for _, x := range slices.Backward(attested) {
@@ -322,6 +349,11 @@ func accessReviewSheet(r AccessReview) sheet.Sheet {
 			sheet.Text(""), sheet.Text(""), sheet.Text(c.InstalledAt.Format(time.RFC3339)), sheet.Text(""), sheet.Text(""), sheet.Text(""),
 			sheet.Text(""), sheet.Text(c.Health)}})
 	}
+	for _, c := range r.Clients {
+		s.Rows = append(s.Rows, sheet.Row{Cells: []sheet.Cell{sheet.Text("integration client"), sheet.Text(c.Name), sheet.Text(joinScopes(c.Scopes)),
+			sheet.Text(""), sheet.Text(""), sheet.Text(c.ExpiresAt.Format(time.RFC3339)), sheet.Text(""), sheet.Text(""), sheet.Text(""),
+			sheet.Text(""), sheet.Text(c.Class + ", owner " + c.Owner + ", " + c.Status)}})
+	}
 	return s
 }
 
@@ -441,7 +473,7 @@ func registerAccessReview(a *API) {
 			return nil, err
 		}
 		sum := sha256.Sum256(data)
-		rows := len(r.Members) + len(r.Invitations) + len(r.Connectors)
+		rows := len(r.Members) + len(r.Invitations) + len(r.Connectors) + len(r.Clients)
 		return &accessReviewFileOutput{Body: ReportFile{ExportID: id.String(), FileName: "access-review-" + r.AsAt.Format(time.DateOnly) + ".csv",
 			MediaType: mediaCSV, SHA256: hex.EncodeToString(sum[:]), Size: len(data), Rows: rows, Content: base64.StdEncoding.EncodeToString(data)}}, nil
 	})

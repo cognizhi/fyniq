@@ -52,7 +52,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: kb-compile script-tests trace trace-gate release-policy storybook help setup setup-code people-setup-code people-owner-recovery super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys test-visual
+.PHONY: qa-mcp kb-compile script-tests trace trace-gate release-policy storybook help setup setup-code people-setup-code people-owner-recovery super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys test-visual
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -195,6 +195,9 @@ storybook: ## Storybook (QA-UI-02): build it, run every shared component's stori
 
 evals: ## Run the AI eval suites (CTL-AI-05): the assistant's golden, red-team and proposal suites and the scheduled agents' suites through the real orchestrator (Docker), then each suite judged soundly and each model's recorded answers replayed, report in .data/evals/report.json; FYNIQ_EVALS_RELEASE=1 fails a missing recording; FYNIQ_AI_LIVE=1 MODEL=<id> records one model on synthetic text
 	@scripts/evals.sh $(if $(MODEL),--model $(MODEL))
+
+qa-mcp: ## The MCP security suite (QA-MCP-01): every test the red-team rows of compliance/qa-mcp-01.json name, run against the pinned Hydra (Docker); report in .data/qa-mcp/report.txt
+	@scripts/qa-mcp.sh
 
 golden-set: ## Rewrite the assistant's golden questions (evals/golden/assistant.json) from the oracle on the sample company (Docker, uv); make evals then checks each against the oracle, the seed and the API
 	@FYNIQ_GOLDEN_WRITE=1 $(MISE) go test -tags local ./internal/api/ -run '^TestWriteTheGoldenSet$$' -count=1

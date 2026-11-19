@@ -4,7 +4,7 @@ type: task
 title: Set up letter types and templates in Nemura
 summary: How the letterhead, the letter types and each template are set, who approves a template, and why a published version never changes
 sources:
-  - docs/user-guide/nemura/letters-templates.md sha256:47da9020e50214accf766314d31b2e6f99a4b81a620edf89f7ede47228ae0219
+  - docs/user-guide/nemura/letters-templates.md sha256:ee1dad0220e1aca7439e45d389bb789e2c709c08c8588b1a1410e882cb04ffcb
 data_class: general
 taint: trusted
 status: published
@@ -34,6 +34,14 @@ aliases:
 4. The HR administrator or the Owner, not the author, selects **Approve and publish the draft**; it becomes the next version and the one before is superseded.
 
 (src: docs/user-guide/nemura/letters-templates.md#steps)
+
+## Issue a standard letter without waiting
+
+- The Owner can delegate automatic issue of a standard letter: under **Automatic issue**, choose the type, the most letters a month and an end date within twelve months, and confirm with a passkey.
+- A request for that letter by an employee not serving notice is then checked and signed in the Owner's name as soon as it is made. **Revoke automatic issue** ends it.
+- A letter that shows pay (the salary certificate, the pay-change letter and the key employment terms) is never issued this way; a change to the template ends the delegation; the Owner's own letter, a request from someone serving notice and one over the monthly limit wait for the people team; the HR administrator sees the delegations but cannot make or revoke one. See [[nemura.letters.kets]].
+
+(src: docs/user-guide/nemura/letters-templates.md#issue-a-standard-letter-without-waiting)
 
 ## When it looks wrong
 

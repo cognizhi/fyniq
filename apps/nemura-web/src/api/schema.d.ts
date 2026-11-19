@@ -572,6 +572,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/letters/delegations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Delegations of automatic issue
+         * @description The signatory's delegations of automatic issue with their state and how many letters each has issued this month. The HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listLetterDelegations"];
+        put?: never;
+        /**
+         * Delegate automatic issue of a letter type
+         * @description The signatory lets one letter type be issued at once, signed as them, to active employees not serving notice: it covers the template version published now, a monthly limit and an end date at most twelve months away. A letter that shows pay is never delegated, a type has one live delegation, and a change to the template ends it. The Owner, after a passkey confirmation in the last five minutes. It is audited.
+         */
+        post: operations["createLetterDelegation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/letters/delegations/{id}/revocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a delegation
+         * @description Ends a delegation from now, once; letters already issued under it stay as they are. The Owner. It is audited.
+         */
+        post: operations["revokeLetterDelegation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/letters/settings": {
         parameters: {
             query?: never;
@@ -2510,6 +2554,92 @@ export interface components {
              */
             reason?: string;
         };
+        DelegateInputBody: {
+            /**
+             * Format: date
+             * @description The day it ends: after today and at most twelve months from today.
+             * @example 2027-11-20
+             */
+            ends_on: string;
+            /**
+             * Format: int64
+             * @description How many letters may be issued under it in a calendar month.
+             * @example 50
+             */
+            monthly_limit: number;
+            /**
+             * @description The letter type to delegate.
+             * @example employment_confirmation
+             */
+            type: string;
+        };
+        Delegation: {
+            /**
+             * Format: date
+             * @description The day it was made.
+             * @example 2026-11-20
+             */
+            created_on: string;
+            /**
+             * Format: date
+             * @description The day it ends: at most twelve months after it was made.
+             * @example 2027-11-20
+             */
+            ends_on: string;
+            /** @description The fields the approved template shows; never salary. */
+            fields: string[] | null;
+            /**
+             * Format: uuid
+             * @description The delegation.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description How many it has issued this month.
+             * @example 3
+             */
+            issued_this_month: number;
+            /**
+             * Format: int64
+             * @description How many letters may be issued under it in a calendar month.
+             * @example 50
+             */
+            monthly_limit: number;
+            /**
+             * @description Why it was revoked.
+             * @example No longer needed.
+             */
+            revoked_reason?: string;
+            /**
+             * @description Active; revoked by a signatory; ended on its date; or replaced because the template changed.
+             * @example active
+             * @enum {string}
+             */
+            state: "active" | "revoked" | "ended" | "replaced";
+            /**
+             * @description The letter type.
+             * @example employment_confirmation
+             */
+            type: string;
+            /**
+             * @description Who may ask: active employees not serving notice.
+             * @example active_employees
+             * @enum {string}
+             */
+            who: "active_employees";
+        };
+        DelegationRevokeInputBody: {
+            /**
+             * @description Why it is revoked.
+             * @example No longer needed.
+             */
+            reason?: string;
+        };
+        DelegationsOutputBody: {
+            /** @description The delegations, newest first. */
+            delegations: components["schemas"]["Delegation"][] | null;
+        };
         Dependant: {
             /**
              * @description The formal intent to adopt, instead of a date of birth.
@@ -3473,6 +3603,11 @@ export interface components {
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
              */
             id: string;
+            /**
+             * @description True when a delegation of the signatory issued the letter at once: it is already under the person's requests, signed.
+             * @example false
+             */
+            issued: boolean;
         };
         LetterBlock: {
             /**
@@ -4579,6 +4714,17 @@ export interface components {
              */
             landing: string;
             /**
+             * @description True after the person's last day: the account is for their own documents only.
+             * @example false
+             */
+            leaver: boolean;
+            /**
+             * Format: date
+             * @description The day the leaver's account ends, when it is one.
+             * @example 2027-12-01
+             */
+            leaver_until?: string;
+            /**
              * Format: uuid
              * @description The person who is signed in.
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
@@ -4590,6 +4736,12 @@ export interface components {
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
              */
             organisation_id: string;
+            /**
+             * Format: uuid
+             * @description The person record the login is linked to, when there is one.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id?: string;
             /**
              * @description The roles the person holds today, from PRD-002 Appendix B.
              * @example [
@@ -6898,6 +7050,228 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listLetterDelegations: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DelegationsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createLetterDelegation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DelegateInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    revokeLetterDelegation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The delegation. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DelegationRevokeInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
