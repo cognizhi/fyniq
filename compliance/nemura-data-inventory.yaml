@@ -58,6 +58,15 @@ classes:
     protection: "Row-level security; every read is audited; the audit event never carries the date of birth"
     transfers: "None"
     columns: [person_dependant.birth_date]
+  - key: leave-records
+    what: "A person's working pattern and their leave ledger: each grant, use, reservation and correction by type and year, with the note a person or an approver wrote"
+    why: "To keep an exact balance of leave, to show how it was worked out, and to meet the employer's record-keeping duties for leave (Employment Act)"
+    where: "Nemura's database, in Singapore"
+    who: "The person their own; the line manager their reports'; HR (Appendix B's leave records)"
+    retention: "MOM: employment records, leave included, of a former employee are kept for 1 year after they leave"
+    protection: "Row-level security; the ledger is append-only and every entry is audited; the note is never in the audit event"
+    transfers: "None"
+    columns: [leave_ledger.note]
   - key: access-requests
     what: "A person's request for their own data, the decision for each category of record and the written outcome"
     why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"
