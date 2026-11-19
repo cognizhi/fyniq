@@ -8,6 +8,7 @@ import { noViolations } from "../test/axe";
 import type { Mode } from "../registry";
 import { AskAboutThis } from "../components/ai/AskAboutThis";
 import { forgetMode } from "../mode";
+import { answer } from "../test/api";
 import { AppFrame } from "./AppFrame";
 
 const owner: Pick<Session, "roles" | "features"> = {
@@ -189,5 +190,57 @@ describe("the app frame", () => {
       fireEvent.keyDown(window, { key: "m", code: "KeyM" });
     });
     expect(window.localStorage.getItem("fyniq.mode")).toBe("basic");
+  });
+
+  // req: FR-UX-21
+  it("shows each badge in words, and announces a change once, as a phrase, through one polite status region", async () => {
+    const approvals = (n: number) => ({ status: 200, body: { items: Array.from({ length: n }, (_, i) => ({ id: `a${i}`, you_may_approve: true })) } });
+    let waiting = 2;
+    answer({
+      "GET /v1/approvals": () => approvals(waiting),
+      "GET /v1/invoices": { status: 200, body: { items: [{ id: "i1", states: { due: "overdue" } }, { id: "i2", states: { due: "none" } }] } },
+      "GET /v1/bill-reminders": { status: 200, body: { items: [{ id: "b1" }, { id: "b2" }, { id: "b3" }] } },
+      "GET /v1/bank-lines": { status: 403, body: {} },
+      "GET /v1/compliance/calendar": { status: 200, body: { deadlines: [{ key: "gst", status: "overdue" }, { key: "cpf", status: "due_soon" }, { key: "eci", status: "open" }] } },
+    });
+    const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const root = createRootRoute();
+    const home = createRoute({
+      getParentRoute: () => root,
+      path: "/",
+      component: () => (
+        <QueryClientProvider client={queries}>
+          <AppFrame session={{ ...owner, user_id: "u-1", roles: ["owner", "accountant"] } as never} title="Home" mode="expert">
+            <h1>Home</h1>
+          </AppFrame>
+        </QueryClientProvider>
+      ),
+    });
+    render(<RouterProvider router={createRouter({ routeTree: root.addChildren([home]), history: createMemoryHistory({ initialEntries: ["/"] }) })} />);
+    const nav = await screen.findByRole("navigation", { name: "Main" });
+    // Said in words for a screen reader; the digits are for the eye alone.
+    expect((await within(nav).findByRole("link", { name: /Inbox, 2 approvals waiting/ })).querySelector(".fy-badge")?.getAttribute("aria-hidden")).toBe("true");
+    expect(within(nav).getByRole("link", { name: /Sales, 1 invoice overdue/ })).toBeTruthy();
+    expect(within(nav).getByRole("link", { name: /Purchases, 3 bills due/ })).toBeTruthy();
+    expect(within(nav).getByRole("link", { name: /Compliance, 2 deadlines due/ })).toBeTruthy();
+    expect(within(nav).getByRole("link", { name: "Banking" }), "a read the roles refuse gives no badge").toBeTruthy();
+    // One polite, atomic region for the shell's counts; the page's own state is not announced.
+    const regions = document.querySelectorAll('[role="status"][aria-live="polite"][aria-atomic="true"]');
+    expect(regions).toHaveLength(1);
+    expect(regions[0]?.textContent).toBe("");
+    // A change is announced as a phrase, and focus does not move.
+    const before = document.activeElement;
+    waiting = 3;
+    await act(async () => {
+      await queries.invalidateQueries({ queryKey: ["nav-badge"] });
+    });
+    await waitFor(() => expect(regions[0]?.textContent).toBe("3 approvals waiting"));
+    expect(document.activeElement).toBe(before);
+    waiting = 0;
+    await act(async () => {
+      await queries.invalidateQueries({ queryKey: ["nav-badge"] });
+    });
+    await waitFor(() => expect(regions[0]?.textContent).toBe("No approvals waiting"));
+    expect(within(nav).getByRole("link", { name: "Inbox" })).toBeTruthy(); // a count of none is no badge
   });
 });

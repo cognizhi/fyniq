@@ -4,14 +4,14 @@ type: task
 title: The Home page, search and commands, long work, Settings, the version, and signing out
 summary: Home (pulse, tiles, plans, your work, deadlines, set-up), Search and commands (Ctrl+K), Operations, Settings, the version (Help › About), signing out
 sources:
-  - docs/user-guide/home.md sha256:294dc028fd0bb2fb9aa18174985a748baa2fc9530f6414fa310e93ca5b5ab697
+  - docs/user-guide/home.md sha256:bc95f1e95db78b56cad9823649d440f3a76c07cc40299fccde793f3ab397cb0c
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-18
+compiled_at: 2026-11-20
 aliases:
   - your work
   - what do I need to do today
@@ -72,6 +72,14 @@ aliases:
 - For someone whose roles read the plans, the tiles add the lowest balance of the next 60 days, the month cash runs out in the latest forecast and, in Expert mode, revenue and costs against the budget; see the next section.
 
 (src: docs/user-guide/home.md#what-it-is)
+
+## The sidebar's counts
+
+- Some sidebar items carry a count: the **Inbox** (requests waiting for approval), **Sales** (invoices overdue), **Purchases** (bills due), **Banking** (bank lines to categorise) and **Compliance** (statutory deadlines due).
+- Each is counted from the list it opens and read again every minute, so it follows what the person may read: an item whose list their roles cannot read shows no count.
+- A screen reader hears each in words, such as "Inbox, 3 approvals waiting", and when a count changes it says so once, in words, without moving the focus.
+
+(src: docs/user-guide/home.md#the-sidebars-counts)
 
 ## Your work and upcoming deadlines
 

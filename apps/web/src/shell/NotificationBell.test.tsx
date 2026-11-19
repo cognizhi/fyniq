@@ -13,6 +13,7 @@ const approval = {
 const roles = { ...approval, id: "n-2", type: "security.roles", label: "Your roles changed", category: "security", severity: "warning", actionable: false, title: "Your roles changed: auditor assigned", link: "/settings/profile", read: true };
 
 // req: FR-NTF-01
+// req: FR-UX-15
 describe("the notification bell", () => {
   it("counts the unread, opens the centre, marks one read and all read, and axe finds nothing", async () => {
     const seen = answer({

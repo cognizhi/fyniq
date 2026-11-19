@@ -102,7 +102,7 @@ test.describe("page load and interaction budgets", () => {
             const heading = () => document.querySelector("main h1")?.textContent ?? "";
             const before = heading();
             const start = performance.now();
-            const a = [...document.querySelectorAll<HTMLAnchorElement>("nav[aria-label='Main'] a")].find((x) => x.textContent?.trim() === link);
+            const a = [...document.querySelectorAll<HTMLAnchorElement>("nav[aria-label='Main'] a")].find((x) => x.querySelector(".fy-nav__label")?.textContent?.trim() === link);
             if (!a) throw new Error(`no link ${link}`);
             a.click();
             const wait = () => (location.pathname === where && heading() && heading() !== before ? requestAnimationFrame(() => done(performance.now() - start)) : requestAnimationFrame(wait));
