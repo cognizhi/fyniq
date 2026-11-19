@@ -87,6 +87,14 @@ var Categories = []Category{
 		Columns:    []string{"flex_request.reason", "flex_request.outcome", "flex_request.written_reply"},
 	},
 	{
+		Key: "key-employment-terms", What: "A person's key employment terms: main duties, notice period, medical benefits and a fixed-term contract's end, and the pay terms (salary period, basic salary, fixed allowances and deductions, overtime period, other pay)",
+		Purpose:    "To give the person the key employment terms in writing (Employment Act) and to fill the letter from the record, not from memory",
+		Capability: "Pay, pay history, pay runs",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"},
+		Columns: []string{"person_terms.main_duties", "person_terms.notice_period", "person_terms.medical_benefits", "person_terms.salary_period", "person_terms.basic_salary", "person_terms.fixed_allowances",
+			"person_terms.fixed_deductions", "person_terms.overtime_period", "person_terms.other_pay"},
+	},
+	{
 		Key: "letters", What: "A person's request for a letter and what it is for, the facts filled into it from their record, the issued letter's data, the company's letterhead and the notes on a template",
 		Purpose:    "To issue letters the person asked for, exactly and attributably, and to keep the issued letter as evidence of what was said and who signed it",
 		Capability: "Letters and templates",

@@ -199,3 +199,26 @@ func OvertimeOverLimit(months []OvertimeMonth, limitHours int) []Finding {
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
 	return out
 }
+
+// KETDue is a person with no issued key employment terms and the day they started.
+type KETDue struct {
+	Person string
+	Start  time.Time
+}
+
+// KETs is N.1 #1 (NM-LTR-06): a person who started 14 or more days ago and has no issued KETs is ✖; in the three days before, it is ⏰. The days are the pack's.
+func KETs(people []KETDue, days int, on time.Time) []Finding {
+	var out []Finding
+	for _, p := range people {
+		due := p.Start.AddDate(0, 0, days)
+		left := int(due.Sub(on).Hours() / 24)
+		switch {
+		case left <= 0:
+			out = append(out, Finding{1, "Letters", Fail, p.Person, fmt.Sprintf("The key employment terms are due %d days after the start, on %s, and none is issued: record the person's terms, then request, check and sign the KETs letter.", days, due.Format(time.DateOnly))})
+		case left <= 3:
+			out = append(out, Finding{1, "Letters", Due, p.Person, fmt.Sprintf("The key employment terms are due on %s, in %d days: record the person's terms and issue the KETs letter.", due.Format(time.DateOnly), left)})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
+	return out
+}

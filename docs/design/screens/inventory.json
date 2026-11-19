@@ -6438,12 +6438,14 @@
     "NM-PPL-05",
     "NM-LV-02",
     "NM-ONB-03",
-    "NM-PAY-06"
+    "NM-PAY-06",
+    "NM-LTR-06"
    ],
    "purpose": "One person's record: job and history, leave, documents, pass and the leaving plan.",
    "content": [
     "Header with status and manager",
     "Job history (effective-dated)",
+    "Key employment terms and the KETs letter",
     "Restricted fields masked with reveal",
     "Leave balances",
     "Documents",

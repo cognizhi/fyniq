@@ -1412,6 +1412,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people/{id}/letters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for a letter about a person
+         * @description The people team asks for a letter about a person, such as their key employment terms: the published template is filled from the person's record, terms and the letterhead, and a fact the record does not hold is refused by name. Another member of the people team checks it and the Owner signs it. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["requestLetterFor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people/{id}/nric": {
         parameters: {
             query?: never;
@@ -1446,6 +1466,30 @@ export interface paths {
         get: operations["getPersonSecret"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's key employment terms
+         * @description The key employment terms Nemura holds for a person on a day. The people team reads the base terms; the Payroll administrator and the Owner read the pay terms as well. Anyone else is refused as if the person did not exist. It changes nothing.
+         */
+        get: operations["getPersonTerms"];
+        put?: never;
+        /**
+         * Start a person's key employment terms
+         * @description Ends the current terms the day the new ones start and starts them. The HR officer, the HR administrator and the Owner write the base terms (main duties, notice period, medical benefits, contract end); the Payroll administrator and the Owner write the pay terms. A part the caller may not write carries forward; pay terms cannot be started before the base terms are. It is audited, and the audit event never holds the pay.
+         */
+        post: operations["setPersonTerms"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3104,6 +3148,18 @@ export interface components {
              */
             year: number;
         };
+        LetterAskForInputBody: {
+            /**
+             * @description What the letter is for.
+             * @example The key employment terms for the new hire
+             */
+            purpose: string;
+            /**
+             * @description The letter type's key.
+             * @example kets
+             */
+            type: string;
+        };
         LetterAskInputBody: {
             /**
              * @description What the letter is for.
@@ -4290,6 +4346,101 @@ export interface components {
              * @example true
              */
             setup_done: boolean;
+        };
+        Terms: {
+            /** @description The base terms. */
+            base: components["schemas"]["TermsBase"];
+            /**
+             * Format: date
+             * @description The day these terms started.
+             * @example 2026-09-01
+             */
+            effective_from: string;
+            /**
+             * Format: date
+             * @description The day they ended, when they have.
+             * @example 2027-01-01
+             */
+            effective_to?: string;
+            /** @description The pay terms; only the Payroll administrator and the Owner see them. */
+            pay?: components["schemas"]["TermsPay"];
+        };
+        TermsBase: {
+            /**
+             * Format: date
+             * @description The last day of a fixed-term contract; empty for an open-ended one.
+             * @example 2027-08-31
+             */
+            contract_end?: string;
+            /**
+             * @description The main duties and responsibilities, as the contract states them.
+             * @example Builds and runs the payments platform.
+             */
+            main_duties: string;
+            /**
+             * @description Other medical benefits; empty is none.
+             * @example Group hospital and surgical insurance
+             */
+            medical_benefits?: string;
+            /**
+             * @description The notice period for termination by either party.
+             * @example One month
+             */
+            notice_period: string;
+        };
+        TermsOutputBody: {
+            /**
+             * @description Whether the person has terms on the day.
+             * @example true
+             */
+            recorded: boolean;
+            /** @description The terms. */
+            terms: components["schemas"]["Terms"];
+        };
+        TermsPay: {
+            /**
+             * @description The basic salary in dollars per salary period, as a decimal string.
+             * @example 4500.00
+             */
+            basic_salary?: string;
+            /**
+             * @description Fixed allowances per salary period; empty is none.
+             * @example Transport 100.00
+             */
+            fixed_allowances?: string;
+            /**
+             * @description Fixed deductions per salary period; empty is none.
+             * @example Dormitory 200.00
+             */
+            fixed_deductions?: string;
+            /**
+             * @description Other salary-related components such as bonuses; empty is none.
+             * @example A discretionary year-end bonus
+             */
+            other_pay?: string;
+            /**
+             * @description The overtime payment period, only when it differs from the salary period.
+             * @example Monthly, with the next salary
+             */
+            overtime_period?: string;
+            /**
+             * @description The salary period.
+             * @example monthly
+             * @enum {string}
+             */
+            salary_period?: "hourly" | "daily" | "weekly" | "fortnightly" | "monthly";
+        };
+        TermsSetInputBody: {
+            /** @description The base terms, for the people team; left out, the current ones carry forward. */
+            base?: components["schemas"]["TermsBase"];
+            /**
+             * Format: date
+             * @description The day the new terms start; the current ones end that day.
+             * @example 2026-09-01
+             */
+            effective_from: string;
+            /** @description The pay terms, for the Payroll administrator and the Owner; left out, the current ones carry forward. */
+            pay?: components["schemas"]["TermsPay"];
         };
         UnpaidDecisionInputBody: {
             /**
@@ -9674,6 +9825,90 @@ export interface operations {
             };
         };
     };
+    requestLetterFor: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person the letter is about. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterAskForInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterAskOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     setPersonNric: {
         parameters: {
             query?: never;
@@ -9820,6 +10055,162 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPersonTerms: {
+        parameters: {
+            query?: {
+                /** @description The day to show the terms on; today when empty. */
+                as_of?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TermsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPersonTerms: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TermsSetInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

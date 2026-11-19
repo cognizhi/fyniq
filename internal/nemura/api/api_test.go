@@ -320,6 +320,16 @@ func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.
 // fakeLetters answers letters with whatever the test says.
 type fakeLetters struct{ err error }
 
+func (f fakeLetters) RequestFor(context.Context, Session, uuid.UUID, string, string) (string, string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", "2026-11-25", f.err
+}
+func (f fakeLetters) Terms(context.Context, Session, uuid.UUID, time.Time, bool) (Terms, bool, error) {
+	return Terms{From: "2026-09-01", Base: TermsBase{MainDuties: "x", NoticePeriod: "y"}}, true, f.err
+}
+func (f fakeLetters) SetTerms(context.Context, Session, uuid.UUID, time.Time, *TermsBase, *TermsPay) error {
+	return f.err
+}
+
 func (f fakeLetters) Settings(context.Context, Session) (LetterSettings, bool, error) {
 	return LetterSettings{Name: "Acme", UEN: "1", Address: "x"}, true, f.err
 }

@@ -1,0 +1,14 @@
+rule,value,effective_from,effective_to,status,source
+overtime_rate_hundredths,150,2000-01-01,,researched,mom-hours-overtime
+overtime_hours_per_month,72,2000-01-01,,researched,mom-hours-overtime
+non_workman_basic_cap,2600,2019-04-01,,researched,mom-hours-overtime
+workman_basic_cap,4500,2000-01-01,,researched,mom-hours-overtime
+normal_hours_per_week,44,2000-01-01,,researched,mom-hours-rest-day
+normal_hours_per_day_5_days_or_less,9,2000-01-01,,researched,mom-hours-rest-day
+normal_hours_per_day_over_5_days,8,2000-01-01,,researched,mom-hours-rest-day
+rest_day_employer_up_to_half_hundredths,100,2000-01-01,,researched,mom-hours-rest-day
+rest_day_employer_more_than_half_hundredths,200,2000-01-01,,researched,mom-hours-rest-day
+rest_day_employer_beyond_normal_hundredths,200,2000-01-01,,researched,mom-hours-rest-day
+rest_day_employee_up_to_half_hundredths,50,2000-01-01,,researched,mom-hours-rest-day
+rest_day_employee_more_than_half_hundredths,100,2000-01-01,,researched,mom-hours-rest-day
+rest_day_employee_beyond_normal_hundredths,100,2000-01-01,,researched,mom-hours-rest-day

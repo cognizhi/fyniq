@@ -34,6 +34,7 @@ func init() {
 			"flexible_work": {"rule", "months", "effective_from", "effective_to", "status", "source"},
 			// Part IV of the Employment Act: the overtime rate, the monthly limit and who is covered (sg-people@2026.4).
 			"part_iv":        {"rule", "value", "effective_from", "effective_to", "status", "source"},
+			"ket_items":      {"item", "key", "label", "when", "status", "source"},
 			"parental_leave": {"scheme", "total_weeks", "employer_weeks", "government_weeks", "min_service_months", "cap_per_period", "cap_period_weeks", "cap_total", "claim_months", "effective_from", "effective_to", "status", "source"},
 		},
 		Pinned: map[string][]string{
@@ -46,9 +47,10 @@ func init() {
 			"retirement":     {"case", "born", "date", "want", "why", "source"},
 			"flexible_work":  {"case", "rule", "date", "want_months", "why", "source"},
 			"part_iv":        {"case", "rule", "date", "want", "why", "source"},
+			"ket_items":      {"case", "item", "want_key", "want_when", "why", "source"},
 			"parental_leave": {"case", "scheme", "birth", "want", "why", "source"},
 		},
-		Since: map[string][2]int{"parental_leave": {2026, 2}, "flexible_work": {2026, 3}, "part_iv": {2026, 4}},
+		Since: map[string][2]int{"parental_leave": {2026, 2}, "flexible_work": {2026, 3}, "part_iv": {2026, 4}, "ket_items": {2026, 6}},
 	}
 }
 
@@ -102,6 +104,21 @@ func checkPeople(dir string, v Version) Problems {
 	nums("timing", "days")
 	nums("records", "months", "keep_after_leaving_months")
 	nums("retirement", "retirement_age", "reemployment_age")
+	if t, ok := v.Tables["ket_items"]; ok {
+		seen := map[string]bool{}
+		for i, row := range t.Rows {
+			if n, ok := atoi(row[t.Col("item")]); !ok || n < 1 {
+				add(CodeValue, fmt.Sprintf("ket_items.csv row %d", i+2), fmt.Sprintf("item %q is not a number from 1", row[t.Col("item")]), "Write the item's number in the official list")
+			}
+			if w := row[t.Col("when")]; w != "always" && w != "fixed_term" && w != "if_different" {
+				add(CodeValue, fmt.Sprintf("ket_items.csv row %d", i+2), fmt.Sprintf("when %q is not always, fixed_term or if_different", w), "Say when the item applies")
+			}
+			if seen[row[t.Col("key")]] {
+				add(CodeValue, fmt.Sprintf("ket_items.csv row %d", i+2), fmt.Sprintf("key %q appears twice", row[t.Col("key")]), "Each item has its own key")
+			}
+			seen[row[t.Col("key")]] = true
+		}
+	}
 	if t, ok := v.Tables["part_iv"]; ok {
 		for i, row := range t.Rows {
 			if n, ok := atoi(row[t.Col("value")]); !ok || n < 0 {
@@ -277,6 +294,9 @@ func peopleTables(v Version) []string {
 	if _, ok := v.Tables["part_iv"]; ok {
 		names = append(names, "part_iv")
 	}
+	if _, ok := v.Tables["ket_items"]; ok {
+		names = append(names, "ket_items")
+	}
 	return names
 }
 
@@ -338,6 +358,27 @@ func PartIV(v Version, rule string, on time.Time) (int, bool) {
 		}
 	}
 	return 0, false
+}
+
+// KETItem is one of the key employment terms the employer gives in writing (NM-LTR-06).
+type KETItem struct {
+	Number     int
+	Key, Label string
+	When       string // always, fixed_term (only for a fixed-term contract) or if_different (only if different from the salary period)
+}
+
+// KETItems are the key employment terms of a version, in the official order.
+func KETItems(v Version) []KETItem {
+	t, ok := v.Tables["ket_items"]
+	if !ok {
+		return nil
+	}
+	var out []KETItem
+	for _, r := range t.Rows {
+		n, _ := atoi(r[t.Col("item")])
+		out = append(out, KETItem{Number: n, Key: r[t.Col("key")], Label: r[t.Col("label")], When: r[t.Col("when")]})
+	}
+	return out
 }
 
 // Unverified lists the values of a version that are only researched (NM-PACK-07): what a company must decide on before a calculation uses them.
@@ -434,6 +475,18 @@ func runPeople(v Version) []Result {
 			r.Got = num(n, found)
 			r.Pass = r.Got == r.Want
 		}
+		out = append(out, r)
+	}
+	for _, row := range v.Pinned["ket_items"].Rows {
+		r := Result{Table: "ket_items", Case: row[0], Why: row[4], Want: row[2] + "/" + row[3]}
+		n, _ := atoi(row[1])
+		r.Got = "none/none"
+		for _, it := range KETItems(v) {
+			if it.Number == n {
+				r.Got = it.Key + "/" + it.When
+			}
+		}
+		r.Pass = r.Got == r.Want
 		out = append(out, r)
 	}
 	for _, row := range v.Pinned["part_iv"].Rows {

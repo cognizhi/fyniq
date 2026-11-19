@@ -55,7 +55,26 @@ var Fields = []Field{
 	{Key: "letter.date", Label: "Date of the letter", Format: "date"},
 	{Key: "letter.reference", Label: "Reference of the letter", Format: "text"},
 	{Key: "request.purpose", Label: "What the letter is for", Format: "text"},
+	// The key employment terms (NM-LTR-06): from the person's terms, their working pattern and the country pack. The pay terms are restricted: only a type that is for them shows them.
+	{Key: "terms.main_duties", Label: "Main duties and responsibilities", Format: "text"},
+	{Key: "terms.contract_duration", Label: "Duration of a fixed-term contract", Format: "text"},
+	{Key: "terms.working_arrangement", Label: "Working hours, days and rest days", Format: "text"},
+	{Key: "terms.salary_period", Label: "Salary period", Format: "text", Restricted: true},
+	{Key: "terms.basic_salary", Label: "Basic salary per salary period", Format: "text", Restricted: true},
+	{Key: "terms.fixed_allowances", Label: "Fixed allowances per salary period", Format: "text", Restricted: true},
+	{Key: "terms.fixed_deductions", Label: "Fixed deductions per salary period", Format: "text", Restricted: true},
+	{Key: "terms.overtime_period", Label: "Overtime payment period", Format: "text", Restricted: true},
+	{Key: "terms.overtime_rate", Label: "Overtime rate of pay", Format: "text", Restricted: true},
+	{Key: "terms.other_pay", Label: "Other salary-related components", Format: "text", Restricted: true},
+	{Key: "terms.leave", Label: "Leave entitlements", Format: "text"},
+	{Key: "terms.medical_benefits", Label: "Other medical benefits", Format: "text"},
+	{Key: "terms.probation", Label: "Probation period", Format: "text"},
+	{Key: "terms.notice_period", Label: "Notice period for termination", Format: "text"},
 }
+
+// KETFields are the merge fields of the key employment terms.
+var KETFields = []string{"terms.main_duties", "terms.contract_duration", "terms.working_arrangement", "terms.salary_period", "terms.basic_salary", "terms.fixed_allowances", "terms.fixed_deductions",
+	"terms.overtime_period", "terms.overtime_rate", "terms.other_pay", "terms.leave", "terms.medical_benefits", "terms.probation", "terms.notice_period"}
 
 // FieldOf is the catalogue's field for a key.
 func FieldOf(key string) (Field, bool) {
@@ -75,6 +94,8 @@ type Type struct {
 	Salary     bool     // the type shows salary when the person asks for it: not built until the pay structure exists
 	AutoIssue  bool     // the type may be issued automatically under a signatory's delegation (NM-LTR-04)
 	Needs      string   // what must exist for the type to be offered: empty, or "salary", "terms"
+	Pay        bool     // the type may show the person's pay terms (the key employment terms): a restricted field outside such a type is refused
+	Default    []Block  // the standard text a company may start from
 	Statement  string   // a plain sentence of what the letter says, for the type's picker
 }
 
@@ -90,7 +111,7 @@ var Types = []Type{
 	{Key: "offer_letter", Title: "Offer letter", FieldKeys: append(slices.Clone(commonFields), "job.department", "employment.type"), DueDays: 5, Statement: "Offers a person a role, a start date and a kind of employment."},
 	{Key: "salary_certificate", Title: "Salary certificate", FieldKeys: append(slices.Clone(commonFields), "pay.basic_salary"), DueDays: 3, Salary: true, Needs: "salary", Statement: "States the person's salary, only when they ask for it."},
 	{Key: "pay_change_letter", Title: "Promotion or pay-change letter", FieldKeys: append(slices.Clone(commonFields), "pay.basic_salary"), DueDays: 5, Salary: true, Needs: "salary", Statement: "Tells a person about a promotion or a change of pay."},
-	{Key: "kets", Title: "Key employment terms", FieldKeys: commonFields, DueDays: 14, Needs: "terms", Statement: "The key employment terms the Employment Act asks for, within 14 days of the start."},
+	{Key: "kets", Title: "Key employment terms", FieldKeys: append(slices.Clone(commonFields), KETFields...), DueDays: 14, Pay: true, Default: KETDefault, Statement: "The key employment terms the Employment Act asks for, within 14 days of the start."},
 }
 
 // TypeOf is the catalogue's type for a key.
@@ -157,6 +178,10 @@ func Check(t Type, blocks []Block) []Problem {
 		}
 		for _, m := range placeholder.FindAllStringSubmatch(b.Text, -1) {
 			key := m[1]
+			if f, ok := FieldOf(key); ok && f.Restricted && !t.Pay {
+				out = append(out, Problem{i + 1, fmt.Sprintf("Block %d uses {{%s}}, a pay term that only the key employment terms may show: remove it.", i+1, key)})
+				continue
+			}
 			if !slices.Contains(t.FieldKeys, key) {
 				if _, known := FieldOf(key); known || strings.HasPrefix(key, "pay.") {
 					out = append(out, Problem{i + 1, fmt.Sprintf("Block %d uses {{%s}}, which a %s letter may not show: remove it.", i+1, key, strings.ToLower(t.Title))})

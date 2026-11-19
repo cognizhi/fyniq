@@ -297,6 +297,13 @@ func (p *PacksService) Checks(ctx context.Context, s api.Session, on time.Time) 
 				return err
 			}
 			out = append(out, checks.LeaveWaiting(v, waiting, negative, on)...)
+			if days, ok := pack.TimingDays(v, "kets_days_after_start", on); ok {
+				due, err := KETFacts(ctx, tx)
+				if err != nil {
+					return err
+				}
+				out = append(out, checks.KETs(due, days, on)...)
+			}
 			if limit, ok := pack.PartIV(v, "overtime_hours_per_month", on); ok {
 				months, err := OvertimeMonths(ctx, tx)
 				if err != nil {

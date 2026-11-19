@@ -21,11 +21,12 @@ import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
 import { Join } from "./pages/Join";
 import { Person } from "./pages/Person";
+import { TermsPanel } from "./components/TermsPanel";
 import { matchRoute } from "./registry";
 import { SignIn, signInURL } from "./pages/SignIn";
 import { reviewsFor, review, type Register } from "./review";
 import { SessionProvider } from "./session";
-import { answer, calls } from "./test/setup";
+import { answer, bodies, calls } from "./test/setup";
 
 const stepUp = vi.hoisted(() => ({ result: undefined as string | undefined }));
 vi.mock("./api/stepup", () => ({ confirmWithPasskey: async () => stepUp.result }));
@@ -901,5 +902,50 @@ describe("letters", () => {
     expect(matchRoute("/me/letters/new")?.route.id).toBe("request-letter");
     expect(matchRoute("/people/letters")?.route.id).toBe("letters");
     expect(matchRoute("/settings/letters")?.route.id).toBe("letter-templates");
+  });
+});
+
+// req: NM-LTR-06
+describe("key employment terms", () => {
+  const person = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61";
+  const terms = { recorded: true, terms: { effective_from: "2026-09-01", base: { main_duties: "Keeps the books.", notice_period: "One month" }, pay: { salary_period: "monthly", basic_salary: "4500.00" } } };
+
+  it("shows the people team the base terms and asks for the KETs letter, with no pay form", async () => {
+    answer(`GET /v1/people/${person}/terms`, { status: 200, body: { recorded: true, terms: { ...terms.terms, pay: undefined } } });
+    answer(`POST /v1/people/${person}/letters`, { status: 201, body: { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0", due_on: "2026-12-04" } });
+    const { container } = render(<TermsPanel person={person} roles={["hr_officer"]} />);
+    expect(await screen.findByText("Keeps the books.")).toBeTruthy();
+    expect(screen.queryByText(/4500/)).toBeNull();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Record the terms" }));
+    expect(screen.getByLabelText("Notice period")).toBeTruthy();
+    expect(screen.queryByLabelText("Basic salary per period (dollars)")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Ask for the KETs letter" }));
+    expect(await screen.findByText("The KETs letter is requested. It is due on 2026-12-04.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/people/${person}/letters`)).toMatchObject({ type: "kets" });
+  });
+
+  it("shows payroll the pay terms and sends only the pay part", async () => {
+    answer(`GET /v1/people/${person}/terms`, { status: 200, body: terms });
+    answer(`POST /v1/people/${person}/terms`, { status: 201, body: {} });
+    render(<TermsPanel person={person} roles={["payroll_admin"]} />);
+    expect(await screen.findByText("4500.00 / monthly")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Ask for the KETs letter" })).toBeNull();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Record the terms" }));
+    expect(screen.queryByLabelText("Notice period")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Salary period"), { target: { value: "monthly" } });
+    fireEvent.change(screen.getByLabelText("Basic salary per period (dollars)"), { target: { value: "4800.00" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Record the terms" }));
+    expect(await screen.findByText("The terms are saved. The earlier ones end the day before.")).toBeTruthy();
+    const sent = bodies.get(`POST /v1/people/${person}/terms`) as { base?: unknown; pay?: { basic_salary: string } };
+    expect(sent.base).toBeUndefined();
+    expect(sent.pay?.basic_salary).toBe("4800.00");
+  });
+
+  it("draws nothing for a person who is not the people team or payroll", () => {
+    const { container } = render(<TermsPanel person={person} roles={["employee"]} />);
+    expect(container.textContent).toBe("");
   });
 });
