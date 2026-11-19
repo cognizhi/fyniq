@@ -319,3 +319,12 @@ func (s *Store) RolesAt(ctx context.Context, org, member uuid.UUID, on time.Time
 	})
 	return out, err
 }
+
+// MemberName is a member's display name, in a transaction of its own: what a passkey ceremony shows the authenticator.
+func (s *Store) MemberName(ctx context.Context, org, member uuid.UUID) (string, error) {
+	var name string
+	err := s.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
+		return tx.QueryRow(ctx, "SELECT display_name FROM nemura.member WHERE id = $1", member).Scan(&name)
+	})
+	return name, err
+}

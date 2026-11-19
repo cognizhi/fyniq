@@ -4,7 +4,7 @@ type: task
 title: Prepare, post and reverse journals
 summary: Prepare, check and post journals, ask for approval, edit or reverse a posted one, attach evidence, recurring journals, reversals that wait
 sources:
-  - docs/user-guide/journals.md sha256:8c8ec3db7c9650bbbe85107116426cd01144fa751ba523757866314601f1272d
+  - docs/user-guide/journals.md sha256:5053d50ed7d305d48abb6a808d6fab0b6f69fafae6e53192c98875c1ad544c5c
 data_class: general
 taint: trusted
 status: draft
@@ -149,7 +149,9 @@ aliases:
 ## Attach evidence
 
 - Under **Evidence** on a journal's page, attach the files it rests on, such as an accrual's calculation, an invoice or a board resolution: a PDF, an image, a CSV or text file, an XLSX or DOCX file, or an email, up to 25 MB.
-- Say what the file is, add a note if it helps, and whether it holds personal data or bank details, then select **Attach**.
+- You can also drop a file on the panel, or select it and paste a screenshot.
+- Say what the file is, add a note if it helps, set **Date it relates to** when the file has a date that is not today's, and say whether it holds personal data or bank details, then select **Attach**. Several files can go on one journal, each with its own kind, note and date.
+- **Details** under a file shows its SHA-256 fingerprint, how it arrived, the personal data it holds and who added it; when image metadata was stripped, the fingerprint of the file as you sent it is shown too.
 - Fyniq decides the file's type from its content, scans it for malware and strips image metadata such as location before keeping it.
 - A HEIC photo, as an iPhone takes by default, is converted to JPEG where the installation has its photo converter, and kept as a JPEG; otherwise it is refused and you export it as JPEG first.
 - On a draft a file can come off again; once the journal is posted its files are kept, and never deleted, for as long as the records are, as is a file added later.

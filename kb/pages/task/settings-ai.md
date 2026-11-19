@@ -4,7 +4,7 @@ type: task
 title: Turn the AI off at once, ask to turn it on, and set the AI's monthly budgets
 summary: Settings › AI, the AI switch off at once and on with a second approver, budgets in money and tokens with their 80% alert and 100% stop, and the monthly usage
 sources:
-  - docs/user-guide/ai-settings.md sha256:c95a64027802122fd14a9a6be72162e27269fe6f027d5ca8195773dc9418da73
+  - docs/user-guide/ai-settings.md sha256:72cbb3fc2bc552ed664465b3d6007b1e0c51265c6a6cab52b6bb31f3eda34137
 data_class: general
 taint: trusted
 status: published
@@ -27,7 +27,7 @@ aliases:
 
 ## What it is
 
-- **Settings → AI** (Expert mode) holds the AI switch and the monthly budgets, and shows the providers and model routes at a glance; **AI usage and budgets** shows what the assistant and the agents used and cost each month.
+- **Settings → AI** (Expert mode) holds the AI switch and the monthly budgets, and shows the providers and model routes at a glance; **Knowledge base** holds the pages the assistant reads for know-how ([[settings.ai-knowledge-base]]); **AI usage and budgets** shows what the assistant and the agents used and cost each month.
 - The Owner, the Administrator, the Controller, the Auditor and the Compliance officer can see them. Where the AI's settings sit among the company's: [[settings.organisation]]; the connections the AI uses: [[settings.ai-providers]].
 
 (src: docs/user-guide/ai-settings.md#what-it-is)

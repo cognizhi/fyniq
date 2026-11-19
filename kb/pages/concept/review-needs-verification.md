@@ -18,6 +18,8 @@ aliases:
   - review banner
   - not yet reviewed
   - can I trust this page
+  - is this tax advice
+  - how accurate is the guide
 ---
 
 # The "Needs additional verification" banner

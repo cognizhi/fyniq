@@ -84,6 +84,7 @@ var (
 	orderedItem  = regexp.MustCompile(`(?m)^\s*\d+\.\s`)
 	sectionSplit = regexp.MustCompile(`(?m)^## `)
 	dateRe       = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+	citeMarker   = regexp.MustCompile(` ?\(src: [^)]*\)`)
 )
 
 // ParseFrontMatter reads the restricted front matter of kb/schema.md: "key: value" lines and lists of "  - item"
@@ -245,4 +246,38 @@ func NumbersOutsideIDs(body string) []string {
 // page carries ("(src: docs/user-guide/x.md#y)", "[[key]]"), which would match every query for "guide" or "docs".
 func SearchText(body string) string {
 	return wikilinkRe.ReplaceAllString(citeRe.ReplaceAllString(body, " "), " ")
+}
+
+// Cited is a body's text as a reader is given it: the "(src: path#anchor)" markers, which say where a claim came from, left
+// out of the words (the citations are returned beside them, resolved to what a person can open).
+func Cited(text string) string {
+	return strings.TrimSpace(citeMarker.ReplaceAllString(text, ""))
+}
+
+// Words are the section's own text, after its heading.
+func (s Section) Words() string {
+	_, rest, _ := strings.Cut(s.Text, "\n")
+	return strings.TrimSpace(rest)
+}
+
+// Cites are the citations of the section's text, each once, in order.
+func (s Section) Cites() []Citation {
+	var out []Citation
+	seen := map[Citation]bool{}
+	for _, c := range Citations(s.Text) {
+		if !seen[c] {
+			seen[c], out = true, append(out, c)
+		}
+	}
+	return out
+}
+
+// Intro is the body's text before its first H2 section, without the "# title" line.
+func Intro(body string) string {
+	parts := sectionSplit.Split(body, 2)
+	intro := parts[0]
+	if strings.HasPrefix(strings.TrimLeft(intro, " \t\r\n"), "# ") {
+		_, intro, _ = strings.Cut(strings.TrimLeft(intro, " \t\r\n"), "\n")
+	}
+	return strings.TrimSpace(intro)
 }

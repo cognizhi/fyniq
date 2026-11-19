@@ -73,7 +73,8 @@ describe("Settings › AI activity", () => {
     const turn = (t: Record<string, unknown>) => ({ id: "t-1", conversation_id: "c-1", person: "user:u-1", question: "What was revenue?", status: "answered",
       runs: ["r-1"], input_tokens: 2400, output_tokens: 310, classes: ["business-figures"], cited: 1, regenerated: false, withheld: 0, tool_errors: 0,
       screening_flags: 0, cost: "0.0213",
-      tool_calls: [{ tool: "metrics.query", version: 1, outcome: "read", facts: 3, omitted: 0, withheld: false, duration_ms: 120 }],
+      tool_calls: [{ tool: "metrics.query", version: 1, outcome: "read", facts: 3, omitted: 0, withheld: false, duration_ms: 120, kb_pages: [] },
+        { tool: "kb.read", version: 1, outcome: "read", facts: 0, omitted: 0, withheld: false, duration_ms: 40, kb_pages: [{ key: "claims.approve-team-claims", version: "v0.1.0#7c1ea9b4f2d3" }] }],
       asked_at: "2026-11-15T01:00:00Z", masked: false, ...t });
     const seen = answer({
       "GET /v1/ai/activity": { status: 200, body: { scope: "all", items: [] } },
@@ -90,6 +91,9 @@ describe("Settings › AI activity", () => {
     const table = await screen.findByRole("table", { name: "Questions to the assistant" });
     expect(within(table).getByText("What was revenue?")).toBeTruthy();
     expect(within(table).getByText("read 3 figures")).toBeTruthy();
+    // The knowledge-base page version an answer used (AI-12, AI-51).
+    expect(within(table).getByText("claims.approve-team-claims")).toBeTruthy();
+    expect(within(table).getByText("v0.1.0#7c1ea9b4f2d3")).toBeTruthy();
     expect(within(table).getByText("Masked: it read payroll")).toBeTruthy();
     expect(within(table).getByText("AI-SCREEN-01")).toBeTruthy();
     expect(within(table).getByText("2 reads refused")).toBeTruthy(); // req: QA-AI-04

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accept_overstated_revenue": {
+      "description": "Above the limit, confirms the loss is written off as an expense although the invoice's revenue stays as invoiced until it is credited.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "date": {
+      "description": "The journal's date; today when left out.",
+      "examples": [
+        "2026-11-19"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The provider's clearing money account the dispute is on.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Above the limit, why it is written off without crediting the invoice.",
+      "examples": [
+        "The customer cannot be found: the charge was a one-off"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    }
+  },
+  "required": [
+    "money_account_id"
+  ],
+  "title": "DisputeLossDraft",
+  "type": "object"
+}

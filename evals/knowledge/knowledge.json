@@ -1,0 +1,861 @@
+{
+ "suite": "knowledge",
+ "version": 1,
+ "requirement": "QA-AI-06",
+ "top": 5,
+ "cases": [
+  {
+   "id": "paraphrase-01",
+   "category": "paraphrase",
+   "question": "How do I get my money back after paying for a company expense myself?",
+   "expect": [
+    "claims.make-a-claim"
+   ]
+  },
+  {
+   "id": "paraphrase-02",
+   "category": "paraphrase",
+   "question": "Who signs off the expense claims of my team?",
+   "expect": [
+    "claims.approve-team-claims"
+   ]
+  },
+  {
+   "id": "paraphrase-03",
+   "category": "paraphrase",
+   "question": "I need to send a customer a bill for work we did",
+   "expect": [
+    "sales.invoices"
+   ]
+  },
+  {
+   "id": "paraphrase-04",
+   "category": "paraphrase",
+   "question": "How do I record what a supplier charged us?",
+   "expect": [
+    "purchases.bills"
+   ]
+  },
+  {
+   "id": "paraphrase-05",
+   "category": "paraphrase",
+   "question": "Where can I see how much cash we will have in the next few months?",
+   "expect": [
+    "planning.cash"
+   ]
+  },
+  {
+   "id": "paraphrase-06",
+   "category": "paraphrase",
+   "question": "How do I check the bank feed matches what we recorded?",
+   "expect": [
+    "banking.reconcile"
+   ]
+  },
+  {
+   "id": "paraphrase-07",
+   "category": "paraphrase",
+   "question": "A bank line showed up and I do not know what it is for",
+   "expect": [
+    "banking.categorise"
+   ]
+  },
+  {
+   "id": "paraphrase-08",
+   "category": "paraphrase",
+   "question": "I want to upload my bank's CSV file",
+   "expect": [
+    "banking.import"
+   ]
+  },
+  {
+   "id": "paraphrase-09",
+   "category": "paraphrase",
+   "question": "How do I lock a month so nobody changes it?",
+   "expect": [
+    "accounting.periods"
+   ]
+  },
+  {
+   "id": "paraphrase-10",
+   "category": "paraphrase",
+   "question": "How do I fix a mistake in a journal that is already posted?",
+   "expect": [
+    "accounting.journals"
+   ]
+  },
+  {
+   "id": "paraphrase-11",
+   "category": "paraphrase",
+   "question": "What do I enter when the company starts using Fyniq part way through the year?",
+   "expect": [
+    "accounting.opening-balances"
+   ]
+  },
+  {
+   "id": "paraphrase-12",
+   "category": "paraphrase",
+   "question": "How do I add a new person to the company in Fyniq?",
+   "expect": [
+    "members.invite"
+   ]
+  },
+  {
+   "id": "paraphrase-13",
+   "category": "paraphrase",
+   "question": "How do I stop someone from accessing our books?",
+   "expect": [
+    "members.remove"
+   ]
+  },
+  {
+   "id": "paraphrase-14",
+   "category": "paraphrase",
+   "question": "How do I make Fyniq easier on the eyes at night?",
+   "expect": [
+    "preferences.appearance"
+   ]
+  },
+  {
+   "id": "paraphrase-15",
+   "category": "paraphrase",
+   "question": "What keys can I press to move around Fyniq?",
+   "expect": [
+    "shell.shortcuts"
+   ]
+  },
+  {
+   "id": "paraphrase-16",
+   "category": "paraphrase",
+   "question": "Where do I see who owns how many shares?",
+   "expect": [
+    "equity.register"
+   ]
+  },
+  {
+   "id": "paraphrase-17",
+   "category": "paraphrase",
+   "question": "How do I issue new shares to an investor?",
+   "expect": [
+    "equity.register"
+   ]
+  },
+  {
+   "id": "paraphrase-18",
+   "category": "paraphrase",
+   "question": "The company owes me for costs I paid before it was set up",
+   "expect": [
+    "founders.pre-incorporation-costs"
+   ]
+  },
+  {
+   "id": "paraphrase-19",
+   "category": "paraphrase",
+   "question": "How do I get paid back what the company owes me?",
+   "expect": [
+    "founders.settle-balance"
+   ]
+  },
+  {
+   "id": "paraphrase-20",
+   "category": "paraphrase",
+   "question": "How do I find out whether we must register for GST?",
+   "expect": [
+    "compliance.gst"
+   ]
+  },
+  {
+   "id": "paraphrase-21",
+   "category": "paraphrase",
+   "question": "When is my next tax filing due?",
+   "expect": [
+    "compliance.calendar"
+   ]
+  },
+  {
+   "id": "paraphrase-22",
+   "category": "paraphrase",
+   "question": "Can I stop the AI from running at all?",
+   "expect": [
+    "settings.ai"
+   ]
+  },
+  {
+   "id": "paraphrase-23",
+   "category": "paraphrase",
+   "question": "What did the AI do with my data?",
+   "expect": [
+    "settings.ai-activity"
+   ]
+  },
+  {
+   "id": "paraphrase-24",
+   "category": "paraphrase",
+   "question": "How do I choose which AI model is used?",
+   "expect": [
+    "settings.ai-routes"
+   ]
+  },
+  {
+   "id": "paraphrase-25",
+   "category": "paraphrase",
+   "question": "How do I let the AI use a different provider?",
+   "expect": [
+    "settings.ai-providers"
+   ]
+  },
+  {
+   "id": "paraphrase-26",
+   "category": "paraphrase",
+   "question": "How do I change the company logo on invoices?",
+   "expect": [
+    "settings.brand"
+   ]
+  },
+  {
+   "id": "paraphrase-27",
+   "category": "paraphrase",
+   "question": "How do I design how my invoices look?",
+   "expect": [
+    "settings.templates"
+   ]
+  },
+  {
+   "id": "paraphrase-28",
+   "category": "paraphrase",
+   "question": "Where do I find a recommended default and change it?",
+   "expect": [
+    "settings.organisation"
+   ]
+  },
+  {
+   "id": "paraphrase-29",
+   "category": "paraphrase",
+   "question": "How do I make payments to many suppliers at once?",
+   "expect": [
+    "purchases.payment-batches"
+   ]
+  },
+  {
+   "id": "paraphrase-30",
+   "category": "paraphrase",
+   "question": "How does Fyniq decide who must approve a payment?",
+   "expect": [
+    "approvals.policies"
+   ]
+  },
+  {
+   "id": "paraphrase-31",
+   "category": "paraphrase",
+   "question": "How do I ask somebody else to approve my change?",
+   "expect": [
+    "approvals.decide"
+   ]
+  },
+  {
+   "id": "paraphrase-32",
+   "category": "paraphrase",
+   "question": "How do I know the books are in good shape?",
+   "expect": [
+    "checks.overview"
+   ]
+  },
+  {
+   "id": "paraphrase-33",
+   "category": "paraphrase",
+   "question": "How do I see the history of who changed what?",
+   "expect": [
+    "compliance.audit-trail"
+   ]
+  },
+  {
+   "id": "paraphrase-34",
+   "category": "paraphrase",
+   "question": "How do I take a copy of all our data?",
+   "expect": [
+    "settings.data"
+   ]
+  },
+  {
+   "id": "paraphrase-35",
+   "category": "paraphrase",
+   "question": "How do I bring in the old workbook?",
+   "expect": [
+    "settings.import"
+   ]
+  },
+  {
+   "id": "paraphrase-36",
+   "category": "paraphrase",
+   "question": "How do I track the start-up's monthly customer numbers?",
+   "expect": [
+    "reports.kpis"
+   ]
+  },
+  {
+   "id": "paraphrase-37",
+   "category": "paraphrase",
+   "question": "Where do I read the profit and loss report?",
+   "expect": [
+    "reports.statements"
+   ]
+  },
+  {
+   "id": "paraphrase-38",
+   "category": "paraphrase",
+   "question": "How do I plan a budget for next year?",
+   "expect": [
+    "planning.budgets"
+   ]
+  },
+  {
+   "id": "paraphrase-39",
+   "category": "paraphrase",
+   "question": "How do I see what hiring more people does to cash?",
+   "expect": [
+    "planning.forecast"
+   ]
+  },
+  {
+   "id": "paraphrase-40",
+   "category": "paraphrase",
+   "question": "How do I record the wear and tear on a laptop?",
+   "expect": [
+    "accounting.fixed-assets"
+   ]
+  },
+  {
+   "id": "synonym-01",
+   "category": "synonym",
+   "question": "IOU from the company to a director",
+   "expect": [
+    "founders.balance"
+   ]
+  },
+  {
+   "id": "synonym-02",
+   "category": "synonym",
+   "question": "money lent to the company by a founder",
+   "expect": [
+    "founders.balance"
+   ]
+  },
+  {
+   "id": "synonym-03",
+   "category": "synonym",
+   "question": "reimbursement for receipts",
+   "expect": [
+    "claims.make-a-claim"
+   ]
+  },
+  {
+   "id": "synonym-04",
+   "category": "synonym",
+   "question": "foreign currency rates",
+   "expect": [
+    "accounting.currencies"
+   ]
+  },
+  {
+   "id": "synonym-05",
+   "category": "synonym",
+   "question": "month end close",
+   "expect": [
+    "accounting.periods"
+   ]
+  },
+  {
+   "id": "synonym-06",
+   "category": "synonym",
+   "question": "list of ledger accounts",
+   "expect": [
+    "accounting.chart"
+   ]
+  },
+  {
+   "id": "synonym-07",
+   "category": "synonym",
+   "question": "vendor invoice",
+   "expect": [
+    "purchases.bills"
+   ]
+  },
+  {
+   "id": "synonym-08",
+   "category": "synonym",
+   "question": "accounts payable",
+   "expect": [
+    "purchases.bills"
+   ]
+  },
+  {
+   "id": "synonym-09",
+   "category": "synonym",
+   "question": "sales invoice",
+   "expect": [
+    "sales.invoices"
+   ]
+  },
+  {
+   "id": "synonym-10",
+   "category": "synonym",
+   "question": "chasing customers who have not paid",
+   "expect": [
+    "sales.statements"
+   ]
+  },
+  {
+   "id": "synonym-11",
+   "category": "synonym",
+   "question": "payment reminders to customers",
+   "expect": [
+    "sales.statements"
+   ]
+  },
+  {
+   "id": "synonym-12",
+   "category": "synonym",
+   "question": "quotation for a customer",
+   "expect": [
+    "sales.quotes"
+   ]
+  },
+  {
+   "id": "synonym-13",
+   "category": "synonym",
+   "question": "purchase order",
+   "expect": [
+    "purchases.orders"
+   ]
+  },
+  {
+   "id": "synonym-14",
+   "category": "synonym",
+   "question": "cap table",
+   "expect": [
+    "equity.register"
+   ]
+  },
+  {
+   "id": "synonym-15",
+   "category": "synonym",
+   "question": "who are the shareholders",
+   "expect": [
+    "equity.register"
+   ]
+  },
+  {
+   "id": "synonym-16",
+   "category": "synonym",
+   "question": "dark mode",
+   "expect": [
+    "preferences.appearance"
+   ]
+  },
+  {
+   "id": "synonym-17",
+   "category": "synonym",
+   "question": "two factor authentication",
+   "expect": [
+    "preferences.security"
+   ]
+  },
+  {
+   "id": "synonym-18",
+   "category": "synonym",
+   "question": "sign in with a passkey",
+   "expect": [
+    "auth.sign-in"
+   ]
+  },
+  {
+   "id": "synonym-19",
+   "category": "synonym",
+   "question": "single sign on",
+   "expect": [
+    "settings.sign-in-providers"
+   ]
+  },
+  {
+   "id": "synonym-20",
+   "category": "synonym",
+   "question": "cash runway",
+   "expect": [
+    "planning.cash"
+   ]
+  },
+  {
+   "id": "synonym-21",
+   "category": "synonym",
+   "question": "ACRA annual return",
+   "expect": [
+    "compliance.calendar"
+   ]
+  },
+  {
+   "id": "synonym-22",
+   "category": "synonym",
+   "question": "IRAS filing deadlines",
+   "expect": [
+    "compliance.calendar"
+   ]
+  },
+  {
+   "id": "synonym-23",
+   "category": "synonym",
+   "question": "personal data protection register",
+   "expect": [
+    "compliance.data-protection"
+   ]
+  },
+  {
+   "id": "synonym-24",
+   "category": "synonym",
+   "question": "who can do what in the company",
+   "expect": [
+    "members.roles"
+   ]
+  },
+  {
+   "id": "synonym-25",
+   "category": "synonym",
+   "question": "separation of duties",
+   "expect": [
+    "settings.team-mode"
+   ]
+  },
+  {
+   "id": "synonym-26",
+   "category": "synonym",
+   "question": "search for an invoice",
+   "expect": [
+    "shell.search"
+   ]
+  },
+  {
+   "id": "synonym-27",
+   "category": "synonym",
+   "question": "export all my data",
+   "expect": [
+    "settings.data"
+   ]
+  },
+  {
+   "id": "synonym-28",
+   "category": "synonym",
+   "question": "model provider connection",
+   "expect": [
+    "settings.ai-providers"
+   ]
+  },
+  {
+   "id": "synonym-29",
+   "category": "synonym",
+   "question": "monthly AI spending limit",
+   "expect": [
+    "settings.ai"
+   ]
+  },
+  {
+   "id": "synonym-30",
+   "category": "synonym",
+   "question": "bank rules that categorise automatically",
+   "expect": [
+    "banking.rules"
+   ]
+  },
+  {
+   "id": "negation-exception-01",
+   "category": "negation-exception",
+   "question": "Why can't I approve my own expense claim?",
+   "expect": [
+    "claims.approve-team-claims"
+   ]
+  },
+  {
+   "id": "negation-exception-02",
+   "category": "negation-exception",
+   "question": "Why can't I post a journal into a closed month?",
+   "expect": [
+    "accounting.periods"
+   ]
+  },
+  {
+   "id": "negation-exception-03",
+   "category": "negation-exception",
+   "question": "What happens if there is no second person to approve in a small team?",
+   "expect": [
+    "settings.team-mode"
+   ]
+  },
+  {
+   "id": "negation-exception-04",
+   "category": "negation-exception",
+   "question": "Can the AI approve a payment for me?",
+   "expect": [
+    "ai.proposals"
+   ]
+  },
+  {
+   "id": "negation-exception-05",
+   "category": "negation-exception",
+   "question": "Can the assistant change my books?",
+   "expect": [
+    "ai.assistant"
+   ]
+  },
+  {
+   "id": "negation-exception-06",
+   "category": "negation-exception",
+   "question": "Why doesn't the assistant show payroll?",
+   "expect": [
+    "ai.assistant"
+   ]
+  },
+  {
+   "id": "negation-exception-07",
+   "category": "negation-exception",
+   "question": "What if a bank line was matched automatically by mistake?",
+   "expect": [
+    "banking.auto-reconciled"
+   ]
+  },
+  {
+   "id": "negation-exception-08",
+   "category": "negation-exception",
+   "question": "Why can't I delete a posted invoice?",
+   "expect": [
+    "sales.invoices"
+   ]
+  },
+  {
+   "id": "negation-exception-09",
+   "category": "negation-exception",
+   "question": "What do I do if we are not registered for GST?",
+   "expect": [
+    "compliance.gst"
+   ]
+  },
+  {
+   "id": "negation-exception-10",
+   "category": "negation-exception",
+   "question": "Is what the guide says about tax advice?",
+   "expect": [
+    "review.needs-verification"
+   ]
+  },
+  {
+   "id": "negation-exception-11",
+   "category": "negation-exception",
+   "question": "Why does a page say needs additional verification?",
+   "expect": [
+    "review.needs-verification"
+   ]
+  },
+  {
+   "id": "negation-exception-12",
+   "category": "negation-exception",
+   "question": "Why is the audit trail not showing everything?",
+   "expect": [
+    "compliance.audit-trail"
+   ]
+  },
+  {
+   "id": "other-language-01",
+   "category": "other-language",
+   "question": "怎么报销费用？",
+   "expect": [
+    "claims.make-a-claim"
+   ]
+  },
+  {
+   "id": "other-language-02",
+   "category": "other-language",
+   "question": "如何添加银行账户？",
+   "expect": [
+    "banking.add-account"
+   ]
+  },
+  {
+   "id": "other-language-03",
+   "category": "other-language",
+   "question": "如何邀请新成员加入公司？",
+   "expect": [
+    "members.invite"
+   ]
+  },
+  {
+   "id": "other-language-04",
+   "category": "other-language",
+   "question": "公司欠创始人的钱怎么算？",
+   "expect": [
+    "founders.balance"
+   ]
+  },
+  {
+   "id": "other-language-05",
+   "category": "other-language",
+   "question": "汇率在哪里设置？",
+   "expect": [
+    "accounting.currencies"
+   ]
+  },
+  {
+   "id": "other-language-06",
+   "category": "other-language",
+   "question": "怎么开启深色模式？",
+   "expect": [
+    "preferences.appearance"
+   ]
+  },
+  {
+   "id": "other-language-07",
+   "category": "other-language",
+   "question": "Bagaimana saya menuntut semula perbelanjaan syarikat?",
+   "expect": [
+    "claims.make-a-claim"
+   ]
+  },
+  {
+   "id": "other-language-08",
+   "category": "other-language",
+   "question": "Bagaimana untuk menjemput ahli baharu?",
+   "expect": [
+    "members.invite"
+   ]
+  },
+  {
+   "id": "other-language-09",
+   "category": "other-language",
+   "question": "Di mana kadar pertukaran mata wang?",
+   "expect": [
+    "accounting.currencies"
+   ]
+  },
+  {
+   "id": "other-language-10",
+   "category": "other-language",
+   "question": "Bagaimana mendaftar untuk GST?",
+   "expect": [
+    "compliance.gst"
+   ]
+  },
+  {
+   "id": "stale-guide-vs-pack-01",
+   "category": "stale-guide-vs-pack",
+   "question": "What is the current GST rate?",
+   "expect": [
+    "compliance.gst"
+   ],
+   "live": "The answer must come from packs.get and say the guide may be older than the pack in force (AI-53, G4-091): needs a recorded model run [live-verify]"
+  },
+  {
+   "id": "stale-guide-vs-pack-02",
+   "category": "stale-guide-vs-pack",
+   "question": "What is the threshold to register for GST?",
+   "expect": [
+    "compliance.gst"
+   ],
+   "live": "The answer must come from packs.get and say the guide may be older than the pack in force (AI-53, G4-091): needs a recorded model run [live-verify]"
+  },
+  {
+   "id": "stale-guide-vs-pack-03",
+   "category": "stale-guide-vs-pack",
+   "question": "By when must the annual return be filed?",
+   "expect": [
+    "compliance.calendar"
+   ],
+   "live": "The answer must come from packs.get and say the guide may be older than the pack in force (AI-53, G4-091): needs a recorded model run [live-verify]"
+  },
+  {
+   "id": "stale-guide-vs-pack-04",
+   "category": "stale-guide-vs-pack",
+   "question": "What are the filing deadlines this year?",
+   "expect": [
+    "compliance.calendar"
+   ],
+   "live": "The answer must come from packs.get and say the guide may be older than the pack in force (AI-53, G4-091): needs a recorded model run [live-verify]"
+  },
+  {
+   "id": "stale-guide-vs-pack-05",
+   "category": "stale-guide-vs-pack",
+   "question": "Which statutory pack version is in force?",
+   "expect": [
+    "settings.statutory-packs"
+   ],
+   "live": "The answer must come from packs.get and say the guide may be older than the pack in force (AI-53, G4-091): needs a recorded model run [live-verify]"
+  },
+  {
+   "id": "revoked-reader-01",
+   "category": "revoked-reader",
+   "question": "How do I search the audit trail?",
+   "expect": [
+    "compliance.audit-trail"
+   ],
+   "reader": "employee"
+  },
+  {
+   "id": "revoked-reader-02",
+   "category": "revoked-reader",
+   "question": "Where is the data protection register?",
+   "expect": [
+    "compliance.data-protection"
+   ],
+   "reader": "employee"
+  },
+  {
+   "id": "revoked-reader-03",
+   "category": "revoked-reader",
+   "question": "How do I see whether the controls hold?",
+   "expect": [
+    "compliance.controls"
+   ],
+   "reader": "employee"
+  },
+  {
+   "id": "revoked-reader-04",
+   "category": "revoked-reader",
+   "question": "How do I attest the quarterly access review?",
+   "expect": [
+    "settings.access-review"
+   ],
+   "reader": "employee"
+  },
+  {
+   "id": "revoked-reader-05",
+   "category": "revoked-reader",
+   "question": "How does the accountant review a closed month?",
+   "expect": [
+    "accounting.reviews"
+   ],
+   "reader": "employee"
+  },
+  {
+   "id": "revoked-reader-06",
+   "category": "revoked-reader",
+   "question": "Where do I see the bank accounts and their freshness?",
+   "expect": [
+    "banking.accounts"
+   ],
+   "reader": "employee"
+  }
+ ],
+ "thresholds": {
+  "paraphrase": 0.9,
+  "synonym": 0.9,
+  "negation-exception": 0.8,
+  "other-language": 0.1,
+  "stale-guide-vs-pack": 1.0,
+  "revoked-reader": 1.0
+ },
+ "owners": {
+  "other-language": {
+   "owner": "The founders: to name a person at the first sign-off of this suite",
+   "plan": "The pages carry English aliases only. Add Chinese and Malay aliases and a translated summary to each page in the compile step and measure again; a vector index is not the fix (AI-58, ADR-T6). Measured 18 Nov 2026: recall 0.10 at the top 5, so the threshold is the floor, not the aim."
+  },
+  "negation-exception": {
+   "owner": "The founders: to name a person at the first sign-off of this suite",
+   "plan": "Add aliases for how people phrase an exception or a refusal, and cross-link the pages that explain a rule with those that explain its exception."
+  }
+ }
+}

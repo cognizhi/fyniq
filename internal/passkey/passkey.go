@@ -46,14 +46,29 @@ func New(origin string) (*RelyingParty, error) {
 	if err != nil || u.Hostname() == "" || (u.Scheme != "https" && u.Scheme != "http") {
 		return nil, fmt.Errorf("passkey: %q is not the web app's origin", origin)
 	}
-	w, err := webauthn.New(&webauthn.Config{RPID: u.Hostname(), RPDisplayName: "Fyniq", RPOrigins: []string{u.Scheme + "://" + u.Host},
+	return newFor(u, u.Hostname(), "Fyniq")
+}
+
+// NewFor is New for another application on a registrable domain it shares with Fyniq (PRD-002 question 10): the relying party ID is rpID,
+// a suffix of the origin's host such as the registrable domain, so one passkey works in both apps, and displayName is what the
+// authenticator shows. Nemura's passkeys are made and checked here.
+func NewFor(origin, rpID, displayName string) (*RelyingParty, error) {
+	u, err := url.Parse(origin)
+	if err != nil || u.Hostname() == "" || (u.Scheme != "https" && u.Scheme != "http") || rpID == "" {
+		return nil, fmt.Errorf("passkey: %q is not the web app's origin", origin)
+	}
+	return newFor(u, rpID, displayName)
+}
+
+func newFor(u *url.URL, rpID, displayName string) (*RelyingParty, error) {
+	w, err := webauthn.New(&webauthn.Config{RPID: rpID, RPDisplayName: displayName, RPOrigins: []string{u.Scheme + "://" + u.Host},
 		AttestationPreference: protocol.PreferNoAttestation,
 		AuthenticatorSelection: protocol.AuthenticatorSelection{ResidentKey: protocol.ResidentKeyRequirementPreferred,
 			UserVerification: protocol.VerificationRequired}})
 	if err != nil {
 		return nil, err
 	}
-	return &RelyingParty{w: w, id: u.Hostname(), origin: u.Scheme + "://" + u.Host}, nil
+	return &RelyingParty{w: w, id: rpID, origin: u.Scheme + "://" + u.Host}, nil
 }
 
 // ID is the relying party ID: the web app's host.

@@ -4,14 +4,14 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, AI, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:b102492da8969bb36d8e38c02ed61da363b51de919e3ab67d8d074b3e2a193c0
+  - docs/user-guide/organisation-settings.md sha256:a37ee004d4468dd6c4f6c81af2533da6bd2a7f2a47802e8ee06f15cef5c9f1da
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
-compiled_at: 2026-11-17
+compiled_at: 2026-11-19
 aliases:
   - company secretary assistant
   - scheduled agent
@@ -274,6 +274,15 @@ The calendar itself: [[compliance.calendar]].
 - A change needs a second approver, as the other accounting settings do.
 
 (src: docs/user-guide/organisation-settings.md#bank-charges)
+
+## Lost disputes
+
+- When a customer's card payment is disputed and lost, the money the provider took back waits in the **disputes** account. Fyniq prepares a draft journal that writes it off to the **dispute losses** account, and it is posted like any other journal.
+- **Lost disputes written off as an expense, up to**: S$100. Up to this amount the draft needs nothing more; above it, the person confirms that they are writing off more than this and says why, because the invoice's revenue stays as invoiced until it is credited.
+- A dispute fee alone is about S$15, so under S$100 it costs more to find the invoice than to write it off. The accountant is asked about the GST on a lost dispute and about amounts above the limit.
+- A change needs a second approver, as the other accounting settings do.
+
+(src: docs/user-guide/organisation-settings.md#lost-disputes)
 
 ## Incoming-funds alerts
 

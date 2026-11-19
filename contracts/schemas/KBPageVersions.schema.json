@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "KBPageVersion.schema.json"
+      },
+      "type": "array"
+    },
+    "key": {
+      "examples": [
+        "org.expense-policy"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "items"
+  ],
+  "title": "KBPageVersions",
+  "type": "object"
+}

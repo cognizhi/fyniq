@@ -24,6 +24,13 @@
       "format": "int64",
       "type": "integer"
     },
+    "kb_pages": {
+      "description": "The knowledge-base page versions it read (AI-12, AI-51): each page and the release or version it came from.",
+      "items": {
+        "$ref": "AIKBPage.schema.json"
+      },
+      "type": "array"
+    },
     "omitted": {
       "description": "How many lists its limits cut.",
       "examples": [
@@ -77,7 +84,8 @@
     "facts",
     "omitted",
     "withheld",
-    "duration_ms"
+    "duration_ms",
+    "kb_pages"
   ],
   "title": "AITurnToolCall",
   "type": "object"

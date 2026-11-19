@@ -116,6 +116,27 @@ services:
     ports:
       - "127.0.0.1:${FYNIQ_PARTNER_AIRWALLEX_PORT:-4012}:4012"
 
+  # Stripe and HitPay (p1-payment-providers task 1.4): hand-made extracts of their reference pages, the read operations Fyniq calls.
+  partner-stripe:
+    image: node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
+    profiles: [partners]
+    command: ["npx", "--yes", "@stoplight/prism-cli@5.14.2", "mock", "--host", "0.0.0.0", "--port", "4013", "/partners/stripe.yaml"]
+    volumes:
+      - ../../contracts/partners:/partners:ro
+      - prism-npm:/root/.npm
+    ports:
+      - "127.0.0.1:${FYNIQ_PARTNER_STRIPE_PORT:-4013}:4013"
+
+  partner-hitpay:
+    image: node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
+    profiles: [partners]
+    command: ["npx", "--yes", "@stoplight/prism-cli@5.14.2", "mock", "--host", "0.0.0.0", "--port", "4014", "/partners/hitpay.yaml"]
+    volumes:
+      - ../../contracts/partners:/partners:ro
+      - prism-npm:/root/.npm
+    ports:
+      - "127.0.0.1:${FYNIQ_PARTNER_HITPAY_PORT:-4014}:4014"
+
   gcs:                                        # Cloud Storage JSON API emulator (Bucket Lock is not emulated)
     image: fsouza/fake-gcs-server:1.56@sha256:797ce226d62f947c009dc40246b30cfb456b8473d8241407f9d6f2c04e4d69ef
     command: ["-scheme", "http", "-port", "4443", "-public-host", "localhost:4443", "-backend", "memory"]
@@ -276,9 +297,38 @@ services:
       NEMURA_PUBLIC_ORIGIN: http://localhost:${NEMURA_HTTP_PORT:-8180}   # Nemura's own origin, through its edge
       NEMURA_API_BASE: /api
       NEMURA_TENANT: local
+      NEMURA_OAUTH_ADMIN_URL: http://nemura-oauth:4445   # Hydra's admin API: never through the edge
     ports: ["127.0.0.1:${NEMURA_API_PORT:-8087}:8080"]
     depends_on: { nemura-migrate: { condition: service_completed_successfully } }
     healthcheck: *health
+
+  # Nemura's own OAuth server (question 11): its own instance of the platform's authorisation server, on its own database, so standalone needs
+  # nothing from Fyniq. It issues tokens to Nemura's API clients (client credentials, private_key_jwt); the web app's sign-in is the API's.
+  nemura-oauth-migrate:
+    <<: *hardened
+    image: oryd/hydra:v26.2.0@sha256:ff67c7fb5f95074fa53374d41151713554960504b340cd3f95b09e65deaea2a9
+    profiles: [people]
+    restart: "no"
+    command: ["migrate", "sql", "up", "-e", "--yes"]
+    environment:
+      DSN: postgres://nemura_hydra:nemura-local-only@postgres:5432/nemura_hydra?sslmode=disable
+    depends_on: { nemura-migrate: { condition: service_completed_successfully } }
+
+  nemura-oauth:
+    <<: *hardened
+    image: oryd/hydra:v26.2.0@sha256:ff67c7fb5f95074fa53374d41151713554960504b340cd3f95b09e65deaea2a9
+    profiles: [people]
+    command: ["serve", "all", "--dev", "--sqa-opt-out"]
+    environment:
+      DSN: postgres://nemura_hydra:nemura-local-only@postgres:5432/nemura_hydra?sslmode=disable
+      URLS_SELF_ISSUER: http://localhost:${NEMURA_HTTP_PORT:-8180}/oauth/
+      URLS_LOGIN: http://localhost:${NEMURA_HTTP_PORT:-8180}/sign-in
+      URLS_CONSENT: http://localhost:${NEMURA_HTTP_PORT:-8180}/sign-in
+      SECRETS_SYSTEM: nemura-local-only-oauth-system-key   # local only; Secret Manager in the cloud
+      OAUTH2_PKCE_ENFORCED: "true"
+      STRATEGIES_ACCESS_TOKEN: opaque                      # introspected, so revocation is seen
+      TTL_ACCESS_TOKEN: 1h                                 # at most 60 minutes
+    depends_on: { nemura-oauth-migrate: { condition: service_completed_successfully } }
 
   nemura-edge:                                # Nemura's own origin on NEMURA_HTTP_PORT, as its production hostname is (NM-INT-12)
     image: caddy:2.10-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
@@ -287,6 +337,7 @@ services:
     volumes: ["./Caddyfile.people:/etc/caddy/Caddyfile:ro"]
     depends_on:
       nemura-api: { condition: service_healthy }
+      nemura-oauth: { condition: service_started }
 
   nemura-worker:                              # background work from the outbox: /tasks and the sweep's /tick (ADR-T7)
     <<: *hardened

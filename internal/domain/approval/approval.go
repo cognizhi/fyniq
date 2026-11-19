@@ -171,6 +171,9 @@ const (
 	// each class may go to beyond the defaults; a person with C on "AI providers and model routes" asks, the Owner
 	// approves; its key is AIDataPolicyKey.
 	ObjectAIDataPolicy = "ai_data_policy"
+	// ObjectKBPublication is a publication of the organisation's knowledge base (AI-56, open question 18): in Founder mode the
+	// Owner publishes alone and it waits in the weekly review (FM-3); in Team mode another Owner signs; its key is KBPublicationKey.
+	ObjectKBPublication = "kb_publication"
 	// ObjectAIRoute is an agent's route (AI-74, AI-26): a version that widens where the agent's data goes, its first
 	// among them, is asked by the Owner or an Administrator and approved by the Owner or a second approver who holds the
 	// row's A; its key is the agent's ID.
@@ -207,6 +210,9 @@ const AIDataPolicyKey = "ai-data-policy"
 
 // TeamModeKey is the object key of a team mode switch: the organisation has one team mode.
 const TeamModeKey = "organisation"
+
+// KBPublicationKey is the object key of a knowledge-base publication: the organisation has one knowledge base.
+const KBPublicationKey = "knowledge-base"
 
 // The operations: what executes on the final approval.
 const (
@@ -326,6 +332,9 @@ const (
 	OpAIConnectionPrice = "ai_connection.price"
 	// OpAIRouteChange makes the asked route its agent's next version (AI-74).
 	OpAIRouteChange = "ai_route.change"
+	// OpKBPublish makes the next snapshot of the organisation's knowledge base: the page versions it names become what the
+	// assistant reads (AI-56, FR-APR-01).
+	OpKBPublish = "kb_publication.publish"
 	// OpAPIClientCreate registers an integration client with the OAuth server and records it (FR-INT-02).
 	OpAPIClientCreate = "api_client.create"
 	// OpAPIClientReclass reclasses a personal access token from agent to integration (FR-INT-02).
@@ -395,6 +404,7 @@ var Operations = map[string]string{
 	OpAIConnectionAllowModel:   ObjectAIConnection,
 	OpAIConnectionPrice:        ObjectAIConnection,
 	OpAIRouteChange:            ObjectAIRoute,
+	OpKBPublish:                ObjectKBPublication,
 	OpAPIClientCreate:          ObjectAPIClient,
 	OpAPIClientReclass:         ObjectAPIClient,
 	OpAIProposalExecute:        ObjectAIProposal,
@@ -521,6 +531,8 @@ var Dependencies = map[string][]string{
 	ObjectAIDataPolicy: {"version"},
 	// the route's version: what it replaces
 	ObjectAIRoute: {"version"},
+	// the pages and versions to publish with each page's digest, and the snapshot they replace: a change to any voids the request
+	ObjectKBPublication: {"pages", "snapshot"},
 	// the client's version and whether it is live ("new" before it exists): what is registered or reclassed
 	ObjectAPIClient: {"status"},
 	// the proposal's status and its payload's hash: what executes
@@ -596,6 +608,7 @@ var Rows = map[string]string{
 	ObjectAIConnection:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectAIDataPolicy:        "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectAIRoute:             "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
+	ObjectKBPublication:       "Knowledge base: compiled pages and index (rev 0.4)",
 	ObjectAPIClient:           "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)",
 	// Who signs a proposal is its task type's (the request names the roles and the command's right); who sees it is the
 	// AI activity log's: each member their own, the Owner and the DPO every one.
@@ -697,6 +710,7 @@ var Policies = map[string]Policy{
 	ObjectAIDataPolicy:        {ObjectType: ObjectAIDataPolicy, Version: "founder/ai_data_policy@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAIRoute:             {ObjectType: ObjectAIRoute, Version: "founder/ai_route@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAPIClient:           {ObjectType: ObjectAPIClient, Version: "founder/api_client@2026-11-17.1", Steps: []Step{{Quorum: 1}}},
+	ObjectKBPublication:       {ObjectType: ObjectKBPublication, Version: "founder/kb_publication@2026-11-19.1", Steps: []Step{{Quorum: 1}}},
 	// Fixed: no policy removes a proposal's step or automates it, in any team mode (AI-P4, AI-06, CTL-AI-03); the request
 	// narrows its step to the task type's approver roles.
 	ObjectAIProposal:         {ObjectType: ObjectAIProposal, Version: "founder/ai_proposal@2026-11-15.1", Steps: []Step{{Quorum: 1}}, Fixed: true},

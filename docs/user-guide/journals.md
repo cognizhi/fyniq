@@ -187,12 +187,19 @@ Attach the files a journal rests on, such as the calculation of an accrual, an i
 resolution, under **Evidence** on the journal's page.
 
 1. Choose the file: a PDF, an image, a CSV or text file, an XLSX or DOCX file, or an email, up to
-   25 MB.
+   25 MB. You can also drop a file on the panel, or select it and paste a screenshot.
 2. Say what it is, such as "calculation" or "invoice", and add a note if it helps.
-3. Say whether it holds personal data or bank details, then select **Attach**.
+3. Set **Date it relates to** if the file has a date that is not today's, such as an invoice's date.
+   Fyniq keeps it with the file.
+4. Say whether it holds personal data or bank details, then select **Attach**.
+
+Several files can go on one journal, each with its own kind, note and date.
 
 - Fyniq decides the file's type from its content, scans it for malware, and strips image metadata
   such as location before keeping it.
+- Select **Details** under a file to see its SHA-256 fingerprint, how it arrived (uploaded or pasted),
+  the personal data it holds and who added it. When Fyniq stripped image metadata, both the
+  fingerprint of the stored file and of the file as you sent it are shown.
 - A HEIC photo, as an iPhone takes by default, is converted to JPEG where your installation has its photo
   converter, and kept as a JPEG; otherwise it is refused and you export it as JPEG first.
 - A file whose text shows an NRIC or FIN in full is marked **Shows an NRIC**: mask the number

@@ -29,6 +29,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/pspevents"
 	"github.com/cognizhi/fyniq/internal/signin"
 	"github.com/cognizhi/fyniq/internal/version"
 	"github.com/cognizhi/fyniq/internal/wiring"
@@ -131,6 +132,8 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	hooks.Register(s)
 	// The bank-data connectors' webhooks (FR-BNK-15, design D11): each verified by its connector and only prompting a sync.
 	(&bankfeed.Hooks{Store: kit.Store, Routes: kit.Store, Runtime: kit.Runtime(deps.Clock), Dispatcher: *d.Outbox, Clock: deps.Clock, Log: d.Log}).Register(s)
+	// The payment-provider connectors' webhooks (FR-PSP-01): each verified by its connector, stored once as received and queued.
+	(&pspevents.Hooks{Store: kit.Store, Routes: kit.Store, Runtime: kit.Runtime(deps.Clock), Dispatcher: *d.Outbox, Clock: deps.Clock, Fields: kit.Fields, Log: d.Log}).Register(s)
 	api.New(s, d)
 	// The email connectors from the deployment's settings, once (rev 0.139); before first-run setup, the tick does it later.
 	bootstrap := func(ctx context.Context) {

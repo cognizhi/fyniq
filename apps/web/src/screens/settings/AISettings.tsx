@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChartColumn, CircleCheck, CircleOff, Hourglass, Pencil, Plus, Power, TriangleAlert } from "lucide-react";
+import { BookOpen, ChartColumn, CircleCheck, CircleOff, Hourglass, Pencil, Plus, Power, TriangleAlert } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -104,10 +104,16 @@ export function AISettings() {
   return (
     <SettingsPage title={h.label} lead={h.tooltip} screen="ai-settings"
       actions={
-        <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/settings/ai/usage">
-          <Icon of={ChartColumn} />
-          {helpText("settings.ai-usage").label}
-        </Link>
+        <>
+          <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/settings/ai/knowledge-base">
+            <Icon of={BookOpen} />
+            {helpText("settings.ai-knowledge-base").label}
+          </Link>
+          <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/settings/ai/usage">
+            <Icon of={ChartColumn} />
+            {helpText("settings.ai-usage").label}
+          </Link>
+        </>
       }>
       {settings.isError && <Refusal problem={problemOf(settings.error)} title="The AI settings could not be shown" />}
       {!settings.data && !settings.isError && <p className="fy-small">Loading the AI settings…</p>}

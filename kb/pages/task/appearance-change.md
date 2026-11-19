@@ -19,6 +19,9 @@ aliases:
   - accessibility settings
   - animations
   - row height
+  - night mode
+  - easier on the eyes
+  - dark theme
 ---
 
 # Change how Fyniq looks: theme, high contrast, density and motion

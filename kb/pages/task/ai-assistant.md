@@ -4,7 +4,7 @@ type: task
 title: Ask the assistant about your books
 summary: The assistant panel (Ctrl+J or ⌘J): ask about this, explain, simulate, figures with sources, rating answers, what it never sees, conversations
 sources:
-  - docs/user-guide/ai-assistant.md sha256:30c671e95fdbace509378532f6fb473fe0eef2f90cff1d0a6b17a525de3f6fc7
+  - docs/user-guide/ai-assistant.md sha256:00cbde2d6712c9e358d086770d8f8a15720bc3db763ab4e1925caa025f9d2797
 data_class: general
 taint: trusted
 status: published
@@ -50,6 +50,14 @@ aliases:
 - Expert mode lists what each figure was read from and its ledger revision.
 
 (src: docs/user-guide/ai-assistant.md#where-each-figure-comes-from)
+
+## Ask how something works
+
+- Ask how Fyniq works, what a status means or what your organisation decided; the assistant answers from the guide in its own words, never from memory, and only from guide pages the person may open. Related: [[help.guide]].
+- A chip beneath the answer names the guide page each explanation comes from and opens it; it never links the assistant's own working notes. A chip marked **awaiting review** points to a guide page not yet reviewed, and the assistant says so.
+- The guide holds no figures of the books, which always come from the books. For a tax rate, threshold or deadline the assistant checks Fyniq's statutory values and says when the guide may be out of date.
+
+(src: docs/user-guide/ai-assistant.md#ask-how-something-works)
 
 ## What it never sees
 
