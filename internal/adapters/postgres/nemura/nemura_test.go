@@ -16,6 +16,8 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura/nemuratest"
+	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/domain/audit"
 )
 
 var update = flag.Bool("update", false, "rewrite the golden files from the database")
@@ -258,8 +260,11 @@ func TestRowLevelSecurityKeepsOrganisationsApart(t *testing.T) {
 	a, b := uuid.New(), uuid.New()
 	insert := func(org uuid.UUID, name string) error {
 		return api.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
-			_, err := tx.Exec(ctx, "INSERT INTO nemura.organisation (name) VALUES ($1)", name)
-			return err
+			if _, err := tx.Exec(ctx, "INSERT INTO nemura.organisation (name) VALUES ($1)", name); err != nil {
+				return err
+			}
+			return nemura.Audit(ctx, tx, org, clock.System{}.Now(), audit.Actor{Type: "user", ID: "test"}, "nemura.org.created",
+				audit.Object{Type: "organisation", ID: org}, map[string]audit.Change{"name": {nil, name}}, "")
 		})
 	}
 	if err := insert(a, "Acme People Pte Ltd"); err != nil {

@@ -71,15 +71,17 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 3. Audit chain, outbox and worker (two slices)
 
-- [ ] 3.1 (slice 3a) Audit in Nemura's database (D5): `audit_chain` and `audit_event` with the append trigger,
+- [x] 3.1 (slice 3a) Audit in Nemura's database (D5): `audit_chain` and `audit_event` with the append trigger,
   the same canonical form and chain rule, a Nemura schema id in `contracts/audit/`, written by the unit of work in
   the same transaction as the change, masked by the shared code, sealed per person and year with the local key
   adapter. Tests `TestNemuraAuditSameTransaction`
   (no tag yet: NM-SEC-01 is tagged in 10.2, when all its clauses are proven), tamper detection (an edited or removed event fails verification), no secret, token
   or full NRIC in an event (`// asvs: V16.2.5` or the matching ID).
+  (Built, 19 Nov 2026: migration 000002, `internal/adapters/postgres/nemura/audit.go` and `audit_test.go`: `TestAChangeAndItsAuditEventCommitTogether`, `TestTheChainDetectsTampering`, `TestNoSecretReachesTheAuditTrail`, `TestOneOrganisationsTrailIsInvisibleToAnother`. The event form is the shared `internal/domain/audit` under the schema id `nemura-audit-event@1`. **Left:** sealing of personal values per person and year (it arrives with the first personal field, in `p1-nemura-records-packs`), and a Nemura schema file in `contracts/audit/`.)
 - [ ] 3.2 (slice 3a) Verification and anchoring: the Nemura storage port's chain reads, the nightly verification
   and the anchors in a Nemura-prefixed bucket (local blob store; the real bucket is `[live-verify]`). Tests: a
   tampered chain fails the nightly check, an anchor mismatch is reported, a restored copy verifies.
+  (Built in part, 19 Nov 2026: `Store.VerifyAudit` recomputes a whole chain from its first event and checks it against the chain head; `TestTheChainDetectsTampering`. **Left:** the anchors in a Nemura-prefixed bucket, the nightly verification job and a restored copy's check, which need the signer and blob ports wired into the worker.)
 - [ ] 3.3 (slice 3b) The outbox and the `worker` role (D6): `outbox` table and its functions, `POST /tasks` with an
   audience-bound task token for `nemura-worker`, retry with backoff, dead-lettering with an alert event, the
   scheduler tick endpoint, and `/jobs` for long work; `nemura_worker` grants. Tests: a task queued while its
