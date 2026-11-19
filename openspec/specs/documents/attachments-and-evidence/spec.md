@@ -532,6 +532,10 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **THEN** it asks the agent document_capture with no tools and a strict output schema, screened before and after, within the AI switch and budgets
 - **AND** it reads a document once unless a person asks again
 
+#### Scenario: A file with an identity number is not read
+- **WHEN** a captured file's text shows an NRIC or FIN in full
+- **THEN** it is kept and flagged, and never sent to the model, which refuses it with the reason
+
 #### Scenario: A person makes the draft
 - **WHEN** a person who may enter bills or claims chooses Draft from a read row
 - **THEN** one draft is made by the same function as `ap.draft_bill` or `exp.draft_claim`, from the reading as they corrected it

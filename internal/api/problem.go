@@ -496,6 +496,7 @@ var codeFacts = map[string]struct {
 	CodeCaptureDuplicate:          {409, "The bill duplicates one already entered"},
 	CodeCaptureType:               {422, "That kind of file cannot be read"},
 	CodeCaptureReading:            {422, "The document could not be read"},
+	CodeCaptureAdopted:            {409, "That mail's file is in the inbox already"},
 	CodeNotifyLocked:              {409, "A security notice is always on"},
 	CodeNotifyTime:                {422, "Not a time of day"},
 	CodeNotifyType:                {404, "No such notification type"},

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Ban, CircleCheck, Copy, Download, FileText, Mail, Sparkles, TriangleAlert, Upload } from "lucide-react";
+import { Ban, CircleCheck, Clock, Copy, Download, FileText, Mail, Sparkles, TriangleAlert, Upload } from "lucide-react";
 import { useId, useState, type ClipboardEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -488,6 +488,7 @@ export function DocumentInbox() {
                   <td data-card="hide">{c.kind ? `${c.kind.replace("_", " ")}${c.supplier ? `, ${c.supplier.name}` : ""}` : "not read yet"}</td>
                   <td data-card="status">
                     <span className={`fy-chip ${c.status === "read" ? "fy-chip--info" : c.status === "drafted" ? "fy-chip--good" : c.status === "failed" || c.status === "duplicate" ? "fy-chip--warning" : "fy-chip--neutral"}`}>
+                      <Icon of={c.status === "drafted" ? CircleCheck : c.status === "failed" || c.status === "duplicate" ? TriangleAlert : c.status === "read" ? FileText : Clock} />
                       {statusWords[c.status] ?? c.status}
                     </span>
                   </td>
@@ -507,6 +508,15 @@ export function DocumentInbox() {
               Download the file
             </Button>
           </div>
+          {chosen.nric_flagged && (
+            <div className="fy-banner fy-banner--warning" role="status">
+              <Icon of={TriangleAlert} size={20} />
+              <div className="fy-banner__text">
+                <span className="fy-strong">It shows an NRIC or FIN in full</span>
+                <span className="fy-small">That number never goes to the model, so this document is not read. Mask it and capture it again, or type the bill in.</span>
+              </div>
+            </div>
+          )}
           {chosen.status === "failed" && <p className="fy-small">{chosen.note}</p>}
           {chosen.status === "duplicate" && <p className="fy-small">The same file is in the inbox already.</p>}
           {chosen.draft && (
@@ -519,12 +529,14 @@ export function DocumentInbox() {
             </p>
           )}
           <ReadingCard c={chosen} />
-          {mayDraft && ["received", "failed", "read"].includes(chosen.status) && (
+          {mayDraft && ["received", "reading", "failed", "read"].includes(chosen.status) && (
             <div className="fy-row fy-row--wrap gap-2">
-              <Button variant="secondary" onClick={() => void read(chosen)} disabled={busy !== ""}>
-                <Icon of={Sparkles} />
-                {chosen.status === "read" ? "Read it again" : "Have it read"}
-              </Button>
+              {chosen.status !== "reading" && !chosen.nric_flagged && (
+                <Button variant="secondary" onClick={() => void read(chosen)} disabled={busy !== ""}>
+                  <Icon of={Sparkles} />
+                  {chosen.status === "read" ? "Read it again" : "Have it read"}
+                </Button>
+              )}
               <label className="fy-sr" htmlFor={`${idPrefix}-why`}>
                 Why you dismiss it
               </label>

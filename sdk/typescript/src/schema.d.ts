@@ -33077,6 +33077,11 @@ export interface components {
              */
             note?: string;
             /**
+             * @description true when its text shows an NRIC or FIN in full (FR-DOC-09): it is never sent to a model, so it is not read; mask it and capture it again, or type the bill in.
+             * @example false
+             */
+            nric_flagged: boolean;
+            /**
              * @description true when it arrived at the caller's own email-in address: only they see it.
              * @example false
              */
@@ -79097,7 +79102,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAP-05` That mail's file is in the inbox already; `STORAGE-LOCK-01` Another change is in progress. */
             409: {
                 headers: {
                     [name: string]: unknown;
