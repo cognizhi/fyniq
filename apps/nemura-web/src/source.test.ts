@@ -65,3 +65,22 @@ describe("the design tokens", () => {
     expect(ours).not.toMatch(/var\(--ai[\w-]*\)/); // AI violet marks AI content, and this app has none yet
   });
 });
+
+// req: NM-UX-06
+describe("the verification banner on the people team's pages", () => {
+  const sourceText = code.filter((f) => f.endsWith(".tsx")).map((f) => readFileSync(f, "utf8")).join("\n");
+  const bannered = (screen: string) => sourceText.includes(`<ReviewBanner screen="${screen}"`);
+
+  it("is on every page the register lists that is built, and on none of the pages it never lists", async () => {
+    const { review } = await import("./review");
+    const { registry } = await import("./registry");
+    const built = new Set(registry.flatMap((e) => (e.kind === "route" ? [e.screen] : [])));
+    const listed = new Set(review.areas.flatMap((a) => a.screens));
+    const missing = [...listed].filter((s) => built.has(s) && !bannered(s));
+    expect(built.size).toBeGreaterThan(20);
+    expect(missing).toEqual([]);
+    for (const never of review.never) {
+      expect(bannered(never), never).toBe(false);
+    }
+  });
+});

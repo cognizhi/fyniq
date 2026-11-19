@@ -1187,3 +1187,44 @@ func TestOnlyTheHRAdministratorAndTheOwnerChangePacksAndPolicies(t *testing.T) {
 		}
 	}
 }
+
+// Nemura holds people data and no company finance: no schema of the contract has a field that names the ledger, a company bank balance, revenue, cash, profit or a trial balance (NM-ROLE-02, FR-PAY-13): a contract
+// scan of every property name.
+// req: NM-ROLE-02, FR-PAY-13
+func TestNoOperationCarriesAFieldOfTheCompanysFinances(t *testing.T) {
+	raw, err := os.ReadFile(contractPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	forbidden := []string{"ledger", "revenue", "cash_balance", "cash_flow", "bank_balance", "profit", "trial_balance", "journal_entry", "company_financial", "gst_", "receivable", "payable_ledger", "general_ledger"}
+	var props []string
+	inProps := false
+	indent := 0
+	for _, line := range strings.Split(string(raw), "\n") {
+		trimmed := strings.TrimLeft(line, " ")
+		if trimmed == "properties:" {
+			inProps, indent = true, len(line)-len(trimmed)
+			continue
+		}
+		if inProps {
+			lead := len(line) - len(trimmed)
+			if trimmed == "" || lead <= indent {
+				inProps = false
+				continue
+			}
+			if lead == indent+2 && strings.HasSuffix(trimmed, ":") {
+				props = append(props, strings.TrimSuffix(trimmed, ":"))
+			}
+		}
+	}
+	if len(props) < 300 {
+		t.Fatalf("the scan found only %d property names: the contract's shape changed", len(props))
+	}
+	for _, p := range props {
+		for _, f := range forbidden {
+			if strings.Contains(strings.ToLower(p), f) {
+				t.Errorf("the property %q names the company's finances (%s)", p, f)
+			}
+		}
+	}
+}
