@@ -689,3 +689,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | compliance.evidence: the PDF preview of an evidence file (p1-documents-evidence 1.3, 4.2)
 
 ## [2026-11-20] compile | leave.apply recompiled, leave.approve new (p1-nemura-leave-time slice 2.1, 2.2)
+
+## [2026-11-20] compile | settings.ai-knowledge-base recompiled: Recompile and the weekly check (p1-knowledge-base 6.3, 8.1, 8.2)

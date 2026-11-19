@@ -144,6 +144,11 @@ Source: PRD-001 §9.11 · Priority M · Phase P1
 - **WHEN** a source changes at runtime
 - **THEN** the runtime compiler job compiles it (AI-57)
 
+#### Scenario: The weekly pass without a model
+- **WHEN** a week passes, or a person recompiles
+- **THEN** deterministic checks across the whole knowledge base (a stale page, a note with no page, a superseded overlay, a link to no page, an orphan) raise findings as the compiler
+- **AND** such advice never publishes and never stops a publication
+
 #### Scenario: The index is generated, never hand-written
 - **WHEN** pages change
 - **THEN** a script regenerates the index from the pages' front matter, so it cannot drift
@@ -253,6 +258,11 @@ Source: PRD-001 §9.11 · Priority M · Phase P1 / P2 (documents)
 Compiled pages and the index SHALL NOT be shown in the normal interface, and Settings → AI → Knowledge base SHALL let the Owner and the Administrator administer them, with every action audited (AUD-01).
 
 Source: PRD-001 §9.11 · Priority M · Phase P1
+
+#### Scenario: Recompile
+- **WHEN** an Owner or Administrator chooses Recompile
+- **THEN** the compiler job is queued for the organisation and the request is audited
+- **AND** it makes drafts and findings only, and is refused with a plain message where no compiler is connected
 
 #### Scenario: Users see the user guide
 - **WHEN** a user uses the normal interface
