@@ -37,6 +37,22 @@ const money = (extra: Partial<MoneyAccount> = {}): MoneyAccount => ({
   version: 1,
   ...extra,
 });
+// A Wise account, for which a stand-in server offers Wise's file (none is built yet: the server decides what is offered).
+const wise = (extra: Partial<MoneyAccount> = {}) =>
+  money({
+    id: "m2",
+    kind: "wallet",
+    name: "Wise USD",
+    institution: "Wise",
+    provider: "wise",
+    currency: "USD",
+    payment_files: [
+      { format: "payment-list", offered: true },
+      { format: "wise-batch", offered: true },
+      { format: "dbs-uff", offered: false, reason: "Payment file: DBS IDEAL's UFF is only for a DBS account, and this account is not at DBS." },
+    ],
+    ...extra,
+  });
 const position = {
   date: "2026-10-26",
   accounts: [
@@ -434,5 +450,100 @@ describe("importing statements", () => {
         spec: { date_formats: ["02/01/2006"], number: {}, date: "Transaction Date", in: "Credit", out: "Debit", balance: "Balance" },
       }),
     );
+  });
+});
+
+// req: FR-BNK-12
+// req: banking/bank-transactions The file is a setting of the money account (rev 0.157)
+describe("a money account's payment file", () => {
+  it("shows the file each bank or wallet account gives, and lists the others with why they are not offered; axe finds nothing", async () => {
+    answer({
+      "GET /v1/money-accounts": { status: 200, body: { items: [money(), wise({ payment_file: "wise-batch" }), money({ id: "m3", name: "Petty cash", kind: "cash", institution: undefined, payment_files: [] })] } },
+      "GET /v1/cash-position": { status: 200, body: position },
+    });
+    renderPage(BankAccounts, { path: "/banking", session: bookkeeper });
+    const dbs = await screen.findByRole("article", { name: /DBS current/ });
+    expect(within(dbs).getAllByText("Payment file")).toHaveLength(2); // its row, and the button that sets it
+    expect(within(dbs).getByText("The payment list")).toBeTruthy();
+    expect(within(await screen.findByRole("article", { name: /Wise USD/ })).getByText("Wise's batch payment file")).toBeTruthy();
+    // Cash is not paid from by a batch: it shows no payment file.
+    expect(within(screen.getByRole("article", { name: /Petty cash/ })).queryByText("Payment file")).toBeNull();
+    fireEvent.click(within(dbs).getByRole("button", { name: "Payment file" }));
+    const group = within(dbs).getByRole("radiogroup", { name: "Payment file" });
+    expect(within(group).getByRole("radio", { name: /The payment list/ }).getAttribute("aria-checked")).toBe("true");
+    const wiseFile = within(group).getByRole("radio", { name: /Wise's batch payment file/ });
+    expect(wiseFile.hasAttribute("disabled")).toBe(true);
+    expect(within(group).getByText(/only for a Wise account, and this account is not at Wise/)).toBeTruthy();
+    expect(within(group).getByText(/DBS IDEAL's UFF is not available yet/)).toBeTruthy();
+    expect(within(dbs).getByRole("button", { name: "Save the payment file" }).hasAttribute("disabled")).toBe(true);
+    await noViolations(document.body);
+  });
+
+  it("changes the file with the whole account as it is, and says what the server refused", async () => {
+    let refuse = false;
+    const sent = answer({
+      "GET /v1/money-accounts": { status: 200, body: { items: [wise({ opened_on: "2026-01-05", cardholder: undefined })] } },
+      "GET /v1/cash-position": { status: 200, body: position },
+      "PUT /v1/money-accounts/m2": (body) =>
+        refuse
+          ? problem(422, "PAYFILE-01", "Payment file: Wise's batch payment file is only for a Wise account.", "Choose the payment list.")
+          : { status: 200, body: wise({ payment_file: (body as { payment_file: "wise-batch" }).payment_file, version: 2 }), headers: { ETag: '"2"' } },
+    });
+    renderPage(BankAccounts, { path: "/banking", session: bookkeeper });
+    const card = await screen.findByRole("article", { name: /Wise USD/ });
+    fireEvent.click(within(card).getByRole("button", { name: "Payment file" }));
+    refuse = true;
+    fireEvent.click(within(card).getByRole("radio", { name: /Wise's batch payment file/ }));
+    fireEvent.click(within(card).getByRole("button", { name: "Save the payment file" }));
+    expect(await screen.findByText("The payment file was not changed")).toBeTruthy();
+    expect(screen.getByText(/only for a Wise account/)).toBeTruthy();
+    refuse = false;
+    fireEvent.click(within(card).getByRole("button", { name: "Save the payment file" }));
+    expect(await within(card).findByText(/Saved: its payment batches give wise's batch payment file from now on/)).toBeTruthy();
+    const puts = sent.filter((s) => s.method === "PUT");
+    expect(puts[1]?.body).toEqual({ kind: "wallet", name: "Wise USD", institution: "Wise", opened_on: "2026-01-05", payment_file: "wise-batch" });
+    expect(puts[1]?.headers.get("If-Match")).toBe('"1"');
+  });
+
+  it("leaves the file as it is for someone who cannot change money accounts", async () => {
+    answer({
+      "GET /v1/money-accounts": { status: 200, body: { items: [money()] } },
+      "GET /v1/cash-position": { status: 200, body: position },
+    });
+    renderPage(BankAccounts, { path: "/banking", session: auditor });
+    const card = await screen.findByRole("article", { name: /DBS current/ });
+    expect(within(card).getByText("The payment list")).toBeTruthy();
+    expect(within(card).queryByRole("button", { name: "Payment file" })).toBeNull();
+  });
+
+  it("offers the bank's names when an account is added, and its payment file beside its data source", async () => {
+    const sent = answer({
+      "GET /v1/accounts": chart,
+      "GET /v1/money-accounts": { status: 200, body: { items: [] } },
+      "POST /v1/money-accounts": { status: 201, body: wise({ id: "m9", payment_file: "payment-list" }), headers: { ETag: '"1"' } },
+      "PUT /v1/money-accounts/m9": { status: 200, body: wise({ id: "m9", payment_file: "wise-batch", version: 2 }), headers: { ETag: '"2"' } },
+      "GET /v1/money-accounts/m9": { status: 200, body: wise({ id: "m9", payment_file: "wise-batch", version: 2 }), headers: { ETag: '"2"' } },
+      "POST /v1/money-accounts/m9/sources": { status: 201, body: wise({ id: "m9", version: 2 }), headers: { ETag: '"2"' } },
+    });
+    const { container } = renderPage(AddBankAccount, { path: "/banking/accounts/new", session: bookkeeper });
+    const bank = await screen.findByLabelText("Bank or provider (optional)");
+    const names = Array.from(container.querySelectorAll(`datalist#${CSS.escape(bank.getAttribute("list") ?? "")} option`)).map((o) => o.getAttribute("value"));
+    expect(names.slice(0, 3)).toEqual(["DBS", "OCBC", "UOB"]);
+    expect(names).toContain("Wise");
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Wise USD" } });
+    const select = screen.getByLabelText("Account in the chart");
+    await waitFor(() => expect(within(select).getAllByRole("option")).toHaveLength(3));
+    fireEvent.change(select, { target: { value: "a1010" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add the account" }));
+    expect(await screen.findByText("Where does Wise USD's data come from?")).toBeTruthy();
+    fireEvent.click(screen.getByRole("radio", { name: /Wise's batch payment file/ }));
+    await noViolations(container);
+    fireEvent.click(screen.getByRole("button", { name: "Save the payment file" }));
+    expect(await screen.findByText(/Saved: its payment batches give wise's batch payment file/)).toBeTruthy();
+    expect(sent.find((s) => s.method === "PUT")?.body).toMatchObject({ kind: "wallet", payment_file: "wise-batch" });
+    // The account's version moved: the page reads it again before it goes on.
+    await waitFor(() => expect(sent.some((s) => s.method === "GET" && s.path === "/v1/money-accounts/m9")).toBe(true));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Wise USD is added")).toBeTruthy();
   });
 });

@@ -1,0 +1,1 @@
+error KB-TYPE kb/pages/task/a.md

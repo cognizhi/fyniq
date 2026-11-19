@@ -113,3 +113,5 @@ aliases:
 - MERGE-03, something scheduled still posts to the account: let the spread, asset or reversal post, or move it to another account, then merge.
 
 (src: docs/user-guide/chart-of-accounts.md#common-problems)
+
+A project is a value of the Project dimension with its own record: see [[projects.projects]].

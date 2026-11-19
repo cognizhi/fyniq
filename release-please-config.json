@@ -26,7 +26,10 @@
       "changelog-path": "CHANGELOG.md",
       "version-file": "VERSION",
       "initial-version": "0.1.0",
-      "extra-files": [{ "type": "generic", "path": "contracts/openapi/fyniq.v1.yaml" }]
+      "extra-files": [
+        { "type": "generic", "path": "contracts/openapi/fyniq.v1.yaml" },
+        { "type": "generic", "path": "contracts/openapi/fyniq-internal.v1.yaml" }
+      ]
     }
   }
 }

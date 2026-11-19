@@ -76,7 +76,7 @@
   port). Class `agent` takes the AI column intersected with the member's roles: reads only today (proposals when `p1-ai-proposals` lands), no write whatever its scopes, until reclassed. No
   migration was needed (000432 already held them). Tests `TestPersonalAccessTokens` (against Hydra),
   `TestAPersonalAccessTokenIsCheckedWhole`, `TestAttackAnAPIClientKeepsItsRules` (the reclass) and the matrix rows; threat
-  model section 5. **Left:** a sweep of expired personal clients from Hydra by the worker [live-verify]; the access review lists no API clients yet (Connected apps, AI-46). **Owner's decisions (18 Nov 2026, PRD-001 rev 0.291):** a token can be made only once the organisation's setting `security.personal_access_tokens` is on (off by default; an Owner turns it on with a second approver; off at once; refused with `API-CLIENT-09` meanwhile; guide `organisation-settings.md`, kb recompiled), and a reclassed token may keep its shared secret (the recorded SEC-07 exception).)
+  model section 5. **Left:** a sweep of expired personal clients from Hydra by the worker [live-verify]; the access review lists no API clients yet (Connected apps, AI-46). **Owner's decisions (18 Nov 2026, PRD-001 rev 0.296):** a token can be made only once the organisation's setting `security.personal_access_tokens` is on (off by default; an Owner turns it on with a second approver; off at once; refused with `API-CLIENT-09` meanwhile; guide `organisation-settings.md`, kb recompiled), and a reclassed token may keep its shared secret (the recorded SEC-07 exception).)
 - [x] 3.2 JSON Schema for every resource, the published API reference, `llms.txt` and the agent guide, all generated from the contract. Test `// req: FR-INT-13`
   (19 Oct 2026: `make openapi` also writes a JSON Schema 2020-12 per resource to `contracts/schemas/`, and
   `docs/api/reference.md` and `docs/api/llms.txt`, from the same document as the contract;
@@ -84,5 +84,14 @@
   its three parts. They are published in the public repository; serving them from an installation comes with
   third-party access in P2)
 - [ ] 3.3 Package the TypeScript client as the SDK. Test `// req: FR-INT-17` (P1 part)
-- [ ] 3.4 Create `contracts/events/` with a schema per event version. A test fails on an emitted event type without a schema or a version (`// req: platform/release-and-versioning Event schema versions`)
+- [x] 3.4 Create `contracts/events/` with a schema per event version. A test fails on an emitted event type without a schema or a version (`// req: platform/release-and-versioning Event schema versions`)
+  (18 Nov 2026: the events the code emits are the notification types, the one event stream (FR-NTF-05: `notify.Emit`
+  accepts only `notify.Catalogue`'s). `contracts/events/schemas/fyniq.<object>.<event>.v1.schema.json` holds each
+  one's data (IDs and the time, never the title: a title may hold names and amounts), and `asyncapi.yaml` is the
+  AsyncAPI 3 document that lists them, both written by `go test ./internal/notify -run TestTheEventCatalogue -update`
+  for a new type. `TestTheEventCatalogue` fails on an emitted type without a schema or a `.vN` version, on a schema
+  for a type nothing emits, and on a stale AsyncAPI document; `TestTheEventCheckRefusesPlantedEvents` plants each
+  fault. The package is `contracts/events` (embedded); no service imports it yet, so the images are unchanged.
+  **Left:** the CloudEvents envelope and webhook delivery are P2 (FR-INT-12); an event type that is not a
+  notification type joins the catalogue with its own emitter.)
 - [ ] 3.5 Finish with `make check` and `make test`

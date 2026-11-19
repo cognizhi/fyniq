@@ -1391,12 +1391,13 @@
     "FR-BNK-01",
     "FR-BNK-13",
     "FR-BNK-16",
-    "FR-BNK-15"
+    "FR-BNK-15",
+    "FR-BNK-12"
    ],
    "purpose": "See every money account, how fresh its data is and what still needs categorising.",
    "content": [
     "Cash position across accounts and currencies at the latest rates (base SGD total)",
-    "Account cards: bank, card, wallet, payment-gateway and cash accounts (DBS current, Wise USD, Airwallex, Stripe clearing), balance, uncategorised count, last sync, 'complete to' date, sync source (file, email report, API)",
+    "Account cards: bank, card, wallet, payment-gateway and cash accounts (DBS current, Wise USD, Airwallex, Stripe clearing), balance, uncategorised count, last sync, 'complete to' date, sync source (file, email report, API); for a bank or wallet its Payment file (the file its payment batches give), changed by whoever may change money accounts",
     "Stale or broken sync ⚠ with the gap ('No statement since 9 Oct')",
     "Actions: Categorise, Import statement, Reconcile, Add account"
    ],
@@ -1427,12 +1428,13 @@
     "FR-BNK-15",
     "FR-BNK-17",
     "FR-BNK-18",
-    "FR-INT-22"
+    "FR-INT-22",
+    "FR-BNK-12"
    ],
    "purpose": "Create a money account and choose how its data arrives, without credential-sharing aggregators.",
    "content": [
-    "Step 1: account type, bank, currency, ledger account code, opening balance date",
-    "Step 2: data source: file import (CSV, MT940, camt.053, OFX), bank reports by email (shows the organisation's bank-ingest address for DBS IDEAL daily reports and incoming-funds alerts), EMI API (Wise, Airwallex read-only key), bank API or host-to-host (P2)",
+    "Step 1: account type, bank (picked from the list of banks and providers Fyniq knows, or typed: it decides which payment files the account may give), currency, ledger account code, opening balance date",
+    "Step 2: data source: file import (CSV, MT940, camt.053, OFX), bank reports by email (shows the organisation's bank-ingest address for DBS IDEAL daily reports and incoming-funds alerts), EMI API (Wise, Airwallex read-only key), bank API or host-to-host (P2). A bank or wallet account also shows its Payment file: the payment list, Wise's batch payment file or DBS IDEAL's UFF, each offered only for an account at that bank and once Fyniq writes it, with the reason when not (rev 0.157)",
     "Step 3: test and first sync; continuity check result",
     "Explainer: connectors are read-only; payments go out as approved files"
    ],
@@ -1796,7 +1798,7 @@
     "Item table: payee, document (bill, claim, pay run), amount, payee bank-details version, holds",
     "Holds explained: IR21 clearance hold, withholding-tax decision pending, payee bank details changed (re-approval required)",
     "Approval steps; release after step-up by the Payment releaser: in Founder mode whoever prepared or approved it, never one person alone; in Standard mode a third person (rev 0.154)",
-    "Release posts each payment and gives the payment list (CSV; SGD to Singapore accounts by FAST or GIRO) with its hash, keyed into the bank until the bank's own file is built (rev 0.156); P2 initiate via bank API",
+    "Release posts each payment and gives the file the money account is set to (the payment list, a CSV, until the bank's own file is built; rev 0.157) with its hash; the download button names the file; P2 initiate via bank API",
     "Evidence: bank confirmation screenshot or file; mark paid when the feed shows the debit",
     "Remittance advice emailed to each supplier when its payment matches the bank statement line (rev 0.154)"
    ],
