@@ -43,8 +43,6 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-10-20] compile | home.md, sign-in.md, profile-and-security.md → home.overview, auth.sign-in, preferences.security (Settings and Profile and security pages in the web app)
 
-## [2026-10-20] compile | home.md, sign-in.md, profile-and-security.md → home.overview, auth.sign-in, preferences.security (Settings and Profile and security pages in the web app)
-
 ## [2026-10-20] compile | approvals.md → approvals.decide (Inbox, the request page and its confirmation, the review log in the web app)
 
 ## [2026-10-20] compile | members-and-roles.md → members.roles, members.invite (Settings › Members and roles in the web app)
@@ -111,8 +109,6 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-10-22] compile | docs/user-guide/currencies.md → accounting.currencies (new: exchange rates, the cascade, adding, importing and withdrawing rates); docs/user-guide/journals.md → accounting.journals (a line's rate left blank takes the cascade's; FX-01)
 
-## [2026-10-22] compile | docs/user-guide/currencies.md → accounting.currencies (new: exchange rates, the cascade, adding, importing and withdrawing rates); docs/user-guide/journals.md → accounting.journals (a line's rate left blank takes the cascade's; FX-01)
-
 ## [2026-10-22] compile | docs/user-guide/currencies.md → accounting.currencies (revalue a month; FX-05 to FX-07); docs/user-guide/periods-and-close.md → accounting.periods (the revaluation close check); docs/user-guide/chart-of-accounts.md → accounting.chart (the revalued-at-month-end flag; COA-10)
 
 ## [2026-10-22] compile | docs/user-guide/currencies.md → accounting.currencies (the money accounts in other currencies, in both currencies)
@@ -156,8 +152,6 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-23] compile | docs/user-guide/contacts-and-items.md, docs/user-guide/document-templates.md → contacts.manage, settings.templates (a contact's own templates, chosen with Templates in Contacts; FR-TPL-05, rev 0.101)
 
 ## [2026-10-23] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (Email-in: quarantined mail kept for 30 days, or until someone decides; FR-INT-22, rev 0.106)
-
-## [2026-10-24] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the notification email details setting, rev 0.108)
 
 ## [2026-10-24] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the notification email details setting, rev 0.108)
 
@@ -230,8 +224,6 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-10-27] compile | docs/user-guide/fixed-assets.md → accounting.fixed-assets (new: the fixed asset register, p1-fixed-assets task 5.2)
 
 ## [2026-10-27] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (rev 0.151: the recommended mileage rates S$0.60 and S$0.25, and 1160 as the disposal clearing account)
-
-## [2026-10-27] compile | docs/user-guide/chart-of-accounts.md, docs/user-guide/fixed-assets.md → accounting.chart, accounting.fixed-assets (rev 0.151: the default useful life on an asset account, offered by the register's form; 88 accounts with 1160)
 
 ## [2026-10-27] compile | docs/user-guide/chart-of-accounts.md, docs/user-guide/fixed-assets.md → accounting.chart, accounting.fixed-assets (rev 0.151: the default useful life on an asset account, offered by the register's form; 88 accounts with 1160)
 
@@ -341,8 +333,6 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-06] compile | team-mode.md, payment-batches.md, approvals.md, organisation-settings.md → settings.team-mode, purchases.payment-batches, approvals.decide, settings.organisation, settings.change (break-glass, FM-8, PRD-001 rev 0.175)
 
-## [2026-11-06] compile | team-mode.md, payment-batches.md, approvals.md, organisation-settings.md → settings.team-mode, purchases.payment-batches, approvals.decide, settings.organisation, settings.change (break-glass, FM-8, PRD-001 rev 0.175)
-
 ## [2026-11-06] compile | accountant-review.md (new), periods-and-close.md → accounting.reviews (new), accounting.periods (the accountant's review, FM-7, PRD-001 rev 0.176)
 
 ## [2026-11-06] compile | approvals.md → approvals.decide (what approving would post, FR-APR-02, PRD-001 rev 0.177)
@@ -368,8 +358,6 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-06] compile | docs/user-guide/contacts-and-items.md → contacts.manage (what a contact stands at: balances, the year's totals, ageing and activity; FR-CT-02)
 
-## [2026-11-06] compile | docs/user-guide/contacts-and-items.md → contacts.manage (what a contact stands at: balances, the year's totals, ageing and activity; FR-CT-02)
-
 ## [2026-11-06] compile | docs/user-guide/notifications.md → settings.notifications (a notification by row follows the role; SEC-34)
 
 ## [2026-11-06] compile | docs/user-guide/contacts-and-items.md → contacts.manage (each item's sales this financial year, FR-ITM-01, rev 0.187)
@@ -377,8 +365,6 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-06] compile | docs/user-guide/evidence-search.md, journals.md → compliance.evidence, accounting.journals (open or save an evidence file, FR-DOC-01, rev 0.188)
 
 ## [2026-11-06] compile | docs/user-guide/journals.md → accounting.journals (a manual journal to a control account shows a warning, INV-07, question 55, rev 0.189)
-
-## [2026-11-06] compile | docs/user-guide/search.md, home.md → shell.search (new), home.overview (the global search, FR-UX-02, rev 0.190)
 
 ## [2026-11-06] compile | docs/user-guide/search.md, home.md → shell.search (new), home.overview (the global search, FR-UX-02, rev 0.190)
 
@@ -397,8 +383,6 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | sign-in.md, members-and-roles.md, sign-in-providers.md → auth.sign-in, members.invite, settings.sign-in-providers (joining by email domain, FR-ADM-08, PRD-001 rev 0.199); members.remove, members.roles rehashed
 
 ## [2026-11-07] compile | logo-and-brand.md (new) → settings.brand (new) (logo, icon, SVG cleaning and accent colour, FR-ORG-09, PRD-001 rev 0.200)
-
-## [2026-11-07] compile | docs/user-guide/logo-and-brand.md → settings.brand (the logo drawn for documents, the brand in force when a document was issued, BRAND-04; rev 0.201)
 
 ## [2026-11-07] compile | docs/user-guide/logo-and-brand.md → settings.brand (the logo drawn for documents, the brand in force when a document was issued, BRAND-04; rev 0.201)
 
@@ -443,8 +427,6 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-07] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the statutory calendar's settings and the evidence rule for filings, p1-gst slice 3a)
 
 ## [2026-11-07] compile | docs/user-guide/statutory-calendar.md, docs/user-guide/gst-registration.md → compliance.calendar, compliance.record-filing, compliance.gst, compliance.gst-forecast (new guide pages, p1-gst slice 4); settings.organisation links them
-
-## [2026-11-08] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the Cash buffer setting, planning.buffer_months; p1-planning slice 3)
 
 ## [2026-11-08] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the Cash buffer setting, planning.buffer_months; p1-planning slice 3)
 
@@ -505,8 +487,6 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-10] compile | docs/user-guide/contacts-and-items.md, audit-trail.md → contacts.manage, compliance.audit-trail (a person or a company; sealed and shredded personal values, §11.8)
 
 ## [2026-11-10] compile | docs/user-guide/compliance-data-protection.md → compliance.data-protection (shredding at the end of retention and anonymisation, §11.8, §11.9)
-
-## [2026-11-11] compile | docs/user-guide/home.md → home.overview (REL-05: Help, About Fyniq, the version and commit in every export's footer)
 
 ## [2026-11-11] compile | docs/user-guide/home.md → home.overview (REL-05: Help, About Fyniq, the version and commit in every export's footer)
 
@@ -644,8 +624,11 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-18] compile | docs/user-guide/approvals.md → approvals.decide (FM-6: unusual items in the weekly review, rev 0.287)
 
+## [2026-11-18] compile | docs/user-guide/banking.md and payment-batches.md → banking.accounts, banking.add-account, purchases.payment-batches (the money account's Payment file and the download label naming it, FR-BNK-12; the other banking pages re-hashed, unchanged)
+
 ## [2026-11-18] compile | docs/user-guide/ai-activity.md -> settings.ai-activity (an answer's know-how page versions in the activity log, AI-12, AI-51)
 
 ## [2026-11-18] compile | docs/user-guide/ai-assistant.md -> ai.assistant (ask how something works: know-how answers with chips to guide pages, AI-51, AI-53)
 
 ## [2026-11-18] edit | added aliases for users' own wording to 17 pages after the QA-AI-06 retrieval baseline (a retrieval miss is fixed in the compile step, AI-58)
+## [2026-11-19] compile | docs/user-guide/projects-projects.md → projects.projects (the projects screens, p1-projects slice 1)

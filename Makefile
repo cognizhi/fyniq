@@ -8,6 +8,9 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 
 COMPOSE := docker compose -f deploy/local/compose.yaml
+# PEOPLE=yes adds Nemura, the optional people platform (PRD-002), to `make up` and `make dev`: the compose profile `people`.
+PEOPLE ?=
+PROFILES := --profile core$(if $(filter yes,$(PEOPLE)), --profile people)
 DESIGN := docs/design-system/fyniq
 SCREENS := docs/design/screens
 # OpenSpec CLI: the installed one, else the pinned version through npx (CI)
@@ -15,7 +18,7 @@ OPENSPEC ?= $(shell command -v openspec >/dev/null 2>&1 && echo openspec || echo
 export OPENSPEC_TELEMETRY := 0
 # The pinned toolchain from mise.toml when mise is installed; the tools on PATH otherwise
 MISE := $(shell command -v mise >/dev/null 2>&1 && echo "mise exec --")
-GO_IMAGES := api ai mcp worker executor render migrate jobs scanner clamd
+GO_IMAGES := api ai mcp worker executor render migrate jobs scanner clamd nemura
 # Mutation testing scope (QA-ENG-04): money, the rounding policies and the posting engine
 # Each Go test binary's limit: the API's authorisation matrix (20 roles × every operation) takes 20 to 25 minutes on a CI
 # runner beside the other database suites, and one run on a slow runner passed 30 (3 Nov 2026), past go test's default of
@@ -78,13 +81,14 @@ dev: ## Run the stack with hot reload: dependencies in Docker, the Go services a
 	@$(MAKE) --no-print-directory seed
 	@$(MISE) scripts/dev.sh
 
-up: ## Run the stack from the local flavour of the images, behind Caddy on http://localhost:8080
+up: ## Run the stack from the local flavour of the images, behind Caddy on http://localhost:8080 (PEOPLE=yes adds Nemura)
 	@$(MAKE) --no-print-directory images FLAVOURS=local PIN_CHECK=no
-	@$(COMPOSE) --profile core up -d --wait
+	@$(COMPOSE) $(PROFILES) up -d --wait
 	@echo "Fyniq       http://localhost:$${FYNIQ_HTTP_PORT:-8080}   (API http://localhost:$${FYNIQ_API_PORT:-8081}/version)"
+	@$(if $(filter yes,$(PEOPLE)),echo "Nemura      API http://localhost:$${NEMURA_API_PORT:-8087}/version   (the people platform, PRD-002)")
 
-down: ## Stop the stack started by `make up` (keeps the database volume)
-	@$(COMPOSE) --profile core down
+down: ## Stop the stack started by `make up`, Nemura included (keeps the database volume)
+	@$(COMPOSE) --profile core --profile people down
 
 seed: ## Write the sample company (DEV-04) to .data/seed/company.json
 	@$(MISE) go run -tags local ./cmd/seed --out .data/seed/company.json
@@ -109,7 +113,7 @@ restore-drill: ## The restore drill now against the local database (DR-06): a co
 	@$(MISE) go run -tags local ./cmd/jobs restore-drill
 
 reset: ## Stop everything and delete local data: the database volume and .data/
-	@$(COMPOSE) --profile core down -v
+	@$(COMPOSE) --profile core --profile people down -v
 	@rm -rf .data
 	@echo "✔ local data removed; run make dev to start again"
 
