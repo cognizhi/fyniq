@@ -7,6 +7,8 @@
 //	NEMURA_ROLE=migrate nemura up   apply Nemura's migrations under nemura_migrator, then exit
 //	NEMURA_ROLE=migrate nemura status   list the migrations and whether each is applied
 //	NEMURA_ROLE=migrate nemura setup-code   create the one-time first-run setup code and print it, once
+//	NEMURA_ROLE=migrate nemura owner-recovery <organisation id> <member id> "<name>, <name>"
+//	                                the deployment's two-person recovery of an Owner: print a one-time code, valid 24 hours, once
 //	nemura --version                what the build is
 //	nemura healthcheck              probe the running role's /readyz (a distroless image has no shell or curl)
 //
@@ -19,6 +21,7 @@ package main
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -27,6 +30,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/httpserver"
+	"github.com/cognizhi/fyniq/internal/nemura/alert"
 	"github.com/cognizhi/fyniq/internal/nemura/identity"
 	"github.com/cognizhi/fyniq/internal/nemura/outbox"
 	"github.com/cognizhi/fyniq/internal/nemura/role"
@@ -62,8 +66,14 @@ func run(args []string, getenv func(string) string) int {
 		fmt.Fprintf(os.Stderr, "nemura: %v\n", err)
 		return 2
 	}
+	if err := checkRegion(getenv, flavour); err != nil {
+		fmt.Fprintf(os.Stderr, "nemura: %v\n", err)
+		return 2
+	}
 	if r == role.Migrate {
-		return app.Run(r.Service(), func(ctx context.Context, _ app.Deps, args []string) error { return migrate(ctx, getenv, args) })
+		return app.Run(r.Service(), func(ctx context.Context, deps app.Deps, args []string) error {
+			return migrate(ctx, getenv, args, deps.Clock)
+		})
 	}
 	return app.Serve(r.Service(), func(s *httpserver.Server, deps app.Deps) error { return routes(r, s, deps, getenv) })
 }
@@ -115,17 +125,26 @@ func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) strin
 	if err != nil {
 		return err
 	}
-	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock}
+	// The pay-day path's failure alert (NM-NFR-05): the sweep raises a notice for each person to tell about a dead pay-day job, and the worker
+	// delivers it. The local build and a deployment with no channel yet log it; email and in-app delivery arrive with notifications.
+	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock, Raise: store.RaisePayDayAlerts}
 	s.Handle("POST /tasks", &outbox.Handler{Class: outbox.ClassWorker, Store: store, Tokens: tokens, Clock: deps.Clock,
-		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: map[string]outbox.Work{}})
+		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: map[string]outbox.Work{alert.KindNotify: alert.Work(alert.LogNotifier{}, deps.Clock)}})
 	s.Handle("POST /tick", outbox.Tick{Dispatcher: disp, Tokens: tokens, Class: outbox.ClassWorker})
 	return nil
 }
 
 // migrate is the migrate role: `up` applies every pending migration, `status` lists them.
-func migrate(ctx context.Context, getenv func(string) string, args []string) error {
+func migrate(ctx context.Context, getenv func(string) string, args []string, clock ports.Clock) error {
+	const usage = "usage: NEMURA_ROLE=migrate nemura up | nemura status | nemura setup-code | nemura owner-recovery <organisation id> <member id> \"<name>, <name>\""
+	if len(args) == 0 {
+		return errors.New(usage)
+	}
+	if args[0] == "owner-recovery" {
+		return ownerRecovery(ctx, getenv, args[1:], clock)
+	}
 	if len(args) != 1 || (args[0] != "up" && args[0] != "status" && args[0] != "setup-code") {
-		return fmt.Errorf("usage: NEMURA_ROLE=migrate nemura up | nemura status | nemura setup-code")
+		return errors.New(usage)
 	}
 	url, err := databaseURL(role.Migrate, getenv)
 	if err != nil {

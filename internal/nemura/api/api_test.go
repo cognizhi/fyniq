@@ -72,6 +72,13 @@ func (f fakePasskeys) BeginStepUp(context.Context, Session) ([]byte, error) {
 }
 func (f fakePasskeys) CompleteStepUp(context.Context, Session, []byte) error { return f.err }
 
+type fakeSignIn struct{ done bool }
+
+func (fakeSignIn) Providers() []Provider {
+	return []Provider{{ID: "local", Name: "Local sign-in (development)"}}
+}
+func (f fakeSignIn) SetupDone(context.Context) (bool, error) { return f.done, nil }
+
 // fakeClients registers whatever it is told and answers with clientsErr.
 type fakeClients struct{ err error }
 
@@ -91,7 +98,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -485,5 +492,28 @@ func TestOnlyTheOwnerManagesAPIClientsWithAFreshPasskeyConfirmation(t *testing.T
 	rec := do(true, true, "POST", "/v1/api-clients", clientBody)
 	if !strings.Contains(rec.Body.String(), `"audience":"nemura-api"`) || strings.Contains(rec.Body.String(), "public_key") || strings.Contains(rec.Body.String(), `"x"`) {
 		t.Errorf("a registered client shows its audience and no key: %s", rec.Body.String())
+	}
+}
+
+// The sign-in page's information needs no session: the providers in order and whether setup is done.
+// req: NM-ARC-01
+func TestTheSignInPageLearnsTheProvidersAndWhetherSetupIsDone(t *testing.T) {
+	_, mux := testAPI(t)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/v1/sign-in", nil))
+	var body struct {
+		Providers []Provider `json:"providers"`
+		SetupDone bool       `json:"setup_done"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || rec.Code != http.StatusOK || len(body.Providers) != 1 || body.Providers[0].ID != "local" || !body.SetupDone {
+		t.Errorf("%d %s", rec.Code, rec.Body.String())
+	}
+	// With no provider wired (the release flavour before Identity Platform), the page gets none, not an error.
+	mux2 := http.NewServeMux()
+	New(mux2, Deps{Clock: clock.NewFrozen(testNow)})
+	rec = httptest.NewRecorder()
+	mux2.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/v1/sign-in", nil))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"providers":[]`) {
+		t.Errorf("no provider wired: %d %s", rec.Code, rec.Body.String())
 	}
 }

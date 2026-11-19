@@ -1,0 +1,22 @@
+# CTL-NM-04: PRD-001 Appendix F (F.9). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-NM-04
+section: "F.9"
+control: "An Owner who cannot sign in is recovered only by two named operators with the migrator credential: a one-time code valid 24 hours, kept as a hash, used once, audited with both names, replacing every other sign-in, session and passkey of that member"
+mapping: "ISO 5.17, 5.18; SOC2 CC6.1"
+automated_check: "Attack tests: one operator, the same operator twice, a non-Owner, a replayed, older, expired, forged or other organisation's code, the application roles' grants"
+frequency: "CI, E (each recovery)"
+evidence: "Test report; the trail's `nemura.owner.recovery_issued` and `nemura.owner.recovered` events"
+owner: Owner
+checks:
+  - frequency: CI
+    status: running
+    how: "test TestAnOwnerIsRecoveredByTwoOperatorsWithAOneTimeCode"
+    evidence: "two different named operators, an active Owner, a code used once within 24 hours and only if newest, every other sign-in, session and passkey replaced, the application roles unable to issue or replace without it; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestFirstRunAndAnInvitationTakeAPlaceThroughTheBrowser"
+    evidence: "the command and the browser flow end to end, a wrong and a used code refused; CI artefact test-report (90 days)"
+  - frequency: E
+    status: manual
+    evidence: "the trail's nemura.owner.recovery_issued and nemura.owner.recovered events for each recovery, with the change-log record the runbook asks for (docs/runbooks/nemura-first-run.md)"

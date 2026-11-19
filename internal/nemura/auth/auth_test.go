@@ -42,6 +42,8 @@ func (f *fakeSignIn) Finish(_ context.Context, _ string, cb *url.URL, s ports.Si
 }
 
 type fakeStore struct {
+	joined      []string // what FirstRun and AcceptInvitation were given
+	joinErr     error
 	done        bool
 	memberships []Membership
 	started     int
@@ -62,6 +64,20 @@ func (s *fakeStore) StartSession(_ context.Context, _, _ uuid.UUID, _ time.Time)
 func (s *fakeStore) EndSession(_ context.Context, token string, _ time.Time) error {
 	s.ended = append(s.ended, token)
 	return nil
+}
+
+func (s *fakeStore) FirstRun(_ context.Context, code []byte, _ time.Time, organisation, name string, who identity.Identity) (uuid.UUID, uuid.UUID, error) {
+	s.joined = append(s.joined, "setup:"+string(code)+":"+organisation+":"+name+":"+who.Subject)
+	return uuid.New(), uuid.New(), s.joinErr
+}
+func (s *fakeStore) AcceptInvitation(_ context.Context, code string, _ time.Time, who identity.Identity) (uuid.UUID, uuid.UUID, error) {
+	s.joined = append(s.joined, "invitation:"+code+":"+who.Subject)
+	return uuid.New(), uuid.New(), s.joinErr
+}
+
+func (s *fakeStore) RecoverOwner(_ context.Context, code string, _ time.Time, who identity.Identity) (uuid.UUID, uuid.UUID, error) {
+	s.joined = append(s.joined, "recovery:"+code+":"+who.Subject)
+	return uuid.New(), uuid.New(), s.joinErr
 }
 
 func newFlow(origin string) (Flow, *fakeSignIn, *fakeStore, *http.ServeMux) {
@@ -220,5 +236,124 @@ func TestSigningOutEndsTheSessionAndRefusesAnotherSite(t *testing.T) {
 	rec := out("same-origin")
 	if c := cookieOf(rec, "nemura_session"); rec.Code != http.StatusSeeOther || c == nil || c.MaxAge != -1 || len(st.ended) != 1 || st.ended[0] != "tok-1" {
 		t.Errorf("signing out: %d, %v, ended %v", rec.Code, c, st.ended)
+	}
+}
+
+// join posts the sign-in form's code and returns the browser's next request, the one that starts the sign-in with the code's cookie.
+func join(t *testing.T, mux *http.ServeMux, form url.Values) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/auth/join", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	return rec
+}
+
+// A person takes a place with a code: the invitation's, or the deployment's one-time setup code. The code waits in an HttpOnly cookie, never in
+// a URL, and the callback uses it once with the identity the provider proved: the first organisation's Owner, or the invited member. Wrong
+// forms, wrong codes and a code from another site are refused in plain codes, with no session (NM-ARC-01).
+// req: NM-ARC-01
+// asvs: V7.2.1, V3.3.1, V2.1.1
+func TestACodeTakesAPlaceWithTheIdentityTheProviderProved(t *testing.T) {
+	f, si, st, mux := newFlow("http://localhost:8180")
+	st.memberships, st.done = nil, false
+	rec := join(t, mux, url.Values{"provider": {"local"}, "kind": {"setup"}, "code": {" setup-code "}, "organisation": {"Acme Pte Ltd"}, "name": {"Sam"}, "return_to": {"/me"}})
+	c := cookieOf(rec, f.joinCookie())
+	loc := rec.Header().Get("Location")
+	if rec.Code != http.StatusSeeOther || c == nil || !c.HttpOnly || c.SameSite != http.SameSiteLaxMode || c.MaxAge != int(joinLifetime/time.Second) || loc != "/api/auth/signin?provider=local&return_to=%2Fme" {
+		t.Fatalf("join: %d %+v %s", rec.Code, c, loc)
+	}
+	if strings.Contains(loc, "setup-code") {
+		t.Error("the code is in a URL")
+	}
+	// The browser starts the sign-in, comes back with the join cookie, and the first organisation is made with the proved identity.
+	cb := begin(t, mux, si, f, "/me")
+	cb.AddCookie(c)
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, cb)
+	if rec.Header().Get("Location") != "/me" || cookieOf(rec, "nemura_session") == nil || st.started != 1 {
+		t.Fatalf("callback: %s %v %d", rec.Header().Get("Location"), cookieOf(rec, "nemura_session"), st.started)
+	}
+	if len(st.joined) != 1 || st.joined[0] != "setup:"+string(identity.Hash("setup-code"))+":Acme Pte Ltd:Sam:sam" {
+		t.Errorf("first run was given %v", st.joined)
+	}
+	if jc := cookieOf(rec, f.joinCookie()); jc == nil || jc.MaxAge != -1 {
+		t.Error("the code is not used once")
+	}
+
+	// An invitation links the identity to the invited member, even for someone who belongs elsewhere already.
+	st.memberships, st.joined = []Membership{{uuid.New(), uuid.New()}}, nil
+	rec = join(t, mux, url.Values{"provider": {"local"}, "kind": {"invitation"}, "code": {"inv-1"}})
+	cb = begin(t, mux, si, f, "/")
+	cb.AddCookie(cookieOf(rec, f.joinCookie()))
+	mux.ServeHTTP(httptest.NewRecorder(), cb)
+	if len(st.joined) != 1 || st.joined[0] != "invitation:inv-1:sam" {
+		t.Errorf("accepting an invitation was given %v", st.joined)
+	}
+
+	// A recovery code takes the member's place with the account signed in, even for an account that belongs elsewhere already.
+	st.joined = nil
+	rec = join(t, mux, url.Values{"provider": {"local"}, "kind": {"recovery"}, "code": {"rec-1"}})
+	cb = begin(t, mux, si, f, "/")
+	cb.AddCookie(cookieOf(rec, f.joinCookie()))
+	mux.ServeHTTP(httptest.NewRecorder(), cb)
+	if len(st.joined) != 1 || st.joined[0] != "recovery:rec-1:sam" {
+		t.Errorf("a recovery was given %v", st.joined)
+	}
+
+	// Setup for an account that belongs to an organisation is refused before the database is asked.
+	st.joined = nil
+	rec = join(t, mux, url.Values{"provider": {"local"}, "kind": {"setup"}, "code": {"c"}, "organisation": {"X"}, "name": {"Y"}})
+	cb = begin(t, mux, si, f, "/")
+	cb.AddCookie(cookieOf(rec, f.joinCookie()))
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, cb)
+	if rec.Header().Get("Location") != "/sign-in?signin_error="+CodeJoinRefused || len(st.joined) != 0 {
+		t.Errorf("setup by someone who belongs: %s %v", rec.Header().Get("Location"), st.joined)
+	}
+
+	// A wrong code is the database's one answer, a failing database is another, and neither leaves a session.
+	st.memberships, st.started = nil, 0
+	for err, want := range map[error]string{identity.Refused(): CodeJoinRefused, errors.New("the database is down"): CodeFailure} {
+		st.joinErr = err
+		rec = join(t, mux, url.Values{"provider": {"local"}, "kind": {"invitation"}, "code": {"nope"}})
+		cb = begin(t, mux, si, f, "/")
+		cb.AddCookie(cookieOf(rec, f.joinCookie()))
+		rec = httptest.NewRecorder()
+		mux.ServeHTTP(rec, cb)
+		if rec.Header().Get("Location") != "/sign-in?signin_error="+want || cookieOf(rec, "nemura_session") != nil || st.started != 0 {
+			t.Errorf("%v: %s", err, rec.Header().Get("Location"))
+		}
+	}
+	st.joinErr = nil
+
+	// Incomplete forms, an unknown provider and a form from another site set no cookie.
+	for name, form := range map[string]url.Values{
+		"no code":           {"provider": {"local"}, "kind": {"invitation"}},
+		"no kind":           {"provider": {"local"}, "code": {"c"}},
+		"setup with no org": {"provider": {"local"}, "kind": {"setup"}, "code": {"c"}, "name": {"Y"}},
+		"unknown provider":  {"provider": {"nope"}, "kind": {"invitation"}, "code": {"c"}},
+		"a long code":       {"provider": {"local"}, "kind": {"invitation"}, "code": {strings.Repeat("x", 201)}},
+	} {
+		rec = join(t, mux, form)
+		if rec.Header().Get("Location") != "/sign-in?signin_error="+CodeJoinRefused || cookieOf(rec, f.joinCookie()) != nil {
+			t.Errorf("%s: %s", name, rec.Header().Get("Location"))
+		}
+	}
+	req := httptest.NewRequest(http.MethodPost, "/auth/join", strings.NewReader("provider=local&kind=invitation&code=c"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Header().Get("Location") != "/sign-in?signin_error="+CodeJoinRefused || cookieOf(rec, f.joinCookie()) != nil {
+		t.Errorf("another site: %s", rec.Header().Get("Location"))
+	}
+	// A forged or truncated cookie is not a join.
+	cb = begin(t, mux, si, f, "/")
+	cb.AddCookie(&http.Cookie{Name: f.joinCookie(), Value: "not-base64-json"})
+	st.joined = nil
+	mux.ServeHTTP(httptest.NewRecorder(), cb)
+	if len(st.joined) != 0 {
+		t.Errorf("a forged join cookie was used: %v", st.joined)
 	}
 }

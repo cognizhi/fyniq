@@ -71,6 +71,24 @@ func NewSetupCode() (display string, hash []byte) {
 	return secret, Hash(secret)
 }
 
+// RecoveryTTL is how long an Owner's recovery code works (FR-ADM-09, as Fyniq's deployment recovery).
+const RecoveryTTL = 24 * time.Hour
+
+// Operators reads the two names of the people who issue a recovery, as "name, name": exactly two, each 1 to 100 characters, and different
+// (compared without regard to case). The database checks the same again (NM110).
+func Operators(list string) ([]string, error) {
+	var names []string
+	for _, n := range strings.Split(list, ",") {
+		if n = strings.TrimSpace(n); n != "" {
+			names = append(names, n)
+		}
+	}
+	if len(names) != 2 || strings.EqualFold(names[0], names[1]) || len(names[0]) > 100 || len(names[1]) > 100 {
+		return nil, &Refusal{CodeRecoveryOperators, "A recovery needs exactly two different operators, by name: OPERATORS=\"<name>, <name>\"."}
+	}
+	return names, nil
+}
+
 // Refusal is a plain refusal with a stable code.
 type Refusal struct{ Code, Message string }
 
@@ -81,6 +99,9 @@ const (
 	CodeSignInRefused = "NM_SIGNIN_REFUSED" // the code or token is wrong, used, expired or revoked: one answer for all, so it tells an attacker nothing
 	CodeSetupRefused  = "NM_SETUP_REFUSED"  // the setup code is wrong, or setup is done
 	CodeStepUp        = "NM_STEP_UP_REQUIRED"
+
+	CodeRecoveryOperators = "NM_RECOVERY_OPERATORS" // not exactly two different operator names
+	CodeRecoveryMember    = "NM_RECOVERY_MEMBER"    // the member is not an active Owner of that organisation
 )
 
 // Refused is the one refusal for any code or token that does not open: it never says which part was wrong.

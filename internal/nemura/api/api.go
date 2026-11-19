@@ -50,6 +50,7 @@ func Config(v string) huma.Config {
 	cfg.Tags = []*huma.Tag{
 		{Name: "Platform", Description: "What the service is and the error codes it returns (NM-ARC-03)."},
 		{Name: "API clients", Description: "Systems that call Nemura's API on their own, registered by the Owner with a key pair they hold (NM-ARC-06)."},
+		{Name: "Sign-in", Description: "What the sign-in page shows: the providers on offer and whether first-run setup is done."},
 		{Name: "Session", Description: "Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02)."},
 	}
 	return cfg
@@ -92,11 +93,24 @@ type Sessions interface {
 	RolesAt(ctx context.Context, org, member uuid.UUID, on time.Time) ([]authz.Role, error)
 }
 
+// Provider is a sign-in provider people may use, in the order to offer them.
+type Provider struct {
+	ID   string `json:"id" doc:"The provider's ID, passed to /auth/signin." example:"google"`
+	Name string `json:"name" doc:"As the sign-in page names it." example:"Google"`
+}
+
+// SignInInfo is what the sign-in page needs: the providers on offer and whether first-run setup is done.
+type SignInInfo interface {
+	Providers() []Provider
+	SetupDone(ctx context.Context) (bool, error)
+}
+
 // Deps are what the API is given.
 type Deps struct {
 	Sessions Sessions
 	Passkeys Passkeys
 	Clients  APIClients
+	SignIn   SignInInfo
 	Clock    ports.Clock
 	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
 	CookieNames []string
@@ -115,6 +129,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerSession()
 	a.registerPasskeys()
 	a.registerClients()
+	a.registerSignIn()
 	return a
 }
 

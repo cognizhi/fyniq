@@ -4,7 +4,7 @@ type: task
 title: Bills
 summary: Entering, posting and approving a supplier's bill; claiming its GST; recurring bills; spreading a prepaid cost; payments; voiding or editing a bill
 sources:
-  - docs/user-guide/bills.md sha256:373f4916fc39ce6e2d5e88dceb1e4c097ad377c934e4802eab195e1dabaca43d
+  - docs/user-guide/bills.md sha256:1d6958012456916b88e928d4fa34b934e490ccb78efddad112f543781e15909a
 data_class: general
 taint: trusted
 status: draft
@@ -102,7 +102,7 @@ aliases:
 
 ## Attach the supplier's invoice
 
-- Under **Evidence** on a saved bill or credit note: choose the file, say what it is (such as the invoice or a receipt) and select **Attach**. PDF, image, CSV, text, XLSX, DOCX and email files of up to 25 MB are accepted; Fyniq scans each one and strips image metadata such as location. A HEIC photo, as an iPhone takes by default, is not accepted yet: export it as JPEG first. A file whose text shows an NRIC or FIN in full is marked **Shows an NRIC**: mask the number before sharing it.
+- Under **Evidence** on a saved bill or credit note: choose the file, say what it is (such as the invoice or a receipt) and select **Attach**. PDF, image, CSV, text, XLSX, DOCX and email files of up to 25 MB are accepted; Fyniq scans each one and strips image metadata such as location. A HEIC photo, as an iPhone takes by default, is converted to JPEG where the installation has its photo converter, and refused otherwise: then export it as JPEG first. A file whose text shows an NRIC or FIN in full is marked **Shows an NRIC**: mask the number before sharing it.
 - While the bill is a draft a file can come off again; once it is posted its files are kept with it and never deleted, for as long as the records are, and a file added later is kept the same way.
 
 - A bill posts only with the supplier's invoice or receipt attached, unless the organisation's **Evidence for bills** setting says otherwise ([[settings.organisation]]).

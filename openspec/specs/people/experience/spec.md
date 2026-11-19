@@ -87,6 +87,11 @@ Source: PRD-002 §3 · Priority M · Phase P1
 - **WHEN** a line manager applies for leave
 - **THEN** they cannot approve it themselves
 
+#### Scenario: An Owner who cannot sign in
+- **GIVEN** an Owner whose sign-in account is lost
+- **WHEN** two named operators with the migrator credential issue a recovery code
+- **THEN** the code works once within 24 hours, replaces every other sign-in, session and passkey of that Owner, and the audit trail records both operators
+
 ### Requirement: NM-UX-01 Nemura's own design system
 Nemura SHALL use its own design system with Fyniq's semantic token names, tokens only, contrast validated in four themes, and AI content always violet with the AI badge.
 

@@ -121,6 +121,11 @@ Source: PRD-002 §4 · Priority M · Phase P1
 - **WHEN** the people-assistant runtime tries to write a pay run, a record or an issued letter
 - **THEN** its database role refuses it, and it can only insert a proposal
 
+#### Scenario: API clients are the Owner's
+- **WHEN** an API client is registered or revoked
+- **THEN** it needs the Owner and a passkey confirmed in the last five minutes, and a second approver arrives with the Fyniq link
+
+
 ### Requirement: NM-NFR-01 Region and residency
 Nemura SHALL run in Google Cloud `asia-southeast1`, work offline in local mode once it has code, and scale to zero.
 

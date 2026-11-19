@@ -301,6 +301,16 @@ Source: PRD-001 §8.16 · Priority M · Phase P1
 - **AND** a HEIC image is converted to JPEG
 - **AND** image metadata such as location is stripped
 
+#### Scenario: HEIC conversion through the converter (rev 0.292)
+- **GIVEN** the installation has a converter (the converter port, a service of its own in the cloud)
+- **WHEN** a HEIC photo is attached
+- **THEN** it is scanned as received, converted to JPEG, the picture scanned again, stripped of metadata and kept as a JPEG
+- **AND** the SHA-256 of the original and of the file kept are both recorded; a photo the converter cannot read is refused in plain words, and with no converter a HEIC photo is refused as before
+
+#### Scenario: The size limit is an organisation setting (rev 0.292)
+- **WHEN** an organisation lowers `evidence.max_file_mb`
+- **THEN** a file above it is refused, saying the limit; the limit is never above 25 MB
+
 #### Scenario: Office files with macros
 - **WHEN** an office file with macros is uploaded
 - **THEN** it is rejected

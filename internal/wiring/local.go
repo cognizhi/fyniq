@@ -91,7 +91,7 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 		// Local mode keeps staging and committed evidence under their own prefixes of the same directory, which
 		// enforces retention in code, and scans with clamd when FYNIQ_CLAMD_ADDR names one (the stack's scanner
 		// profile), else with the EICAR fake (SEC-24).
-		Staging: blobs, Evidence: blobs, Scanner: scanner(local.EICARScanner{}),
+		Staging: blobs, Evidence: blobs, Scanner: scanner(local.EICARScanner{}), Converter: converter(os.Getenv),
 		Mail:   LocalMail(os.Getenv),
 		Origin: cmp.Or(os.Getenv("FYNIQ_PUBLIC_ORIGIN"), "http://localhost:8080"),
 		// The daily rate feed from files of synthetic rates, one per date (FR-GL-05).
@@ -151,6 +151,15 @@ func scanner(fallback ports.Scanner) ports.Scanner {
 		return clamav.Scanner{Addr: addr}
 	}
 	return fallback
+}
+
+// converter is the stand-in converter when FYNIQ_CONVERTER_STANDIN is 1, else none: a real HEIC photo is refused with its
+// plain message rather than turned into a flat-colour picture, as no real engine is in the pinned toolchain (FR-DOC-08).
+func converter(env func(string) string) ports.Converter {
+	if env("FYNIQ_CONVERTER_STANDIN") == "1" {
+		return local.StandInConverter{}
+	}
+	return nil
 }
 
 // LocalMail is local mode's email (ADR-T4, PRD-001 §8.24): Mailpit (`make deps-up`, or the stack's mailpit) for sending,
