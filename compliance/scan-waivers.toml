@@ -221,6 +221,20 @@ expires = 2027-04-15
 [[waiver]]
 tool = "gosec"
 rule = "G101"
+path = "internal/adapters/postgres/nemura/bootstrap_local.go"
+reason = "LocalPassword is the password of Nemura's throw-away local and test database roles, compiled only into the local build (DEV-07) and valid nowhere else (SEC-12)."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "gosec"
+rule = "G101"
+path = "internal/adapters/postgres/nemura/nemuratest/nemuratest.go"
+reason = "The passwords of the test container's superuser and of a probe login: throw-away values in a package compiled only with the local tag, for Testcontainers databases that exist for one test run (DEV-07, SEC-12)."
+expires = 2027-04-15
+
+[[waiver]]
+tool = "gosec"
+rule = "G101"
 path = "internal/adapters/local/devtokens.go"
 reason = "DevTokenKey signs the local issuer's dev tokens; it is compiled only into the local build (DEV-07), and a release build accepts no dev token."
 expires = 2027-04-15
