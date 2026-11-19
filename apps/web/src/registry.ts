@@ -339,6 +339,8 @@ export const actions = [
   { kind: "action", id: "time.correct", mode: "basic", help: "time.correct", guide: "projects.time#correct-approved-time" },
   { kind: "action", id: "time.missing", mode: "basic", help: "time.missing", guide: "projects.time#days-with-no-time" },
   { kind: "action", id: "project.milestones", mode: "expert", help: "project.milestones", guide: "projects.billing#fixed-fee-and-retainer" },
+  { kind: "action", id: "project.profitability", mode: "expert", help: "project.profitability", guide: "projects.reports#a-projects-own-profitability" },
+  { kind: "action", id: "project.export", mode: "expert", help: "project.export", guide: "projects.reports#export-the-report" },
   { kind: "action", id: "project.unbilled", mode: "expert", help: "project.unbilled", guide: "projects.billing#what-a-project-can-bill" },
   { kind: "action", id: "project.billable", mode: "expert", help: "project.billable", guide: "projects.costs#bill-a-cost-on-to-the-customer" },
   { kind: "action", id: "rates.cost", mode: "expert", help: "rates.cost", guide: "projects.rates#enter-cost-rates" },

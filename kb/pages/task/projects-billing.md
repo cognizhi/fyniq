@@ -4,14 +4,14 @@ type: task
 title: Bill a project's time and costs
 summary: What Unbilled work lists, how to draft the invoice, when the work counts as billed, and the check on time left uninvoiced
 sources:
-  - docs/user-guide/projects-billing.md sha256:669e5cbab15d9572c6aca3ab893bcb4c7a0641983835b4cdc381054cd8486f3e
+  - docs/user-guide/projects-billing.md sha256:2eb3db78bd0e58006dc2197b0e0339773654d822aaf75eba4b8174189ba5b16f
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-sonnet-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-19
+compiled_at: 2026-11-20
 aliases:
   - unbilled work
   - draft invoice from a project
@@ -32,6 +32,8 @@ aliases:
 - **Draft an invoice** saves an ordinary draft invoice to the project's customer, a line a person and rate for the time and a line a cost, on the
   revenue account and GST code you choose; the Accountant and the AR specialist can do it.
   (src: docs/user-guide/projects-billing.md#draft-the-invoice)
+
+The assistant can propose this draft for a project when asked to invoice it by its code: the customer, the lines and the total are shown and a person who may draft the invoice approves it ([[ai.proposals]]). (src: docs/user-guide/projects-billing.md#draft-the-invoice)
 
 ## Billed once
 

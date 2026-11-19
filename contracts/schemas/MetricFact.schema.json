@@ -99,17 +99,19 @@
       "type": "string"
     },
     "unit": {
-      "enum": [
+      "description": "What the value is: amount, percent, months, ratio, days or minutes; more may be added.",
+      "examples": [
+        "amount"
+      ],
+      "type": "string",
+      "x-extensible-enum": [
         "amount",
         "percent",
         "months",
         "ratio",
-        "days"
-      ],
-      "examples": [
-        "amount"
-      ],
-      "type": "string"
+        "days",
+        "minutes"
+      ]
     },
     "value": {
       "description": "Exact decimal text, as the report shows it before rounding for display; absent when the fact has no value.",

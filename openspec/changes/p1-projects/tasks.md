@@ -106,8 +106,10 @@ project's Rates card; G4-050 tests.
 Built (slice 4, PR 864): `projectreport` (revenue and direct costs through `balance.BySet`, payroll-cost accounts listed apart, time at cost at the viewer's tier,
 utilisation, realisation, budget use); `GET /v1/reports/projects` and the time-entries drill (hours only); Reports > Projects; checks C.1 #26, C.1 #27 and
 C.2 #41; migration `000605` (a week's `submitted_at` from the application's clock); PRD-001 rev 0.296. Utilisation uses 8 hours a weekday less public holidays until
-FR-PPL-07 supplies working patterns. Deferred: the CSV export and the semantic-layer metrics of 4.2, and the project record's profitability tile (the report and
-the Unbilled card carry them).
+FR-PPL-07 supplies working patterns. Deferred then, built 20 Nov 2026 (PRD-001 rev 0.331): the CSV and Excel export of 4.2 (`GET /v1/reports/projects/export`, the caller's own columns, audited), the semantic layer's
+Project dimension and `project_minutes` measure (the `metrics.query` tool is version 2; hours only, never a rate or a cost; a manager sees only their projects), and the project
+record's Profitability card of 4.4 (the report's row at the viewer's tier, the rate named, the small-group warning, the approved entries on request, Export CSV). The time-cost
+margin is not a semantic measure by decision (it depends on the viewer's tier; the assistant is never given a person's cost).
 
 ## 5. Billing and project costs (slice 5)
 
@@ -129,14 +131,14 @@ Invoiced entries are locked by the trigger's marks (an entry is billed once), no
 
 ## Left (named, not forgotten)
 
-- **Fixed-fee revenue over time** (FR-PRJ-11, P2), **the AI's draft** of a time-and-materials invoice (an AI read tool over the unbilled view), **the CSV export and metrics of 4.2** and
-  **the project record's profitability tile** (4.4): not built; the report and the Unbilled card carry the figures.
+- **Fixed-fee revenue over time** (FR-PRJ-11, P2): left out, as the PRD says (the CSV export, metrics and profitability tile are built, PRD-001 rev 0.331; the AI's draft is built, rev 0.332).
 
 - **FR-PRJ-09** per-task budgets, forecasts at completion, alerts at 80% and 100%, change orders: in this change's plan
   row, outside the commission; the project's own budget in hours and money and its use are built (slice 4).
 - **The payroll-derived default cost rate** (FR-PRJ-06), **working patterns and leave in available hours**
   (FR-PPL-07): need payroll and Nemura.
-- **The PWA timer** (P2); **FR-PRJ-11** revenue over time (P2); **the AI draft** of a time-and-materials invoice, as an AI
-  read tool for the unbilled view (needs the AI slice's read-tool registry and its red-team cases).
+- **The PWA timer** (P2); **FR-PRJ-11** revenue over time (P2). **The AI draft** of a time-and-materials invoice is built (20 Nov 2026, PRD-001 rev 0.332) as the
+  catalogue task type `ar.draft_invoice` version 1 through the proposal path, naming the project by its code; **left:** its proposal eval suite (it needs a sample company with an
+  approved-time project; recorded model runs are `[live-verify]`), and **an owner decision** on whether the AI may read project reports and the unbilled view.
 - **The Owner's grant of person-level rates** to another person (FR-PRJ-06; FR-PAY-13's grant mechanism).
 - **Decisions A to H** (design): the owner confirms or changes them; each is built on its recommendation.

@@ -15,6 +15,7 @@ import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { billingNames, hours, keepers, statusNames, type ProjectTask } from "./data";
 import { ProjectForm } from "./ProjectForm";
 import { ProjectMilestones } from "./ProjectMilestones";
+import { ProjectProfitability } from "./ProjectProfitability";
 import { ProjectRates } from "./ProjectRates";
 import { ProjectUnbilled } from "./ProjectUnbilled";
 import { FeatureOff } from "./Projects";
@@ -304,6 +305,7 @@ export function ProjectRecord() {
               </div>
             )}
           </section>
+          <ProjectProfitability project={projectId} startsOn={p.starts_on ?? undefined} />
           <ProjectRates project={projectId} billed={p.billing_method !== "internal"} may={may} />
           {(p.billing_method === "fixed_fee" || p.billing_method === "retainer") && <ProjectMilestones project={projectId} method={p.billing_method} />}
           <ProjectUnbilled project={projectId} />

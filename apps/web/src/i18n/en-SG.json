@@ -2267,6 +2267,14 @@
       "label": "Add a project",
       "tooltip": "A project is a value of your Project dimension, so lines you tag with it already count towards it. Choose how it is billed, its customer and who works on it."
     },
+    "project.profitability": {
+      "label": "Profitability",
+      "tooltip": "This project's revenue, direct costs, margin and approved time over its last twelve months or since it started. Time is costed at the rate you may see, and the card says which."
+    },
+    "project.export": {
+      "label": "Export the report",
+      "tooltip": "Download the projects' rows as CSV or Excel. A file holds only the figures your own report shows."
+    },
     "project.people": {
       "label": "People on the project",
       "tooltip": "Members log time on the project. A manager also approves that time, but only a person who holds the Approver or Controller role can: naming someone a manager gives them no right of its own."

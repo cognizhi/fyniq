@@ -2,11 +2,10 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -265,11 +264,6 @@ func (a *API) projectInvoiceDraft(ctx context.Context, u storage.UnitOfWork, pr 
 	if in.MilestoneID != "" {
 		return a.milestoneInvoiceDraft(ctx, u, pr, account, code, in)
 	}
-	un, err := projectbilling.Of(ctx, u, pr, base)
-	if err != nil {
-		return invoice.Draft{}, err
-	}
-	cur := un.Currency
 	day, err := orgToday(ctx, a, u)
 	if err != nil {
 		return invoice.Draft{}, err
@@ -280,95 +274,30 @@ func (a *API) projectInvoiceDraft(ctx context.Context, u storage.UnitOfWork, pr 
 		}
 	}
 	// The entries and costs to bill: those asked for, or all that can be.
-	wantTime, wantExp := map[uuid.UUID]bool{}, map[string]bool{}
+	opts := projectbilling.DraftOptions{AccountID: account, GSTCode: code, Day: day}
 	for i, s := range in.TimeEntryIDs {
 		t, err := uuid.Parse(string(s))
 		if err != nil {
 			return invoice.Draft{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.time_entry_ids[" + strconv.Itoa(i) + "]", Message: "is not an ID", Fix: "Send the time entry's ID"}})
 		}
-		wantTime[t] = true
+		opts.TimeEntries = append(opts.TimeEntries, t)
 	}
 	for i, x := range in.Expenses {
 		t, err := uuid.Parse(x.DocumentID)
 		if err != nil {
 			return invoice.Draft{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.expenses[" + strconv.Itoa(i) + "].document_id", Message: "is not an ID", Fix: "Send the bill's or claim's ID"}})
 		}
-		wantExp[fmt.Sprintf("%s/%d", t, x.Line)] = true
+		opts.Expenses = append(opts.Expenses, projectbilling.ExpenseRef{DocumentID: t, Line: x.Line})
 	}
-	names, err := memberNames(ctx, u, a.deps.Clock.Now())
-	if err != nil {
+	if opts.Names, err = memberNames(ctx, u, a.deps.Clock.Now()); err != nil {
 		return invoice.Draft{}, err
 	}
-	one, err := money.ParseQuantity("1", "quantity")
-	if err != nil {
-		return invoice.Draft{}, err
+	d, err := projectbilling.InvoiceDraft(ctx, u, pr, base, opts)
+	var pe *projectbilling.Error
+	if errors.As(err, &pe) {
+		return d, problem(pe.Code, pe.Message, pe.Fix)
 	}
-	d := invoice.Draft{CustomerID: *pr.CustomerID, Date: day, Currency: cur, Reference: pr.Code}
-	billing := &invoice.ProjectBilling{ProjectID: pr.ID}
-	line := func(desc string, amount money.Money) error {
-		price, err := money.ParseUnitPrice(amount.String(), cur, "unit_price")
-		if err != nil {
-			return err
-		}
-		d.Lines = append(d.Lines, invoice.Line{Description: desc, Quantity: one, UnitPrice: price, AccountID: account, GSTCode: code, Values: []uuid.UUID{pr.ID}})
-		return nil
-	}
-	// Time: a line a person and a rate, in date order, its amount the sum of its entries' RND-TIME values.
-	type group struct {
-		user    uuid.UUID
-		rate    string
-		minutes int
-		from    time.Time
-		to      time.Time
-		value   money.Money
-	}
-	var groups []*group
-	for _, t := range un.Time {
-		if len(wantTime) > 0 && !wantTime[t.EntryID] {
-			continue
-		}
-		var g *group
-		for _, x := range groups {
-			if x.user == t.UserID && x.rate == t.Rate.String() {
-				g = x
-			}
-		}
-		if g == nil {
-			g = &group{user: t.UserID, rate: t.Rate.String(), from: t.Date, to: t.Date, value: money.Zero(cur)}
-			groups = append(groups, g)
-		}
-		g.minutes += t.Minutes
-		g.to = t.Date
-		if g.value, err = g.value.Add(*t.Value); err != nil {
-			return d, err
-		}
-		billing.TimeEntries = append(billing.TimeEntries, t.EntryID)
-	}
-	for _, g := range groups {
-		desc := fmt.Sprintf("%s, %s to %s: %s at %s %s an hour", names[g.user], g.from.Format(time.DateOnly), g.to.Format(time.DateOnly), hoursText(g.minutes), g.rate, cur.Code)
-		if err := line(desc, g.value); err != nil {
-			return d, err
-		}
-	}
-	for _, x := range un.Expenses {
-		if len(wantExp) > 0 && !wantExp[fmt.Sprintf("%s/%d", x.DocumentID, x.Line)] {
-			continue
-		}
-		desc := x.Label
-		if x.MarkupPercent != "" && x.MarkupPercent != "0" {
-			desc += fmt.Sprintf(" (cost plus %s%% markup)", x.MarkupPercent)
-		}
-		if err := line(strings.TrimSpace(desc), x.Billable); err != nil {
-			return d, err
-		}
-		billing.Expenses = append(billing.Expenses, invoice.BilledExpense{DocumentID: x.DocumentID, Line: x.Line})
-	}
-	if len(d.Lines) == 0 {
-		return d, problem(projectbilling.CodeNothing, "Nothing is ready to bill on the project.", "Approve its time, enter a billing rate for it, or mark costs billable")
-	}
-	slices.SortStableFunc(billing.TimeEntries, func(x, y uuid.UUID) int { return strings.Compare(x.String(), y.String()) })
-	d.ProjectBilling = billing
-	return d, nil
+	return d, err
 }
 
 // hoursText is minutes as "9 h 30 min".

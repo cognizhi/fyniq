@@ -22,6 +22,12 @@ leave_head | nemura_migrator | true | true
 leave_ledger | nemura_migrator | true | true
 leave_request | nemura_migrator | true | true
 legal_hold | nemura_migrator | true | true
+letter_issued | nemura_migrator | true | true
+letter_link | nemura_migrator | true | true
+letter_request | nemura_migrator | true | true
+letter_settings | nemura_migrator | true | true
+letter_template_version | nemura_migrator | true | true
+letter_type | nemura_migrator | true | true
 member | nemura_migrator | true | true
 organisation | nemura_migrator | true | true
 outbox | nemura_migrator | true | true
@@ -270,6 +276,70 @@ legal_hold | reason | text | true |
 legal_hold | placed_by | uuid | true | 
 legal_hold | placed_on | date | true | 
 legal_hold | released_on | date | false | 
+letter_issued | organisation_id | uuid | true | nemura.current_org()
+letter_issued | id | uuid | true | uuidv7()
+letter_issued | request_id | uuid | true | 
+letter_issued | person_id | uuid | true | 
+letter_issued | type_key | text | true | 
+letter_issued | reference | text | true | 
+letter_issued | blob_key | text | true | 
+letter_issued | sha256 | bytea | true | 
+letter_issued | template_id | uuid | true | 
+letter_issued | data | jsonb | true | 
+letter_issued | signatory | uuid | true | 
+letter_issued | authority | text | true | 
+letter_issued | envelope | jsonb | true | 
+letter_issued | issued_at | timestamp with time zone | true | 
+letter_issued | replaces | uuid | false | 
+letter_link | organisation_id | uuid | true | nemura.current_org()
+letter_link | id | uuid | true | uuidv7()
+letter_link | issued_id | uuid | true | 
+letter_link | token_hash | bytea | true | 
+letter_link | expires_at | timestamp with time zone | true | 
+letter_link | created_by | uuid | true | 
+letter_link | created_at | timestamp with time zone | true | 
+letter_request | organisation_id | uuid | true | nemura.current_org()
+letter_request | id | uuid | true | uuidv7()
+letter_request | person_id | uuid | true | 
+letter_request | type_key | text | true | 
+letter_request | template_id | uuid | true | 
+letter_request | purpose | text | true | 
+letter_request | data | jsonb | true | 
+letter_request | state | text | true | 'requested'::text
+letter_request | due_on | date | true | 
+letter_request | requested_by | uuid | true | 
+letter_request | requested_at | timestamp with time zone | true | 
+letter_request | reference | text | false | 
+letter_request | render_blob | text | false | 
+letter_request | render_sha256 | bytea | false | 
+letter_request | checked_by | uuid | false | 
+letter_request | checked_at | timestamp with time zone | false | 
+letter_request | decision_reason | text | false | 
+letter_request | decided_at | timestamp with time zone | false | 
+letter_settings | organisation_id | uuid | true | nemura.current_org()
+letter_settings | company_name | text | true | 
+letter_settings | uen | text | true | 
+letter_settings | address | text | true | 
+letter_settings | updated_by | uuid | true | 
+letter_settings | updated_at | timestamp with time zone | true | 
+letter_template_version | organisation_id | uuid | true | nemura.current_org()
+letter_template_version | id | uuid | true | uuidv7()
+letter_template_version | type_key | text | true | 
+letter_template_version | version | integer | false | 
+letter_template_version | blocks | jsonb | true | 
+letter_template_version | note | text | false | 
+letter_template_version | state | text | true | 'draft'::text
+letter_template_version | created_by | uuid | true | 
+letter_template_version | created_at | timestamp with time zone | true | 
+letter_template_version | approved_by | uuid | false | 
+letter_template_version | approved_at | timestamp with time zone | false | 
+letter_type | organisation_id | uuid | true | nemura.current_org()
+letter_type | id | uuid | true | uuidv7()
+letter_type | type_key | text | true | 
+letter_type | enabled | boolean | true | 
+letter_type | due_days | integer | true | 
+letter_type | updated_by | uuid | true | 
+letter_type | updated_at | timestamp with time zone | true | 
 member | organisation_id | uuid | true | nemura.current_org()
 member | id | uuid | true | uuidv7()
 member | display_name | text | true | 
@@ -882,6 +952,108 @@ legal_hold | legal_hold_reason_not_null | NOT NULL reason
 legal_hold | legal_hold_record_type_format | CHECK (((record_type ~ '^[a-z][a-z0-9_-]*$'::text) AND (length(record_type) <= 60)))
 legal_hold | legal_hold_record_type_not_null | NOT NULL record_type
 legal_hold | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+letter_issued | letter_issued_authority_not_null | NOT NULL authority
+letter_issued | letter_issued_blob_key_not_null | NOT NULL blob_key
+letter_issued | letter_issued_data_not_null | NOT NULL data
+letter_issued | letter_issued_envelope_not_null | NOT NULL envelope
+letter_issued | letter_issued_id_not_null | NOT NULL id
+letter_issued | letter_issued_issued_at_not_null | NOT NULL issued_at
+letter_issued | letter_issued_organisation_id_not_null | NOT NULL organisation_id
+letter_issued | letter_issued_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+letter_issued | letter_issued_person_id_not_null | NOT NULL person_id
+letter_issued | letter_issued_pkey | PRIMARY KEY (organisation_id, id)
+letter_issued | letter_issued_reference_not_null | NOT NULL reference
+letter_issued | letter_issued_reference_once | UNIQUE (organisation_id, reference)
+letter_issued | letter_issued_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES nemura.letter_request(organisation_id, id)
+letter_issued | letter_issued_request_id_not_null | NOT NULL request_id
+letter_issued | letter_issued_request_once | UNIQUE (organisation_id, request_id)
+letter_issued | letter_issued_sha | CHECK ((octet_length(sha256) = 32))
+letter_issued | letter_issued_sha256_not_null | NOT NULL sha256
+letter_issued | letter_issued_signatory_fkey | FOREIGN KEY (organisation_id, signatory) REFERENCES nemura.member(organisation_id, id)
+letter_issued | letter_issued_signatory_not_null | NOT NULL signatory
+letter_issued | letter_issued_template_fkey | FOREIGN KEY (organisation_id, template_id) REFERENCES nemura.letter_template_version(organisation_id, id)
+letter_issued | letter_issued_template_id_not_null | NOT NULL template_id
+letter_issued | letter_issued_type_key_not_null | NOT NULL type_key
+letter_issued | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+letter_link | letter_link_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+letter_link | letter_link_created_at_not_null | NOT NULL created_at
+letter_link | letter_link_created_by_not_null | NOT NULL created_by
+letter_link | letter_link_expires_at_not_null | NOT NULL expires_at
+letter_link | letter_link_id_not_null | NOT NULL id
+letter_link | letter_link_issued_fkey | FOREIGN KEY (organisation_id, issued_id) REFERENCES nemura.letter_issued(organisation_id, id)
+letter_link | letter_link_issued_id_not_null | NOT NULL issued_id
+letter_link | letter_link_organisation_id_not_null | NOT NULL organisation_id
+letter_link | letter_link_pkey | PRIMARY KEY (organisation_id, id)
+letter_link | letter_link_token | CHECK ((octet_length(token_hash) = 32))
+letter_link | letter_link_token_hash_not_null | NOT NULL token_hash
+letter_link | letter_link_token_once | UNIQUE (token_hash)
+letter_link | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+letter_request | letter_request_by_fkey | FOREIGN KEY (organisation_id, requested_by) REFERENCES nemura.member(organisation_id, id)
+letter_request | letter_request_checked_by_fkey | FOREIGN KEY (organisation_id, checked_by) REFERENCES nemura.member(organisation_id, id)
+letter_request | letter_request_checked_state | CHECK (((state <> ALL (ARRAY['checked'::text, 'issued'::text])) OR (render_sha256 IS NOT NULL)))
+letter_request | letter_request_checked_whole | CHECK ((((render_sha256 IS NULL) = (render_blob IS NULL)) AND ((render_sha256 IS NULL) = (reference IS NULL)) AND ((render_sha256 IS NULL) = (checked_by IS NULL)) AND ((render_sha256 IS NULL) = (checked_at IS NULL))))
+letter_request | letter_request_data_not_null | NOT NULL data
+letter_request | letter_request_due_on_not_null | NOT NULL due_on
+letter_request | letter_request_id_not_null | NOT NULL id
+letter_request | letter_request_organisation_id_not_null | NOT NULL organisation_id
+letter_request | letter_request_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+letter_request | letter_request_person_id_not_null | NOT NULL person_id
+letter_request | letter_request_pkey | PRIMARY KEY (organisation_id, id)
+letter_request | letter_request_purpose_length | CHECK (((length(btrim(purpose)) >= 1) AND (length(btrim(purpose)) <= 300)))
+letter_request | letter_request_purpose_not_null | NOT NULL purpose
+letter_request | letter_request_reason_length | CHECK (((decision_reason IS NULL) OR (length(decision_reason) <= 500)))
+letter_request | letter_request_reference_once | UNIQUE (organisation_id, reference)
+letter_request | letter_request_refusal_reason | CHECK (((state <> 'refused'::text) OR (length(btrim(COALESCE(decision_reason, ''::text))) > 0)))
+letter_request | letter_request_requested_at_not_null | NOT NULL requested_at
+letter_request | letter_request_requested_by_not_null | NOT NULL requested_by
+letter_request | letter_request_state | CHECK ((state = ANY (ARRAY['requested'::text, 'checked'::text, 'refused'::text, 'issued'::text, 'withdrawn'::text])))
+letter_request | letter_request_state_not_null | NOT NULL state
+letter_request | letter_request_template_fkey | FOREIGN KEY (organisation_id, template_id) REFERENCES nemura.letter_template_version(organisation_id, id)
+letter_request | letter_request_template_id_not_null | NOT NULL template_id
+letter_request | letter_request_type_key_not_null | NOT NULL type_key
+letter_request | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+letter_settings | letter_settings_address_not_null | NOT NULL address
+letter_settings | letter_settings_by_fkey | FOREIGN KEY (organisation_id, updated_by) REFERENCES nemura.member(organisation_id, id)
+letter_settings | letter_settings_company_name_not_null | NOT NULL company_name
+letter_settings | letter_settings_lengths | CHECK ((((length(btrim(company_name)) >= 1) AND (length(btrim(company_name)) <= 200)) AND ((length(btrim(uen)) >= 1) AND (length(btrim(uen)) <= 30)) AND ((length(btrim(address)) >= 1) AND (length(btrim(address)) <= 400))))
+letter_settings | letter_settings_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+letter_settings | letter_settings_organisation_id_not_null | NOT NULL organisation_id
+letter_settings | letter_settings_pkey | PRIMARY KEY (organisation_id)
+letter_settings | letter_settings_uen_not_null | NOT NULL uen
+letter_settings | letter_settings_updated_at_not_null | NOT NULL updated_at
+letter_settings | letter_settings_updated_by_not_null | NOT NULL updated_by
+letter_settings | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+letter_template_version | letter_template_version_approved_fkey | FOREIGN KEY (organisation_id, approved_by) REFERENCES nemura.member(organisation_id, id)
+letter_template_version | letter_template_version_blocks | CHECK (((jsonb_typeof(blocks) = 'array'::text) AND ((jsonb_array_length(blocks) >= 1) AND (jsonb_array_length(blocks) <= 40)) AND (octet_length((blocks)::text) <= 65536)))
+letter_template_version | letter_template_version_blocks_not_null | NOT NULL blocks
+letter_template_version | letter_template_version_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+letter_template_version | letter_template_version_created_at_not_null | NOT NULL created_at
+letter_template_version | letter_template_version_created_by_not_null | NOT NULL created_by
+letter_template_version | letter_template_version_id_not_null | NOT NULL id
+letter_template_version | letter_template_version_not_own_approval | CHECK (((approved_by IS NULL) OR (approved_by <> created_by)))
+letter_template_version | letter_template_version_note_length | CHECK (((note IS NULL) OR (length(note) <= 500)))
+letter_template_version | letter_template_version_numbered | UNIQUE (organisation_id, type_key, version)
+letter_template_version | letter_template_version_organisation_id_not_null | NOT NULL organisation_id
+letter_template_version | letter_template_version_pkey | PRIMARY KEY (organisation_id, id)
+letter_template_version | letter_template_version_published | CHECK ((((state = 'draft'::text) = (version IS NULL)) AND ((state = 'draft'::text) = (approved_by IS NULL)) AND ((state = 'draft'::text) = (approved_at IS NULL))))
+letter_template_version | letter_template_version_state | CHECK ((state = ANY (ARRAY['draft'::text, 'published'::text, 'superseded'::text])))
+letter_template_version | letter_template_version_state_not_null | NOT NULL state
+letter_template_version | letter_template_version_type_key | CHECK ((type_key ~ '^[a-z][a-z0-9_]{1,60}$'::text))
+letter_template_version | letter_template_version_type_key_not_null | NOT NULL type_key
+letter_template_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+letter_type | letter_type_by_fkey | FOREIGN KEY (organisation_id, updated_by) REFERENCES nemura.member(organisation_id, id)
+letter_type | letter_type_due | CHECK (((due_days >= 1) AND (due_days <= 30)))
+letter_type | letter_type_due_days_not_null | NOT NULL due_days
+letter_type | letter_type_enabled_not_null | NOT NULL enabled
+letter_type | letter_type_id_not_null | NOT NULL id
+letter_type | letter_type_key | CHECK ((type_key ~ '^[a-z][a-z0-9_]{1,60}$'::text))
+letter_type | letter_type_once | UNIQUE (organisation_id, type_key)
+letter_type | letter_type_organisation_id_not_null | NOT NULL organisation_id
+letter_type | letter_type_pkey | PRIMARY KEY (organisation_id, id)
+letter_type | letter_type_type_key_not_null | NOT NULL type_key
+letter_type | letter_type_updated_at_not_null | NOT NULL updated_at
+letter_type | letter_type_updated_by_not_null | NOT NULL updated_by
+letter_type | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 member | member_created_at_not_null | NOT NULL created_at
 member | member_display_name_length | CHECK (((length(btrim(display_name)) >= 1) AND (length(btrim(display_name)) <= 200)))
 member | member_display_name_not_null | NOT NULL display_name
@@ -1312,6 +1484,20 @@ CREATE INDEX leave_request_person_idx ON nemura.leave_request USING btree (organ
 CREATE UNIQUE INDEX leave_request_pkey ON nemura.leave_request USING btree (organisation_id, id)
 CREATE INDEX leave_request_state_idx ON nemura.leave_request USING btree (organisation_id, state, start_date)
 CREATE UNIQUE INDEX legal_hold_pkey ON nemura.legal_hold USING btree (organisation_id, id)
+CREATE UNIQUE INDEX letter_issued_pkey ON nemura.letter_issued USING btree (organisation_id, id)
+CREATE UNIQUE INDEX letter_issued_reference_once ON nemura.letter_issued USING btree (organisation_id, reference)
+CREATE UNIQUE INDEX letter_issued_request_once ON nemura.letter_issued USING btree (organisation_id, request_id)
+CREATE UNIQUE INDEX letter_link_pkey ON nemura.letter_link USING btree (organisation_id, id)
+CREATE UNIQUE INDEX letter_link_token_once ON nemura.letter_link USING btree (token_hash)
+CREATE INDEX letter_request_person_idx ON nemura.letter_request USING btree (organisation_id, person_id, requested_at)
+CREATE UNIQUE INDEX letter_request_pkey ON nemura.letter_request USING btree (organisation_id, id)
+CREATE UNIQUE INDEX letter_request_reference_once ON nemura.letter_request USING btree (organisation_id, reference)
+CREATE INDEX letter_request_state_idx ON nemura.letter_request USING btree (organisation_id, state, due_on)
+CREATE UNIQUE INDEX letter_settings_pkey ON nemura.letter_settings USING btree (organisation_id)
+CREATE UNIQUE INDEX letter_template_version_numbered ON nemura.letter_template_version USING btree (organisation_id, type_key, version)
+CREATE UNIQUE INDEX letter_template_version_pkey ON nemura.letter_template_version USING btree (organisation_id, id)
+CREATE UNIQUE INDEX letter_type_once ON nemura.letter_type USING btree (organisation_id, type_key)
+CREATE UNIQUE INDEX letter_type_pkey ON nemura.letter_type USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_pkey ON nemura.member USING btree (organisation_id, id)
 CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organisation_id)
 CREATE UNIQUE INDEX outbox_business_key ON nemura.outbox USING btree (organisation_id, kind, business_key)
@@ -1404,6 +1590,16 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.leave_l
 CREATE TRIGGER leave_request_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.leave_request FOR EACH ROW EXECUTE FUNCTION nemura.leave_request_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.leave_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('leave_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.legal_hold DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('legal_hold', 'id')
+CREATE TRIGGER letter_issued_append_only BEFORE DELETE OR UPDATE ON nemura.letter_issued FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('An issued letter')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.letter_issued DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_issued', 'id')
+CREATE TRIGGER letter_link_append_only BEFORE DELETE OR UPDATE ON nemura.letter_link FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('A letter link')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.letter_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_link', 'id')
+CREATE TRIGGER letter_request_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.letter_request FOR EACH ROW EXECUTE FUNCTION nemura.letter_request_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_request', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_settings DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_settings', 'organisation_id')
+CREATE TRIGGER letter_template_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.letter_template_version FOR EACH ROW EXECUTE FUNCTION nemura.letter_template_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_template_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_template_version', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_type DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_type', 'id')
 CREATE TRIGGER member_deactivated AFTER UPDATE OF deactivated_at ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.member_deactivated()
 CREATE TRIGGER member_no_delete BEFORE DELETE ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.members_no_delete()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('member', 'id')
@@ -1476,6 +1672,12 @@ leave_head | tenant_isolation | (organisation_id = nemura.current_org()) | (orga
 leave_ledger | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 legal_hold | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+letter_issued | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+letter_link | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+letter_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+letter_settings | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+letter_template_version | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+letter_type | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 outbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -1891,6 +2093,70 @@ BEGIN
   END IF;
   IF OLD.settled_at IS NOT NULL AND NEW.settled_at IS DISTINCT FROM OLD.settled_at THEN
     RAISE EXCEPTION 'A settled request stays settled' USING ERRCODE = 'NM144';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.letter_request_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'A letter request is evidence: it is withdrawn, never deleted' USING ERRCODE = 'NM161';
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.state <> 'requested' THEN
+      RAISE EXCEPTION 'A letter request starts requested' USING ERRCODE = 'NM161';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.type_key IS DISTINCT FROM OLD.type_key OR NEW.template_id IS DISTINCT FROM OLD.template_id OR NEW.purpose IS DISTINCT FROM OLD.purpose
+     OR NEW.data IS DISTINCT FROM OLD.data OR NEW.due_on IS DISTINCT FROM OLD.due_on OR NEW.requested_by IS DISTINCT FROM OLD.requested_by OR NEW.requested_at IS DISTINCT FROM OLD.requested_at THEN
+    RAISE EXCEPTION 'A letter request keeps its words and its data' USING ERRCODE = 'NM161';
+  END IF;
+  IF NEW.state IS DISTINCT FROM OLD.state AND NOT ((OLD.state = 'requested' AND NEW.state IN ('checked', 'refused', 'withdrawn')) OR (OLD.state = 'checked' AND NEW.state IN ('issued', 'refused', 'withdrawn'))) THEN
+    RAISE EXCEPTION 'A % letter request cannot become %', OLD.state, NEW.state USING ERRCODE = 'NM161';
+  END IF;
+  IF OLD.render_sha256 IS NOT NULL AND (NEW.render_sha256 IS DISTINCT FROM OLD.render_sha256 OR NEW.render_blob IS DISTINCT FROM OLD.render_blob OR NEW.reference IS DISTINCT FROM OLD.reference) THEN
+    RAISE EXCEPTION 'The checked letter is the letter that is signed: its bytes and reference never change' USING ERRCODE = 'NM161';
+  END IF;
+  IF NEW.state = 'checked' AND EXISTS (SELECT 1 FROM nemura.person p WHERE p.organisation_id = NEW.organisation_id AND p.id = NEW.person_id AND p.member_id = NEW.checked_by) THEN
+    RAISE EXCEPTION 'Nobody checks their own letter' USING ERRCODE = 'NM162';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.letter_template_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'A template version is never deleted' USING ERRCODE = 'NM160';
+  END IF;
+  IF TG_OP = 'UPDATE' THEN
+    IF NEW.type_key IS DISTINCT FROM OLD.type_key OR NEW.created_by IS DISTINCT FROM OLD.created_by OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+      RAISE EXCEPTION 'A template version keeps its type and its author' USING ERRCODE = 'NM160';
+    END IF;
+    IF OLD.state = 'draft' AND NEW.state = 'draft' THEN
+      RETURN NEW;
+    END IF;
+    IF OLD.state = 'draft' AND NEW.state = 'published' THEN
+      IF NEW.blocks IS DISTINCT FROM OLD.blocks OR NEW.note IS DISTINCT FROM OLD.note THEN
+        RAISE EXCEPTION 'A draft is published as it is' USING ERRCODE = 'NM160';
+      END IF;
+      RETURN NEW;
+    END IF;
+    IF OLD.state = 'published' AND NEW.state = 'superseded' AND NEW.blocks IS NOT DISTINCT FROM OLD.blocks AND NEW.version IS NOT DISTINCT FROM OLD.version
+       AND NEW.approved_by IS NOT DISTINCT FROM OLD.approved_by AND NEW.approved_at IS NOT DISTINCT FROM OLD.approved_at AND NEW.note IS NOT DISTINCT FROM OLD.note THEN
+      RETURN NEW;
+    END IF;
+    RAISE EXCEPTION 'A published template version is immutable: change it with a new version' USING ERRCODE = 'NM160';
   END IF;
   RETURN NEW;
 END

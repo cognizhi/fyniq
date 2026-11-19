@@ -1,6 +1,6 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import axe from "axe-core";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { ReviewBanner } from "./components/ReviewBanner";
 import { Home } from "./pages/Home";
@@ -8,6 +8,9 @@ import { NewPerson } from "./pages/NewPerson";
 import { ApplyLeave } from "./pages/ApplyLeave";
 import { GovernmentLeave } from "./pages/GovernmentLeave";
 import { MyLeave } from "./pages/MyLeave";
+import { LetterTemplates } from "./pages/LetterTemplates";
+import { Letters } from "./pages/Letters";
+import { RequestLetter } from "./pages/RequestLetter";
 import { PeopleTiles } from "./components/PeopleTiles";
 import { MyRequests } from "./pages/MyRequests";
 import { ReportSick } from "./pages/ReportSick";
@@ -23,6 +26,9 @@ import { SignIn, signInURL } from "./pages/SignIn";
 import { reviewsFor, review, type Register } from "./review";
 import { SessionProvider } from "./session";
 import { answer, calls } from "./test/setup";
+
+const stepUp = vi.hoisted(() => ({ result: undefined as string | undefined }));
+vi.mock("./api/stepup", () => ({ confirmWithPasskey: async () => stepUp.result }));
 
 const providers = { providers: [{ id: "local", name: "Local sign-in" }, { id: "google", name: "Google" }], setup_done: true };
 const session = { landing: "/me", member_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45", organisation_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44", roles: ["employee"] };
@@ -799,5 +805,101 @@ describe("hours worked, pay inputs, unpaid sick days and the accrual", () => {
     expect(await screen.findByText("1")).toBeTruthy();
     expect(screen.getAllByText("–").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByRole("link", { name: /Leave requests waiting/ }).getAttribute("href")).toBe("/people/leave");
+  });
+});
+
+// req: NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07
+describe("letters", () => {
+  const types = { types: [
+    { key: "employment_confirmation", title: "Employment confirmation", statement: "Confirms that the person works for the company.", enabled: true, due_days: 3, published_version: 1, fields: ["person.legal_name", "company.name"] },
+    { key: "salary_certificate", title: "Salary certificate", statement: "States the salary.", enabled: false, due_days: 3, published_version: 0, needs: "salary", fields: [] }],
+    fields: [{ key: "person.legal_name", label: "Legal name", format: "text" }, { key: "company.name", label: "Company name", format: "text" }] };
+  const base = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0", person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", person_name: "Ben Lim", type: "employment_confirmation", purpose: "A bank loan.", due_on: "2026-11-25", requested_at: "2026-11-20T10:00:00Z" };
+
+  it("lets a person ask for a letter the company issues, and says when it is due", async () => {
+    answer("GET /v1/letters/types", { status: 200, body: types });
+    answer("POST /v1/me/letters", { status: 201, body: { id: base.id, due_on: "2026-11-25" } });
+    const { container } = render(<RequestLetter roles={["employee"]} />);
+    expect(await screen.findByText("Confirms that the person works for the company.")).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "Salary certificate" })).toBeNull();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("What is it for?"), { target: { value: "A bank loan." } });
+    fireEvent.submit(screen.getByRole("form", { name: "Ask for a letter" }));
+    expect(await screen.findByText("Sent. It is due by 2026-11-25.")).toBeTruthy();
+  });
+
+  it("lets the people team check a request, and the signatory sign only after the passkey is confirmed", async () => {
+    const sha = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
+    answer("GET /v1/letters", { status: 200, body: { requests: [{ ...base, state: "requested" }, { ...base, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef1", state: "checked", reference: "EC-2026-0001", sha256: sha }] } });
+    answer(`POST /v1/letters/${base.id}/check`, { status: 200, body: { reference: "EC-2026-0001", sha256: sha } });
+    answer("POST /v1/letters/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef1/signature", { status: 200, body: { issued_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f00" } });
+    const { container } = render(<Letters roles={["owner"]} />);
+    expect((await screen.findAllByText(/Ben Lim: employment_confirmation, for A bank loan\.\. Due 2026-11-25\./)).length).toBe(2);
+    expect(screen.getByText(`The signatory confirms this hash of the exact PDF: ${sha}`)).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getAllByRole("button", { name: "Check" })[0] as HTMLElement);
+    expect(await screen.findByText("Checked. The letter is EC-2026-0001.")).toBeTruthy();
+    // The passkey is not confirmed: nothing is sent.
+    stepUp.result = "";
+    fireEvent.click(screen.getByRole("button", { name: "Sign with my passkey" }));
+    expect(await screen.findByText("The passkey was not confirmed, so nothing was signed.")).toBeTruthy();
+    expect(calls).not.toContain("POST /v1/letters/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef1/signature");
+    stepUp.result = undefined;
+    fireEvent.click(screen.getByRole("button", { name: "Sign with my passkey" }));
+    expect(await screen.findByText("Signed and issued.")).toBeTruthy();
+    expect(calls).toContain("POST /v1/letters/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef1/signature");
+  });
+
+  it("offers an HR officer no signature, and a person only their own letter's download and link", async () => {
+    answer("GET /v1/letters", { status: 200, body: { requests: [{ ...base, state: "checked", reference: "EC-2026-0001", sha256: "ab" }] } });
+    render(<Letters roles={["hr_officer"]} />);
+    await screen.findByText("Read the letter");
+    expect(screen.queryByRole("button", { name: "Sign with my passkey" })).toBeNull();
+    cleanup();
+    answer("GET /v1/letters", { status: 200, body: { requests: [{ ...base, state: "issued", reference: "EC-2026-0001", issued_id: "x" }] } });
+    const { LetterList } = await import("./components/LetterList");
+    render(<LetterList mine roles={["employee"]} />);
+    expect(await screen.findByRole("button", { name: "Download" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Make a link that works for seven days" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Check" })).toBeNull();
+  });
+
+  it("sets the letterhead, switches a type on, saves a draft and publishes it, and shows the API's problems in words", async () => {
+    answer("GET /v1/letters/types", { status: 200, body: types });
+    answer("GET /v1/letters/settings", { status: 200, body: { set: true, settings: { company_name: "Acme", uen: "201912345A", address: "1 Raffles Place" } } });
+    answer("PUT /v1/letters/settings", { status: 204 });
+    answer("PUT /v1/letters/types/employment_confirmation", { status: 204 });
+    answer("GET /v1/letters/types/employment_confirmation/templates", { status: 200, body: { versions: [{ id: "d1", type: "employment_confirmation", version: 0, state: "draft", note: "Adds the department.", blocks: [{ kind: "paragraph", text: "Hello {{person.legal_name}}" }] }, { id: "v1", type: "employment_confirmation", version: 1, state: "published", blocks: [{ kind: "paragraph", text: "Hi" }] }] } });
+    answer("PUT /v1/letters/types/employment_confirmation/template", { status: 422, body: { code: "NM_LETTER_INVALID", detail: "A template ends with a signature block: add one." } });
+    answer("POST /v1/letters/templates/d1/publication", { status: 200, body: { version: 2 } });
+    const { container } = render(<LetterTemplates roles={["hr_admin"]} />);
+    expect(await screen.findByText("Needs the person's salary, which Nemura does not hold yet.")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Save the letterhead" }));
+    expect(await screen.findByText("Saved.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Choose a letter type"), { target: { value: "employment_confirmation" } });
+    expect(await screen.findByText("Merge fields you may use: {{person.legal_name}}, {{company.name}}")).toBeTruthy();
+    expect(await screen.findByDisplayValue("Hello {{person.legal_name}}")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Save the draft" }));
+    expect((await screen.findAllByRole("alert")).map((a) => a.textContent).join(" ")).toMatch(/ends with a signature block/);
+    fireEvent.click(screen.getByRole("button", { name: "Approve and publish the draft" }));
+    expect(await screen.findByText("Published as version 2.")).toBeTruthy();
+  });
+
+  it("shows an HR officer the types and no way to switch them or approve a draft", async () => {
+    answer("GET /v1/letters/types", { status: 200, body: types });
+    render(<LetterTemplates roles={["hr_officer"]} />);
+    await screen.findByText("Needs the person's salary, which Nemura does not hold yet.");
+    expect(screen.queryByRole("button", { name: "Save the letterhead" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+  });
+
+  it("is routed from the address", () => {
+    expect(matchRoute("/me/letters/new")?.route.id).toBe("request-letter");
+    expect(matchRoute("/people/letters")?.route.id).toBe("letters");
+    expect(matchRoute("/settings/letters")?.route.id).toBe("letter-templates");
   });
 });

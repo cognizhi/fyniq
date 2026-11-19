@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,6 +40,7 @@ const (
 	Amount  = "amount"
 	Percent = "percent"
 	Months  = "months"
+	Minutes = "minutes"
 	Ratio   = "ratio"
 	Days    = "days"
 )
@@ -59,6 +61,7 @@ const (
 	Customer   Dimension = "customer"
 	Vendor     Dimension = "vendor"
 	Department Dimension = "department"
+	Project    Dimension = "project"
 )
 
 // The codes of a query's refusal.
@@ -98,11 +101,11 @@ const (
 
 // Measures are the semantic layer's measures, in the order the registry lists them.
 var Measures = []Measure{
-	{Key: "revenue", Name: "Revenue", Description: "Revenue recognised", Unit: Amount, Kind: Flow, Source: "the profit and loss's revenue", Sign: statementSign, By: []Dimension{Department}},
-	{Key: "gross_profit", Name: "Gross profit", Description: "Revenue less cost of sales", Unit: Amount, Kind: Flow, Source: "the profit and loss's gross profit", Sign: statementSign, By: []Dimension{Department}},
-	{Key: "ebitda", Name: "EBITDA", Description: "Operating profit before depreciation and amortisation, without other income", Unit: Amount, Kind: Flow, Source: "the profit and loss's EBITDA", Sign: statementSign, By: []Dimension{Department}},
-	{Key: "net_profit", Name: "Net profit", Description: "Profit after every expense", Unit: Amount, Kind: Flow, Source: "the profit and loss's net profit", Sign: statementSign, By: []Dimension{Department}},
-	{Key: "costs", Name: "Cost of sales and operating expenses", Description: "Cost of sales and operating expenses together", Unit: Amount, Kind: Flow, Source: "the profit and loss's cost of sales and operating expenses", Sign: statementSign, By: []Dimension{Department}},
+	{Key: "revenue", Name: "Revenue", Description: "Revenue recognised", Unit: Amount, Kind: Flow, Source: "the profit and loss's revenue", Sign: statementSign, By: []Dimension{Department, Project}},
+	{Key: "gross_profit", Name: "Gross profit", Description: "Revenue less cost of sales", Unit: Amount, Kind: Flow, Source: "the profit and loss's gross profit", Sign: statementSign, By: []Dimension{Department, Project}},
+	{Key: "ebitda", Name: "EBITDA", Description: "Operating profit before depreciation and amortisation, without other income", Unit: Amount, Kind: Flow, Source: "the profit and loss's EBITDA", Sign: statementSign, By: []Dimension{Department, Project}},
+	{Key: "net_profit", Name: "Net profit", Description: "Profit after every expense", Unit: Amount, Kind: Flow, Source: "the profit and loss's net profit", Sign: statementSign, By: []Dimension{Department, Project}},
+	{Key: "costs", Name: "Cost of sales and operating expenses", Description: "Cost of sales and operating expenses together", Unit: Amount, Kind: Flow, Source: "the profit and loss's cost of sales and operating expenses", Sign: statementSign, By: []Dimension{Department, Project}},
 	{Key: "spend_sm", Name: "Spend on sales & marketing", Description: "Expenses of accounts whose function is S&M, their depreciation included", Unit: Amount, Kind: Flow, Source: "the KPI spend_sm@1, the expenses of S&M accounts with their depreciation", Sign: statementSign},
 	{Key: "spend_rd", Name: "Spend on research & development", Description: "Expenses of accounts whose function is R&D, their depreciation included", Unit: Amount, Kind: Flow, Source: "the KPI spend_rd@1, the expenses of R&D accounts with their depreciation", Sign: statementSign},
 	{Key: "spend_ga", Name: "Spend on general & administrative", Description: "Expenses of accounts whose function is G&A, their depreciation included", Unit: Amount, Kind: Flow, Source: "the KPI spend_ga@1, the expenses of G&A accounts with their depreciation", Sign: statementSign},
@@ -114,6 +117,7 @@ var Measures = []Measure{
 	{Key: "current_liabilities", Name: "Current liabilities", Unit: Amount, Kind: Stock, Source: "the balance sheet's current liabilities", Sign: statementSign},
 	{Key: "total_liabilities", Name: "Total liabilities", Unit: Amount, Kind: Stock, Source: "the balance sheet's total liabilities", Sign: statementSign},
 	{Key: "equity", Name: "Equity", Unit: Amount, Kind: Stock, Source: "the balance sheet's equity", Sign: statementSign},
+	{Key: "project_minutes", Name: "Approved project time", Description: "Approved net minutes of time entered on projects, by project", Unit: Minutes, Kind: Flow, Source: "the project report's approved minutes (hours only: never a rate or a cost)", Sign: "minutes, positive", By: []Dimension{Project}, Needs: Project},
 	{Key: "account_movement", Name: "Account movement", Description: "Each account's net movement", Unit: Amount, Kind: Flow, Source: "the trial balance of the months", Sign: debitsSign, By: []Dimension{Account}, Needs: Account},
 	{Key: "account_balance", Name: "Account balance", Description: "Each account's balance at the month's end", Unit: Amount, Kind: Stock, Source: "the trial balance from the books' first month", Sign: debitsSign, By: []Dimension{Account}, Needs: Account},
 	{Key: "gross_margin", Name: "Gross margin", Unit: Percent, Kind: Monthly, Source: "the KPI gross_margin@1", kpi: "gross_margin"},
@@ -148,6 +152,10 @@ type Books struct {
 	First, Last int
 	Revision    int64
 	YearStart   func(day time.Time) (time.Time, error)
+	// Projects say which projects the reader may see (FR-PRJ-12): a project manager sees theirs only, and the lines tagged with no project
+	// only when AllProjects. Nil: every project and the untagged lines, as for a reader with an unqualified right.
+	Projects    func(project uuid.UUID) bool
+	AllProjects bool
 }
 
 // Query asks for a measure over the books' months, at a grain, split by a dimension, kept to one member of it or not.
@@ -194,7 +202,7 @@ func Run(ctx context.Context, u storage.UnitOfWork, b Books, q Query) ([]Fact, e
 		return nil, refuse(CodeGrain, "grain", "is not month or total", "Ask by month, or for the total of the months")
 	case m.Kind == Monthly && q.Grain == Total && b.First != b.Last:
 		return nil, refuse(CodeGrain, "grain", fmt.Sprintf("is total, but %s is a KPI of one month", m.Key), "Ask for it by month")
-	case (q.By == Customer || q.By == Vendor || q.By == Department) && q.Grain == ByMonth && b.First != b.Last:
+	case (q.By == Customer || q.By == Vendor || q.By == Department || q.By == Project) && q.Grain == ByMonth && b.First != b.Last:
 		return nil, refuse(CodeGrain, "grain", fmt.Sprintf("is month, but %s by %s is given over the months asked", m.Key, q.By), "Ask for the total")
 	}
 	r := run{u: u, b: b, m: m, q: q}
@@ -204,7 +212,12 @@ func Run(ctx context.Context, u storage.UnitOfWork, b Books, q Query) ([]Fact, e
 	case Customer, Vendor:
 		return r.parties(ctx)
 	case Department:
-		return r.departments(ctx)
+		return r.byDimension(ctx, storage.DimensionDepartment, "department")
+	case Project:
+		if r.m.Key == "project_minutes" {
+			return r.projectMinutes(ctx)
+		}
+		return r.byDimension(ctx, storage.DimensionProject, "project")
 	}
 	return r.organisation(ctx)
 }
@@ -241,6 +254,8 @@ func (r run) lineage(from, to time.Time, member string) string {
 	}
 	months := fmt.Sprintf("from=%s&to=%s", from.Format("2006-01"), to.Format("2006-01")) + revision
 	switch {
+	case r.m.Key == "project_minutes":
+		return "/v1/reports/projects?from=" + from.Format(time.DateOnly) + "&to=" + to.Format(time.DateOnly)
 	case r.q.By == Account:
 		return "/v1/reports/general-ledger?account_id=" + member + "&from=" + from.Format(time.DateOnly) + "&to=" + to.Format(time.DateOnly) + revision
 	case r.q.By == Customer:
@@ -475,16 +490,17 @@ func (r run) parties(ctx context.Context) ([]Fact, error) {
 	return out, nil
 }
 
-// departments answers a profit and loss line by the department dimension's values, over the months asked: one fact
-// for each value, and one for the lines with none.
-func (r run) departments(ctx context.Context) ([]Fact, error) {
+// byDimension answers a profit and loss line by the values of the dimension of a kind (department or project), over the months
+// asked: one fact for each value, and one for the lines with none. For the project dimension only the projects the reader may see
+// are given, and the lines tagged with no project only to a reader who sees every project (FR-PRJ-12).
+func (r run) byDimension(ctx context.Context, kind, noun string) ([]Fact, error) {
 	dims, err := r.u.Dimensions().List(ctx)
 	if err != nil {
 		return nil, err
 	}
-	i := slices.IndexFunc(dims, func(d storage.Dimension) bool { return d.Kind == storage.DimensionDepartment })
+	i := slices.IndexFunc(dims, func(d storage.Dimension) bool { return d.Kind == kind })
 	if i < 0 {
-		return nil, refuse(CodeDimension, "by", "is department, but the organisation has no department dimension", "Ask for the organisation's total")
+		return nil, refuse(CodeDimension, "by", "is "+noun+", but the organisation has no "+noun+" dimension", "Ask for the organisation's total")
 	}
 	pl, err := financials.Lay(ctx, r.u, r.b.Base, financials.Request{Kind: financials.ProfitAndLoss, All: r.b.Periods, First: r.b.First, Last: r.b.Last,
 		Revision: r.b.Revision, Pivot: dims[i].ID})
@@ -500,6 +516,9 @@ func (r run) departments(ctx context.Context) ([]Fact, error) {
 		if r.q.Member != "" && member != r.q.Member {
 			continue
 		}
+		if kind == storage.DimensionProject && !r.projectSeen(member) {
+			continue
+		}
 		total := money.Zero(r.b.Base)
 		for _, blk := range pl.Blocks {
 			if blk.Key == r.m.Key || (r.m.Key == "costs" && (blk.Key == "cost_of_sales" || blk.Key == "operating_expenses")) {
@@ -512,5 +531,46 @@ func (r run) departments(ctx context.Context) ([]Fact, error) {
 		f.Value = total.String()
 		out = append(out, f)
 	}
+	return out, nil
+}
+
+// projectSeen says whether the reader may see the project a column's member names: "none" is the lines tagged with no project.
+func (r run) projectSeen(member string) bool {
+	if r.b.Projects == nil {
+		return true
+	}
+	if member == "" || member == "none" {
+		return r.b.AllProjects
+	}
+	id, err := uuid.Parse(member)
+	return err == nil && r.b.Projects(id)
+}
+
+// projectMinutes answers each project's approved net minutes over the months asked, from approved time entries: hours only, never a rate
+// or a cost, so no figure of it depends on who is reading beyond which projects they may see (G4-050).
+func (r run) projectMinutes(ctx context.Context) ([]Fact, error) {
+	projects, err := r.u.Projects().List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	from, to := r.from(r.b.First), r.to(r.b.Last)
+	var out []Fact
+	for _, p := range projects {
+		if !p.Configured || (r.q.Member != "" && p.ID.String() != r.q.Member) || !r.projectSeen(p.ID.String()) {
+			continue
+		}
+		entries, err := r.u.Timesheets().Entries(ctx, storage.TimeFilter{ProjectID: p.ID, From: from, To: to, Status: storage.TimeApproved, Limit: 20000})
+		if err != nil {
+			return nil, err
+		}
+		minutes := 0
+		for _, e := range entries {
+			minutes += e.Minutes
+		}
+		f := r.fact(from, to, p.ID.String(), p.Code+" · "+p.Name)
+		f.Value = strconv.Itoa(minutes)
+		out = append(out, f)
+	}
+	slices.SortFunc(out, func(a, b Fact) int { return strings.Compare(a.MemberName+a.Member, b.MemberName+b.Member) })
 	return out, nil
 }

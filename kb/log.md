@@ -718,12 +718,18 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | home.md -> home.overview (the Auditor's engagement opens the trial balance, general ledger and access list)
 
+## [2026-11-20] compile | projects.reports recompiled: a project's profitability card, the CSV and Excel export, project metrics (p1-projects 4.2, 4.4)
+
 ## [2026-11-20] compile | nemura.requests new; leave.approve: flexible work replies (p1-nemura-leave-time 3.3)
 
 ## [2026-11-20] compile | appearance.md -> preferences.appearance (Expert starts Compact)
+
+## [2026-11-20] compile | ai.proposals.approve and projects.billing recompiled: the AI's draft of a project invoice, ar.draft_invoice (p1-projects)
 
 ## [2026-11-20] compile | sign-in.md -> auth.sign-in (set up how you confirm it's you: the enrolment page)
 
 ## [2026-11-20] compile | home.md -> home.overview (favourites and saved views)
 
 ## [2026-11-20] compile | nemura requests, leave.approve, nemura.my-leave, nemura.home: hours worked, pay inputs, accrual, encashment, people tiles
+
+## [2026-11-20] compile | nemura.letters.request, nemura.letters.issue, nemura.letters.templates new (p1-nemura-self-service-letters 1.6)

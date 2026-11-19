@@ -99,6 +99,14 @@ tests' own type checks the harness: a right proposal passes, and a turn that pro
   - its red-team cases.
   The company secretary's `sec.create_task`, `sec.draft_reminder` and `sec.draft_document` come first, with
   `p1-scheduled-agents` and `p1-company-secretary`.
+- **`ar.draft_invoice` (version 1, a project's unbilled work; 20 Nov 2026).** A draft only: the command is the API's own shared
+  draft function, so the AI path and a person's cannot differ; the AI names the project by code and the platform finds it among the
+  projects the approver may read (a guess finds nothing); the payload holds no amount, so none is the model's; the dry run carries
+  billing rates and names, never a cost rate (the function never reads one); the base version is a fingerprint of the lines and the
+  work they bill, so approved, returned or billed time since the dry run is Stale and makes nothing. The executor's one new grant is
+  EXECUTE on `member_names()` (migration 000800), which returns this organisation's members' display names. Proved by
+  `TestTheAIDraftsAProjectInvoiceThatAPersonApproves`. Its eval suite needs a sample company with an approved-time project and is
+  left; the AI reading project reports is an owner decision (PRD-001 rev 0.332).
 - **Approval quality.** The approval rate, edits before approval, time to decide and reversals measure approval
   fatigue. They arrive with `p1-ai-proposals` after go-live. Until then the waiting check, expiry and the limits stand
   in.

@@ -49,7 +49,7 @@ type Execution struct {
 type Commands map[string]Command
 
 // Release are the release's commands. Each task type's change adds its own with what it acts on.
-var Release = Commands{"CreateComplianceTask": CreateComplianceTask{}, "DraftReminder": DraftReminder{}, "DraftCorporateDocument": DraftCorporateDocument{}}
+var Release = Commands{"CreateComplianceTask": CreateComplianceTask{}, "DraftReminder": DraftReminder{}, "DraftCorporateDocument": DraftCorporateDocument{}, "DraftInvoice": DraftInvoice{}}
 
 // Measure is what a payload holds, for the limits: its items (1 when it is not a batch) and each item's amount.
 type Measure struct {

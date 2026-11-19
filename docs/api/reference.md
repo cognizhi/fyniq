@@ -3243,6 +3243,26 @@ For each project the caller may see, between two months: revenue and direct cost
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PRJ-09`
 
+### `GET /v1/reports/projects/export`
+
+**Export the project report** (`exportProjectReport`)
+
+The report getProjectReport gives for the same months, as a file (FR-PRJ-12, FR-RPT-09): CSV, the projects' rows with amounts as plain decimals and an ASCII minus; or XLSX, a workbook with the projects and each person's utilisation, amounts as number cells. No text in either becomes a formula. It holds only what the caller's own report holds: costs, margin and salary tagged are columns only for a caller who may see them, and a person's cost only for the Owner and the Payroll administrator. Returned in base64 with its SHA-256 and the ledger revision. Refused with PRJ-09 while Projects and time are switched off. Side effects: an audit event of the export with what was exported, its months, rows and hash (FR-RPT-09). Never cached.
+
+- **Permission:** View on Project reports and cost rates (rev 0.8). The same rows the caller's own report holds, as a file: costs, margin and salary tagged only for those who may see them (G4-050).
+- **Parameters:**
+  - `from` (query, required): A day in the first month.
+  - `to` (query, required): A day in the last month, at most 12 months after the first.
+  - `format` (query): csv: the projects' rows, plain decimals with an ASCII minus; xlsx: a workbook with the projects and each person's utilisation, amounts as number cells.
+- **Responses:**
+  - `200` OK [`ReportFile`](../../contracts/schemas/ReportFile.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PRJ-09`
+
 ### `POST /v1/time-entries/{entry_id}/reverse`
 
 **Reverse an approved entry of the caller's** (`reverseTimeEntry`)
@@ -11725,7 +11745,7 @@ A ledger entry with its lines and where it comes from (FR-UX-04, the Trace panel
 
 **Query the semantic layer** (`queryMetrics`)
 
-A named measure (AI-03) over a run of months, by month or their total, split by a dimension the measure offers (account, customer, vendor or department) or not: revenue, gross profit, EBITDA, net profit, costs, spend by function, net burn, cash, receivables, payables, current assets and liabilities, total liabilities, equity, each account's movement or balance, and the monthly KPIs. Each figure is a typed fact (AI-68) with its ID, period, exact value, currency and unit, sign, the ledger revision it was read at and the report it comes from: the statements, the KPIs, the trial balance and the sub-ledgers, so it equals what that report shows. A month the books have no period for is REPORT-03, a later revision REPORT-04. Saves nothing; no side effects.
+A named measure (AI-03) over a run of months, by month or their total, split by a dimension the measure offers (account, customer, vendor, department or project) or not: revenue, gross profit, EBITDA, net profit, costs, spend by function, net burn, cash, receivables, payables, current assets and liabilities, total liabilities, equity, each account's movement or balance, and the monthly KPIs. Each figure is a typed fact (AI-68) with its ID, period, exact value, currency and unit, sign, the ledger revision it was read at and the report it comes from: the statements, the KPIs, the trial balance and the sub-ledgers, so it equals what that report shows. A month the books have no period for is REPORT-03, a later revision REPORT-04. Saves nothing; no side effects.
 
 - **Permission:** View on Reports, dashboards. A view of the reports limited to sales, purchases, payroll or a department is refused; by customer it needs a view of invoices, by vendor of bills.
 - **Request body:** [`MetricsQuery`](../../contracts/schemas/MetricsQuery.schema.json)

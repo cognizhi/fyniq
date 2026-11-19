@@ -40,6 +40,26 @@ The Owner sees each person's own rate and cost. The Controller, the Accountant, 
 average (a role of at least three people) or the standard rate, and never one person's cost. The AR specialist sees revenue and hours
 only. A project's manager sees only the projects they manage.
 
+## A project's own profitability
+
+A project's page has a **Profitability** card for its last twelve months, or since it started if that is later: revenue, direct costs,
+margin and approved time, the same figures as the report for that project, at the rate you may use, and the card names the rate. When
+fewer than three people hold a role with a rate, time is costed at the standard rate and the card says so, because one person's own cost
+is never shown to you. **Show the approved time** lists the entries behind the hours. A person who may not see project reports sees no
+card.
+
+## Export the report
+
+**Export CSV** and **Export Excel** on Reports, Projects (and **Export CSV** on a project's Profitability card) download the rows for the
+months you chose, with plain numbers and a minus sign you can calculate with. A file holds only the figures your own report shows: costs,
+margin and salary tagged are columns only if you may see them, and a person's own cost is in the Excel file only for the Owner and the
+Payroll administrator. Each export is recorded in the audit trail.
+
+## Ask the assistant
+
+The assistant can give revenue, gross profit, EBITDA, net profit and costs by project, and a project's approved minutes, for the projects
+you may see. It never gives a rate or a person's cost.
+
 ## Look behind a figure
 
 Open a project, then its time, to see the approved entries behind its hours. The entries show hours only, never a rate.

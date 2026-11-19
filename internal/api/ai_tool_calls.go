@@ -350,7 +350,7 @@ func (a *API) runTool(ctx context.Context, tool aitool.Tool, in map[string]any) 
 
 // factOf is a semantic layer's fact as a tool returns it.
 func factOf(f MetricFact) aitool.Fact {
-	return aitool.Fact{ID: f.ID, Measure: f.Measure, Name: f.Name, Value: f.Value, Words: f.Words, Undefined: f.Undefined, Unit: f.Unit,
+	return aitool.Fact{ID: f.ID, Measure: f.Measure, Name: f.Name, Value: f.Value, Words: f.Words, Undefined: f.Undefined, Unit: string(f.Unit),
 		Currency: f.Currency, From: f.From, To: f.To, Dimension: f.Dimension, Member: f.Member, MemberName: f.MemberName, Sign: f.Sign,
 		Revision: f.Revision, Source: f.Source, Lineage: f.Lineage}
 }

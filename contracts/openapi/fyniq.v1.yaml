@@ -35227,15 +35227,17 @@ components:
             - no revenue in the month
           type: string
         unit:
-          enum:
+          description: "What the value is: amount, percent, months, ratio, days or minutes; more may be added."
+          examples:
+            - amount
+          type: string
+          x-extensible-enum:
             - amount
             - percent
             - months
             - ratio
             - days
-          examples:
-            - amount
-          type: string
+            - minutes
         value:
           description: Exact decimal text, as the report shows it before rounding for display; absent when the fact has no value.
           examples:
@@ -35268,6 +35270,7 @@ components:
             - customer
             - vendor
             - department
+            - project
           examples:
             - customer
           type: string
@@ -35305,6 +35308,7 @@ components:
             - current_liabilities
             - total_liabilities
             - equity
+            - project_minutes
             - account_movement
             - account_balance
             - gross_margin
@@ -171625,7 +171629,7 @@ paths:
         right: A
   /v1/metrics:query:
     post:
-      description: "A named measure (AI-03) over a run of months, by month or their total, split by a dimension the measure offers (account, customer, vendor or department) or not: revenue, gross profit, EBITDA, net profit, costs, spend by function, net burn, cash, receivables, payables, current assets and liabilities, total liabilities, equity, each account's movement or balance, and the monthly KPIs. Each figure is a typed fact (AI-68) with its ID, period, exact value, currency and unit, sign, the ledger revision it was read at and the report it comes from: the statements, the KPIs, the trial balance and the sub-ledgers, so it equals what that report shows. A month the books have no period for is REPORT-03, a later revision REPORT-04. Saves nothing; no side effects."
+      description: "A named measure (AI-03) over a run of months, by month or their total, split by a dimension the measure offers (account, customer, vendor, department or project) or not: revenue, gross profit, EBITDA, net profit, costs, spend by function, net burn, cash, receivables, payables, current assets and liabilities, total liabilities, equity, each account's movement or balance, and the monthly KPIs. Each figure is a typed fact (AI-68) with its ID, period, exact value, currency and unit, sign, the ledger revision it was read at and the report it comes from: the statements, the KPIs, the trial balance and the sub-ledgers, so it equals what that report shows. A month the books have no period for is REPORT-03, a later revision REPORT-04. Saves nothing; no side effects."
       operationId: queryMetrics
       requestBody:
         content:
@@ -214410,6 +214414,132 @@ paths:
         - PRJ-09
       x-fyniq-permission:
         capability: Project reports and cost rates (rev 0.8)
+        right: V
+  /v1/reports/projects/export:
+    get:
+      description: "The report getProjectReport gives for the same months, as a file (FR-PRJ-12, FR-RPT-09): CSV, the projects' rows with amounts as plain decimals and an ASCII minus; or XLSX, a workbook with the projects and each person's utilisation, amounts as number cells. No text in either becomes a formula. It holds only what the caller's own report holds: costs, margin and salary tagged are columns only for a caller who may see them, and a person's cost only for the Owner and the Payroll administrator. Returned in base64 with its SHA-256 and the ledger revision. Refused with PRJ-09 while Projects and time are switched off. Side effects: an audit event of the export with what was exported, its months, rows and hash (FR-RPT-09). Never cached."
+      operationId: exportProjectReport
+      parameters:
+        - description: A day in the first month.
+          explode: false
+          in: query
+          name: from
+          required: true
+          schema:
+            description: A day in the first month.
+            examples:
+              - "2026-11-01"
+            format: date
+            type: string
+        - description: A day in the last month, at most 12 months after the first.
+          explode: false
+          in: query
+          name: to
+          required: true
+          schema:
+            description: A day in the last month, at most 12 months after the first.
+            examples:
+              - "2026-11-30"
+            format: date
+            type: string
+        - description: "csv: the projects' rows, plain decimals with an ASCII minus; xlsx: a workbook with the projects and each person's utilisation, amounts as number cells."
+          explode: false
+          in: query
+          name: format
+          schema:
+            default: csv
+            description: "csv: the projects' rows, plain decimals with an ASCII minus; xlsx: a workbook with the projects and each person's utilisation, amounts as number cells."
+            enum:
+              - csv
+              - xlsx
+            examples:
+              - csv
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportFile"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Export the project report
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - PRJ-09
+      x-fyniq-permission:
+        capability: Project reports and cost rates (rev 0.8)
+        note: "The same rows the caller's own report holds, as a file: costs, margin and salary tagged only for those who may see them (G4-050)."
         right: V
   /v1/reports/sales-by-customer:
     get:
