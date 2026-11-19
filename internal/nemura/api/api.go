@@ -55,6 +55,7 @@ func Config(v string) huma.Config {
 		{Name: "Features", Description: "Each optional feature of an organisation: on, off or held by another system (NM-FEAT-01 to 05)."},
 		{Name: "Packs", Description: "Country packs with their sources, the company's policy on top and the people checks (NM-PACK-01 to 08)."},
 		{Name: "Leave", Description: "Working patterns, leave balances and the ledger behind them (NM-LV-01, NM-LV-02, NM-LV-13, NM-TIM-01)."},
+		{Name: "Onboarding", Description: "The task to invite new people to Fyniq, and a leaver's dates, checklist and leave settlement (NM-ONB-02, NM-ONB-03)."},
 		{Name: "Self-service", Description: "A person's own details and requests, and what waits for the people team (NM-ESS-03, NM-ESS-04)."},
 		{Name: "Letters", Description: "Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07)."},
 		{Name: "Session", Description: "Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02)."},
@@ -132,6 +133,7 @@ type Deps struct {
 	Time        Time
 	Letters     Letters
 	SelfService SelfService
+	Onboarding  Onboarding
 	SignIn      SignInInfo
 	Clock       ports.Clock
 	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
@@ -164,6 +166,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerAccrual()
 	a.registerLetters()
 	a.registerSelfService()
+	a.registerOnboarding()
 	a.registerSignIn()
 	return a
 }

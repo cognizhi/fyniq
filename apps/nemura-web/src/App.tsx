@@ -12,6 +12,7 @@ import { RequestLetter } from "./pages/RequestLetter";
 import { Letters } from "./pages/Letters";
 import { MyDetails } from "./pages/MyDetails";
 import { AskQuestion } from "./pages/AskQuestion";
+import { PeopleOnboarding } from "./pages/PeopleOnboarding";
 import { PeopleRequests } from "./pages/PeopleRequests";
 import { LetterTemplates } from "./pages/LetterTemplates";
 import { MyRequests } from "./pages/MyRequests";
@@ -75,6 +76,7 @@ export function App() {
     if (state.status === "in" && route.id === "request-letter") return <RequestLetter roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "my-details") return <MyDetails roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "ask") return <AskQuestion roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "onboarding") return <PeopleOnboarding roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "people-requests") return <PeopleRequests roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "letters") return <Letters roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "letter-templates") return <LetterTemplates roles={state.session.roles ?? []} />;

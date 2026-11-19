@@ -468,6 +468,59 @@ func TestOnlyTheSignatoryDelegatesAutomaticIssueAfterAFreshPasskey(t *testing.T)
 	}
 }
 
+// The joiner's invitation task is the HR administrator's, the Administrator's and the Owner's; a person's leaving is the people team's; the setting is the HR administrator's and
+// the Owner's (NM-ONB-02, NM-ONB-03).
+// req: NM-ONB-02, NM-ONB-03
+func TestInvitationTasksAndLeavingsAreForTheRolesThatHandleThem(t *testing.T) {
+	do := func(roles []authz.Role, method, path, body string) int {
+		testRoles = roles
+		defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20"
+	person := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"
+	leaving := `{"kind":"resignation","last_day":"2026-11-30","notice_given_on":"2026-10-01"}`
+	for _, tc := range []struct {
+		roles                                                 []authz.Role
+		tasks, decide, settings, setSettings, leave, setLeave int
+	}{
+		{[]authz.Role{authz.Employee}, 403, 403, 403, 403, 403, 403}, {[]authz.Role{authz.LineManager}, 403, 403, 403, 403, 403, 403}, {[]authz.Role{authz.PayrollAdmin}, 403, 403, 403, 403, 403, 403},
+		{[]authz.Role{authz.HROfficer}, 403, 403, 403, 403, 200, 204}, {[]authz.Role{authz.HRAdmin}, 200, 204, 200, 204, 200, 204},
+		{[]authz.Role{authz.Administrator}, 200, 204, 200, 403, 403, 403}, {[]authz.Role{authz.Owner}, 200, 204, 200, 204, 200, 204},
+	} {
+		if got := do(tc.roles, "GET", "/v1/onboarding/tasks", ""); got != tc.tasks {
+			t.Errorf("%v reading the tasks: %d, want %d", tc.roles, got, tc.tasks)
+		}
+		if got := do(tc.roles, "POST", "/v1/onboarding/tasks/"+id+"/decision", `{"state":"done"}`); got != tc.decide {
+			t.Errorf("%v deciding a task: %d, want %d", tc.roles, got, tc.decide)
+		}
+		if got := do(tc.roles, "GET", "/v1/onboarding/settings", ""); got != tc.settings {
+			t.Errorf("%v reading the setting: %d, want %d", tc.roles, got, tc.settings)
+		}
+		if got := do(tc.roles, "PUT", "/v1/onboarding/settings", `{"invite_to_fyniq":true}`); got != tc.setSettings {
+			t.Errorf("%v setting it: %d, want %d", tc.roles, got, tc.setSettings)
+		}
+		if got := do(tc.roles, "GET", "/v1/offboardings", ""); got != tc.leave {
+			t.Errorf("%v listing leavings: %d, want %d", tc.roles, got, tc.leave)
+		}
+		if got := do(tc.roles, "PUT", "/v1/people/"+person+"/offboarding", leaving); got != tc.setLeave {
+			t.Errorf("%v recording a leaving: %d, want %d", tc.roles, got, tc.setLeave)
+		}
+	}
+	if got := do([]authz.Role{authz.HROfficer}, "PUT", "/v1/people/"+person+"/offboarding", `{"kind":"quit","last_day":"2026-11-30"}`); got != 422 {
+		t.Errorf("a kind that is not one: %d", got)
+	}
+	if got := do([]authz.Role{authz.HROfficer}, "POST", "/v1/onboarding/tasks/"+id+"/decision", `{"state":"done"}`); got != 403 {
+		t.Errorf("an HR officer deciding an invitation task: %d", got)
+	}
+}
+
 // Letters are asked for by the person, checked by the people team (never their own), signed only by the signatory after a fresh passkey confirmation, and read by the person
 // and the people team; the people team writes templates, the HR administrator and the Owner approve them and set the letterhead and the types; a delivery link needs no
 // sign-in (NM-LTR-01, NM-LTR-02, NM-LTR-03).
