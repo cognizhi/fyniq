@@ -7160,6 +7160,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/evidence-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the evidence rules
+         * @description The required and recommended evidence of each kind of activity (FR-DOC-06; PRD-001 §8.16), with each configurable activity's level in force today: required blocks completing it, recommended warns (C.2 #30), optional asks for nothing. Read-only; any member may read it.
+         */
+        get: operations["getEvidenceRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/evidence/{evidence_id}/download": {
         parameters: {
             query?: never;
@@ -32589,6 +32609,53 @@ export interface components {
              */
             type: string;
         };
+        EvidenceRule: {
+            /**
+             * @description The group of activities it belongs to.
+             * @example purchases
+             * @enum {string}
+             */
+            area: "purchases" | "journals" | "filings" | "equity" | "governance";
+            /**
+             * @description Whether its module exists, so the rule is enforced now; otherwise it starts to apply with its module.
+             * @example true
+             */
+            built: boolean;
+            /**
+             * @description The activity.
+             * @example bill
+             */
+            key: string;
+            /**
+             * @description The activity in a sentence.
+             * @example Bill
+             */
+            label: string;
+            /**
+             * @description How its evidence counts today: the organisation's setting where there is one, else the table's default.
+             * @example required
+             * @enum {string}
+             */
+            level: "required" | "recommended" | "optional";
+            /** @description What is recommended; a missing item is a warning. */
+            recommended: components["schemas"]["EvidenceRuleItem"][];
+            /** @description What it needs; a missing item blocks completing it while its level is required. */
+            required: components["schemas"]["EvidenceRuleItem"][];
+            /**
+             * @description The organisation setting that holds its level (FR-ORG-08), changed under dual control; none when its module fixes it.
+             * @example evidence.bill
+             */
+            setting?: string;
+        };
+        EvidenceRuleItem: {
+            /**
+             * @description In the table's words.
+             * @example Receipt or invoice
+             */
+            label: string;
+            /** @description Evidence types that meet it, as a file names what it is; none means any file does. */
+            types: string[];
+        };
         ExemptStatusDraft: {
             /**
              * @description An exempt private company: no corporate shareholder and at most 20 members. False once, for example, a corporate investor joins.
@@ -35557,6 +35624,10 @@ export interface components {
              * @example 2026-10-31
              */
             to: string;
+        };
+        GetEvidenceRulesOutputBody: {
+            /** @description The table's rows, in its order. */
+            rules: components["schemas"]["EvidenceRule"][];
         };
         HeartbeatDrillInput: {
             /**
@@ -109448,6 +109519,81 @@ export interface operations {
             };
             /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getEvidenceRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetEvidenceRulesOutputBody"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
