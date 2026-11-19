@@ -11,6 +11,8 @@ import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { kinds, makers, type MoneyAccount } from "./BankAccounts";
+import { institutions, paysOut } from "./paymentFiles";
+import { PaymentFileSetting } from "./PaymentFileSetting";
 
 type Draft = components["schemas"]["MoneyAccountDraft"];
 type Source = "file" | "email" | "connector";
@@ -198,7 +200,13 @@ function AccountStep({ onDone }: { onDone: (a: MoneyAccount, etag: string) => vo
           <label className="fy-label" htmlFor={`${id}-institution`}>
             Bank or provider (optional)
           </label>
-          <input className="fy-input" id={`${id}-institution`} value={form.institution} maxLength={100} placeholder="Such as DBS, Wise or Airwallex" onChange={set("institution")} />
+          <input className="fy-input" id={`${id}-institution`} list={`${id}-banks`} value={form.institution} maxLength={100} placeholder="Such as DBS, Wise or Airwallex" onChange={set("institution")} />
+          <datalist id={`${id}-banks`}>
+            {institutions.map((i) => (
+              <option key={i} value={i} />
+            ))}
+          </datalist>
+          <span className="fy-small fy-muted">Pick one from the list when it is there: it decides which payment files the account may give. Another bank gives the payment list.</span>
         </div>
         <div className="fy-field">
           <label className="fy-label" htmlFor={`${id}-account`}>
@@ -249,6 +257,7 @@ function AccountStep({ onDone }: { onDone: (a: MoneyAccount, etag: string) => vo
 function SourceStep({ account, etag, mayConnect, onDone }: { account: MoneyAccount; etag: string; mayConnect: boolean; onDone: (s: Source) => void }) {
   const id = useId();
   const h = helpText("bank-account.source");
+  const file = helpText("bank-account.payment-file");
   const [source, setSource] = useState<Source>("file");
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [busy, setBusy] = useState(false);
@@ -259,6 +268,18 @@ function SourceStep({ account, etag, mayConnect, onDone }: { account: MoneyAccou
   const [connector, setConnector] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const queries = useQueryClient();
+  // The account as the server has it now: its version moves when its payment file is saved, and the file choices follow its bank.
+  const fresh = useQuery({
+    queryKey: ["money-account", account.id],
+    initialData: { account, etag: etag || `"${account.version}"` },
+    staleTime: Infinity,
+    queryFn: async () => {
+      const r = await api.GET("/v1/money-accounts/{money_account_id}", { params: { path: { money_account_id: account.id } } });
+      if (r.error) throw r.error;
+      return { account: r.data, etag: etagOf(r.response) };
+    },
+  });
+  const current = fresh.data;
   const addresses = useQuery({
     queryKey: ["capture-addresses"],
     enabled: mayConnect,
@@ -320,7 +341,7 @@ function SourceStep({ account, etag, mayConnect, onDone }: { account: MoneyAccou
       void queries.invalidateQueries({ queryKey: ["capture-addresses"] });
     }
     const out = await api.POST("/v1/money-accounts/{money_account_id}/sources", {
-      params: { path: { money_account_id: account.id }, header: { "Idempotency-Key": newKey(), "If-Match": etag || `"${account.version}"` } },
+      params: { path: { money_account_id: account.id }, header: { "Idempotency-Key": newKey(), "If-Match": current.etag || `"${current.account.version}"` } },
       body:
         source === "email"
           ? { kind: "email", from_date: todayInSingapore(), senders: list, report_format: format, mapping_id: mapping || undefined }
@@ -470,6 +491,18 @@ function SourceStep({ account, etag, mayConnect, onDone }: { account: MoneyAccou
             </div>
           </div>
         </div>
+      )}
+      {paysOut(account.kind) && (
+        <section className="fy-card" aria-labelledby={`${id}-file`}>
+          <div className="fy-card__head">
+            <h2 className="fy-h3" id={`${id}-file`} title={file.tooltip}>
+              How its payments are written
+            </h2>
+          </div>
+          <div className="fy-card__body">
+            <PaymentFileSetting account={current.account} may />
+          </div>
+        </section>
       )}
       <div className="fy-row gap-2">
         <button type="button" className="fy-btn fy-btn--primary" onClick={() => void send()} disabled={busy}>

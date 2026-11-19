@@ -1159,6 +1159,14 @@
       "label": "Download payment list",
       "tooltip": "The list to key into your bank, with full account numbers, once you confirm it's you. Each download is recorded."
     },
+    "batch.download-wise": {
+      "label": "Download Wise batch file",
+      "tooltip": "Wise's batch payment file, with full account numbers, once you confirm it's you. Upload it to Wise. Each download is recorded."
+    },
+    "batch.download-dbs": {
+      "label": "Download DBS UFF file",
+      "tooltip": "DBS IDEAL's UFF, with full account numbers, once you confirm it's you. Upload it in DBS IDEAL. Each download is recorded."
+    },
     "batch.remittance-again": {
       "label": "Send again",
       "tooltip": "A supplier's remittance advice that gave up after several tries is sent once more, with a reason. It is still sent at most once."
@@ -1222,6 +1230,10 @@
     "banking.cash-position": {
       "label": "Cash position",
       "tooltip": "The cash in every open money account, other currencies at the day's rate; an account with no rate is left out and listed."
+    },
+    "bank-account.payment-file": {
+      "label": "Payment file",
+      "tooltip": "The file a payment batch paying from this account gives when released: the payment list for any bank, or the bank's own file once Fyniq writes it. A batch already released keeps its file."
     },
     "bank-account.complete-to": {
       "label": "Complete to",
@@ -2190,6 +2202,26 @@
     "public.download": {
       "label": "Download the PDF",
       "tooltip": "Save the document as the sender issued it, to keep for your records."
+    },
+    "projects.overview": {
+      "label": "Projects",
+      "tooltip": "The work you track: each project's customer, how it is billed, its budget, who logs time on it and who approves that time. Off until an Owner or Administrator switches Projects and time on."
+    },
+    "projects.record": {
+      "label": "Project",
+      "tooltip": "One project: its customer, billing method, dates and budgets, the people on it and which of its managers can approve time, and its tasks."
+    },
+    "project.new": {
+      "label": "Add a project",
+      "tooltip": "A project is a value of your Project dimension, so lines you tag with it already count towards it. Choose how it is billed, its customer and who works on it."
+    },
+    "project.people": {
+      "label": "People on the project",
+      "tooltip": "Members log time on the project. A manager also approves that time, but only a person who holds the Approver or Controller role can: naming someone a manager gives them no right of its own."
+    },
+    "project.task-add": {
+      "label": "Add a task",
+      "tooltip": "Time is logged against a task of a project, such as Data migration. A task is never deleted: put it out of use when it is done."
     },
     "claim.line-dimensions": {
       "label": "Team or project",
