@@ -12,7 +12,8 @@ The rules this module applies, with the source of each:
 
 * **Wage classes by facts** (FR-PAY-17). An item that is CPF wages is *ordinary* when it is for the month's employment (``for_month``,
   the wage month when it names none) and payable by the 14th of the following month (``payable_on``, the month's pay day when it names
-  none), and *additional* otherwise; an item that is not CPF wages is neither. The name (``suggested``) changes no figure.
+  none), and *additional* otherwise (so pay for another month's employment is additional wages [verify]); an item that is not CPF wages is
+  neither. The name (``suggested``) changes no figure.
 * **Gross** is every item added (B.3). **Ordinary wages for CPF** are ``min(max(0, ordinary items), OW ceiling)``; the **additional
   wages** of the month are the additional items (not below nothing), limited by the annual ceiling (below).
 * **Additional Wage ceiling** (FR-PAY-02, FR-PAY-14): the annual salary ceiling less the year's ordinary wages subject to CPF, per
@@ -28,15 +29,17 @@ The rules this module applies, with the source of each:
   ``pr_start``; a resident with no start date is read as past both. The age band changes from the first day of the month after the 55th,
   60th, 65th and 70th birthday. Wages up to S$50 carry nothing; above S$50 to S$500 the flat rate of the wages, all of it the employer's;
   above S$500 to S$750 the flat rate of the wages plus the slope of the wages above S$500, the slope being the employee's share
-  (``RND-CPF-GRAD``); above S$750 the rates of the rates table on the subject wages (``RND-CPF``). In both the **total** is rounded to
+  (``RND-CPF-GRAD``); above S$750 the rates of the rates table on the subject wages (``RND-CPF``). The month's total wages, which pick the band,
+  are the wages subject to CPF, as the pack's own text defines them: the capped ordinary wages and the additional wages after their
+  ceiling and any true-up [verify: the CPF Board's "Total Wages payable in a calendar month" may count the wages above a ceiling]. In both the **total** is rounded to
   the nearest dollar with 50 cents up, the **employee's share** is rounded down to the dollar, the employer's is the difference, once
   per employee-month.
 * **SDL** (FR-PAY-03, ``RND-SDL``): an employee's levy is the rate on the month's remuneration (the gross) rounded to the cent half up,
   held between the pack's minimum and maximum, and nothing when the remuneration is not above nothing; a contractor pays none. The
   employer-month **SDL payable** is the employees' amounts added and rounded **down** to the dollar.
-* **SHG** (FR-PAY-04): the fund's amount for the band the month's total wages (the CPF wages, before the ceilings) fall in, unless the
-  employee opted out; nothing when there are no wages.
-* **Deductions** (FR-PAY-16): only the kinds MOM allows; ``other`` needs written consent; the deductions, not counting absence, the
+* **SHG** (FR-PAY-04): the fund's amount for the band the month's wages (the gross, before the ceilings) fall in, unless the employee
+  opted out; nothing when there are none [verify: whether items that are not CPF wages count as "monthly total wages"].
+* **Deductions** (FR-PAY-16): only the kinds MOM allows, each for more than nothing; ``other`` needs written consent; the deductions, not counting absence, the
   recovery of advances, loans, overpaid salary or unearned benefits and co-operative society payments, are at most 50% of the salary
   payable (the gross) except on termination (``final``); an advance is recovered in at most 12 instalments of at most 25% of the
   salary each; on final pay an advance is recovered only as far as the employee consented in writing [accountant to confirm: MOM does not say
@@ -168,8 +171,14 @@ def _pack_ids(doc: dict[str, Any]) -> dict[str, str]:
 
 
 def _passed(birth: date, month: date, years: int) -> bool:
-    """Whether the person is above ``years`` of age for the wage month: from the first day of the month after the birthday."""
-    return (birth.year + years, birth.month) < (month.year, month.month)
+    """Whether the person is above ``years`` of age for the wage month: from the first day of the month after the birthday. A 29 February
+    birthday falls on 1 March in a year with no 29 February [verify: the CPF Board's reading]."""
+    year = birth.year + years
+    try:
+        birthday = date(year, birth.month, birth.day)
+    except ValueError:
+        birthday = date(year, 3, 1)
+    return (birthday.year, birthday.month) < (month.year, month.month)
 
 
 def pr_year(start: date, month: date) -> int:
@@ -216,7 +225,8 @@ def _rates(pack_id: str, group: str, birth: date, month: date) -> tuple[Decimal,
 
 
 def cpf_split(pack_id: str, group: str, birth: date, month: date, subject: Decimal) -> tuple[Decimal, Decimal]:
-    """(total, employee's share) in whole dollars for the wages subject to CPF: ``RND-CPF`` above S$750, ``RND-CPF-GRAD`` up to it."""
+    """(total, employee's share) in whole dollars for the month's total wages, which are the wages subject to CPF (the capped ordinary wages
+    and the additional wages after their ceiling and any true-up: the pack's own definition): ``RND-CPF`` above S$750, ``RND-CPF-GRAD`` up to it."""
     rows = [r for r in _table(pack_id, "low_wages.csv") if r["group"] == group and _age_matches(r, birth, month) and _in_force(r, month)]
     if len(rows) != 1:
         raise PayrollError(f"{pack_id} holds no single graduated row for {group} in {month:%Y-%m}")
@@ -287,10 +297,8 @@ def wage_class(item: dict[str, Any], month: date, pay_day: date) -> str:
         return NOT_WAGES
     for_month = _first(item["for_month"], "for_month") if item.get("for_month") else month
     payable_on = _first(item["payable_on"], "payable_on") if item.get("payable_on") else pay_day
-    next_month = date(month.year + (month.month == 12), month.month % 12 + 1, 14)
-    if (for_month.year, for_month.month) == (month.year, month.month) and payable_on <= next_month:
-        return ORDINARY
-    return ADDITIONAL
+    due = date(month.year + (month.month == 12), month.month % 12 + 1, 14)  # the 14th of the month following the wage month
+    return ORDINARY if (for_month.year, for_month.month) == (month.year, month.month) and payable_on <= due else ADDITIONAL
 
 
 def last_day(month: date) -> date:
@@ -337,6 +345,9 @@ def check_deductions(salary: Decimal, deductions: list[dict[str, Any]], final: b
     for d in deductions:
         if d["kind"] == "other" and not d["consent"]:
             found.append({"key": d["key"], "rule": "consent"})
+        if d["amount"] <= 0:  # a deduction is more than zero; it is not counted
+            found.append({"key": d["key"], "rule": "amount"})
+            continue
         if d["kind"] not in EXEMPT_FROM_HALF:
             counted += d["amount"]
         if d["is_advance"]:
@@ -389,20 +400,17 @@ def employee_month(person: dict[str, Any], month: date, facts: dict[str, Any], p
 
     subject = ow_subject + aw_subject
     cpf_total = cpf_employee = ZERO
-    refund_total = refund_employee = ZERO
+    refund_employee = ZERO
     if group is not None:
         cpf_total, cpf_employee = cpf_split(cpf_id, group, birth, month, subject)
         if refund_wages > 0:
-            employer_rate, employee_rate = _rates(cpf_id, group, birth, month)
-            refund_total = cents_half_up(refund_wages * (employer_rate + employee_rate))
-            refund_employee = cents_down(refund_wages * employee_rate)
+            refund_employee = cents_down(refund_wages * _rates(cpf_id, group, birth, month)[1])
     cpf_employer = cpf_total - cpf_employee
 
     sdl = sdl_employee(sdl_id, month, gross) if employee else ZERO
-    total_wages = max(ZERO, raw_ow + raw_aw)
     shg = ZERO
     if employee and person.get("shg_fund") and not person.get("shg_opt_out"):
-        shg = shg_fund_amount(shg_id, month, person["shg_fund"], total_wages)
+        shg = shg_fund_amount(shg_id, month, person["shg_fund"], gross)
 
     deductions_total = sum((d["amount"] for d in facts["deductions"]), ZERO)
     reimbursements = sum(facts["reimbursements"], ZERO)
@@ -424,7 +432,6 @@ def employee_month(person: dict[str, Any], month: date, facts: dict[str, Any], p
         "disburse": net + reimbursements - facts["held"],
         "employer_cost": gross + cpf_employer + sdl,
         "refund_wages": refund_wages,
-        "refund_total": refund_total,
         "refund_employee": refund_employee,
         "violations": check_deductions(gross, facts["deductions"], facts["final"]),
     }
@@ -433,7 +440,7 @@ def employee_month(person: dict[str, Any], month: date, facts: dict[str, Any], p
 # --- the run -----------------------------------------------------------------------------------------------------------------------
 
 FIGURES = ("gross", "ow_subject", "aw_subject", "cpf_total", "cpf_employee", "cpf_employer", "sdl", "shg", "deductions", "reimbursements",
-           "held", "net", "disburse", "employer_cost", "refund_wages", "refund_total", "refund_employee")
+           "held", "net", "disburse", "employer_cost", "refund_wages", "refund_employee")
 DIFFERENCE = ("gross", "cpf_employee", "cpf_employer", "sdl", "shg", "deductions", "reimbursements", "net", "disburse")
 
 
@@ -544,7 +551,7 @@ def payroll_run(doc: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema": "fyniq-payroll-run-result@1",
         "people": people,
-        "totals": {k: fmt(v) for k, v in totals.items()},
+        "totals": {k: fmt(v) for k, v in totals.items() if k != "advances"},
         "postings": {k: {"debit": fmt(v["debit"]), "credit": fmt(v["credit"])} for k, v in lines.items()},
         "balanced": balanced(lines),
     }

@@ -105,6 +105,12 @@ def test_cpf_of_a_citizen_aged_55_or_under_by_the_wage_band(wages, total, employ
     assert Decimal(got["cpf_employer"]) == total - employee
 
 
+def test_a_leap_day_birthday_is_a_leap_day_only_in_a_leap_year():  # req: FR-PAY-02
+    assert em._passed(em.date(1964, 2, 29), em.date(2024, 3, 1), 60) is True  # 29 Feb 2024 exists: March is the next month
+    assert em._passed(em.date(1964, 2, 29), em.date(2024, 2, 1), 60) is False
+    assert em._passed(em.date(1963, 2, 28), em.date(2023, 3, 1), 60) is True
+
+
 def test_cpf_applies_once_to_the_months_total_never_to_a_run():  # req: RND-CPF, FR-PAY-02 (G4-003)
     # S$3,005 as 1,502.50 + 1,502.50 in one employee-month is the same S$3,005: 1,112 / 601 / 511, not 1,112 / 600 / 512.
     two = [
@@ -169,8 +175,10 @@ def test_the_prd_wage_of_700_uses_the_graduated_table_and_not_the_workbooks_figu
         ("1971-03-01", "2026-03-01", 1850, 1000),  # a birthday on the 1st is read the same way: the band changes the month after
         ("1971-03-01", "2026-04-01", 1700, 900),
         ("1971-02-28", "2026-03-01", 1700, 900),  # the birthday was in February: March is the new band
-        ("1972-02-29", "2027-02-01", 1850, 1000),  # the 55th birthday would be 29 Feb 2027, which does not exist: still February's
-        ("1972-02-29", "2027-03-01", 1775, 950),  # March 2027: above 55 to 60 at 2027's 16.5% + 19% = 35.5% of 5,000
+        ("1972-02-29", "2027-03-01", 1850, 1000),  # the 55th birthday would be 29 Feb 2027, which does not exist: 1 March [verify]; still 55 and below
+        ("1972-02-29", "2027-04-01", 1775, 950),  # April 2027: above 55 to 60 at 2027's 16.5% + 19% = 35.5% of 5,000
+        ("1956-02-29", "2026-03-01", 825, 375),  # the 70th birthday is 1 March 2026: still above 65 to 70 (16.5% of 5,000)
+        ("1956-02-29", "2026-04-01", 625, 250),  # April: above 70 (12.5%)
         ("1966-12-20", "2026-12-01", 1700, 900),  # turns 60 in December 2026: still 55 to 60 at 34%
         ("1966-12-20", "2027-01-01", 1300, 650),  # January 2027: above 60 to 65 at 2027's 13% + 13% = 26% of 5,000
         ("1961-06-10", "2026-06-01", 1250, 625),  # turns 65 in June 2026: 60 to 65 at 12.5% + 12.5% = 25% of 5,000
@@ -255,12 +263,12 @@ def test_wages_below_nothing_carry_no_cpf_and_no_sdl():  # req: FR-PAY-02, FR-PA
     assert figures(got, "ow_subject", "cpf_total", "sdl") == {"ow_subject": 0, "cpf_total": 0, "sdl": 0}
 
 
-def test_an_item_that_is_not_cpf_wages_is_in_gross_and_sdl_but_not_in_cpf_or_shg():  # req: FR-PAY-17, FR-PAY-03, FR-PAY-04
+def test_an_item_that_is_not_cpf_wages_is_in_gross_sdl_and_shg_but_not_in_cpf():  # req: FR-PAY-17, FR-PAY-03, FR-PAY-04 [verify]
     items = basic("1000.00") + [{"key": "t", "name": "Allowance", "amount": "1500.00", "cpf_wages": False}]
     got = work(items=items, person=person(shg_fund="CDAC"))
-    # gross 2,500; CPF on 1,000: 370, the employee 200; SDL 0.25% of 2,500 = 6.25; CDAC on the total wages of 1,000: 0.50
+    # gross 2,500; CPF on 1,000: 370, the employee 200; SDL 0.25% of 2,500 = 6.25; CDAC for wages above 2,000 up to 3,500: 1.00
     assert figures(got, "gross", "cpf_total", "cpf_employee", "sdl", "shg") == {
-        "gross": 2500, "cpf_total": 370, "cpf_employee": 200, "sdl": Decimal("6.25"), "shg": Decimal("0.50")}
+        "gross": 2500, "cpf_total": 370, "cpf_employee": 200, "sdl": Decimal("6.25"), "shg": Decimal("1.00")}
 
 
 # --- the additional wage ceiling and the year to date ---------------------------------------------------------------------------------
@@ -296,15 +304,14 @@ def test_the_last_month_of_employment_trues_up_though_it_is_not_december():  # r
 
 
 def test_a_true_up_excess_is_a_refund_task_with_the_employees_share_cents_dropped():  # req: FR-PAY-14
-    # Ordinary wages 96,000 actual: 6,000 allowed; 30,000 counted: 24,000 refundable at 37% = 8,880; the employee's share 20% of 24,000 = 4,800.
+    # Ordinary wages 96,000 actual: 6,000 allowed; 30,000 counted: 24,000 refundable; the employee's share 20% of 24,000 = 4,800.
     got = work(month="2026-12-01", person=person(), items=basic("8000.00"), last_month=True, ytd={"ow": "88000", "aw_subject": "30000", "aw_paid": "30000"})
-    assert figures(got, "aw_subject", "refund_wages", "refund_total", "refund_employee") == {
-        "aw_subject": 0, "refund_wages": 24000, "refund_total": 8880, "refund_employee": 4800}
+    assert figures(got, "aw_subject", "refund_wages", "refund_employee") == {"aw_subject": 0, "refund_wages": 24000, "refund_employee": 4800}
 
 
 def test_a_refund_with_a_part_cent_drops_the_cents_for_the_employee():  # req: FR-PAY-14
     # Actual ordinary wages 89,999.93 + 8,000 = 97,999.93: 4,000.07 allowed; 12,100.14 counted: 8,100.07 refundable.
-    # The employee's share 20% of 8,100.07 = 1,620.014: cents dropped, 1,620.01. The total at 37% is 2,997.0259 [verify: the cent]
+    # The employee's share 20% of 8,100.07 = 1,620.014: cents dropped, 1,620.01. 
     got = work(month="2026-12-01", items=basic("8000.00"), last_month=True, ytd={"ow": "89999.93", "aw_subject": "12100.14", "aw_paid": "12100.14"})
     assert figures(got, "refund_wages", "refund_employee") == {"refund_wages": Decimal("8100.07"), "refund_employee": Decimal("1620.01")}
 
@@ -419,6 +426,11 @@ def test_the_50_percent_limit_does_not_apply_on_termination():  # req: FR-PAY-16
     assert violations([ded("a", "damage_or_loss", "3900.00")], final=True) == []
 
 
+def test_a_deduction_is_for_more_than_nothing_and_is_not_counted():  # req: FR-PAY-16
+    assert violations([ded("a", "damage_or_loss", "0.00")]) == [{"key": "a", "rule": "amount"}]
+    assert violations([ded("a", "damage_or_loss", "0.00"), ded("b", "damage_or_loss", "2000.00")]) == [{"key": "a", "rule": "amount"}]  # no "half": 2,000 is 50% of 4,000
+
+
 def test_any_other_purpose_needs_written_consent():  # req: FR-PAY-16
     assert violations([ded("a", "other", "10.00")]) == [{"key": "a", "rule": "consent"}]
     assert violations([ded("a", "other", "10.00", consent=True)]) == []
@@ -463,7 +475,7 @@ def test_a_runs_totals_and_balanced_entry():  # req: FR-PAY-18, FR-PAY-07, FR-PA
     t = {k: Decimal(v) for k, v in out["totals"].items()}
     assert t["gross"] == 8000 and t["employee_cpf"] == 1000 and t["employer_cpf"] == 850
     assert t["sdl_employees"] == Decimal("18.75") and t["sdl_payable"] == 18  # rounded down once
-    assert t["deductions"] == 600 and t["advances"] == 500 and t["reimbursements"] == 45 and t["held"] == 200
+    assert t["deductions"] == 600 and t["reimbursements"] == 45 and t["held"] == 200
     assert t["net"] == 6400 and t["disburse"] == 6245
     assert t["employer_cost"] == 8868  # 8,000 + 850 + the SDL payable 18
     # Dr 8,000 + 850 + 18 + 45 = 8,913 = Cr 500 (1250) + 100 (the damage deduction's account) + 6,445 (2100: 6,245 + 200 held)

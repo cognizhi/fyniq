@@ -1,0 +1,60 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "advance-claim-and-held",
+ "why": "An advance recovered clears 1250 and not salary expense, a booked claim clears 2150, monies held stay in 2100 (B.3, FR-PAY-18); the SDL payable is rounded down once (RND-SDL)",
+ "month": "2026-06-01",
+ "people": [
+  {
+   "id": "A",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "deductions": [
+    {
+     "key": "adv",
+     "kind": "recovery",
+     "amount": "500.00",
+     "instalment": 1,
+     "is_advance": true
+    }
+   ],
+   "reimbursements": [
+    "45.00"
+   ]
+  },
+  {
+   "id": "B",
+   "person": {
+    "residency": "foreigner",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "3000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "deductions": [
+    {
+     "key": "dmg",
+     "kind": "damage_or_loss",
+     "amount": "100.00"
+    }
+   ],
+   "held": "200.00"
+  }
+ ]
+}
