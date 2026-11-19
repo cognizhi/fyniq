@@ -10,14 +10,16 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
 
 ## 1. The contract and its fixtures (FR-PPL-15 and 03 are counted in `p1-nemura-fyniq-link`, built here because Fyniq's side needs them first)
 
-- [ ] 1.1 The envelope and its canonical bytes (design D2): `internal/domain/peoplelink` (digest, signature, window, epoch) and the shared fixtures in
+- [x] 1.1 The envelope and its canonical bytes (design D2): `internal/domain/peoplelink` (digest, signature, window, epoch) and the shared fixtures in
   `contracts/peoplelink/` generated at test time; negative tests for an altered payload, an altered header, a wrong key, an old epoch and a 5-minute skew.
+  (Built, 20 Nov 2026: `internal/domain/peoplelink` and Nemura's own copy `internal/nemura/link` (canonicalisation, digest, Ed25519 signature, the six checks with codes `PPL-01` to `PPL-06`); `contracts/peoplelink/` with `canonical.json` (hand-worked vectors and refusals), `envelope.json` (a signed envelope; its key is derived at test time) and a README. Both copies pass the same fixtures; tests do not carry a `req:` tag until FR-PPL-15 and NM-INT-10 are complete.)
 - [ ] 1.2 The events and calls of Appendix E as operations in `contracts/openapi/` (`/v1/people-link/...`) and event schemas under `contracts/events/`;
   `make openapi`, `make api-check`; the error codes are stable and plain.
 
 ## 2. The link in Fyniq (FR-PPL-01, 16, 08, 03, 18)
 
 - [ ] 2.1 Migration: `people_link` (state, epoch, Nemura organisation, link public key, client, source per feature), tenancy and RLS, audited.
+  (Built, 20 Nov 2026: migration 000900 `people_link` (states active, suspended, unlinking, unlinked; epochs one above the last, never reused; one live link; no delete; key and approval kept) and `people_source` (the latest row of each feature is in force), `storage.PeopleLinks` with `Link`, `SetState`, `SetSource`, `Sources`; `TestAttackTheLinkKeepsItsEpochsAndItsTenant` carries `// req: FR-PPL-16`... not tagged complete. **Left:** the Owner-and-second-approver request and its executor, the link client's registration, the Settings page (2.2, 2.3).)
 - [ ] 2.2 Settings → People and HR: sources per feature; link, change source and unlink need the Owner and a second approver; unlinking settles work in
   flight first (runs approved not posted, unknown outcomes, open holds, events waiting) and revokes the client and key after.
 - [ ] 2.3 The link client (design D1, D4): registered only by the dual-approved link, Appendix E scopes only, principal class `link`; attack tests that no
@@ -29,8 +31,10 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
 
 - [ ] 3.1 `people_link_inbox` (design D5): dedupe by event ID, per-object versions, older ignored and recorded, tombstones, gap repair by reading the
   object; a replay outside 5 minutes or a bad signature refused; no pay or bank payload ever stored or logged.
+  (Built, 20 Nov 2026: `people_link_inbox` (append-only, the event ID once, outcome applied, ignored as older or refused with a code, identities and digests only) and `PeopleLinks.Receive`; the projection's per-part version rules (`peoplelink.ApplyPerson`, `ApplyBankDetails`, `ApplyTaxHold`). **Left:** the receiving operation that verifies the envelope and calls them, gap repair, the redaction test on logs (3.1 stays open).)
 - [ ] 3.2 The projection: person, name, email, department, cost centre, dates, status, line manager, hold state and version, bank-detail version (never the
   account number); `people.person.upserted` and `people.bank_details.changed` applied through the inbox.
+  (Built, 20 Nov 2026: `person_projection` (person, name, email, department and cost-centre values, dates, status, line manager as a person ID, tombstone, hold and bank-detail versions; never an account number; an older version of a part refused by the database), `PeopleLinks.Person`, `People`, `PersonOfUser`, `SavePerson` audited by field name, never by value (`TestAttackTheProjectionOnlyMovesForwardAndTheInboxReceivesOnce`). **Left:** applying events through the API (3.1) and the explicit person-to-user mapping flow (2.5).)
 - [ ] 3.3 Leave for the books (FR-PPL-07): `leave.taken.changed` (dates and hours, never the type; a tombstone restores the hours) lowers available hours
   once against holidays (FR-PRJ-12); the month-end accrual arrives as a draft journal (P2 part).
 - [ ] 3.4 What reads the projection: claim routing to the line manager (FR-AP-17), the approvers' department figures, the personal approvals page of
@@ -48,6 +52,7 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
 
 - [ ] 5.1 The rule `payroll_run@1` (design D7) with replay registration, the oracle's half written from PRD-001 §10.2 and B.3, the scenario schema and a
   differential scenario; the full `make differential` passes.
+  (Built, 20 Nov 2026: `ledger.PostPayrollRun` (`payroll_run@1`: the difference of a version from what the run's earlier versions posted; departments with dimension values, employer CPF, SDL, 2110, 2100, deductions, reimbursements; stale refused; `LEDGER-51`), `ReplayPayrollRun`; the oracle's `sources/payroll.py` written from PRD-001 §10.2 and B.3; the scenario schema, `golden/payroll.json`, `oracle/tests/test_payroll.py` and a Hypothesis strategy (`payroll` in `DIFFERENTIAL_SOURCES`); the full `make differential` passes. FR-PAY-07 is not tagged yet: its tests say "part of", until the verified path posts through it (5.3). **Left:** the replay registration over a stored run version waits for the run's table (5.3), and the Appendix B.3 per-employee-month formulas are `p1-nemura-payroll`'s.)
 - [ ] 5.2 Corrections: the difference of a new version, a stale version refused, out-of-order convergence, a closed wage month posted in the open month,
   a withdrawn run reversed; economic uniqueness by organisation, source system, run and wage month.
 - [ ] 5.3 The mapping version (design D8) and the pay-run receipts: posting reference and status back to Nemura (`payroll.run.posted`), a refused posting

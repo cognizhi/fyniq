@@ -29,6 +29,7 @@ from oracle.ledger import Ledger
 from oracle.scenario import ScenarioError, scenario_from_json
 from oracle.strategies import scenarios
 from oracle.strategies_p1 import p1_scenarios
+from oracle.strategies_payroll import payroll_scenarios
 from oracle.strategies_statements import with_statements
 
 GOLDEN = Path(__file__).parent / "golden"
@@ -37,10 +38,12 @@ SOURCES = tuple(s.strip() for s in os.environ.get("FYNIQ_DIFFERENTIAL_SOURCES", 
 
 
 def strategy() -> st.SearchStrategy[dict]:
-    p1 = tuple(s for s in SOURCES if s not in ("statements", "kpis", "forecast", "feasibility", "purge"))
+    p1 = tuple(s for s in SOURCES if s not in ("statements", "kpis", "forecast", "feasibility", "purge", "payroll"))
     base = scenarios("differential")
     if p1:
         base = st.one_of(base, p1_scenarios(p1, "differential"))
+    if "payroll" in SOURCES:  # pay runs from the people platform: their own small chart (payroll_run@1)
+        base = st.one_of(base, payroll_scenarios("differential"))
     if "kpis" in SOURCES:
         return st.one_of(base, with_statements(base), with_statements(base, kpis=True))
     if "statements" in SOURCES:

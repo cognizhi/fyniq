@@ -77,6 +77,10 @@ var systemRoles = map[string]string{
 	"claims_payable":           ledger.RoleExpenseClaimsPayable,
 	"director_loan":            ledger.RoleDirectorLoan,
 	"deferred_remuneration":    ledger.RoleDeferredRemuneration,
+	"salaries_payable":         ledger.RoleSalariesPayable,
+	"cpf_sdl_payable":          ledger.RoleCPFSDLPayable,
+	"employer_cpf":             ledger.RoleEmployerCPF,
+	"sdl":                      ledger.RoleSDL,
 	"depreciation":             ledger.RoleDepreciation,
 	"accumulated_depreciation": ledger.RoleAccumulatedDepreciation,
 	"opening_clearing":         ledger.RoleOpeningClearing,
@@ -161,13 +165,17 @@ type p1 struct {
 	stagedRound     *namedRound
 	// The option pool's recorded resolutions and grants, and the grants' options as the cap table counts them, each
 	// kept by the document being posted until it is accepted (README, "The option pool and grants").
-	optionBook  equity.OptionBook
-	options     []equity.Option
-	grants      map[string]*recordedGrant // by the scenario's ID
-	stagedPool  *equity.PoolResolution
-	stagedGrant *recordedGrant
-	stagedEvent *stagedEvent
-	stagedUse   *stagedExercise
+	optionBook equity.OptionBook
+	options    []equity.Option
+	grants     map[string]*recordedGrant // by the scenario's ID
+	stagedPool *equity.PoolResolution
+	// payrolls are what each pay run's versions posted so far, by the scenario's run (payroll_run@1, FR-PPL-11); stagedPayroll is the
+	// version being posted, until it is accepted.
+	payrolls      map[string]ledger.PayrollPosted
+	stagedPayroll *stagedPayroll
+	stagedGrant   *recordedGrant
+	stagedEvent   *stagedEvent
+	stagedUse     *stagedExercise
 }
 
 // scheduled is one entry the scheduler posts after every document: a spread's release or an asset's depreciation.
@@ -264,6 +272,8 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return r.preIncorporationCost(d, date)
 	case "director_fee":
 		return r.directorFee(d, date)
+	case "payroll_run":
+		return r.payrollRun(d, date)
 	case "director_waiver":
 		return r.directorWaiver(d, date)
 	case "director_repayment":
