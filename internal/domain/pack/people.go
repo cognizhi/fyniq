@@ -33,9 +33,11 @@ func init() {
 			// The flexible work arrangement request rules (sg-people@2026.3).
 			"flexible_work": {"rule", "months", "effective_from", "effective_to", "status", "source"},
 			// Part IV of the Employment Act: the overtime rate, the monthly limit and who is covered (sg-people@2026.4).
-			"part_iv":        {"rule", "value", "effective_from", "effective_to", "status", "source"},
-			"ket_items":      {"item", "key", "label", "when", "status", "source"},
-			"payslip_items":  {"item", "key", "label", "when", "status", "source"},
+			"part_iv":       {"rule", "value", "effective_from", "effective_to", "status", "source"},
+			"ket_items":     {"item", "key", "label", "when", "status", "source"},
+			"payslip_items": {"item", "key", "label", "when", "status", "source"},
+			// The Monday that is a public holiday in lieu of one on a Sunday (sg-people@2026.8): the company calendar's non-working day, which a person's own leave count derives from their rest day instead.
+			"in_lieu":        {"date", "name", "holiday", "status", "source"},
 			"parental_leave": {"scheme", "total_weeks", "employer_weeks", "government_weeks", "min_service_months", "cap_per_period", "cap_period_weeks", "cap_total", "claim_months", "effective_from", "effective_to", "status", "source"},
 		},
 		Pinned: map[string][]string{
@@ -50,9 +52,10 @@ func init() {
 			"part_iv":        {"case", "rule", "date", "want", "why", "source"},
 			"ket_items":      {"case", "item", "want_key", "want_when", "why", "source"},
 			"payslip_items":  {"case", "item", "want_key", "want_when", "why", "source"},
+			"in_lieu":        {"case", "date", "want", "why", "source"},
 			"parental_leave": {"case", "scheme", "birth", "want", "why", "source"},
 		},
-		Since: map[string][2]int{"parental_leave": {2026, 2}, "flexible_work": {2026, 3}, "part_iv": {2026, 4}, "ket_items": {2026, 6}, "payslip_items": {2026, 7}},
+		Since: map[string][2]int{"parental_leave": {2026, 2}, "flexible_work": {2026, 3}, "part_iv": {2026, 4}, "ket_items": {2026, 6}, "payslip_items": {2026, 7}, "in_lieu": {2026, 8}},
 	}
 }
 
@@ -164,6 +167,20 @@ func checkPeople(dir string, v Version) Problems {
 			add(CodeValue, fmt.Sprintf("holidays.csv row %d", i+2), fmt.Sprintf("date %q is not a date", row[0]), "Write YYYY-MM-DD")
 		}
 	}
+	for i, row := range v.Tables["in_lieu"].Rows {
+		d, derr := ParseDate(row[0])
+		h, herr := ParseDate(row[2])
+		switch {
+		case derr != nil || herr != nil:
+			add(CodeValue, fmt.Sprintf("in_lieu.csv row %d", i+2), "the date or the holiday is not a date", "Write YYYY-MM-DD")
+		case h.Weekday() != time.Sunday || !d.Equal(h.AddDate(0, 0, 1)):
+			add(CodeValue, fmt.Sprintf("in_lieu.csv row %d", i+2), "an in-lieu day is the Monday after a public holiday on a Sunday", "Check the holiday's date and weekday against the official page")
+		default:
+			if _, ok := PublicHoliday(v, h); !ok {
+				add(CodeValue, fmt.Sprintf("in_lieu.csv row %d", i+2), "the holiday it replaces is not in holidays.csv", "Add the holiday, or correct the date")
+			}
+		}
+	}
 	for i, row := range v.Tables["retirement"].Rows {
 		r, _ := atoi(row[2])
 		e, _ := atoi(row[3])
@@ -219,6 +236,30 @@ func PublicHoliday(v Version, date time.Time) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// InLieu is the name of the public holiday a date stands in for, when the date is the Monday in lieu of a holiday on a Sunday (sg-people@2026.8), or false. A person's own leave is counted from their
+// rest day (leave.Observed); this is the company calendar's non-working day, for the checks' working-day counts.
+func InLieu(v Version, date time.Time) (string, bool) {
+	s := date.Format(time.DateOnly)
+	for _, r := range v.Tables["in_lieu"].Rows {
+		if r[0] == s {
+			return r[1], true
+		}
+	}
+	return "", false
+}
+
+// NonWorkingDay says whether a day is not a working day of the company calendar: a weekend, a public holiday or the Monday in lieu of one.
+func NonWorkingDay(v Version, date time.Time) bool {
+	if date.Weekday() == time.Saturday || date.Weekday() == time.Sunday {
+		return true
+	}
+	if _, ok := PublicHoliday(v, date); ok {
+		return true
+	}
+	_, ok := InLieu(v, date)
+	return ok
 }
 
 // HolidaysIn are the public holidays of a calendar year in the pack, by date; none means the pack holds no calendar for that year (NM-PACK-05).
@@ -305,6 +346,9 @@ func peopleTables(v Version) []string {
 	}
 	if _, ok := v.Tables["payslip_items"]; ok {
 		names = append(names, "payslip_items")
+	}
+	if _, ok := v.Tables["in_lieu"]; ok {
+		names = append(names, "in_lieu")
 	}
 	return names
 }
@@ -456,6 +500,18 @@ func runPeople(v Version) []Result {
 		r := Result{Table: "holidays", Case: row[0], Why: row[3], Want: row[2]}
 		if d, ok := day(&r, row[1]); ok {
 			name, found := PublicHoliday(v, d)
+			r.Got = "none"
+			if found {
+				r.Got = name
+			}
+			r.Pass = r.Got == r.Want
+		}
+		out = append(out, r)
+	}
+	for _, row := range v.Pinned["in_lieu"].Rows {
+		r := Result{Table: "in_lieu", Case: row[0], Why: row[3], Want: row[2]}
+		if d, ok := day(&r, row[1]); ok {
+			name, found := InLieu(v, d)
 			r.Got = "none"
 			if found {
 				r.Got = name

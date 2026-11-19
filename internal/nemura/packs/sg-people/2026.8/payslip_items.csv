@@ -1,0 +1,13 @@
+item,key,label,when,status,source
+1,employer_name,"Full name of employer",always,researched,mom-itemised-payslips
+2,employee_name,"Full name of employee",always,researched,mom-itemised-payslips
+3,payment_date,"Date of payment (or dates, if the pay slip consolidates multiple payments)",always,researched,mom-itemised-payslips
+4,basic_salary,"Basic salary",always,researched,mom-itemised-payslips
+5,salary_period,"Start and end date of salary period",always,researched,mom-itemised-payslips
+6,allowances,"Allowances paid for the salary period (fixed and ad-hoc)",if_applicable,researched,mom-itemised-payslips
+7,additional_payments,"Any other additional payment for the salary period (bonuses, rest day pay, public holiday pay)",if_applicable,researched,mom-itemised-payslips
+8,deductions,"Deductions made for the salary period (fixed and ad-hoc)",if_applicable,researched,mom-itemised-payslips
+9,overtime_hours,"Overtime hours worked",if_applicable,researched,mom-itemised-payslips
+10,overtime_pay,"Overtime pay",if_applicable,researched,mom-itemised-payslips
+11,overtime_period,"Start and end date of overtime payment period (if different from the salary period)",if_different,researched,mom-itemised-payslips
+12,net_salary,"Net salary paid in total",always,researched,mom-itemised-payslips
