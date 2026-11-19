@@ -26,7 +26,7 @@ The rules this module applies, with the source of each:
   A month that pays additional wages to a person CPF applies to, with no year to date, is refused (``needs_year_to_date``, ✖).
 * **CPF** (FR-PAY-02, B.3): citizens and permanent residents who are employees; a permanent resident in the first or second year of
   residence is at the graduated rates of both (G/G), or at the full employer rate and graduated employee rate (F/G) after a joint
-  application (``joint_election``). The year of residence runs to the end of the month of the first and of the second anniversary of
+  application (``joint_election``), or at the full rates of both (F/F, ``joint_election`` with ``employee_full_rate``: the full table's, as the CPF Board's table note says). The year of residence runs to the end of the month of the first and of the second anniversary of
   ``pr_start``; a resident with no start date is read as past both. The age band changes from the first day of the month after the 55th,
   60th, 65th and 70th birthday. Wages up to S$50 carry nothing; above S$50 to S$500 the flat rate of the wages, all of it the employer's;
   above S$500 to S$750 the flat rate of the wages plus the slope of the wages above S$500, the slope being the employee's share
@@ -200,6 +200,8 @@ def cpf_group(person: dict[str, Any], month: date) -> str | None:
     year = pr_year(date.fromisoformat(person["pr_start"]), month)
     if year >= 3:
         return "sc_spr3"
+    if person.get("joint_election") and person.get("employee_full_rate"):
+        return "sc_spr3"  # F/F: the full table's rates, as the CPF Board's table note says
     return f"spr{year}_{'fg' if person.get('joint_election') else 'gg'}"
 
 

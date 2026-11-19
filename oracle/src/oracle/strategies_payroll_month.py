@@ -78,6 +78,8 @@ def _person(draw: st.DrawFn, month: date) -> dict[str, Any]:
             out["pr_start"] = draw(_pr_start(month))
         if draw(st.booleans()):
             out["joint_election"] = draw(st.booleans())
+            if out["joint_election"] and draw(st.booleans()):
+                out["employee_full_rate"] = True  # F/F: the full table's rates for the employee too
     if draw(st.integers(0, 19)) == 0:
         out["employee"] = False
     if draw(st.booleans()):

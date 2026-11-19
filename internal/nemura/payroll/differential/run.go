@@ -72,6 +72,7 @@ type personDoc struct {
 	PRStart       string `json:"pr_start"`
 	BirthDate     string `json:"birth_date"`
 	JointElection bool   `json:"joint_election"`
+	FullRate      bool   `json:"employee_full_rate"`
 	SHGFund       string `json:"shg_fund"`
 	SHGOptOut     bool   `json:"shg_opt_out"`
 }
@@ -154,7 +155,7 @@ func cut(s string, sep byte) (string, string, bool) {
 }
 
 func person(p personDoc) (payroll.Person, error) {
-	out := payroll.Person{Employee: p.Employee == nil || *p.Employee, Residency: p.Residency, JointElection: p.JointElection, SHGFund: p.SHGFund, SHGOptOut: p.SHGOptOut}
+	out := payroll.Person{Employee: p.Employee == nil || *p.Employee, Residency: p.Residency, JointElection: p.JointElection, FullEmployeeRate: p.FullRate, SHGFund: p.SHGFund, SHGOptOut: p.SHGOptOut}
 	b, err := date(p.BirthDate)
 	if err != nil {
 		return out, err

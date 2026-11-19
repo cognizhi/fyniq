@@ -30,7 +30,8 @@
               "residency": {"enum": ["citizen", "permanent_resident", "foreigner"]},
               "pr_start": {"type": "string", "format": "date"},
               "birth_date": {"type": "string", "format": "date"},
-              "joint_election": {"type": "boolean"},
+              "joint_election": {"type": "boolean", "description": "A first- or second-year permanent resident with the CPF Board's approval of a joint application: full employer and graduated employee rates (F/G)"},
+              "employee_full_rate": {"type": "boolean", "description": "With joint_election: the application is for the employee's full rates too (F/F), which are the full table's"},
               "shg_fund": {"enum": ["", "CDAC", "ECF", "MBMF", "SINDA"]},
               "shg_opt_out": {"type": "boolean"}
             }

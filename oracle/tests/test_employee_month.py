@@ -605,3 +605,19 @@ def test_the_packs_pinned_sdl_and_shg_and_ceilings():  # req: RND-SDL, FR-PAY-04
     for r in _rows("sg-cpf", "2026.2", "ceilings.csv"):
         if r["want"] != "none":
             assert em._ceiling("sg-cpf@2026.2", r["ceiling"], em.date.fromisoformat(r["month"] + "-01")) == Decimal(r["want"]), r["case"]
+
+
+def test_a_joint_application_at_full_rates_for_both_is_the_full_table():  # req: FR-PAY-14
+    # The CPF Board's Table 1 note: the full rates "are also applicable to 1st and 2nd year SPR employees ... after CPF Board approves their joint application to
+    # contribute to CPF at full employer - full employee rates" (F/F). A first-year resident aged 36: 5,000 at 37% is 1,850, 20% of it, 1,000, the employee's;
+    # 600 is in the graduated range of Table 1: 17% of 600 + 0.6 x (600 - 500) = 162, the slope, 60, the employee's. F/G keeps the graduated employee rate.
+    ff = person(residency="permanent_resident", pr_start="2026-02-10", joint_election=True, employee_full_rate=True)
+    fg = person(residency="permanent_resident", pr_start="2026-02-10", joint_election=True)
+    month = {"month": "2027-02-01"}
+    assert figures(work(person=ff, items=basic("5000.00"), **month), "cpf_total", "cpf_employee") == {"cpf_total": 1850, "cpf_employee": 1000}
+    assert figures(work(person=ff, items=basic("600.00"), **month), "cpf_total", "cpf_employee") == {"cpf_total": 162, "cpf_employee": 60}
+    # F/G keeps the graduated employee rate, so its employee share is not F/F's 1,000.
+    assert figures(work(person=fg, items=basic("5000.00"), **month), "cpf_employee")["cpf_employee"] != 1000
+    # The full-rates election applies only in the first two years, and only with a joint application.
+    third = person(residency="permanent_resident", pr_start="2024-01-10", joint_election=True, employee_full_rate=True)
+    assert figures(work(person=third, items=basic("5000.00"), **month), "cpf_total") == {"cpf_total": 1850}
