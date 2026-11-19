@@ -51,10 +51,12 @@ Load before each slice: `fyniq-accounting-domain` (money, rounding, postings), `
   only at approval (3.3); the year to date is the import plus the latest approved line of each month; a missing fact refuses the run naming the person. Left: the approval and "what changed since
   last month" (3.3, 3.4); encashment of leave (its CPF class is `[verify]`), claims paid through payroll, the IR21 hold and off-cycle runs; rest-day and public-holiday overtime pay (a one-off item);
   a fixed deduction "for another purpose" needs a consent record that does not exist yet, so it fails ✖ until one does.
-- [ ] 3.3 Approval: the preparer cannot approve (a database constraint and trigger), the approver confirms with a passkey over the run's digest, the Owner is the second person in a team of one.
+- [x] 3.3 Approval: the preparer cannot approve (a database constraint and trigger), the approver confirms with a passkey over the run's digest, the Owner is the second person in a team of one.
   The attack tests: the preparer approving, an approval over another digest, an approved version edited, a run read without the payroll role. `// req: FR-PAY-07, NM-ROLE-04`
-- [ ] 3.4 What changed since last month (NM-PAY-11) and the approval screen `nm-payrun-approval`, with the ⚠ items and unexplained changes. `// req: NM-PAY-11`
-- [ ] 3.5 Verify, including the redaction test: no audit event, log, outbox row or error carries pay.
+  Built: the approver is checked by the API (Payroll administrator or Owner, fresh passkey) and the preparer is refused by the adapter and by a constraint; approval supersedes older approved
+  versions, marks the inputs used once and writes the passkey's envelope; the approval page `nm-payrun-approval`.
+- [x] 3.4 What changed since last month (NM-PAY-11) and the approval screen `nm-payrun-approval`, with the ⚠ items and unexplained changes. `// req: NM-PAY-11`
+- [x] 3.5 Verify, including the redaction test: no audit event, log, outbox row or error carries pay.
 
 ## 4. Payslips and My pay (slice 4)
 

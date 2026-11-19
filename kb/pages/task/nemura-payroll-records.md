@@ -4,7 +4,7 @@ type: task
 title: Set up pay groups and record each person's pay in Nemura
 summary: What the Payroll administrator and the Owner record for payroll, how a pay record, the year to date and a one-off item work, and why nobody else sees pay
 sources:
-  - docs/user-guide/nemura/payroll-records.md sha256:c11db43e92958c324e3bb47d096528067c8602caa060d4e727536dd5322336a1
+  - docs/user-guide/nemura/payroll-records.md sha256:6a9a72543e09b36c5c246814aed1b6b77e4aadc6c258e052524af8690ae11bf6
 data_class: personal
 taint: trusted
 status: published
@@ -48,6 +48,8 @@ aliases:
 ## What happens next
 
 - A pay record is history: a change starts a new one from a later day. A one-off item's class follows its facts, not its name; for the month and payable by the 14th of the next month is ordinary wages, otherwise additional. A one-off is used by one run once. (src: docs/user-guide/nemura/payroll-records.md#what-happens-next)
+
+- The run is approved by another person, who reads it against last month's and confirms with a passkey: see [[nemura.payroll-approval]]. (src: docs/user-guide/nemura/payroll-records.md#related)
 
 ## When it looks wrong
 

@@ -79,6 +79,7 @@ export function PayRuns({ month, groups, people }: { month: string; groups: Grou
       {open && (
         <div className="fy-stack fy-stack--2" aria-label={t("runs.detail", { group: open.pay_group })}>
           <h3 className="fy-h3">{t("runs.detail", { group: open.pay_group })}</h3>
+          <a href={`/people/payroll/runs/${open.id}`}>{t("runs.openApproval", { group: open.pay_group })}</a>
           <p>{t("runs.summary", { version: String(open.latest.version), state: t(`runs.state.${open.latest.state}`), digest: open.latest.digest.slice(0, 12), failing: String(open.latest.flags_failing), warning: String(open.latest.flags_warning) })}</p>
           <p>{t("runs.totals", { gross: open.latest.totals.gross, ee: open.latest.totals.cpf_employee, er: open.latest.totals.cpf_employer, sdl: open.latest.totals.sdl_payable, net: open.latest.totals.net, cost: open.latest.totals.employer_cost })}</p>
           <table className="fy-table">

@@ -60,4 +60,5 @@ rounded once, to the cent. Open the run to read each person's month: their gross
 
 ## Related
 
+- [Read and approve a pay run](payroll-approval.md)
 - [Read a person's record and their job history](person.md)

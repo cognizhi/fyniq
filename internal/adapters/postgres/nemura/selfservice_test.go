@@ -66,8 +66,9 @@ func TestAPersonChangesTheirOwnDetailsAndFollowsTheirRequests(t *testing.T) {
 	if _, err := svc.Details(ctx, nobody); err == nil {
 		t.Error("a login with no person has details")
 	}
+	// The patterns carry a space or a letter, which a hash never does, so a run of hexadecimal digits cannot match.
 	var leaks int
-	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND (body LIKE '%9123%' OR body LIKE '%ben@example%' OR body LIKE '%Raffles%' OR body LIKE '%Mei Lim%' OR body LIKE '%048616%')`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND (body LIKE '%9123 4567%' OR body LIKE '%ben@example%' OR body LIKE '%Raffles%' OR body LIKE '%Mei Lim%' OR body LIKE '%Tan Ah Kow%' OR body LIKE '%"048616"%')`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
 		t.Errorf("the audit trail holds %d personal details: %v", leaks, err)
 	}
 	var events int

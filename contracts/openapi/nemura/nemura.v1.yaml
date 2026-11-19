@@ -4858,6 +4858,132 @@ components:
         - pay_day
         - latest
       type: object
+    RunApprovalInputBody:
+      additionalProperties: false
+      properties:
+        digest:
+          description: The digest of the version as the approver read it.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          pattern: ^[0-9a-f]{64}$
+          type: string
+        version:
+          description: "The version approved: the newest, while it is calculated."
+          examples:
+            - 2
+          format: int64
+          minimum: 1
+          type: integer
+      required:
+        - version
+        - digest
+      type: object
+    RunChange:
+      additionalProperties: false
+      properties:
+        amount:
+          description: More or less than last month, in dollars; a joiner's or a leaver's whole gross pay.
+          examples:
+            - "5000.00"
+          type: string
+        cause:
+          description: What caused it.
+          enum:
+            - joiner
+            - leaver
+            - pay_change
+            - unpaid_leave
+            - overtime
+            - one_off
+            - allowance
+            - deduction
+            - cpf
+          examples:
+            - one_off
+          type: string
+        item:
+          description: The pay item it comes from.
+          examples:
+            - bonus-2026
+          type: string
+        person:
+          description: Their legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person's ID, or the person for a change that has none.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          type: string
+        source_type:
+          description: The kind of record the item came from.
+          examples:
+            - pay_one_off
+          type: string
+      required:
+        - person_id
+        - person
+        - cause
+        - amount
+      type: object
+    RunChanges:
+      additionalProperties: false
+      properties:
+        changes:
+          description: Every difference with its cause.
+          items:
+            $ref: "#/components/schemas/RunChange"
+          type:
+            - array
+            - "null"
+        employer_cost_now:
+          description: This run's employer cost.
+          examples:
+            - "11000.00"
+          type: string
+        employer_cost_previous:
+          description: Last month's.
+          examples:
+            - "5500.00"
+          type: string
+        gross_now:
+          description: This run's gross pay.
+          examples:
+            - "10000.00"
+          type: string
+        gross_previous:
+          description: Last month's.
+          examples:
+            - "5000.00"
+          type: string
+        has_previous:
+          description: Whether the pay group has an approved run for the month before.
+          examples:
+            - true
+          type: boolean
+        net_now:
+          description: This run's net pay.
+          examples:
+            - "8000.00"
+          type: string
+        net_previous:
+          description: Last month's.
+          examples:
+            - "4000.00"
+          type: string
+        unexplained:
+          description: "What has no input behind it: for the approver to check."
+          items:
+            $ref: "#/components/schemas/RunUnexplained"
+          type:
+            - array
+            - "null"
+      required:
+        - has_previous
+        - changes
+        - unexplained
+      type: object
     RunDetail:
       additionalProperties: false
       properties:
@@ -5326,6 +5452,29 @@ components:
         - net
         - disburse
         - employer_cost
+      type: object
+    RunUnexplained:
+      additionalProperties: false
+      properties:
+        person:
+          description: Their legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          type: string
+        why:
+          description: What to check.
+          examples:
+            - CPF changed with no change in wages.
+          type: string
+      required:
+        - person_id
+        - person
+        - why
       type: object
     RunVersion:
       additionalProperties: false
@@ -10896,6 +11045,140 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Internal Server Error
       summary: A pay run with its newest version
+      tags:
+        - Payroll
+  /v1/payroll/runs/{id}/approval:
+    post:
+      description: Approves the newest version, while it is calculated, after a passkey confirmation in the last five minutes, over the digest the approver read. The approver is the Payroll administrator or the Owner and never the person who prepared the version (a database constraint refuses it too); a version with a ✖ is refused. The approval is written once with what the passkey confirmed, older approved versions of the run are superseded, and the inputs the version used are marked used by the run. It is audited with the run, the version and the digest, never an amount.
+      operationId: approvePayRunVersion
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The run.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The run.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunApprovalInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Approve a pay run version
+      tags:
+        - Payroll
+  /v1/payroll/runs/{id}/changes:
+    get:
+      description: "The newest version against the previous month's approved run of the same pay group: gross pay, net pay and employer cost, and every difference with its cause and the item it comes from (a joiner, a leaver, a pay change, unpaid leave, overtime, a one-off item, an allowance or a deduction), with what has no input behind it listed for the approver. The Payroll administrator and the Owner. It changes nothing."
+      operationId: getPayRunChanges
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The run.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The run.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunChanges"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A pay run against last month's
       tags:
         - Payroll
   /v1/payroll/runs/{id}/overrides:

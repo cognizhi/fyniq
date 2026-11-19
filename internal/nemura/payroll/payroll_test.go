@@ -567,3 +567,53 @@ func TestAnOverrideReplacesOneFigureWithAReasonAndIsFlagged(t *testing.T) {
 		}
 	}
 }
+
+// The run is set against last month's with every difference explained by its cause and the item it comes from: a joiner and a leaver, a pay change, a one-off item, unpaid leave, overtime; and
+// a person whose CPF changed with no change in their wages is listed for the approver (NM-PAY-11).
+// req: NM-PAY-11
+func TestTheRunIsComparedWithLastMonthWithEveryDifferenceExplained(t *testing.T) {
+	line := func(id, name, gross, cpf string, items ...ItemFacts) LineFacts {
+		return LineFacts{Person: id, Name: name, Gross: D(gross), Net: D(gross), CPF: D(cpf), Cost: D(gross), Items: items}
+	}
+	item := func(key, src, amount string) ItemFacts {
+		return ItemFacts{Key: key, SourceType: src, Class: "ordinary", Amount: D(amount)}
+	}
+	prev := []LineFacts{
+		line("ana", "Ana Tan", "5000.00", "1850", item("basic", "person_pay", "5000.00")),
+		line("ben", "Ben Lim", "4000.00", "1480", item("basic", "person_pay", "4000.00")),
+		line("cy", "Cy Wong", "3000.00", "1110", item("basic", "person_pay", "3000.00")),
+		line("eve", "Eve Ong", "3500.00", "1295", item("basic", "person_pay", "3500.00")),
+	}
+	now := []LineFacts{
+		line("ana", "Ana Tan", "10000.00", "3700", item("basic", "person_pay", "5000.00"), ItemFacts{Key: "bonus", SourceType: "pay_one_off", Class: "additional", Amount: D("5000.00")}),
+		line("ben", "Ben Lim", "4500.00", "1665", item("basic", "person_pay", "4500.00")),
+		line("cy", "Cy Wong", "2795.45", "1034", item("basic", "person_pay", "3000.00"), item("unpaid-1a2b3c4d", "pay_input", "-204.55")),
+		line("dee", "Dee Foo", "2000.00", "740", item("basic", "person_pay", "2000.00")),
+		line("eve", "Eve Ong", "3500.00", "1190", item("basic", "person_pay", "3500.00")),
+	}
+	got := Compare(now, prev)
+	if text(got.GrossNow) != "22795.45" || text(got.GrossPrev) != "15500.00" {
+		t.Errorf("gross %s against %s", text(got.GrossNow), text(got.GrossPrev))
+	}
+	causes := map[string]string{}
+	for _, c := range got.Changes {
+		causes[c.Name+"/"+c.Cause+"/"+c.Key] = text(c.Amount)
+	}
+	for k, want := range map[string]string{"Ana Tan/one_off/bonus": "5000.00", "Ben Lim/pay_change/basic": "500.00", "Cy Wong/unpaid_leave/unpaid-1a2b3c4d": "-204.55", "Dee Foo/joiner/": "2000.00", "Eve Ong/cpf/": "-105"} {
+		if causes[k] != want {
+			t.Errorf("%s: %q, want %s (all: %v)", k, causes[k], want, causes)
+		}
+	}
+	if len(got.Unexplained) != 1 || got.Unexplained[0].Name != "Eve Ong" || !strings.Contains(got.Unexplained[0].Why, "no change in wages") {
+		t.Errorf("unexplained: %+v", got.Unexplained)
+	}
+	// A person who left is a leaver with the whole of last month's gross pay.
+	left := Compare(now[:1], prev[:2])
+	found := false
+	for _, c := range left.Changes {
+		found = found || c.Cause == CauseLeaver && c.Name == "Ben Lim" && text(c.Amount) == "-4000.00"
+	}
+	if !found {
+		t.Errorf("a leaver: %+v", left.Changes)
+	}
+}

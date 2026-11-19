@@ -112,6 +112,8 @@ var Matrix = map[string]string{ // #nosec G101 -- operation names and who may ca
 	"POST /v1/payroll/runs/{id}/versions":             "Payroll administrator, Owner",
 	"POST /v1/payroll/runs/{id}/overrides":            "Payroll administrator, Owner",
 	"POST /v1/payroll/overrides/{id}/withdrawal":      "Payroll administrator, Owner",
+	"GET /v1/payroll/runs/{id}/changes":               "Payroll administrator, Owner",
+	"POST /v1/payroll/runs/{id}/approval":             "Payroll administrator, Owner, after a fresh passkey confirmation, never the preparer",
 	"POST /v1/me/letters":                             "signed in (any role), for themselves",
 	"GET /v1/people/{id}/terms":                       "HR officer, HR administrator, Payroll administrator, Owner (the pay terms only for Payroll administrator and Owner)",
 	"POST /v1/people/{id}/terms":                      "HR officer, HR administrator, Owner (base terms); Payroll administrator, Owner (pay terms)",

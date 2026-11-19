@@ -855,3 +855,152 @@ FROM nemura.pay_run_line l JOIN nemura.person p ON p.organisation_id = l.organis
 	}
 	return out, rows.Err()
 }
+
+// ApproveRun approves the newest version of a run (FR-PAY-07, NM-ROLE-04): it is calculated and not superseded, it has no ✖, the approver is not the person who prepared it (the database
+// refuses it too), is the Payroll administrator or the Owner (the API checks the role), and confirms the digest they read with a passkey in the last five minutes (stepUpAt). The approval is written once with
+// what the passkey confirmed; every older approved version of the run is superseded; the inputs the version used (one-off items, unpaid leave, overtime) are marked used by the run, once. The
+// audit event names the run, the version and the digest, never an amount.
+func ApproveRun(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by, runID uuid.UUID, version int, confirmed [32]byte, stepUpAt time.Time) error {
+	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", "pay-run:"+runID.String()); err != nil {
+		return err
+	}
+	var id, preparer uuid.UUID
+	var state string
+	var failing int
+	var digest []byte
+	var latest int
+	if err := tx.QueryRow(ctx, "SELECT coalesce(max(version), 0) FROM nemura.pay_run_version WHERE run_id = $1", runID).Scan(&latest); err != nil {
+		return err
+	}
+	err := tx.QueryRow(ctx, "SELECT id, state, prepared_by, flags_failing, digest FROM nemura.pay_run_version WHERE run_id = $1 AND version = $2", runID, version).Scan(&id, &state, &preparer, &failing, &digest)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return &payroll.Refusal{Code: payroll.CodeNotFound, Message: "There is no such version of that pay run."}
+	}
+	if err != nil {
+		return err
+	}
+	if version != latest || state != "calculated" {
+		return &payroll.Refusal{Code: payroll.CodeConflict, Message: "Only the newest version, while it is calculated, is approved: calculate the next version, or it is approved already."}
+	}
+	if failing > 0 {
+		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: fmt.Sprintf("The version has %d failing checks (✖): resolve each, calculate the next version, then approve it.", failing)}
+	}
+	if preparer == by {
+		return &payroll.Refusal{Code: payroll.CodeRole, Message: "Nobody approves the run they prepared: another Payroll administrator or the Owner approves it."}
+	}
+	if string(digest) != string(confirmed[:]) {
+		return &payroll.Refusal{Code: payroll.CodeConflict, Message: "The digest you confirmed is not this version's: open the run again and confirm the one shown."}
+	}
+	envelope, _ := json.Marshal(map[string]any{"run": runID.String(), "version": version, "digest": fmt.Sprintf("%x", digest), "approver": by.String(), "step_up_at": stepUpAt.UTC().Format(time.RFC3339), "approved_at": at.UTC().Format(time.RFC3339)})
+	if _, err := tx.Exec(ctx, "UPDATE nemura.pay_run_version SET state = 'approved', approved_by = $2, approved_at = $3, approved_digest = $4, envelope = $5::jsonb WHERE id = $1", id, by, at, digest, string(envelope)); err != nil {
+		return runError(err)
+	}
+	older, err := tx.Query(ctx, "SELECT id FROM nemura.pay_run_version WHERE run_id = $1 AND version < $2 AND state = 'approved'", runID, version)
+	if err != nil {
+		return err
+	}
+	var superseded []uuid.UUID
+	for older.Next() {
+		var o uuid.UUID
+		if err := older.Scan(&o); err != nil {
+			older.Close()
+			return err
+		}
+		superseded = append(superseded, o)
+	}
+	older.Close()
+	for _, o := range superseded {
+		if _, err := tx.Exec(ctx, "UPDATE nemura.pay_run_version SET state = 'superseded' WHERE id = $1", o); err != nil {
+			return runError(err)
+		}
+		if err := Audit(ctx, tx, org, at, user(by), "nemura.pay_run_version.superseded", audit.Object{Type: "pay_run_version", ID: o}, map[string]audit.Change{"state": {"approved", "superseded"}}, "corrected by version "+fmt.Sprint(version)); err != nil {
+			return err
+		}
+	}
+	// The inputs this version used are used by the run, once.
+	rows, err := tx.Query(ctx, `SELECT DISTINCT it->>'SourceType', it->>'SourceID' FROM nemura.pay_run_line l, jsonb_array_elements(l.items) it WHERE l.version_id = $1 AND it->>'SourceType' IN ('pay_one_off', 'pay_input', 'overtime_entry')`, id)
+	if err != nil {
+		return err
+	}
+	var used []usedInput
+	for rows.Next() {
+		var table, src string
+		if err := rows.Scan(&table, &src); err != nil {
+			rows.Close()
+			return err
+		}
+		u, err := uuid.Parse(src)
+		if err != nil {
+			rows.Close()
+			return err
+		}
+		used = append(used, usedInput{table, u})
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, u := range used {
+		tag, err := tx.Exec(ctx, "UPDATE nemura."+u.Table+" SET used_in_run = $2, used_at = $3 WHERE id = $1 AND (used_in_run IS NULL OR used_in_run = $2)", u.ID, runID, at)
+		if err != nil {
+			return runError(err)
+		}
+		if tag.RowsAffected() != 1 {
+			return &payroll.Refusal{Code: payroll.CodeConflict, Message: "An input of this version was used by another run meanwhile: calculate the next version."}
+		}
+		if err := Audit(ctx, tx, org, at, user(by), "nemura."+u.Table+".used", audit.Object{Type: u.Table, ID: u.ID}, map[string]audit.Change{"run": {nil, runID.String()}}, ""); err != nil {
+			return err
+		}
+	}
+	return Audit(ctx, tx, org, at, user(by), "nemura.pay_run_version.approved", audit.Object{Type: "pay_run_version", ID: id},
+		map[string]audit.Change{"run": {nil, runID.String()}, "version": {nil, version}, "digest": {nil, fmt.Sprintf("%x", digest)}}, "")
+}
+
+// ChangesFor sets the newest version of a run against the previous month's approved run of the same pay group (NM-PAY-11); with none before, it says so.
+func ChangesFor(ctx context.Context, tx pgx.Tx, runID uuid.UUID) (payroll.Comparison, bool, error) {
+	r, vs, err := RunOf(ctx, tx, runID)
+	if err != nil {
+		return payroll.Comparison{}, false, err
+	}
+	if len(vs) == 0 {
+		return payroll.Comparison{}, false, nil
+	}
+	now, err := lineFacts(ctx, tx, vs[0].ID)
+	if err != nil {
+		return payroll.Comparison{}, false, err
+	}
+	var prevVersion uuid.UUID
+	err = tx.QueryRow(ctx, `SELECT v.id FROM nemura.pay_run pr JOIN nemura.pay_run_version v ON v.organisation_id = pr.organisation_id AND v.run_id = pr.id
+WHERE pr.pay_group_id = $1 AND pr.month = $2 AND v.approved_by IS NOT NULL ORDER BY v.version DESC LIMIT 1`, r.Group, day(r.Month.AddDate(0, -1, 0))).Scan(&prevVersion)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return payroll.Comparison{}, false, nil
+	}
+	if err != nil {
+		return payroll.Comparison{}, false, err
+	}
+	prev, err := lineFacts(ctx, tx, prevVersion)
+	if err != nil {
+		return payroll.Comparison{}, false, err
+	}
+	return payroll.Compare(now, prev), true, nil
+}
+
+func lineFacts(ctx context.Context, tx pgx.Tx, version uuid.UUID) ([]payroll.LineFacts, error) {
+	lines, err := RunLines(ctx, tx, version)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]payroll.LineFacts, len(lines))
+	for i, l := range lines {
+		f := payroll.LineFacts{Person: l.Person.String(), Name: l.PersonName, Gross: dec(l.Gross), Net: dec(l.Net), CPF: addDec(dec(l.CPFEmployee), dec(l.CPFEmployer)), Cost: dec(l.EmployerCost)}
+		for _, it := range l.Items {
+			amt := dec(it.Amount)
+			if it.Class == "deduction" {
+				amt = negDec(amt)
+			}
+			f.Items = append(f.Items, payroll.ItemFacts{Key: it.Key, SourceType: it.SourceType, Class: it.Class, Amount: amt})
+		}
+		out[i] = f
+	}
+	return out, nil
+}

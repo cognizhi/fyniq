@@ -226,8 +226,40 @@ type RunDetail struct {
 	Overrides []RunOverride `json:"overrides" doc:"The overrides in force on the run."`
 }
 
+// RunChange is one difference from last month with its cause.
+type RunChange struct {
+	PersonID   string `json:"person_id" doc:"The person's ID, or the person for a change that has none." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Person     string `json:"person" doc:"Their legal name." example:"Ben Lim"`
+	Cause      string `json:"cause" enum:"joiner,leaver,pay_change,unpaid_leave,overtime,one_off,allowance,deduction,cpf" doc:"What caused it." example:"one_off"`
+	Item       string `json:"item,omitempty" doc:"The pay item it comes from." example:"bonus-2026"`
+	SourceType string `json:"source_type,omitempty" doc:"The kind of record the item came from." example:"pay_one_off"`
+	Amount     string `json:"amount" doc:"More or less than last month, in dollars; a joiner's or a leaver's whole gross pay." example:"5000.00"`
+}
+
+// RunUnexplained is a difference with no input behind it.
+type RunUnexplained struct {
+	PersonID string `json:"person_id" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Person   string `json:"person" doc:"Their legal name." example:"Ben Lim"`
+	Why      string `json:"why" doc:"What to check." example:"CPF changed with no change in wages."`
+}
+
+// RunChanges is the run against the previous month's approved run (NM-PAY-11).
+type RunChanges struct {
+	HasPrevious   bool             `json:"has_previous" doc:"Whether the pay group has an approved run for the month before." example:"true"`
+	GrossNow      string           `json:"gross_now,omitempty" doc:"This run's gross pay." example:"10000.00"`
+	GrossPrevious string           `json:"gross_previous,omitempty" doc:"Last month's." example:"5000.00"`
+	NetNow        string           `json:"net_now,omitempty" doc:"This run's net pay." example:"8000.00"`
+	NetPrevious   string           `json:"net_previous,omitempty" doc:"Last month's." example:"4000.00"`
+	CostNow       string           `json:"employer_cost_now,omitempty" doc:"This run's employer cost." example:"11000.00"`
+	CostPrevious  string           `json:"employer_cost_previous,omitempty" doc:"Last month's." example:"5500.00"`
+	Changes       []RunChange      `json:"changes" doc:"Every difference with its cause."`
+	Unexplained   []RunUnexplained `json:"unexplained" doc:"What has no input behind it: for the approver to check."`
+}
+
 // Payroll is pay records behind the API.
 type Payroll interface {
+	Approve(ctx context.Context, s Session, id uuid.UUID, version int, digest string) error
+	Changes(ctx context.Context, s Session, id uuid.UUID) (RunChanges, error)
 	StartRun(ctx context.Context, s Session, month time.Time, group uuid.UUID) (Run, error)
 	Runs(ctx context.Context, s Session, month time.Time) ([]Run, error)
 	RunDetail(ctx context.Context, s Session, id uuid.UUID) (RunDetail, error)
@@ -245,6 +277,7 @@ type Payroll interface {
 }
 
 func init() {
+	IdempotencyExempt["POST /v1/payroll/runs/{id}/approval"] = "a version is approved once: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs"] = "a month has one run for a pay group: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/versions"] = "each calculation is its own version of the run, with its own digest"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/overrides"] = "each override is its own record with its own reason: a repeat replaces nothing and the next calculation applies both in order"
@@ -579,6 +612,17 @@ type runOverrideInput struct {
 	}
 }
 
+type runApprovalInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The run." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"`
+	Body   struct {
+		Version int    `json:"version" minimum:"1" doc:"The version approved: the newest, while it is calculated." example:"2"`
+		Digest  string `json:"digest" pattern:"^[0-9a-f]{64}$" doc:"The digest of the version as the approver read it." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
+	}
+}
+
+type runChangesOutput struct{ Body RunChanges }
+
 type overrideWithdrawInput struct {
 	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
 	ID     string `path:"id" format:"uuid" doc:"The override." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f42"`
@@ -709,6 +753,41 @@ func (a *API) registerPayRuns() {
 		out := &createdOutput{}
 		out.Body.ID = oid
 		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getPayRunChanges", Method: "GET", Path: "/v1/payroll/runs/{id}/changes", Tags: []string{"Payroll"}, Summary: "A pay run against last month's",
+		Description: "The newest version against the previous month's approved run of the same pay group: gross pay, net pay and employer cost, and every difference with its cause and the item it comes from (a joiner, a leaver, a pay change, unpaid leave, overtime, a one-off item, an allowance or a deduction), with what has no input behind it listed for the approver. The Payroll administrator and the Owner. It changes nothing.", Errors: []int{401, 403, 404},
+	}, func(ctx context.Context, in *runIDInput) (*runChangesOutput, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such pay run.")
+		}
+		c, err := a.d.Payroll.Changes(ctx, s, id)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		return &runChangesOutput{Body: c}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "approvePayRunVersion", Method: "POST", Path: "/v1/payroll/runs/{id}/approval", Tags: []string{"Payroll"}, Summary: "Approve a pay run version",
+		Description: "Approves the newest version, while it is calculated, after a passkey confirmation in the last five minutes, over the digest the approver read. The approver is the Payroll administrator or the Owner and never the person who prepared the version (a database constraint refuses it too); a version with a ✖ is refused. The approval is written once with what the passkey confirmed, older approved versions of the run are superseded, and the inputs the version used are marked used by the run. It is audited with the run, the version and the digest, never an amount.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 204,
+	}, func(ctx context.Context, in *runApprovalInput) (*struct{}, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		if !s.Fresh(a.d.Clock.Now()) {
+			return nil, Err(CodeStepUp, "Confirm it is you with your passkey, then try again: approving a pay run moves money.")
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such pay run.")
+		}
+		return nil, payrollErrorOrNil(a.d.Payroll.Approve(ctx, s, id, in.Body.Version, in.Body.Digest))
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "withdrawPayRunOverride", Method: "POST", Path: "/v1/payroll/overrides/{id}/withdrawal", Tags: []string{"Payroll"}, Summary: "Withdraw an override",

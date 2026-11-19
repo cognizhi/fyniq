@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cockroachdb/apd/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
@@ -315,4 +316,54 @@ func (p PayrollService) WithdrawOverride(ctx context.Context, s api.Session, id 
 	return p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
 		return WithdrawOverride(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, id)
 	})
+}
+
+// Approve approves the newest version of a run with the approver's fresh passkey confirmation over its digest (FR-PAY-07, NM-ROLE-04).
+func (p PayrollService) Approve(ctx context.Context, s api.Session, id uuid.UUID, version int, digest string) error {
+	raw, err := hex.DecodeString(digest)
+	if err != nil || len(raw) != 32 {
+		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "The digest is 64 hexadecimal characters: copy it from the run as it was calculated."}
+	}
+	var confirmed [32]byte
+	copy(confirmed[:], raw)
+	stepUp := p.Clock.Now()
+	if s.StepUpAt != nil {
+		stepUp = *s.StepUpAt
+	}
+	return p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		return ApproveRun(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, id, version, confirmed, stepUp)
+	})
+}
+
+// Changes is the run against last month's (NM-PAY-11).
+func (p PayrollService) Changes(ctx context.Context, s api.Session, id uuid.UUID) (api.RunChanges, error) {
+	var out api.RunChanges
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		c, has, err := ChangesFor(ctx, tx, id)
+		if err != nil || !has {
+			out.Changes, out.Unexplained = []api.RunChange{}, []api.RunUnexplained{}
+			return err
+		}
+		out.HasPrevious = true
+		out.GrossNow, out.GrossPrevious, out.NetNow, out.NetPrevious, out.CostNow, out.CostPrevious = cents2(c.GrossNow), cents2(c.GrossPrev), cents2(c.NetNow), cents2(c.NetPrev), cents2(c.CostNow), cents2(c.CostPrev)
+		out.Changes, out.Unexplained = []api.RunChange{}, []api.RunUnexplained{}
+		for _, ch := range c.Changes {
+			out.Changes = append(out.Changes, api.RunChange{PersonID: ch.Person, Person: ch.Name, Cause: ch.Cause, Item: ch.Key, SourceType: ch.SourceType, Amount: cents2(ch.Amount)})
+		}
+		for _, u := range c.Unexplained {
+			out.Unexplained = append(out.Unexplained, api.RunUnexplained{PersonID: u.Person, Person: u.Name, Why: u.Why})
+		}
+		return nil
+	})
+	return out, err
+}
+
+func cents2(d *apd.Decimal) string {
+	out := new(apd.Decimal)
+	c := apd.BaseContext.WithPrecision(60)
+	c.Rounding = apd.RoundHalfUp
+	if _, err := c.Quantize(out, d, -2); err != nil {
+		panic(err)
+	}
+	return out.Text('f')
 }

@@ -195,10 +195,133 @@ func TestAPayRunIsCalculatedFromThePayRecordsIntoAReadOnlyVersionWithADigest(t *
 		t.Errorf("a preparer approving their own run: %v", err)
 	}
 	var leaks int
-	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND (body LIKE '%9250%' OR body LIKE '%20000%' OR body LIKE '%999.00%' OR body LIKE '%29395%' OR body LIKE '%9600%' OR body LIKE '%1702%' OR body LIKE '%204.55%')`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F])(9250|20000|999\.00|29395|9600|1702|204\.55)([^0-9a-fA-F]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
 		t.Errorf("the audit trail holds an amount in %d events: %v", leaks, err)
 	}
 	if list, _ := svc.Runs(ctx, pay, june); len(list) != 1 || list[0].Latest.Number != 5 {
 		t.Errorf("runs of the month: %+v", list)
+	}
+}
+
+// A version is approved by someone other than its preparer, over the digest they read, once, when it is the newest and has no ✖; the approval keeps what the passkey confirmed; older approved
+// versions are superseded by a corrected one; the inputs it used are marked used by the run so no later run takes them; the next month is set against this one with every difference
+// explained (FR-PAY-07, NM-ROLE-04, NM-PAY-09, NM-PAY-11).
+// req: FR-PAY-07, NM-ROLE-04, NM-PAY-09, NM-PAY-11
+// asvs: V8.2.1, V8.3.1
+func TestAVersionIsApprovedByAnotherPersonOverItsDigestAndItsInputsAreUsedOnce(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := d("2026-11-20").Add(10 * time.Hour)
+	st := store(t, "nemura_api")
+	packsSvc, err := nemura.NewPacksService(st, clock.NewFrozen(now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc}
+	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
+	approver := api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now}
+	su := connect(t, db.SuperURL())
+	birth := d("1990-05-20")
+	gid, _ := svc.CreateGroup(ctx, prep, api.PayGroupInput{Name: "Monthly", PayDay: 25, CutoffDays: 7, ApprovalDays: 3})
+	for _, p := range []uuid.UUID{lt.ben, lt.cy} {
+		if err := svc.SetPay(ctx, prep, p, d("2026-01-05"), api.PersonPayInput{GroupID: gid, BasicMonthly: "4000.00"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		for _, p := range []uuid.UUID{lt.ben, lt.cy} {
+			if err := nemura.SetClassification(ctx, tx, lt.c.org, now, lt.c.owner, p, d("2026-01-06"), people.Classification{ContractType: "service", EACovered: true, PartIVClass: "none", Residency: "citizen", BirthDate: &birth}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if _, err := svc.AddOneOff(ctx, prep, lt.ben, d("2026-06-01"), api.OneOffInput{Key: "gift", Name: "Allowance", Nature: "allowance", Amount: "300.00", CPFWages: true}); err != nil {
+		t.Fatal(err)
+	}
+	may, err := svc.StartRun(ctx, prep, d("2026-05-01"), mustUUID(gid))
+	if err != nil {
+		t.Fatal(err)
+	}
+	digestOf := func(h string) string { return h }
+	// Nothing is approved by its preparer, on a stale digest, on a version that is not the newest, or a version that does not exist.
+	if err := svc.Approve(ctx, prep, mustUUID(may.ID), 1, may.Latest.Digest); payCode(err) != payroll.CodeRole {
+		t.Errorf("the preparer approving: %v", err)
+	}
+	if err := svc.Approve(ctx, approver, mustUUID(may.ID), 1, strings.Repeat("0", 64)); payCode(err) != payroll.CodeConflict {
+		t.Errorf("a digest that is not the version's: %v", err)
+	}
+	if err := svc.Approve(ctx, approver, mustUUID(may.ID), 1, "not hex"); payCode(err) != payroll.CodeInvalid {
+		t.Errorf("a malformed digest: %v", err)
+	}
+	if err := svc.Approve(ctx, approver, mustUUID(may.ID), 9, may.Latest.Digest); payCode(err) != payroll.CodeNotFound {
+		t.Errorf("a version that does not exist: %v", err)
+	}
+	if err := svc.Approve(ctx, approver, mustUUID(may.ID), 1, digestOf(may.Latest.Digest)); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Approve(ctx, approver, mustUUID(may.ID), 1, may.Latest.Digest); payCode(err) != payroll.CodeConflict {
+		t.Errorf("approving twice: %v", err)
+	}
+	var by uuid.UUID
+	var env string
+	if err := su.QueryRow(ctx, "SELECT approved_by, envelope::text FROM nemura.pay_run_version WHERE id = $1", mustUUID(may.Latest.ID)).Scan(&by, &env); err != nil || by != lt.c.owner || !strings.Contains(env, may.Latest.Digest) || !strings.Contains(env, "step_up_at") {
+		t.Errorf("the approval: %v %s %v", by, env, err)
+	}
+	// June: the one-off item is eligible while the run is calculated, is used by the run when approved, and a later run cannot take it again.
+	june, err := svc.StartRun(ctx, prep, d("2026-06-01"), mustUUID(gid))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if june.Latest.Totals.Gross != "8300.00" {
+		t.Fatalf("June gross: %+v", june.Latest.Totals)
+	}
+	r2, err := svc.Recalculate(ctx, prep, mustUUID(june.ID), "")
+	if err != nil || r2.Latest.Totals.Gross != "8300.00" {
+		t.Fatalf("recalculating still includes the item: %+v %v", r2.Latest.Totals, err)
+	}
+	if err := svc.Approve(ctx, approver, mustUUID(june.ID), 1, june.Latest.Digest); payCode(err) != payroll.CodeConflict {
+		t.Errorf("approving a superseded version: %v", err)
+	}
+	if err := svc.Approve(ctx, approver, mustUUID(june.ID), 2, r2.Latest.Digest); err != nil {
+		t.Fatal(err)
+	}
+	var used *uuid.UUID
+	_ = su.QueryRow(ctx, "SELECT used_in_run FROM nemura.pay_one_off WHERE key = 'gift'").Scan(&used)
+	if used == nil || *used != mustUUID(june.ID) {
+		t.Errorf("the one-off item is not marked used by the run: %v", used)
+	}
+	// A correction of an approved month needs a reason, keeps the used item, supersedes the approved version once approved by another person.
+	if _, err := svc.Recalculate(ctx, prep, mustUUID(june.ID), ""); payCode(err) != payroll.CodeInvalid || !strings.Contains(err.Error(), "reason") {
+		t.Errorf("a correction without a reason: %v", err)
+	}
+	c3, err := svc.Recalculate(ctx, prep, mustUUID(june.ID), "A bonus was missed.")
+	if err != nil || c3.Latest.Number != 3 || c3.Latest.Totals.Gross != "8300.00" || c3.Latest.Reason != "A bonus was missed." {
+		t.Fatalf("the correction: %+v %v", c3.Latest, err)
+	}
+	if d3, _ := svc.RunDetail(ctx, prep, mustUUID(june.ID)); d3.Versions[1].State != "approved" || d3.Versions[0].State != "calculated" {
+		t.Errorf("the approved version stays approved until the correction is: %+v", d3.Versions)
+	}
+	if err := svc.Approve(ctx, approver, mustUUID(june.ID), 3, c3.Latest.Digest); err != nil {
+		t.Fatal(err)
+	}
+	if d3, _ := svc.RunDetail(ctx, prep, mustUUID(june.ID)); d3.Versions[1].State != "superseded" || d3.Versions[0].State != "approved" {
+		t.Errorf("the corrected version supersedes the one before: %+v", d3.Versions)
+	}
+	// What changed since May: Ben's gift is a one-off item linked to its record; nobody else changed.
+	ch, err := svc.Changes(ctx, prep, mustUUID(june.ID))
+	if err != nil || !ch.HasPrevious || ch.GrossPrevious != "8000.00" || ch.GrossNow != "8300.00" || len(ch.Unexplained) != 0 {
+		t.Fatalf("changes: %+v %v", ch, err)
+	}
+	if len(ch.Changes) != 1 || ch.Changes[0].Person != "Ben Lim" || ch.Changes[0].Cause != "one_off" || ch.Changes[0].SourceType != "pay_one_off" || ch.Changes[0].Amount != "300.00" {
+		t.Errorf("the explained change: %+v", ch.Changes)
+	}
+	if none, _ := svc.Changes(ctx, prep, mustUUID(may.ID)); none.HasPrevious {
+		t.Errorf("May has a month before it: %+v", none)
+	}
+	// No amount in the trail; the approved lines are evidence.
+	var leaks int
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F])(8300|8000\.00|300\.00)([^0-9a-fA-F]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
+		t.Errorf("amounts in the audit trail: %d %v", leaks, err)
 	}
 }
