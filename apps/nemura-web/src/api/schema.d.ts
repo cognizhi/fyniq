@@ -48,6 +48,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/assistant/proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The assistant's proposals
+         * @description The drafts the assistant proposed, newest first, with what it proposed, who it acted for and where each is. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listAssistantProposals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/proposals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One proposal
+         * @description One draft with its text. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["getAssistantProposal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/proposals/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or reject a proposal
+         * @description A named human approves or rejects a pending proposal, never the person the assistant acted for. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. It is audited with the hashes, never the text.
+         */
+        post: operations["decideAssistantProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The people assistant's settings
+         * @description Whether the assistant is on, its model route, the task types turned on and the catalogue of what it may propose. The assistant is off, with no route and no task type, until the Owner turns it on. Own-pay explanations are always off until a second approver exists. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["getAssistantSettings"];
+        /**
+         * Turn the people assistant on or off
+         * @description Saves the settings. Only the Owner, after a passkey confirmation in the last five minutes. A task type outside the catalogue, own-pay explanations (they need a second approver) and a route this build does not have are refused; turning the assistant on needs a route. It is audited.
+         */
+        put: operations["putAssistantSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/bank-account-changes/{id}": {
         parameters: {
             query?: never;
@@ -2524,6 +2608,186 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AIDecision: {
+            /**
+             * @description Approve the draft, or not.
+             * @example true
+             */
+            approve: boolean;
+            /** @description The text to approve, after editing: it must fit the task's shape. Left out, the assistant's own text is approved. */
+            final_payload?: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description Required to reject.
+             * @example Not needed.
+             */
+            reason?: string;
+        };
+        AIProposal: {
+            /**
+             * @description The person the assistant acted for.
+             * @example Ana Tan
+             */
+            asker: string;
+            /**
+             * Format: uuid
+             * @description Their login, so a page does not offer them a decision they cannot make.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+             */
+            asker_id: string;
+            /**
+             * Format: date-time
+             * @description When it was proposed.
+             * @example 2026-11-20T10:00:00Z
+             */
+            created_at: string;
+            /**
+             * @description The human who decided it.
+             * @example Mei Tan
+             */
+            decided_by?: string;
+            /**
+             * @description Their reason.
+             * @example Not needed.
+             */
+            decision_reason?: string;
+            /**
+             * @description True when it waited more than 72 hours without a decision: it cannot be approved.
+             * @example false
+             */
+            expired: boolean;
+            /**
+             * Format: date-time
+             * @description When it expires.
+             * @example 2026-11-23T10:00:00Z
+             */
+            expires_at: string;
+            /** @description What the human approved, after editing. */
+            final_payload?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: uuid
+             * @description The proposal.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80
+             */
+            id: string;
+            /**
+             * @description The route that made it.
+             * @example scripted
+             */
+            model_id: string;
+            /** @description What the assistant proposed. */
+            payload: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description Why, in the assistant's words.
+             * @example Filled from the record.
+             */
+            rationale?: string;
+            /**
+             * @description Where it is.
+             * @example pending
+             * @enum {string}
+             */
+            state: "pending" | "approved" | "rejected" | "applied";
+            /**
+             * @description What kind of draft.
+             * @example people.draft_letter
+             */
+            task_type: string;
+            /**
+             * @description What it proposes.
+             * @example A letter from a template for a request, with the fields filled from the record
+             */
+            what: string;
+        };
+        AISettings: {
+            /** @description Every task type the assistant may propose. */
+            catalogue: components["schemas"]["AITask"][] | null;
+            /**
+             * @description Whether the assistant is on: off until the Owner turns it on.
+             * @example false
+             */
+            enabled: boolean;
+            /**
+             * @description Whether own-pay explanations are on. They need the Owner and a second approver, which arrives with the Fyniq link: always false until then.
+             * @example false
+             */
+            own_pay: boolean;
+            /**
+             * @description Why own pay is off.
+             * @example Needs the Owner and a second approver.
+             */
+            own_pay_note: string;
+            /**
+             * @description The model route: none, or local mode's scripted model. A real route needs processing evidenced in Singapore.
+             * @example none
+             * @enum {string}
+             */
+            route: "none" | "scripted";
+            /** @description The task types the Owner turned on; each is off until then. */
+            task_types: string[] | null;
+            /**
+             * Format: date-time
+             * @description When the Owner last changed them.
+             * @example 2026-11-20T10:00:00Z
+             */
+            updated_at?: string;
+        };
+        AISettingsInput: {
+            /**
+             * @description Turn the assistant on or off.
+             * @example true
+             */
+            enabled: boolean;
+            /**
+             * @description Refused until a second approver exists.
+             * @example false
+             */
+            own_pay?: boolean;
+            /**
+             * @description The model route.
+             * @example scripted
+             * @enum {string}
+             */
+            route: "none" | "scripted";
+            /**
+             * @description The task types to turn on.
+             * @example [
+             *       "people.draft_letter"
+             *     ]
+             */
+            task_types: string[] | null;
+        };
+        AITask: {
+            /** @description The roles that decide a proposal of it. */
+            approver_roles: string[] | null;
+            /**
+             * Format: int64
+             * @description How long a proposal waits for a human.
+             * @example 72
+             */
+            expiry_hours: number;
+            /**
+             * @description The task type.
+             * @example people.draft_letter
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description Tier 1: routine and reversible.
+             * @example 1
+             */
+            tier: number;
+            /**
+             * @description What it proposes.
+             * @example A letter from a template for a request, with the fields filled from the record
+             */
+            what: string;
+        };
         AccrualCountOutputBody: {
             /**
              * Format: int64
@@ -2675,6 +2939,10 @@ export interface components {
              * @enum {string}
              */
             pass_type: "employment_pass" | "s_pass" | "work_permit" | "dp_work_permit";
+        };
+        AiProposalsOutputBody: {
+            /** @description Newest first, up to 200. */
+            proposals: components["schemas"]["AIProposal"][] | null;
         };
         AppliedOutputBody: {
             /**
@@ -7588,6 +7856,346 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAssistantProposals: {
+        parameters: {
+            query?: {
+                /** @description Only proposals in this state; all when left out. */
+                state?: "pending" | "approved" | "rejected" | "applied";
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiProposalsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAssistantProposal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The proposal. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIProposal"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideAssistantProposal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The proposal. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIDecision"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAssistantSettings: {
+        parameters: {
+            query?: {
+                /** @description Only requests in this state. */
+                state?: "requested" | "checked" | "refused" | "issued" | "withdrawn";
+                /** @description Only the caller's own. */
+                mine?: boolean;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AISettings"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putAssistantSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AISettingsInput"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -50,6 +50,11 @@ The assistant SHALL never approve or refuse leave or requests, change pay, bank 
 
 Source: PRD-002 §18 · Priority M · Phase P1
 
+#### Scenario: A proposal is decided by someone else
+- **GIVEN** the assistant drafted a letter for Ana
+- **WHEN** Ana tries to approve it
+- **THEN** it is refused: another person decides, within 72 hours
+
 #### Scenario: Approve refused
 - **WHEN** a manager asks the assistant to approve a leave request
 - **THEN** it refuses and points to the approval in the inbox

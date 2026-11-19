@@ -27,6 +27,7 @@ import { LeaverHome } from "./pages/LeaverHome";
 import { PayRunApproval } from "./pages/PayRunApproval";
 import { MyPay, Payslip } from "./pages/MyPay";
 import { FinalPay } from "./components/FinalPay";
+import { AssistantSettings } from "./pages/AssistantSettings";
 import { PayRuns } from "./components/PayRuns";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
@@ -1433,5 +1434,52 @@ describe("final pay", () => {
     const { container } = render(<FinalPay person={person} docs={[]} onChange={() => undefined} />);
     await new Promise((r) => setTimeout(r, 20));
     expect(container.textContent).toBe("");
+  });
+});
+
+// req: NM-AI-01, NM-AI-04
+describe("the people assistant's settings", () => {
+  const pid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80";
+  const asker = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45";
+  const settings = { enabled: false, route: "none", task_types: [], own_pay: false, own_pay_note: "Own-pay explanations need the Owner and a second approver.", catalogue: [{ id: "people.draft_letter", what: "A letter from a template", tier: 1, approver_roles: ["hr_officer"], expiry_hours: 72 }] };
+  const proposal = (expired: boolean) => ({ id: pid, task_type: "people.draft_letter", what: "A letter from a template", asker: "Ana Tan", asker_id: asker, payload: { request_id: "r", fields: { job_title: "Analyst" } }, model_id: "scripted", state: "pending", expired, created_at: "2026-11-20T10:00:00Z", expires_at: "2026-11-23T10:00:00Z" });
+
+  it("lists what the assistant never does, saves the Owner's choices with a passkey and is off by default", async () => {
+    answer("GET /v1/assistant/settings", { status: 200, body: settings });
+    answer("GET /v1/assistant/proposals", { status: 200, body: { proposals: [] } });
+    answer("PUT /v1/assistant/settings", { status: 204, body: undefined });
+    stepUp.result = undefined;
+    const { container } = render(<AssistantSettings roles={["owner"]} member="m" />);
+    expect(await screen.findByText(/It never approves or refuses leave or a request, changes pay, a bank account, a role or a record, issues or signs a letter/)).toBeTruthy();
+    expect(screen.getByText("No draft is waiting.")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByLabelText(/people.draft_letter: A letter from a template/));
+    fireEvent.click(screen.getByRole("button", { name: "Save with my passkey" }));
+    expect(await screen.findByText("Saved.")).toBeTruthy();
+    expect(bodies.get("PUT /v1/assistant/settings")).toMatchObject({ enabled: false, route: "none", task_types: ["people.draft_letter"] });
+  });
+
+  it("shows the people team a draft to approve or reject, never to the person it was drafted for, and not one that expired", async () => {
+    answer("GET /v1/assistant/settings", { status: 200, body: settings });
+    answer("GET /v1/assistant/proposals", { status: 200, body: { proposals: [proposal(false)] } });
+    answer(`POST /v1/assistant/proposals/${pid}/decision`, { status: 204, body: undefined });
+    const first = render(<AssistantSettings roles={["hr_officer"]} member="someone-else" />);
+    expect(await screen.findByText("A letter from a template, for Ana Tan. Waits until 2026-11-23 10:00.")).toBeTruthy();
+    expect(screen.getByText("AI draft")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Save with my passkey" })).toBeNull();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Approve the draft" }));
+    expect(await screen.findByText("Approved: the draft is kept as you saw it.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/assistant/proposals/${pid}/decision`)).toMatchObject({ approve: true });
+    first.unmount();
+    render(<AssistantSettings roles={["hr_officer"]} member={asker} />);
+    expect(await screen.findByText("The assistant drafted this for you: someone else decides it.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Approve the draft" })).toBeNull();
+  });
+
+  it("says that only the people team sees it", () => {
+    render(<AssistantSettings roles={["employee"]} member="m" />);
+    expect(screen.getByRole("alert").textContent).toContain("Only the HR officer, the HR administrator and the Owner");
   });
 });

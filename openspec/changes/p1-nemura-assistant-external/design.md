@@ -38,3 +38,10 @@ NM-EXT-01 to 03 are decided on the Fyniq side (FR-PPL-01, 05; the import is idem
 - A prompt injection in a request's text (a flexible-work reason, a letter's purpose) that asks for approval, a pay figure or another person's record: the red-team suite carries each and must see a refusal and no proposal.
 - The rules drifting between the two apps: the conformance test in D1 and the shared PRD sentences.
 - A model route that stores data outside Singapore: none is configured until evidenced (AI-88).
+
+## Decisions made while building slice 1
+
+- **D7 The approver of both P1 drafts is the HR team for now.** The PRD lets a line manager decide a flexible-work reply; that needs the manager's scope on the subject person (a database-checked relation), so slice 3 adds it with the draft. Until then the HR officer, the HR administrator and the Owner decide both (`MayDecide`), which is the narrower set.
+- **D8 The runtime holds no read grant.** `nemura_assistant` can insert a proposal and its audit event and read only the AI settings: not the people tables and not its own proposals. The grants golden and a test of the role (`permission denied` on a read of a person and on any update) keep it so; the schema test names the assistant's one write.
+- **D9 Own pay is a database check, not only a refusal.** `ai_settings_own_pay_needs_a_second_approver` forbids a row with it on; the migration that adds the second approver (with the Fyniq link) is the one that relaxes it.
+- **D10 Expiry is computed.** A pending proposal past its 72 hours shows as expired and cannot be approved (the trigger refuses an approval dated after it); nothing needs to write a row to expire it.

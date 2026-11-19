@@ -1,0 +1,86 @@
+package assistant
+
+import (
+	"strings"
+	"testing"
+)
+
+// The never-list names every sentence of NM-AI-04: the assistant never approves or refuses leave or requests, changes pay, a bank account, a role or a record, issues or signs a letter, moves a
+// candidate, decides a hiring, rating, promotion or termination, or reads another person's restricted data. A task type or a command that holds any of those words is refused with what it would do.
+// req: NM-AI-04
+func TestTheNeverListNamesEverySentenceOfNMAI04(t *testing.T) {
+	for _, tc := range []struct{ id, what string }{
+		{"people.approve_leave", "approving or refusing"}, {"people.refuse_request", "approving or refusing"}, {"people.decideFlexibleWork", "approving or refusing"},
+		{"people.change_pay", "changing pay"}, {"people.set_salary", "changing pay"}, {"people.update_bank_account", "changing a bank account"},
+		{"people.assign_role", "changing a role"}, {"people.update_record", "changing, deleting or ending a record"}, {"people.terminate_person", "changing, deleting or ending a record"},
+		{"people.issue_letter", "issuing or signing a letter"}, {"people.sign_letter", "issuing or signing a letter"},
+		{"people.move_candidate", "moving a candidate"}, {"people.decide_hiring", "approving or refusing"}, {"people.rate_person", "moving a candidate, or deciding a hiring, a rating, a promotion"}, {"people.promote", "a promotion"},
+		{"people.read_nric", "another person's restricted data"}, {"people.export_everything", "exporting data"}, {"people.edit_audit_trail", "changing, deleting or ending a record"},
+	} {
+		if got := Refuse(tc.id); got == "" || !strings.Contains(got, tc.what) {
+			t.Errorf("%s: %q", tc.id, got)
+		}
+	}
+	for _, ok := range []string{"people.draft_letter", "people.draft_fwa_reply", "people.draftJobPost"} {
+		if got := Refuse(ok); got != "" {
+			t.Errorf("%s is refused: %s", ok, got)
+		}
+	}
+	if len(NeverWords()) < 60 {
+		t.Errorf("the never-list holds %d words", len(NeverWords()))
+	}
+}
+
+// The catalogue holds the two P1 drafts, each tier 1, off until an Owner turns it on, expiring in 72 hours, decided by HR; it passes its own check, and a task type the never-list names is refused as
+// the catalogue loads, with the sentence.
+// req: NM-AI-01, NM-AI-04
+func TestTheCatalogueHoldsTwoDraftsAndRefusesWhatTheNeverListNames(t *testing.T) {
+	if err := CheckCatalogue(Catalogue); err != nil {
+		t.Fatal(err)
+	}
+	if len(Catalogue) != 2 || Catalogue[0].ID != "people.draft_letter" || Catalogue[1].ID != "people.draft_fwa_reply" {
+		t.Errorf("catalogue: %+v", Catalogue)
+	}
+	bad := append([]Task{}, Catalogue...)
+	bad = append(bad, Task{ID: "people.approve_leave", Version: 1, Tier: 1, ExpiryHours: Expiry, ApproverRoles: []string{"hr_officer"}})
+	if err := CheckCatalogue(bad); err == nil || !strings.Contains(err.Error(), "approving or refusing") || !strings.Contains(err.Error(), CodeNever) {
+		t.Errorf("a catalogue with an approval: %v", err)
+	}
+	slow := []Task{{ID: "people.draft_letter", Version: 1, Tier: 1, ExpiryHours: 200, ApproverRoles: []string{"hr_officer"}}}
+	if err := CheckCatalogue(slow); err == nil || !strings.Contains(err.Error(), "72 hours") {
+		t.Errorf("an expiry of 200 hours: %v", err)
+	}
+}
+
+// A proposal's payload is checked against the strict shape: an unknown field, a missing one, a value too long and a wrong kind are each refused with the field named.
+// req: NM-AI-04
+func TestAPayloadIsCheckedAgainstItsStrictShape(t *testing.T) {
+	letter, _ := Lookup("people.draft_letter")
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"
+	if err := Check(letter, map[string]any{"request_id": id, "fields": map[string]any{"job_title": "Analyst"}, "rationale": "From the record."}); err != nil {
+		t.Fatal(err)
+	}
+	for name, p := range map[string]map[string]any{
+		"an unknown field":            {"request_id": id, "fields": map[string]any{"a": "b"}, "approve": true},
+		"no request":                  {"fields": map[string]any{"a": "b"}},
+		"a request that is not an ID": {"request_id": "latest", "fields": map[string]any{"a": "b"}},
+		"no fields":                   {"request_id": id, "fields": map[string]any{}},
+		"a field that is long":        {"request_id": id, "fields": map[string]any{"a": strings.Repeat("x", 501)}},
+		"a field that is a number":    {"request_id": id, "fields": map[string]any{"a": 5}},
+		"a long rationale":            {"request_id": id, "fields": map[string]any{"a": "b"}, "rationale": strings.Repeat("x", 501)},
+	} {
+		if err := Check(letter, p); err == nil || !strings.Contains(err.Error(), CodeInvalid) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	fwa, _ := Lookup("people.draft_fwa_reply")
+	if err := Check(fwa, map[string]any{"request_id": id, "reply": "Thank you for your request.", "outcome": "approved"}); err == nil || !strings.Contains(err.Error(), `"outcome" is not a field`) {
+		t.Errorf("a reply that carries a decision: %v", err)
+	}
+	if err := Check(fwa, map[string]any{"request_id": id, "reply": strings.Repeat("x", 4001)}); err == nil {
+		t.Error("a reply of 4,001 characters")
+	}
+	if !MayDecide(letter, []string{"employee", "hr_officer"}) || MayDecide(letter, []string{"employee", "line_manager", "payroll_admin"}) {
+		t.Error("who may decide a letter draft")
+	}
+}

@@ -39,6 +39,7 @@ export const registry: Entry[] = [
   { kind: "route", id: "onboarding", path: "/people/onboarding", signedIn: true, screen: "nm-onboarding", mode: "expert", help: "onb.page", guide: "nemura.onboarding" },
   { kind: "route", id: "payroll-hr", path: "/people/payroll", signedIn: true, screen: "nm-payroll-hr", mode: "expert", help: "payroll.page", guide: "nemura.payroll-records" },
   { kind: "route", id: "payrun-approval", path: "/people/payroll/runs/:id", signedIn: true, screen: "nm-payrun-approval", mode: "expert", help: "approval.page", guide: "nemura.payroll-approval" },
+  { kind: "route", id: "assistant", path: "/settings/assistant", signedIn: true, screen: "nm-assistant", mode: "expert", help: "assistant.page", guide: "nemura.assistant" },
   { kind: "route", id: "my-pay", path: "/me/pay", signedIn: true, screen: "nm-my-pay", mode: "basic", help: "mypay.page", guide: "nemura.my-pay" },
   { kind: "route", id: "payslip", path: "/me/pay/:id", signedIn: true, screen: "nm-payslip", mode: "basic", help: "mypay.page", guide: "nemura.my-pay" },
   { kind: "route", id: "request-letter", path: "/me/letters/new", signedIn: true, screen: "nm-request-letter", mode: "basic", help: "request.page", guide: "nemura.letters.request" },
