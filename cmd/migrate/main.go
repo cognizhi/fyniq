@@ -81,6 +81,9 @@ func main() {
 		if err := postgres.Migrate(ctx, url, os.Stderr); err != nil {
 			return err
 		}
+		if err := loadKnowledge(ctx, url); err != nil {
+			return err
+		}
 		if after != nil {
 			return after(ctx, url)
 		}

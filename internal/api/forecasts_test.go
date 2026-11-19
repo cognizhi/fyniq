@@ -153,7 +153,7 @@ func TestForecastsThroughTheAPI(t *testing.T) {
 			s = append(s, string(p))
 		}
 		return s
-	}(), ",") != "sg-cit@2026.1,sg-cpf@2026.1,sg-sdl@2026.1" || res.Currency != "SGD" || res.Sandbox == "" {
+	}(), ",") != "sg-cit@2026.1,sg-cpf@2026.2,sg-sdl@2026.1" || res.Currency != "SGD" || res.Sandbox == "" {
 		t.Errorf("packs %v, currency %s, sandbox %q", res.Packs, res.Currency, res.Sandbox)
 	}
 	if len(res.Runs) != 2 || !res.Runs[0].WithFunding || res.Runs[1].WithFunding {
