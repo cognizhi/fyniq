@@ -349,6 +349,12 @@ func (f fakeAssistant) Proposals(context.Context, Session, string) ([]AIProposal
 func (f fakeAssistant) Proposal(context.Context, Session, uuid.UUID) (AIProposal, error) {
 	return AIProposal{}, f.err
 }
+func (f fakeAssistant) Draft(context.Context, Session, AIDraftInput) (AIDraftResult, error) {
+	return AIDraftResult{}, f.err
+}
+func (f fakeAssistant) Drafts(context.Context, Session, uuid.UUID) ([]AIDraft, error) {
+	return nil, f.err
+}
 func (f fakeAssistant) Decide(context.Context, Session, uuid.UUID, AIDecision) error { return f.err }
 
 func (f fakePayroll) Export(context.Context, Session, uuid.UUID, ExportInput) (ExportFile, error) {

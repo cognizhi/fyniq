@@ -68,6 +68,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/assistant/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The drafts attached to a request
+         * @description The approved drafts the executor attached to a letter request or a flexible-work request, for the person who decides it to use. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listAssistantDrafts"];
+        put?: never;
+        /**
+         * Ask the assistant to draft a letter or a reply
+         * @description Makes a proposal: a draft letter for an open letter request (its fields filled from the values the request holds from the person's record, its purpose quoted) or a draft reply to an open flexible-work request (an acknowledgement that states no decision and no reason). The request's own words are data, never instructions. The assistant and the task type must be on. The proposal waits for a person to approve it within 72 hours; nothing is checked, issued, signed or replied to. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["draftWithAssistant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/assistant/proposals": {
         parameters: {
             query?: never;
@@ -119,7 +143,7 @@ export interface paths {
         put?: never;
         /**
          * Approve or reject a proposal
-         * @description A named human approves or rejects a pending proposal, never the person the assistant acted for. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. It is audited with the hashes, never the text.
+         * @description A named human approves or rejects a pending proposal; a tier 1 draft may be decided by the person who asked for it. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. It is audited with the hashes, never the text.
          */
         post: operations["decideAssistantProposal"];
         delete?: never;
@@ -2661,6 +2685,58 @@ export interface components {
              */
             reason?: string;
         };
+        AIDraft: {
+            /**
+             * Format: date-time
+             * @description When it was attached.
+             * @example 2026-11-20T10:00:00Z
+             */
+            applied_at: string;
+            /**
+             * Format: uuid
+             * @description The draft.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1fa0
+             */
+            id: string;
+            /**
+             * @description A letter's fields or a reply's words.
+             * @example letter
+             * @enum {string}
+             */
+            kind: "letter" | "flex_reply";
+            /** @description The approved text, exactly as approved. */
+            payload: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: uuid
+             * @description The proposal it came from.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80
+             */
+            proposal_id: string;
+        };
+        AIDraftInput: {
+            /**
+             * Format: uuid
+             * @description The request the draft is for: still open.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f90
+             */
+            request_id: string;
+            /**
+             * @description What to draft: a letter for a letter request, or a reply to a flexible-work request.
+             * @example people.draft_letter
+             * @enum {string}
+             */
+            task_type: "people.draft_letter" | "people.draft_fwa_reply";
+        };
+        AIDraftResult: {
+            /**
+             * Format: uuid
+             * @description The proposal, waiting for a person to decide it.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80
+             */
+            proposal_id: string;
+        };
         AIProposal: {
             /**
              * @description The person the assistant acted for.
@@ -2992,6 +3068,10 @@ export interface components {
              * @example How much leave do I have left?
              */
             question: string;
+        };
+        AiDraftsOutputBody: {
+            /** @description The drafts attached to the request, newest first. */
+            drafts: components["schemas"]["AIDraft"][] | null;
         };
         AiProposalsOutputBody: {
             /** @description Newest first, up to 200. */
@@ -7999,6 +8079,149 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAssistantDrafts: {
+        parameters: {
+            query?: {
+                /** @description The request. */
+                request_id?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiDraftsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    draftWithAssistant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIDraftInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIDraftResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

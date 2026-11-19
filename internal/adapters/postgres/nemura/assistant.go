@@ -22,10 +22,6 @@ func assistantError(err error) error {
 		switch pg.Code {
 		case "NM178":
 			return &assistant.Refusal{Code: assistant.CodeConflict, Message: pg.Message + "."}
-		case "23514":
-			if pg.ConstraintName == "ai_proposal_decider_is_another" {
-				return &assistant.Refusal{Code: assistant.CodeRole, Message: "A proposal is decided by someone other than the person the assistant acted for."}
-			}
 		}
 	}
 	return err
@@ -201,7 +197,7 @@ func ProposalOf(ctx context.Context, tx pgx.Tx, id uuid.UUID) (ProposalRow, erro
 }
 
 // DecideProposal approves or rejects a pending proposal as a named human. An approval stores the final text the human saw and edited, checked against the task's strict shape, with its SHA-256; the
-// executor applies that text and nothing else. A proposal past its 72 hours, one the person asked for themselves and one already decided are refused. The audit event holds the hashes, never the text.
+// executor applies that text and nothing else. A proposal past its 72 hours and one already decided are refused; a tier 1 draft may be decided by the person who asked for it. The audit event holds the hashes, never the text.
 func DecideProposal(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by uuid.UUID, roles []string, id uuid.UUID, approve bool, reason string, final map[string]any) error {
 	p, err := ProposalOf(ctx, tx, id)
 	if err != nil {
@@ -213,9 +209,6 @@ func DecideProposal(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time,
 	}
 	if p.State != "pending" {
 		return &assistant.Refusal{Code: assistant.CodeConflict, Message: "That proposal has been decided already."}
-	}
-	if by == p.Asker {
-		return &assistant.Refusal{Code: assistant.CodeRole, Message: "A proposal is decided by someone other than the person the assistant acted for."}
 	}
 	if !approve {
 		if reason == "" {
@@ -243,7 +236,10 @@ func DecideProposal(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time,
 	if _, err := tx.Exec(ctx, "UPDATE nemura.ai_proposal SET state = 'approved', decided_by = $2, decided_at = $3, decision_reason = $4, final_payload = $5::jsonb, approved_hash = $6 WHERE id = $1", id, by, at, nilIfEmpty(reason), string(body), sum[:]); err != nil {
 		return assistantError(err)
 	}
-	return Audit(ctx, tx, org, at, user(by), "nemura.ai_proposal.approved", audit.Object{Type: "ai_proposal", ID: id}, map[string]audit.Change{"task": {nil, p.Task}, "approved_sha256": {nil, hexOf(sum[:])}}, "")
+	if err := Audit(ctx, tx, org, at, user(by), "nemura.ai_proposal.approved", audit.Object{Type: "ai_proposal", ID: id}, map[string]audit.Change{"task": {nil, p.Task}, "approved_sha256": {nil, hexOf(sum[:])}}, ""); err != nil {
+		return err
+	}
+	return enqueueApply(ctx, tx, id)
 }
 
 func nilIfEmpty(s string) *string {

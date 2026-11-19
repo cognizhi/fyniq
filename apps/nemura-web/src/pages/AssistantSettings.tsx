@@ -13,7 +13,7 @@ const problem = (e: unknown): string => (e as { detail?: string } | undefined)?.
 
 // AssistantSettings is nm-assistant (NM-AI-01, NM-AI-04): what the people assistant may do for this organisation, off until the Owner turns it on, and the drafts it has proposed for a person to decide.
 // The assistant drafts and explains; it never approves, issues, pays or changes a record, and this page lists that in words. The Owner saves the settings with a passkey; the people team decides the drafts.
-export function AssistantSettings({ roles, member }: { roles: readonly string[]; member: string }) {
+export function AssistantSettings({ roles }: { roles: readonly string[] }) {
   const [s, setS] = useState<Settings | null>(null);
   const [list, setList] = useState<Proposal[]>([]);
   const [enabled, setEnabled] = useState(false);
@@ -48,7 +48,6 @@ export function AssistantSettings({ roles, member }: { roles: readonly string[];
     setNote(error ? { ok: false, text: problem(error) } : { ok: true, text: t(approve ? "assistant.approved" : "assistant.rejected") });
     if (!error) load();
   };
-  const mine = (p: Proposal) => p.asker_id === member;
   const toggle = (id: string) => setTasks(tasks.includes(id) ? tasks.filter((x) => x !== id) : [...tasks, id]);
   return (
     <Shell roles={roles} directory={team(roles)} features={admin(roles)}>
@@ -96,8 +95,7 @@ export function AssistantSettings({ roles, member }: { roles: readonly string[];
                     <p>{t("assistant.proposal", { what: p.what, asker: p.asker, expires: p.expires_at.slice(0, 16).replace("T", " ") })}</p>
                     <pre className="fy-pre">{JSON.stringify(p.payload, null, 2)}</pre>
                     {p.expired && <p role="status" className="fy-secondary">{t("assistant.expired")}</p>}
-                    {!p.expired && mine(p) && <p className="fy-secondary">{t("assistant.yours")}</p>}
-                    {!p.expired && !mine(p) && (
+                    {!p.expired && (
                       <div className="fy-row" style={{ gap: "var(--space-3)" }}>
                         <label className="fy-field"><span>{t("assistant.reason")}</span><input className="fy-input" value={reasons[p.id] ?? ""} onChange={(ev: Change) => setReasons({ ...reasons, [p.id]: ev.target.value })} /></label>
                         <button className="fy-btn fy-btn--primary" type="button" onClick={() => decide(p, true)}>{t("assistant.approve")}</button>

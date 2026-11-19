@@ -17,8 +17,8 @@ Load before each slice: `fyniq-ai-proposals`, `fyniq-security-compliance`, `fyni
 
 ## 3. Drafts and the executor (slice 3)
 
-- [ ] 3.1 `people.draft_letter` and `people.draft_fwa_reply` proposals made from a request, with the fields filled from the record; `nm-assistant` shows what waits for a human. `// req: NM-AI-02`
-- [ ] 3.2 The executor applies an approved proposal's stored text through the letters domain commands, once; an expired, rejected or edited-after-approval proposal applies nothing. `// req: NM-AI-04`
+- [x] 3.1 `people.draft_letter` and `people.draft_fwa_reply` proposals made from a request, with the fields filled from the record; `nm-assistant` shows what waits for a human. `// req: NM-AI-02`
+- [x] 3.2 The executor applies an approved proposal's stored text through the letters domain commands, once; an expired, rejected or edited-after-approval proposal applies nothing. `// req: NM-AI-04`
 
 ## 4. Evals and red team (slice 4)
 
@@ -39,3 +39,8 @@ Load before each slice: `fyniq-ai-proposals`, `fyniq-security-compliance`, `fyni
 | NM-EXT-01 Fyniq without Nemura | 4.2 | Nemura's side only | `p1-payroll-link` 8.1 |
 | NM-EXT-02 Connectors | | none here | `p1-payroll-link` 7.1; the provider connector after its API is verified `[verify]` |
 | NM-EXT-03 Imported journals are drafts | | none here | `p1-payroll-link` 7.1 |
+
+## Left (slice 3)
+
+- The assistant's and the executor's own processes (`NEMURA_ROLE=assistant` and `executor`) are not built (`cmd/nemura/main_test.go` says so), so a draft request answers `NM_UNAVAILABLE` in a deployment until they are; the code path, the roles and the grants are proven by the database tests. The queued `assistant.apply` item (class executor) waits for the executor's sweep, which is `ExecutorService.ApplyApproved`.
+- A draft letter's fields are the values the request already holds; filling the template's own fields from the record again is the people team's check step.

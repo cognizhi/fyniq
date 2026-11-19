@@ -91,6 +91,26 @@ type Asker interface {
 	Ask(ctx context.Context, s Session, question string) (AIAnswer, error)
 }
 
+// AIDraftInput asks the assistant to draft something for a request.
+type AIDraftInput struct {
+	Task      string `json:"task_type" enum:"people.draft_letter,people.draft_fwa_reply" doc:"What to draft: a letter for a letter request, or a reply to a flexible-work request." example:"people.draft_letter"`
+	RequestID string `json:"request_id" format:"uuid" doc:"The request the draft is for: still open." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f90"`
+}
+
+// AIDraftResult is the proposal a draft request made.
+type AIDraftResult struct {
+	ProposalID string `json:"proposal_id" format:"uuid" doc:"The proposal, waiting for a person to decide it." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80"`
+}
+
+// AIDraft is a draft attached to a request after its proposal was approved.
+type AIDraft struct {
+	ID         string         `json:"id" format:"uuid" doc:"The draft." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1fa0"`
+	ProposalID string         `json:"proposal_id" format:"uuid" doc:"The proposal it came from." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80"`
+	Kind       string         `json:"kind" enum:"letter,flex_reply" doc:"A letter's fields or a reply's words." example:"letter"`
+	Payload    map[string]any `json:"payload" doc:"The approved text, exactly as approved."`
+	AppliedAt  string         `json:"applied_at" format:"date-time" doc:"When it was attached." example:"2026-11-20T10:00:00Z"`
+}
+
 // AssistantAdmin is the assistant's settings and proposals behind the API.
 type AssistantAdmin interface {
 	Settings(ctx context.Context, s Session) (AISettings, error)
@@ -98,6 +118,8 @@ type AssistantAdmin interface {
 	Proposals(ctx context.Context, s Session, state string) ([]AIProposal, error)
 	Proposal(ctx context.Context, s Session, id uuid.UUID) (AIProposal, error)
 	Decide(ctx context.Context, s Session, id uuid.UUID, in AIDecision) error
+	Draft(ctx context.Context, s Session, in AIDraftInput) (AIDraftResult, error)
+	Drafts(ctx context.Context, s Session, request uuid.UUID) ([]AIDraft, error)
 }
 
 func assistantError(err error) error {
@@ -142,6 +164,24 @@ type aiProposalInput struct {
 
 type aiProposalOutput struct{ Body AIProposal }
 
+type aiDraftPost struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	Body   AIDraftInput
+}
+
+type aiDraftOutput struct{ Body AIDraftResult }
+
+type aiDraftsInput struct {
+	Cookie    string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	RequestID string `query:"request_id" format:"uuid" doc:"The request." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f90"`
+}
+
+type aiDraftsOutput struct {
+	Body struct {
+		Drafts []AIDraft `json:"drafts" doc:"The drafts attached to the request, newest first."`
+	}
+}
+
 type aiDecisionInput struct {
 	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
 	ID     string `path:"id" format:"uuid" doc:"The proposal." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80"`
@@ -150,6 +190,7 @@ type aiDecisionInput struct {
 
 func (a *API) registerAssistant() {
 	IdempotencyExempt["POST /v1/assistant/proposals/{id}/decision"] = "a proposal is decided once: a repeat is refused (NM_AI_CONFLICT)"
+	IdempotencyExempt["POST /v1/assistant/drafts"] = "each request for a draft is a proposal of its own, which a person decides or lets expire"
 	IdempotencyExempt["POST /v1/assistant/ask"] = "a question changes nothing"
 	IdempotencyExempt["PUT /v1/assistant/settings"] = "a put of the same settings is the same settings"
 	team := func(ctx context.Context, cookie string) (Session, error) {
@@ -182,6 +223,43 @@ func (a *API) registerAssistant() {
 			return nil, assistantError(err)
 		}
 		return &aiAskOutput{Body: ans}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "draftWithAssistant", Method: "POST", Path: "/v1/assistant/drafts", Tags: []string{"Assistant"}, Summary: "Ask the assistant to draft a letter or a reply",
+		Description: "Makes a proposal: a draft letter for an open letter request (its fields filled from the values the request holds from the person's record, its purpose quoted) or a draft reply to an open flexible-work request (an acknowledgement that states no decision and no reason). The request's own words are data, never instructions. The assistant and the task type must be on. The proposal waits for a person to approve it within 72 hours; nothing is checked, issued, signed or replied to. The HR officer, the HR administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 201,
+	}, func(ctx context.Context, in *aiDraftPost) (*aiDraftOutput, error) {
+		s, err := team(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		r, err := a.d.Assistant.Draft(ctx, s, in.Body)
+		if err != nil {
+			return nil, assistantError(err)
+		}
+		return &aiDraftOutput{Body: r}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "listAssistantDrafts", Method: "GET", Path: "/v1/assistant/drafts", Tags: []string{"Assistant"}, Summary: "The drafts attached to a request",
+		Description: "The approved drafts the executor attached to a letter request or a flexible-work request, for the person who decides it to use. The HR officer, the HR administrator and the Owner. It changes nothing.", Errors: []int{401, 403, 422},
+	}, func(ctx context.Context, in *aiDraftsInput) (*aiDraftsOutput, error) {
+		s, err := team(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.RequestID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such request.")
+		}
+		list, err := a.d.Assistant.Drafts(ctx, s, id)
+		if err != nil {
+			return nil, assistantError(err)
+		}
+		out := &aiDraftsOutput{}
+		out.Body.Drafts = list
+		if list == nil {
+			out.Body.Drafts = []AIDraft{}
+		}
+		return out, nil
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "getAssistantSettings", Method: "GET", Path: "/v1/assistant/settings", Tags: []string{"Assistant"}, Summary: "The people assistant's settings",
@@ -259,7 +337,7 @@ func (a *API) registerAssistant() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "decideAssistantProposal", Method: "POST", Path: "/v1/assistant/proposals/{id}/decision", Tags: []string{"Assistant"}, Summary: "Approve or reject a proposal",
-		Description: "A named human approves or rejects a pending proposal, never the person the assistant acted for. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. It is audited with the hashes, never the text.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 204,
+		Description: "A named human approves or rejects a pending proposal; a tier 1 draft may be decided by the person who asked for it. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. It is audited with the hashes, never the text.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 204,
 	}, func(ctx context.Context, in *aiDecisionInput) (*struct{}, error) {
 		s, err := team(ctx, in.Cookie)
 		if err != nil {
