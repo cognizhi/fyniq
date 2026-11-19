@@ -74,6 +74,12 @@ func NewDevSignIn(providers []signin.Provider, base, callback string, clock port
 		codes: map[string]devCode{}}, nil
 }
 
+// NewLocalSignIn is the local build's sign-in with its one provider, DevSignInProvider: what an application other than Fyniq's API
+// (Nemura's, PRD-002) wires without naming the provider's configuration type.
+func NewLocalSignIn(base, callback string, clock ports.Clock) (*DevSignIn, error) {
+	return NewDevSignIn([]signin.Provider{DevSignInProvider}, base, callback, clock)
+}
+
 // Register adds the page to mux.
 func (d *DevSignIn) Register(mux interface {
 	HandleFunc(pattern string, h func(http.ResponseWriter, *http.Request))

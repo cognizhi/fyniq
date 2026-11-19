@@ -49,14 +49,16 @@ type Code struct {
 // (TestEveryCodeInTheCatalogueIsTriggered). PRD-002 names more (NM_FEATURE_REQUIRED, NM_POLICY_BELOW_STATUTE,
 // NM_FEATURE_OBLIGATIONS_OPEN): they arrive with the features that raise them.
 const (
-	CodeNotFound = "NM_NOT_FOUND" // no such record
-	CodeInvalid  = "NM_INVALID"   // a field is invalid
+	CodeNotFound        = "NM_NOT_FOUND"       // no such record
+	CodeInvalid         = "NM_INVALID"         // a field is invalid
+	CodeUnauthenticated = "NM_UNAUTHENTICATED" // no valid session
 )
 
 // Catalogue is every stable code the API returns, in order. It is served at GET /v1/errors.
 var Catalogue = []Code{
 	{CodeNotFound, http.StatusNotFound, "Not found", "Check the identifier, and that it belongs to your organisation."},
 	{CodeInvalid, http.StatusUnprocessableEntity, "A field is not valid", "Correct the fields listed in errors and send the request again."},
+	{CodeUnauthenticated, http.StatusUnauthorized, "Sign-in required", "Sign in, then try again."},
 }
 
 func lookup(code string) Code {
