@@ -10,20 +10,24 @@ Load before each slice: `fyniq-accounting-domain` (money, rounding, postings), `
 
 ## 1. The engine (slice 1)
 
-- [ ] 1.1 Pure functions `RND-CPF`, `RND-CPF-GRAD` and `RND-SDL` in `internal/domain/rounding`, named, with the PRD's hand-worked cases and edge cases (49.99 and 50.00, 750.00 and
+- [x] 1.1 Pure functions `RND-CPF`, `RND-CPF-GRAD` and `RND-SDL` in `internal/domain/rounding`, named, with the PRD's hand-worked cases and edge cases (49.99 and 50.00, 750.00 and
   750.01, 8,000 ceiling, a dollar boundary for the employee share, SDL minimum and maximum, the employer-month total rounded down). `// req: RND-CPF, RND-CPF-GRAD, RND-SDL`
-- [ ] 1.2 Wage classes by facts (FR-PAY-17): an item is ordinary or additional wages by the period it is for and the date it is payable; the name only suggests a default; a mismatch is
+- [x] 1.2 Wage classes by facts (FR-PAY-17): an item is ordinary or additional wages by the period it is for and the date it is payable; the name only suggests a default; a mismatch is
   reported. Tested on the PRD's examples (monthly commission payable by the 14th, quarterly commission, an annual bonus). `// req: FR-PAY-17`
-- [ ] 1.3 The employee-month (B.3): gross, ordinary wages for CPF with the ceiling, additional wages with the annual ceiling and the year to date, CPF by residency, age band (from the
+- [x] 1.3 The employee-month (B.3): gross, ordinary wages for CPF with the ceiling, additional wages with the annual ceiling and the year to date, CPF by residency, age band (from the
   first day of the month after the birthday) and PR year from the pack, the December or last-month true-up with a shortfall or a refund task, SDL per employee and per employer-month,
   the self-help group fund with opt-out, net pay. Returns the working with each step's source. `// req: FR-PAY-01, FR-PAY-02, FR-PAY-03, FR-PAY-04, FR-PAY-14`
-- [ ] 1.3a A later run or correction of the month recomputes the whole employee-month and returns the difference from what was posted. `// req: FR-PAY-01`
-- [ ] 1.4 Deductions and what a run pays out (FR-PAY-16, FR-PAY-18): the allowed kinds, the 50% limit with its exceptions, advances over at most 12 months and 25% a period, consent;
+- [x] 1.3a A later run or correction of the month recomputes the whole employee-month and returns the difference from what was posted. `// req: FR-PAY-01`
+- [x] 1.4 Deductions and what a run pays out (FR-PAY-16, FR-PAY-18): the allowed kinds, the 50% limit with its exceptions, advances over at most 12 months and 25% a period, consent;
   reimbursements and held monies; the amount to disburse and the totals of B.3's postings balancing (gross + employer CPF + SDL + reimbursements = advances + other deductions + 2100 + 2110).
   `// req: FR-PAY-16, FR-PAY-18`
-- [ ] 1.5 The scenario schema and the golden employee-months (`test/differential/`) the oracle reads; a property test that nothing rounds outside a named policy and that the totals balance
+- [x] 1.5 The scenario schema and the golden employee-months (`test/differential/`) the oracle reads; a property test that nothing rounds outside a named policy and that the totals balance
   for generated months. `[oracle]` for the agreement run. `// req: QA-ENG-02`
-- [ ] 1.6 Verify: the local gates; the foreign worker levy is an expense input (O2), not a calculation.
+- [x] 1.6 Verify: the local gates; the foreign worker levy is an expense input (O2), not a calculation.
+  Built in slice 1: `internal/domain/rounding/payroll.go`; `internal/nemura/payroll` (`Classify`, `Calculate`, `CheckDeductions`, `Total`, `Postings`, `Diff`); Nemura's copies of `sg-cpf`, `sg-sdl` and
+  `sg-shg` (`internal/nemura/packs.StatutoryFiles`, kept equal to Fyniq's by an archtest); `test/differential/payroll.schema.json` and 16 hand-worked golden months, with a property test of a thousand
+  generated months. Left in slice 1: the oracle's half `[oracle]`; the CPF Board's treatment of a birthday on the first of a month `[verify]`; the SPR joint election is read from the person (its
+  evidence is slice 2); the engine does not yet read the salary of a part month (joiners and leavers are inputs prorated in slice 2).
 
 ## 2. Pay records, inputs and the calendar (slice 2)
 
