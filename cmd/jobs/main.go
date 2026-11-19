@@ -14,7 +14,7 @@
 //	                             on it, the copy removed, the drill recorded (DR-06; make restore-drill locally)
 //	jobs controls                list every check of the control registry and how it runs (the dry run)
 //	jobs kb-compile <org>        the knowledge-base compiler for an organisation (AI-52, AI-57): drafts and findings through the
-//	                             API's four compiler operations, with its own service token and no database
+//	                             API's compiler operations, with its own service token and no database
 //
 // FYNIQ_DATABASE_URL is the worker's role; the local build defaults it.
 package main
@@ -64,6 +64,9 @@ func main() {
 		kit.Release = controls.Release{Tag: version.Release, Repository: version.Repository} // CMP-01: the CI checks' release
 		// REL-05: every exported report names the version and the commit.
 		kit.Stamp = sheet.Stamp(version.Version, version.Commit)
+		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" { // AI-90: the job that removes lapsed AI app registrations; none: they are only marked
+			kit.OAuthClients = wiring.Hydra(admin)
+		}
 		defer kit.Store.Close()
 		switch args[0] {
 		case "audit-anchor":

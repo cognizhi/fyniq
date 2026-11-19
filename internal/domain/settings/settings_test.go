@@ -67,8 +67,8 @@ func TestTheCatalogueShipsEverySettingAtAValidRecommendedValue(t *testing.T) {
 		if !ok || !headings[section] {
 			t.Errorf("%s: the guide link %q has no section in the guide", d.Key, d.Guide)
 		}
-		if d.OffAtOnce && ((d.Kind != Switch && d.Kind != TaskTypes) || !d.DualControl) {
-			t.Errorf("%s: only a switch or the task types under dual control turn off at once (AI-13, AI-32)", d.Key)
+		if d.OffAtOnce && ((d.Kind != Switch && d.Kind != TaskTypes && d.Kind != Choices && d.Kind != Apps) || !d.DualControl) {
+			t.Errorf("%s: only a switch, the task types or the allowed apps under dual control turn off at once (AI-13, AI-32, AI-35)", d.Key)
 		}
 		if d.Fixed {
 			continue
@@ -76,7 +76,7 @@ func TestTheCatalogueShipsEverySettingAtAValidRecommendedValue(t *testing.T) {
 		if v, p := Normalise(d, d.Recommended); p != nil || v != d.Recommended {
 			t.Errorf("%s: the recommended value %q is not valid: %q %v", d.Key, d.Recommended, v, p)
 		}
-		if d.Kind != Switch && d.Kind != AccountCode && d.Kind != Choice && d.Kind != Choices && d.Kind != Cron && d.Kind != TimeRange {
+		if d.Kind != Switch && d.Kind != AccountCode && d.Kind != Choice && d.Kind != Choices && d.Kind != Apps && d.Kind != Cron && d.Kind != TimeRange {
 			if _, p := Normalise(d, d.Min); p != nil {
 				t.Errorf("%s: its minimum is out of range: %v", d.Key, p)
 			}
@@ -292,5 +292,63 @@ func TestTaskTypesNarrowAtOnceAndWidenUnderDualControl(t *testing.T) {
 	}
 	if terms, _ := Lookup("sales.payment_terms_days"); Narrows(terms, "45", "30") {
 		t.Error("a setting that is no kill switch narrows")
+	}
+}
+
+// MCP access is closed until an Owner opens it (AI-35, CTL-MCP-03): the switch and the allowlist start off and empty, turning
+// the switch on or adding an app needs a second approver, and turning it off or taking an app off, the per-app kill switch,
+// takes effect at once. Only the apps this release pre-registered can be listed, and the limits start at AI-43's defaults.
+// req: AI-35
+// req: AI-43
+// req: CTL-MCP-03
+// req: AI-90
+func TestMCPAccessIsClosedByDefaultAndAppsNarrowAtOnce(t *testing.T) {
+	sw, _ := Lookup("features.mcp")
+	apps, _ := Lookup("mcp.clients")
+	reg, _ := Lookup("mcp.registration")
+	if reg.Recommended != "false" || !reg.DualControl || !reg.OffAtOnce || reg.Requirement != "AI-90" {
+		t.Fatalf("mcp.registration %+v", reg)
+	}
+	if sw.Recommended != "false" || !sw.DualControl || !sw.OffAtOnce || apps.Recommended != "" || !apps.DualControl || !apps.OffAtOnce {
+		t.Fatalf("features.mcp %+v, mcp.clients %+v", sw, apps)
+	}
+	for _, c := range []struct {
+		d          Definition
+		was, value string
+		want       bool
+	}{
+		{sw, "true", "false", true},
+		{sw, "false", "true", false},
+		{apps, "claude-code,claude-desktop", "claude-code", true},
+		{apps, "claude-code", "", true},
+		{apps, "", "claude-code", false},
+		{apps, "claude-code", "claude-code,claude-desktop", false},
+		{apps, "claude-code", "claude-desktop", false},
+	} {
+		if got := Narrows(c.d, c.was, c.value); got != c.want {
+			t.Errorf("%s from %q to %q narrows: %v; want %v", c.d.Key, c.was, c.value, got, c.want)
+		}
+	}
+	if v, p := Normalise(apps, "claude-desktop, claude-code"); p != nil || v != "claude-code,claude-desktop" {
+		t.Errorf("two listed apps: %q %v", v, p)
+	}
+	if v, p := Normalise(apps, "mcp-0123456789abcdef0123, claude-code"); p != nil || v != "claude-code,mcp-0123456789abcdef0123" {
+		t.Errorf("a registered app: %q %v", v, p)
+	}
+	for _, rogue := range []string{"rogue-app", "claude-code,rogue-app", "https://evil.test/client.json", "mcp-short", "mcp-0123456789ABCDEF0123", "mcp-0123456789abcdef01234"} {
+		if _, p := Normalise(apps, rogue); p == nil {
+			t.Errorf("%q was accepted as an app that may connect: only the release's own pre-registered apps can be listed", rogue)
+		}
+	}
+	for key, want := range map[string]string{"mcp.requests_per_minute": "60", "mcp.tool_calls_per_hour": "600", "mcp.tool_calls_per_day": "5000",
+		"mcp.proposals_per_hour": "30", "mcp.result_rows": "500", "mcp.result_kb": "256"} {
+		d, ok := Lookup(key)
+		if !ok || d.Recommended != want || !d.DualControl || d.OffAtOnce || d.Max == "" {
+			t.Errorf("%s: %+v, want default %s under dual control with a platform maximum", key, d, want)
+		}
+	}
+	rows, _ := Lookup("mcp.result_rows")
+	if _, p := Normalise(rows, "5001"); p == nil || !strings.Contains(p.Fix, "rows") {
+		t.Errorf("a number of rows past the platform maximum: %v", p)
 	}
 }

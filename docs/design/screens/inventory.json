@@ -1726,7 +1726,8 @@
     "Payout detail: gross charges, refunds, disputes, fees (e.g. HitPay PayNow 0.65% + S$0.30 = S$35.73 on S$5,450, payout S$5,414.27)",
     "Clearing balance vs the provider's reported balance not yet paid out",
     "Completeness sweep status and 'complete to' date; unknown events parked ⚠",
-    "Monthly fee tax invoice matched to the month's fees"
+    "Disputes: what each holds in disputes clearing, open, won, written off or credited; for a lost one, write it off as a draft journal or settle an issued credit note's credit against it (once per dispute; rev 0.308)",
+    "Events Fyniq parked for a person, each marked as dealt with with a reason"
    ],
    "states": [
     "payout does not net to zero (✖)",

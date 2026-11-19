@@ -10,8 +10,14 @@ evidence: "Test report"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-mcp-first-party"
+    status: running
+    how: "test TestAnMCPToolCallPassesEveryGateOrIsRefused"
+    evidence: "an agent-class token's write to the public API is refused (403), and the MCP service's one operation runs a read tool only, for the MCP service's own service token and a delegated agent token, with every other caller refused; QA-MCP-01; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestTheMCPServiceCarriesNoDatabaseCode"
+    evidence: "the MCP service's binary carries no database adapter, no domain command and no write path, in both flavours, whichever of the shell and the server runs; CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
-    arrives: "p1-mcp-first-party"
+    status: running
+    how: "verify mcp.agent-writes"
+    evidence: "the latest run in each organisation (fyniq.control_run), nightly: every audit event of the last day made by an AI app's delegated token (actor mcp:<client>) is a proposal's (ai_proposal.*) or its own approval request, the one write an agent-class token has; each other is listed by event (target 0)"

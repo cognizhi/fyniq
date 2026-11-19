@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "app": {
+      "description": "The app.",
+      "examples": [
+        "claude-code"
+      ],
+      "type": "string"
+    },
+    "app_version": {
+      "description": "As the app reports itself.",
+      "examples": [
+        "claude-code/2.1.327"
+      ],
+      "type": "string"
+    },
+    "at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-19T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "code": {
+      "description": "The refusal's or failure's code.",
+      "examples": [
+        "MCP-SCOPE-01"
+      ],
+      "type": "string"
+    },
+    "facts": {
+      "description": "How many figures it returned.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "id": {
+      "description": "The call's ID.",
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "network": {
+      "description": "The caller's network, never its address.",
+      "examples": [
+        "203.0.113.0/24"
+      ],
+      "type": "string"
+    },
+    "outcome": {
+      "description": "What became of it.",
+      "enum": [
+        "read",
+        "refused",
+        "limited",
+        "failed"
+      ],
+      "examples": [
+        "read"
+      ],
+      "type": "string"
+    },
+    "tool": {
+      "description": "The tool.",
+      "examples": [
+        "metrics.query"
+      ],
+      "type": "string"
+    },
+    "user_id": {
+      "description": "Whose app it was.",
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "user_id",
+    "app",
+    "tool",
+    "outcome",
+    "facts",
+    "at"
+  ],
+  "title": "MCPCallRow",
+  "type": "object"
+}

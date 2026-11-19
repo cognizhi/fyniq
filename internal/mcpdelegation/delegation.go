@@ -7,6 +7,7 @@
 package mcpdelegation
 
 import (
+	"cmp"
 	"context"
 	"crypto"
 	"crypto/rand"
@@ -35,11 +36,14 @@ const assertionLifetime = time.Minute
 
 // Delegator obtains delegated API tokens.
 type Delegator struct {
-	MCP         authn.Authenticator // the MCP audience's introspector: the MCP token must be valid now
-	Key         crypto.Signer       // the MCP server's key: an EC P-256 key (ES256); Cloud KMS in the cloud
-	KeyID       string
-	Issuer      string // the trust relationship's issuer
-	TokenURL    string // Hydra's token endpoint: the assertion's audience
+	MCP      authn.Authenticator // the MCP audience's introspector: the MCP token must be valid now
+	Key      crypto.Signer       // the MCP server's key: an EC P-256 key (ES256); Cloud KMS in the cloud
+	KeyID    string
+	Issuer   string // the trust relationship's issuer
+	TokenURL string // Hydra's token endpoint, where the grant is posted
+	// Audience is the assertion's audience when Hydra names its token endpoint otherwise than the address the MCP service
+	// reaches it at (its public URL, behind the edge); empty: TokenURL.
+	Audience    string
 	ClientID    string // the MCP server's delegation client (JWT-bearer only, agent class)
 	Secret      string
 	APIAudience string
@@ -70,11 +74,22 @@ func (d Delegator) APIToken(ctx context.Context, authorization string) (Token, e
 	if p.Via != authn.ViaToken || !p.AI() || p.Subject == "" {
 		return Token{}, errors.Join(ErrRefused, errors.New("only an agent's valid MCP token can be delegated (AI-34)"))
 	}
-	assertion, err := d.assertion(p.Subject)
+	return d.For(ctx, p.Subject, p.Scopes)
+}
+
+// For returns an API-audience token for subject, for scopes, for a caller that has just validated the person's MCP token
+// itself (the MCP server's resource-server check): the assertion is made only for that subject, at most 5 minutes, and
+// the scopes are the MCP token's, which the OAuth server intersects with the trust relationship's. subject is the person's
+// user ID, or, to name the organisation they consented in, authn.DelegatedSubject.
+func (d Delegator) For(ctx context.Context, subject string, scopes []string) (Token, error) {
+	if subject == "" {
+		return Token{}, errors.Join(ErrRefused, errors.New("a delegation needs the person's subject"))
+	}
+	assertion, err := d.assertion(subject)
 	if err != nil {
 		return Token{}, err
 	}
-	scopes := slices.DeleteFunc(slices.Clone(p.Scopes), func(s string) bool { return s == "openid" || s == "offline_access" })
+	scopes = slices.DeleteFunc(slices.Clone(scopes), func(s string) bool { return s == "openid" || s == "offline_access" })
 	form := url.Values{"grant_type": {"urn:ietf:params:oauth:grant-type:jwt-bearer"}, "assertion": {assertion},
 		"scope": {strings.Join(scopes, " ")}, "audience": {d.APIAudience}}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, d.TokenURL, strings.NewReader(form.Encode()))
@@ -110,7 +125,7 @@ func (d Delegator) APIToken(ctx context.Context, authorization string) (Token, e
 	if life <= 0 || life > MaxLifetime {
 		return Token{}, errors.Join(ErrRefused, fmt.Errorf("the delegated token lives %s; at most %s", life, MaxLifetime))
 	}
-	return Token{AccessToken: out.AccessToken, Subject: p.Subject, Scopes: strings.Fields(out.Scope), Expires: d.Clock.Now().Add(life)}, nil
+	return Token{AccessToken: out.AccessToken, Subject: subject, Scopes: strings.Fields(out.Scope), Expires: d.Clock.Now().Add(life)}, nil
 }
 
 // assertion is the RFC 7523 JWT: issued by the MCP server, about subject, for Hydra's token endpoint,
@@ -122,7 +137,7 @@ func (d Delegator) assertion(subject string) (string, error) {
 		return "", err
 	}
 	now := d.Clock.Now()
-	claims := map[string]any{"iss": d.Issuer, "sub": subject, "aud": d.TokenURL, "iat": now.Unix(), "nbf": now.Unix(),
+	claims := map[string]any{"iss": d.Issuer, "sub": subject, "aud": cmp.Or(d.Audience, d.TokenURL), "iat": now.Unix(), "nbf": now.Unix(),
 		"exp": now.Add(assertionLifetime).Unix(), "jti": rand.Text()}
 	b, err := json.Marshal(claims)
 	if err != nil {

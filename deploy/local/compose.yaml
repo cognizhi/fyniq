@@ -179,6 +179,9 @@ services:
       # The audiences are the URLs clients call (RFC 8707), so they move with the port too.
       FYNIQ_API_AUDIENCE: http://localhost:${FYNIQ_HTTP_PORT:-8080}/api
       FYNIQ_MCP_AUDIENCE: http://localhost:${FYNIQ_HTTP_PORT:-8080}/mcp
+      FYNIQ_MCP_DELEGATION_CLIENT: mcp-delegation           # the MCP service's JWT-bearer client: its delegated tokens are accepted (local)
+      FYNIQ_OAUTH_ISSUER: http://localhost:${FYNIQ_HTTP_PORT:-8080}/oauth/   # the issuer the authorisation-server metadata names (RFC 8414)
+      FYNIQ_MCP_SERVER: ${FYNIQ_MCP_SERVER:-off}            # AI apps can register themselves only where the MCP server is on (AI-90)
       FYNIQ_PUBLIC_ORIGIN: http://localhost:${FYNIQ_HTTP_PORT:-8080}   # where the browser is: sign-in sends it back here
       FYNIQ_CLAMD_ADDR: ${FYNIQ_CLAMD_ADDR:-}                # clamav:3310 with the scanner profile; else the EICAR fake
       FYNIQ_TICK_INTERVAL: ${FYNIQ_TICK_INTERVAL:-5m}       # the API's own tick, as Cloud Scheduler's; the journeys' stack ticks faster
@@ -202,7 +205,19 @@ services:
     <<: *hardened
     image: fyniq-mcp:local
     profiles: [core]
-    environment: { <<: *fyniq-env }   # reaches data only through the API (§12.3)
+    environment:                      # reaches data only through the API (§12.3); no database credential
+      <<: *fyniq-env
+      # The launch shell answers (no tool, every call refused) until this is on: an operator's switch, set after the security
+      # review (p1-mcp-first-party design D1). For a local try-out: FYNIQ_MCP_SERVER=on make up.
+      FYNIQ_MCP_SERVER: ${FYNIQ_MCP_SERVER:-off}
+      FYNIQ_OAUTH_ADMIN_URL: http://oauth:4445              # introspection only (the service uses no other call)
+      FYNIQ_OAUTH_TOKEN_URL: http://oauth:4444/oauth2/token # the JWT-bearer grant for the delegated API token (option (b))
+      FYNIQ_API_INTERNAL_URL: http://api:8080/internal/v1   # the one operation through which it reads
+      FYNIQ_API_AUDIENCE: http://localhost:${FYNIQ_HTTP_PORT:-8080}/api
+      FYNIQ_MCP_DELEGATION_CLIENT: mcp-delegation
+      FYNIQ_OAUTH_ISSUER: http://localhost:${FYNIQ_HTTP_PORT:-8080}/oauth/
+      FYNIQ_MCP_AUDIENCE: http://localhost:${FYNIQ_HTTP_PORT:-8080}/mcp
+      FYNIQ_PUBLIC_ORIGIN: http://localhost:${FYNIQ_HTTP_PORT:-8080}
     healthcheck: *health
 
   worker:
@@ -257,7 +272,7 @@ services:
       # Where the browser reaches Hydra and the sign-in pages, through Caddy: FYNIQ_HTTP_PORT moves them all.
       URLS_SELF_ISSUER: http://localhost:${FYNIQ_HTTP_PORT:-8080}/oauth/
       URLS_LOGIN: http://localhost:${FYNIQ_HTTP_PORT:-8080}/api/auth/login
-      URLS_CONSENT: http://localhost:${FYNIQ_HTTP_PORT:-8080}/api/auth/consent
+      URLS_CONSENT: http://localhost:${FYNIQ_HTTP_PORT:-8080}/auth/consent
       SECRETS_SYSTEM: fyniq-local-only-oauth-system-key   # local only; Secret Manager in the cloud
       OAUTH2_PKCE_ENFORCED: "true"                         # the authorisation code with PKCE only (AI-36)
       STRATEGIES_ACCESS_TOKEN: opaque                      # introspected, so revocation is seen (AI-38)

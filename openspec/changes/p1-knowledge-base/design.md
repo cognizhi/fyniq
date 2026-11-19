@@ -256,6 +256,17 @@ What the first five slices settled, where the build differed from the text above
   the Administrator edits and asks only, so Founder mode lets an Owner publish alone and Team mode asks another Owner.
 - **Rendered pages publish with the setting change (decision 3).** They are the setting's own words, so no second person
   is asked; a person's edit of one is never overwritten.
+- **Recompile and the weekly lint (20 Nov 2026, PRD-001 rev 0.330; decided while the owner was away, small).** A person's Recompile
+  is an outbox row (`kb.compile`) the worker runs as the compiler through `kbcompile.APIClient` with the compiler's own token, so the
+  API never runs the model loop and the person's token is never the compiler's. The worker holds that token only in the local build (as
+  it holds the agents' model-step token); the release build has none, so Recompile answers `KB-COMPILER-03` and the weekly job logs
+  that it did nothing, until the compiler's own Cloud Run job and service account exist `[live-verify]`. The weekly pass's deterministic
+  half is a fifth compiler operation, `kbCompilerLint`, which raises findings and nothing else, so the worker needs no grant on
+  `kb_lint_finding` (the alternative was rejected: a wider boundary for a weekly job). The advice kinds (stale, source without page,
+  superseded, link to no page, orphan) never block a publication (`knowledge.BlocksPublication`): the new version is their answer, and an
+  open advice finding that blocked the page it is about would stop the fix. An "Inbox task" is the findings list of Settings → AI →
+  Knowledge base, not a Home row. A nightly per-role reader-filter run against the live database stays a CI and local test: the worker
+  holds no grant on the platform tables and none is widened for a check.
 - **Left from this design:** layer 1's cached index (task 2.3), the platform's check against the pack in force (task 3.3),
   the recompile operation (8.1, 8.2), the weekly semantic lint and the schedule (6.3), the answer-level evals (`[live-verify]`) and CTL-AI-08's
   nightly and event checks (9.3).

@@ -88,6 +88,25 @@ var matrixPaymentProviders = map[string]func(e *env, tok string) (response, func
 		m := v.(storage.MoneyAccount)
 		return e.call(http.MethodPost, "/v1/payment-providers/disputes/dp_matrix/loss", tok, map[string]any{"money_account_id": m.ID.String()}), nil
 	},
+	// The matrix's provider account names no disputes account, so an allowed role is answered PSP-05, past its policy.
+	"settleDisputeCredit": func(e *env, tok string) (response, func() bool) {
+		v, ok := pspMatrixAccounts.Load(e)
+		if !ok {
+			m, _ := e.providerAccount()
+			v = m
+			pspMatrixAccounts.Store(e, m)
+			e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+				c, err := u.Connectors().Organisation(ctx)
+				if err != nil {
+					return err
+				}
+				_, err = u.PSP().SaveAccount(ctx, storage.NewPSPAccount{MoneyAccountID: m.ID, ConnectorID: c[len(c)-1].ID, FeeAccountID: e.books.Rent.ID, At: e.clock.Now()}, 0)
+				return err
+			})
+		}
+		m := v.(storage.MoneyAccount)
+		return e.call(http.MethodPost, "/v1/payment-providers/disputes/dp_matrix/credit-settlement", tok, map[string]any{"money_account_id": m.ID.String(), "credit_note_id": uuid.NewString()}), nil
+	},
 	// A parked event: the first allowed role resolves it, and the others are answered PSP-07, past their policy.
 	"resolvePaymentProviderEvent": func(e *env, tok string) (response, func() bool) {
 		if _, ok := pspMatrixAccounts.Load(e); !ok {

@@ -156,3 +156,46 @@ func LeaveWaiting(v pack.Version, waiting []Waiting, negative []Negative, on tim
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
 	return out
 }
+
+// FlexRequest is a flexible work request that has not been answered in writing.
+type FlexRequest struct {
+	Person string
+	Due    time.Time
+}
+
+// FlexReplies is N.1 #5 (NM-LV-10): a flexible work request with no written reply is ⏰ from 14 days before its two months are up, and says so once they are.
+func FlexReplies(waiting []FlexRequest, on time.Time) []Finding {
+	var out []Finding
+	for _, w := range waiting {
+		days := int(w.Due.Sub(on).Hours() / 24)
+		switch {
+		case days < 0:
+			out = append(out, Finding{5, "Requests", Due, w.Person, fmt.Sprintf("A flexible work request had to be answered in writing by %s and has no reply: reply now, with the business grounds if you refuse.", w.Due.Format(time.DateOnly))})
+		case days <= 14:
+			out = append(out, Finding{5, "Requests", Due, w.Person, fmt.Sprintf("A flexible work request must be answered in writing by %s, in %d days: reply, with the business grounds if you refuse.", w.Due.Format(time.DateOnly), days)})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
+	return out
+}
+
+// OvertimeMonth is a person's overtime recorded in a month, in hundredths of an hour.
+type OvertimeMonth struct {
+	Person string
+	Month  time.Time
+	Hours  int
+}
+
+// OvertimeOverLimit is N.1 #16 (NM-TIM-04): a Part IV employee's overtime in a month beyond the pack's monthly limit is ⚠. The hours stay recorded and are paid; HR acts on
+// them with an exemption or a change of pattern.
+func OvertimeOverLimit(months []OvertimeMonth, limitHours int) []Finding {
+	var out []Finding
+	for _, m := range months {
+		if m.Hours > limitHours*100 {
+			out = append(out, Finding{16, "Time", Warn, m.Person, fmt.Sprintf("Overtime in %s is %d.%02d hours, beyond the monthly limit of %d: the hours stay recorded and are paid, so apply for an overtime exemption or change the person's working pattern.",
+				m.Month.Format("January 2006"), m.Hours/100, m.Hours%100, limitHours)})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
+	return out
+}

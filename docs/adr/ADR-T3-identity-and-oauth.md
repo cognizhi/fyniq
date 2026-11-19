@@ -13,7 +13,7 @@ asks ("the Hydra version and edition are pinned").
 | Edition | Apache-2.0: no RFC 8693 token exchange, no RFC 8707 resource indicators, no Client ID Metadata Documents (open question 40). The founders decided on 16 Oct 2026 not to buy the Enterprise Licence. Option (b), the JWT-bearer grant from the MCP server's key, is built and measured, and is the path for P1's MCP work: `ADR-T3-mcp-delegation-spike.md` |
 | Storage | Its own database, `hydra`, on the same PostgreSQL server, owned by its own role (Cloud SQL in the cloud, p0-infra-opentofu) |
 | Settings | `OAUTH2_PKCE_ENFORCED=true`; opaque access tokens (`STRATEGIES_ACCESS_TOKEN=opaque`) with introspection; access tokens 1 hour; `--sqa-opt-out` (no telemetry); `--dev` only in the local stack and the tests (it allows an `http` issuer) |
-| Endpoints | Public under `/oauth/` (issuer `http://localhost:8080/oauth/` locally); admin API internal only. Login and consent are the API's `/auth/login` and `/auth/consent` |
+| Endpoints | Public under `/oauth/` (issuer `http://localhost:8080/oauth/` locally); admin API internal only. Login is the API's `/auth/login`; consent is the web app's `/auth/consent` page, which reads and answers through the API's `/v1/oauth/consent` operations (the API's own `/auth/consent` form stays for clients that cannot run the page) |
 
 ## How tokens are checked (P0)
 

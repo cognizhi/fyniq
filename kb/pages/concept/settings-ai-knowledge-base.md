@@ -4,14 +4,14 @@ type: concept
 title: The knowledge base the assistant reads: pages, notes, publishing
 summary: The pages the assistant reads, the notes they come from, versions, findings and publishing; nothing changes until a person publishes
 sources:
-  - docs/user-guide/knowledge-base.md sha256:4d4aa1d7644f0cc6d417142e6cc4785d84da76e6b4fdcf1efc785b6a24848263
+  - docs/user-guide/knowledge-base.md sha256:601b1076a744268ce7e93c676e8035af631baa5c017445656bb3fc71bbb55649
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-19
+compiled_at: 2026-11-20
 aliases:
   - knowledge base
   - knowledge base admin
@@ -27,6 +27,8 @@ aliases:
   - why the assistant says something old
   - teach the assistant
   - add a policy for the assistant
+  - recompile the knowledge base
+  - weekly knowledge base check
 ---
 
 # The knowledge base the assistant reads: pages, notes, publishing
@@ -79,9 +81,18 @@ aliases:
 
 (src: docs/user-guide/knowledge-base.md#publish)
 
+## Recompile
+
+- Recompile, for an Owner or Administrator, queues the compiler: it drafts a page from each note that changed since its page was made, checks each draft with the publication lint, then checks the whole knowledge base. The result is new drafts and findings; nothing is published.
+- While the AI is switched off it drafts no pages but still runs the check, and the message says so. The compiler works under its own identity, can only make drafts and findings, and never overwrites a page a person wrote.
+- The same check runs weekly for every organisation with no AI. Where no compiler is connected, Recompile says so and queues nothing.
+
+(src: docs/user-guide/knowledge-base.md#recompile)
+
 ## Lint findings
 
-- A finding is a recompile waiting beside a person's edit, a contradiction with a setting, or a source that changed. An open finding on a page stops its publication.
+- A finding is a recompile waiting beside a person's edit, a contradiction with a setting, or a source that changed. An open finding of those kinds stops its page's publication.
+- The weekly check adds advice that never stops a publication: a stale page, a note with no page, a superseded overlay, a link to no page, and an orphan page.
 - Resolve closes a finding with a sentence on what was done; it closes once and who closed it is kept.
 
 (src: docs/user-guide/knowledge-base.md#lint-findings)

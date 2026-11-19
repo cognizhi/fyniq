@@ -1,9 +1,9 @@
 -- name: InsertAIProposal :one
 INSERT INTO fyniq.ai_proposal (task_type, task_version, task_sha256, payload, payload_sha256, item_count, rationale, evidence, risk_tier,
-  required_approvals, agent, requested_by, turn_id, run_id, model, prompt, tools_sha256, proposed_at, expires_at)
+  required_approvals, agent, requested_by, turn_id, run_id, mcp_app, model, prompt, tools_sha256, proposed_at, expires_at)
 VALUES (sqlc.arg(task_type), sqlc.arg(task_version), sqlc.arg(task_sha256), sqlc.arg(payload), sqlc.arg(payload_sha256), sqlc.arg(item_count),
   sqlc.arg(rationale), sqlc.arg(evidence), sqlc.arg(risk_tier), sqlc.arg(required_approvals), sqlc.arg(agent), sqlc.arg(requested_by),
-  sqlc.narg(turn_id), sqlc.narg(run_id), sqlc.arg(model), sqlc.arg(prompt), sqlc.arg(tools_sha256), sqlc.arg(proposed_at), sqlc.arg(expires_at))
+  sqlc.narg(turn_id), sqlc.narg(run_id), sqlc.narg(mcp_app), sqlc.arg(model), sqlc.arg(prompt), sqlc.arg(tools_sha256), sqlc.arg(proposed_at), sqlc.arg(expires_at))
 RETURNING *;
 
 -- name: GetAIProposal :one
@@ -16,6 +16,7 @@ WHERE (cardinality(sqlc.arg(statuses)::text[]) = 0 OR status = ANY (sqlc.arg(sta
   AND (sqlc.narg(turn_id)::uuid IS NULL OR turn_id = sqlc.narg(turn_id)::uuid)
   AND (sqlc.narg(run_id)::uuid IS NULL OR run_id = sqlc.narg(run_id)::uuid)
   AND (sqlc.arg(agent)::text = '' OR agent = sqlc.arg(agent)::text)
+  AND (sqlc.narg(since)::timestamptz IS NULL OR proposed_at >= sqlc.narg(since)::timestamptz)
   AND (sqlc.arg(after)::uuid = '00000000-0000-0000-0000-000000000000'::uuid OR id < sqlc.arg(after)::uuid)
 ORDER BY id DESC
 LIMIT sqlc.arg(max_rows);

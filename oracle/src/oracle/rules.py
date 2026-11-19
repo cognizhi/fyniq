@@ -201,6 +201,17 @@ class Rules:
             raise Rejected("money-account-currency")
         return held
 
+    def dispute_account(self, code: str, currency: str | None = None) -> str:
+        """A payment provider's disputes clearing account (FR-PSP-04, rev 0.308): an account that holds no money, which a
+        dispute settlement credits, and the currency it is kept in; ``currency``, when given, must be it."""
+        held = self.settings.data.get("dispute_accounts", {}).get(code)
+        if held is None or code in self.settings.money_accounts:
+            raise Rejected("not-a-dispute-account")
+        self.account(code)
+        if currency is not None and held != currency:
+            raise Rejected("dispute-account-currency")
+        return held
+
     # ---------------------------------------------------------------- GST
     def gst_code(self, code: str, direction: str | None = None) -> str:
         """One of Appendix B.6's twelve; with ``direction`` (``"supply"`` or ``"purchase"``), one of that

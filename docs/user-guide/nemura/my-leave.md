@@ -40,6 +40,9 @@ calendar year. Annual leave is counted in your working days, set by your **worki
   on a day. A working pattern is history: setting a new one ends the old one the day before.
 - Maternity, paternity and shared parental leave are recorded separately, with the employer's reimbursement claim: see
   [Record government-paid leave](leave-government-paid.md).
+- Under **Pay out annual leave**, enter the days, the day the encashment is for and why, then select **Record the encashment**. The
+  days come out of the person's balance, never more than the balance, and the next pay run gets an input to pay them. Nothing is
+  paid out by itself: the company agrees each encashment.
 - Nothing is edited or deleted. Every grant, correction, carry-forward and expiry is a new entry in the person's leave
   ledger, and each is audited.
 

@@ -36,7 +36,7 @@ Choose **High contrast** for stronger text and borders, **Standard** for the usu
 ### Density
 
 Choose **Comfortable** (rows 40 px high) or **Compact** (rows 32 px high, to see more at once).
-Density is an Expert choice: Basic mode always uses Comfortable.
+Density is an Expert choice: Basic mode always uses Comfortable, and Expert mode starts with Compact until you choose.
 
 ### Motion
 

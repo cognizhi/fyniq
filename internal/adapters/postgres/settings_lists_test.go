@@ -12,11 +12,12 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// The database keeps a setting's value to 1 to 200 characters, but for the two lists, the fields the AI never reads
-// and the task types it may propose, which may be empty and run to 4,000 (migration 000373): whatever the API sends,
+// The database keeps a setting's value to 1 to 200 characters, but for the three lists, the fields the AI never reads, the
+// task types it may propose and the AI apps allowed over MCP, which may be empty and run to 4,000 (migrations 000373, 000581): whatever the API sends,
 // another setting's empty or longer value, or a list past 4,000, is refused.
 // req: AI-32
 // req: AI-02
+// req: AI-35
 // req: FR-ORG-08
 func TestOnlyTheListSettingsMayBeEmptyOrLong(t *testing.T) {
 	api := store(t, "fyniq_api")
@@ -36,6 +37,7 @@ func TestOnlyTheListSettingsMayBeEmptyOrLong(t *testing.T) {
 	for _, c := range []struct{ key, value string }{
 		{"ai.task_types", "sec.create_task"}, {"ai.task_types", ""}, {"ai.task_types", strings.Repeat("t", 4000)},
 		{"ai.exclusions", "notes"}, {"ai.exclusions", ""},
+		{"mcp.clients", "claude-code"}, {"mcp.clients", ""}, // the per-app kill switch, to the last app (AI-35, migration 000581)
 		{"sales.payment_terms_days", strings.Repeat("9", 200)},
 	} {
 		if err := record(c.key, c.value); err != nil {
@@ -43,7 +45,7 @@ func TestOnlyTheListSettingsMayBeEmptyOrLong(t *testing.T) {
 		}
 	}
 	for _, c := range []struct{ key, value string }{
-		{"ai.task_types", strings.Repeat("t", 4001)}, {"ai.exclusions", strings.Repeat("n", 4001)},
+		{"ai.task_types", strings.Repeat("t", 4001)}, {"ai.exclusions", strings.Repeat("n", 4001)}, {"mcp.clients", strings.Repeat("c", 4001)},
 		{"sales.payment_terms_days", ""}, {"sales.payment_terms_days", strings.Repeat("9", 201)},
 		{"features.ai_assistant", ""},
 	} {

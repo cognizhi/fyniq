@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, Building, CircleCheck, CircleX, GitCompare, Hourglass, ListChecks, Minus, Pencil, PencilLine, Plus, RotateCcw, Search, Settings2, Sparkles, TriangleAlert, Upload } from "lucide-react";
+import { BookOpen, Building, CircleCheck, CircleX, GitCompare, Hourglass, ListChecks, Minus, Pencil, PencilLine, Plus, RefreshCw, RotateCcw, Search, Settings2, Sparkles, TriangleAlert, Upload } from "lucide-react";
 import { useId, useMemo, useState, type FormEvent } from "react";
 import { api, newKey } from "../../api/client";
 import type { components } from "../../api/schema";
@@ -117,13 +117,31 @@ export function KnowledgeBase() {
   const drafts = own.filter((e) => e.state !== "published");
   const open_ = (found.data ?? []).filter((f) => f.status === "open");
   const live = snaps.data?.[0]?.number;
+  const [recompiling, setRecompiling] = useState(false);
+  // recompile asks the API to queue the compiler job; what it makes arrives as drafts and findings, never as a publication.
+  const recompile = async () => {
+    setProblem(null);
+    setSaid(null);
+    setRecompiling(true);
+    const { data, error } = await api.POST("/v1/knowledge-base/recompile", { params: { header: { "Idempotency-Key": newKey() } } });
+    setRecompiling(false);
+    if (error) return setProblem(problemOf(error));
+    setSaid(data?.note ?? "The compiler is queued.");
+  };
+  const hr = helpText("kb.recompile");
   return (
     <SettingsPage title={h.label} lead={h.tooltip} screen="knowledge-base"
       actions={
-        <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/settings/ai">
-          <Icon of={Settings2} />
-          {helpText("settings.ai").label}
-        </Link>
+        <>
+          <Button size="sm" variant="secondary" disabled={recompiling} onClick={recompile} title={hr.tooltip}>
+            <Icon of={RefreshCw} />
+            {hr.label}
+          </Button>
+          <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/settings/ai">
+            <Icon of={Settings2} />
+            {helpText("settings.ai").label}
+          </Link>
+        </>
       }>
       {index.isError && <Refusal problem={problemOf(index.error)} title="The knowledge base could not be shown" />}
       {problem && <Refusal problem={problem} title="That was not done" />}

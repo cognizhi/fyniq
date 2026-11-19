@@ -4,7 +4,7 @@ import { ShieldCheck, Sparkles } from "lucide-react";
 import { createContext, useContext, useEffect } from "react";
 import { DeviceRoot } from "./components/ui/dialog";
 import { api, type Organisation, type Session } from "./api/client";
-import { setOrganisationMotion } from "./appearance";
+import { setAppearanceMode, setOrganisationMotion } from "./appearance";
 import { adopt } from "./preferences";
 import { helpText } from "./i18n";
 import { setMode, useMode } from "./mode";
@@ -142,6 +142,11 @@ export function SignedIn() {
     const el = device?.current;
     if (el) el.dataset.mode = mode;
   }, [device, mode]);
+
+  // The look follows the mode for its density: Comfortable in Basic, Compact in Expert unless the person chose (experience/modes).
+  useEffect(() => {
+    if (session) setAppearanceMode(mode);
+  }, [session, mode]);
 
   useEffect(() => {
     // Moving between the signed-out pages is a page load, so nothing secret survives in memory.

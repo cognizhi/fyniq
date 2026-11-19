@@ -96,7 +96,7 @@ checks are tagged `[live-verify]`.
   - **Left:** the follow-ups of section 4, and every live-provider check `[live-verify]`: Stripe's permissions for the list calls, the API version, the
     invoice-payments lookup of a charge's invoice, HitPay's fee fields, refunds and balance reserve, and G4-107's outage.
 
-## 4. Follow-up, after go-live (the owner's decisions of 19 Nov 2026, design.md)
+## 4. Follow-up (4.1 to 4.4 after go-live; 4.5 and 4.6 built, rev 0.308; the owner's decisions of 19 Nov 2026, design.md)
 
 - [ ] 4.1 A migration for the Model B mirror (`psp_customer`, `psp_subscription`, `psp_invoice` with the collection state and the
   one mapping of a provider invoice to its document) and the typed provider invoice on the port, read from Stripe's invoice
@@ -108,6 +108,23 @@ checks are tagged `[live-verify]`.
   adapter until then), a credit note for a refund, a void, a write-off for uncollectible, unsupported pricing parked.
   Tests: G4-040 (out of order, redelivered), G4-106 (collection state mirrored, no reminder, no charge), UC-PSP-01.
 - [ ] 4.4 The `subscriptions` screen and the guide page for it, with the knowledge-base page; MRR and churn stay P2.
-- [ ] 4.5 The credit-note route of a lost dispute: a new posting rule, a dispute settlement against a customer credit (Dr 1100 ·
+- [x] 4.5 The credit-note route of a lost dispute: a new posting rule, a dispute settlement against a customer credit (Dr 1100 ·
   Cr disputes clearing), with the oracle's half, and the one-click step from the dispute `[accountant to confirm the GST]`.
-- [ ] 4.6 The `provider-payouts` screen over the API of 3.3 and the disputes list, with its help keys and guide page.
+  - Built (PRD rev 0.308): `dispute_settlement@1` (`internal/domain/ledger/dispute_settlement.go`, a rule version of the customer
+    refund; base currency only; replay golden and unit test); `customercredit.PrepareRefund` selects it when the refund account is
+    a provider's disputes account; migration 000640 `psp_dispute_credit` (once per dispute, guard trigger, FORCE RLS, audited);
+    the operation `settleDisputeCredit` (`POST /v1/payment-providers/disputes/{dispute_id}/credit-settlement`, Invoices/Post,
+    codes PSP-08 and the credit's own) posting the refund and recording the settlement in one unit of work; the disputes list
+    shows `credited`, the disputed amount and the settlement. The oracle's half: the document type `dispute_settlement` and the
+    scenario setting `dispute_accounts` (not money accounts), the Go runner, a third dispute in the golden
+    `payment-providers.json` (invoice, receipt, credit note, settlement, the fee written off by journal) and a hand-worked test.
+  - Left: nothing for the rule; the GST of the credit note and of the expense route stay `[accountant to confirm]`.
+- [x] 4.6 The `provider-payouts` screen over the API of 3.3 and the disputes list, with its help keys and guide page.
+  - Built: `apps/web/src/screens/banking/ProviderPayouts.tsx` at `/banking/payouts` (Expert; a tab on Banking): each provider's
+    clearing balance against the provider's, the payouts with their breakdown and the nets-to-zero chip (a critical banner for one
+    that does not), the disputes with the write-off and the credit-note settlement, and the parked events marked as dealt with;
+    the registry and help keys (`banking.payouts`, `psp.*`), the guide section "Payment provider payouts" in `banking.md` with
+    its knowledge-base page `banking.payouts`, the design fragment and inventory row, the component tests with axe.
+  - Left: the "Sync now" button and the monthly fee tax invoice card of the first design (no API for either; the sweep is
+    hourly and fee invoices wait for FR-PSP-05's tax-invoice match); the canvas of `banking-claims` to republish from the
+    design account; the browser journey and the visual baseline (the key pages did not change).

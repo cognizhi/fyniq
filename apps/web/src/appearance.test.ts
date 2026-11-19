@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyTo, defaults, parse, resolve, setAppearance, startAppearance, type Environment } from "./appearance";
+import { applyTo, defaults, densityOf, parse, resolve, setAppearance, setAppearanceMode, startAppearance, type Environment } from "./appearance";
 import { media } from "./test/setup";
 
 const os: Environment = { prefersDark: false, prefersMoreContrast: false, prefersReducedMotion: false, organisationMotion: "on" };
@@ -56,5 +56,26 @@ describe("appearance", () => {
     expect(root().dataset.density).toBe("compact");
     expect(parse('{"theme":"neon","motion":"reduce"}')).toEqual({ ...defaults, motion: "reduce" });
     expect(parse("not json")).toEqual(defaults);
+  });
+});
+
+// req: experience/modes Basic and Expert density
+describe("density by mode", () => {
+  it("is Comfortable in Basic, Compact in Expert unless the person chose, and the person's choice holds in Expert only", () => {
+    expect(densityOf("auto", "basic")).toBe("comfortable");
+    expect(densityOf("auto", "expert")).toBe("compact");
+    expect(densityOf("comfortable", "expert")).toBe("comfortable"); // the person can change it
+    expect(densityOf("compact", "expert")).toBe("compact");
+    expect(densityOf("compact", "basic")).toBe("comfortable"); // Basic always uses Comfortable
+    expect(densityOf("auto", undefined)).toBe("comfortable"); // before sign-in
+    setAppearance({ density: "auto" });
+    setAppearanceMode("expert");
+    expect(root().dataset.density).toBe("compact");
+    setAppearance({ density: "comfortable" });
+    expect(root().dataset.density).toBeUndefined();
+    setAppearance({ density: "auto" });
+    expect(root().dataset.density).toBe("compact");
+    setAppearanceMode("basic");
+    expect(root().dataset.density).toBeUndefined();
   });
 });

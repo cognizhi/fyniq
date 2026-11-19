@@ -94,6 +94,9 @@ export function BankTabs() {
       <Link className="fy-expert-only" to="/banking/rules" activeOptions={{ exact: true }}>
         Rules
       </Link>
+      <Link className="fy-expert-only" to="/banking/payouts" activeOptions={{ exact: true }}>
+        Payouts
+      </Link>
     </nav>
   );
 }

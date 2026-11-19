@@ -3,7 +3,7 @@ key: home.overview
 title: The Home page and finding your way around
 mode: basic
 roles: [all]
-requirements: [FR-UX-01, FR-UX-21, FR-UX-29, FR-UX-31, FR-UX-40, FR-KPI-01, FR-KPI-03, FR-PLN-03, REL-05, FR-INT-11]
+requirements: [FR-UX-01, FR-UX-12, FR-UX-21, FR-UX-29, FR-UX-31, FR-UX-40, FR-KPI-01, FR-KPI-03, FR-PLN-03, REL-05, FR-INT-11]
 status: draft            # written with the app shell's first slice (P1); reviewed when the shell's screens are built
 ---
 
@@ -114,6 +114,19 @@ overdue), **Purchases** (bills due), **Banking** (bank lines to categorise) and 
 due). Each is counted from the list it opens and read again every minute, so it follows what you may read: an item
 whose list your roles cannot read shows no count. A screen reader hears each in words, such as "Inbox, 3 approvals
 waiting", and when a count changes it says so once, in words, such as "3 approvals waiting", without moving your focus.
+
+### Favourites and saved views
+
+Select the star in the header (on a phone, **Favourites and views** under **More**) to pin the page you are on, or to save it as
+a **view**: the page with the filters, columns and sort its address carries, under a name you choose, such as "Overdue this
+quarter". Open or take away what you saved from the same place. They are yours, kept with your profile, so they are the
+same on every device you sign in on.
+
+A view's link is the page's address, so copying it shares no data: whoever opens it sees only what their own roles let them
+see. A page whose filters are not in its address, such as most lists today, can be pinned, and a view of it keeps the page
+without filters. A favourite or view in an area your roles no longer reach is left out of the list. Taking one away deletes
+nothing: its history stays in the audit trail. Recent pages are not kept on the server, since every visit would be a saved
+change in the audit trail.
 
 ### Upcoming deadlines
 

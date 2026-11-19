@@ -7,6 +7,7 @@ import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
 import { Home } from "./pages/Home";
 import { Join } from "./pages/Join";
+import { MyRequests } from "./pages/MyRequests";
 import { GovernmentLeave } from "./pages/GovernmentLeave";
 import { ReportSick } from "./pages/ReportSick";
 import { ApplyLeave } from "./pages/ApplyLeave";
@@ -63,6 +64,7 @@ export function App() {
     if (state.status === "in" && route.id === "features") return <Features roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "apply-leave") return <ApplyLeave roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "report-sick") return <ReportSick roles={state.session.roles ?? []} />;
+    if (state.status === "in" && route.id === "my-requests") return <MyRequests roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "government-leave") return <GovernmentLeave roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "team-leave") return <TeamLeave roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "my-leave") return <MyLeave roles={state.session.roles ?? []} />;

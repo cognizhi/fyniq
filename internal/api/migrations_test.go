@@ -345,11 +345,11 @@ func TestTheMappingIsSignedByTheAccountantAlone(t *testing.T) {
 // import's difference register needs a committed import, and the matrix's organisation posts as it goes, so it never
 // commits one (rev 0.266), nor uploads the parallel month's workbook (rev 0.268), nor signs it to archive (rev 0.269).
 // Nor does it turn the company secretary assistant on, which waits for a second approver, so Run now finds it off.
-var pastPolicy = map[string]string{"exportProjectReport": CodeProjectsOff, "createPersonalAccessToken": apiclient.CodeDisabled, "createKBNote": CodeSessionRequired, "reviseKBNote": CodeSessionRequired, "editKBPage": CodeSessionRequired, "rollbackKBPage": CodeSessionRequired, "publishKBPages": CodeSessionRequired, "requestKBPublication": CodeSessionRequired, "resolveKBFinding": CodeSessionRequired, "listKBPageVersions": CodeNotFound, "runCompanySecretary": CodeAgentOff, "decideMigrationDifference": migration.CodeCommit, "signMigrationReconciliation": migration.CodeCommit,
+var pastPolicy = map[string]string{"exportProjectReport": CodeProjectsOff, "createPersonalAccessToken": apiclient.CodeDisabled, "createKBNote": CodeSessionRequired, "reviseKBNote": CodeSessionRequired, "editKBPage": CodeSessionRequired, "rollbackKBPage": CodeSessionRequired, "publishKBPages": CodeSessionRequired, "requestKBPublication": CodeSessionRequired, "resolveKBFinding": CodeSessionRequired, "recompileKnowledgeBase": CodeSessionRequired, "listKBPageVersions": CodeNotFound, "runCompanySecretary": CodeAgentOff, "decideMigrationDifference": migration.CodeCommit, "signMigrationReconciliation": migration.CodeCommit,
 	"uploadMigrationParallelWorkbook": migration.CodeCommit, "decideMigrationParallelDifference": migration.CodeCommit,
 	"signMigrationParallel": migration.CodeCommit, "getMigrationParallelReport": CodeNotFound,
 	"uploadMigrationArchivePDF": migration.CodeCommit, "archiveMigration": migration.CodeParallel,
-	"prepareDisputeLoss": CodePSPDisputeState, "resolvePaymentProviderEvent": CodePSPEventState,
+	"prepareDisputeLoss": CodePSPDisputeState, "settleDisputeCredit": CodePSPDisputeState, "resolvePaymentProviderEvent": CodePSPEventState,
 	"addExpenseClaimEvidenceFromMessage": CodeMessageFile} // the matrix member has no mail at an address of their own
 
 // matrixMigrations are the authorisation matrix's rows for the workbook migration (FR-MIG-01, Appendix D "Workbook

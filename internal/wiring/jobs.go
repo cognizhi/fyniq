@@ -39,7 +39,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/superadmin"
 	"github.com/cognizhi/fyniq/internal/domain/unusual"
 	"github.com/cognizhi/fyniq/internal/email"
+	"github.com/cognizhi/fyniq/internal/kbcompile"
 	"github.com/cognizhi/fyniq/internal/logging"
+	"github.com/cognizhi/fyniq/internal/mcpregister"
 	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/notify/reminders"
@@ -84,6 +86,11 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		agents.ScheduleJob: func(ctx context.Context) error { // AI-62: each enabled agent's slots due before the next tick
 			_, err := agents.Scheduler{Store: k.Store, Dispatcher: k.dispatcher(clock), Clock: clock, Skills: agents.Default()}.ScheduleAll(ctx)
+			return err
+		},
+		kbcompile.LintJob: k.KBLint(), // AI-52: the weekly deterministic lint of every organisation's knowledge base, as the compiler
+		mcpregister.ExpireJob: func(ctx context.Context) error { // AI-90: the AI apps' registrations that lapsed
+			_, err := mcpregister.Expire(ctx, k.Store, k.OAuthClients, clock.Now(), slog.Default())
 			return err
 		},
 		proposal.ExpireJob: func(ctx context.Context) error { // §9.5: the AI's proposals past their expiry, undecided
@@ -330,6 +337,67 @@ func (k *Kit) AgentRuns(clock ports.Clock) agents.Runner {
 		r.Model = agents.APIModel{URL: k.AgentModelURL, Token: k.AgentModelToken, HTTP: k.AgentModelHTTP}.Step
 	}
 	return r
+}
+
+// KBCompiler is the knowledge-base compiler's client for the API's compiler operations, under the compiler's own token; nil where
+// the build has none (the release build until its job is connected [live-verify]).
+func (k *Kit) KBCompiler() kbcompile.Client {
+	if k.KBCompilerURL == "" || k.KBCompilerToken == nil || k.KBCompilerHTTP == nil {
+		return nil
+	}
+	return kbcompile.APIClient{URL: k.KBCompilerURL, Token: k.KBCompilerToken, HTTP: k.KBCompilerHTTP}
+}
+
+// KBCompile is the outbox's work of a person's Recompile (kbcompile.Kind): the compile pass, then the lint, as the compiler. Where
+// the build has no compiler identity the row fails saying so, never running as another identity.
+func (k *Kit) KBCompile() outbox.Work {
+	c := k.KBCompiler()
+	if c == nil {
+		return func(context.Context, uuid.UUID, storage.OutboxRow) error {
+			return errors.New("this build has no knowledge-base compiler identity: it runs under its own, never another's [live-verify]")
+		}
+	}
+	return kbcompile.Work(c, slog.Default())
+}
+
+// KBLint is the weekly platform job (kb.lint): the deterministic lint across every organisation's knowledge base, as the compiler,
+// raising findings for the Owner and the Administrator (AI-52, AI-56; p1-knowledge-base task 6.3). It needs no model, so it runs whether
+// or not an organisation switched the AI on. Where the build has no compiler identity it logs that and does nothing [live-verify].
+func (k *Kit) KBLint() func(ctx context.Context) error {
+	return func(ctx context.Context) error {
+		c := k.KBCompiler()
+		if c == nil {
+			slog.WarnContext(ctx, "kb.lint: this build has no knowledge-base compiler identity, so no organisation's knowledge base was linted [live-verify]")
+			return nil
+		}
+		orgs, err := k.Store.Organisations(ctx)
+		if err != nil {
+			return err
+		}
+		var errs []error
+		for _, org := range orgs {
+			has := false
+			if err := k.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+				notes, err := u.OrganisationKnowledge().Notes(ctx)
+				if err != nil {
+					return err
+				}
+				latest, err := u.OrganisationKnowledge().Latest(ctx)
+				has = len(notes)+len(latest) > 0
+				return err
+			}); err != nil {
+				errs = append(errs, fmt.Errorf("organisation %s: %w", org, err))
+				continue
+			}
+			if !has {
+				continue
+			}
+			if _, _, err := kbcompile.RunLint(ctx, c, org); err != nil {
+				errs = append(errs, fmt.Errorf("organisation %s: %w", org, err))
+			}
+		}
+		return errors.Join(errs...)
+	}
 }
 
 // Relays emits the installation's notices, such as a connector paused or a change waiting, in the organisations of the

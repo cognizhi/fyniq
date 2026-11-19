@@ -4,14 +4,14 @@ type: task
 title: Sign in to Fyniq, confirm it's you with a passkey, or join with an invitation
 summary: Signing in with a second factor, passkeys, your devices, when a session ends, joining a company or as the second Super admin by invitation, and errors
 sources:
-  - docs/user-guide/sign-in.md sha256:69bca9594e9125f1b18c09dc5d6e457a5d671662453cf14703f8dc35c65a599d
+  - docs/user-guide/sign-in.md sha256:8d9016aea56173d5f34e86065f467cb53bf18050621807e5ada5d2f78c5517a1
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-12
+compiled_at: 2026-11-20
 aliases:
   - log in
   - login
@@ -59,6 +59,16 @@ aliases:
 - Each request to confirm works once, for 5 minutes, and only on this site.
 
 (src: docs/user-guide/sign-in.md#confirm-its-you-with-a-passkey)
+
+## Set up how you confirm it's you
+
+- The page at `/sign-in/enrol` walks a person through three steps, each marked **Done** or **To do** from what Fyniq holds, and each also on **Settings › Profile and security**.
+- Step 1: **Add a passkey**, a fingerprint, face or PIN on this device; if the browser cannot make passkeys, use the authenticator app the sign-in provider asks for and add a passkey later.
+- Step 2: **Keep your recovery codes**, ten one-time codes shown once; print them or keep them in a password manager.
+- Step 3, recommended: a second authenticator, such as a second passkey on another device, so losing one device does not lock the person out.
+- When steps 1 and 2 are done the page says the person is set up; Fyniq then asks them to confirm it's you, with the passkey, for approvals, releasing payments and changing bank details.
+
+(src: docs/user-guide/sign-in.md#set-up-how-you-confirm-its-you)
 
 ## Your devices
 

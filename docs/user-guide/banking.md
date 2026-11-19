@@ -194,6 +194,43 @@ transfer, and lines an approved rule met. A line for a whole batch's total alway
 - The page shows the limits Fyniq works within. Each week the 5 largest and 5 others picked at random
   join the weekly review.
 
+## Payment provider payouts
+
+**Payouts** (Expert mode) shows what a Stripe or HitPay connector brought into the provider's clearing
+account, and proves it comes to nothing once the provider has paid out.
+
+- Each provider has a card: the **clearing balance** the books hold, the balance the provider says it
+  still holds for you, whether they agree, and how far the hourly sweep has made the account complete.
+  A failed sweep is shown with its reason.
+- Each payout is broken into the **charges, refunds, disputes and fees** it settles, with the gross, the
+  fee and the net of each, and the amount that reached the bank. **Nets to zero** means the payout and
+  what it settles leave nothing in the clearing account. A payout with an amount **left** is a ✖ at the
+  top of the page: open it to see which line is missing, and the next sweep fetches what the provider
+  has since reported. A payout still **waiting for its bank line** has not been checked yet.
+- Every figure is the server's: the page adds nothing up.
+- **Events waiting for a person** are events Fyniq could not place, such as a type it does not know. A
+  parked event posts nothing; the books follow the provider's statement lines. Choose **Mark as dealt
+  with** and say what you did or why nothing is needed: the reason is kept in the audit trail.
+
+### A lost dispute
+
+When a customer wins a dispute, the provider takes the money and charges a fee; both sit in the
+provider's disputes clearing account until you settle them. A dispute that is open and fully posted
+shows two ways to settle it, and each is done once.
+
+- **Write it off** prepares a draft journal: the amount held goes to the dispute loss account. It posts
+  nothing; you post the draft under Journals, with that row's own approval. Up to the limit
+  `psp.dispute_expense_limit` (S$100 by default) that is all. Above it the invoice's revenue stays as
+  invoiced, so you confirm that and give a reason. [accountant to confirm]
+- **Settle a credit note** is for a dispute above the limit whose invoice you know. Credit the invoice
+  under Sales and issue the credit note first: it reverses the invoice's revenue and GST, with its own
+  approval. Then choose the credit note here: its credit, up to the amount disputed, clears against the
+  money the dispute holds (Dr accounts receivable, Cr disputes clearing). Only a credit in the company's
+  currency can settle a dispute this way. What stays held, the dispute fee, is written off with **Write
+  it off**. [accountant to confirm the GST of the credit note]
+- A journal never touches accounts receivable by hand: the credit note is how the customer's balance is
+  corrected.
+
 ## Reconcile an account for a month
 
 **Reconcile** (Expert mode) proves the books agree with the bank for a month: one person prepares it,

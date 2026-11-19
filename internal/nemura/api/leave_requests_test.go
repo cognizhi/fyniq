@@ -156,3 +156,140 @@ func TestGovernmentPaidLeaveIsWrittenByHRAndReadByThePeopleTeamOwnerAndPayroll(t
 		t.Errorf("a claim with a day that is not a date: %d", got)
 	}
 }
+
+// Flexible work requests are made by the person for themselves, answered in writing by the HR officer, the HR administrator or the Owner, and read by the person and
+// the people team only (NM-LV-10).
+// req: NM-LV-10
+// asvs: V8.2.1
+func TestFlexibleWorkRequestsAreMadeByThePersonAndAnsweredByThePeopleTeam(t *testing.T) {
+	do := func(roles []authz.Role, method, path, body string) int {
+		testRoles = roles
+		defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0"
+	for _, tc := range []struct {
+		roles []authz.Role
+		reply int
+	}{
+		{[]authz.Role{authz.Employee}, 403}, {[]authz.Role{authz.LineManager}, 403}, {[]authz.Role{authz.PayrollAdmin}, 403}, {[]authz.Role{authz.Administrator}, 403},
+		{[]authz.Role{authz.HROfficer}, 204}, {[]authz.Role{authz.HRAdmin}, 204}, {[]authz.Role{authz.Owner}, 204},
+	} {
+		if got := do(tc.roles, "POST", "/v1/me/flexible-work-requests", `{"arrangement":"flexi_time","from":"2027-01-04","reason":"School run."}`); got != 201 {
+			t.Errorf("%v could not ask: %d", tc.roles, got)
+		}
+		if got := do(tc.roles, "GET", "/v1/flexible-work-requests", ""); got != 200 {
+			t.Errorf("%v could not list: %d", tc.roles, got)
+		}
+		if got := do(tc.roles, "POST", "/v1/flexible-work-requests/"+id+"/reply", `{"outcome":"accepted","written_reply":"Approved from January."}`); got != tc.reply {
+			t.Errorf("%v replying: %d, want %d", tc.roles, got, tc.reply)
+		}
+		if got := do(tc.roles, "POST", "/v1/flexible-work-requests/"+id+"/withdrawal", ""); got != 204 {
+			t.Errorf("%v could not withdraw their own: %d", tc.roles, got)
+		}
+	}
+}
+
+// Hours worked on special days are recorded by the person, decided by their manager or the people team (never their own), and what leave and time give a pay run is read
+// by the people team, the Owner and Payroll only; the decision on unpaid sick days and the encashment of leave are the HR officer's and administrator's (NM-TIM-04, NM-LV-08).
+// req: NM-TIM-04, NM-LV-08
+// asvs: V8.2.1
+func TestHoursWorkedAndPayInputsAreScopedByRole(t *testing.T) {
+	do := func(roles []authz.Role, method, path, body string) int {
+		testRoles = roles
+		defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	person := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"
+	rec := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1eb0"
+	sick := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90"
+	for _, tc := range []struct {
+		roles                 []authz.Role
+		decide, inputs, write int
+	}{
+		{[]authz.Role{authz.Employee}, 403, 403, 403}, {[]authz.Role{authz.LineManager}, 204, 403, 403}, {[]authz.Role{authz.Administrator}, 403, 403, 403},
+		{[]authz.Role{authz.PayrollAdmin}, 403, 200, 403}, {[]authz.Role{authz.Owner}, 204, 200, 403},
+		{[]authz.Role{authz.HROfficer}, 204, 200, 200}, {[]authz.Role{authz.HRAdmin}, 204, 200, 200},
+	} {
+		if got := do(tc.roles, "POST", "/v1/me/overtime", `{"date":"2026-09-01","kind":"overtime","hours":"2.50"}`); got != 201 {
+			t.Errorf("%v could not record: %d", tc.roles, got)
+		}
+		if got := do(tc.roles, "GET", "/v1/overtime", ""); got != 200 {
+			t.Errorf("%v could not list: %d", tc.roles, got)
+		}
+		if got := do(tc.roles, "POST", "/v1/overtime/"+rec+"/decision", `{"decision":"approve"}`); got != tc.decide {
+			t.Errorf("%v deciding: %d, want %d", tc.roles, got, tc.decide)
+		}
+		if got := do(tc.roles, "GET", "/v1/pay-inputs?to=2026-12-31", ""); got != tc.inputs {
+			t.Errorf("%v reading the inputs: %d, want %d", tc.roles, got, tc.inputs)
+		}
+		want := 201
+		if tc.write == 403 {
+			want = 403
+		}
+		if got := do(tc.roles, "POST", "/v1/people/"+person+"/leave/2026/encashment", `{"days":"2.00","on":"2026-11-30"}`); got != want {
+			t.Errorf("%v encashing: %d, want %d", tc.roles, got, want)
+		}
+		if got := do(tc.roles, "POST", "/v1/sick-leave/"+sick+"/unpaid-decision", `{"treatment":"unpaid"}`); got != tc.write {
+			t.Errorf("%v deciding unpaid days: %d, want %d", tc.roles, got, tc.write)
+		}
+	}
+}
+
+// The accrual is drafted by the HR officer and administrator, read by the people team, the Owner and Payroll, and approved by the people team and the Owner (never the draft
+// they made); availability is the person's, their manager's and the people team's (NM-LV-09, NM-TIM-01).
+// req: NM-LV-09, NM-TIM-01
+// asvs: V8.2.1
+func TestTheAccrualAndAvailabilityAreScopedByRole(t *testing.T) {
+	do := func(roles []authz.Role, method, path, body string) int {
+		testRoles = roles
+		defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	month := `{"month":"2026-05"}`
+	for _, tc := range []struct {
+		roles                []authz.Role
+		draft, read, approve int
+	}{
+		{[]authz.Role{authz.Employee}, 403, 403, 403}, {[]authz.Role{authz.LineManager}, 403, 403, 403}, {[]authz.Role{authz.Administrator}, 403, 403, 403},
+		{[]authz.Role{authz.PayrollAdmin}, 403, 200, 403}, {[]authz.Role{authz.Owner}, 403, 200, 200},
+		{[]authz.Role{authz.HROfficer}, 201, 200, 200}, {[]authz.Role{authz.HRAdmin}, 201, 200, 200},
+	} {
+		if got := do(tc.roles, "POST", "/v1/leave/accruals", month); got != tc.draft {
+			t.Errorf("%v drafting: %d, want %d", tc.roles, got, tc.draft)
+		}
+		if got := do(tc.roles, "GET", "/v1/leave/accruals?month=2026-05", ""); got != tc.read {
+			t.Errorf("%v reading: %d, want %d", tc.roles, got, tc.read)
+		}
+		if got := do(tc.roles, "POST", "/v1/leave/accruals/approval", month); got != tc.approve {
+			t.Errorf("%v approving: %d, want %d", tc.roles, got, tc.approve)
+		}
+	}
+	if got := do([]authz.Role{authz.HRAdmin}, "POST", "/v1/leave/accruals", `{"month":"May"}`); got != 422 {
+		t.Errorf("a month that is not a month: %d", got)
+	}
+	if got := do([]authz.Role{authz.HRAdmin}, "GET", "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/availability?from=2026-04-01&to=2026-04-30", ""); got != 200 {
+		t.Errorf("availability for the people team: %d", got)
+	}
+	if got := do([]authz.Role{authz.HRAdmin}, "GET", "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/availability?from=April", ""); got != 422 {
+		t.Errorf("a bad day: %d", got)
+	}
+}

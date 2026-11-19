@@ -208,6 +208,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/flexible-work-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Flexible work requests the caller may read
+         * @description Lists the caller's own requests; the people team (HR officer, HR administrator, Owner) reads everyone's. Requests waiting come first, by deadline. It changes nothing.
+         */
+        get: operations["listFlexibleWorkRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/flexible-work-requests/{id}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer a flexible work request in writing
+         * @description The HR officer, the HR administrator or the Owner records the employer's written reply, once and never to their own request. A refusal or an alternative gives the business grounds. The reply is the record the guidelines ask the employer to keep. It is audited and the person is told.
+         */
+        post: operations["replyFlexibleWork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/flexible-work-requests/{id}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw one's own flexible work request
+         * @description The person withdraws their own request while it waits for a reply. It is audited.
+         */
+        post: operations["withdrawFlexibleWork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/government-paid-claims/{id}/events": {
         parameters: {
             query?: never;
@@ -388,6 +448,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/leave/accruals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A month's leave liability accrual
+         * @description Lists the month's lines. The people team, the Owner and the Payroll administrator. It changes nothing.
+         */
+        get: operations["listLeaveAccrual"];
+        put?: never;
+        /**
+         * Draft a month's leave liability accrual
+         * @description Drafts the month-end accrual: for each person, the carried-forward annual leave still untaken. Nemura keeps the days; the amounts come from the pay structure and the journal from the Fyniq link, which a person approves there. A month is drafted once. The HR officer and the HR administrator. It is audited.
+         */
+        post: operations["draftLeaveAccrual"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/leave/accruals/approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a month's leave liability accrual
+         * @description The HR officer, the HR administrator or the Owner approves the month's draft, once, and never the one they drafted. It is then ready for the Fyniq link. It is audited.
+         */
+        post: operations["approveLeaveAccrual"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/leave/settlement": {
         parameters: {
             query?: never;
@@ -402,6 +506,26 @@ export interface paths {
          * @description Turns the reserved days of each approved request that ended before the day into taken days, once. The HR officer and the HR administrator. It is audited.
          */
         post: operations["settleLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/flexible-work-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a formal flexible work request
+         * @description Records the signed-in person's formal request (type, start, end and reason). Its receipt date is today and never restarts; the employer's written reply is due the country pack's months after (two). The people team is told. It is audited.
+         */
+        post: operations["requestFlexibleWork"];
         delete?: never;
         options?: never;
         head?: never;
@@ -468,6 +592,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/overtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a day's overtime or special-day work
+         * @description Records the signed-in Part IV employee's overtime, rest-day work or public-holiday work for a day, without clocking. It starts pending. Overtime beyond the country pack's monthly limit stays recorded and is flagged for HR, never refused. A person who is not a Part IV employee on that day is refused. It is audited.
+         */
+        post: operations["recordOvertime"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/sick-leave": {
         parameters: {
             query?: never;
@@ -482,6 +626,46 @@ export interface paths {
          * @description Records the signed-in person's sick leave: no approval. Each working day is taken against the paid ceiling in force on that day, outpatient and hospitalisation sharing one; days beyond it are recorded as unpaid for the people team to decide on. A notice later than 48 hours after the first day is flagged and accepted. It is audited and the people team is told.
          */
         post: operations["notifySickLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/overtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Overtime and special-day records the caller may read
+         * @description Lists the caller's own records, their reports' for a line manager, and everyone's for the people team, the Owner and the Payroll administrator. It changes nothing.
+         */
+        get: operations["listOvertime"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/overtime/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or refuse an overtime record
+         * @description The person's line manager decides on their reports' records and the HR officer, the HR administrator and the Owner on anyone's; nobody decides their own. A refusal needs a reason. A decision is made once. It is audited.
+         */
+        post: operations["decideOvertime"];
         delete?: never;
         options?: never;
         head?: never;
@@ -588,6 +772,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/pay-inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What leave and time give the next pay run
+         * @description Lists the inputs no pay run has used yet: unpaid leave, encashed annual leave, and approved overtime, rest-day and public-holiday hours, each linked to its source record. The people team, the Owner and the Payroll administrator. A pay run marks each used once. It changes nothing.
+         */
+        get: operations["listPayInputs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people": {
         parameters: {
             query?: never;
@@ -629,6 +833,26 @@ export interface paths {
          * @description Changes a person's name, contact, probation end or leaving date and reason. The start date and the login are set once; the job and the classification are history and change through their own operations. The HR officer and the HR administrator. It is audited.
          */
         put: operations["updatePerson"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's available hours in a period
+         * @description Works out the hours a person has available between two days: their working days by pattern less public holidays, less the days away on approved leave, sick leave and government-paid leave, at the hours of a working day. This is what Fyniq plans against. The person, their line manager and the people team. It changes nothing.
+         */
+        get: operations["getAvailability"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -844,6 +1068,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people/{id}/leave/{year}/encashment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pay out days of annual leave
+         * @description The HR officer or the HR administrator takes days of the person's annual leave from the ledger as an encashment, never beyond the balance, and gives the pay run an input to pay them. Encashment is off unless the company agreed it: nothing happens by itself. It is audited.
+         */
+        post: operations["encashLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people/{id}/nric": {
         parameters: {
             query?: never;
@@ -1052,6 +1296,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/sick-leave/{id}/unpaid-decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide how the days beyond the sick leave ceiling are handled
+         * @description The HR officer or the HR administrator decides, once, whether the days of a sick leave notification beyond the paid ceiling are unpaid leave (a pay input) or taken from annual leave. It is audited.
+         */
+        post: operations["decideUnpaidSickDays"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sick-leave/{id}/verification": {
         parameters: {
             query?: never;
@@ -1096,6 +1360,60 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AccrualCountOutputBody: {
+            /**
+             * Format: int64
+             * @description How many people have days on the accrual.
+             * @example 3
+             */
+            lines: number;
+        };
+        AccrualInputBody: {
+            /**
+             * @description The month, as 2026-05.
+             * @example 2026-05
+             */
+            month: string;
+        };
+        AccrualLine: {
+            /**
+             * @description All annual leave left, for the accountant's information.
+             * @example 18.00
+             */
+            annual_left: string;
+            /**
+             * @description Carried-forward annual leave untaken at the month's end: what the accrual recognises by default.
+             * @example 4.00
+             */
+            carried_days: string;
+            /**
+             * Format: uuid
+             * @description The line.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ed0
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            person_name: string;
+            /**
+             * @description A draft waiting for approval, or approved and ready for the Fyniq link.
+             * @example draft
+             * @enum {string}
+             */
+            state: "draft" | "approved";
+        };
+        AccrualListOutputBody: {
+            /** @description The month's accrual by person. */
+            lines: components["schemas"]["AccrualLine"][] | null;
+        };
         AddDependantInputBody: {
             /**
              * @description The formal intent to adopt, when there is no date of birth yet.
@@ -1206,6 +1524,28 @@ export interface components {
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80
              */
             id: string;
+        };
+        Availability: {
+            /**
+             * @description The hours available: working days less days away, at the hours of a day.
+             * @example 154.00
+             */
+            available_hours: string;
+            /**
+             * @description Of them, the days away on approved leave, sick leave or government-paid leave.
+             * @example 3.50
+             */
+            away_days: string;
+            /**
+             * @description Hours in a working day: the week's hours over the days worked.
+             * @example 8.80
+             */
+            hours_per_day: string;
+            /**
+             * @description Working days by the person's pattern, public holidays left out.
+             * @example 21.00
+             */
+            working_days: string;
         };
         AwayPerson: {
             /**
@@ -1755,6 +2095,24 @@ export interface components {
             /** @description The documents the caller may see. */
             documents: components["schemas"]["Document"][] | null;
         };
+        EncashInputBody: {
+            /**
+             * @description Days of annual leave to pay out, as a decimal string.
+             * @example 2.00
+             */
+            days: string;
+            /**
+             * @description Why, for the record.
+             * @example Agreed on leaving.
+             */
+            note?: string;
+            /**
+             * Format: date
+             * @description The day the encashment is for; the pay run that covers it pays it.
+             * @example 2026-11-30
+             */
+            on: string;
+        };
         ErrorsOutputBody: {
             /** @description Every stable error code, in order. */
             codes: components["schemas"]["Code"][] | null;
@@ -1844,6 +2202,139 @@ export interface components {
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
              */
             subject: string;
+        };
+        FlexAsk: {
+            /**
+             * @description Flexi-time (when), flexi-place (where) or flexi-load (how much).
+             * @example flexi_time
+             * @enum {string}
+             */
+            arrangement: "flexi_time" | "flexi_place" | "flexi_load";
+            /**
+             * Format: date
+             * @description The day the arrangement would start.
+             * @example 2027-01-04
+             */
+            from: string;
+            /**
+             * @description Why the arrangement is wanted.
+             * @example School run on Tuesdays.
+             */
+            reason: string;
+            /**
+             * Format: date
+             * @description The day it would end; open when absent.
+             * @example 2027-06-30
+             */
+            to?: string;
+        };
+        FlexListOutputBody: {
+            /** @description The requests the caller may read: their own, or everyone's for the people team; those waiting first, by deadline. */
+            requests: components["schemas"]["FlexRequest"][] | null;
+        };
+        FlexReplyInputBody: {
+            /**
+             * @description Accept, refuse, or offer an alternative.
+             * @example alternative
+             * @enum {string}
+             */
+            outcome: "accepted" | "rejected" | "alternative";
+            /**
+             * @description The written reply; a refusal or an alternative gives the business grounds.
+             * @example We can offer a 9am start on Tuesdays.
+             */
+            written_reply: string;
+        };
+        FlexRequest: {
+            /**
+             * @description The kind of arrangement.
+             * @example flexi_time
+             * @enum {string}
+             */
+            arrangement: "flexi_time" | "flexi_place" | "flexi_load";
+            /**
+             * Format: date
+             * @description The day it would start.
+             * @example 2027-01-04
+             */
+            from: string;
+            /**
+             * Format: uuid
+             * @description The request.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0
+             */
+            id: string;
+            /**
+             * @description How the employer answered.
+             * @example alternative
+             * @enum {string}
+             */
+            outcome?: "accepted" | "rejected" | "alternative";
+            /**
+             * Format: uuid
+             * @description The person asking.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            person_name: string;
+            /**
+             * @description The person's reason.
+             * @example School run on Tuesdays.
+             */
+            reason: string;
+            /**
+             * Format: date
+             * @description The formal receipt date, which never restarts.
+             * @example 2026-11-20
+             */
+            received_on: string;
+            /**
+             * Format: date-time
+             * @description When it was answered.
+             * @example 2026-11-21T10:00:00Z
+             */
+            replied_at?: string;
+            /**
+             * Format: date
+             * @description The last day for the written reply: the country pack's months after receipt.
+             * @example 2027-01-20
+             */
+            reply_due: string;
+            /**
+             * @description Received and waiting for the written reply, replied, or withdrawn.
+             * @example received
+             * @enum {string}
+             */
+            state: "received" | "replied" | "withdrawn";
+            /**
+             * Format: date
+             * @description The day it would end.
+             * @example 2027-06-30
+             */
+            to?: string;
+            /**
+             * @description The employer's written reply, with its reason for a refusal.
+             * @example We can offer a 9am start on Tuesdays.
+             */
+            written_reply?: string;
+        };
+        FlexRequestedOutputBody: {
+            /**
+             * Format: uuid
+             * @description The new request.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0
+             */
+            id: string;
+            /**
+             * Format: date
+             * @description The last day for the employer's written reply.
+             * @example 2027-01-20
+             */
+            reply_due: string;
         };
         GovAsk: {
             /**
@@ -2296,6 +2787,120 @@ export interface components {
              */
             nric: string;
         };
+        OvertimeAsk: {
+            /**
+             * @description For rest-day work, at whose request it was: the pay differs.
+             * @example employer_request
+             * @enum {string}
+             */
+            branch?: "employer_request" | "employee_request";
+            /**
+             * Format: date
+             * @description The day worked.
+             * @example 2026-09-01
+             */
+            date: string;
+            /**
+             * @description Hours worked, in quarter hours, as a decimal string.
+             * @example 2.50
+             */
+            hours: string;
+            /**
+             * @description Overtime beyond normal hours, work on a rest day, or work on a public holiday.
+             * @example overtime
+             * @enum {string}
+             */
+            kind: "overtime" | "rest_day" | "public_holiday";
+            /**
+             * @description A note for the approver.
+             * @example Month-end close.
+             */
+            note?: string;
+        };
+        OvertimeListOutputBody: {
+            /** @description The records the caller may read, newest first. */
+            records: components["schemas"]["OvertimeRecord"][] | null;
+        };
+        OvertimeRecord: {
+            /**
+             * @description For rest-day work, at whose request.
+             * @example employer_request
+             */
+            branch?: string;
+            /**
+             * Format: date
+             * @description The day worked.
+             * @example 2026-09-01
+             */
+            date: string;
+            /**
+             * @description The approver's reason; a refusal always has one.
+             * @example Not requested.
+             */
+            decision_reason?: string;
+            /**
+             * @description Hours worked.
+             * @example 2.50
+             */
+            hours: string;
+            /**
+             * Format: uuid
+             * @description The record.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1eb0
+             */
+            id: string;
+            /**
+             * @description The kind of work.
+             * @example overtime
+             * @enum {string}
+             */
+            kind: "overtime" | "rest_day" | "public_holiday";
+            /**
+             * @description The person's note.
+             * @example Month-end close.
+             */
+            note?: string;
+            /**
+             * @description The month's overtime hours pass the country pack's limit with this record: it stays recorded and HR is to act on it.
+             * @example false
+             */
+            over_limit: boolean;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            person_name: string;
+            /**
+             * @description Where the record is.
+             * @example pending
+             * @enum {string}
+             */
+            state: "pending" | "approved" | "refused";
+            /**
+             * @description Whether a pay run has used it, once.
+             * @example false
+             */
+            used_by_pay_run: boolean;
+        };
+        OvertimeRecordedOutputBody: {
+            /**
+             * Format: uuid
+             * @description The new record.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1eb0
+             */
+            id: string;
+            /**
+             * @description The month's overtime hours pass the limit with this record: it is recorded and flagged, never refused.
+             * @example false
+             */
+            over_limit: boolean;
+        };
         PackSource: {
             /**
              * @description The source's id in the pack.
@@ -2435,6 +3040,70 @@ export interface components {
         PassesOutputBody: {
             /** @description The person's work passes, soonest to expire first. */
             passes: components["schemas"]["Pass"][] | null;
+        };
+        PayInput: {
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-03-02
+             */
+            from: string;
+            /**
+             * Format: uuid
+             * @description The input.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ec0
+             */
+            id: string;
+            /**
+             * @description What it is.
+             * @example unpaid_leave
+             * @enum {string}
+             */
+            kind: "unpaid_leave" | "encashment" | "overtime" | "rest_day" | "public_holiday";
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            person_name: string;
+            /**
+             * @description Days or hours, as a decimal string.
+             * @example 2.00
+             */
+            quantity: string;
+            /**
+             * Format: uuid
+             * @description That record.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e90
+             */
+            source_id: string;
+            /**
+             * @description The record it comes from.
+             * @example sick_notification
+             * @enum {string}
+             */
+            source_type: "sick_notification" | "leave_ledger" | "overtime_entry";
+            /**
+             * Format: date
+             * @description The last day.
+             * @example 2026-03-03
+             */
+            to: string;
+            /**
+             * @description The unit of the quantity.
+             * @example days
+             * @enum {string}
+             */
+            unit: "days" | "hours";
+        };
+        PayInputsOutputBody: {
+            /** @description The inputs no pay run has used yet, oldest first. */
+            inputs: components["schemas"]["PayInput"][] | null;
         };
         PersonInput: {
             /**
@@ -2907,6 +3576,12 @@ export interface components {
              */
             unpaid_days: string;
             /**
+             * @description How the days beyond the ceiling were decided, once the people team has decided.
+             * @example unpaid
+             * @enum {string}
+             */
+            unpaid_decision?: "unpaid" | "annual";
+            /**
              * @description Whether the people team verified the certificate.
              * @example false
              */
@@ -2948,6 +3623,21 @@ export interface components {
              * @example true
              */
             setup_done: boolean;
+        };
+        UnpaidDecisionInputBody: {
+            /**
+             * @description Unpaid leave (a pay input) or taken from annual leave.
+             * @example unpaid
+             * @enum {string}
+             */
+            treatment: "unpaid" | "annual";
+        };
+        UnpaidDecisionOutputBody: {
+            /**
+             * @description The days decided.
+             * @example 2.00
+             */
+            days: string;
         };
         WorkingPattern: {
             /**
@@ -3659,6 +4349,221 @@ export interface operations {
             };
         };
     };
+    listFlexibleWorkRequests: {
+        parameters: {
+            query?: {
+                /** @description Only requests in this state; all when absent. */
+                state?: "pending" | "approved" | "refused" | "cancelled";
+                /** @description Only the caller's own, whatever else their roles let them read. */
+                mine?: boolean;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlexListOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replyFlexibleWork: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlexReplyInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    withdrawFlexibleWork: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     recordGovernmentPaidClaimEvent: {
         parameters: {
             query?: never;
@@ -3971,6 +4876,8 @@ export interface operations {
             query?: {
                 /** @description Only requests in this state; all when absent. */
                 state?: "pending" | "approved" | "refused" | "cancelled";
+                /** @description Only the caller's own, whatever else their roles let them read. */
+                mine?: boolean;
             };
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
@@ -4250,6 +5157,221 @@ export interface operations {
             };
         };
     };
+    listLeaveAccrual: {
+        parameters: {
+            query?: {
+                /** @description The month, as 2026-05; this month when absent. */
+                month?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccrualListOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    draftLeaveAccrual: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccrualInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccrualCountOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    approveLeaveAccrual: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccrualInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccrualCountOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     settleLeave: {
         parameters: {
             query?: never;
@@ -4286,6 +5408,78 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestFlexibleWork: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlexAsk"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlexRequestedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4537,6 +5731,78 @@ export interface operations {
             };
         };
     };
+    recordOvertime: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OvertimeAsk"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OvertimeRecordedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     notifySickLeave: {
         parameters: {
             query?: never;
@@ -4564,6 +5830,152 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listOvertime: {
+        parameters: {
+            query?: {
+                /** @description Only requests in this state; all when absent. */
+                state?: "pending" | "approved" | "refused" | "cancelled";
+                /** @description Only the caller's own, whatever else their roles let them read. */
+                mine?: boolean;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OvertimeListOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideOvertime: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4943,6 +6355,77 @@ export interface operations {
             };
         };
     };
+    listPayInputs: {
+        parameters: {
+            query?: {
+                /** @description Inputs with a day on or before this one; today when absent. */
+                to?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayInputsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listPeople: {
         parameters: {
             query?: {
@@ -5177,6 +6660,82 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAvailability: {
+        parameters: {
+            query?: {
+                /** @description The first day. */
+                from?: string;
+                /** @description The last day. */
+                to?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Availability"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6129,6 +7688,90 @@ export interface operations {
             };
         };
     };
+    encashLeave: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+                /** @description The leave year. */
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EncashInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     setPersonNric: {
         parameters: {
             query?: never;
@@ -6973,6 +8616,90 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideUnpaidSickDays: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The sick leave notification. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnpaidDecisionInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnpaidDecisionOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
