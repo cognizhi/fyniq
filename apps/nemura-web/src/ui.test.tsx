@@ -24,6 +24,7 @@ import { Person } from "./pages/Person";
 import { TermsPanel } from "./components/TermsPanel";
 import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
+import { Delegations } from "./components/Delegations";
 import { AskQuestion } from "./pages/AskQuestion";
 import { PeopleRequests } from "./pages/PeopleRequests";
 import { RequestSteps } from "./components/RequestSteps";
@@ -1072,5 +1073,47 @@ describe("a leaver's home", () => {
     fireEvent.change(screen.getByLabelText("Your question"), { target: { value: "Please send my KETs again." } });
     fireEvent.submit(screen.getByRole("form", { name: "Ask for a copy of a lost document" }));
     expect(await screen.findByText("Sent. The people team answers by 2027-01-05.")).toBeTruthy();
+  });
+});
+
+// req: NM-LTR-04
+describe("automatic issue", () => {
+  const did = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10";
+  const types = [
+    { key: "employment_confirmation", title: "Employment confirmation", statement: "x", enabled: true, due_days: 3, published_version: 1, fields: [] },
+    { key: "salary_certificate", title: "Salary certificate", statement: "x", enabled: false, due_days: 3, published_version: 0, needs: "salary", fields: [] },
+    { key: "kets", title: "Key employment terms", statement: "x", enabled: true, due_days: 14, published_version: 1, fields: [] },
+  ];
+  const live = { id: did, type: "employment_confirmation", who: "active_employees", fields: [], monthly_limit: 50, issued_this_month: 3, created_on: "2026-11-20", ends_on: "2027-06-30", state: "active" };
+
+  it("lets the signatory delegate a standard letter only after a fresh passkey, never pay, and revoke it", async () => {
+    answer("GET /v1/letters/delegations", { status: 200, body: { delegations: [live] } });
+    answer("POST /v1/letters/delegations", { status: 201, body: { id: did } });
+    answer(`POST /v1/letters/delegations/${did}/revocation`, { status: 204, body: undefined });
+    const { container } = render(<Delegations types={types as never} signatory />);
+    expect(await screen.findByText(/3 of 50 this month, until 2027-06-30 \(active\)/)).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "Salary certificate" })).toBeNull();
+    expect(screen.queryByRole("option", { name: "Key employment terms" })).toBeNull();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Ends on (within twelve months)"), { target: { value: "2027-06-30" } });
+    stepUp.result = "Passkey failed.";
+    fireEvent.submit(screen.getByRole("form", { name: "Let a letter type be issued automatically" }));
+    expect(await screen.findByText("Passkey failed.")).toBeTruthy();
+    expect(calls).not.toContain("POST /v1/letters/delegations");
+    stepUp.result = undefined;
+    fireEvent.submit(screen.getByRole("form", { name: "Let a letter type be issued automatically" }));
+    expect(await screen.findByText("Delegated. Requests for that letter are now issued at once.")).toBeTruthy();
+    expect(bodies.get("POST /v1/letters/delegations")).toMatchObject({ type: "employment_confirmation", monthly_limit: 50, ends_on: "2027-06-30" });
+    fireEvent.click(screen.getByRole("button", { name: "Revoke automatic issue of employment_confirmation" }));
+    expect(await screen.findByText("Revoked. Letters already issued stay as they are.")).toBeTruthy();
+  });
+
+  it("shows the HR administrator the delegations and no way to make or revoke one", async () => {
+    answer("GET /v1/letters/delegations", { status: 200, body: { delegations: [{ ...live, state: "replaced" }] } });
+    render(<Delegations types={types as never} signatory={false} />);
+    expect(await screen.findByText(/ended because the template changed/)).toBeTruthy();
+    expect(screen.queryByRole("form")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Revoke/ })).toBeNull();
   });
 });

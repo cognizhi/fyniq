@@ -3,7 +3,7 @@ key: nemura.letters.templates
 title: Set up letter types and templates
 mode: expert
 roles: [hr_officer, hr_admin, owner]
-requirements: [NM-LTR-01, NM-LTR-02]
+requirements: [NM-LTR-04, NM-LTR-01, NM-LTR-02]
 ---
 
 # Set up letter types and templates
@@ -17,7 +17,7 @@ template is a draft until the HR administrator approves it, and then it is a num
 ## Before you start
 
 - The HR administrator or the Owner sets the letterhead and the letter types, and approves templates. The HR officer writes drafts.
-- Letters that show salary, and the key employment terms, wait until Nemura holds the person's pay and terms.
+- Letters that show salary wait until Nemura holds the person's pay. The key employment terms use their own standard text and the terms recorded on the person: see [Record a person's key employment terms and issue their KETs](letters-kets.md).
 
 ## Steps
 
@@ -28,6 +28,17 @@ template is a draft until the HR administrator approves it, and then it is a num
    Select **Save the draft**. Nemura checks every block and field and reports every problem at once.
 5. The HR administrator or the Owner, not the author, selects **Approve and publish the draft**. It becomes the next version, and
    the version before is superseded.
+
+## Issue a standard letter without waiting
+
+The Owner can let a standard letter, such as an employment confirmation, be issued at once. Under **Automatic issue**, choose the letter type, the most letters a month and
+the day the delegation ends, within twelve months, and select **Confirm with my passkey and delegate**. From then on a request for that letter by an employee who is not
+serving notice is checked and signed in the Owner's name as soon as it is made, and the letter shows under the person's requests. Select **Revoke automatic issue** to end it.
+
+- A letter that shows pay is never issued this way: the salary certificate, the pay-change letter and the key employment terms still go through the people team and the signatory.
+- A change to the template ends the delegation: publish the new version, then delegate again.
+- The Owner's own letter, a request from someone serving notice, and a request over the monthly limit wait for the people team as usual.
+- The HR administrator sees the delegations and how many letters each has issued this month, but cannot make or revoke one.
 
 ## Common problems
 

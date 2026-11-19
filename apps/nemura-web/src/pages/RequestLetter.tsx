@@ -28,7 +28,7 @@ export function RequestLetter({ roles }: { roles: readonly string[] }) {
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     const { data, error } = await api.POST("/v1/me/letters", { body: { type, purpose } });
-    setNote(data ? { ok: true, text: t("request.sent", { due: data.due_on }) } : { ok: false, text: problem(error) });
+    setNote(data ? { ok: true, text: data.issued ? t("request.issued") : t("request.sent", { due: data.due_on }) } : { ok: false, text: problem(error) });
   };
   return (
     <Shell roles={roles} directory={team(roles)} features={admin(roles)}>

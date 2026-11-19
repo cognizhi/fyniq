@@ -426,6 +426,48 @@ func TestALeaversAccountKeepsOnlyTheirOwnDocumentsAndAQuestion(t *testing.T) {
 	}
 }
 
+// Only the Owner, who signs, delegates automatic issue (after a fresh passkey confirmation) and revokes; the HR administrator reads the delegations; nobody else does (NM-LTR-04).
+// req: NM-LTR-04
+// asvs: V8.2.1, V8.3.1
+func TestOnlyTheSignatoryDelegatesAutomaticIssueAfterAFreshPasskey(t *testing.T) {
+	do := func(roles []authz.Role, stepUp bool, method, path, body string) int {
+		testRoles, testStepUp = roles, stepUp
+		defer func() { testRoles, testStepUp = []authz.Role{authz.HRAdmin}, false }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10"
+	create := `{"type":"employment_confirmation","monthly_limit":50,"ends_on":"2027-06-30"}`
+	for _, tc := range []struct {
+		roles                            []authz.Role
+		read, createFresh, revoke, plain int
+	}{
+		{[]authz.Role{authz.Employee}, 403, 403, 403, 403}, {[]authz.Role{authz.HROfficer}, 403, 403, 403, 403}, {[]authz.Role{authz.PayrollAdmin}, 403, 403, 403, 403},
+		{[]authz.Role{authz.HRAdmin}, 200, 403, 403, 403}, {[]authz.Role{authz.Owner}, 200, 201, 204, 403},
+	} {
+		if got := do(tc.roles, false, "GET", "/v1/letters/delegations", ""); got != tc.read {
+			t.Errorf("%v reading: %d, want %d", tc.roles, got, tc.read)
+		}
+		if got := do(tc.roles, true, "POST", "/v1/letters/delegations", create); got != tc.createFresh {
+			t.Errorf("%v delegating with a fresh passkey: %d, want %d", tc.roles, got, tc.createFresh)
+		}
+		if got := do(tc.roles, false, "POST", "/v1/letters/delegations/"+id+"/revocation", `{"reason":"No longer needed."}`); got != tc.revoke {
+			t.Errorf("%v revoking: %d, want %d", tc.roles, got, tc.revoke)
+		}
+	}
+	if got := do([]authz.Role{authz.Owner}, false, "POST", "/v1/letters/delegations", create); got != 403 {
+		t.Errorf("delegating without a fresh passkey: %d", got)
+	}
+	if got := do([]authz.Role{authz.Owner}, true, "POST", "/v1/letters/delegations", `{"type":"employment_confirmation","monthly_limit":5000,"ends_on":"2027-06-30"}`); got != 422 {
+		t.Errorf("a limit out of range: %d", got)
+	}
+}
+
 // Letters are asked for by the person, checked by the people team (never their own), signed only by the signatory after a fresh passkey confirmation, and read by the person
 // and the people team; the people team writes templates, the HR administrator and the Owner approve them and set the letterhead and the types; a delivery link needs no
 // sign-in (NM-LTR-01, NM-LTR-02, NM-LTR-03).

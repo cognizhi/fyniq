@@ -332,10 +332,10 @@ func TestTheLettersServiceAsksChecksSignsAndDelivers(t *testing.T) {
 	if _, err := svc.Templates(ctx, ben, "nonsense"); letterCode(err) != letters.CodeNotFound {
 		t.Errorf("an unknown type: %v", err)
 	}
-	if _, _, err := svc.Request(ctx, stranger, "employment_confirmation", "x"); personRefusal(err) != people.CodeNotFound {
+	if _, _, _, err := svc.Request(ctx, stranger, "employment_confirmation", "x"); personRefusal(err) != people.CodeNotFound {
 		t.Errorf("a login with no person: %v", err)
 	}
-	id, due, err := svc.Request(ctx, ben, "employment_confirmation", "a bank loan")
+	id, due, _, err := svc.Request(ctx, ben, "employment_confirmation", "a bank loan")
 	if err != nil || due != "2026-11-25" {
 		t.Fatalf("request: %s %s %v", id, due, err)
 	}
@@ -385,7 +385,7 @@ func TestTheLettersServiceAsksChecksSignsAndDelivers(t *testing.T) {
 		}
 	}
 	// Withdrawing is the person's own; and without a renderer or a store nothing is checked or read.
-	id2, _, err := svc.Request(ctx, ben, "employment_confirmation", "a visa")
+	id2, _, _, err := svc.Request(ctx, ben, "employment_confirmation", "a visa")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -411,4 +411,158 @@ func typeNeeds(types []api.LetterType, key string) string {
 		}
 	}
 	return ""
+}
+
+// A signatory's delegation issues a standard letter at once, signed as them without a passkey and naming the delegation as the authority; it covers one approved template version,
+// active employees not serving notice, a monthly limit and an end date within twelve months; it never covers pay, is never the delegator's own letter, ends when the template
+// changes, and is revoked once; every other request waits for the people team as before (NM-LTR-04).
+// req: NM-LTR-04
+// asvs: V8.2.1, V8.3.1
+func TestADelegationIssuesAStandardLetterAtOnceWithinItsTerms(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := d("2026-11-20").Add(10 * time.Hour)
+	blobs, err := local.NewDir(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := nemura.LettersService{Store: store(t, "nemura_api"), Clock: clock.NewFrozen(now), Blobs: blobs, Renderer: letters.Local{}}
+	hr := api.Session{Organisation: lt.c.org, Member: lt.c.hr}
+	ben := hr // Ben Lim is the person behind the HR administrator's login
+	owner := api.Session{Organisation: lt.c.org, Member: lt.c.owner}
+	su := connect(t, db.SuperURL())
+	if err := svc.SetSettings(ctx, hr, api.LetterSettings{Name: "Acme Pte. Ltd.", UEN: "201912345A", Address: "1 Raffles Place"}); err != nil {
+		t.Fatal(err)
+	}
+	// Nothing to delegate until the type is on and a template is published.
+	if _, err := svc.Delegate(ctx, owner, "employment_confirmation", 3, d("2027-06-30")); letterCode(err) != letters.CodeConflict {
+		t.Errorf("a type that is not on: %v", err)
+	}
+	if err := svc.SetType(ctx, hr, "employment_confirmation", true, 3); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Delegate(ctx, owner, "employment_confirmation", 3, d("2027-06-30")); letterCode(err) != letters.CodeConflict || !strings.Contains(err.Error(), "no published version") {
+		t.Errorf("no template: %v", err)
+	}
+	publish := func(text string) {
+		blocks := []api.LetterBlock{{Kind: "letterhead", Text: "{{company.name}}"}, {Kind: "paragraph", Text: text}, {Kind: "signature", Text: "For {{company.name}} {{letter.reference}}"}}
+		draft, err := svc.SaveDraft(ctx, hr, "employment_confirmation", blocks, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := svc.Publish(ctx, owner, mustUUID(draft)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	publish("{{person.legal_name}} works as {{job.title}}.")
+	for _, tc := range []struct {
+		typ     string
+		monthly int
+		ends    string
+		want    string
+	}{{"salary_certificate", 3, "2027-06-30", letters.CodeInvalid}, {"kets", 3, "2027-06-30", letters.CodeInvalid}, {"employment_confirmation", 0, "2027-06-30", letters.CodeInvalid},
+		{"employment_confirmation", 3, "2026-11-20", letters.CodeInvalid}, {"employment_confirmation", 3, "2027-11-21", letters.CodeInvalid}, {"nonsense", 3, "2027-06-30", letters.CodeNotFound}} {
+		if _, err := svc.Delegate(ctx, owner, tc.typ, tc.monthly, d(tc.ends)); letterCode(err) != tc.want {
+			t.Errorf("%+v: %v", tc, err)
+		}
+	}
+	del, err := svc.Delegate(ctx, owner, "employment_confirmation", 3, d("2027-11-20"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Delegate(ctx, owner, "employment_confirmation", 3, d("2027-06-30")); letterCode(err) != letters.CodeConflict {
+		t.Errorf("a second live delegation: %v", err)
+	}
+	// An ordinary request is issued at once under it, as the signatory, with no passkey.
+	id, _, issued, err := svc.Request(ctx, ben, "employment_confirmation", "a bank loan")
+	if err != nil || !issued {
+		t.Fatalf("the first request: %v %v", issued, err)
+	}
+	var authority, envelope, state string
+	if err := su.QueryRow(ctx, "SELECT i.authority, i.envelope::text, q.state FROM nemura.letter_issued i JOIN nemura.letter_request q ON q.id = i.request_id WHERE i.request_id = $1", id).Scan(&authority, &envelope, &state); err != nil {
+		t.Fatal(err)
+	}
+	if authority != "delegation:"+del || state != "issued" || !strings.Contains(envelope, `"signed_under"`) || strings.Contains(envelope, "step_up_at") {
+		t.Errorf("issued: %s %s %s", authority, state, envelope)
+	}
+	if ref, pdf, err := svc.File(ctx, ben, mustUUID(id), false); err != nil || !bytes.HasPrefix(pdf, []byte("%PDF")) || ref == "" {
+		t.Errorf("the person's copy: %v", err)
+	}
+	// Someone serving notice, and the delegator's own letter, wait for the people team.
+	last := d("2027-01-31")
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		p, err := nemura.PersonOn(ctx, tx, lt.ben, now)
+		if err != nil {
+			return err
+		}
+		return nemura.UpdatePerson(ctx, tx, lt.c.org, now, lt.c.owner, lt.ben, people.Person{LegalName: p.LegalName, EmploymentStart: p.Start, LeavingDate: &last})
+	})
+	if _, _, issued, err := svc.Request(ctx, ben, "employment_confirmation", "a visa"); err != nil || issued {
+		t.Errorf("serving notice: %v %v", issued, err)
+	}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		p, err := nemura.PersonOn(ctx, tx, lt.ben, now)
+		if err != nil {
+			return err
+		}
+		return nemura.UpdatePerson(ctx, tx, lt.c.org, now, lt.c.owner, lt.ben, people.Person{LegalName: p.LegalName, EmploymentStart: p.Start})
+	})
+	if _, _, issued, err := svc.Request(ctx, owner, "employment_confirmation", "my own"); err != nil || issued {
+		t.Errorf("the delegator's own letter: %v %v", issued, err)
+	}
+	// The limit: two more are issued (3 in all) and the next waits.
+	for i := 0; i < 2; i++ {
+		if _, _, issued, err := svc.Request(ctx, ben, "employment_confirmation", "again"); err != nil || !issued {
+			t.Fatalf("request %d under the limit: %v %v", i, issued, err)
+		}
+	}
+	if _, _, issued, err := svc.Request(ctx, ben, "employment_confirmation", "over the limit"); err != nil || issued {
+		t.Errorf("over the limit: %v %v", issued, err)
+	}
+	list, err := svc.Delegations(ctx, hr)
+	if err != nil || len(list) != 1 || list[0].State != "active" || list[0].IssuedThisMonth != 3 || list[0].MonthlyLimit != 3 || len(list[0].Fields) == 0 {
+		t.Errorf("the delegations: %+v %v", list, err)
+	}
+	// A delegation keeps its terms; a template change ends it, and the next request waits.
+	if _, err := su.Exec(ctx, "UPDATE nemura.letter_delegation SET monthly_limit = 1000 WHERE id = $1", del); err == nil || !strings.Contains(err.Error(), "NM169") {
+		t.Errorf("a delegation's terms changed: %v", err)
+	}
+	publish("{{person.legal_name}} is employed as {{job.title}}.")
+	if list, _ := svc.Delegations(ctx, hr); list[0].State != "replaced" {
+		t.Errorf("after a template change: %+v", list)
+	}
+	if err := svc.Revoke(ctx, owner, mustUUID(del), ""); letterCode(err) != letters.CodeConflict {
+		t.Errorf("revoking an ended delegation: %v", err)
+	}
+	// A new delegation is revoked once; and one ends on its date.
+	del2, err := svc.Delegate(ctx, owner, "employment_confirmation", 5, d("2027-03-31"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Revoke(ctx, owner, mustUUID(del2), "No longer needed."); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Revoke(ctx, owner, mustUUID(del2), ""); letterCode(err) != letters.CodeConflict {
+		t.Errorf("revoking twice: %v", err)
+	}
+	if _, _, issued, _ := svc.Request(ctx, ben, "employment_confirmation", "after revoking"); issued {
+		t.Error("a revoked delegation issued a letter")
+	}
+	del3, _ := svc.Delegate(ctx, owner, "employment_confirmation", 5, d("2027-03-31"))
+	var ended []nemura.Delegation
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		ended, err = nemura.Delegations(ctx, tx, d("2027-04-01"))
+		return err
+	})
+	for _, x := range ended {
+		if x.ID.String() == del3 && x.State != "ended" {
+			t.Errorf("after its date: %+v", x)
+		}
+	}
+	// The audit trail names who delegated, never a letter's text.
+	var events int
+	if err := su.QueryRow(ctx, "SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND action IN ('nemura.letter_delegation.created', 'nemura.letter_delegation.revoked', 'nemura.letter_delegation.ended')", lt.c.org).Scan(&events); err != nil || events < 5 {
+		t.Errorf("delegation events: %d %v", events, err)
+	}
 }

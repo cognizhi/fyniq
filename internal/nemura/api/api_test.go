@@ -349,6 +349,11 @@ func (f fakeSelf) Reply(context.Context, Session, uuid.UUID, string) error { ret
 
 type fakeLetters struct{ err error }
 
+func (f fakeLetters) Delegations(context.Context, Session) ([]Delegation, error) { return nil, f.err }
+func (f fakeLetters) Delegate(context.Context, Session, string, int, time.Time) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10", f.err
+}
+func (f fakeLetters) Revoke(context.Context, Session, uuid.UUID, string) error { return f.err }
 func (f fakeLetters) RequestFor(context.Context, Session, uuid.UUID, string, string) (string, string, error) {
 	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", "2026-11-25", f.err
 }
@@ -374,8 +379,8 @@ func (f fakeLetters) SaveDraft(context.Context, Session, string, []LetterBlock, 
 	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ee0", f.err
 }
 func (f fakeLetters) Publish(context.Context, Session, uuid.UUID) (int, error) { return 1, f.err }
-func (f fakeLetters) Request(context.Context, Session, string, string) (string, string, error) {
-	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0", "2026-11-25", f.err
+func (f fakeLetters) Request(context.Context, Session, string, string) (string, string, bool, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0", "2026-11-25", false, f.err
 }
 func (f fakeLetters) List(context.Context, Session, bool, string) ([]LetterRequest, error) {
 	return []LetterRequest{}, f.err

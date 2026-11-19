@@ -53,7 +53,9 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations`, `fyniq
 
 ## 4. Automatic issue, joiners and leavers (slice 4)
 
-- [ ] 4.1 Delegations (NM-LTR-04, D6): created by a signatory, bounded, revocable, ended by a template change; each letter keeps its bytes and who asked.
+- [x] 4.1 Delegations (NM-LTR-04, D6): migration 000026; created by the Owner after a fresh passkey, bounded (a monthly limit, an end date within twelve months, one live
+  delegation per type, never pay), revocable once, ended by a template change; each letter keeps its bytes, who asked and the delegation as its authority. `// req: NM-LTR-04`
+  Left in 4.1: "who may ask" is the one rule (active employees not serving notice); the people assistant's drafts do not exist yet and will never use this path.
 - [ ] 4.2 The joiner's invitation task on People home (NM-ONB-02) and the offboarding dates and leave settlement (NM-ONB-03, D10). Screen `nm-onboarding`.
 - [ ] 4.3 Verify, and tag only what is fully proven.
 
