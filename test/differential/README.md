@@ -15,7 +15,8 @@ folder holds the contract between them (OpenSpec change `p0-python-oracle-differ
 | `forecasts/` | The golden forecasts the Go gate runs through both sides |
 | `feasibility.schema.json` | `fyniq-feasibility@1`: a feasibility study both sides work out ("Feasibility studies") |
 | `feasibilities/` | The golden studies the Go gate runs through both sides |
-| `payroll.schema.json` | `fyniq-payroll-month@1`: an employee-month (PRD-001 Appendix B.3) both sides work out; the golden months are in `payrolls/`, worked by hand, and Nemura's engine (`internal/nemura/payroll`) passes them; the oracle's half reads the same files `[oracle]` |
+| `payroll-run.schema.json` | `fyniq-payroll-run@1`: a pay run of one wage month (section "Payroll months and runs") |
+| `payroll.schema.json` | `fyniq-payroll-month@1`: an employee-month (PRD-001 Appendix B.3) both sides work out; the golden months are in `payrolls/`, worked by hand, and Nemura's engine (`internal/nemura/payroll`) passes them; the oracle's half reads the same files (`oracle/src/oracle/employee_month.py`; section "Payroll months and runs") |
 
 Both schemas are JSON Schema draft 2020-12 with RE2- and ECMA-262-compatible patterns, so a Go
 validator and Python's `jsonschema` accept the same documents. The oracle checks its input against
@@ -1637,6 +1638,43 @@ through the oracle's own (`oracle/src/oracle/purge.py`), each writing `fyniq-pur
 - **The gate.** `TestThePurgeAgreesWithTheOracle` runs `purges/` and 40 generated ledgers in `make test` and
   requires `unchanged`. `make differential` draws them with Hypothesis (`purge` in `DIFFERENTIAL_SOURCES`) and saves a
   shrunk disagreement, or a ledger the purge would change, in `purges/`.
+
+## Payroll months and runs (Nemura's payroll; PRD-001 §8.7, Appendix B.3; PRD-002 ADR-N2; p1-nemura-payroll)
+
+The oracle's half of Nemura's payroll engine (`oracle/src/oracle/employee_month.py`) is written from the rules (the PRD, `RND-CPF`,
+`RND-CPF-GRAD`, `RND-SDL`, the packs `sg-cpf@2026.2`, `sg-sdl@2026.1`, `sg-shg@2026.1`), never from `internal/nemura/payroll`. Two
+documents carry the facts:
+
+- `fyniq-payroll-month@1` (`payroll.schema.json`, golden months in `payrolls/`, worked by hand): one employee-month and the
+  figures `expect` names. Optional `pay_day`, `deductions`, `final` and `held` state a month's deductions (FR-PAY-16) and held monies.
+- `fyniq-payroll-run@1` (`payroll-run.schema.json`): a run of one `month`: each of `people` (an `id`, the `person`, the month's `items`, `ytd`,
+  `last_month`, `reimbursements`, `deductions`, `final`, `held`), and for a later run or correction the same person's facts as last
+  `posted`. Its result, `fyniq-payroll-run-result@1`, has per person every figure of the month as a decimal string (`gross`,
+  `ow_subject`, `aw_subject`, `cpf_total`, `cpf_employee`, `cpf_employer`, `sdl`, `shg`, `deductions`, `reimbursements`, `held`, `net`,
+  `disburse`, `employer_cost`, `refund_wages`, `refund_total`, `refund_employee`), `violations` (the deductions' broken rules, each
+  with its rule named) and, with `posted`, `difference` (what the later run posts); or `{"error": "needs_year_to_date"}`. A person
+  refused is left out of the run's `totals` (FR-PAY-18: `gross`, `employee_cpf`, `employer_cpf`, `sdl_employees`, `sdl_payable`, `shg`,
+  `deductions`, `advances`, `reimbursements`, `held`, `net`, `disburse`, `employer_cost`) and `postings`, B.3's entry by account
+  (`salary`, `6020`, `6030`, `2150`, `1250`, `deductions` for the other deductions' own accounts, `2100`, `2110`, each `debit` and
+  `credit`), with `balanced`. Both sides compare every figure as a decimal.
+
+Money is exact; every rounding is a named policy. The oracle's own tests (`oracle/tests/test_employee_month.py`) reproduce the sixteen
+golden months, the packs' pinned tables, the PRD's G.2 rows and G4-002/003/004/006/008 by hand. The Go side is
+`internal/nemura/payroll/differential` (the runner `cmd/nemura/payrollrun` and the fixed-seed gate in `make test`); `make differential`
+lets Hypothesis search more (`payroll-month` in `DIFFERENTIAL_SOURCES`) and saves a shrunk disagreement in `payroll-runs/`.
+
+Rules the sources leave open, decided in the oracle and marked for confirmation (`[verify]`, `[accountant to confirm]`):
+
+- **The year's estimated ordinary wages** before the last pay month: what is counted so far plus this month's ordinary wages subject to CPF for
+  each month left, this one included (FR-PAY-14 says only "estimated OW for the year"). `[verify]`
+- **Joint election** is the full employer rate with graduated employee rates (F/G); the person record has no switch for F/F. `[verify]`
+- **No start date** for a permanent resident is read as past the second year; a month in the start month is in the first year. `[verify]`
+- **SDL** is on the gross; **SHG** is on the CPF wages before the ceilings, and is nothing when there are none. `[verify]`
+- **Graduated band** is chosen on the wages subject to CPF (after the ceilings). `[verify]`
+- **Final pay**: an advance is recovered only with consent; the 12-instalment and 25% limits are not applied on it. `[accountant to confirm]`
+- **Run cost and 6030** carry the SDL payable (rounded down once), not the employees' sum (PRD-001 question 27, recommended default).
+- **Refund**: the total at the month's rate in cents half up, the employee's share cents dropped. `[verify]`
+- **Not covered here:** overrides (FR-PAY-06), the foreign worker levy (O2), the part-month salary of joiners and leavers.
 
 ## Commands
 
