@@ -49,7 +49,7 @@ platform, or half model. Their tags are added when the rest is built, so the tra
   Built: `AssistantPanel` shows a chip per guide source (BookOpen icon, "awaiting review" for a draft guide page) linking `/help/<guide>#<anchor>`; Vitest with axe.
 - [ ] 3.3 Statutory pages: the pack in force newer than the page's makes the tool result say so, and the answer is from
   `packs.get` (G4-091). Tests `// req: AI-53`.
-  **Left:** the platform's check that the pack in force is newer than the page's cited version, and the answer-level proof (G4-091), which needs a recorded model run `[live-verify]`.
+  **Built in part (owner's decision, 19 Nov 2026, PRD-001 rev 0.305):** `kb-schema@2` with an optional `packs` front-matter field; the lint (Go and `scripts/kb.py`, five shared fixtures) fails a page while a newer version of a pack it lists exists (`KB-PACK-STALE`), and `make kb-stale` lists it; `compliance.gst` and `compliance.calendar` declare their packs, and every page moved to `kb-schema@2`. Untagged (AI-53's answering half is not proved here). **Left:** the tool result saying a platform page's pack is older than the one in force (the platform tables carry no `packs` yet: a column and `kb_platform_load` change), and the answer-level proof (G4-091), which needs a recorded model run `[live-verify]`.
 
 ## 4. The organisation's knowledge base
 
