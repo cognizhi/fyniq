@@ -129,6 +129,16 @@ func (s Invoices) CreateCredit(ctx context.Context, org uuid.UUID, d invoice.Dra
 	return s.create(ctx, org, storage.DocumentCreditNote, d)
 }
 
+// CreateInvoiceIn saves a draft invoice in u, the caller's own unit of work: how an approved AI proposal's draft is made by the executor
+// (PRD-001 Appendix E, ar.draft_invoice), through the same encoding and numbering as a person's draft.
+func CreateInvoiceIn(ctx context.Context, u storage.UnitOfWork, d invoice.Draft) (storage.Document, error) {
+	b, err := invoice.Encode(d)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	return createNumbered(ctx, u, storage.DocumentInvoice, b)
+}
+
 func (s Invoices) create(ctx context.Context, org uuid.UUID, t storage.DocumentType, d invoice.Draft) (storage.Document, error) {
 	b, err := invoice.Encode(d)
 	if err != nil {
