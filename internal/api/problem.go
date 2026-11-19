@@ -547,6 +547,8 @@ var codeFacts = map[string]struct {
 	bill.CodeTooLong:              {422, "A text of the bill is too long"},
 	bill.CodeInputTax:             {422, "An input-tax fact of the bill is not one Fyniq reads"},
 	bill.CodeBusinessShare:        {422, "A line's business share is not a percentage from 0 to 100"},
+	project.CodeMarkup:            {422, "A markup is not a percentage from 0 to 999.99, or is on a line that is not billable"},
+	project.CodeLine:              {422, "A billable line needs a project"},
 	bill.CodeNature:               {422, "The bill does not say what the non-resident supplier's payment is for"},
 	bill.CodeWithholding:          {422, "The withholding decision cannot be recorded"},
 	CodeBillNeedsApproval:         {409, "The bill needs another person's approval"},

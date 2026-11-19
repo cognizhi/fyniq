@@ -143,6 +143,16 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** a purchase order is raised for a project
 - **THEN** it is recorded against that project
 
+#### Scenario: A billable line needs a project (rev 0.297)
+- **WHEN** a bill line or a claim line is billable or has a markup
+- **THEN** it carries a project value, a markup is a percentage from 0 to 999.99 with at most two decimals, and a markup belongs to a billable line
+- **AND** otherwise it is refused with a plain message naming the line
+
+#### Scenario: A purchase order's project (rev 0.297)
+- **GIVEN** a purchase order for a project
+- **WHEN** a bill is made from it
+- **THEN** each of the bill's lines carries the project as a project value
+
 ### Requirement: FR-PRJ-09 Budgets and change orders
 The system SHALL keep budgets in hours and money per task, with burn, forecast at completion and alerts at 80% and 100% (settings), and change orders (P2) that change the budget, the fee and the estimate at completion.
 

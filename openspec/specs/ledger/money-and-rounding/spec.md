@@ -395,6 +395,16 @@ Source: PRD-001 §10.4
 - **THEN** cost = round(minutes × hourly rate ÷ 60, minor units), half away from zero, computed exactly before its one rounding
 - **AND** a reversing entry costs exactly the negative of the entry it reverses
 
+### Requirement: RND-MARKUP Markup on a billable expense
+The markup on a billable project expense SHALL be its cost times the markup percentage divided by 100, rounded to the currency's minor units, half away from zero, once (new, FR-PRJ-08).
+
+Source: PRD-001 §10.4
+
+#### Scenario: Markup formula
+- **WHEN** the markup on a billable expense is computed
+- **THEN** markup = round(cost × percent ÷ 100, minor units), half away from zero, computed exactly before its one rounding
+- **AND** the percent is from 0 to 999.99 with at most two decimals, and what is billed is the cost plus the markup
+
 ### Requirement: RND-DISPLAY Display never re-rounds
 Display SHALL never re-round stored amounts, and totals SHALL be sums of stored amounts, so every report foots and cross-foots exactly (new).
 

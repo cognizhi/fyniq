@@ -1326,3 +1326,44 @@ func TestTimeCostIsTheMinutesAtTheHourlyRateRoundedOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// RND-MARKUP (PRD-001 §10.4; FR-PRJ-08): the markup on a billable expense = cost × percent ÷ 100 to the cent, half away from zero.
+// req: RND-MARKUP
+// req: FR-PRJ-08
+func TestMarkupIsTheCostTimesThePercentRoundedOnceHalfAwayFromZero(t *testing.T) {
+	sgd := money.MustLookup("SGD")
+	cost := func(s string) money.Money {
+		m, err := money.Parse(s, sgd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	for _, c := range []struct{ cost, pct, want string }{
+		{"420.00", "10", "42.00"},
+		{"0.05", "10", "0.01"},   // 0.005 is a tie: away from zero
+		{"-0.05", "10", "-0.01"}, // and negated for a credit
+		{"0.04", "10", "0.00"},   // 0.004 rounds down
+		{"100.00", "0", "0.00"},
+		{"100.00", "999.99", "999.99"},
+		{"33.33", "12.5", "4.17"}, // 4.16625
+		{"1.00", "250", "2.50"},
+		{"7.77", "0.01", "0.00"},
+	} {
+		got, err := Markup(cost(c.cost), c.pct)
+		if err != nil || got.String() != c.want {
+			t.Errorf("%s at %s%%: %v %v, want %s", c.cost, c.pct, got, err, c.want)
+		}
+	}
+	for _, bad := range []string{"", "10%", "-1", "1000", "1.234", "ten", " 10"} {
+		if _, err := Markup(cost("1.00"), bad); err == nil {
+			t.Errorf("markup %q is accepted", bad)
+		}
+		if IsMarkup(bad) {
+			t.Errorf("IsMarkup(%q)", bad)
+		}
+	}
+	if !IsMarkup("0") || !IsMarkup("999.99") || !IsMarkup("5.5") {
+		t.Error("a plain percentage is refused")
+	}
+}

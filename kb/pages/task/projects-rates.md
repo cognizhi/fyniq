@@ -42,4 +42,4 @@ aliases:
   and a project's manager see the average rate of a role with at least three people, or the standard rate, and no person's cost; the AR
   specialist sees hours only. (src: docs/user-guide/projects-rates.md#what-time-costs-and-who-sees-it)
 
-Related: [[projects.time]], [[projects.projects]], [[projects.reports]].
+Related: [[projects.time]], [[projects.projects]], [[projects.reports]], [[projects.costs]].

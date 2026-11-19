@@ -1451,6 +1451,10 @@
       "label": "Input tax",
       "tooltip": "What the GST claim rests on: the document, the supplier's registration and whom it is addressed to."
     },
+    "project.billable": {
+      "label": "Bill to the customer",
+      "tooltip": "A cost of a project can be billed on to its customer, with a markup on the cost. The project's Unbilled tab then lists it once it is posted, at its cost plus the markup."
+    },
     "bill.business-share": {
       "label": "Business share (%)",
       "tooltip": "How much of the purchase is used for the business; only that share of the GST is claimed. Leave blank for all of it."

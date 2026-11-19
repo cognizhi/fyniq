@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,9 +13,13 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/bill"
+	"github.com/cognizhi/fyniq/internal/domain/claim"
 	"github.com/cognizhi/fyniq/internal/domain/money"
+	"github.com/cognizhi/fyniq/internal/domain/project"
 	"github.com/cognizhi/fyniq/internal/domain/projectrate"
 	"github.com/cognizhi/fyniq/internal/domain/projectreport"
+	"github.com/cognizhi/fyniq/internal/domain/purchaseorder"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -302,4 +307,78 @@ func (a *API) projectReportOf(ctx context.Context, u storage.UnitOfWork, p authn
 		body.Untagged = &ProjectReportRow{Code: "", Name: "Tagged with no project", Revenue: untagged.Revenue.String(), DirectCosts: untagged.DirectCosts.String(), PayrollTagged: untagged.PayrollTagged.String(), Basis: "none"}
 	}
 	return body, nil
+}
+
+// billingOn is a cost line's project billing, as the checks read it.
+type billingOn struct {
+	Values   []uuid.UUID
+	Billable bool
+	Markup   string
+}
+
+// checkBillableLines refuses a bill's line that is billable or marked up without a project of the organisation among its dimension values,
+// or with a markup Fyniq cannot read (FR-PRJ-08).
+func (a *API) checkBillableLines(ctx context.Context, u storage.UnitOfWork, lines []bill.Line) error {
+	on := make([]billingOn, len(lines))
+	for i, l := range lines {
+		on[i] = billingOn{l.Values, l.Billable, l.Markup}
+	}
+	return checkBilling(ctx, u, on)
+}
+
+// checkBillableClaimLines is the same for an expense claim's lines, receipts and trips alike.
+func (a *API) checkBillableClaimLines(ctx context.Context, u storage.UnitOfWork, lines []claim.Line) error {
+	on := make([]billingOn, len(lines))
+	for i, l := range lines {
+		on[i] = billingOn{l.Values, l.Billable, l.Markup}
+	}
+	return checkBilling(ctx, u, on)
+}
+
+func checkBilling(ctx context.Context, u storage.UnitOfWork, lines []billingOn) error {
+	var projects map[uuid.UUID]bool
+	var bad []FieldProblem
+	for i, l := range lines {
+		if !l.Billable && l.Markup == "" {
+			continue
+		}
+		if projects == nil {
+			ps, err := u.Projects().List(ctx)
+			if err != nil {
+				return err
+			}
+			projects = map[uuid.UUID]bool{}
+			for _, p := range ps {
+				projects[p.ID] = p.Status != storage.ProjectClosed
+			}
+		}
+		has := false
+		for _, v := range l.Values {
+			has = has || projects[v]
+		}
+		if p := project.CheckBillableLine("body.lines["+strconv.Itoa(i)+"]", l.Billable, l.Markup, has); p != nil {
+			bad = append(bad, FieldProblem{Code: p.Code, Field: p.Field, Message: p.Message, Fix: p.Fix})
+		}
+	}
+	if len(bad) > 0 {
+		return invalid(bad)
+	}
+	return nil
+}
+
+// checkOrderProject refuses a purchase order for a project that is not one of the organisation's, or is closed, or while the
+// feature is off (FR-PRJ-08).
+func (a *API) checkOrderProject(ctx context.Context, u storage.UnitOfWork, d purchaseorder.Draft) error {
+	if d.ProjectID == uuid.Nil {
+		return nil
+	}
+	if err := requireProjects(ctx, a, u); err != nil {
+		return err
+	}
+	p, err := u.Projects().Get(ctx, d.ProjectID)
+	if err != nil || p.Status == storage.ProjectClosed {
+		return invalid([]FieldProblem{{Code: project.CodeLine, Field: "body.project_id", Message: "is not a project of this organisation that is open",
+			Fix: "Choose a project that is planned, active or on hold"}})
+	}
+	return nil
 }
