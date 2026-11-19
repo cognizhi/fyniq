@@ -2036,6 +2036,36 @@ private_endpoint | reason | text | not null |
 private_endpoint | recorded_by | uuid | not null | 
 private_endpoint | recorded_at | timestamp with time zone | not null | 
 private_endpoint | change_id | uuid | null | 
+project | organisation_id | uuid | not null | current_org()
+project | id | uuid | not null | 
+project | customer_id | uuid | null | 
+project | currency | text | not null | 
+project | minor_units | smallint | not null | 
+project | status | text | not null | 'active'::text
+project | billing_method | text | not null | 
+project | starts_on | date | null | 
+project | ends_on | date | null | 
+project | budget_minutes | integer | null | 
+project | budget_amount | numeric(20,4) | null | 
+project | version | integer | not null | 1
+project | created_at | timestamp with time zone | not null | now()
+project | changed_at | timestamp with time zone | not null | now()
+project_member | organisation_id | uuid | not null | current_org()
+project_member | id | uuid | not null | uuidv7()
+project_member | project_id | uuid | not null | 
+project_member | user_id | uuid | not null | 
+project_member | is_manager | boolean | not null | false
+project_member | is_active | boolean | not null | true
+project_member | created_at | timestamp with time zone | not null | now()
+project_task | organisation_id | uuid | not null | current_org()
+project_task | id | uuid | not null | uuidv7()
+project_task | project_id | uuid | not null | 
+project_task | name | text | not null | 
+project_task | billable | boolean | not null | true
+project_task | is_active | boolean | not null | true
+project_task | version | integer | not null | 1
+project_task | created_at | timestamp with time zone | not null | now()
+project_task | changed_at | timestamp with time zone | not null | now()
 quote_outcome | organisation_id | uuid | not null | current_org()
 quote_outcome | id | uuid | not null | uuidv7()
 quote_outcome | document_id | uuid | not null | 
@@ -5701,6 +5731,53 @@ private_endpoint | private_endpoint_service_not_null | NOT NULL service
 private_endpoint | private_endpoint_tls_pin_not_null | NOT NULL tls_pin
 private_endpoint | private_endpoint_version_not_null | NOT NULL version
 private_endpoint | private_endpoint_version_positive | CHECK ((version >= 1))
+project | project_billing_known | CHECK ((billing_method = ANY (ARRAY['time_and_materials'::text, 'fixed_fee'::text, 'retainer'::text, 'internal'::text])))
+project | project_billing_method_not_null | NOT NULL billing_method
+project | project_budget_amount | CHECK (((budget_amount IS NULL) OR ((budget_amount <> 'NaN'::numeric) AND (budget_amount >= (0)::numeric) AND (budget_amount = trunc(budget_amount, (minor_units)::integer)))))
+project | project_budget_minutes | CHECK (((budget_minutes IS NULL) OR ((budget_minutes >= 0) AND (budget_minutes <= 100000000))))
+project | project_changed_at_not_null | NOT NULL changed_at
+project | project_created_at_not_null | NOT NULL created_at
+project | project_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
+project | project_currency_not_null | NOT NULL currency
+project | project_customer_fkey | FOREIGN KEY (organisation_id, customer_id) REFERENCES contact(organisation_id, id)
+project | project_dates_ordered | CHECK (((starts_on IS NULL) OR (ends_on IS NULL) OR (starts_on <= ends_on)))
+project | project_id_not_null | NOT NULL id
+project | project_minor_units_not_null | NOT NULL minor_units
+project | project_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+project | project_organisation_id_not_null | NOT NULL organisation_id
+project | project_pkey | PRIMARY KEY (organisation_id, id)
+project | project_status_known | CHECK ((status = ANY (ARRAY['planned'::text, 'active'::text, 'on_hold'::text, 'closed'::text])))
+project | project_status_not_null | NOT NULL status
+project | project_value_fkey | FOREIGN KEY (organisation_id, id) REFERENCES dimension_value(organisation_id, id)
+project | project_version_not_null | NOT NULL version
+project | project_version_positive | CHECK ((version >= 1))
+project | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+project_member | project_member_created_at_not_null | NOT NULL created_at
+project_member | project_member_id_not_null | NOT NULL id
+project_member | project_member_is_active_not_null | NOT NULL is_active
+project_member | project_member_is_manager_not_null | NOT NULL is_manager
+project_member | project_member_organisation_id_not_null | NOT NULL organisation_id
+project_member | project_member_person_key | UNIQUE (organisation_id, project_id, user_id)
+project_member | project_member_pkey | PRIMARY KEY (organisation_id, id)
+project_member | project_member_project_fkey | FOREIGN KEY (organisation_id, project_id) REFERENCES project(organisation_id, id)
+project_member | project_member_project_id_not_null | NOT NULL project_id
+project_member | project_member_user_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+project_member | project_member_user_id_not_null | NOT NULL user_id
+project_member | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+project_task | project_task_billable_not_null | NOT NULL billable
+project_task | project_task_changed_at_not_null | NOT NULL changed_at
+project_task | project_task_created_at_not_null | NOT NULL created_at
+project_task | project_task_id_not_null | NOT NULL id
+project_task | project_task_is_active_not_null | NOT NULL is_active
+project_task | project_task_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)))
+project_task | project_task_name_not_null | NOT NULL name
+project_task | project_task_organisation_id_not_null | NOT NULL organisation_id
+project_task | project_task_pkey | PRIMARY KEY (organisation_id, id)
+project_task | project_task_project_fkey | FOREIGN KEY (organisation_id, project_id) REFERENCES project(organisation_id, id)
+project_task | project_task_project_id_not_null | NOT NULL project_id
+project_task | project_task_version_not_null | NOT NULL version
+project_task | project_task_version_positive | CHECK ((version >= 1))
+project_task | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 quote_outcome | quote_outcome_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
 quote_outcome | quote_outcome_document_id_not_null | NOT NULL document_id
 quote_outcome | quote_outcome_id_not_null | NOT NULL id
@@ -6474,6 +6551,8 @@ CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, date
 CREATE INDEX period_reopen_period ON fyniq.period_reopen USING btree (organisation_id, period_id, reopened_at)
 CREATE INDEX period_variance_explanation_period ON fyniq.period_variance_explanation USING btree (organisation_id, period_id, account_id, written_at)
 CREATE INDEX private_endpoint_serves ON fyniq.private_endpoint USING btree (serves, credential)
+CREATE INDEX project_customer_idx ON fyniq.project USING btree (organisation_id, customer_id) WHERE (customer_id IS NOT NULL)
+CREATE INDEX project_member_user_idx ON fyniq.project_member USING btree (organisation_id, user_id) WHERE is_active
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
 CREATE INDEX report_export_expiring ON fyniq.report_export USING btree (organisation_id, status, expires_at)
 CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organisation_id, requested_by, requested_at DESC)
@@ -6806,6 +6885,12 @@ CREATE UNIQUE INDEX policy_draft_pkey ON fyniq.policy_draft USING btree (organis
 CREATE UNIQUE INDEX policy_version_once ON fyniq.policy_version USING btree (organisation_id, key, version)
 CREATE UNIQUE INDEX policy_version_pkey ON fyniq.policy_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX private_endpoint_pkey ON fyniq.private_endpoint USING btree (id, version)
+CREATE UNIQUE INDEX project_member_person_key ON fyniq.project_member USING btree (organisation_id, project_id, user_id)
+CREATE UNIQUE INDEX project_member_pkey ON fyniq.project_member USING btree (organisation_id, id)
+CREATE UNIQUE INDEX project_pkey ON fyniq.project USING btree (organisation_id, id)
+CREATE UNIQUE INDEX project_task_live_name ON fyniq.project_task USING btree (organisation_id, project_id, lower(btrim(name))) WHERE is_active
+CREATE UNIQUE INDEX project_task_pkey ON fyniq.project_task USING btree (organisation_id, id)
+CREATE UNIQUE INDEX project_task_project_key ON fyniq.project_task USING btree (organisation_id, project_id, id)
 CREATE UNIQUE INDEX quote_outcome_once ON fyniq.quote_outcome USING btree (organisation_id, document_id)
 CREATE UNIQUE INDEX quote_outcome_pkey ON fyniq.quote_outcome USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
@@ -7040,6 +7125,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.owner_su
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.payee_bank_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'change_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.pd_shredding_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_shredding_run', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_bill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_journal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'id')
@@ -7391,6 +7479,9 @@ CREATE TRIGGER policy_draft_no_truncate BEFORE TRUNCATE ON fyniq.policy_draft FO
 CREATE TRIGGER policy_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_version FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
 CREATE TRIGGER policy_version_no_truncate BEFORE TRUNCATE ON fyniq.policy_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER private_endpoint_append_only BEFORE DELETE OR UPDATE ON fyniq.private_endpoint FOR EACH ROW EXECUTE FUNCTION private_endpoint_append_only()
+CREATE TRIGGER project_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project FOR EACH ROW EXECUTE FUNCTION project_guard()
+CREATE TRIGGER project_member_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_member FOR EACH ROW EXECUTE FUNCTION project_part_guard()
+CREATE TRIGGER project_task_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_task FOR EACH ROW EXECUTE FUNCTION project_part_guard()
 CREATE TRIGGER quote_outcome_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.quote_outcome FOR EACH ROW EXECUTE FUNCTION quote_outcome_guard()
 CREATE TRIGGER recurring_bill_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_bill_version FOR EACH ROW EXECUTE FUNCTION recurring_bill_version_immutable()
 CREATE TRIGGER recurring_invoice_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_invoice_version FOR EACH ROW EXECUTE FUNCTION recurring_invoice_version_immutable()
@@ -7606,6 +7697,9 @@ person_key | tenant_isolation | * | (organisation_id = current_org()) | (organis
 policy_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_draft | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+project | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+project_member | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+project_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 quote_outcome | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_bill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7817,6 +7911,9 @@ policy_acknowledgement | enabled | forced
 policy_draft | enabled | forced
 policy_version | enabled | forced
 private_endpoint | disabled | not forced
+project | enabled | forced
+project_member | enabled | forced
+project_task | enabled | forced
 quote_outcome | enabled | forced
 rate_limit_window | enabled | forced
 recovery_confirmation | disabled | not forced
@@ -8142,6 +8239,8 @@ private_endpoint_address_ok(p_address cidr) → boolean | security invoker | i |
 private_endpoint_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 495b7d8c5db1f4005355e12e03026057
 private_endpoints() → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | da8a815f6c91cfdc5f5453fba7d6e3f8
 private_endpoints_for(p_service text, p_credential uuid) → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 85ce4fe273b1eba64231e49b57ed690b
+project_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 263feebbc9e8c9cfa868c0c58b30e881
+project_part_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abaebce4c4cd3919837dd8db7382ce2a
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
 purge_ip_rate_windows(p_before timestamp with time zone) → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 81de58d9129c046ca2aa53b08d3607c8
 purge_switched_on(p_org uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 90114d368d5bac0773307d5f4b014509

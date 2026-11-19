@@ -4,7 +4,7 @@ type: task
 title: Add a money account and choose where its data comes from
 summary: Add a bank, card, wallet, gateway or cash account in three steps, and set its statements to arrive as files, by email or through a connector
 sources:
-  - docs/user-guide/banking.md sha256:019de19b09be6ac3fa40b7d3251ca8fa62beba74f7364724e67a934f577efdd8
+  - docs/user-guide/banking.md sha256:1fd6c0da3a4734ae8481580fe09a6b4f1464c01af923abc8ae8dfbd54e829fef
 data_class: general
 taint: trusted
 status: draft
@@ -26,8 +26,9 @@ aliases:
 ## Steps
 
 - In **Banking**, select **Add account** and follow the three steps.
-- **The account**: its kind (bank, card, wallet, payment gateway or cash), its name, the bank or provider, and the chart account it posts to; only an account marked as a money account in the chart can be chosen, and its currency is the money account's. Enter the account number, or the provider's balance ID for Wise or Airwallex; only its last four characters show afterwards.
+- **The account**: its kind (bank, card, wallet, payment gateway or cash), its name, the bank or provider (pick it from the list when it is there: it decides which payment files the account may give; another bank gives the payment list), and the chart account it posts to; only an account marked as a money account in the chart can be chosen, and its currency is the money account's. Enter the account number, or the provider's balance ID for Wise or Airwallex; only its last four characters show afterwards.
 - **Where its data comes from**: statement files, the bank's reports by email, or a connector such as Wise or Airwallex ([[banking.accounts]]).
+- On step 2 a bank or wallet account also shows **Payment file**: the file its payment batches give ([[banking.accounts]]).
 - **Check**: what happens next, such as waiting for the first emailed report.
 
 (src: docs/user-guide/banking.md#add-a-money-account)
