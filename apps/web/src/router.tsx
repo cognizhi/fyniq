@@ -42,6 +42,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "my-time": lazyRouteComponent(() => import("./screens/projects/MyTime"), "MyTime"),
   timesheet: lazyRouteComponent(() => import("./screens/projects/Timesheet"), "Timesheet"),
   "cost-rates": lazyRouteComponent(() => import("./screens/projects/CostRates"), "CostRates"),
+  "project-reports": lazyRouteComponent(() => import("./screens/projects/ProjectReports"), "ProjectReports"),
   "global-search": lazyRouteComponent(() => import("./screens/Search"), "Search"),
   help: lazyRouteComponent(() => import("./screens/help/Help"), "Help"),
   "help-page": lazyRouteComponent(() => import("./screens/help/Help"), "HelpPage"),

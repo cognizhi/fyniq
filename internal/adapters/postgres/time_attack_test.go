@@ -73,7 +73,7 @@ func TestAttackTimeIsDecidedByTheProjectsManagerAndApprovedTimeNeverChanges(t *t
 	}
 	var sub storage.Submission
 	if err := do("", func(ctx context.Context, u storage.UnitOfWork) (err error) {
-		sub, _, err = u.Timesheets().Submit(ctx, priya, project, week)
+		sub, _, err = u.Timesheets().Submit(ctx, priya, project, week, now)
 		return err
 	}); err != nil {
 		t.Fatal(err)

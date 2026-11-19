@@ -2820,6 +2820,48 @@ The approved net minutes on the project between two days, each person's hours, a
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`
 
+### `GET /v1/projects/{project_id}/time-entries`
+
+**The approved time entries behind a project's figures** (`listProjectTimeEntries`)
+
+The project's approved entries between two days, reversing entries included, by day: the drill-down of its hours and cost (FR-PRJ-12). Hours only, never a rate or a cost. A person who reads only the projects they are on gets 404 for another one. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+
+- **Permission:** View on Project reports and cost rates (rev 0.8)
+- **Parameters:**
+  - `project_id` (path, required): The project's ID.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+  - `from` (query, required): The first day.
+  - `to` (query, required): The last day, at most 366 days after the first.
+- **Responses:**
+  - `200` OK [`TimeEntryList`](../../contracts/schemas/TimeEntryList.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`
+
+### `GET /v1/reports/projects`
+
+**Project profitability, utilisation and realisation** (`getProjectReport`)
+
+For each project the caller may see, between two months: revenue and direct costs from the posted ledger through the balance service (payroll-cost accounts excluded and listed apart), the time at cost at the caller's tier (RND-TIME) and the margin = revenue - time at cost - direct costs, approved hours, billing at standard value and realisation, and budget use; each person's utilisation (billable over available hours); and the lines tagged with no project, so every project plus these tie to the ledger (FR-PRJ-12, QA-RPT-01). Time posts nothing. A person's own cost appears only for the Owner and the Payroll administrator; the AR specialist is given hours and revenue only; the AI never reads it. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+
+- **Permission:** View on Project reports and cost rates (rev 0.8)
+- **Parameters:**
+  - `from` (query, required): A day in the first month.
+  - `to` (query, required): A day in the last month, at most 12 months after the first.
+- **Responses:**
+  - `200` OK [`ProjectReport`](../../contracts/schemas/ProjectReport.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PRJ-09`
+
 ### `POST /v1/time-entries/{entry_id}/reverse`
 
 **Reverse an approved entry of the caller's** (`reverseTimeEntry`)

@@ -543,7 +543,7 @@ fyniq_api       INSERT    time_timer (billable, note, project_id, started_at, ta
 fyniq_api       SELECT    time_timer
 fyniq_api       EXECUTE   time_week_id()
 fyniq_api       EXECUTE   time_week_start()
-fyniq_api       INSERT    timesheet_submission (project_id, user_id, week_start)
+fyniq_api       INSERT    timesheet_submission (project_id, submitted_at, user_id, week_start)
 fyniq_api       SELECT    timesheet_submission
 fyniq_api       UPDATE    timesheet_submission (comment, decided_at, decided_by, status, version)
 fyniq_api       EXECUTE   unlink_identity()

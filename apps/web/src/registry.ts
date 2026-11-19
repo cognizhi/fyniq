@@ -78,6 +78,7 @@ export const routes = [
   { kind: "route", id: "my-time", path: "/me/time", mode: "basic", signedIn: true, help: "time.my-time", guide: "projects.time" },
   { kind: "route", id: "timesheet", path: "/projects/timesheet", mode: "basic", signedIn: true, help: "time.timesheet", guide: "projects.time#approve-the-teams-time" },
   { kind: "route", id: "cost-rates", path: "/projects/cost-rates", mode: "expert", signedIn: true, help: "rates.cost-page", guide: "projects.rates#enter-cost-rates" },
+  { kind: "route", id: "project-reports", path: "/reports/projects", mode: "expert", signedIn: true, help: "reports.projects", guide: "projects.reports" },
   { kind: "route", id: "global-search", path: "/search", mode: "basic", signedIn: true, help: "shell.search", guide: "shell.search" },
   // The user guide, built from docs/user-guide/ (FR-UX-32).
   { kind: "route", id: "help", path: "/help", mode: "basic", signedIn: true, help: "help.guide", guide: "help.guide" },

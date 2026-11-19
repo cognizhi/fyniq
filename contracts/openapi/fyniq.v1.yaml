@@ -41555,6 +41555,204 @@ components:
       required:
         - user_id
       type: object
+    ProjectReport:
+      additionalProperties: false
+      properties:
+        costs_visible:
+          description: false when the caller may see hours only.
+          examples:
+            - true
+          type: boolean
+        currency:
+          description: The base currency.
+          examples:
+            - SGD
+          type: string
+        from:
+          description: The first month's first day.
+          examples:
+            - "2026-11-01"
+          format: date
+          type: string
+        people:
+          description: Each person's utilisation.
+          items:
+            $ref: "#/components/schemas/ProjectReportPerson"
+          type: array
+        projects:
+          description: Each project the caller may see.
+          items:
+            $ref: "#/components/schemas/ProjectReportRow"
+          type: array
+        to:
+          description: The last month's first day.
+          examples:
+            - "2026-11-01"
+          format: date
+          type: string
+        untagged:
+          $ref: "#/components/schemas/ProjectReportRow"
+          description: "Revenue and costs of lines tagged with no project: every project plus these equal the revenue and expense accounts' totals (QA-RPT-01). Only for those who see every project, as it is company-wide."
+      required:
+        - from
+        - to
+        - currency
+        - projects
+        - people
+        - costs_visible
+      type: object
+    ProjectReportPerson:
+      additionalProperties: false
+      properties:
+        available_minutes:
+          description: The weekdays of the window less public holidays, at 8 hours a day (a working pattern and leave join with FR-PPL-07).
+          examples:
+            - 10080
+          format: int64
+          type: integer
+        billable_minutes:
+          description: Billable minutes.
+          examples:
+            - 8000
+          format: int64
+          type: integer
+        cost:
+          description: "Their time at their own cost rate: only for the Owner and the Payroll administrator (FR-PAY-13)."
+          examples:
+            - "9000.00"
+          type: string
+        minutes:
+          description: Approved net minutes.
+          examples:
+            - 9000
+          format: int64
+          type: integer
+        person_name:
+          description: Their name.
+          examples:
+            - Priya Nair
+          type: string
+        user_id:
+          description: The person.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+          format: uuid
+          type: string
+        utilisation:
+          description: Billable over available, a percentage to one decimal.
+          examples:
+            - "79.4"
+          type: string
+      required:
+        - user_id
+        - person_name
+        - minutes
+        - billable_minutes
+        - available_minutes
+        - utilisation
+      type: object
+    ProjectReportRow:
+      additionalProperties: false
+      properties:
+        billable_minutes:
+          description: Of them, the billable minutes.
+          examples:
+            - 12000
+          format: int64
+          type: integer
+        budget_minutes:
+          description: The hours budget in minutes.
+          examples:
+            - 24000
+          format: int64
+          type: integer
+        budget_used:
+          description: Approved minutes over the hours budget, a percentage to one decimal.
+          examples:
+            - "56.3"
+          type: string
+        code:
+          description: Its code.
+          examples:
+            - ACME-01
+          type: string
+        customer_name:
+          description: Its customer.
+          examples:
+            - Acme Pte Ltd
+          type: string
+        direct_costs:
+          description: Project-tagged posted costs on expense accounts WITHOUT the payroll-cost flag (FR-COA-02), in the base currency.
+          examples:
+            - "420.00"
+          type: string
+        margin:
+          description: Revenue less time at cost less direct costs; absent when the time has no cost to use.
+          examples:
+            - "17580.00"
+          type: string
+        minutes:
+          description: Approved net minutes.
+          examples:
+            - 13500
+          format: int64
+          type: integer
+        name:
+          description: Its name.
+          examples:
+            - Acme rollout
+          type: string
+        payroll_tagged:
+          description: "Project-tagged lines on payroll-cost accounts: listed to reconcile, never in direct costs, so salary tagged to a project is not counted twice (G4-049)."
+          examples:
+            - "5000.00"
+          type: string
+        project_id:
+          description: The project.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+          format: uuid
+          type: string
+        rate_basis:
+          description: Where the time cost's rates came from.
+          enum:
+            - person
+            - role_average
+            - standard
+            - mixed
+            - none
+          examples:
+            - role_average
+          type: string
+        realisation:
+          description: Billed (revenue) over standard value, a percentage to one decimal.
+          examples:
+            - "83.3"
+          type: string
+        revenue:
+          description: Revenue posted to the project in the months, from posted ledger lines on revenue accounts, in the base currency.
+          examples:
+            - "30000.00"
+          type: string
+        standard_value:
+          description: Billable time at billing rates, in the base currency, when the project is billed in it.
+          examples:
+            - "36000.00"
+          type: string
+        time_cost:
+          description: Approved time at the viewer's cost rate (RND-TIME per entry); absent when no rate may be used.
+          examples:
+            - "12000.00"
+          type: string
+      required:
+        - project_id
+        - code
+        - name
+        - revenue
+        - minutes
+        - billable_minutes
+        - rate_basis
+      type: object
     ProjectTask:
       additionalProperties: false
       properties:
@@ -50839,6 +51037,22 @@ components:
         - billable
         - status
         - version
+      type: object
+    TimeEntryList:
+      additionalProperties: false
+      properties:
+        items:
+          description: The approved entries by day; hours only, never a rate or a cost.
+          items:
+            $ref: "#/components/schemas/TimeEntry"
+          type: array
+        next_cursor:
+          description: Pass it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEwMCJ9
+          type: string
+      required:
+        - items
       type: object
     TimerStart:
       additionalProperties: false
@@ -195340,6 +195554,159 @@ paths:
       x-fyniq-permission:
         capability: Project reports and cost rates (rev 0.8)
         right: V
+  /v1/projects/{project_id}/time-entries:
+    get:
+      description: "The project's approved entries between two days, reversing entries included, by day: the drill-down of its hours and cost (FR-PRJ-12). Hours only, never a rate or a cost. A person who reads only the projects they are on gets 404 for another one. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects."
+      operationId: listProjectTimeEntries
+      parameters:
+        - description: The project's ID.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            description: The project's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+            format: uuid
+            type: string
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: The first day.
+          explode: false
+          in: query
+          name: from
+          required: true
+          schema:
+            description: The first day.
+            examples:
+              - "2026-11-01"
+            format: date
+            type: string
+        - description: The last day, at most 366 days after the first.
+          explode: false
+          in: query
+          name: to
+          required: true
+          schema:
+            description: The last day, at most 366 days after the first.
+            examples:
+              - "2026-11-30"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeEntryList"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: The approved time entries behind a project's figures
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PRJ-09
+      x-fyniq-permission:
+        capability: Project reports and cost rates (rev 0.8)
+        right: V
   /v1/public/document:
     get:
       description: "Public: no session. Opens the quote or invoice a link's token (in the Fyniq-Link header, from the link's fragment) was made for (FR-AR-06, FR-AR-16): what its PDF shows, a quote's status and answer, and whether the customer can answer it here. The first opening is recorded as the document's delivery viewed (the time only, never the reader's address). A link opens its own document's version and nothing else, for 180 days at most, until revoked, voided or cancelled, or an invoice is paid in full; every link that opens nothing answers the same 404 LINK-01. At most 30 a minute per link. Never cached or indexed."
@@ -203590,6 +203957,118 @@ paths:
       x-fyniq-permission:
         capability: Reports, dashboards
         note: A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused.
+        right: V
+  /v1/reports/projects:
+    get:
+      description: "For each project the caller may see, between two months: revenue and direct costs from the posted ledger through the balance service (payroll-cost accounts excluded and listed apart), the time at cost at the caller's tier (RND-TIME) and the margin = revenue - time at cost - direct costs, approved hours, billing at standard value and realisation, and budget use; each person's utilisation (billable over available hours); and the lines tagged with no project, so every project plus these tie to the ledger (FR-PRJ-12, QA-RPT-01). Time posts nothing. A person's own cost appears only for the Owner and the Payroll administrator; the AR specialist is given hours and revenue only; the AI never reads it. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects."
+      operationId: getProjectReport
+      parameters:
+        - description: A day in the first month.
+          explode: false
+          in: query
+          name: from
+          required: true
+          schema:
+            description: A day in the first month.
+            examples:
+              - "2026-11-01"
+            format: date
+            type: string
+        - description: A day in the last month, at most 12 months after the first.
+          explode: false
+          in: query
+          name: to
+          required: true
+          schema:
+            description: A day in the last month, at most 12 months after the first.
+            examples:
+              - "2026-11-30"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectReport"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Project profitability, utilisation and realisation
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - PRJ-09
+      x-fyniq-permission:
+        capability: Project reports and cost rates (rev 0.8)
         right: V
   /v1/reports/sales-by-customer:
     get:

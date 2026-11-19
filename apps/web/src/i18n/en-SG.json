@@ -2267,6 +2267,10 @@
       "label": "Time at cost",
       "tooltip": "Approved time this month valued by the server for you: each person's own rate only if you may see it, else the average of a role with three people or more, else the standard rate, else hours only."
     },
+    "reports.projects": {
+      "label": "Project reports",
+      "tooltip": "What each project earns and costs, from posted ledger lines and approved time: revenue less time at cost less direct costs, with utilisation and realisation. The cost is valued for you: a person's own rate only if you may see it."
+    },
     "claim.line-dimensions": {
       "label": "Team or project",
       "tooltip": "The department, project or other dimension the receipt or trip was for; a category that needs one says so."

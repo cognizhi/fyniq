@@ -556,3 +556,8 @@ func billingRateOf(r storage.BillingRate) BillingRate {
 	}
 	return out
 }
+
+// roundingTime is RND-TIME for a cost, kept apart so the report and the time cost value time the same way.
+func roundingTime(minutes int, rate money.UnitPrice) (money.Money, error) {
+	return rounding.Time(minutes, rate)
+}

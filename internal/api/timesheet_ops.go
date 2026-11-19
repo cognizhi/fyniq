@@ -115,7 +115,7 @@ func registerTimesheetOps(a *API) {
 					return Timesheet{}, problem(timesheet.CodeSubmit, "There is nothing to submit for this week.", "Enter the time first, then submit the week")
 				}
 				for _, pid := range projects {
-					if _, _, err := u.Timesheets().Submit(ctx, p.UserID, pid, week); err != nil {
+					if _, _, err := u.Timesheets().Submit(ctx, p.UserID, pid, week, a.deps.Clock.Now()); err != nil {
 						return Timesheet{}, err
 					}
 				}

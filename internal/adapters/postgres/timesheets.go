@@ -195,11 +195,11 @@ func (r timesheets) Reverse(ctx context.Context, id uuid.UUID) (storage.TimeEntr
 	return out, r.u.event(ctx, "time.entry_reversed", "time_week", wid, nil, map[string][2]any{"reverses": {nil, orig.ID.String()}, "entry": {nil, entryText(out)}})
 }
 
-func (r timesheets) Submit(ctx context.Context, user, project uuid.UUID, week time.Time) (storage.Submission, []storage.TimeEntry, error) {
+func (r timesheets) Submit(ctx context.Context, user, project uuid.UUID, week, at time.Time) (storage.Submission, []storage.TimeEntry, error) {
 	if err := r.u.check(); err != nil {
 		return storage.Submission{}, nil, err
 	}
-	sub, err := r.u.q.InsertSubmission(ctx, sqlcdb.InsertSubmissionParams{UserID: user, ProjectID: project, WeekStart: week})
+	sub, err := r.u.q.InsertSubmission(ctx, sqlcdb.InsertSubmissionParams{UserID: user, ProjectID: project, WeekStart: week, SubmittedAt: at})
 	if err != nil {
 		return storage.Submission{}, nil, mapError(err)
 	}

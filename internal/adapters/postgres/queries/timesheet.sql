@@ -45,7 +45,7 @@ UPDATE fyniq.time_entry SET status = sqlc.arg(status), version = version + 1, ch
 RETURNING *;
 
 -- name: InsertSubmission :one
-INSERT INTO fyniq.timesheet_submission (user_id, project_id, week_start) VALUES (sqlc.arg(user_id), sqlc.arg(project_id), sqlc.arg(week_start))
+INSERT INTO fyniq.timesheet_submission (user_id, project_id, week_start, submitted_at) VALUES (sqlc.arg(user_id), sqlc.arg(project_id), sqlc.arg(week_start), sqlc.arg(submitted_at))
 RETURNING *;
 
 -- name: DecideSubmission :one

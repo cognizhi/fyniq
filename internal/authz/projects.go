@@ -46,3 +46,10 @@ var (
 	SetBillingRate     = Policy{Operation: "setBillingRate", Capability: ChartOfAccounts, Need: Create}
 	GetProjectTimeCost = Policy{Operation: "getProjectTimeCost", Capability: ProjectReports, Need: View}
 )
+
+// Project reports (FR-PRJ-12): profitability per project, utilisation and realisation, read under "Project reports and cost rates"
+// at the viewer's tier (design D5, D6), with the entries behind a figure.
+var (
+	GetProjectReport       = Policy{Operation: "getProjectReport", Capability: ProjectReports, Need: View}
+	ListProjectTimeEntries = Policy{Operation: "listProjectTimeEntries", Capability: ProjectReports, Need: View}
+)

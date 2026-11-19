@@ -211,6 +211,14 @@ var matrixProjectRates = map[string]func(e *env, tok string) (response, func() b
 			return !strings.Contains(e.call(http.MethodGet, "/v1/projects/"+t.project+"/billing-rates", t.fresh(e, t.una, authz.Controller), nil).Raw, day)
 		}
 	},
+	"getProjectReport": func(e *env, tok string) (response, func() bool) {
+		t := matrixTimeTeam(e)
+		return e.call(http.MethodGet, "/v1/reports/projects?from=2026-10-01&to=2026-10-31", t.as(e, tok, t.wei), nil), nil
+	},
+	"listProjectTimeEntries": func(e *env, tok string) (response, func() bool) {
+		t := matrixTimeTeam(e)
+		return e.call(http.MethodGet, "/v1/projects/"+t.project+"/time-entries?from=2026-10-01&to=2026-10-31", t.as(e, tok, t.wei), nil), nil
+	},
 	"getProjectTimeCost": func(e *env, tok string) (response, func() bool) {
 		t := matrixTimeTeam(e)
 		return e.call(http.MethodGet, "/v1/projects/"+t.project+"/time-cost?from=2090-01-01&to=2090-01-31", t.as(e, tok, t.wei), nil), nil

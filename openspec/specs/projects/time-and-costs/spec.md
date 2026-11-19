@@ -249,6 +249,20 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **THEN** Acme's cost counts staff cost once (time at cost)
 - **AND** the tagged salary appears on a separate reconciliation line, not in direct costs
 
+#### Scenario: Lines tagged with no project (rev 0.296)
+- **WHEN** the project report is shown to someone who sees every project
+- **THEN** a row for lines tagged with no project is shown, so every project plus that row equals the revenue and expense accounts' totals
+
+#### Scenario: Cost by tier in the report (rev 0.296)
+- **WHEN** the report shows time at cost
+- **THEN** a person's own rate is used only for the Owner and the Payroll administrator
+- **AND** others see the role average over at least three people or the standard rate, and the AR specialist sees revenue and hours only
+
+#### Scenario: Project checks (rev 0.296)
+- **GIVEN** a project over its hours budget, a week submitted or returned more than 7 days ago, or a closed week with no approved time
+- **WHEN** the checks run
+- **THEN** C.1 #26, C.1 #27 and C.2 #41 each warn, name the project or week, and say how to fix it
+
 #### Scenario: Pattern change, leave across a holiday
 - **GIVEN** a part-timer whose working pattern changes mid-month, and a leave interval that spans a public holiday and is later cancelled in part
 - **WHEN** available hours are computed

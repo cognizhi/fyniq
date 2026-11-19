@@ -841,6 +841,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/projects/{project_id}/billing-rates` (listBillingRates): List a project's billing rates
 - `GET /v1/projects/{project_id}/tasks` (listProjectTasks): List a project's tasks
 - `GET /v1/projects/{project_id}/time-cost` (getProjectTimeCost): Read a project's approved time and what it costs
+- `GET /v1/projects/{project_id}/time-entries` (listProjectTimeEntries): The approved time entries behind a project's figures
 - `GET /v1/public/document` (getPublicDocument): Open a quote or invoice through its link
 - `POST /v1/public/document/accept` (acceptQuoteByLink): Accept a quote through its link
 - `POST /v1/public/document/decline` (declineQuoteByLink): Decline a quote through its link
@@ -891,6 +892,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/report-exports/{export_id}/file` (getReportExportFile): Download one of my exports
 - `GET /v1/reports/budget-vs-actual` (getBudgetVsActual): Get Budget vs Actual
 - `GET /v1/reports/general-ledger` (getGeneralLedger): Get the general ledger report
+- `GET /v1/reports/projects` (getProjectReport): Project profitability, utilisation and realisation
 - `GET /v1/reports/sales-by-customer` (getSalesByCustomer): Get sales by customer
 - `GET /v1/reports/sales-by-item` (getSalesByItem): Get sales by item
 - `GET /v1/reports/schedules` (getSchedules): Get the prepayment and deferral schedules

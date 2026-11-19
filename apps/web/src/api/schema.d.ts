@@ -13573,6 +13573,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project_id}/time-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The approved time entries behind a project's figures
+         * @description The project's approved entries between two days, reversing entries included, by day: the drill-down of its hours and cost (FR-PRJ-12). Hours only, never a rate or a cost. A person who reads only the projects they are on gets 404 for another one. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+         */
+        get: operations["listProjectTimeEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/public/document": {
         parameters: {
             query?: never;
@@ -14389,6 +14409,26 @@ export interface paths {
          * @description The general ledger of one to 20 accounts over a range of dates, in the base currency (FR-GL-11; PRD-001 rev 0.52, provisional): each account's balance before the range, its lines in posting order (date, revision, line) with the running balance and each line's source to open it, its debits and credits, and its closing balance; all read at one ledger revision, the latest or as_at_revision's (FR-RPT-08). At most 5,000 lines per account: a wider range is refused (REPORT-01) until the asynchronous export. Year-end (FR-GL-10; rev 0.56, provisional): revenue and expense accounts start each financial year from nothing, and the retained-earnings account's opening includes the profit or loss of every earlier year, computed, never posted; so a range lies within one financial year, and one that crosses a year's start is refused (REPORT-02). Needs an unqualified view of the reports: a view limited to sales, purchases, payroll, a department or the board pack does not reach every line. Read-only; no side effects.
          */
         get: operations["getGeneralLedger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reports/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Project profitability, utilisation and realisation
+         * @description For each project the caller may see, between two months: revenue and direct costs from the posted ledger through the balance service (payroll-cost accounts excluded and listed apart), the time at cost at the caller's tier (RND-TIME) and the margin = revenue - time at cost - direct costs, approved hours, billing at standard value and realisation, and budget use; each person's utilisation (billable over available hours); and the lines tagged with no project, so every project plus these tie to the ledger (FR-PRJ-12, QA-RPT-01). Time posts nothing. A person's own cost appears only for the Owner and the Payroll administrator; the AR specialist is given hours and revenue only; the AI never reads it. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+         */
+        get: operations["getProjectReport"];
         put?: never;
         post?: never;
         delete?: never;
@@ -44783,6 +44823,164 @@ export interface components {
              */
             user_id: string;
         };
+        ProjectReport: {
+            /**
+             * @description false when the caller may see hours only.
+             * @example true
+             */
+            costs_visible: boolean;
+            /**
+             * @description The base currency.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: date
+             * @description The first month's first day.
+             * @example 2026-11-01
+             */
+            from: string;
+            /** @description Each person's utilisation. */
+            people: components["schemas"]["ProjectReportPerson"][];
+            /** @description Each project the caller may see. */
+            projects: components["schemas"]["ProjectReportRow"][];
+            /**
+             * Format: date
+             * @description The last month's first day.
+             * @example 2026-11-01
+             */
+            to: string;
+            /** @description Revenue and costs of lines tagged with no project: every project plus these equal the revenue and expense accounts' totals (QA-RPT-01). Only for those who see every project, as it is company-wide. */
+            untagged?: components["schemas"]["ProjectReportRow"];
+        };
+        ProjectReportPerson: {
+            /**
+             * Format: int64
+             * @description The weekdays of the window less public holidays, at 8 hours a day (a working pattern and leave join with FR-PPL-07).
+             * @example 10080
+             */
+            available_minutes: number;
+            /**
+             * Format: int64
+             * @description Billable minutes.
+             * @example 8000
+             */
+            billable_minutes: number;
+            /**
+             * @description Their time at their own cost rate: only for the Owner and the Payroll administrator (FR-PAY-13).
+             * @example 9000.00
+             */
+            cost?: string;
+            /**
+             * Format: int64
+             * @description Approved net minutes.
+             * @example 9000
+             */
+            minutes: number;
+            /**
+             * @description Their name.
+             * @example Priya Nair
+             */
+            person_name: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+             */
+            user_id: string;
+            /**
+             * @description Billable over available, a percentage to one decimal.
+             * @example 79.4
+             */
+            utilisation: string;
+        };
+        ProjectReportRow: {
+            /**
+             * Format: int64
+             * @description Of them, the billable minutes.
+             * @example 12000
+             */
+            billable_minutes: number;
+            /**
+             * Format: int64
+             * @description The hours budget in minutes.
+             * @example 24000
+             */
+            budget_minutes?: number;
+            /**
+             * @description Approved minutes over the hours budget, a percentage to one decimal.
+             * @example 56.3
+             */
+            budget_used?: string;
+            /**
+             * @description Its code.
+             * @example ACME-01
+             */
+            code: string;
+            /**
+             * @description Its customer.
+             * @example Acme Pte Ltd
+             */
+            customer_name?: string;
+            /**
+             * @description Project-tagged posted costs on expense accounts WITHOUT the payroll-cost flag (FR-COA-02), in the base currency.
+             * @example 420.00
+             */
+            direct_costs?: string;
+            /**
+             * @description Revenue less time at cost less direct costs; absent when the time has no cost to use.
+             * @example 17580.00
+             */
+            margin?: string;
+            /**
+             * Format: int64
+             * @description Approved net minutes.
+             * @example 13500
+             */
+            minutes: number;
+            /**
+             * @description Its name.
+             * @example Acme rollout
+             */
+            name: string;
+            /**
+             * @description Project-tagged lines on payroll-cost accounts: listed to reconcile, never in direct costs, so salary tagged to a project is not counted twice (G4-049).
+             * @example 5000.00
+             */
+            payroll_tagged?: string;
+            /**
+             * Format: uuid
+             * @description The project.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+             */
+            project_id: string;
+            /**
+             * @description Where the time cost's rates came from.
+             * @example role_average
+             * @enum {string}
+             */
+            rate_basis: "person" | "role_average" | "standard" | "mixed" | "none";
+            /**
+             * @description Billed (revenue) over standard value, a percentage to one decimal.
+             * @example 83.3
+             */
+            realisation?: string;
+            /**
+             * @description Revenue posted to the project in the months, from posted ledger lines on revenue accounts, in the base currency.
+             * @example 30000.00
+             */
+            revenue: string;
+            /**
+             * @description Billable time at billing rates, in the base currency, when the project is billed in it.
+             * @example 36000.00
+             */
+            standard_value?: string;
+            /**
+             * @description Approved time at the viewer's cost rate (RND-TIME per entry); absent when no rate may be used.
+             * @example 12000.00
+             */
+            time_cost?: string;
+        };
         ProjectTask: {
             /**
              * @description false once put out of use: kept, as time names it.
@@ -51142,6 +51340,15 @@ export interface components {
              * @example 2026-11-17
              */
             work_date: string;
+        };
+        TimeEntryList: {
+            /** @description The approved entries by day; hours only, never a rate or a cost. */
+            items: components["schemas"]["TimeEntry"][];
+            /**
+             * @description Pass it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjEwMCJ9
+             */
+            next_cursor?: string;
         };
         TimerStart: {
             /**
@@ -159066,6 +159273,102 @@ export interface operations {
             };
         };
     };
+    listProjectTimeEntries: {
+        parameters: {
+            query: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+                /** @description The first day. */
+                from: string;
+                /** @description The last day, at most 366 days after the first. */
+                to: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project's ID. */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeEntryList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getPublicDocument: {
         parameters: {
             query?: never;
@@ -165068,6 +165371,86 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `REPORT-01` Too many lines for one report; `REPORT-02` The range crosses a financial year; `REPORT-04` A revision later than the ledger. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getProjectReport: {
+        parameters: {
+            query: {
+                /** @description A day in the first month. */
+                from: string;
+                /** @description A day in the last month, at most 12 months after the first. */
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectReport"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

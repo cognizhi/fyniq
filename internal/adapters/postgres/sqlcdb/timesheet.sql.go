@@ -134,18 +134,24 @@ func (q *Queries) DeleteTimeTimer(ctx context.Context, userID uuid.UUID) (int64,
 }
 
 const insertSubmission = `-- name: InsertSubmission :one
-INSERT INTO fyniq.timesheet_submission (user_id, project_id, week_start) VALUES ($1, $2, $3)
+INSERT INTO fyniq.timesheet_submission (user_id, project_id, week_start, submitted_at) VALUES ($1, $2, $3, $4)
 RETURNING organisation_id, id, user_id, project_id, week_start, status, submitted_at, decided_by, decided_at, comment, week_id, version
 `
 
 type InsertSubmissionParams struct {
-	UserID    uuid.UUID
-	ProjectID uuid.UUID
-	WeekStart time.Time
+	UserID      uuid.UUID
+	ProjectID   uuid.UUID
+	WeekStart   time.Time
+	SubmittedAt time.Time
 }
 
 func (q *Queries) InsertSubmission(ctx context.Context, arg InsertSubmissionParams) (FyniqTimesheetSubmission, error) {
-	row := q.db.QueryRow(ctx, insertSubmission, arg.UserID, arg.ProjectID, arg.WeekStart)
+	row := q.db.QueryRow(ctx, insertSubmission,
+		arg.UserID,
+		arg.ProjectID,
+		arg.WeekStart,
+		arg.SubmittedAt,
+	)
 	var i FyniqTimesheetSubmission
 	err := row.Scan(
 		&i.OrganisationID,

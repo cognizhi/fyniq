@@ -126,7 +126,7 @@ type Timesheets interface {
 	Reverse(ctx context.Context, id uuid.UUID) (TimeEntry, error)
 	// Submit sends a person's draft and returned entries of a project's week, as one submission at the app's clock.
 	// CodeTime when there are none.
-	Submit(ctx context.Context, user, project uuid.UUID, week time.Time) (Submission, []TimeEntry, error)
+	Submit(ctx context.Context, user, project uuid.UUID, week, at time.Time) (Submission, []TimeEntry, error)
 	// Decide approves or returns a submission at its version, and its entries with it; decider must be a manager of the
 	// project or the Controller, and never the person (the database repeats it, FY602).
 	Decide(ctx context.Context, id uuid.UUID, version int, decider uuid.UUID, approve bool, comment string, at time.Time) (Submission, error)
