@@ -57,7 +57,8 @@ accounts and total it pays now.
 ## Release a batch
 
 The Payment releaser selects **Release** and confirms it's you. Releasing records each payment as recording it by hand
-does, dated the payment date, and writes the payment list.
+does, dated the payment date, and writes the file the bank account is set to: the payment list unless Wise's batch
+payment file or DBS IDEAL's UFF has been chosen for it ([The file its payment batches give](banking.md#the-file-its-payment-batches-give)).
 
 In Standard mode the releaser is a third person, who neither prepared, asked for nor approved the batch, nor the change
 of a payee's bank account. In Founder mode the founder who prepared or approved it may release it; it is still never one
@@ -68,13 +69,18 @@ for approval under break-glass, within its limits ([Break-glass](team-mode.md#br
 
 ## Pay it in the bank
 
-1. Select **Download payment list** and confirm it's you. The list holds each payee's full account number, and each
-   download is recorded.
-2. Key each payment into your bank's bulk payment screen, and check the bank's count and total against the list's last
-   row.
+1. Select the download button, which names the file: **Download payment list**, **Download Wise batch file** or
+   **Download DBS UFF file**. Confirm it's you. The file holds each payee's full account number, and each download is
+   recorded.
+2. Put it into the bank:
+   - The payment list: key each payment into your bank's bulk payment screen, and check the bank's count and total
+     against the list's last row.
+   - Wise's batch payment file or DBS IDEAL's UFF: upload it to Wise or in DBS IDEAL, and check the count and total the
+     bank shows.
 3. Delete the file once the bank has it.
 
-The batch's page shows the list's SHA-256, so you can check a copy is the one released.
+The batch's page shows the file's name and its SHA-256, so you can check a copy is the one released. The file is the one the
+bank account was set to when the batch was released: changing the setting later never changes a released batch's file.
 
 ## Paid, and remittance advice
 

@@ -4,7 +4,7 @@ type: task
 title: Import bank statement files, with a preview first
 summary: Import CSV, XLSX, OFX, camt.053 or MT940 statements for one account or several, preview what each adds, and save a column mapping
 sources:
-  - docs/user-guide/banking.md sha256:019de19b09be6ac3fa40b7d3251ca8fa62beba74f7364724e67a934f577efdd8
+  - docs/user-guide/banking.md sha256:1fd6c0da3a4734ae8481580fe09a6b4f1464c01af923abc8ae8dfbd54e829fef
 data_class: general
 taint: trusted
 status: draft

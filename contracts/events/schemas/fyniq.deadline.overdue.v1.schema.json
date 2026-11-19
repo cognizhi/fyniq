@@ -1,0 +1,45 @@
+{
+  "$id": "https://github.com/cognizhi/fyniq/contracts/events/schemas/fyniq.deadline.overdue.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Fires when: A statutory deadline passed with nothing recorded. The data of the event, whose type is fyniq.deadline.overdue.v1: the IDs and the time only, never its title or any detail; the subscriber reads what it needs through the API, under its own rights.",
+  "properties": {
+    "occurred_at": {
+      "description": "When it happened.",
+      "format": "date-time",
+      "type": "string"
+    },
+    "organisation_id": {
+      "description": "The organisation it happened in.",
+      "format": "uuid",
+      "type": "string"
+    },
+    "record_id": {
+      "description": "That record's ID.",
+      "format": "uuid",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "record_type": {
+      "description": "What kind of record it is about, when it is about one.",
+      "maxLength": 40,
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "organisation_id",
+    "occurred_at"
+  ],
+  "title": "fyniq.deadline.overdue.v1",
+  "type": "object",
+  "x-fyniq-event": {
+    "category": "operations",
+    "type": "fyniq.deadline.overdue.v1",
+    "version": 1
+  }
+}
