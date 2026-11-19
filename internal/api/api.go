@@ -490,6 +490,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerEvidenceSearch(a)
 	registerEvidenceRulesList(a)
 	registerEvidenceFile(a)
+	registerEvidencePreview(a)
 	registerEvidenceDownloads(a)
 	registerSearch(a)
 	registerContactSummary(a)

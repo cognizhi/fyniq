@@ -4,14 +4,14 @@ type: task
 title: Find evidence across the records, and see what is missing
 summary: Search the files attached to records, open or save one, and list the posted records still missing their evidence
 sources:
-  - docs/user-guide/evidence-search.md sha256:a457de7d566afd5907cf298fb6099458ed439b5acc4572968c5f86327a77e4ed
+  - docs/user-guide/evidence-search.md sha256:adee18352d3e9d77fce32374eb931787136c6ac1231e0a4ba240c0c51b861684
 data_class: general
 taint: trusted
 status: published
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-17
+compiled_at: 2026-11-20
 aliases:
   - how long are files kept
   - retention of evidence
@@ -48,8 +48,9 @@ aliases:
 
 ## Open a file
 
-- In a record's **Evidence** panel, and in each row of **Find evidence**, **Show** (the eye) shows a picture, such as a photo of a receipt or a screenshot, below the list, and **Hide** closes it; a PDF is saved rather than shown.
-- **Save** (the arrow) saves any other file, such as a PDF or a spreadsheet; the saved copy keeps only the letters, digits, spaces, dots, dashes and underscores of its name.
+- In a record's **Evidence** panel, and in each row of **Find evidence**, **Show** (the eye) shows a picture, such as a photo of a receipt or a screenshot, below the list, and **Hide** closes it.
+- **Preview** (the eye, on a PDF) shows the first page of a PDF as a picture, drawn by a separate service in its own sandbox so nothing in the PDF runs; the picture is scanned, the audit trail records the fingerprints of the PDF and of the picture, and the picture is not kept. An encrypted or damaged PDF, or an installation with no preview service, says so and the file can still be saved.
+- **Save** (the arrow) saves any file, such as a PDF or a spreadsheet; the saved copy keeps only the letters, digits, spaces, dots, dashes and underscores of its name.
 - Only a file on a record your role lets you see opens; an Employee opens the receipts of their own claims. The file is checked against the fingerprint recorded when it was attached, each opening is in the audit trail, and a file taken off a draft does not open.
 
 (src: docs/user-guide/evidence-search.md#open-a-file)

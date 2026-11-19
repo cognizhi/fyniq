@@ -12,7 +12,7 @@
   `TestRetentionFollowsTheRecordsObligations`, `TestAContractIsKeptUntilItsTransactionsComplete` (with CTL-AUD-03's
   records check). Guide `evidence-search.md`, compiled.)
 - [x] 1.2 Add the `Scanner` port with a ClamAV adapter, an EICAR-flagging fake and the scanner service in the local stack as an optional profile. Test `// req: FR-DOC-01` (scan on upload) (20 Oct 2026: `ports.Scanner`, `local.EICARScanner`, `internal/adapters/clamav` on clamd's INSTREAM, `porttest.Scanner`, and the `scanner` profile in the local stack with `FYNIQ_CLAMD_ADDR`; a failing or missing scanner refuses the file. **Left:** clamd beside the API in the cloud, as a Cloud Run sidecar [verify], and its signature updates)
-- [ ] 1.3 Safe-file handling: type from content, 25 MB limit, HEIC conversion, metadata stripping, macro, ZIP and XML checks, safe previews, file names as data. Test `// req: FR-DOC-08` with a fuzz corpus per type (20 Oct 2026, part: the type from the content for PDF, PNG, JPEG, WebP, CSV, text, XLSX, DOCX, EML and MSG; 25 MB; metadata stripped from JPEG, PNG and WebP; macros, ActiveX and legacy OLE refused; the archive limits read from the ZIP directory; file names kept as data; `FuzzStripMetadata` with a seed corpus. **Left:** HEIC conversion (refused until then, rev 0.38), safe PDF previews, the safe name in download headers (no download yet), XML parsing rules once a part is parsed, and a fuzz corpus per type)
+- [x] 1.3 Safe-file handling: type from content, 25 MB limit, HEIC conversion, metadata stripping, macro, ZIP and XML checks, safe previews, file names as data. Test `// req: FR-DOC-08` with a fuzz corpus per type (20 Oct 2026, part: the type from the content for PDF, PNG, JPEG, WebP, CSV, text, XLSX, DOCX, EML and MSG; 25 MB; metadata stripped from JPEG, PNG and WebP; macros, ActiveX and legacy OLE refused; the archive limits read from the ZIP directory; file names kept as data; `FuzzStripMetadata` with a seed corpus. **Left:** HEIC conversion (refused until then, rev 0.38), safe PDF previews, the safe name in download headers (no download yet), XML parsing rules once a part is parsed, and a fuzz corpus per type)
   (17 Nov 2026, part: a HEIC photo is refused with its own message, to export it as JPEG (`IsHEIC`, by its file-type
   box); a file name loses its control, line-separating and invisible format characters too (a right-to-left override),
   and a safe name is its own safe name; the safe name is what the download headers carry (`createEvidenceDownload`, from
@@ -34,6 +34,14 @@
   Run service, which need a pinned HEIC decoder and PDF renderer (none is in the toolchain, and each has a licence to
   check against `make scan`); the converter's own infra; the safe PDF preview (an endpoint, where derived previews are kept
   and audited with both hashes), which the port already has a kind for.)
+  (20 Nov 2026, PRD-001 rev 0.321: the safe PDF preview is built. `GET /v1/evidence/{evidence_id}/preview`
+  (`getEvidencePreview`) has the converter port draw a PDF's first page as a PNG (`evidence.Preview`: the output's type from
+  its content, within 25 MB, scanned); for whoever may open the file, audited as an `evidence.opened` event with the SHA-256 of the
+  PDF and of the picture; a file that is no PDF or that the renderer cannot read is DOC-12, no converter is 503. Previews are
+  drawn when asked and not kept. Tests `TestAPDFPreviewIsAPictureTheConverterDrew`, `TestAPDFEvidenceFilePreviewsAsAPicture`,
+  the matrix row `getEvidencePreview`, `EvidenceSearch.test.tsx`, `JournalEvidence.test.tsx`; guide `evidence-search.md`,
+  compiled. Every part of the task is built; **Left, `[live-verify]`:** `cmd/converter`, its image, budget and Cloud Run
+  service, and the real PDF renderer and HEIC decoder behind it.)
 
 ## 2. Upload, attach, finalise
 
@@ -85,7 +93,7 @@
 ## 4. API and screens
 
 - [x] 4.1 Add `POST /v1/{collection}/{id}/evidence` (multipart, `Idempotency-Key`) to the contract; AI and MCP clients can only propose. Test `// req: FR-DOC-11` (20 Oct 2026: journals first: `addJournalEvidence`, `listJournalEvidence`, `getJournalEvidence`, `removeJournalEvidence`; the Evidence capability of Appendix D with the right to view the journal; AI and MCP clients refused. **Left:** the other collections as they arrive, and a download with a safe name)
-- [ ] 4.2 Build the Evidence panel (several typed files with notes and dates) and evidence-search as designed. Tests `// req: FR-DOC-05` and `// req: FR-DOC-01` (attach and preview); help keys and `docs/user-guide/` pages compiled into `kb/` **Left**
+- [x] 4.2 Build the Evidence panel (several typed files with notes and dates) and evidence-search as designed. Tests `// req: FR-DOC-05` and `// req: FR-DOC-01` (attach and preview); help keys and `docs/user-guide/` pages compiled into `kb/` **Left**
   (6 Nov 2026, PRD-001 rev 0.188: opening a file. `GET /v1/evidence/{evidence_id}/file` sends a file in base64 with its
   name as data, read from staging or, once final, from the locked store (the API's `Evidence` store, read only;
   `[live-verify]` its grant in the cloud), checked against its SHA-256 and audited (`evidence.opened`); the record's
@@ -103,4 +111,6 @@
   (18 Nov 2026: the panel takes the date a file relates to (`relates_on`, which the API had), sends a pasted screenshot as
   source `paste`, and each file has **Details**: its SHA-256 as stored and as received, how it arrived, its data class
   and who added it. Tests `JournalEvidence.test.tsx`; fragment `EvidencePanel.html`; guide `journals.md`, compiled.)
+  (20 Nov 2026: **Preview** on a PDF, in the panel and in the evidence search, shows its first page from `getEvidencePreview`
+  (task 1.3); the panel and search tests cover it and its refusals. Every item of the task is built.)
 - [ ] 4.3 Finish with `make check` and `make test`

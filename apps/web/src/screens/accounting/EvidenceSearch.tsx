@@ -10,7 +10,7 @@ import { date, dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
-import { openEvidence, pictures, type Shown } from "./JournalEvidence";
+import { openEvidence, pictures, previewEvidence, type Shown } from "./JournalEvidence";
 
 type Found = components["schemas"]["EvidenceFound"];
 type Activity = NonNullable<Found["record"]["activity"]>;
@@ -139,6 +139,16 @@ export function EvidenceSearch() {
     setOpening(f.id);
     setFailed(null);
     const out = await openEvidence(f.id, f.file_name);
+    setOpening("");
+    if (out.problem) return setFailed(out.problem);
+    if (out.shown) setShown(out.shown);
+  };
+
+  // preview shows a PDF's first page below the list, as the converter drew it.
+  const preview = async (f: Found) => {
+    setOpening(f.id);
+    setFailed(null);
+    const out = await previewEvidence(f.id, f.file_name);
     setOpening("");
     if (out.problem) return setFailed(out.problem);
     if (out.shown) setShown(out.shown);
@@ -289,6 +299,11 @@ export function EvidenceSearch() {
                       <td>{f.evidence_type}</td>
                       <td>{dateTime(f.uploaded_at)}</td>
                       <td>
+                        {f.media_type === "application/pdf" && (
+                          <Button variant="ghost" size="sm" onClick={() => void preview(f)} disabled={opening !== ""} aria-label={`Preview ${f.file_name}`} title="Show its first page below">
+                            <Icon of={Eye} />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
