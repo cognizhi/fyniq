@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approved": {
+      "format": "int64",
+      "type": "integer"
+    },
+    "quick": {
+      "format": "int64",
+      "type": "integer"
+    },
+    "user": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user",
+    "approved",
+    "quick"
+  ],
+  "title": "QualityApprover",
+  "type": "object"
+}

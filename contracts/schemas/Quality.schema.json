@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approved": {
+      "format": "int64",
+      "type": "integer"
+    },
+    "expired": {
+      "format": "int64",
+      "type": "integer"
+    },
+    "invalid": {
+      "format": "int64",
+      "type": "integer"
+    },
+    "made": {
+      "format": "int64",
+      "type": "integer"
+    },
+    "median_decision_seconds": {
+      "format": "double",
+      "type": "number"
+    },
+    "per_approver": {
+      "items": {
+        "$ref": "QualityApprover.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "quick_share": {
+      "format": "double",
+      "type": "number"
+    },
+    "rejected": {
+      "format": "int64",
+      "type": "integer"
+    },
+    "rejected_with_reason_share": {
+      "format": "double",
+      "type": "number"
+    },
+    "stale": {
+      "format": "int64",
+      "type": "integer"
+    },
+    "task_types": {
+      "items": {
+        "$ref": "QualityTaskType.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "made",
+    "approved",
+    "rejected",
+    "expired",
+    "invalid",
+    "stale",
+    "quick_share",
+    "median_decision_seconds",
+    "rejected_with_reason_share",
+    "per_approver",
+    "task_types"
+  ],
+  "title": "Quality",
+  "type": "object"
+}

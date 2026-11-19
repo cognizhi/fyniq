@@ -44,7 +44,7 @@ The owner is away: the decisions below are on the recommended option, owner to c
 **D4. Undo is a person's act through the domain's own reversal (AI-31, AI-91).**
 - An optional interface `proposal.Undoer` (`Undo(ctx, u, execution, base, as)`), so no existing command or fake changes.
   A command that does not implement it is not undoable, and the catalogue says so.
-- The operation `undoAIProposal` runs as the person (never the executor), who holds the command's right; it refuses
+- (As built: `POST /v1/ai/proposal-undos` with the proposal's ID in the body, because the contract lint ties a path under a record to its ETag.) The operation `undoAIProposal` runs as the person (never the executor), who holds the command's right; it refuses
   unless the proposal is Executed, the records are as it left them (the same base-version check as AI-P5) and, for
   ledger entries, the period is open. It runs in one transaction through the domain function a person would use: a draft
   is not undone (see below), an entry is reversed by a reversing entry, master data restored to its previous version.

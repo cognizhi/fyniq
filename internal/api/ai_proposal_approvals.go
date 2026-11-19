@@ -132,7 +132,7 @@ func (a *API) requestProposal(ctx context.Context, u storage.UnitOfWork, p authn
 	case p.Run != uuid.Nil:
 		method = runMFA
 	}
-	steps := []approval.Step{{Quorum: 1, Roles: roles}}
+	steps := proposalSteps(tt.Tier, roles)
 	r, err := u.Approvals().Request(ctx, storage.NewApprovalRequest{ObjectType: c.ObjectType, ObjectKey: c.ObjectKey, Operation: c.Operation,
 		Summary: c.Summary, Change: change, Envelope: string(envelope), EnvelopeHash: approval.Hash(envelope), PolicyVersion: policy.Version,
 		PolicySteps: storageSteps(steps), RequestedBy: p.UserID, RequestedAt: now, RequesterMFAMethod: method, RequesterMFAAt: now,
@@ -141,6 +141,17 @@ func (a *API) requestProposal(ctx context.Context, u storage.UnitOfWork, p authn
 		return storage.ApprovalRequest{}, err
 	}
 	return r, nil
+}
+
+// proposalSteps are the steps of a proposal's request (AI-09, AI-92): one step of the task type's approver roles, and for tier 3, which no release's
+// catalogue holds (reserved), two, each signed by a different person in every team mode: the engine refuses a second signature by anyone who has
+// signed the request, and the person who asked never signs above tier 1 (proposalRule.SelfSign).
+func proposalSteps(tier int, roles []string) []approval.Step {
+	steps := []approval.Step{{Quorum: 1, Roles: roles}}
+	if tier >= proposal.Tier3 {
+		steps = append(steps, approval.Step{Quorum: 1, Roles: roles})
+	}
+	return steps
 }
 
 // aiProposalDependencies are a proposal's envelope dependencies: its status and payload's hash, at its version.

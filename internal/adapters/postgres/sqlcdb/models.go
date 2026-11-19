@@ -444,6 +444,23 @@ type FyniqAiProposal struct {
 	McpApp            *string
 }
 
+type FyniqAiProposalUndo struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProposalID     uuid.UUID
+	UndoneBy       uuid.UUID
+	UndoneAt       time.Time
+	Reason         string
+	Reversed       []byte
+}
+
+type FyniqAiProposalView struct {
+	OrganisationID uuid.UUID
+	ProposalID     uuid.UUID
+	UserID         uuid.UUID
+	FirstViewedAt  time.Time
+}
+
 type FyniqAiQualification struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -462,6 +479,16 @@ type FyniqAiQualification struct {
 	RanAt          time.Time
 	OutOfDateAt    *time.Time
 	OutOfDateWhy   *string
+}
+
+type FyniqAiQualityReview struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Month          time.Time
+	SignedBy       uuid.UUID
+	SignedAt       time.Time
+	Report         []byte
+	Note           *string
 }
 
 type FyniqAiReservation struct {

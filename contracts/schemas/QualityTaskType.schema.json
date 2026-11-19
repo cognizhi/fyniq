@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "count": {
+      "format": "int64",
+      "type": "integer"
+    },
+    "share": {
+      "description": "Of the month's proposals, from 0 to 1.",
+      "format": "double",
+      "type": "number"
+    },
+    "task_type": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "task_type",
+    "count",
+    "share"
+  ],
+  "title": "QualityTaskType",
+  "type": "object"
+}

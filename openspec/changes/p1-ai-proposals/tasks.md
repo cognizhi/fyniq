@@ -21,12 +21,19 @@
 
 ## 2. Undo, tier 3 and approval quality
 
-- [ ] 2.1 Undo (design D4): `proposal.Undoer`, `undoAIProposal`, `ai_proposal_undo`; the posting and master-data types implement it as they arrive, the drafts are not undoable. Tests
-  `// req: AI-31`, `// req: AI-91`.
-- [ ] 2.2 Tier 3 in the engine (design D5): two steps, two different people, with a test-only type. Tests `// req: AI-09`,
-  `// req: AI-92`.
-- [ ] 2.3 Approval quality (design D6): the first-view record, the month's report, the signed review. Tests
-  `// req: CTL-AI-07`, `// req: AI-92`.
+- [x] 2.1 Undo (design D4): `proposal.Undoer`, `undoAIProposal`, the append-only record. Tests `// req: AI-31`, `// req: AI-91`.
+  As built (migration 000952): `POST /v1/ai/proposal-undos` runs as the person (the command's right, as to do it themselves) through the command's
+  own `Undo`, in one transaction, once, only for an Executed proposal whose command implements `Undoer` (AI-UNDO-01 to 04), and keeps who, when,
+  why and what was reversed in `ai_proposal_undo` (append-only, FY951), audited; the proposal stays Executed. No real task type implements
+  `Undoer` yet: the drafts are not undoable by design, and the posting and master-data types add it as they are built (tests use a test-only
+  undoable type). **Left:** the Undo button on the proposal review (web) and its guide text.
+- [x] 2.2 Tier 3 in the engine (design D5): `proposalSteps` gives a tier-3 request two steps; the engine already refuses a second signature by
+  the same person and the requester's own above tier 1. Proved on a request built with two steps (no catalogue loads a tier-3 type, and none
+  is added for the test). Tests `// req: AI-09`, `// req: AI-92`.
+- [x] 2.3 Approval quality (design D6): `ai_proposal_view` records each person's first look at a review (when they open `getAIProposal`);
+  `proposal.MeasureQuality` computes the month's metrics; `GET /v1/ai/approval-quality?month=` (Owner, DPO) and `POST /v1/ai/approval-reviews`
+  (Owner, DPO, step-up, after the month, once, with the metrics as signed) keep the review as CTL-AI-07's evidence (control file running).
+  Tests `// req: CTL-AI-07`, `// req: AI-92`. **Left:** the report's screen under Settings, AI, AI tasks.
 
 ## 3. The other tier-1 types
 

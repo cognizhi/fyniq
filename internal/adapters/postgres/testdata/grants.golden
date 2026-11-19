@@ -60,9 +60,15 @@ fyniq_api       SELECT    ai_price_rate
 fyniq_api       INSERT    ai_proposal (agent, evidence, expires_at, item_count, mcp_app, model, payload, payload_sha256, prompt, proposed_at, rationale, requested_by, required_approvals, risk_tier, run_id, task_sha256, task_type, task_version, tools_sha256, turn_id)
 fyniq_api       SELECT    ai_proposal
 fyniq_api       UPDATE    ai_proposal (approval_request_id, approved_items, approved_payload, approved_sha256, base_versions, decided_at, decided_by, impact, reason, status, superseded_by, version)
+fyniq_api       INSERT    ai_proposal_undo (proposal_id, reason, reversed, undone_at, undone_by)
+fyniq_api       SELECT    ai_proposal_undo
+fyniq_api       INSERT    ai_proposal_view (first_viewed_at, proposal_id, user_id)
+fyniq_api       SELECT    ai_proposal_view
 fyniq_api       INSERT    ai_qualification (agent, cases, connection_id, model, passed, ran_at, ran_by, result, run_id, suite, suite_version, threshold, version)
 fyniq_api       SELECT    ai_qualification
 fyniq_api       UPDATE    ai_qualification (out_of_date_at, out_of_date_why)
+fyniq_api       INSERT    ai_quality_review (month, note, report, signed_at, signed_by)
+fyniq_api       SELECT    ai_quality_review
 fyniq_api       SELECT    ai_reservation
 fyniq_api       EXECUTE   ai_reserve()
 fyniq_api       INSERT    ai_route (agent, approval_id, classes, made_at, made_by, preset, version)
@@ -779,7 +785,10 @@ fyniq_readonly  SELECT    ai_price
 fyniq_readonly  SELECT    ai_price_catalogues
 fyniq_readonly  SELECT    ai_price_rate
 fyniq_readonly  SELECT    ai_proposal
+fyniq_readonly  SELECT    ai_proposal_undo
+fyniq_readonly  SELECT    ai_proposal_view
 fyniq_readonly  SELECT    ai_qualification
+fyniq_readonly  SELECT    ai_quality_review
 fyniq_readonly  SELECT    ai_reservation
 fyniq_readonly  SELECT    ai_route
 fyniq_readonly  SELECT    ai_route_step
@@ -1025,10 +1034,13 @@ fyniq_worker    INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_worker    SELECT    ai_price_rate
 fyniq_worker    SELECT    ai_proposal
 fyniq_worker    UPDATE    ai_proposal (decided_at, status, version)
+fyniq_worker    SELECT    ai_proposal_undo
+fyniq_worker    SELECT    ai_proposal_view
 fyniq_worker    EXECUTE   ai_purge_conversations()
 fyniq_worker    INSERT    ai_qualification (agent, cases, connection_id, model, passed, ran_at, ran_by, result, run_id, suite, suite_version, threshold, version)
 fyniq_worker    SELECT    ai_qualification
 fyniq_worker    UPDATE    ai_qualification (out_of_date_at, out_of_date_why)
+fyniq_worker    SELECT    ai_quality_review
 fyniq_worker    SELECT    ai_reservation
 fyniq_worker    EXECUTE   ai_reserve()
 fyniq_worker    SELECT    ai_route

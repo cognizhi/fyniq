@@ -21,3 +21,15 @@ var (
 	DraftClaimFromCapture = Policy{Operation: "draftClaimFromCapture", Capability: ExpenseClaims, Need: Create, Parent: Bills,
 		Note: "Makes the caller's own draft claim from a read receipt."}
 )
+
+// The rest of the AI proposals (PRD-001 AI-31, AI-91, AI-92, CTL-AI-07; p1-ai-proposals): undoing an executed proposal, and the month's approval-quality
+// report and its signed review. Each is a person's, on the AI activity log's row, decided by the record or the role in the handler: the AI's column
+// is "—", so no AI or MCP client reaches them (§9.6).
+var (
+	UndoAIProposal = Policy{Operation: "undoAIProposal", Capability: AIActivity, Need: View, ByRecord: true,
+		Note: "Undoes an executed proposal as the person who holds the right its command needs, through the domain's own reversal (AI-31, AI-91)."}
+	GetAIApprovalQuality = Policy{Operation: "getAIApprovalQuality", Capability: AIActivity, Need: View, ByRecord: true,
+		Note: "The month's approval-quality metrics, for the Owner and the DPO (CTL-AI-07)."}
+	SignAIApprovalReview = Policy{Operation: "signAIApprovalReview", Capability: AIActivity, Need: View, ByRecord: true,
+		Note: "Signs the month's review of the approval-quality metrics, as the Owner or the DPO, after step-up (CTL-AI-07)."}
+)
