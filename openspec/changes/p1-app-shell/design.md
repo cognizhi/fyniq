@@ -82,7 +82,7 @@
   server-sent events changes the web app's reader only. Not built in this change's slices: it needs a measurement in the cloud
   (`[live-verify]`).
 
-- **The entry grid is our own, not AG Grid Community** (`components/EntryGrid.tsx`, PRD-001 rev 0.377, MASTER.md's "AG Grid (entry grids)" changed,
+- **The entry grid is our own, not AG Grid Community** (`components/EntryGrid.tsx`, PRD-001 rev 0.383, MASTER.md's "AG Grid (entry grids)" changed,
   owner to confirm). FR-UX-07 asks for range selection, fill down, multi-cell edit and a paste from Excel; in AG Grid those are Enterprise features,
   so the Community edition would have meant building them on top of a large dependency, over a bundle that is above its budget already. The grid draws
   only the rows in view (a fixed row height and a scroll position), is an ARIA grid with one tab stop, and keeps amounts as decimal strings: a sum

@@ -126,7 +126,7 @@
 ## 3. Grids, records and correctness
 
 - [ ] 3.1 The grid (Community edition until the licence arrives) virtualised to 100,000 rows, and statement tables with TanStack. Tests `// req: FR-UX-07` and `// req: NFR-PERF-UI-02` (≥ 50 fps in Playwright tracing)
-  (20 Nov 2026, PRD-001 rev 0.377, FR-UX-07 and FR-UX-20 in part: the shared entry grid, `components/EntryGrid.tsx` with its model `entryGridModel.ts`, `format/arithmetic.ts`
+  (20 Nov 2026, PRD-001 rev 0.383, FR-UX-07 and FR-UX-20 in part: the shared entry grid, `components/EntryGrid.tsx` with its model `entryGridModel.ts`, `format/arithmetic.ts`
   (`=` sums exact on scaled integers) and `format/table.ts` (the spreadsheet clipboard's tables). Built on our own windowing, not AG Grid Community (design.md,
   owner to confirm): keyboard-first (arrows, Shift-selection, Home, End, Page Up and Down, Tab across and out at the end, type or Enter or F2 to edit, Delete, Ctrl+Enter,
   Ctrl+D, Ctrl+Z, Ctrl+Y, Ctrl+C), a paste preview with the cells that do not fit flagged, inline validation with status chips, 100,000 rows drawn as ~25.

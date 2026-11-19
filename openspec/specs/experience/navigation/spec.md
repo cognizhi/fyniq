@@ -464,12 +464,12 @@ Source: PRD-001 §7.2 · Priority M · Phase P1
 - **WHEN** a grid holds 100,000 rows
 - **THEN** it is virtualised and stays usable
 
-#### Scenario: A paste is shown before it is set (rev 0.377)
+#### Scenario: A paste is shown before it is set (rev 0.383)
 - **WHEN** the user pastes cells from a spreadsheet into a grid
 - **THEN** the grid shows what it read, flags the cells that do not fit their column and says how many rows it adds
 - **AND** it sets them only when the user applies the paste, and leaves the grid as it was when they cancel
 
-#### Scenario: The keyboard is never trapped (rev 0.377)
+#### Scenario: The keyboard is never trapped (rev 0.383)
 - **WHEN** the keyboard focus is in a grid
 - **THEN** the arrow keys move between cells, Enter edits, Escape cancels and Tab leaves the grid at its last cell
 
