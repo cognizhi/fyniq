@@ -109,6 +109,8 @@ type UnitOfWork interface {
 	SavedItems() SavedItems
 	// PeopleLinks are the link to Nemura, the inbox of its events and the employee projection (FR-PPL-06, 15, 16).
 	PeopleLinks() PeopleLinks
+	// PayrollRuns are the pay-run mapping and the receipts of the runs posted from the people platform (FR-PPL-04, 09, 11).
+	PayrollRuns() PayrollRuns
 	// MCPOptIns are each person's opt-in to AI apps over MCP (AI-35).
 	MCPOptIns() MCPOptIns
 	// MCPCalls are the AI apps' calls over MCP, for the activity log, the limits and the detection (AI-43 to AI-45).

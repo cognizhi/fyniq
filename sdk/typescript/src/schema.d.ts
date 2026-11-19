@@ -13653,6 +13653,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll-mapping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show the account mapping pay runs post by
+         * @description The current version of what each department's salary and each kind of deduction post to (FR-EMP-02's minimum, p1-payroll-link design D8), for the people with payroll rights. A pay run is calculated against one version and Fyniq refuses a run for another. Read-only; no side effects.
+         */
+        get: operations["getPayrollMapping"];
+        put?: never;
+        /**
+         * Set the next version of the account mapping
+         * @description Sets the next version of the mapping pay runs post by (FR-EMP-02's minimum): each department's salary expense account and each kind of deduction's account. A new version makes a run calculated against the old one refused until Nemura recalculates it. Side effects: the new version and its audit event. Idempotent with Idempotency-Key. On the never-list for the AI and MCP (§9.6). Left: dual control by the approval engine.
+         */
+        post: operations["setPayrollMapping"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people-link": {
         parameters: {
             query?: never;
@@ -13691,6 +13715,26 @@ export interface paths {
          * @description Nemura's `people.tax_hold.changed` (PRD-002 NM-INT-08, Appendix E): a person held from a date, or released after IRAS's notice or directive recorded with evidence. It needs the link's client and the scope people.holds.write and is checked, applied once and versioned exactly as receivePeopleProjectionEvent is. A held person's lines are not released (FR-PPL-13); only Nemura's release clears a hold. Only the link's client may call it; on the never-list for the AI and MCP (§9.6).
          */
         post: operations["receivePeopleHoldEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people-link/payroll-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receive an approved pay run from Nemura and post it
+         * @description Nemura's `payroll.run.approved` (PRD-002 Appendix E, NM-INT-06): the link's envelope carrying the approval envelope over the run's canonical figures, its SHA-256 and the approver's signed record. It needs the link's client and the scope payroll.journal.submit. Before anything posts, Fyniq verifies in one transaction the link's signature and epoch, the approval envelope's digest, the linked organisation, that the preparer is not the approver and the approver held the right, the approver's passkey assertion against a passkey they enrolled in Fyniq, the account-mapping version, that the envelope is unused and the version newer than any posted; each failure has its own code (PPL-11 to PPL-19), posts nothing, creates nothing and is audited. It then posts the difference from what the run's earlier versions posted (payroll_run@1) under the period locks and checks of any posting: department salary expense, employer CPF, SDL, 2110, 2100, deductions and claims paid with salary, no per-person line, attributed to the approver via Nemura; a closed wage month's difference posts in the current open month. Side effects: the entry, the receipt and the inbox row, with their audit events. Idempotent on the event ID (a repeat answers duplicate). Only the link's client may call it; on the never-list for the AI and MCP (§9.6).
+         */
+        post: operations["submitPayrollRun"];
         delete?: never;
         options?: never;
         head?: never;
@@ -45843,6 +45887,83 @@ export interface components {
              */
             txn_id: string;
         };
+        PayrollMapping: {
+            /**
+             * @description department:<department ID> or deduction:<kind> -> the account's ID.
+             * @example {
+             *       "department:0192a000-0000-7000-8000-0000000000d1": "0192a000-0000-7000-8000-000000006011"
+             *     }
+             */
+            entries: {
+                [key: string]: string;
+            };
+            /**
+             * Format: date-time
+             * @description When it was set.
+             * @example 2026-11-20T09:00:00Z
+             */
+            set_at?: string;
+            /**
+             * @description Who set it.
+             * @example user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            set_by?: string;
+            /**
+             * Format: int64
+             * @description The mapping's version: a run is calculated against one, and Fyniq refuses a run for another than the current one.
+             * @example 1
+             */
+            version: number;
+        };
+        PayrollMappingChange: {
+            /**
+             * @description department:<department ID> (a dimension value of the Department dimension) or deduction:<kind> -> the account's ID: a salary expense account, or the asset or liability account a deduction is recovered through (1250 for an advance recovered).
+             * @example {
+             *       "department:0192a000-0000-7000-8000-0000000000d1": "0192a000-0000-7000-8000-000000006011"
+             *     }
+             */
+            entries: {
+                [key: string]: string;
+            };
+        };
+        PayrollRunReceipt: {
+            /**
+             * Format: uuid
+             * @description The journal entry it posted.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            entry_id?: string;
+            /**
+             * Format: uuid
+             * @description The event's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            event_id: string;
+            /**
+             * @description posted: the difference is in the ledger; unchanged: the version states the figures already posted, so nothing posted; duplicate: the event was received before.
+             * @example posted
+             * @enum {string}
+             */
+            outcome: "posted" | "unchanged" | "duplicate";
+            /**
+             * Format: date
+             * @description The day it posted: the wage month's last day, or the current open month's day when the wage month is closed (FR-PPL-11).
+             * @example 2026-10-31
+             */
+            posting_date?: string;
+            /**
+             * Format: uuid
+             * @description The run.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            run_id?: string;
+            /**
+             * Format: int64
+             * @description The version.
+             * @example 2
+             */
+            version?: number;
+        };
         PdRequestsOutputBody: {
             /** @description The requests, oldest first. */
             items: components["schemas"]["PDRequestView"][];
@@ -45851,11 +45972,13 @@ export interface components {
             /**
              * Format: uuid
              * @description The API client Nemura calls with: its scopes are Appendix E's and no other.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
              */
             client_id?: string;
             /**
              * Format: int64
              * @description The link's epoch: every event carries it and an earlier one is refused (FR-PPL-16).
+             * @example 1
              */
             epoch?: number;
             /** @description The events received, by outcome. */
@@ -45863,23 +45986,27 @@ export interface components {
             /**
              * Format: date-time
              * @description When it was linked.
+             * @example 2026-11-20T09:00:00Z
              */
             linked_at?: string;
             /**
              * Format: uuid
              * @description The Nemura organisation it is linked to.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
              */
             nemura_organisation_id?: string;
             /** @description Where each feature lives now. */
             sources: components["schemas"]["PeopleLinkSource"][];
             /**
              * @description none: never linked; unlinked is final, and a later link starts at a higher epoch.
+             * @example active
              * @enum {string}
              */
             state: "none" | "active" | "suspended" | "unlinking" | "unlinked";
             /**
              * Format: int64
              * @description The link's version.
+             * @example 1
              */
             version?: number;
         };
@@ -45889,74 +46016,98 @@ export interface components {
             payload: {
                 [key: string]: unknown;
             };
-            /** @description Ed25519 over the canonical header, base64url without padding, with the link key (contracts/peoplelink). */
+            /**
+             * @description Ed25519 over the canonical header, base64url without padding, with the link key (contracts/peoplelink).
+             * @example EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE5S1xv2o8mZl7sQd0pTuHk3r9iV6bYw4cG1nXfA2JgQ
+             */
             signature: string;
         };
         PeopleLinkHeader: {
             /**
              * Format: uuid
              * @description Ties the event to its cause.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
              */
             correlation_id: string;
             /**
              * Format: date-time
              * @description When the change took effect, RFC 3339 in UTC.
+             * @example 2026-11-20T09:00:00Z
              */
             effective_at: string;
             /**
              * Format: int64
              * @description The link's epoch; an earlier or a later one is refused.
+             * @example 1
              */
             epoch: number;
             /**
              * Format: uuid
              * @description The event's ID: a repeat does nothing.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
              */
             event_id: string;
-            /** @description The object's ID. */
+            /**
+             * @description The object's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
             object_id: string;
-            /** @description The kind of object the event is about. */
+            /**
+             * @description The kind of object the event is about.
+             * @example person
+             */
             object_type: string;
             /**
              * Format: int64
              * @description The object's version: an older one than applied is ignored.
+             * @example 2
              */
             object_version: number;
-            /** @description The SHA-256 of the payload's canonical JSON (contracts/peoplelink). */
+            /**
+             * @description The SHA-256 of the payload's canonical JSON (contracts/peoplelink).
+             * @example 54a65415ad370228851a1da4b31b6fd42dc58b19a50d35cae759325f7388ce64
+             */
             payload_sha256: string;
             /**
              * Format: date-time
              * @description When the sender recorded it.
+             * @example 2026-11-20T09:00:00Z
              */
             recorded_at: string;
             /**
              * Format: int64
              * @description The payload schema's version.
+             * @example 1
              */
             schema_version: number;
             /**
              * Format: int64
              * @description The sender's running number on this link, for gap repair and the reconciliation checkpoint.
+             * @example 41
              */
             sequence: number;
             /**
              * Format: date-time
              * @description When it was signed: more than 5 minutes from now is refused.
+             * @example 2026-11-20T09:00:01Z
              */
             signed_at: string;
             /**
              * Format: uuid
              * @description The Nemura organisation.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
              */
             source_organisation: string;
             /**
              * @description The sending system.
+             * @example nemura
              * @enum {string}
              */
             source_system: "nemura";
             /**
              * Format: uuid
              * @description This organisation.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
              */
             target_organisation: string;
             /**
@@ -45969,15 +46120,18 @@ export interface components {
             /**
              * Format: int64
              * @description How many.
+             * @example 12
              */
             count: number;
             /**
              * Format: date-time
              * @description When the last arrived.
+             * @example 2026-11-20T09:00:00Z
              */
             last_at?: string;
             /**
              * @description What became of them.
+             * @example applied
              * @enum {string}
              */
             outcome: "applied" | "ignored_older" | "refused";
@@ -45986,10 +46140,12 @@ export interface components {
             /**
              * Format: uuid
              * @description The event's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
              */
             event_id: string;
             /**
              * @description applied; ignored_older: a version no newer than the one applied, recorded and changing nothing; duplicate: the event ID was received before.
+             * @example applied
              * @enum {string}
              */
             outcome: "applied" | "ignored_older" | "duplicate";
@@ -46023,25 +46179,34 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
              */
             nemura_organisation_id: string;
+            /**
+             * @description Where Nemura's web app is served from, such as https://people.example.com: a passkey assertion made there names it, and Fyniq checks a pay run's approval against it (one relying-party ID, two origins).
+             * @example https://people.example.com
+             */
+            nemura_origin: string;
         };
         PeopleLinkSource: {
             /**
              * Format: date
              * @description The day it started there; the start day of a change of source (FR-PPL-16).
+             * @example 2026-11-20
              */
             effective_from: string;
             /**
              * @description The feature.
+             * @example payroll
              * @enum {string}
              */
             feature: "records" | "payroll" | "leave" | "letters";
             /**
              * Format: date-time
              * @description When it was set.
+             * @example 2026-11-20T09:00:00Z
              */
             set_at: string;
             /**
              * @description Where it lives: Nemura, an external system, or nowhere (payroll posted by manual journal).
+             * @example nemura
              * @enum {string}
              */
             source: "nemura" | "external" | "none";
@@ -162523,6 +162688,212 @@ export interface operations {
             };
         };
     };
+    getPayrollMapping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollMapping"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPayrollMapping: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollMappingChange"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollMapping"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getPeopleLink: {
         parameters: {
             query?: never;
@@ -162790,6 +163161,103 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `PPL-01` The event is not well formed; `PPL-09` The event carries more than the people platform shares (PRD-002 Appendix E). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    submitPayrollRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeopleLinkEvent"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollRunReceipt"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PPL-02` The event's signature does not verify with the link key; `PPL-03` The event's payload is not the one its signed header names; `PPL-04` The event was signed more than 5 minutes from now; `PPL-05` The event is of another epoch of the link; `PPL-06` The event is not from the linked organisation to this one; `PPL-08` The event came through a client that is not the link's; `PPL-12` The approval was signed for another organisation; `PPL-13` The run's preparer cannot approve it; `PPL-14` The approver did not hold the right to approve a pay run; `PPL-15` The approver's signed record does not verify against their passkey; `PPL-19` The approver has no sign-in identity or passkey in Fyniq. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `PPL-07` The organisation has no active link to the people platform; `PPL-16` The run was calculated against another account mapping than Fyniq's current one; `PPL-17` The approval envelope was used before; `PPL-18` The version is no newer than one already posted; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYROLL-RUN-01` A pay run's receipt is kept once, and a payroll entry needs one. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `LEDGER-01` The journal has no date; `LEDGER-04` An account does not exist; `LEDGER-11` A text is too long; `LEDGER-22` A system account is missing; `LEDGER-51` The pay run does not fit the posting rule; `PPL-01` The event is not well formed; `PPL-09` The event carries more than the people platform shares (PRD-002 Appendix E); `PPL-11` The approval envelope is not the one the approval names. */
             422: {
                 headers: {
                     [name: string]: unknown;

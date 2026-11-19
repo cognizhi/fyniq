@@ -27,6 +27,7 @@ type PeopleLinkRow struct {
 	State                string
 	Epoch                int
 	NemuraOrganisationID uuid.UUID
+	NemuraOrigin         string // where Nemura's web app is served from: a passkey assertion made there names it
 	LinkKey              []byte // Nemura's Ed25519 public key for the link's envelopes, given when the link was approved
 	ClientID             uuid.UUID
 	ApprovalID           uuid.UUID

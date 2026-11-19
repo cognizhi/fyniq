@@ -145,7 +145,8 @@
         "statements_approval",
         "corporate_document",
         "api_client",
-        "kb_publication"
+        "kb_publication",
+        "people_link"
       ]
     },
     "operation": {
@@ -233,7 +234,9 @@
         "corporate_document.record",
         "api_client.create",
         "api_client.reclass",
-        "kb_publication.publish"
+        "kb_publication.publish",
+        "people_link.link",
+        "people_link.unlink"
       ]
     },
     "policy": {

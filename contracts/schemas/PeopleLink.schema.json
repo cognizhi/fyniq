@@ -4,11 +4,17 @@
   "properties": {
     "client_id": {
       "description": "The API client Nemura calls with: its scopes are Appendix E's and no other.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
       "format": "uuid",
       "type": "string"
     },
     "epoch": {
       "description": "The link's epoch: every event carries it and an earlier one is refused (FR-PPL-16).",
+      "examples": [
+        1
+      ],
       "format": "int64",
       "type": "integer"
     },
@@ -21,11 +27,17 @@
     },
     "linked_at": {
       "description": "When it was linked.",
+      "examples": [
+        "2026-11-20T09:00:00Z"
+      ],
       "format": "date-time",
       "type": "string"
     },
     "nemura_organisation_id": {
       "description": "The Nemura organisation it is linked to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
       "format": "uuid",
       "type": "string"
     },
@@ -45,10 +57,16 @@
         "unlinking",
         "unlinked"
       ],
+      "examples": [
+        "active"
+      ],
       "type": "string"
     },
     "version": {
       "description": "The link's version.",
+      "examples": [
+        1
+      ],
       "format": "int64",
       "type": "integer"
     }

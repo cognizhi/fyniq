@@ -12,6 +12,9 @@
     },
     "signature": {
       "description": "Ed25519 over the canonical header, base64url without padding, with the link key (contracts/peoplelink).",
+      "examples": [
+        "EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE5S1xv2o8mZl7sQd0pTuHk3r9iV6bYw4cG1nXfA2JgQ"
+      ],
       "maxLength": 200,
       "minLength": 1,
       "type": "string"

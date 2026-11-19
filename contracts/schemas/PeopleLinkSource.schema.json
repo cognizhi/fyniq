@@ -4,6 +4,9 @@
   "properties": {
     "effective_from": {
       "description": "The day it started there; the start day of a change of source (FR-PPL-16).",
+      "examples": [
+        "2026-11-20"
+      ],
       "format": "date",
       "type": "string"
     },
@@ -15,10 +18,16 @@
         "leave",
         "letters"
       ],
+      "examples": [
+        "payroll"
+      ],
       "type": "string"
     },
     "set_at": {
       "description": "When it was set.",
+      "examples": [
+        "2026-11-20T09:00:00Z"
+      ],
       "format": "date-time",
       "type": "string"
     },
@@ -28,6 +37,9 @@
         "nemura",
         "external",
         "none"
+      ],
+      "examples": [
+        "nemura"
       ],
       "type": "string"
     }

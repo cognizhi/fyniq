@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entries": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "department:\u003cdepartment ID\u003e or deduction:\u003ckind\u003e -\u003e the account's ID.",
+      "examples": [
+        {
+          "department:0192a000-0000-7000-8000-0000000000d1": "0192a000-0000-7000-8000-000000006011"
+        }
+      ],
+      "type": "object"
+    },
+    "set_at": {
+      "description": "When it was set.",
+      "examples": [
+        "2026-11-20T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "set_by": {
+      "description": "Who set it.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "The mapping's version: a run is calculated against one, and Fyniq refuses a run for another than the current one.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "entries"
+  ],
+  "title": "PayrollMapping",
+  "type": "object"
+}

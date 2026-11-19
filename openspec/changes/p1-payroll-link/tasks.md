@@ -49,19 +49,23 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
 - [ ] 4.1 The checks in the posting transaction (design D3, D6): link signature and epoch, payload digest against the envelope, the approver's passkey
   record, approver is not the preparer and held the right, the mapping version, the envelope unused; each failure refuses with its own stable code, no
   side effect, and the refusal audited.
+  (Built, 20 Nov 2026: `peoplelink.ParseRun` and `submitPayrollRun` (`POST /v1/people-link/payroll-runs`, scope `payroll.journal.submit`): the link's envelope, the approval envelope's SHA-256 against its canonical bytes, the linked organisation, preparer not approver, the approver's right, the approver's passkey assertion over that digest against a passkey enrolled in Fyniq (matched by issuer and subject; `passkey.ReverifyAt` at the link's `nemura_origin`), the mapping version, the envelope unused, the version newer; each failure has its own code `PPL-11` to `PPL-19`, posts nothing and is audited in a transaction of its own (`payroll_run.refused`, no figure). `TestAnApprovedPayRunPostsOnlyAfterItsAuthorityVerifies` refuses altered totals under an earlier approval, the preparer as approver, an approver without the right, another organisation, another mapping version, a stranger's passkey, a wrong origin, a digest the passkey did not sign and an approver with no identity. FR-PPL-09 is not tagged: its scenario "Imports stay drafts" waits for 7.1. **Left:** the approver's right is the envelope's own statement signed by the link (Fyniq cannot read Nemura's roles); the unused-envelope claim shares the transaction, a concurrent replay loses at the unique key.)
 - [ ] 4.2 Segregation as one chain (SOD-4; FR-PPL-10 is counted in `p1-nemura-fyniq-link`, whose Nemura half proves the other side): the preparer cannot approve or release the salary batch under any account (issuer and subject), the Founder-mode
   two-person rule applies, and break-glass cannot change a salary account, lift a hold or pay the person using it.
 
+  (Built in part: the preparer cannot be the approver in the same run (`PPL-13`, and the receipt table's own CHECK). **Left:** the salary batch's approver and releaser against the run (6.1), Founder mode FM-1, and the break-glass refusals, which need the salary batch.)
 ## 5. Posting a pay run (FR-PPL-04, 11; FR-PAY-07; the payroll posting rules)
 
-- [ ] 5.1 The rule `payroll_run@1` (design D7) with replay registration, the oracle's half written from PRD-001 §10.2 and B.3, the scenario schema and a
+- [x] 5.1 The rule `payroll_run@1` (design D7) with replay registration, the oracle's half written from PRD-001 §10.2 and B.3, the scenario schema and a
   differential scenario; the full `make differential` passes.
-  (Built, 20 Nov 2026: `ledger.PostPayrollRun` (`payroll_run@1`: the difference of a version from what the run's earlier versions posted; departments with dimension values, employer CPF, SDL, 2110, 2100, deductions, reimbursements; stale refused; `LEDGER-51`), `ReplayPayrollRun`; the oracle's `sources/payroll.py` written from PRD-001 §10.2 and B.3; the scenario schema, `golden/payroll.json`, `oracle/tests/test_payroll.py` and a Hypothesis strategy (`payroll` in `DIFFERENTIAL_SOURCES`); the full `make differential` passes. FR-PAY-07 is not tagged yet: its tests say "part of", until the verified path posts through it (5.3). **Left:** the replay registration over a stored run version waits for the run's table (5.3), and the Appendix B.3 per-employee-month formulas are `p1-nemura-payroll`'s.)
+  (Built, 20 Nov 2026: `ledger.PostPayrollRun` (`payroll_run@1`: the difference of a version from what the run's earlier versions posted; departments with dimension values, employer CPF, SDL, 2110, 2100, deductions, reimbursements; stale refused; `LEDGER-51`), `ReplayPayrollRun`; the oracle's `sources/payroll.py` written from PRD-001 §10.2 and B.3; the scenario schema, `golden/payroll.json`, `oracle/tests/test_payroll.py` and a Hypothesis strategy (`payroll` in `DIFFERENTIAL_SOURCES`); the full `make differential` passes. FR-PAY-07 is not tagged yet: its tests say "part of", until the verified path posts through it (5.3). **Left:** the replay registration over a stored run version (`ReplayPayrollRun` exists; wiring it into the replay walk needs the receipt's source rows, `internal/domain/journal/replay.go`), and the Appendix B.3 per-employee-month formulas are `p1-nemura-payroll`'s.)
 - [ ] 5.2 Corrections: the difference of a new version, a stale version refused, out-of-order convergence, a closed wage month posted in the open month,
   a withdrawn run reversed; economic uniqueness by organisation, source system, run and wage month.
+  (Built, 20 Nov 2026: a version posts the difference from the run's receipt totals (`ledger.PayrollPosted.Encode`), a stale version is refused (`PPL-18`), a version that changes nothing posts nothing and is recorded, a closed wage month's difference posts in the current open month with the wage month in the memo, and the receipt's unique keys make one run-version and one envelope exist once. **Left:** a run withdrawn before payment is reversed (FR-GL-12) and the supplementary salary line for net pay still unpaid (6.2); the closed-month rule is proved at the API only.)
 - [ ] 5.3 The mapping version (design D8) and the pay-run receipts: posting reference and status back to Nemura (`payroll.run.posted`), a refused posting
   returns its code.
 
+  (Built, 20 Nov 2026: migration 000903/000904: `payroll_mapping` and its entries by version (department value or deduction kind to account; `getPayrollMapping`, `setPayrollMapping`), `payroll_run_receipt` (envelope digest, run, version, wage month, approver and preparer by issuer and subject, mapping version, entry, posted totals; no per-person figure) and a deferred trigger that refuses any `payroll_run` entry without its receipt from the same transaction (`TestAttackAPayrollEntryNeedsItsReceipt`). **Left:** `payroll.run.posted` back to Nemura with the posting reference or the ledger's code (needs Nemura's webhook, `p1-nemura-fyniq-link` 2.3), the mapping's dual control (it is a Payroll administrator's step-up change today: owner to confirm), and FR-EMP-02's departments page, which stays `p1-nemura-payroll`'s.)
 ## 6. Salary payments (FR-PAY-11, FR-PPL-12, 13, 14, 17; C.2 #44)
 
 - [ ] 6.1 The salary batch on the payment batch (design D9): lines sealed, need to know, bank-detail versions in the approval envelope, a newer version
@@ -85,18 +89,18 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
 
 | Requirement | Built in | Status | Left to |
 |---|---|---|---|
-| FR-PPL-01 People and HR settings | 2.2 | planned | |
-| FR-PPL-04 Pay runs from Nemura | 5 | planned | |
+| FR-PPL-01 People and HR settings | 2.2 | API and approvals built; the page is 8.1 | 8.1 |
+| FR-PPL-04 Pay runs from Nemura | 5 | the posting built; the salary batch and the status back to Nemura open | 6, `p1-nemura-fyniq-link` |
 | FR-PPL-05 External payroll and HR systems | 7.1 | planned | |
-| FR-PPL-06 Employee projection | 3.2 | planned | |
+| FR-PPL-06 Employee projection | 3.2 | store, rules and event application built; the explicit person mapping and claim routing open | 2.5, 3.4 |
 | FR-PPL-07 Leave for the books | 3.3 | planned | |
 | FR-PPL-08 Link health | 2.4 | planned | |
-| FR-PPL-09 Verified payroll authority | 4.1 | planned | |
-| FR-PPL-11 Corrections from Nemura | 5.2 | planned | |
+| FR-PPL-09 Verified payroll authority | 4.1 | every check built and refused by its own test; scenario "Imports stay drafts" open | 7.1 |
+| FR-PPL-11 Corrections from Nemura | 5.2 | difference, stale, closed month built; withdrawal and supplementary line open | 5.2 Left, 6.2 |
 | FR-PPL-12 Paid means paid | 6.2 | planned | |
 | FR-PPL-13 Tax-clearance hold at release | 6.3 | planned | |
 | FR-PPL-14 Salary bank details by version | 6.1 | planned | |
-| FR-PPL-16 Link lifecycle and source changes | 2.2 | planned | |
+| FR-PPL-16 Link lifecycle and source changes | 2.2 | link, unlink and epochs built; settling work in flight and a source change open | 6, 2.2 Left |
 | FR-PPL-17 Salary payments on a need-to-know basis | 6.1 | planned | |
 | FR-PPL-19 Restores across the two databases | 5.3 (receipts), `p1-nemura-fyniq-link` 5 (checkpoint) | planned | |
 | FR-PAY-07 Pay run approval and posting | 5.1 | planned | |

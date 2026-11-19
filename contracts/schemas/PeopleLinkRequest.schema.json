@@ -27,11 +27,15 @@
     "features": {
       "description": "The features that live in Nemura from now on: Fyniq never loads them itself (FR-PPL-01).",
       "items": {
+        "description": "A feature that can live in Nemura.",
         "enum": [
           "records",
           "payroll",
           "leave",
           "letters"
+        ],
+        "examples": [
+          "payroll"
         ],
         "type": "string"
       },
@@ -59,10 +63,19 @@
       ],
       "format": "uuid",
       "type": "string"
+    },
+    "nemura_origin": {
+      "description": "Where Nemura's web app is served from, such as https://people.example.com: a passkey assertion made there names it, and Fyniq checks a pay run's approval against it (one relying-party ID, two origins).",
+      "examples": [
+        "https://people.example.com"
+      ],
+      "pattern": "^https?://[a-z0-9.-]{1,200}(:[0-9]{1,5})?$",
+      "type": "string"
     }
   },
   "required": [
     "nemura_organisation_id",
+    "nemura_origin",
     "link_key",
     "client_name",
     "client_public_key",

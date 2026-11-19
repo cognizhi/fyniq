@@ -321,3 +321,33 @@ func ReplayPayrollRun(rule string, r PayrollRun, prior PayrollPosted, s Settings
 	}
 	return f(r, prior, s)
 }
+
+// EncodeKey writes a line key as a receipt keeps it: the account, a bar and the dimension values.
+func (k PayrollKey) EncodeKey() string { return k.Account.String() + "|" + k.Values }
+
+// Encode is a run's posted totals as a receipt keeps them: by encoded line key, each a signed base amount as exact decimal text.
+func (p PayrollPosted) Encode() map[string]string {
+	out := make(map[string]string, len(p.Totals))
+	for k, v := range p.Totals {
+		out[k.EncodeKey()] = v.String()
+	}
+	return out
+}
+
+// DecodePayrollPosted reads totals a receipt kept, in the base currency; the version is the receipt's.
+func DecodePayrollPosted(version int, kept map[string]string, base money.Currency) (PayrollPosted, error) {
+	out := PayrollPosted{Version: version, Totals: make(map[PayrollKey]money.Money, len(kept))}
+	for k, v := range kept {
+		acc, values, ok := strings.Cut(k, "|")
+		id, err := uuid.Parse(acc)
+		if !ok || err != nil {
+			return PayrollPosted{}, fmt.Errorf("payroll: the key %q is not an account and its values", k)
+		}
+		m, err := money.Parse(v, base)
+		if err != nil {
+			return PayrollPosted{}, err
+		}
+		out.Totals[PayrollKey{Account: id, Values: values}] = m
+	}
+	return out, nil
+}

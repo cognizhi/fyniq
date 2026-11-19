@@ -4,72 +4,111 @@
   "properties": {
     "correlation_id": {
       "description": "Ties the event to its cause.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
       "format": "uuid",
       "type": "string"
     },
     "effective_at": {
       "description": "When the change took effect, RFC 3339 in UTC.",
+      "examples": [
+        "2026-11-20T09:00:00Z"
+      ],
       "format": "date-time",
       "type": "string"
     },
     "epoch": {
       "description": "The link's epoch; an earlier or a later one is refused.",
+      "examples": [
+        1
+      ],
       "format": "int64",
       "minimum": 1,
       "type": "integer"
     },
     "event_id": {
       "description": "The event's ID: a repeat does nothing.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
       "format": "uuid",
       "type": "string"
     },
     "object_id": {
       "description": "The object's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
       "maxLength": 100,
       "minLength": 1,
       "type": "string"
     },
     "object_type": {
       "description": "The kind of object the event is about.",
+      "examples": [
+        "person"
+      ],
       "maxLength": 50,
       "minLength": 1,
       "type": "string"
     },
     "object_version": {
       "description": "The object's version: an older one than applied is ignored.",
+      "examples": [
+        2
+      ],
       "format": "int64",
       "minimum": 1,
       "type": "integer"
     },
     "payload_sha256": {
       "description": "The SHA-256 of the payload's canonical JSON (contracts/peoplelink).",
+      "examples": [
+        "54a65415ad370228851a1da4b31b6fd42dc58b19a50d35cae759325f7388ce64"
+      ],
       "pattern": "^[0-9a-f]{64}$",
       "type": "string"
     },
     "recorded_at": {
       "description": "When the sender recorded it.",
+      "examples": [
+        "2026-11-20T09:00:00Z"
+      ],
       "format": "date-time",
       "type": "string"
     },
     "schema_version": {
       "description": "The payload schema's version.",
+      "examples": [
+        1
+      ],
       "format": "int64",
       "minimum": 1,
       "type": "integer"
     },
     "sequence": {
       "description": "The sender's running number on this link, for gap repair and the reconciliation checkpoint.",
+      "examples": [
+        41
+      ],
       "format": "int64",
       "minimum": 0,
       "type": "integer"
     },
     "signed_at": {
       "description": "When it was signed: more than 5 minutes from now is refused.",
+      "examples": [
+        "2026-11-20T09:00:01Z"
+      ],
       "format": "date-time",
       "type": "string"
     },
     "source_organisation": {
       "description": "The Nemura organisation.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
       "format": "uuid",
       "type": "string"
     },
@@ -78,10 +117,16 @@
       "enum": [
         "nemura"
       ],
+      "examples": [
+        "nemura"
+      ],
       "type": "string"
     },
     "target_organisation": {
       "description": "This organisation.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
       "format": "uuid",
       "type": "string"
     },

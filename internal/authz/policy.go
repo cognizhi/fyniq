@@ -127,7 +127,7 @@ const (
 // registration (FR-INT-02, p1-public-api task 3.1).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
 	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts, CapTable,
-	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile, ConnectedApps, KnowledgeBase}
+	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile, ConnectedApps, KnowledgeBase, PeopleAndHR}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -611,6 +611,9 @@ var (
 	RequestPeopleLink            = Policy{Operation: "requestPeopleLink", Capability: PeopleAndHR, Need: Create}
 	RequestPeopleUnlink          = Policy{Operation: "requestPeopleUnlink", Capability: PeopleAndHR, Need: Create}
 	ReceivePeopleProjectionEvent = Policy{Operation: "receivePeopleProjectionEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.projection.write"}
+	GetPayrollMapping            = Policy{Operation: "getPayrollMapping", Capability: PayRuns, Need: View}
+	SetPayrollMapping            = Policy{Operation: "setPayrollMapping", Capability: PayRuns, Need: Create}
+	SubmitPayrollRun             = Policy{Operation: "submitPayrollRun", Capability: PeopleAndHR, Need: Create, LinkScope: "payroll.journal.submit"}
 	ReceivePeopleHoldEvent       = Policy{Operation: "receivePeopleHoldEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.holds.write"}
 	// Personal access tokens (FR-INT-02): a member makes, lists and revokes their own under "Own MCP connection"; an
 	// Administrator lists and revokes any, and asks to reclass one, under "Connected apps".
@@ -2013,7 +2016,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,

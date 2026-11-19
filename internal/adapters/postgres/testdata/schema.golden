@@ -1981,6 +1981,34 @@ payment_batch_release | currency | text | not null |
 payment_batch_release | minor_units | smallint | not null | 
 payment_batch_release | total | numeric(20,4) | not null | 
 payment_batch_release | break_glass_id | uuid | null | 
+payroll_mapping | organisation_id | uuid | not null | current_org()
+payroll_mapping | id | uuid | not null | uuidv7()
+payroll_mapping | version | integer | not null | 
+payroll_mapping | set_by | text | not null | 
+payroll_mapping | set_at | timestamp with time zone | not null | 
+payroll_mapping_entry | organisation_id | uuid | not null | current_org()
+payroll_mapping_entry | id | uuid | not null | uuidv7()
+payroll_mapping_entry | mapping_id | uuid | not null | 
+payroll_mapping_entry | key | text | not null | 
+payroll_mapping_entry | account_id | uuid | not null | 
+payroll_run_receipt | organisation_id | uuid | not null | current_org()
+payroll_run_receipt | id | uuid | not null | uuidv7()
+payroll_run_receipt | link_id | uuid | not null | 
+payroll_run_receipt | epoch | integer | not null | 
+payroll_run_receipt | source_system | text | not null | 
+payroll_run_receipt | run_id | uuid | not null | 
+payroll_run_receipt | version | integer | not null | 
+payroll_run_receipt | wage_month | date | not null | 
+payroll_run_receipt | envelope_sha256 | text | not null | 
+payroll_run_receipt | approver_issuer | text | not null | 
+payroll_run_receipt | approver_subject | text | not null | 
+payroll_run_receipt | preparer_issuer | text | not null | 
+payroll_run_receipt | preparer_subject | text | not null | 
+payroll_run_receipt | mapping_version | integer | not null | 
+payroll_run_receipt | entry_id | uuid | null | 
+payroll_run_receipt | totals | jsonb | not null | 
+payroll_run_receipt | received_at | timestamp with time zone | not null | 
+payroll_run_receipt | created_xact | bigint | not null | ((pg_current_xact_id())::text)::bigint
 pd_anonymisation | organisation_id | uuid | not null | current_org()
 pd_anonymisation | id | uuid | not null | uuidv7()
 pd_anonymisation | contact_id | uuid | not null | 
@@ -2078,6 +2106,7 @@ people_link | version | integer | not null | 1
 people_link | created_by | text | not null | 
 people_link | created_at | timestamp with time zone | not null | 
 people_link | changed_at | timestamp with time zone | not null | 
+people_link | nemura_origin | text | not null | ''::text
 people_link_inbox | organisation_id | uuid | not null | current_org()
 people_link_inbox | id | uuid | not null | uuidv7()
 people_link_inbox | event_id | uuid | not null | 
@@ -5145,6 +5174,7 @@ journal_entry | journal_entry_source_type_format | CHECK ((source_type ~ '^[a-z]
 journal_entry | journal_entry_source_type_not_null | NOT NULL source_type
 journal_entry | journal_entry_source_version_not_null | NOT NULL source_version
 journal_entry | journal_entry_source_version_positive | CHECK ((source_version > 0))
+journal_entry | payroll_entry_needs_receipt | TRIGGER DEFERRABLE INITIALLY DEFERRED
 journal_entry | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 journal_entry | share_issue_entry_registered | TRIGGER DEFERRABLE INITIALLY DEFERRED
 journal_line | journal_line_account_fkey | FOREIGN KEY (organisation_id, account_id) REFERENCES account(organisation_id, id)
@@ -5935,6 +5965,54 @@ payment_batch_release | payment_batch_release_version_fkey | FOREIGN KEY (organi
 payment_batch_release | payment_batch_release_writer_format | CHECK ((writer ~ '^[a-z0-9-]+@[0-9]+$'::text))
 payment_batch_release | payment_batch_release_writer_not_null | NOT NULL writer
 payment_batch_release | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+payroll_mapping | payroll_mapping_by_format | CHECK ((set_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+payroll_mapping | payroll_mapping_id_not_null | NOT NULL id
+payroll_mapping | payroll_mapping_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+payroll_mapping | payroll_mapping_organisation_id_not_null | NOT NULL organisation_id
+payroll_mapping | payroll_mapping_pkey | PRIMARY KEY (organisation_id, id)
+payroll_mapping | payroll_mapping_set_at_not_null | NOT NULL set_at
+payroll_mapping | payroll_mapping_set_by_not_null | NOT NULL set_by
+payroll_mapping | payroll_mapping_version_key | UNIQUE (organisation_id, version)
+payroll_mapping | payroll_mapping_version_not_null | NOT NULL version
+payroll_mapping | payroll_mapping_version_positive | CHECK ((version >= 1))
+payroll_mapping | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+payroll_mapping_entry | payroll_mapping_entry_account_fkey | FOREIGN KEY (organisation_id, account_id) REFERENCES account(organisation_id, id)
+payroll_mapping_entry | payroll_mapping_entry_account_id_not_null | NOT NULL account_id
+payroll_mapping_entry | payroll_mapping_entry_id_not_null | NOT NULL id
+payroll_mapping_entry | payroll_mapping_entry_key | UNIQUE (organisation_id, mapping_id, key)
+payroll_mapping_entry | payroll_mapping_entry_key_not_null | NOT NULL key
+payroll_mapping_entry | payroll_mapping_entry_key_shape | CHECK ((key ~ '^(department:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|deduction:[a-z][a-z_]{0,39})$'::text))
+payroll_mapping_entry | payroll_mapping_entry_mapping_fkey | FOREIGN KEY (organisation_id, mapping_id) REFERENCES payroll_mapping(organisation_id, id)
+payroll_mapping_entry | payroll_mapping_entry_mapping_id_not_null | NOT NULL mapping_id
+payroll_mapping_entry | payroll_mapping_entry_organisation_id_not_null | NOT NULL organisation_id
+payroll_mapping_entry | payroll_mapping_entry_pkey | PRIMARY KEY (organisation_id, id)
+payroll_run_receipt | payroll_run_receipt_approver_issuer_not_null | NOT NULL approver_issuer
+payroll_run_receipt | payroll_run_receipt_approver_subject_not_null | NOT NULL approver_subject
+payroll_run_receipt | payroll_run_receipt_created_xact_not_null | NOT NULL created_xact
+payroll_run_receipt | payroll_run_receipt_digest | CHECK ((envelope_sha256 ~ '^[0-9a-f]{64}$'::text))
+payroll_run_receipt | payroll_run_receipt_distinct_people | CHECK (((approver_issuer <> preparer_issuer) OR (approver_subject <> preparer_subject)))
+payroll_run_receipt | payroll_run_receipt_entry_fkey | FOREIGN KEY (organisation_id, entry_id) REFERENCES journal_entry(organisation_id, id)
+payroll_run_receipt | payroll_run_receipt_envelope_key | UNIQUE (organisation_id, envelope_sha256)
+payroll_run_receipt | payroll_run_receipt_envelope_sha256_not_null | NOT NULL envelope_sha256
+payroll_run_receipt | payroll_run_receipt_epoch_not_null | NOT NULL epoch
+payroll_run_receipt | payroll_run_receipt_id_not_null | NOT NULL id
+payroll_run_receipt | payroll_run_receipt_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES people_link(organisation_id, id)
+payroll_run_receipt | payroll_run_receipt_link_id_not_null | NOT NULL link_id
+payroll_run_receipt | payroll_run_receipt_mapping_version_not_null | NOT NULL mapping_version
+payroll_run_receipt | payroll_run_receipt_organisation_id_not_null | NOT NULL organisation_id
+payroll_run_receipt | payroll_run_receipt_pkey | PRIMARY KEY (organisation_id, id)
+payroll_run_receipt | payroll_run_receipt_preparer_issuer_not_null | NOT NULL preparer_issuer
+payroll_run_receipt | payroll_run_receipt_preparer_subject_not_null | NOT NULL preparer_subject
+payroll_run_receipt | payroll_run_receipt_received_at_not_null | NOT NULL received_at
+payroll_run_receipt | payroll_run_receipt_run_id_not_null | NOT NULL run_id
+payroll_run_receipt | payroll_run_receipt_run_key | UNIQUE (organisation_id, source_system, run_id, version)
+payroll_run_receipt | payroll_run_receipt_source_system_not_null | NOT NULL source_system
+payroll_run_receipt | payroll_run_receipt_totals_not_null | NOT NULL totals
+payroll_run_receipt | payroll_run_receipt_version_not_null | NOT NULL version
+payroll_run_receipt | payroll_run_receipt_version_positive | CHECK (((version >= 1) AND (mapping_version >= 1) AND (epoch >= 1)))
+payroll_run_receipt | payroll_run_receipt_wage_month | CHECK ((wage_month = (date_trunc('month'::text, (wage_month)::timestamp with time zone))::date))
+payroll_run_receipt | payroll_run_receipt_wage_month_not_null | NOT NULL wage_month
+payroll_run_receipt | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 pd_anonymisation | pd_anonymisation_anonymised_at_not_null | NOT NULL anonymised_at
 pd_anonymisation | pd_anonymisation_anonymised_by_not_null | NOT NULL anonymised_by
 pd_anonymisation | pd_anonymisation_by_format | CHECK ((anonymised_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
@@ -6086,8 +6164,10 @@ people_link | people_link_id_not_null | NOT NULL id
 people_link | people_link_key_size | CHECK ((octet_length(link_key) = 32))
 people_link | people_link_link_key_not_null | NOT NULL link_key
 people_link | people_link_nemura_organisation_id_not_null | NOT NULL nemura_organisation_id
+people_link | people_link_nemura_origin_not_null | NOT NULL nemura_origin
 people_link | people_link_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 people_link | people_link_organisation_id_not_null | NOT NULL organisation_id
+people_link | people_link_origin_shape | CHECK ((nemura_origin ~ '^(https?://[a-z0-9.-]{1,200}(:[0-9]{1,5})?)?$'::text))
 people_link | people_link_pkey | PRIMARY KEY (organisation_id, id)
 people_link | people_link_state_known | CHECK ((state = ANY (ARRAY['active'::text, 'suspended'::text, 'unlinking'::text, 'unlinked'::text])))
 people_link | people_link_state_not_null | NOT NULL state
@@ -7764,6 +7844,13 @@ CREATE UNIQUE INDEX payment_batch_payment_once ON fyniq.payment_batch_payment US
 CREATE UNIQUE INDEX payment_batch_payment_pkey ON fyniq.payment_batch_payment USING btree (organisation_id, id)
 CREATE UNIQUE INDEX payment_batch_release_once ON fyniq.payment_batch_release USING btree (organisation_id, batch_id)
 CREATE UNIQUE INDEX payment_batch_release_pkey ON fyniq.payment_batch_release USING btree (organisation_id, id)
+CREATE UNIQUE INDEX payroll_mapping_entry_key ON fyniq.payroll_mapping_entry USING btree (organisation_id, mapping_id, key)
+CREATE UNIQUE INDEX payroll_mapping_entry_pkey ON fyniq.payroll_mapping_entry USING btree (organisation_id, id)
+CREATE UNIQUE INDEX payroll_mapping_pkey ON fyniq.payroll_mapping USING btree (organisation_id, id)
+CREATE UNIQUE INDEX payroll_mapping_version_key ON fyniq.payroll_mapping USING btree (organisation_id, version)
+CREATE UNIQUE INDEX payroll_run_receipt_envelope_key ON fyniq.payroll_run_receipt USING btree (organisation_id, envelope_sha256)
+CREATE UNIQUE INDEX payroll_run_receipt_pkey ON fyniq.payroll_run_receipt USING btree (organisation_id, id)
+CREATE UNIQUE INDEX payroll_run_receipt_run_key ON fyniq.payroll_run_receipt USING btree (organisation_id, source_system, run_id, version)
 CREATE UNIQUE INDEX pd_anonymisation_pkey ON fyniq.pd_anonymisation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_breach_exercise_pkey ON fyniq.pd_breach_exercise USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_breach_pkey ON fyniq.pd_breach USING btree (organisation_id, id)
@@ -7916,6 +8003,7 @@ CREATE CONSTRAINT TRIGGER ledger_boundary_carried AFTER INSERT ON fyniq.ledger_b
 CREATE CONSTRAINT TRIGGER payee_bank_change_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'payee_bank_change'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION payee_bank_change_approved()
 CREATE CONSTRAINT TRIGGER payment_batch_approved AFTER INSERT OR UPDATE OF status ON fyniq.document DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((new.type = 'payment_batch'::text) AND (new.status = 'posted'::text))) EXECUTE FUNCTION payment_batch_approved()
 CREATE CONSTRAINT TRIGGER payment_batch_holds AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION payment_batch_holds()
+CREATE CONSTRAINT TRIGGER payroll_entry_needs_receipt AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((new.source_type = 'payroll_run'::text)) EXECUTE FUNCTION payroll_entry_needs_receipt()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.access_review_attestation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('access_review_attestation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.accountant_review_journal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accountant_review', 'review_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_budget DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_budget', 'id')
@@ -7974,6 +8062,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.operation DEFERRAB
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.organisation_setting DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('organisation_setting', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_batch_payment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'payment_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payment_batch_release DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'batch_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payroll_mapping DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('payroll_mapping', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.payroll_run_receipt DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('payroll_run_receipt', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_anonymisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_anonymisation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_breach', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach_exercise DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_breach_exercise', 'id')
@@ -8428,6 +8518,12 @@ CREATE TRIGGER payment_batch_payment_guard BEFORE INSERT OR DELETE OR UPDATE ON 
 CREATE TRIGGER payment_batch_payment_no_truncate BEFORE TRUNCATE ON fyniq.payment_batch_payment FOR EACH STATEMENT EXECUTE FUNCTION payment_batch_payment_guard()
 CREATE TRIGGER payment_batch_release_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.payment_batch_release FOR EACH ROW EXECUTE FUNCTION payment_batch_release_guard()
 CREATE TRIGGER payment_batch_release_no_truncate BEFORE TRUNCATE ON fyniq.payment_batch_release FOR EACH STATEMENT EXECUTE FUNCTION payment_batch_release_guard()
+CREATE TRIGGER payroll_mapping_entry_guard BEFORE DELETE OR UPDATE ON fyniq.payroll_mapping_entry FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER payroll_mapping_entry_no_truncate BEFORE TRUNCATE ON fyniq.payroll_mapping_entry FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER payroll_mapping_guard BEFORE DELETE OR UPDATE ON fyniq.payroll_mapping FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER payroll_mapping_no_truncate BEFORE TRUNCATE ON fyniq.payroll_mapping FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER payroll_run_receipt_guard BEFORE DELETE OR UPDATE ON fyniq.payroll_run_receipt FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER payroll_run_receipt_no_truncate BEFORE TRUNCATE ON fyniq.payroll_run_receipt FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER pd_anonymisation_immutable BEFORE DELETE OR UPDATE ON fyniq.pd_anonymisation FOR EACH ROW EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_anonymisation_no_truncate BEFORE TRUNCATE ON fyniq.pd_anonymisation FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_breach_exercise_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_breach_exercise FOR EACH ROW EXECUTE FUNCTION pd_breach_guard()
@@ -8703,6 +8799,9 @@ owner_succession | tenant_isolation | * | (organisation_id = current_org()) | (o
 payee_bank_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payment_batch_payment | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 payment_batch_release | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+payroll_mapping | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+payroll_mapping_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+payroll_run_receipt | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_anonymisation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_breach | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_breach_exercise | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8945,6 +9044,9 @@ owner_succession | enabled | forced
 payee_bank_account | enabled | forced
 payment_batch_payment | enabled | forced
 payment_batch_release | enabled | forced
+payroll_mapping | enabled | forced
+payroll_mapping_entry | enabled | forced
+payroll_run_receipt | enabled | forced
 pd_anonymisation | enabled | forced
 pd_breach | enabled | forced
 pd_breach_exercise | enabled | forced
@@ -9309,6 +9411,7 @@ payment_batch_approved() → trigger | security invoker | v | search_path=pg_cat
 payment_batch_holds() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e828989f43ccadc695506c2496db8c0a
 payment_batch_payment_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 763964fa08a7cf056831339660d84231
 payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0c2e26331f52a0ca299b3ab3aaa9b534
+payroll_entry_needs_receipt() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f00c6441f4aa760f66b01d13321806f6
 pd_breach_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aa943103eb58e8ba42a46bdf6d7b932a
 pd_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84bdfa5651f52981df006a9b1b3fa887
 pd_shredding_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78959af9821f7e3f1ccf60b99d41b64

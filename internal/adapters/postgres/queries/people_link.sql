@@ -1,24 +1,24 @@
 -- name: LivePeopleLink :one
-SELECT id, state, epoch, nemura_organisation_id, link_key, client_id, approval_id, version, created_by, created_at, changed_at
+SELECT id, state, epoch, nemura_organisation_id, nemura_origin, link_key, client_id, approval_id, version, created_by, created_at, changed_at
 FROM fyniq.people_link WHERE state <> 'unlinked';
 
 -- name: LastPeopleLinkEpoch :one
 SELECT coalesce(max(epoch), 0)::int AS epoch FROM fyniq.people_link;
 
 -- name: InsertPeopleLink :one
-INSERT INTO fyniq.people_link (state, epoch, nemura_organisation_id, link_key, client_id, approval_id, created_by, created_at, changed_at)
-VALUES ('active', sqlc.arg(epoch), sqlc.arg(nemura_organisation_id), sqlc.arg(link_key), sqlc.arg(client_id), sqlc.arg(approval_id),
+INSERT INTO fyniq.people_link (state, epoch, nemura_organisation_id, nemura_origin, link_key, client_id, approval_id, created_by, created_at, changed_at)
+VALUES ('active', sqlc.arg(epoch), sqlc.arg(nemura_organisation_id), sqlc.arg(nemura_origin), sqlc.arg(link_key), sqlc.arg(client_id), sqlc.arg(approval_id),
         sqlc.arg(created_by), sqlc.arg(at), sqlc.arg(at))
-RETURNING id, state, epoch, nemura_organisation_id, link_key, client_id, approval_id, version, created_by, created_at, changed_at;
+RETURNING id, state, epoch, nemura_organisation_id, nemura_origin, link_key, client_id, approval_id, version, created_by, created_at, changed_at;
 
 -- name: PeopleLinkForUpdate :one
-SELECT id, state, epoch, nemura_organisation_id, link_key, client_id, approval_id, version, created_by, created_at, changed_at
+SELECT id, state, epoch, nemura_organisation_id, nemura_origin, link_key, client_id, approval_id, version, created_by, created_at, changed_at
 FROM fyniq.people_link WHERE id = sqlc.arg(id) FOR UPDATE;
 
 -- name: SetPeopleLinkState :one
 UPDATE fyniq.people_link SET state = sqlc.arg(state), client_id = sqlc.arg(client_id), version = version + 1, changed_at = sqlc.arg(at)
 WHERE id = sqlc.arg(id) AND version = sqlc.arg(version)
-RETURNING id, state, epoch, nemura_organisation_id, link_key, client_id, approval_id, version, created_by, created_at, changed_at;
+RETURNING id, state, epoch, nemura_organisation_id, nemura_origin, link_key, client_id, approval_id, version, created_by, created_at, changed_at;
 
 -- name: InsertPeopleSource :exec
 INSERT INTO fyniq.people_source (feature, source, effective_from, approval_id, set_at)

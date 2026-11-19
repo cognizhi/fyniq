@@ -54,41 +54,50 @@ var linkFixes = map[string]string{
 
 func linkRefusal(code, detail string) *Problem { return problem(code, detail, linkFixes[code]) }
 
+// PeopleFeature is a feature People and HR settings place: records, payroll, leave or letters.
+type PeopleFeature string
+
+// Schema implements huma.SchemaProvider.
+func (PeopleFeature) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{Type: "string", Enum: []any{"records", "payroll", "leave", "letters"}, Description: "A feature that can live in Nemura.", Examples: []any{"payroll"}}
+}
+
 // PeopleLinkSource is where one feature lives (FR-PPL-01).
 type PeopleLinkSource struct {
-	Feature       string    `json:"feature" enum:"records,payroll,leave,letters" doc:"The feature."`
-	Source        string    `json:"source" enum:"nemura,external,none" doc:"Where it lives: Nemura, an external system, or nowhere (payroll posted by manual journal)."`
-	EffectiveFrom string    `json:"effective_from" format:"date" doc:"The day it started there; the start day of a change of source (FR-PPL-16)."`
-	SetAt         time.Time `json:"set_at" doc:"When it was set."`
+	Feature       string    `json:"feature" enum:"records,payroll,leave,letters" doc:"The feature." example:"payroll"`
+	Source        string    `json:"source" enum:"nemura,external,none" doc:"Where it lives: Nemura, an external system, or nowhere (payroll posted by manual journal)." example:"nemura"`
+	EffectiveFrom string    `json:"effective_from" format:"date" doc:"The day it started there; the start day of a change of source (FR-PPL-16)." example:"2026-11-20"`
+	SetAt         time.Time `json:"set_at" doc:"When it was set." example:"2026-11-20T09:00:00Z"`
 }
 
 // PeopleLinkInbox counts the events the link received by outcome (FR-PPL-08).
 type PeopleLinkInbox struct {
-	Outcome string     `json:"outcome" enum:"applied,ignored_older,refused" doc:"What became of them."`
-	Count   int        `json:"count" doc:"How many."`
-	LastAt  *time.Time `json:"last_at,omitempty" doc:"When the last arrived."`
+	Outcome string     `json:"outcome" enum:"applied,ignored_older,refused" doc:"What became of them." example:"applied"`
+	Count   int        `json:"count" doc:"How many." example:"12"`
+	LastAt  *time.Time `json:"last_at,omitempty" doc:"When the last arrived." example:"2026-11-20T09:00:00Z"`
 }
 
 // PeopleLink is the organisation's link to the people platform and where each feature lives.
 type PeopleLink struct {
-	State                string             `json:"state" enum:"none,active,suspended,unlinking,unlinked" doc:"none: never linked; unlinked is final, and a later link starts at a higher epoch."`
-	Epoch                int                `json:"epoch,omitempty" doc:"The link's epoch: every event carries it and an earlier one is refused (FR-PPL-16)."`
-	NemuraOrganisationID string             `json:"nemura_organisation_id,omitempty" format:"uuid" doc:"The Nemura organisation it is linked to."`
-	ClientID             string             `json:"client_id,omitempty" format:"uuid" doc:"The API client Nemura calls with: its scopes are Appendix E's and no other."`
-	Version              int                `json:"version,omitempty" doc:"The link's version."`
-	LinkedAt             *time.Time         `json:"linked_at,omitempty" doc:"When it was linked."`
+	State                string             `json:"state" enum:"none,active,suspended,unlinking,unlinked" doc:"none: never linked; unlinked is final, and a later link starts at a higher epoch." example:"active"`
+	Epoch                int                `json:"epoch,omitempty" doc:"The link's epoch: every event carries it and an earlier one is refused (FR-PPL-16)." example:"1"`
+	NemuraOrganisationID string             `json:"nemura_organisation_id,omitempty" format:"uuid" doc:"The Nemura organisation it is linked to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
+	ClientID             string             `json:"client_id,omitempty" format:"uuid" doc:"The API client Nemura calls with: its scopes are Appendix E's and no other." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
+	Version              int                `json:"version,omitempty" doc:"The link's version." example:"1"`
+	LinkedAt             *time.Time         `json:"linked_at,omitempty" doc:"When it was linked." example:"2026-11-20T09:00:00Z"`
 	Sources              []PeopleLinkSource `json:"sources" nullable:"false" doc:"Where each feature lives now."`
 	Inbox                []PeopleLinkInbox  `json:"inbox" nullable:"false" doc:"The events received, by outcome."`
 }
 
 // PeopleLinkRequest asks to link the organisation to a Nemura organisation.
 type PeopleLinkRequest struct {
-	NemuraOrganisationID string         `json:"nemura_organisation_id" format:"uuid" doc:"The Nemura organisation to link to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
-	LinkKey              string         `json:"link_key" minLength:"43" maxLength:"43" doc:"Nemura's Ed25519 public key for the link's envelopes, 32 bytes as base64url without padding: shown on Nemura's link page. Every event is checked against it." example:"EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE"`
-	ClientName           string         `json:"client_name" minLength:"1" maxLength:"80" doc:"The name of the client Nemura calls with." example:"Nemura link"`
-	ClientPublicKey      map[string]any `json:"client_public_key" doc:"The public half of the key Nemura's client signs its private_key_jwt assertions with, as a JWK: an EC P-256 key or an RSA key of 2048 bits or more. Never the private key."`
-	ExpiresAt            time.Time      `json:"expires_at" doc:"When the client stops, within a year (SEC-07); link again before then." example:"2027-11-17T00:00:00Z"`
-	Features             []string       `json:"features" minItems:"1" maxItems:"4" uniqueItems:"true" enum:"records,payroll,leave,letters" doc:"The features that live in Nemura from now on: Fyniq never loads them itself (FR-PPL-01)."`
+	NemuraOrganisationID string          `json:"nemura_organisation_id" format:"uuid" doc:"The Nemura organisation to link to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
+	NemuraOrigin         string          `json:"nemura_origin" pattern:"^https?://[a-z0-9.-]{1,200}(:[0-9]{1,5})?$" doc:"Where Nemura's web app is served from, such as https://people.example.com: a passkey assertion made there names it, and Fyniq checks a pay run's approval against it (one relying-party ID, two origins)." example:"https://people.example.com"`
+	LinkKey              string          `json:"link_key" minLength:"43" maxLength:"43" doc:"Nemura's Ed25519 public key for the link's envelopes, 32 bytes as base64url without padding: shown on Nemura's link page. Every event is checked against it." example:"EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE"`
+	ClientName           string          `json:"client_name" minLength:"1" maxLength:"80" doc:"The name of the client Nemura calls with." example:"Nemura link"`
+	ClientPublicKey      map[string]any  `json:"client_public_key" doc:"The public half of the key Nemura's client signs its private_key_jwt assertions with, as a JWK: an EC P-256 key or an RSA key of 2048 bits or more. Never the private key."`
+	ExpiresAt            time.Time       `json:"expires_at" doc:"When the client stops, within a year (SEC-07); link again before then." example:"2027-11-17T00:00:00Z"`
+	Features             []PeopleFeature `json:"features" minItems:"1" maxItems:"4" uniqueItems:"true" doc:"The features that live in Nemura from now on: Fyniq never loads them itself (FR-PPL-01)."`
 }
 
 // PeopleUnlinkRequest asks to end the link.
@@ -98,35 +107,35 @@ type PeopleUnlinkRequest struct {
 
 // PeopleLinkHeader is the header of an envelope (PRD-002 NM-INT-10): what the event says about itself, signed with the link key.
 type PeopleLinkHeader struct {
-	EventID            string `json:"event_id" format:"uuid" doc:"The event's ID: a repeat does nothing."`
+	EventID            string `json:"event_id" format:"uuid" doc:"The event's ID: a repeat does nothing." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
 	Type               string `json:"type" doc:"The event type, such as people.person.upserted." example:"people.person.upserted"`
-	SchemaVersion      int    `json:"schema_version" minimum:"1" doc:"The payload schema's version."`
-	SourceSystem       string `json:"source_system" enum:"nemura" doc:"The sending system."`
-	SourceOrganisation string `json:"source_organisation" format:"uuid" doc:"The Nemura organisation."`
-	TargetOrganisation string `json:"target_organisation" format:"uuid" doc:"This organisation."`
-	Epoch              int    `json:"epoch" minimum:"1" doc:"The link's epoch; an earlier or a later one is refused."`
-	Sequence           int64  `json:"sequence" minimum:"0" doc:"The sender's running number on this link, for gap repair and the reconciliation checkpoint."`
-	ObjectType         string `json:"object_type" minLength:"1" maxLength:"50" doc:"The kind of object the event is about."`
-	ObjectID           string `json:"object_id" minLength:"1" maxLength:"100" doc:"The object's ID."`
-	ObjectVersion      int    `json:"object_version" minimum:"1" doc:"The object's version: an older one than applied is ignored."`
-	EffectiveAt        string `json:"effective_at" format:"date-time" doc:"When the change took effect, RFC 3339 in UTC."`
-	RecordedAt         string `json:"recorded_at" format:"date-time" doc:"When the sender recorded it."`
-	SignedAt           string `json:"signed_at" format:"date-time" doc:"When it was signed: more than 5 minutes from now is refused."`
-	CorrelationID      string `json:"correlation_id" format:"uuid" doc:"Ties the event to its cause."`
-	PayloadSHA256      string `json:"payload_sha256" pattern:"^[0-9a-f]{64}$" doc:"The SHA-256 of the payload's canonical JSON (contracts/peoplelink)."`
+	SchemaVersion      int    `json:"schema_version" minimum:"1" doc:"The payload schema's version." example:"1"`
+	SourceSystem       string `json:"source_system" enum:"nemura" doc:"The sending system." example:"nemura"`
+	SourceOrganisation string `json:"source_organisation" format:"uuid" doc:"The Nemura organisation." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
+	TargetOrganisation string `json:"target_organisation" format:"uuid" doc:"This organisation." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
+	Epoch              int    `json:"epoch" minimum:"1" doc:"The link's epoch; an earlier or a later one is refused." example:"1"`
+	Sequence           int64  `json:"sequence" minimum:"0" doc:"The sender's running number on this link, for gap repair and the reconciliation checkpoint." example:"41"`
+	ObjectType         string `json:"object_type" minLength:"1" maxLength:"50" doc:"The kind of object the event is about." example:"person"`
+	ObjectID           string `json:"object_id" minLength:"1" maxLength:"100" doc:"The object's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
+	ObjectVersion      int    `json:"object_version" minimum:"1" doc:"The object's version: an older one than applied is ignored." example:"2"`
+	EffectiveAt        string `json:"effective_at" format:"date-time" doc:"When the change took effect, RFC 3339 in UTC." example:"2026-11-20T09:00:00Z"`
+	RecordedAt         string `json:"recorded_at" format:"date-time" doc:"When the sender recorded it." example:"2026-11-20T09:00:00Z"`
+	SignedAt           string `json:"signed_at" format:"date-time" doc:"When it was signed: more than 5 minutes from now is refused." example:"2026-11-20T09:00:01Z"`
+	CorrelationID      string `json:"correlation_id" format:"uuid" doc:"Ties the event to its cause." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
+	PayloadSHA256      string `json:"payload_sha256" pattern:"^[0-9a-f]{64}$" doc:"The SHA-256 of the payload's canonical JSON (contracts/peoplelink)." example:"54a65415ad370228851a1da4b31b6fd42dc58b19a50d35cae759325f7388ce64"`
 }
 
 // PeopleLinkEvent is an event or call between the apps: the envelope of NM-INT-10.
 type PeopleLinkEvent struct {
 	Header    PeopleLinkHeader `json:"header"`
-	Signature string           `json:"signature" minLength:"1" maxLength:"200" doc:"Ed25519 over the canonical header, base64url without padding, with the link key (contracts/peoplelink)."`
+	Signature string           `json:"signature" minLength:"1" maxLength:"200" doc:"Ed25519 over the canonical header, base64url without padding, with the link key (contracts/peoplelink)." example:"EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE5S1xv2o8mZl7sQd0pTuHk3r9iV6bYw4cG1nXfA2JgQ"`
 	Payload   map[string]any   `json:"payload" doc:"The event's data: only the fields PRD-002 Appendix E lists for its type."`
 }
 
 // PeopleLinkReceipt says what became of an event.
 type PeopleLinkReceipt struct {
-	EventID string `json:"event_id" format:"uuid" doc:"The event's ID."`
-	Outcome string `json:"outcome" enum:"applied,ignored_older,duplicate" doc:"applied; ignored_older: a version no newer than the one applied, recorded and changing nothing; duplicate: the event ID was received before."`
+	EventID string `json:"event_id" format:"uuid" doc:"The event's ID." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"`
+	Outcome string `json:"outcome" enum:"applied,ignored_older,duplicate" doc:"applied; ignored_older: a version no newer than the one applied, recorded and changing nothing; duplicate: the event ID was received before." example:"applied"`
 }
 
 type (
@@ -245,7 +254,7 @@ func registerPeopleLink(a *API) {
 			return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.link_key", Message: err.Error(), Fix: "Copy the link key from Nemura's link page: 32 bytes as base64url, 43 characters"}})
 		}
 		for _, f := range in.Body.Features {
-			if !slices.Contains(linkFeatures, f) {
+			if !slices.Contains(linkFeatures, string(f)) {
 				return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.features", Message: fmt.Sprintf("%q is not a feature", f), Fix: "Choose records, payroll, leave or letters"}})
 			}
 		}
@@ -263,7 +272,10 @@ func registerPeopleLink(a *API) {
 			return nil, err
 		}
 		p, _ := authn.From(ctx)
-		features := slices.Clone(in.Body.Features)
+		features := make([]string, len(in.Body.Features))
+		for i, f := range in.Body.Features {
+			features[i] = string(f)
+		}
 		slices.Sort(features)
 		resp, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusAccepted, func(ctx context.Context, u storage.UnitOfWork) (Approval, error) {
 			if _, err := u.PeopleLinks().Live(ctx); err == nil {
@@ -271,7 +283,7 @@ func registerPeopleLink(a *API) {
 			} else if !errors.Is(err, ports.ErrNotFound) {
 				return Approval{}, err
 			}
-			change := map[string]any{"id": uuid.NewString(), "nemura_organisation_id": org.String(), "link_key": base64.RawURLEncoding.EncodeToString(key),
+			change := map[string]any{"id": uuid.NewString(), "nemura_organisation_id": org.String(), "nemura_origin": in.Body.NemuraOrigin, "link_key": base64.RawURLEncoding.EncodeToString(key),
 				"client_name": checked.Name, "client_public_key": string(public), "alg": checked.Alg, "key_thumbprint": checked.Thumbprint,
 				"expires_at": checked.ExpiresAt.UTC().Format(time.RFC3339), "features": anyList(features)}
 			diff := []ApprovalDiff{{Field: "nemura_organisation_id", After: org.String()}, {Field: "features in Nemura", After: fmt.Sprint(features)},
@@ -375,32 +387,13 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 	var receipt PeopleLinkReceipt
 	var refused error
 	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
-		l, err := u.PeopleLinks().Live(ctx)
-		if errors.Is(err, ports.ErrNotFound) || (err == nil && l.State != storage.LinkActive) {
-			refused = problem(CodeNoLink, "The organisation has no active link to the people platform.", "Ask the Owner to link Nemura in Settings, People and HR.")
-			return nil
-		}
+		l, refusal, err := a.linkedEnvelope(ctx, u, p, env, now)
 		if err != nil {
 			return err
 		}
-		client, err := u.APIClients().Get(ctx, l.ClientID)
-		if err != nil {
-			return err
-		}
-		if client.ClientID != p.Client {
-			refused = problem(CodeLinkClient, "The event came through a client that is not the link's.", "Call with the client the link registered.")
+		if refusal != nil {
+			refused = refusal
 			return nil
-		}
-		link := peoplelink.Link{Key: ed25519.PublicKey(l.LinkKey), Epoch: l.Epoch, SourceOrganisation: l.NemuraOrganisationID.String(),
-			TargetOrganisation: p.Organisation.String(), SourceSystem: "nemura"}
-		if err := env.Verify(link, now); err != nil {
-			var r *peoplelink.Refusal
-			if errors.As(err, &r) {
-				a.deps.Log.WarnContext(ctx, "people_link.refused", "code", r.Code, "type", env.Header.Type, "organisation", p.Organisation.String()) // never the payload
-				refused = linkRefusal(r.Code, r.Message+".")
-				return nil
-			}
-			return err
 		}
 		eventID, err := uuid.Parse(env.Header.EventID)
 		if err != nil {
@@ -448,6 +441,36 @@ func (a *API) receivePeopleEvent(ctx context.Context, in *peopleEventInput, type
 		return nil, refused
 	}
 	return &peopleEventOutput{Body: receipt}, nil
+}
+
+// linkedEnvelope checks an event against the link as Fyniq holds it: the link is active, the call came through the link's own client, and the envelope's
+// organisations, epoch, signing time, signature and digest hold. A failure is a refusal (never the payload); the error is for what is not the sender's fault.
+func (a *API) linkedEnvelope(ctx context.Context, u storage.UnitOfWork, p authn.Principal, env peoplelink.Envelope, now time.Time) (storage.PeopleLinkRow, *Problem, error) {
+	l, err := u.PeopleLinks().Live(ctx)
+	if errors.Is(err, ports.ErrNotFound) || (err == nil && l.State != storage.LinkActive) {
+		return l, problem(CodeNoLink, "The organisation has no active link to the people platform.", "Ask the Owner to link Nemura in Settings, People and HR."), nil
+	}
+	if err != nil {
+		return l, nil, err
+	}
+	client, err := u.APIClients().Get(ctx, l.ClientID)
+	if err != nil {
+		return l, nil, err
+	}
+	if client.ClientID != p.Client {
+		return l, problem(CodeLinkClient, "The event came through a client that is not the link's.", "Call with the client the link registered."), nil
+	}
+	link := peoplelink.Link{Key: ed25519.PublicKey(l.LinkKey), Epoch: l.Epoch, SourceOrganisation: l.NemuraOrganisationID.String(),
+		TargetOrganisation: p.Organisation.String(), SourceSystem: "nemura"}
+	if err := env.Verify(link, now); err != nil {
+		var r *peoplelink.Refusal
+		if errors.As(err, &r) {
+			a.deps.Log.WarnContext(ctx, "people_link.refused", "code", r.Code, "type", env.Header.Type, "organisation", p.Organisation.String()) // never the payload
+			return l, linkRefusal(r.Code, r.Message+"."), nil
+		}
+		return l, nil, err
+	}
+	return l, nil, nil
 }
 
 // applyPeopleEvent applies a verified event of one of the projection's types to the person it is about, with the payload read strictly:
@@ -554,7 +577,7 @@ func (a *API) executePeopleLink(ctx context.Context, u storage.UnitOfWork, r sto
 		if err != nil {
 			return err
 		}
-		if _, err := u.PeopleLinks().Link(ctx, storage.PeopleLinkRow{NemuraOrganisationID: org, LinkKey: key, ClientID: client.ID, ApprovalID: r.ID,
+		if _, err := u.PeopleLinks().Link(ctx, storage.PeopleLinkRow{NemuraOrganisationID: org, NemuraOrigin: str("nemura_origin"), LinkKey: key, ClientID: client.ID, ApprovalID: r.ID,
 			CreatedBy: "user:" + r.RequestedBy.String(), CreatedAt: now}); err != nil {
 			return err
 		}

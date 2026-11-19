@@ -4,6 +4,9 @@
   "properties": {
     "event_id": {
       "description": "The event's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
       "format": "uuid",
       "type": "string"
     },
@@ -13,6 +16,9 @@
         "applied",
         "ignored_older",
         "duplicate"
+      ],
+      "examples": [
+        "applied"
       ],
       "type": "string"
     }
