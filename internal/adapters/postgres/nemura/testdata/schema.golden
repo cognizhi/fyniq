@@ -1,0 +1,73 @@
+## tables (table | owner | rls | forced)
+organisation | nemura_migrator | true | true
+tenant_directory | nemura_migrator | false | false
+tenants | nemura_migrator | false | false
+
+## columns (table | column | type | not null | default)
+organisation | organisation_id | uuid | true | nemura.current_org()
+organisation | name | text | true | 
+organisation | created_at | timestamp with time zone | true | now()
+tenant_directory | organisation_id | uuid | true | 
+tenant_directory | created_at | timestamp with time zone | true | now()
+
+## constraints (table | name | definition)
+organisation | organisation_created_at_not_null | NOT NULL created_at
+organisation | organisation_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 200)))
+organisation | organisation_name_not_null | NOT NULL name
+organisation | organisation_organisation_id_not_null | NOT NULL organisation_id
+organisation | organisation_pkey | PRIMARY KEY (organisation_id)
+tenant_directory | tenant_directory_created_at_not_null | NOT NULL created_at
+tenant_directory | tenant_directory_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+tenant_directory | tenant_directory_organisation_id_not_null | NOT NULL organisation_id
+tenant_directory | tenant_directory_pkey | PRIMARY KEY (organisation_id)
+
+## indexes
+CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organisation_id)
+CREATE UNIQUE INDEX tenant_directory_pkey ON nemura.tenant_directory USING btree (organisation_id)
+
+## triggers
+CREATE TRIGGER organisation_registered AFTER INSERT ON nemura.organisation FOR EACH ROW EXECUTE FUNCTION nemura.organisation_registered()
+
+## policies (table | name | using | with check)
+organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+
+## functions (definition)
+CREATE OR REPLACE FUNCTION nemura.current_org()
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE PARALLEL SAFE
+AS $function$
+  SELECT CAST(nullif(pg_catalog.current_setting('app.org_id', true), '') AS pg_catalog.uuid)
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.organisation_registered()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  INSERT INTO nemura.tenant_directory (organisation_id) VALUES (NEW.organisation_id);
+  RETURN NULL;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.require_org()
+ RETURNS uuid
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  org uuid := nemura.current_org();
+BEGIN
+  IF org IS NULL THEN
+    RAISE EXCEPTION 'No organisation is set for this transaction'
+      USING ERRCODE = 'NM006',
+            HINT = 'Run the work through the unit of work, which sets app.org_id first (INV-06).';
+  END IF;
+  RETURN org;
+END
+$function$
+
+
