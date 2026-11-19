@@ -20,13 +20,14 @@ import (
 
 func main() {
 	os.Exit(app.Serve("mcp", func(s *httpserver.Server, deps app.Deps) error {
-		return routes(s, deps.Clock, os.Getenv, introspector)
+		return routes(s, deps.Clock, os.Getenv, introspector, backend)
 	}))
 }
 
 // routes mounts the launch shell, or with the deployment switch on the MCP server. A switch that is neither on nor off, or an
 // "on" the server cannot be built for, is an error: the service does not start, so the endpoint is never a half-open one.
-func routes(s *httpserver.Server, clock ports.Clock, getenv func(string) string, introspect func(admin string) (mcpserver.Introspector, error)) error {
+func routes(s *httpserver.Server, clock ports.Clock, getenv func(string) string, introspect func(admin string) (mcpserver.Introspector, error),
+	data func(clock ports.Clock, getenv func(string) string) (mcpserver.Backend, error)) error {
 	log := logging.New(os.Stderr, slog.LevelInfo)
 	on, err := mcpserver.Enabled(getenv)
 	if err != nil {
@@ -40,7 +41,11 @@ func routes(s *httpserver.Server, clock ports.Clock, getenv func(string) string,
 	if err != nil {
 		return err
 	}
-	srv, err := mcpserver.FromEnv(getenv, mcpserver.Wiring{OAuth: oauth, Clock: clock, Log: log, Version: app.Info("mcp").Version})
+	calls, err := data(clock, getenv)
+	if err != nil {
+		return fmt.Errorf("the MCP server cannot reach the data: %w", err)
+	}
+	srv, err := mcpserver.FromEnv(getenv, mcpserver.Wiring{OAuth: oauth, Clock: clock, Log: log, Version: app.Info("mcp").Version, Calls: calls})
 	if err != nil {
 		return fmt.Errorf("the MCP server cannot start: %w", err)
 	}

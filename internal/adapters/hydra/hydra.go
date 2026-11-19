@@ -5,6 +5,7 @@ package hydra
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -241,8 +242,17 @@ type TrustRelationship struct {
 	ExpiresAt       time.Time
 }
 
-// Trust registers a trust relationship and returns its ID.
+// Trust registers a trust relationship and returns its ID. A relationship the issuer already has is replaced, so registering at
+// each start leaves one.
 func (a *Admin) Trust(ctx context.Context, t TrustRelationship) (string, error) {
+	var existing []struct {
+		ID string `json:"id"`
+	}
+	if err := a.do(ctx, http.MethodGet, "/admin/trust/grants/jwt-bearer/issuers", url.Values{"issuer": {t.Issuer}}, nil, nil, &existing); err == nil {
+		for _, g := range existing {
+			_ = a.do(ctx, http.MethodDelete, "/admin/trust/grants/jwt-bearer/issuers/"+url.PathEscape(g.ID), nil, nil, nil, nil)
+		}
+	}
 	body := map[string]any{"issuer": t.Issuer, "allow_any_subject": t.AllowAnySubject, "scope": t.Scopes, "jwk": t.Key,
 		"expires_at": t.ExpiresAt.UTC().Format(time.RFC3339)}
 	if t.Subject != "" {
@@ -258,6 +268,9 @@ func (a *Admin) Trust(ctx context.Context, t TrustRelationship) (string, error) 
 // DelegationClient is the MCP server's confidential client for the JWT-bearer grant: it may ask only
 // for Audiences and Scopes, and its tokens live AccessTokenLifespan.
 type DelegationClient struct {
+	// ID and Secret, when set, are the client's fixed credentials (the local stack's, so the API and the MCP service agree
+	// without sharing a database): registering again replaces the client. Empty: the server chooses them.
+	ID, Secret          string
 	Name                string
 	Audiences, Scopes   []string
 	AccessTokenLifespan time.Duration
@@ -274,6 +287,14 @@ func (a *Admin) CreateDelegationClient(ctx context.Context, c DelegationClient) 
 	var out struct {
 		ID     string `json:"client_id"`
 		Secret string `json:"client_secret"`
+	}
+	if c.ID != "" {
+		body["client_id"], body["client_secret"] = c.ID, c.Secret
+		err = a.do(ctx, http.MethodPut, "/admin/clients/"+url.PathEscape(c.ID), nil, body, nil, &out)
+		if errors.Is(err, ports.ErrNoChallenge) {
+			err = a.do(ctx, http.MethodPost, "/admin/clients", nil, body, nil, &out)
+		}
+		return cmp.Or(out.ID, c.ID), c.Secret, err
 	}
 	err = a.do(ctx, http.MethodPost, "/admin/clients", nil, body, nil, &out)
 	return out.ID, out.Secret, err

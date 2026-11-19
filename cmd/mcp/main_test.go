@@ -30,7 +30,8 @@ func env(m map[string]string) func(string) string { return func(k string) string
 func serve(t *testing.T, e map[string]string) (*httptest.Server, error) {
 	t.Helper()
 	s := httpserver.New(version.Info{})
-	err := routes(s, frozen{}, env(e), func(string) (mcpserver.Introspector, error) { return noOAuth{}, nil })
+	err := routes(s, frozen{}, env(e), func(string) (mcpserver.Introspector, error) { return noOAuth{}, nil },
+		func(ports.Clock, func(string) string) (mcpserver.Backend, error) { return nil, nil })
 	if err != nil {
 		return nil, err
 	}

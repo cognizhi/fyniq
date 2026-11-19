@@ -141,10 +141,17 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 
 ## 6. Reaching the data (AI-16, AI-36, AI-41)
 
-- [ ] 6.1 The delegation wired (design D8): the signer port with a local ES256 key in the secret store, the delegation client
+- [x] 6.1 The delegation wired (design D8): the signer port with a local ES256 key in the secret store, the delegation client
   and trust relationship registered at local start-up, `mcpdelegation.Delegator` used by `mcpserver`, an audit row for each
   delegated token. KMS and `private_key_jwt` are `[live-verify]`. Tests `// req: AI-36` (the MCP token never reaches the API,
   scopes are the intersection, an assertion used twice is refused), `// req: AI-45` (an alert on every delegated token).
+  Built: `mcpserver.APIBackend` (obtains the delegated token for `<organisation>:<person>`, posts the one MCP operation with its
+  service token, turns the answer into MCP: scope challenge, 429, tool errors); `Delegator.For`; `authn.Delegation.LookupIn` (the API
+  checks the person is an active member of the organisation the MCP token names, and reads their roles); the local key derived from a
+  seed (`mcpdelegation.LocalKey`, local builds only) and the API registering the delegation client and the trust relationship at
+  start; `cmd/mcp` wires it in local mode, and a release build refuses to start the server with the switch on until the cloud
+  wiring (Cloud KMS key, `private_key_jwt`, Google service identity) exists `[live-verify]`. `TestAnMCPCallReachesTheDataOnlyAs
+  TheDelegatedPerson` runs the whole path against the pinned Hydra. **Left:** the per-delegated-token alert (8.3).
 - [x] 6.2 `ServiceMCP` and the internal operations (design D3): `/internal/v1/mcp/tool-calls` and the proposal operations, their
   contract in `fyniq-internal.v1.yaml`, the per-call gates in one transaction (organisation, opt-in, client, active member, grant
   age, scope, class `agent`), one stable problem code per refusal, and a matrix test that each service token opens only its own
