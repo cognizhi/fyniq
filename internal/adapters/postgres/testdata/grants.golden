@@ -144,6 +144,8 @@ fyniq_api       UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, und
 fyniq_api       EXECUTE   beat()
 fyniq_api       INSERT    bill_payment_plan (bill_id, planned_on, recorded_by)
 fyniq_api       SELECT    bill_payment_plan
+fyniq_api       INSERT    billing_rate (created_by, currency, customer_id, effective_from, hourly_rate, minor_units, project_id, role_name, user_id)
+fyniq_api       SELECT    billing_rate
 fyniq_api       EXECUTE   bootstrap_installation_connectors()
 fyniq_api       INSERT    brand_version
 fyniq_api       SELECT    brand_version
@@ -313,6 +315,12 @@ fyniq_api       INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_api       SELECT    journal_entry
 fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_api       SELECT    journal_line
+fyniq_api       EXECUTE   kb_platform_index()
+fyniq_api       EXECUTE   kb_platform_info()
+fyniq_api       EXECUTE   kb_platform_page_get()
+fyniq_api       EXECUTE   kb_platform_page_guides()
+fyniq_api       EXECUTE   kb_platform_readable()
+fyniq_api       EXECUTE   kb_platform_search()
 fyniq_api       INSERT    kpi_input (entered_at, entered_by, headcount, lost_customers, month, new_customers, paying_customers)
 fyniq_api       SELECT    kpi_input
 fyniq_api       UPDATE    kpi_input (entered_at, entered_by, headcount, lost_customers, new_customers, paying_customers, version)
@@ -431,6 +439,8 @@ fyniq_api       INSERT    period_reopen (after_hash, after_snapshot, approval_id
 fyniq_api       SELECT    period_reopen
 fyniq_api       INSERT    period_variance_explanation (account_id, current_amount, explanation, kind, period_id, previous_amount, written_at, written_by)
 fyniq_api       SELECT    period_variance_explanation
+fyniq_api       INSERT    person_cost_rate (created_by, currency, effective_from, hourly_rate, minor_units, role_name, user_id)
+fyniq_api       SELECT    person_cost_rate
 fyniq_api       INSERT    person_key (cohort, person, wrapped)
 fyniq_api       SELECT    person_key
 fyniq_api       INSERT    policy_acknowledgement (acknowledged_at, acknowledged_by, key, version)
@@ -441,6 +451,15 @@ fyniq_api       INSERT    policy_version (body, from_draft, key, published_at, p
 fyniq_api       SELECT    policy_version
 fyniq_api       EXECUTE   private_endpoints()
 fyniq_api       EXECUTE   private_endpoints_for()
+fyniq_api       INSERT    project (billing_method, budget_amount, budget_minutes, currency, customer_id, ends_on, id, minor_units, starts_on, status)
+fyniq_api       SELECT    project
+fyniq_api       UPDATE    project (billing_method, budget_amount, budget_minutes, changed_at, customer_id, ends_on, starts_on, status, version)
+fyniq_api       INSERT    project_member (is_manager, project_id, user_id)
+fyniq_api       SELECT    project_member
+fyniq_api       UPDATE    project_member (is_active, is_manager)
+fyniq_api       INSERT    project_task (billable, name, project_id)
+fyniq_api       SELECT    project_task
+fyniq_api       UPDATE    project_task (billable, changed_at, is_active, name, version)
 fyniq_api       EXECUTE   publish_installation_announcement()
 fyniq_api       INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
 fyniq_api       SELECT    quote_outcome
@@ -529,6 +548,18 @@ fyniq_api       SELECT    team_mode
 fyniq_api       SELECT    tenants
 fyniq_api       INSERT    tick_drill (environment, escalation_minutes, findings, first_alert_minutes, held_on, paused_minutes, recorded_at, recorded_by)
 fyniq_api       SELECT    tick_drill
+fyniq_api       DELETE    time_entry
+fyniq_api       INSERT    time_entry (billable, minutes, note, project_id, reverses_id, task_id, user_id, work_date)
+fyniq_api       SELECT    time_entry
+fyniq_api       UPDATE    time_entry (billable, changed_at, minutes, note, status, submission_id, task_id, version, work_date)
+fyniq_api       DELETE    time_timer
+fyniq_api       INSERT    time_timer (billable, note, project_id, started_at, task_id, user_id)
+fyniq_api       SELECT    time_timer
+fyniq_api       EXECUTE   time_week_id()
+fyniq_api       EXECUTE   time_week_start()
+fyniq_api       INSERT    timesheet_submission (project_id, submitted_at, user_id, week_start)
+fyniq_api       SELECT    timesheet_submission
+fyniq_api       UPDATE    timesheet_submission (comment, decided_at, decided_by, status, version)
 fyniq_api       EXECUTE   unlink_identity()
 fyniq_api       EXECUTE   user_cooling_off_until()
 fyniq_api       EXECUTE   user_for_identity()
@@ -568,6 +599,7 @@ fyniq_executor  SELECT    audit_recovery_acknowledgement
 fyniq_executor  INSERT    audit_request_detail (country, id, ip, occurred_at, region, user_agent)
 fyniq_executor  SELECT    balance
 fyniq_executor  SELECT    bill_payment_plan
+fyniq_executor  SELECT    billing_rate
 fyniq_executor  SELECT    brand_version
 fyniq_executor  SELECT    break_glass
 fyniq_executor  SELECT    break_glass_use
@@ -630,8 +662,12 @@ fyniq_executor  SELECT    period_close
 fyniq_executor  SELECT    period_close_check
 fyniq_executor  SELECT    period_reopen
 fyniq_executor  SELECT    period_variance_explanation
+fyniq_executor  SELECT    person_cost_rate
 fyniq_executor  INSERT    person_key (cohort, person, wrapped)
 fyniq_executor  SELECT    person_key
+fyniq_executor  SELECT    project
+fyniq_executor  SELECT    project_member
+fyniq_executor  SELECT    project_task
 fyniq_executor  SELECT    quote_outcome
 fyniq_executor  SELECT    recurring_bill
 fyniq_executor  SELECT    recurring_bill_version
@@ -649,6 +685,11 @@ fyniq_executor  SELECT    statutory_pack_activation
 fyniq_executor  SELECT    statutory_pack_rows
 fyniq_executor  SELECT    statutory_pack_versions
 fyniq_executor  SELECT    team_mode
+fyniq_executor  SELECT    time_entry
+fyniq_executor  SELECT    time_timer
+fyniq_executor  EXECUTE   time_week_id()
+fyniq_executor  EXECUTE   time_week_start()
+fyniq_executor  SELECT    timesheet_submission
 fyniq_executor  SELECT    user_membership
 fyniq_executor  SELECT    withholding_decision
 fyniq_readonly  SELECT    access_review_attestation
@@ -709,6 +750,7 @@ fyniq_readonly  SELECT    bank_signal
 fyniq_readonly  SELECT    bank_statement
 fyniq_readonly  SELECT    bank_transfer
 fyniq_readonly  SELECT    bill_payment_plan
+fyniq_readonly  SELECT    billing_rate
 fyniq_readonly  SELECT    brand_version
 fyniq_readonly  SELECT    break_glass
 fyniq_readonly  SELECT    break_glass_use
@@ -817,9 +859,13 @@ fyniq_readonly  SELECT    period_close
 fyniq_readonly  SELECT    period_close_check
 fyniq_readonly  SELECT    period_reopen
 fyniq_readonly  SELECT    period_variance_explanation
+fyniq_readonly  SELECT    person_cost_rate
 fyniq_readonly  SELECT    policy_acknowledgement
 fyniq_readonly  SELECT    policy_draft
 fyniq_readonly  SELECT    policy_version
+fyniq_readonly  SELECT    project
+fyniq_readonly  SELECT    project_member
+fyniq_readonly  SELECT    project_task
 fyniq_readonly  SELECT    quote_outcome
 fyniq_readonly  SELECT    rate_limit_window
 fyniq_readonly  SELECT    recurring_bill
@@ -849,6 +895,11 @@ fyniq_readonly  SELECT    statutory_pack_rows
 fyniq_readonly  SELECT    statutory_pack_versions
 fyniq_readonly  SELECT    team_mode
 fyniq_readonly  SELECT    tick_drill
+fyniq_readonly  SELECT    time_entry
+fyniq_readonly  SELECT    time_timer
+fyniq_readonly  EXECUTE   time_week_id()
+fyniq_readonly  EXECUTE   time_week_start()
+fyniq_readonly  SELECT    timesheet_submission
 fyniq_readonly  SELECT    user_help_state
 fyniq_readonly  SELECT    user_membership
 fyniq_readonly  SELECT    withholding_decision
@@ -944,6 +995,7 @@ fyniq_worker    SELECT    bank_transfer
 fyniq_worker    UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, undo_reason, undone_at, undone_by, version)
 fyniq_worker    EXECUTE   beat()
 fyniq_worker    SELECT    bill_payment_plan
+fyniq_worker    SELECT    billing_rate
 fyniq_worker    SELECT    brand_version
 fyniq_worker    SELECT    break_glass
 fyniq_worker    SELECT    break_glass_use
@@ -1118,12 +1170,16 @@ fyniq_worker    SELECT    period_close
 fyniq_worker    SELECT    period_close_check
 fyniq_worker    SELECT    period_reopen
 fyniq_worker    SELECT    period_variance_explanation
+fyniq_worker    SELECT    person_cost_rate
 fyniq_worker    INSERT    person_key (cohort, person, wrapped)
 fyniq_worker    SELECT    person_key
 fyniq_worker    SELECT    policy_acknowledgement
 fyniq_worker    SELECT    policy_draft
 fyniq_worker    SELECT    policy_version
 fyniq_worker    EXECUTE   private_endpoints_for()
+fyniq_worker    SELECT    project
+fyniq_worker    SELECT    project_member
+fyniq_worker    SELECT    project_task
 fyniq_worker    EXECUTE   purge_ip_rate_windows()
 fyniq_worker    INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
 fyniq_worker    SELECT    quote_outcome
@@ -1174,6 +1230,11 @@ fyniq_worker    EXECUTE   tenant_rows()
 fyniq_worker    EXECUTE   tenant_tables()
 fyniq_worker    SELECT    tenants
 fyniq_worker    SELECT    tick_drill
+fyniq_worker    SELECT    time_entry
+fyniq_worker    SELECT    time_timer
+fyniq_worker    EXECUTE   time_week_id()
+fyniq_worker    EXECUTE   time_week_start()
+fyniq_worker    SELECT    timesheet_submission
 fyniq_worker    SELECT    user_help_state
 fyniq_worker    SELECT    user_membership
 fyniq_worker    SELECT    withholding_decision

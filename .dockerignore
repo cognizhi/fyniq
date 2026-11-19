@@ -6,6 +6,8 @@
 !internal/
 !db/embed.go
 !db/migrations/
+!db/nemura/embed.go
+!db/nemura/migrations/
 !compliance/registry.go
 !compliance/evidence.go
 !compliance/control.schema.json
@@ -24,6 +26,10 @@
 !evals/evals.go
 !agents/agents.go
 !agents/*/SKILL.md
+!kb/embed.go
+!kb/index.md
+!kb/schema.md
+!kb/pages/
 !contracts/ai/ai.go
 !contracts/ai/mcp-scopes.json
 !contracts/ai/mcp-clients.json
@@ -37,6 +43,7 @@
 !pnpm-lock.yaml
 !pnpm-workspace.yaml
 !apps/web/
+!sdk/typescript/
 !docs/design-system/fyniq/tokens.css
 !docs/design/screens/kit/ui.css
 !docs/prd/reviews/review-status.json
@@ -49,3 +56,5 @@ apps/web/dist
 apps/web/storybook-static
 apps/web/test-results
 apps/web/playwright-report
+sdk/typescript/node_modules
+sdk/typescript/dist

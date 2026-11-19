@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billable_minutes": {
+      "description": "Of them, the billable minutes.",
+      "examples": [
+        4200
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "cost": {
+      "description": "The time at cost in the base currency (RND-TIME per entry): at each person's rate for the Owner and the Payroll administrator, else at the role-average rate of at least three people, else the standard rate; absent when no rate may be used.",
+      "examples": [
+        "4687.50"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "The base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The first day.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "minutes": {
+      "description": "The approved net minutes: a reversing entry takes away what it reverses.",
+      "examples": [
+        4500
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "people": {
+      "description": "Each person's hours; their cost only at the payroll tier.",
+      "items": {
+        "$ref": "TimeCostPerson.schema.json"
+      },
+      "type": "array"
+    },
+    "project_id": {
+      "description": "The project.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "rate_basis": {
+      "description": "Where the rates came from: person (each person's own), role_average, standard, mixed when more than one applied, none (hours only).",
+      "enum": [
+        "person",
+        "role_average",
+        "standard",
+        "mixed",
+        "none"
+      ],
+      "examples": [
+        "role_average"
+      ],
+      "type": "string"
+    },
+    "to": {
+      "description": "The last day.",
+      "examples": [
+        "2026-11-30"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "from",
+    "to",
+    "minutes",
+    "billable_minutes",
+    "rate_basis",
+    "currency",
+    "people"
+  ],
+  "title": "TimeCost",
+  "type": "object"
+}

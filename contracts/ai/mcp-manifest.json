@@ -250,7 +250,7 @@
     {
       "name": "packs.get",
       "title": "Read a statutory value",
-      "description": "Reads the Singapore statutory values in force on a date from the organisation's active statutory pack: GST rates, codes and limits, CPF, SDL and corporate income tax rates, filing deadlines, and the corporate rules of ACRA and the Companies Act (lodgement periods, filing categories, audit exemption), each marked as the Act or ACRA's guidance. Each value is a fact with the pack's key and version and its official source. Quote statutory values only from this tool, never from memory.",
+      "description": "Reads the Singapore statutory values in force on a date from the organisation's active statutory pack: GST rates, codes and limits, CPF, SDL, self-help group fund and corporate income tax rates, filing deadlines, and the corporate rules of ACRA and the Companies Act (lodgement periods, filing categories, audit exemption), each marked as the Act or ACRA's guidance. Each value is a fact with the pack's key and version and its official source. Quote statutory values only from this tool, never from memory.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -270,6 +270,7 @@
               "sg-gst",
               "sg-cpf",
               "sg-sdl",
+              "sg-shg",
               "sg-cit",
               "sg-deadlines",
               "sg-acra"
@@ -291,8 +292,8 @@
       "scopes": [
         "fyniq.read.compliance"
       ],
-      "version": 2,
-      "sha256": "9b1a4643f9bc10be7cfc2f644ed9455d6e8c69ceb6ce332c6cca54f1df4c1fa6"
+      "version": 3,
+      "sha256": "35cd93c8641a538ce117f4723d8444e335747324d21609ef6cece505f9e0dc80"
     },
     {
       "name": "records.get",

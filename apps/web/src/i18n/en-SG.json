@@ -1163,6 +1163,14 @@
       "label": "Download payment list",
       "tooltip": "The list to key into your bank, with full account numbers, once you confirm it's you. Each download is recorded."
     },
+    "batch.download-wise": {
+      "label": "Download Wise batch file",
+      "tooltip": "Wise's batch payment file, with full account numbers, once you confirm it's you. Upload it to Wise. Each download is recorded."
+    },
+    "batch.download-dbs": {
+      "label": "Download DBS UFF file",
+      "tooltip": "DBS IDEAL's UFF, with full account numbers, once you confirm it's you. Upload it in DBS IDEAL. Each download is recorded."
+    },
     "batch.remittance-again": {
       "label": "Send again",
       "tooltip": "A supplier's remittance advice that gave up after several tries is sent once more, with a reason. It is still sent at most once."
@@ -1226,6 +1234,10 @@
     "banking.cash-position": {
       "label": "Cash position",
       "tooltip": "The cash in every open money account, other currencies at the day's rate; an account with no rate is left out and listed."
+    },
+    "bank-account.payment-file": {
+      "label": "Payment file",
+      "tooltip": "The file a payment batch paying from this account gives when released: the payment list for any bank, or the bank's own file once Fyniq writes it. A batch already released keeps its file."
     },
     "bank-account.complete-to": {
       "label": "Complete to",
@@ -1446,6 +1458,10 @@
     "bill.input-tax": {
       "label": "Input tax",
       "tooltip": "What the GST claim rests on: the document, the supplier's registration and whom it is addressed to."
+    },
+    "project.billable": {
+      "label": "Bill to the customer",
+      "tooltip": "A cost of a project can be billed on to its customer, with a markup on the cost. The project's Unbilled tab then lists it once it is posted, at its cost plus the markup."
     },
     "bill.business-share": {
       "label": "Business share (%)",
@@ -2194,6 +2210,78 @@
     "public.download": {
       "label": "Download the PDF",
       "tooltip": "Save the document as the sender issued it, to keep for your records."
+    },
+    "projects.overview": {
+      "label": "Projects",
+      "tooltip": "The work you track: each project's customer, how it is billed, its budget, who logs time on it and who approves that time. Off until an Owner or Administrator switches Projects and time on."
+    },
+    "projects.record": {
+      "label": "Project",
+      "tooltip": "One project: its customer, billing method, dates and budgets, the people on it and which of its managers can approve time, and its tasks."
+    },
+    "project.new": {
+      "label": "Add a project",
+      "tooltip": "A project is a value of your Project dimension, so lines you tag with it already count towards it. Choose how it is billed, its customer and who works on it."
+    },
+    "project.people": {
+      "label": "People on the project",
+      "tooltip": "Members log time on the project. A manager also approves that time, but only a person who holds the Approver or Controller role can: naming someone a manager gives them no right of its own."
+    },
+    "project.task-add": {
+      "label": "Add a task",
+      "tooltip": "Time is logged against a task of a project, such as Data migration. A task is never deleted: put it out of use when it is done."
+    },
+    "time.my-time": {
+      "label": "My time",
+      "tooltip": "Your own week of time by project and task: log it in the grid or with the timer, then send each week to the project's manager. Only you see and change it."
+    },
+    "time.timesheet": {
+      "label": "Timesheet",
+      "tooltip": "Your week, and the weeks your team sent you to approve for the projects you manage."
+    },
+    "time.grid": {
+      "label": "Your week",
+      "tooltip": "Time in hours and minutes by project, task and day, such as 2:15 or 2.25. Save it as often as you like; submitted and approved time cannot change."
+    },
+    "time.timer": {
+      "label": "Timer",
+      "tooltip": "Start the timer on a project and task and stop it when you finish: its time becomes a draft entry on the day it started, to the nearest minute, at least one."
+    },
+    "time.submit": {
+      "label": "Send the week for approval",
+      "tooltip": "Sends each project's part of the week to that project's managers. Submitted time is locked until they approve it or return it with a comment."
+    },
+    "time.approve": {
+      "label": "Time to approve",
+      "tooltip": "Weeks your team sent for approval on projects you manage. Approving locks the entries; returning one sends it back with your comment. You never approve your own time."
+    },
+    "time.correct": {
+      "label": "Correct approved time",
+      "tooltip": "Approved time never changes. A correction adds a reversing entry with the opposite time, and you enter the right time as a new entry; both are approved again."
+    },
+    "time.missing": {
+      "label": "Days with no time",
+      "tooltip": "Working days up to today with no time entered, less public holidays. Enter the time, or ignore a day you did not work."
+    },
+    "rates.cost-page": {
+      "label": "Cost rates",
+      "tooltip": "What an hour of each person's time costs, and the organisation's standard rate. Only the Owner and the Payroll administrator see a person's rate."
+    },
+    "rates.cost": {
+      "label": "Enter a cost rate",
+      "tooltip": "A person's cost of an hour from a day, grouped under a role. A rate never changes: a later day's replaces it. Until payroll fills it in, you type it."
+    },
+    "rates.billing": {
+      "label": "Billing rates",
+      "tooltip": "The price of an hour for the project, a role or a person, in the project's currency. The rate in force on the day of the time is used."
+    },
+    "rates.time-cost": {
+      "label": "Time at cost",
+      "tooltip": "Approved time this month valued by the server for you: each person's own rate only if you may see it, else the average of a role with three people or more, else the standard rate, else hours only."
+    },
+    "reports.projects": {
+      "label": "Project reports",
+      "tooltip": "What each project earns and costs, from posted ledger lines and approved time: revenue less time at cost less direct costs, with utilisation and realisation. The cost is valued for you: a person's own rate only if you may see it."
     },
     "claim.line-dimensions": {
       "label": "Team or project",

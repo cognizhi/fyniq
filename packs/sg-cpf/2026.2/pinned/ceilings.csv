@@ -1,0 +1,5 @@
+case,ceiling,month,want,why,source
+CPF-C-01,ow_monthly,2026-01,8000.00,"on or after 1 Jan 2026: $8,000",iras-cpf-ceilings
+CPF-C-02,ow_monthly,2030-06,8000.00,"no later change is announced",iras-cpf-ceilings
+CPF-C-03,annual_salary,2026-07,102000.00,"the annual salary ceiling remains at $102,000",iras-cpf-ceilings
+CPF-C-04,ow_monthly,2025-12,none,"2025's $7,400 is not held by this version",iras-cpf-ceilings

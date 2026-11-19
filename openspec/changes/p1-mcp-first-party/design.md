@@ -315,8 +315,9 @@ asserts while the deployment switch is off.
   rejects it, option (c) replaces one package.
 - **Spec drift.** The revision in force already differs from the PRD's and the skill's text. The change records the revision
   it was built against, re-checks it before the switch is set, and pins the headers it validates in tests.
-- **A client that cannot be pre-registered** (insists on dynamic registration or on a Client ID Metadata Document) would make
-  the allowlist depend on P2 work. Task 1.1 finds out first.
+- **Self-registration is an attack surface** the owner chose to open in P1 (D14): a public endpoint that creates OAuth clients.
+  It is closed by default, policy-checked, limited, narrow, pending until approved and expiring; the red-team rows for it are
+  part of QA-MCP-01 before the deployment switch is set.
 - **Scope map completeness.** Default deny means a forgotten tool is invisible, not exposed; the cost is a missing feature, so
   a test lists every registry tool and says whether it is mapped, and a reviewer reads the diff.
 - **Data leaves to the client's model.** Controlled by consent, scopes and the enabling decision, not by Fyniq's router
@@ -332,48 +333,78 @@ asserts while the deployment switch is off.
 - **Time to proof.** The suite needs Hydra in Testcontainers or the in-memory server the P0 tests use. The matrix of
   authorisation rows for the new operations runs only the new rows locally (`FYNIQ_MATRIX_ONLY`).
 
-## Decisions needed
+## Decided (the owner, 19 Nov 2026)
 
-Each has a recommended default, which the build uses until the owner decides; a different decision changes only the slice named.
+The owner decided the five questions this design asked. They are in PRD-001 rev 0.294 (AI-39, AI-35, new AI-90) and the specs.
 
-1. **How the real server is kept off after launch** (slice 3).
-   - **A. One image, a deployment switch `FYNIQ_MCP_SERVER`, default off** (recommended): the shell's behaviour and test are
-     untouched; the operator sets it after review #4. Costs: the server's code ships in the image while off, so the guarantee
-     is a flag, covered by a test and the red-team suite.
-   - B. Two images (`mcp` shell, `mcp-server`): no server code in the launch image, so "the server is not there" is literal.
-     Costs: a second image to budget (`deploy/docker/budgets.json`), sign, scan and deploy, and a routing change at the switch.
-   - C. Replace the shell now. Rejected: it contradicts the plan's gate on review #4 and the launch task's promise.
-2. **Which MCP protocol revisions the server speaks** (slice 4; changes AI-39, so a PRD revision).
-   - **A. 2026-07-28, and the earlier handshake revisions as a compatibility layer only if Claude Desktop (or a later finding)
-     needs them** (recommended): Claude Code 2.1.327 was captured speaking the modern shape first (task 1.2), the modern,
-     sessionless shape is the smaller surface, and the compatibility layer (a bound `Mcp-Session-Id`, as AI-39 says) is built
-     only on evidence.
-   - B. 2026-07-28 only: smallest surface and AI-39's session wording replaced by per-request authentication; may exclude
-     clients that have not moved.
-   - C. Both always: widest reach, the largest surface to attack and to keep in step.
-   - Either way the PRD revision rewrites AI-39 to say what is true for each revision served.
-3. **Delegation mechanism** (slice 4; no change unless the owner asks). Option (b) is decided (rev 0.25) and is built. The
-   security reviewer may prefer option (c) (Keycloak with RFC 8693, a second OAuth server to run) or our own exchange endpoint
-   (D3, alternative B), which removes the any-subject weakness at the cost of sending the MCP token to the API. No decision now;
-   named so review #4 has the options and the cost in one place.
-4. **How far an external client's model may read personal data** (slice 6, the consent text and the scope map).
-   - **A. Scope consent plus the Owner's enabling is enough, the consent screen names the data categories, the data inventory
-     records the path** (recommended): matches how an Owner already decides AI and keeps one switch.
-   - B. A separate Owner setting `mcp.personal_data` (off by default) that removes the `records.*` tools and the
-     party-dimension metrics from MCP until on: safer default, a second setting to explain, a thinner first release.
-   - C. No personal-class tool over MCP until a DPIA is complete: strictest, delays most of the value.
+1. **One image plus the deployment switch `FYNIQ_MCP_SERVER`** (D1, as built in #840). The shell stays the default.
+2. **MCP revision 2026-07-28 only** (D6). A compatibility layer for the earlier handshake (task 4.3) is built only if a real
+   client needs it. AI-39's session binding is superseded: an `Mcp-Session-Id` is ignored, never minted; the headers are
+   checked against the body.
+3. **Delegation stays open question 40's option (b)** (D8), as built; review #4 may still ask for option (c).
+4. **An external client's model reads what scope consent and the Owner's dual-controlled enabling allow; the AI exclusions
+   always apply** (D10). No separate personal-data setting.
+5. **Client registration is built now, in P1 (D14, AI-90)**, instead of waiting for P2 and Client ID Metadata Documents, so a
+   client that insists on registering itself (Claude Code's default; Claude Desktop-class connectors) can connect.
 
 Small choices decided here, so none stops the build: limit values as AI-43 proposes (60 a minute, 600 an hour, 5,000 a day, 30
 proposals an hour, 500 rows or 256 KB as ceilings); a second factor within the existing step-up window before consent;
-`fyniq.read.equity` not offered in P1 (no equity tool exists); first-party clients are Claude Desktop and Claude Code only;
-`iss` is checked by clients, so the authorisation server emits it when Hydra can.
+`fyniq.read.equity` not offered in P1 (no equity tool exists); the first-party clients are Claude Desktop and Claude Code;
+`iss` is not emitted by Hydra v26.2.0 (a SHOULD in the revision in force) and is left for the review pack.
+
+**D14. Client registration (AI-90): Fyniq's own endpoint in front of Hydra's admin API.**
+- *The choice.* Three ways to let a client register: (a) enable Hydra's own dynamic registration; (b) fetch a Client ID Metadata
+  Document from a URL the client names; (c) a Fyniq-owned RFC 7591 endpoint that validates and policy-checks the request, writes
+  Fyniq's own record, then creates the client through Hydra's admin API. **Chosen: (c).** (a) leaves the policy to Hydra, which
+  registers whatever its schema allows (our finding: it is off, and has no hook for an Owner's switch, a per-IP limit, a denylist
+  or approval). (b) makes the server fetch an attacker-named URL (SSRF, slow-read and size attacks) and the revision's own
+  preference for it matters only to clients that implement it; Claude Code 2.1.327 registers with RFC 7591 (design D7's capture).
+  (b) stays P2 (AI-46), behind `internal/egress` and its SSRF guards, when third parties arrive.
+- *Where.* In the API service (it has the database, the settings and the audit). A public operation `POST /v1/oauth/register` in
+  the contract (RFC 7591 request and response; errors are RFC 7591's `invalid_client_metadata` and `invalid_redirect_uri` inside
+  a problem with a stable code). The RFC 8414 authorisation-server metadata the client discovers is Fyniq's too: the API serves
+  `/.well-known/oauth-authorization-server/oauth` (the issuer's path), built from Hydra's own discovery document plus
+  `registration_endpoint`, so a client finds the endpoint; Caddy and the load balancer route both paths to the API.
+- *Closed by default, dual control.* A new setting `mcp.registration` (switch, off; turning it on is dual controlled, turning it
+  off is immediate). The endpoint answers only while at least one organisation has it on (a SECURITY DEFINER function reads the
+  effective settings across tenants, the one cross-tenant read, returning a boolean); otherwise 403 with a stable code. It is also
+  refused when the deployment's switch (`FYNIQ_MCP_SERVER`) is off, so the launch shell's closed door stays closed.
+- *Policy, in code and in `contracts/ai/mcp-registration-policy.json`.* Public clients only (`token_endpoint_auth_method: none`),
+  grants `authorization_code` and `refresh_token`, response type `code`. Redirect URIs, one to five, each **exact**: `https` with a
+  host name (no IP literal, no userinfo, no fragment, no wildcard, at most 255 characters), or a loopback address
+  (`http://127.0.0.1`, `http://[::1]` or `http://localhost`, where the port alone may vary: RFC 8252, which Hydra matches
+  natively, as task 1.1 proved); no other scheme in P1. `client_name`: 1 to 100 printable characters, and never a name that
+  impersonates a first-party client or Fyniq (compared after case, spacing and look-alike folding). Anything the server would
+  fetch or trust is refused: `jwks_uri`, `jwks`, `request_uris`, `sector_identifier_uri`, `software_statement`, `logo_uri`,
+  `client_uri`, `tos_uri`, `policy_uri`; so are `scope` values beyond the default, any other grant, and secrets. A deny list (names,
+  redirect hosts) is a contract file reviewed like code. Unknown fields are refused, not ignored.
+- *Narrow and pending.* The client is created `agent` class (proposal-only), MCP audience only, scopes `openid`, `offline_access`
+  and `fyniq.read.reports`. It is **unverified**: the consent screen says so and shows its name and redirect host, never a verified
+  publisher. It cannot connect until an Owner approves it onto the allowlist: `mcp.clients` becomes a list of first-party names
+  and registered client IDs (a new kind; adding is dual controlled, removing is at once), each ID checked against Fyniq's record.
+  Widening a registered client's scopes beyond reports is an Owner's later, dual-controlled change.
+- *Limits.* Per IP: 5 registrations an hour and 20 a day (the edge's per-IP limit for routes that need no organisation, SEC-23,
+  plus a counter in the record); at most 50 registrations pending across the installation; a request body of at most 8 KiB. Over a
+  limit: 429 with `Retry-After`.
+- *Expiry.* A registration no organisation approves within 7 days, or an approved one never used within 30, is removed from Hydra
+  and marked expired by a worker job; a removed client's registration is not reusable.
+- *Record and audit.* A global table `mcp_client` (client ID, name, redirect URIs, status pending, approved, denied or expired,
+  created, last used, the registering address's network prefix); every registration, refusal, approval, denial and expiry is a
+  security event with the requesting address, never a secret, and each organisation's approval or denial is also in its own audit.
+- *Not decided here, `[live-verify]`:* that Claude Desktop-class connectors register from Anthropic's callback
+  (`https://claude.ai/api/mcp/auth_callback`, exact https, which the policy admits) rather than a private-use scheme, which the
+  policy refuses in P1.
+- *Red-team rows (QA-MCP-01):* registration while closed; a wildcard, a fragment, a userinfo, an IP-literal, a private-use or a
+  `javascript:` redirect; two URIs where one is a prefix of the other's host; a secret, a key set, a URL to fetch, a software
+  statement; an impersonating name and a look-alike; scopes beyond the default; the sixth registration from one address; the
+  fifty-first pending; a registered client using MCP before approval; a registered client's token reaching a tool outside its scopes;
+  an expired registration's client; Hydra's own `/oauth2/register` still 404; a registration that tries to make the server call a URL
+  (nothing is fetched).
 
 ## Open questions
 
-- Claude Desktop: how it connects to a remote MCP server (an Anthropic-hosted connector with a public URL and Anthropic's
-  callback, or a local bridge), whether it accepts a pre-registered client ID, and which protocol revision it sends. Cannot be
-  checked on a laptop's local stack; `[live-verify]` with the dev cloud. If it needs dynamic registration or a Client ID Metadata
-  Document, the first-party allowlist cannot include it until `p2-api-third-parties` builds those, and the owner decides
-  whether P1 ships with Claude Code alone.
+- Claude Desktop: whether it registers with RFC 7591 from Anthropic's callback and which protocol revision it sends; cannot be
+  checked on a laptop's local stack (`[live-verify]` with the dev cloud). If it needs a private-use redirect scheme, the policy
+  (exact https and loopback only) refuses it until the owner decides otherwise.
 - Whether the missing `iss` (RFC 9207) must be fixed before the switch is set: today a SHOULD in the revision in force.
 - Every statutory or vendor claim left as `[verify]` in the PRD stays so; nothing here restates one.

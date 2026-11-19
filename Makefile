@@ -8,6 +8,9 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 
 COMPOSE := docker compose -f deploy/local/compose.yaml
+# PEOPLE=yes adds Nemura, the optional people platform (PRD-002), to `make up` and `make dev`: the compose profile `people`.
+PEOPLE ?=
+PROFILES := --profile core$(if $(filter yes,$(PEOPLE)), --profile people)
 DESIGN := docs/design-system/fyniq
 SCREENS := docs/design/screens
 # OpenSpec CLI: the installed one, else the pinned version through npx (CI)
@@ -15,7 +18,7 @@ OPENSPEC ?= $(shell command -v openspec >/dev/null 2>&1 && echo openspec || echo
 export OPENSPEC_TELEMETRY := 0
 # The pinned toolchain from mise.toml when mise is installed; the tools on PATH otherwise
 MISE := $(shell command -v mise >/dev/null 2>&1 && echo "mise exec --")
-GO_IMAGES := api ai mcp worker executor render migrate jobs scanner clamd
+GO_IMAGES := api ai mcp worker executor render migrate jobs scanner clamd nemura
 # Mutation testing scope (QA-ENG-04): money, the rounding policies and the posting engine
 # Each Go test binary's limit: the API's authorisation matrix (20 roles × every operation) takes 20 to 25 minutes on a CI
 # runner beside the other database suites, and one run on a slow runner passed 30 (3 Nov 2026), past go test's default of
@@ -78,13 +81,14 @@ dev: ## Run the stack with hot reload: dependencies in Docker, the Go services a
 	@$(MAKE) --no-print-directory seed
 	@$(MISE) scripts/dev.sh
 
-up: ## Run the stack from the local flavour of the images, behind Caddy on http://localhost:8080
+up: ## Run the stack from the local flavour of the images, behind Caddy on http://localhost:8080 (PEOPLE=yes adds Nemura)
 	@$(MAKE) --no-print-directory images FLAVOURS=local PIN_CHECK=no
-	@$(COMPOSE) --profile core up -d --wait
+	@$(COMPOSE) $(PROFILES) up -d --wait
 	@echo "Fyniq       http://localhost:$${FYNIQ_HTTP_PORT:-8080}   (API http://localhost:$${FYNIQ_API_PORT:-8081}/version)"
+	@$(if $(filter yes,$(PEOPLE)),echo "Nemura      API http://localhost:$${NEMURA_API_PORT:-8087}/version   (the people platform, PRD-002)")
 
-down: ## Stop the stack started by `make up` (keeps the database volume)
-	@$(COMPOSE) --profile core down
+down: ## Stop the stack started by `make up`, Nemura included (keeps the database volume)
+	@$(COMPOSE) --profile core --profile people down
 
 seed: ## Write the sample company (DEV-04) to .data/seed/company.json
 	@$(MISE) go run -tags local ./cmd/seed --out .data/seed/company.json
@@ -105,7 +109,7 @@ restore-drill: ## The restore drill now against the local database (DR-06): a co
 	@$(MISE) go run -tags local ./cmd/jobs restore-drill
 
 reset: ## Stop everything and delete local data: the database volume and .data/
-	@$(COMPOSE) --profile core down -v
+	@$(COMPOSE) --profile core --profile people down -v
 	@rm -rf .data
 	@echo "✔ local data removed; run make dev to start again"
 
@@ -121,8 +125,8 @@ test: ## Run every merge gate offline (Docker needed for the database suites): m
 	@$(MAKE) --no-print-directory oracle-test
 	@$(MAKE) --no-print-directory check
 
-db-lint: ## Lint the migrations (squawk) and check the adapter's generated queries match them (sqlc)
-	@$(MISE) squawk db/migrations/*.sql
+db-lint: ## Lint Fyniq's and Nemura's migrations (squawk) and check the adapter's generated queries match them (sqlc)
+	@$(MISE) squawk db/migrations/*.sql db/nemura/migrations/*.sql
 	@cd internal/adapters/postgres && $(MISE) sqlc diff || { echo "✖ internal/adapters/postgres/sqlcdb is stale: run make sqlc"; exit 1; }
 	@echo "✔ migrations lint clean; generated queries up to date"
 
@@ -143,15 +147,18 @@ oracle-test: ## Run the independent oracle's own tests: hand-worked journals, th
 sqlc: ## Regenerate the PostgreSQL adapter's typed queries from db/migrations and its queries/
 	@cd internal/adapters/postgres && $(MISE) sqlc generate && echo "✔ internal/adapters/postgres/sqlcdb regenerated"
 
-openapi: ## Regenerate the API contract contracts/openapi/fyniq.v1.yaml and the internal one (fyniq-internal.v1.yaml), its JSON Schemas, the API reference and llms.txt from the code, and the web app's client; review the diff
+openapi: ## Regenerate Nemura's API contract contracts/openapi/nemura/nemura.v1.yaml, the API contract contracts/openapi/fyniq.v1.yaml and the internal one (fyniq-internal.v1.yaml), its JSON Schemas, the API reference and llms.txt from the code, and the SDK's types (sdk/typescript, the web app's too); review the diff
 	@$(MISE) go test ./internal/api -run 'TestTheContractIsTheCode|TestTheInternalContractIsTheCode|TestTheReferenceIsTheContract' -count=1 -args -update && echo "✔ contracts/openapi/fyniq.v1.yaml, contracts/schemas/ and docs/api/ regenerated"
-	@$(MISE) pnpm --filter @fyniq/web -s gen:api >/dev/null && echo "✔ apps/web/src/api/schema.d.ts regenerated"
+	@$(MISE) go test ./internal/nemura/api -run 'TestTheContractIsTheCode' -count=1 -args -update && echo "✔ contracts/openapi/nemura/nemura.v1.yaml regenerated"
+	@$(MISE) pnpm --filter @fyniq/sdk -s gen >/dev/null && echo "✔ sdk/typescript/src/schema.d.ts regenerated"
 
-api-check: ## The API contract: Spectral lint (NFR-API-01) and the web app's generated client is current (FR-INT-17); oasdiff runs in the Go tests (QA-API-02)
+api-check: ## The API contract: Spectral lint (NFR-API-01) and the SDK's generated types (the web app's too) are current (FR-INT-17); oasdiff runs in the Go tests (QA-API-02)
 	@$(MISE) pnpm exec spectral lint contracts/openapi/fyniq.v1.yaml --ruleset contracts/openapi/spectral.yaml --fail-severity warn --quiet \
 	  && echo "✔ the API contract passes Spectral"
-	@$(MISE) pnpm --filter @fyniq/web -s check:api >/dev/null || { echo "✖ apps/web/src/api/schema.d.ts is stale: run pnpm --filter @fyniq/web gen:api"; exit 1; }
-	@echo "✔ the web app's API client matches the contract"
+	@$(MISE) pnpm exec spectral lint contracts/openapi/nemura/nemura.v1.yaml --ruleset contracts/openapi/nemura/spectral.yaml --fail-severity warn --quiet \
+	  && echo "✔ Nemura's API contract passes Spectral"
+	@$(MISE) pnpm --filter @fyniq/sdk -s check:api >/dev/null || { echo "✖ sdk/typescript/src/schema.d.ts is stale: run pnpm --filter @fyniq/sdk gen"; exit 1; }
+	@echo "✔ the SDK's types (the web app's too) match the contract"
 
 test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 	@$(MISE) pnpm --filter @fyniq/web test:e2e

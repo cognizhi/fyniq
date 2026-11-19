@@ -234,6 +234,20 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   settings), compiled into `kb/` (`fyniq-knowledge-base`), and the agent guide's MCP section (FR-INT-13: Fyniq answers for its
   tools and results, not an external model's wording; cite fact IDs). Tests `// req: AI-41`, `// req: QA-UI-05`.
 
+## 11. Client registration (AI-90, AI-35; design D14, the owner's decision of 19 Nov 2026)
+
+- [ ] 11.1 Migration 000585 `mcp_client` (global, status guard, the registering addresses' counters); the setting
+  `mcp.registration` (off, dual controlled, off at once) and `mcp.clients` taught registered client IDs (a new kind, checked
+  against the record); `POST /v1/oauth/register` (RFC 7591) with the policy of `contracts/ai/mcp-registration-policy.json`, the
+  limits, the cross-tenant "any organisation has it on" function, `RegisterPublicClient` on the Hydra adapter, and the security
+  events. Tests `// req: AI-90`, `// req: AI-35`, every red-team row of design D14 (`// asvs:`), the authorisation matrix row.
+- [ ] 11.2 The authorisation-server metadata (RFC 8414) at the issuer's path with `registration_endpoint`, from Hydra's discovery;
+  Caddy routes it to the API; Hydra's own `/oauth2/register` is still 404. Tests `// req: AI-36`, `// req: AI-90`.
+- [ ] 11.3 The expiry job (7 days unapproved, 30 days unused) through the outbox, removing the client from Hydra. Test
+  `// req: AI-90`.
+- [ ] 11.4 Approval: an Owner adds a pending registration to `mcp.clients` in Connected apps (dual controlled); consent shows an
+  unverified client's name and redirect host, never a verified publisher. Tests `// req: AI-90`, `// req: AI-37`.
+
 ## 10. The suite, the controls, local mode and the review pack
 
 - [x] 10.1 QA-MCP-01 assembled from the rows each slice added, run in `make test` and its own CI job, and the per-call cost

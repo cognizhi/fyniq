@@ -246,8 +246,8 @@ func TestSoundBooksPassTheirChecks(t *testing.T) {
 	if !strings.Contains(chain.Needs, "audit.verify") {
 		t.Errorf("the audit trail's check names %q", chain.Needs)
 	}
-	if len(states) != len(checks.Catalogue()) {
-		t.Errorf("%d checks ran, the catalogue has %d", len(states), len(checks.Catalogue()))
+	if len(states) != ungatedChecks() {
+		t.Errorf("%d checks ran, the catalogue has %d", len(states), ungatedChecks())
 	}
 }
 
@@ -511,7 +511,7 @@ func TestChecksRunOnAChangeNightlyAndOnRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, rep := range nightly {
-		if rep.Organisation == b.org && (len(rep.Run.Keys) != len(checks.Catalogue()) || !strings.Contains(string(rep.Run.Results), `"C.1 #7"`)) {
+		if rep.Organisation == b.org && (len(rep.Run.Keys) != ungatedChecks() || !strings.Contains(string(rep.Run.Results), `"C.1 #7"`)) {
 			t.Errorf("the nightly run: %v %s", rep.Run.Keys, rep.Run.Results)
 		}
 	}
@@ -880,4 +880,15 @@ func TestARunOnAChangeRunsAtMostOnceAMinute(t *testing.T) {
 	if _, err := stopped.Paced(ctx, b.org); err == nil {
 		t.Error("a cancelled wait ran the checks")
 	}
+}
+
+// ungatedChecks counts the checks no feature switch gates: an organisation with its modules off (the default) runs those only (FR-ORG-06).
+func ungatedChecks() int {
+	n := 0
+	for _, d := range checks.Catalogue() {
+		if d.Module == "" {
+			n++
+		}
+	}
+	return n
 }

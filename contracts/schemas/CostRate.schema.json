@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "effective_from": {
+      "description": "The first day it applies.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "hourly_rate": {
+      "description": "The cost of an hour in the base currency, an exact decimal with at most 6 decimals.",
+      "examples": [
+        "62.500000"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The rate's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5201"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "person_name": {
+      "description": "Their name.",
+      "examples": [
+        "Priya Nair"
+      ],
+      "type": "string"
+    },
+    "role": {
+      "description": "The role the person's rate is grouped under, for role-average rates; Standard for the standard rate.",
+      "examples": [
+        "Consultant"
+      ],
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The person; absent for the organisation's standard rate.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "role",
+    "effective_from",
+    "hourly_rate",
+    "currency"
+  ],
+  "title": "CostRate",
+  "type": "object"
+}

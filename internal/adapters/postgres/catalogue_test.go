@@ -51,7 +51,7 @@ var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbe
 	"fx_feed_rate", "capture_name", "installation_announcement", "document_link_token", "installation_connector",
 	"installation_connector_secret", "installation_change", "connector_route", "invitation_code", "sign_in_method",
 	"user_recovery_code", "recovery_confirmation", "account_recovery", "join_domain", "private_endpoint", "ip_rate_window", "ai_price_catalogue",
-	"ai_agent", "api_client_route", "mcp_client"}
+	"ai_agent", "api_client_route", "mcp_client", "kb_platform_release", "kb_platform_page", "kb_platform_page_source", "kb_platform_source"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain", "opening_balance"}
@@ -215,6 +215,8 @@ SELECT con.conname, src.relname, dst.relname,
 // data, through its own functions (FR-UX-14, §11.9).
 var deletable = map[string]string{
 	"fyniq_api item_price":           "an item's price list, replaced with the item's audited version",
+	"fyniq_api time_entry":           "a draft or returned entry a person removes from their own week before submitting it, which the week's audit event keeps; never a submitted or approved one (FY603)",
+	"fyniq_api time_timer":           "a running timer, ended into a draft entry or dropped: transient state, its start and stop audited",
 	"fyniq_worker authz_refusal":     "refusals kept for their security-log retention, then swept",
 	"fyniq_worker check_run":         "the checks' superseded runs; each check keeps its latest state",
 	"fyniq_worker idempotency_key":   "idempotency records past their window",

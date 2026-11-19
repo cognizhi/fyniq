@@ -457,6 +457,9 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"share_issue.price":            func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "price", v) },
 	"share_issue.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "amount", v) },
 	"holding_movement.shares":      func(t *testing.T, b porttest.Books, v string) error { return rawMovementShares(t, b, v) },
+	"person_cost_rate.hourly_rate": func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "person_cost_rate", v) },
+	"billing_rate.hourly_rate":     func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "billing_rate", v) },
+	"project.budget_amount":        func(t *testing.T, b porttest.Books, v string) error { return rawProject(t, b, v) },
 	"claim_category.line_limit":    func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "limit", v) },
 	"claim_category.receipt_above": func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "receipt", v) },
 	"claim_category.attendees_above": func(t *testing.T, b porttest.Books, v string) error {
@@ -1425,6 +1428,49 @@ func rawTransfer(t *testing.T, b porttest.Books, target, value string) error {
 from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, made_by, made_at)
 VALUES ($1, $2, $3, '2026-10-04', 'SGD', 2, $4::numeric, 'USD', 2, $5::numeric, $6::numeric, 'user:x', now())`,
 			uuid.New(), uuid.New(), uuid.New(), pick("from", "1350.00"), pick("to", "1000.00"), pick("fee", "5.00"))
+		return err
+	})
+}
+
+// rawRate inserts a cost rate (the standard one) or a billing rate whose hourly rate is value, in a transaction never committed.
+func rawRate(t *testing.T, b porttest.Books, table, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, db.URL("fyniq_api"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		if table == "person_cost_rate" {
+			_, err := tx.Exec(ctx, `INSERT INTO fyniq.person_cost_rate (role_name, effective_from, hourly_rate, currency, minor_units, created_by) VALUES ('Standard', '2030-01-01', $1::numeric, 'SGD', 2, 'user:x')`, value)
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.billing_rate (project_id, effective_from, hourly_rate, currency, minor_units, created_by) VALUES ($1, '2030-01-01', $2::numeric, 'SGD', 2, 'user:x')`, uuid.New(), value)
+		return err
+	})
+}
+
+// rawProject adds a Project dimension, a value of it and a project whose money budget is value, in one transaction that is
+// never committed (p1-projects).
+func rawProject(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	// The connection is closed here, not at the test's end: the test that calls it holds one for every column it attacks.
+	c, err := pgx.Connect(ctx, db.URL("fyniq_api"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		var dim, val uuid.UUID
+		if err := tx.QueryRow(ctx, `INSERT INTO fyniq.dimension (kind, name) VALUES ('project', 'Project') RETURNING id`).Scan(&dim); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, `INSERT INTO fyniq.dimension_value (dimension_id, code, name) VALUES ($1, 'NAN', 'NaN') RETURNING id`, dim).Scan(&val); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.project (id, currency, minor_units, billing_method, budget_amount) VALUES ($1, 'SGD', 2, 'internal', $2::numeric)`, val, value)
 		return err
 	})
 }

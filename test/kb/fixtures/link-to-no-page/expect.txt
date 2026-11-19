@@ -1,0 +1,2 @@
+error KB-LINK kb/pages/task/a.md
+warn KB-ORPHAN kb/pages/concept/b.md

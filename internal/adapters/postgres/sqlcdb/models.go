@@ -951,6 +951,21 @@ type FyniqBillPaymentPlan struct {
 	RecordedAt     time.Time
 }
 
+type FyniqBillingRate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      *uuid.UUID
+	CustomerID     *uuid.UUID
+	UserID         *uuid.UUID
+	RoleName       *string
+	EffectiveFrom  time.Time
+	HourlyRate     string
+	Currency       string
+	MinorUnits     int16
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
 type FyniqBrandVersion struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -1904,6 +1919,49 @@ type FyniqJournalLine struct {
 	InstrumentID   *uuid.UUID
 }
 
+type FyniqKbPlatformPage struct {
+	Key        string
+	Type       string
+	Title      string
+	Summary    string
+	Aliases    []string
+	Body       string
+	Sources    []byte
+	DataClass  string
+	Taint      string
+	Status     string
+	CompiledBy string
+	CompiledAt time.Time
+	Digest     string
+	Search     interface{}
+}
+
+type FyniqKbPlatformPageSource struct {
+	PageKey string
+	File    string
+	Sha256  string
+	Roles   []string
+	Draft   bool
+}
+
+type FyniqKbPlatformRelease struct {
+	Singleton bool
+	Version   string
+	Schema    string
+	Digest    string
+	LoadedAt  time.Time
+}
+
+type FyniqKbPlatformSource struct {
+	File   string
+	Key    string
+	Title  string
+	Roles  []string
+	Status string
+	Body   string
+	Search interface{}
+}
+
 type FyniqKpiInput struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID
@@ -2552,6 +2610,19 @@ type FyniqPeriodVarianceExplanation struct {
 	Kind           string
 }
 
+type FyniqPersonCostRate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         *uuid.UUID
+	RoleName       string
+	EffectiveFrom  time.Time
+	HourlyRate     string
+	Currency       string
+	MinorUnits     int16
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
 type FyniqPersonKey struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2608,6 +2679,45 @@ type FyniqPrivateEndpoint struct {
 	RecordedBy uuid.UUID
 	RecordedAt time.Time
 	ChangeID   *uuid.UUID
+}
+
+type FyniqProject struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	CustomerID     *uuid.UUID
+	Currency       string
+	MinorUnits     int16
+	Status         string
+	BillingMethod  string
+	StartsOn       pgtype.Date
+	EndsOn         pgtype.Date
+	BudgetMinutes  *int32
+	BudgetAmount   *string
+	Version        int32
+	CreatedAt      time.Time
+	ChangedAt      time.Time
+}
+
+type FyniqProjectMember struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	UserID         uuid.UUID
+	IsManager      bool
+	IsActive       bool
+	CreatedAt      time.Time
+}
+
+type FyniqProjectTask struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Name           string
+	Billable       bool
+	IsActive       bool
+	Version        int32
+	CreatedAt      time.Time
+	ChangedAt      time.Time
 }
 
 type FyniqQuoteOutcome struct {
@@ -3035,6 +3145,51 @@ type FyniqTickDrill struct {
 	Findings          string
 	RecordedBy        string
 	RecordedAt        time.Time
+}
+
+type FyniqTimeEntry struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	ProjectID      uuid.UUID
+	TaskID         uuid.UUID
+	WorkDate       time.Time
+	Minutes        int32
+	Billable       bool
+	Note           string
+	Status         string
+	SubmissionID   *uuid.UUID
+	ReversesID     *uuid.UUID
+	WeekID         *uuid.UUID
+	Version        int32
+	CreatedAt      time.Time
+	ChangedAt      time.Time
+}
+
+type FyniqTimeTimer struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	ProjectID      uuid.UUID
+	TaskID         uuid.UUID
+	Billable       bool
+	Note           string
+	StartedAt      time.Time
+}
+
+type FyniqTimesheetSubmission struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	ProjectID      uuid.UUID
+	WeekStart      time.Time
+	Status         string
+	SubmittedAt    time.Time
+	DecidedBy      *uuid.UUID
+	DecidedAt      *time.Time
+	Comment        string
+	WeekID         *uuid.UUID
+	Version        int32
 }
 
 type FyniqUserHelpState struct {

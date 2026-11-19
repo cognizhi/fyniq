@@ -644,6 +644,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-18] compile | docs/user-guide/approvals.md → approvals.decide (FM-6: unusual items in the weekly review, rev 0.287)
 
+## [2026-11-18] compile | docs/user-guide/banking.md and payment-batches.md → banking.accounts, banking.add-account, purchases.payment-batches (the money account's Payment file and the download label naming it, FR-BNK-12; the other banking pages re-hashed, unchanged)
+
 ## [2026-11-19] compile | organisation-settings: AI apps through MCP and AI app limits (p1-mcp-first-party 2.1)
 
 ## [2026-11-19] compile | organisation-settings: AI apps may register themselves (p1-mcp-first-party 11.1)
@@ -653,3 +655,9 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | connected-apps: when an app asks to connect (p1-mcp-first-party 9.3)
 
 ## [2026-11-19] compile | connected-apps: changes an app proposes (p1-mcp-first-party 7.x)
+
+## [2026-11-19] compile | docs/user-guide/projects-projects.md → projects.projects (the projects screens, p1-projects slice 1)
+
+## [2026-11-19] compile | docs/user-guide/projects-time.md → projects.time (time entry, timer and approval, p1-projects slice 2)
+
+## [2026-11-19] compile | docs/user-guide/projects-rates.md → projects.rates (rates and time at cost, p1-projects slice 3)

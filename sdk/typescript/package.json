@@ -1,0 +1,47 @@
+{
+  "name": "@fyniq/sdk",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "description": "The Fyniq TypeScript SDK: the typed client of the /v1 API, generated from contracts/openapi/fyniq.v1.yaml, with idempotency keys, retries, problem details, ETags, previews and cursor lists (PRD-001 FR-INT-17). The web app takes its types from it. Registry publication is P2.",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.d.ts"
+  },
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./schema": {
+        "types": "./dist/schema.d.ts"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "gen": "openapi-typescript ../../contracts/openapi/fyniq.v1.yaml --output src/schema.d.ts",
+    "check:api": "openapi-typescript ../../contracts/openapi/fyniq.v1.yaml --output src/schema.d.ts --check",
+    "build": "node scripts/build.mjs",
+    "prepack": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "openapi-typescript": "7.13.0",
+    "typescript": "6.0.3",
+    "vitest": "5.0.3"
+  }
+}

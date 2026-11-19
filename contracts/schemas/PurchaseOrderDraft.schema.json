@@ -45,6 +45,14 @@
       "maxLength": 2000,
       "type": "string"
     },
+    "project_id": {
+      "description": "The project the order is for (FR-PRJ-08): a bill made from the order carries it as a project value on each line, so the cost is the project's. A project of the organisation that is not closed; refused with PRJ-09 while Projects and time are off.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "reference": {
       "description": "A reference, such as the supplier's quotation number.",
       "examples": [

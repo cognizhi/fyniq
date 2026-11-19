@@ -13,11 +13,13 @@ from page front matter, and it lints pages against kb/schema.md. Standard librar
 """
 import datetime
 import hashlib
+import os
 import pathlib
 import re
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
+# KB_ROOT points the tool at another tree: the shared fixtures in test/kb/fixtures (Go and Python lints agree on them).
+ROOT = pathlib.Path(os.environ["KB_ROOT"]).resolve() if os.environ.get("KB_ROOT") else pathlib.Path(__file__).resolve().parent.parent
 KB = ROOT / "kb"
 PAGES = KB / "pages"
 INDEX = KB / "index.md"

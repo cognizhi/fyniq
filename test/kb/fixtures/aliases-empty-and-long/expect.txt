@@ -1,0 +1,2 @@
+error KB-ALIASES kb/pages/concept/b.md
+error KB-ALIASES kb/pages/task/a.md
