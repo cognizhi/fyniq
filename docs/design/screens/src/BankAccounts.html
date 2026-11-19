@@ -1,4 +1,4 @@
-<!-- fyniq-screen {"nav": "banking", "title": "Banking", "mode": "basic", "heights": {"compact": 3000, "medium": 2150, "expanded": 1400}} -->
+<!-- fyniq-screen {"nav": "banking", "title": "Banking", "mode": "basic", "heights": {"compact": 3800, "medium": 2900, "expanded": 2050}} -->
 <div class="fy-page fy-enter">
   <div class="fy-pagehead">
     <div class="fy-pagehead__text">
@@ -95,11 +95,43 @@
                 <div><dt>Last sync</dt><dd>09:12 today</dd></div>
                 <div><dt>Complete to</dt><dd>12 Oct 2026</dd></div>
                 <div style="grid-column: 1 / -1"><dt>Data source</dt><dd class="fy-row"><i data-icon="mail"></i>Bank reports by email: daily report and incoming-funds alerts</dd></div>
+                <div style="grid-column: 1 / -1"><dt>Payment file</dt><dd>The payment list</dd></div>
               </dl>
+            </div>
+            <div class="fy-card__body fy-stack fy-stack--3" id="a-dbs-file">
+              <p class="fy-small fy-secondary">The file a payment batch paying from this account gives when released: the payment list for any bank, or the bank's own file once Fyniq writes it. A batch already released keeps its file.</p>
+              <div class="fy-stack fy-stack--3" role="radiogroup" aria-labelledby="a-dbs-file-label">
+                <span class="fy-label" id="a-dbs-file-label">Payment file</span>
+                <button class="fy-choice" type="button" role="radio" aria-checked="true">
+                  <span class="fy-radio"></span>
+                  <span class="fy-stack fy-grow" style="gap: 4px">
+                    <span class="fy-strong">The payment list</span>
+                    <span class="fy-small fy-secondary">A CSV you key into your bank's bulk payment screen. It works for any bank.</span>
+                  </span>
+                </button>
+                <button class="fy-choice" type="button" role="radio" aria-checked="false" aria-disabled="true" style="opacity: 0.6">
+                  <span class="fy-radio"></span>
+                  <span class="fy-stack fy-grow" style="gap: 4px">
+                    <span class="fy-strong">DBS IDEAL's UFF</span>
+                    <span class="fy-small fy-secondary">The file you upload to DBS IDEAL to pay by FAST or GIRO.</span>
+                    <span class="fy-small fy-muted">Not available yet: Fyniq writes it once DBS's specification, DBS UFF Version 2.2, is in hand.</span>
+                  </span>
+                </button>
+                <button class="fy-choice" type="button" role="radio" aria-checked="false" aria-disabled="true" style="opacity: 0.6">
+                  <span class="fy-radio"></span>
+                  <span class="fy-stack fy-grow" style="gap: 4px">
+                    <span class="fy-strong">Wise's batch payment file</span>
+                    <span class="fy-small fy-secondary">A CSV in Wise's batch template, which you upload to Wise.</span>
+                    <span class="fy-small fy-muted">Only for a Wise account, and this account is not at Wise.</span>
+                  </span>
+                </button>
+              </div>
+              <div class="fy-row"><button class="fy-btn fy-btn--secondary" type="button" disabled="disabled">Save the payment file</button></div>
             </div>
             <div class="fy-card__foot">
               <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#banking/categorise?account=dbs">Categorise<span class="fy-badge" aria-label="12 lines">12</span></a>
               <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#banking/reconciliations/dbs/2026-09">Reconcile</a>
+              <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-expanded="true"><i data-icon="file-down"></i>Payment file</button>
             </div>
           </article>
 
@@ -121,12 +153,14 @@
                 <div><dt>Last import</dt><dd>9 Oct, 17:40</dd></div>
                 <div><dt>Complete to</dt><dd>9 Oct 2026</dd></div>
                 <div style="grid-column: 1 / -1"><dt>Data source</dt><dd class="fy-row"><i data-icon="file-spreadsheet"></i>File import (CSV)</dd></div>
+                <div style="grid-column: 1 / -1"><dt>Payment file</dt><dd>The payment list</dd></div>
               </dl>
               <p class="fy-error"><i data-icon="triangle-alert"></i>No statement since 9 Oct. Import the CSV for 10–12 Oct from OCBC Velocity.</p>
             </div>
             <div class="fy-card__foot">
               <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#banking/import?account=ocbc"><i data-icon="upload"></i>Import</a>
               <a class="fy-btn fy-btn--ghost fy-btn--sm" href="#banking/categorise?account=ocbc">Categorise<span class="fy-badge fy-badge--quiet" aria-label="2 lines">2</span></a>
+              <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-expanded="false"><i data-icon="file-down"></i>Payment file</button>
             </div>
           </article>
 
@@ -151,10 +185,12 @@
                 <div><dt>Last sync</dt><dd>09:05 today</dd></div>
                 <div><dt>Complete to</dt><dd>13 Oct 2026</dd></div>
                 <div style="grid-column: 1 / -1"><dt>Data source</dt><dd class="fy-row"><i data-icon="key-round"></i>Wise API, read-only key</dd></div>
+                <div style="grid-column: 1 / -1"><dt>Payment file</dt><dd>The payment list</dd></div>
               </dl>
             </div>
             <div class="fy-card__foot">
               <span class="fy-chip fy-chip--good"><i data-icon="circle-check"></i>Nothing to categorise</span>
+              <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-expanded="false"><i data-icon="file-down"></i>Payment file</button>
             </div>
           </article>
 
@@ -179,10 +215,12 @@
                 <div><dt>Last try</dt><dd>08:00 today, failed</dd></div>
                 <div><dt>Complete to</dt><dd>12 Oct 2026</dd></div>
                 <div style="grid-column: 1 / -1"><dt>Data source</dt><dd class="fy-row"><i data-icon="key-round"></i>Airwallex API, read-only key</dd></div>
+                <div style="grid-column: 1 / -1"><dt>Payment file</dt><dd>The payment list</dd></div>
               </dl>
             </div>
             <div class="fy-card__foot">
               <a class="fy-btn fy-btn--secondary fy-btn--sm" href="#banking/accounts/airwallex/source"><i data-icon="key-round"></i>Renew key</a>
+              <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button" aria-expanded="false"><i data-icon="file-down"></i>Payment file</button>
             </div>
           </article>
         </div>

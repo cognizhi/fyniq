@@ -1490,6 +1490,37 @@ journal_line | recorded_at | timestamp with time zone | not null | now()
 journal_line | party_id | uuid | null | 
 journal_line | dimension_set_id | uuid | null | 
 journal_line | instrument_id | uuid | null | 
+kb_platform_page | key | text | not null | 
+kb_platform_page | type | text | not null | 
+kb_platform_page | title | text | not null | 
+kb_platform_page | summary | text | not null | 
+kb_platform_page | aliases | text[] | not null | '{}'::text[]
+kb_platform_page | body | text | not null | 
+kb_platform_page | sources | jsonb | not null | 
+kb_platform_page | data_class | text | not null | 
+kb_platform_page | taint | text | not null | 
+kb_platform_page | status | text | not null | 
+kb_platform_page | compiled_by | text | not null | 
+kb_platform_page | compiled_at | date | not null | 
+kb_platform_page | digest | text | not null | 
+kb_platform_page | search | tsvector | not null | 
+kb_platform_page_source | page_key | text | not null | 
+kb_platform_page_source | file | text | not null | 
+kb_platform_page_source | sha256 | text | not null | 
+kb_platform_page_source | roles | text[] | not null | 
+kb_platform_page_source | draft | boolean | not null | 
+kb_platform_release | singleton | boolean | not null | true
+kb_platform_release | version | text | not null | 
+kb_platform_release | schema | text | not null | 
+kb_platform_release | digest | text | not null | 
+kb_platform_release | loaded_at | timestamp with time zone | not null | now()
+kb_platform_source | file | text | not null | 
+kb_platform_source | key | text | not null | 
+kb_platform_source | title | text | not null | 
+kb_platform_source | roles | text[] | not null | 
+kb_platform_source | status | text | not null | 
+kb_platform_source | body | text | not null | 
+kb_platform_source | search | tsvector | not null | 
 kpi_input | organisation_id | uuid | not null | current_org()
 kpi_input | id | uuid | not null | uuidv7()
 kpi_input | month | date | not null | 
@@ -2004,6 +2035,36 @@ private_endpoint | reason | text | not null |
 private_endpoint | recorded_by | uuid | not null | 
 private_endpoint | recorded_at | timestamp with time zone | not null | 
 private_endpoint | change_id | uuid | null | 
+project | organisation_id | uuid | not null | current_org()
+project | id | uuid | not null | 
+project | customer_id | uuid | null | 
+project | currency | text | not null | 
+project | minor_units | smallint | not null | 
+project | status | text | not null | 'active'::text
+project | billing_method | text | not null | 
+project | starts_on | date | null | 
+project | ends_on | date | null | 
+project | budget_minutes | integer | null | 
+project | budget_amount | numeric(20,4) | null | 
+project | version | integer | not null | 1
+project | created_at | timestamp with time zone | not null | now()
+project | changed_at | timestamp with time zone | not null | now()
+project_member | organisation_id | uuid | not null | current_org()
+project_member | id | uuid | not null | uuidv7()
+project_member | project_id | uuid | not null | 
+project_member | user_id | uuid | not null | 
+project_member | is_manager | boolean | not null | false
+project_member | is_active | boolean | not null | true
+project_member | created_at | timestamp with time zone | not null | now()
+project_task | organisation_id | uuid | not null | current_org()
+project_task | id | uuid | not null | uuidv7()
+project_task | project_id | uuid | not null | 
+project_task | name | text | not null | 
+project_task | billable | boolean | not null | true
+project_task | is_active | boolean | not null | true
+project_task | version | integer | not null | 1
+project_task | created_at | timestamp with time zone | not null | now()
+project_task | changed_at | timestamp with time zone | not null | now()
 quote_outcome | organisation_id | uuid | not null | current_org()
 quote_outcome | id | uuid | not null | uuidv7()
 quote_outcome | document_id | uuid | not null | 
@@ -4749,6 +4810,59 @@ journal_line | journal_line_party_fkey | FOREIGN KEY (organisation_id, party_id)
 journal_line | journal_line_pkey | PRIMARY KEY (organisation_id, id)
 journal_line | journal_line_posting_date_not_null | NOT NULL posting_date
 journal_line | journal_line_recorded_at_not_null | NOT NULL recorded_at
+kb_platform_page | kb_platform_page_aliases_not_null | NOT NULL aliases
+kb_platform_page | kb_platform_page_body_not_null | NOT NULL body
+kb_platform_page | kb_platform_page_class | CHECK ((data_class = ANY (ARRAY['general'::text, 'personal'::text, 'payroll'::text, 'equity'::text, 'identity'::text])))
+kb_platform_page | kb_platform_page_compiled_at_not_null | NOT NULL compiled_at
+kb_platform_page | kb_platform_page_compiled_by_not_null | NOT NULL compiled_by
+kb_platform_page | kb_platform_page_data_class_not_null | NOT NULL data_class
+kb_platform_page | kb_platform_page_digest | CHECK ((digest ~ '^[0-9a-f]{64}$'::text))
+kb_platform_page | kb_platform_page_digest_not_null | NOT NULL digest
+kb_platform_page | kb_platform_page_key_format | CHECK ((key ~ '^[a-z0-9][a-z0-9.-]{0,99}$'::text))
+kb_platform_page | kb_platform_page_key_not_null | NOT NULL key
+kb_platform_page | kb_platform_page_pkey | PRIMARY KEY (key)
+kb_platform_page | kb_platform_page_search_not_null | NOT NULL search
+kb_platform_page | kb_platform_page_sources | CHECK (((jsonb_typeof(sources) = 'array'::text) AND (jsonb_array_length(sources) > 0)))
+kb_platform_page | kb_platform_page_sources_not_null | NOT NULL sources
+kb_platform_page | kb_platform_page_status | CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text])))
+kb_platform_page | kb_platform_page_status_not_null | NOT NULL status
+kb_platform_page | kb_platform_page_summary_not_null | NOT NULL summary
+kb_platform_page | kb_platform_page_taint | CHECK ((taint = ANY (ARRAY['trusted'::text, 'untrusted'::text])))
+kb_platform_page | kb_platform_page_taint_not_null | NOT NULL taint
+kb_platform_page | kb_platform_page_text | CHECK ((((length(title) >= 1) AND (length(title) <= 200)) AND ((length(summary) >= 1) AND (length(summary) <= 160))))
+kb_platform_page | kb_platform_page_title_not_null | NOT NULL title
+kb_platform_page | kb_platform_page_trusted | CHECK ((taint = 'trusted'::text))
+kb_platform_page | kb_platform_page_type | CHECK ((type = ANY (ARRAY['concept'::text, 'task'::text, 'reference'::text, 'policy'::text, 'decision'::text])))
+kb_platform_page | kb_platform_page_type_not_null | NOT NULL type
+kb_platform_page_source | kb_platform_page_source_draft_not_null | NOT NULL draft
+kb_platform_page_source | kb_platform_page_source_file_not_null | NOT NULL file
+kb_platform_page_source | kb_platform_page_source_page | FOREIGN KEY (page_key) REFERENCES kb_platform_page(key) ON DELETE CASCADE
+kb_platform_page_source | kb_platform_page_source_page_key_not_null | NOT NULL page_key
+kb_platform_page_source | kb_platform_page_source_pkey | PRIMARY KEY (page_key, file)
+kb_platform_page_source | kb_platform_page_source_roles | CHECK ((cardinality(roles) >= 1))
+kb_platform_page_source | kb_platform_page_source_roles_not_null | NOT NULL roles
+kb_platform_page_source | kb_platform_page_source_sha | CHECK ((sha256 ~ '^[0-9a-f]{64}$'::text))
+kb_platform_page_source | kb_platform_page_source_sha256_not_null | NOT NULL sha256
+kb_platform_release | kb_platform_release_digest | CHECK ((digest ~ '^[0-9a-f]{64}$'::text))
+kb_platform_release | kb_platform_release_digest_not_null | NOT NULL digest
+kb_platform_release | kb_platform_release_loaded_at_not_null | NOT NULL loaded_at
+kb_platform_release | kb_platform_release_one | CHECK (singleton)
+kb_platform_release | kb_platform_release_pkey | PRIMARY KEY (singleton)
+kb_platform_release | kb_platform_release_schema_not_null | NOT NULL schema
+kb_platform_release | kb_platform_release_singleton_not_null | NOT NULL singleton
+kb_platform_release | kb_platform_release_text | CHECK ((((length(version) >= 1) AND (length(version) <= 100)) AND (schema ~ '^kb-schema@[0-9]+$'::text)))
+kb_platform_release | kb_platform_release_version_not_null | NOT NULL version
+kb_platform_source | kb_platform_source_body_not_null | NOT NULL body
+kb_platform_source | kb_platform_source_file | CHECK ((file ~ '^docs/user-guide/[a-z0-9/_.-]+\.md$'::text))
+kb_platform_source | kb_platform_source_file_not_null | NOT NULL file
+kb_platform_source | kb_platform_source_key_not_null | NOT NULL key
+kb_platform_source | kb_platform_source_pkey | PRIMARY KEY (file)
+kb_platform_source | kb_platform_source_roles | CHECK ((cardinality(roles) >= 1))
+kb_platform_source | kb_platform_source_roles_not_null | NOT NULL roles
+kb_platform_source | kb_platform_source_search_not_null | NOT NULL search
+kb_platform_source | kb_platform_source_status | CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text])))
+kb_platform_source | kb_platform_source_status_not_null | NOT NULL status
+kb_platform_source | kb_platform_source_title_not_null | NOT NULL title
 kpi_input | kpi_input_customers_together | CHECK ((((paying_customers IS NULL) = (new_customers IS NULL)) AND ((new_customers IS NULL) = (lost_customers IS NULL))))
 kpi_input | kpi_input_entered_at_not_null | NOT NULL entered_at
 kpi_input | kpi_input_entered_by | CHECK (((length(btrim(entered_by)) >= 1) AND (length(btrim(entered_by)) <= 200)))
@@ -5614,6 +5728,53 @@ private_endpoint | private_endpoint_service_not_null | NOT NULL service
 private_endpoint | private_endpoint_tls_pin_not_null | NOT NULL tls_pin
 private_endpoint | private_endpoint_version_not_null | NOT NULL version
 private_endpoint | private_endpoint_version_positive | CHECK ((version >= 1))
+project | project_billing_known | CHECK ((billing_method = ANY (ARRAY['time_and_materials'::text, 'fixed_fee'::text, 'retainer'::text, 'internal'::text])))
+project | project_billing_method_not_null | NOT NULL billing_method
+project | project_budget_amount | CHECK (((budget_amount IS NULL) OR ((budget_amount <> 'NaN'::numeric) AND (budget_amount >= (0)::numeric) AND (budget_amount = trunc(budget_amount, (minor_units)::integer)))))
+project | project_budget_minutes | CHECK (((budget_minutes IS NULL) OR ((budget_minutes >= 0) AND (budget_minutes <= 100000000))))
+project | project_changed_at_not_null | NOT NULL changed_at
+project | project_created_at_not_null | NOT NULL created_at
+project | project_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
+project | project_currency_not_null | NOT NULL currency
+project | project_customer_fkey | FOREIGN KEY (organisation_id, customer_id) REFERENCES contact(organisation_id, id)
+project | project_dates_ordered | CHECK (((starts_on IS NULL) OR (ends_on IS NULL) OR (starts_on <= ends_on)))
+project | project_id_not_null | NOT NULL id
+project | project_minor_units_not_null | NOT NULL minor_units
+project | project_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+project | project_organisation_id_not_null | NOT NULL organisation_id
+project | project_pkey | PRIMARY KEY (organisation_id, id)
+project | project_status_known | CHECK ((status = ANY (ARRAY['planned'::text, 'active'::text, 'on_hold'::text, 'closed'::text])))
+project | project_status_not_null | NOT NULL status
+project | project_value_fkey | FOREIGN KEY (organisation_id, id) REFERENCES dimension_value(organisation_id, id)
+project | project_version_not_null | NOT NULL version
+project | project_version_positive | CHECK ((version >= 1))
+project | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+project_member | project_member_created_at_not_null | NOT NULL created_at
+project_member | project_member_id_not_null | NOT NULL id
+project_member | project_member_is_active_not_null | NOT NULL is_active
+project_member | project_member_is_manager_not_null | NOT NULL is_manager
+project_member | project_member_organisation_id_not_null | NOT NULL organisation_id
+project_member | project_member_person_key | UNIQUE (organisation_id, project_id, user_id)
+project_member | project_member_pkey | PRIMARY KEY (organisation_id, id)
+project_member | project_member_project_fkey | FOREIGN KEY (organisation_id, project_id) REFERENCES project(organisation_id, id)
+project_member | project_member_project_id_not_null | NOT NULL project_id
+project_member | project_member_user_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+project_member | project_member_user_id_not_null | NOT NULL user_id
+project_member | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+project_task | project_task_billable_not_null | NOT NULL billable
+project_task | project_task_changed_at_not_null | NOT NULL changed_at
+project_task | project_task_created_at_not_null | NOT NULL created_at
+project_task | project_task_id_not_null | NOT NULL id
+project_task | project_task_is_active_not_null | NOT NULL is_active
+project_task | project_task_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)))
+project_task | project_task_name_not_null | NOT NULL name
+project_task | project_task_organisation_id_not_null | NOT NULL organisation_id
+project_task | project_task_pkey | PRIMARY KEY (organisation_id, id)
+project_task | project_task_project_fkey | FOREIGN KEY (organisation_id, project_id) REFERENCES project(organisation_id, id)
+project_task | project_task_project_id_not_null | NOT NULL project_id
+project_task | project_task_version_not_null | NOT NULL version
+project_task | project_task_version_positive | CHECK ((version >= 1))
+project_task | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 quote_outcome | quote_outcome_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
 quote_outcome | quote_outcome_document_id_not_null | NOT NULL document_id
 quote_outcome | quote_outcome_id_not_null | NOT NULL id
@@ -6353,6 +6514,9 @@ CREATE INDEX journal_line_account_amount ON fyniq.journal_line USING btree (orga
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
 CREATE INDEX journal_line_instrument_idx ON fyniq.journal_line USING btree (organisation_id, instrument_id, posting_date) WHERE (instrument_id IS NOT NULL)
 CREATE INDEX journal_line_party_idx ON fyniq.journal_line USING btree (organisation_id, party_id, posting_date) WHERE (party_id IS NOT NULL)
+CREATE INDEX kb_platform_page_search ON fyniq.kb_platform_page USING gin (search)
+CREATE INDEX kb_platform_page_title_trgm ON fyniq.kb_platform_page USING gin (lower(title) fyniq_ext.gin_trgm_ops)
+CREATE INDEX kb_platform_source_search ON fyniq.kb_platform_source USING gin (search)
 CREATE INDEX ledger_purged_entry_source_idx ON fyniq.ledger_purged_entry USING btree (organisation_id, source_id)
 CREATE INDEX migration_archive_run ON fyniq.migration_archive USING btree (organisation_id, run_id)
 CREATE INDEX migration_commit_approval ON fyniq.migration_commit USING btree (organisation_id, approval_id)
@@ -6384,6 +6548,8 @@ CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, date
 CREATE INDEX period_reopen_period ON fyniq.period_reopen USING btree (organisation_id, period_id, reopened_at)
 CREATE INDEX period_variance_explanation_period ON fyniq.period_variance_explanation USING btree (organisation_id, period_id, account_id, written_at)
 CREATE INDEX private_endpoint_serves ON fyniq.private_endpoint USING btree (serves, credential)
+CREATE INDEX project_customer_idx ON fyniq.project USING btree (organisation_id, customer_id) WHERE (customer_id IS NOT NULL)
+CREATE INDEX project_member_user_idx ON fyniq.project_member USING btree (organisation_id, user_id) WHERE is_active
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
 CREATE INDEX report_export_expiring ON fyniq.report_export USING btree (organisation_id, status, expires_at)
 CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organisation_id, requested_by, requested_at DESC)
@@ -6628,6 +6794,10 @@ CREATE UNIQUE INDEX journal_entry_reverses_key ON fyniq.journal_entry USING btre
 CREATE UNIQUE INDEX journal_entry_revision_key ON fyniq.journal_entry USING btree (organisation_id, ledger_revision)
 CREATE UNIQUE INDEX journal_line_entry_line_key ON fyniq.journal_line USING btree (organisation_id, entry_id, line_no)
 CREATE UNIQUE INDEX journal_line_pkey ON fyniq.journal_line USING btree (organisation_id, id)
+CREATE UNIQUE INDEX kb_platform_page_pkey ON fyniq.kb_platform_page USING btree (key)
+CREATE UNIQUE INDEX kb_platform_page_source_pkey ON fyniq.kb_platform_page_source USING btree (page_key, file)
+CREATE UNIQUE INDEX kb_platform_release_pkey ON fyniq.kb_platform_release USING btree (singleton)
+CREATE UNIQUE INDEX kb_platform_source_pkey ON fyniq.kb_platform_source USING btree (file)
 CREATE UNIQUE INDEX kpi_input_id_key ON fyniq.kpi_input USING btree (organisation_id, id)
 CREATE UNIQUE INDEX kpi_input_pkey ON fyniq.kpi_input USING btree (organisation_id, month)
 CREATE UNIQUE INDEX ledger_boundary_boundary_key ON fyniq.ledger_boundary USING btree (organisation_id, boundary)
@@ -6712,6 +6882,12 @@ CREATE UNIQUE INDEX policy_draft_pkey ON fyniq.policy_draft USING btree (organis
 CREATE UNIQUE INDEX policy_version_once ON fyniq.policy_version USING btree (organisation_id, key, version)
 CREATE UNIQUE INDEX policy_version_pkey ON fyniq.policy_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX private_endpoint_pkey ON fyniq.private_endpoint USING btree (id, version)
+CREATE UNIQUE INDEX project_member_person_key ON fyniq.project_member USING btree (organisation_id, project_id, user_id)
+CREATE UNIQUE INDEX project_member_pkey ON fyniq.project_member USING btree (organisation_id, id)
+CREATE UNIQUE INDEX project_pkey ON fyniq.project USING btree (organisation_id, id)
+CREATE UNIQUE INDEX project_task_live_name ON fyniq.project_task USING btree (organisation_id, project_id, lower(btrim(name))) WHERE is_active
+CREATE UNIQUE INDEX project_task_pkey ON fyniq.project_task USING btree (organisation_id, id)
+CREATE UNIQUE INDEX project_task_project_key ON fyniq.project_task USING btree (organisation_id, project_id, id)
 CREATE UNIQUE INDEX quote_outcome_once ON fyniq.quote_outcome USING btree (organisation_id, document_id)
 CREATE UNIQUE INDEX quote_outcome_pkey ON fyniq.quote_outcome USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
@@ -6946,6 +7122,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.owner_su
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.payee_bank_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'change_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.pd_shredding_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_shredding_run', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_bill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_journal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'id')
@@ -7297,6 +7476,9 @@ CREATE TRIGGER policy_draft_no_truncate BEFORE TRUNCATE ON fyniq.policy_draft FO
 CREATE TRIGGER policy_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_version FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
 CREATE TRIGGER policy_version_no_truncate BEFORE TRUNCATE ON fyniq.policy_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER private_endpoint_append_only BEFORE DELETE OR UPDATE ON fyniq.private_endpoint FOR EACH ROW EXECUTE FUNCTION private_endpoint_append_only()
+CREATE TRIGGER project_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project FOR EACH ROW EXECUTE FUNCTION project_guard()
+CREATE TRIGGER project_member_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_member FOR EACH ROW EXECUTE FUNCTION project_part_guard()
+CREATE TRIGGER project_task_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_task FOR EACH ROW EXECUTE FUNCTION project_part_guard()
 CREATE TRIGGER quote_outcome_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.quote_outcome FOR EACH ROW EXECUTE FUNCTION quote_outcome_guard()
 CREATE TRIGGER recurring_bill_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_bill_version FOR EACH ROW EXECUTE FUNCTION recurring_bill_version_immutable()
 CREATE TRIGGER recurring_invoice_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_invoice_version FOR EACH ROW EXECUTE FUNCTION recurring_invoice_version_immutable()
@@ -7512,6 +7694,9 @@ person_key | tenant_isolation | * | (organisation_id = current_org()) | (organis
 policy_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_draft | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+project | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+project_member | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+project_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 quote_outcome | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_bill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7670,6 +7855,10 @@ join_domain | disabled | not forced
 join_request | enabled | forced
 journal_entry | enabled | forced
 journal_line | enabled | forced
+kb_platform_page | disabled | not forced
+kb_platform_page_source | disabled | not forced
+kb_platform_release | disabled | not forced
+kb_platform_source | disabled | not forced
 kpi_input | enabled | forced
 ledger_boundary | enabled | forced
 ledger_purged_entry | enabled | forced
@@ -7719,6 +7908,9 @@ policy_acknowledgement | enabled | forced
 policy_draft | enabled | forced
 policy_version | enabled | forced
 private_endpoint | disabled | not forced
+project | enabled | forced
+project_member | enabled | forced
+project_task | enabled | forced
 quote_outcome | enabled | forced
 rate_limit_window | enabled | forced
 recovery_confirmation | disabled | not forced
@@ -7973,6 +8165,13 @@ journal_immutable() → trigger | security invoker | v | search_path=pg_catalog,
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0f5bd691e4430aa3432cee16293c5fe1
 journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 55a3d18429a41eae4bbb8231d3bf02d4
 journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b9269db42a6b251fcf5f6ec4576b4fb8
+kb_platform_index(p_roles text[], p_classes text[]) → TABLE(key text, type text, title text, summary text, status text, data_class text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 7b424e41cfdc6ce4aae26d2373cd74dd
+kb_platform_info() → TABLE(version text, schema text, digest text, loaded_at timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02dda96e1273c149a12b7ce0e8a0f6a3
+kb_platform_load(p_release jsonb) → void | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ba55718a26c440e56e79a88cac713b2c
+kb_platform_page_get(p_key text, p_roles text[], p_classes text[]) → TABLE(key text, type text, title text, summary text, aliases text[], body text, sources jsonb, data_class text, taint text, status text, compiled_by text, compiled_at date, digest text, release text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 48a894936c19062794fbaa3f5dc98592
+kb_platform_page_guides(p_key text, p_roles text[], p_classes text[]) → TABLE(file text, key text, title text, draft boolean) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | aa653b92242d6fed6ef0deae9052d670
+kb_platform_readable(p_key text, p_roles text[], p_classes text[]) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4c28f1c52571c14662d29634d2f7861c
+kb_platform_search(p_terms text[], p_roles text[], p_classes text[], p_scope text, p_limit integer) → TABLE(kind text, key text, title text, summary text, snippet text, rank real, draft boolean) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4dd60b9e92df8a4e6c5b45a7ac270599
 kpi_input_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9f9ba3f0de039e4e5e95975fec3d4493
 last_owner_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7f570bdc5ca8922f07860844550f5f69
 latest_job_slot(p_job text) → timestamp with time zone | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 1ea2f4ef730e451c5b73db6510685ce2
@@ -8037,6 +8236,8 @@ private_endpoint_address_ok(p_address cidr) → boolean | security invoker | i |
 private_endpoint_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 495b7d8c5db1f4005355e12e03026057
 private_endpoints() → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | da8a815f6c91cfdc5f5453fba7d6e3f8
 private_endpoints_for(p_service text, p_credential uuid) → SETOF private_endpoint | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 85ce4fe273b1eba64231e49b57ed690b
+project_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 263feebbc9e8c9cfa868c0c58b30e881
+project_part_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abaebce4c4cd3919837dd8db7382ce2a
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
 purge_ip_rate_windows(p_before timestamp with time zone) → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 81de58d9129c046ca2aa53b08d3607c8
 purge_switched_on(p_org uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 90114d368d5bac0773307d5f4b014509
