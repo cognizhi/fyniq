@@ -55,64 +55,82 @@ rows, `TestAProjectIsADimensionValueWithAttributes`, `TestAttackAProject…`, `s
   keys, the guide page `projects.time`, the compiled page.
   - Tests: Vitest with axe; a person with personal rights only sees My time and nothing else of Projects.
     `// req: FR-PRJ-05`, `// req: FR-UX-39`
-- [ ] 2.6 Missing-day reminders as notifications on the scheduler's tick (Friday), skipped while the module is off.
+- [x] 2.6 Missing-day reminders as notifications on the scheduler's tick (Friday), skipped while the module is off.
   - Tests: a person with a missing day is reminded once. `// req: FR-PRJ-05`
 
 Built (slice 2): migration 000602; `internal/domain/timesheet` and `RND-TIME`; the API (`/v1/timesheet`, `/v1/timer`, `/v1/time-entries`,
 `/v1/timesheet-submissions`); My time and Timesheet; PRD-001 rev 0.293 (FR-PRJ-05, FR-PRJ-07, `RND-TIME`; the Appendix D row for cost rates waits
-for slice 3). **Left:** 2.6, the Friday reminder (the scheduler job and a notification type), and the Inbox item for weeks to approve (the
-Timesheet page lists them).
+for slice 3). The Inbox card for weeks to approve is built (slice 2).
+
+Built (reminder): the job `notify.timesheets` (daily at 16:00 Singapore time; on each organisation's Friday, one notice `time.missing` to each member of
+an active project naming the weekdays of the week with no time, public holidays excluded, none while the module is off), its schedule, handler, watched-job
+entry, event schema and notification type; PRD-001 rev 0.302 (FR-PRJ-05).
 
 ## 3. Rates (slice 3)
 
-- [ ] 3.1 Migration 000604/000605: `person_cost_rate`, `billing_rate`; the setting `projects.standard_cost_rate` and
+- [x] 3.1 Migration 000604/000605: `person_cost_rate`, `billing_rate`; the setting `projects.standard_cost_rate` and
   `projects.standard_hours_per_week` (40) in `internal/domain/settings`, with guide anchors and recommended values.
   - Tests: goldens; the column grants. `// req: FR-PRJ-06`
-- [ ] 3.2 `internal/domain/projectrate`: the rate in force on a date, the tier function (person, role average over at
+- [x] 3.2 `internal/domain/projectrate`: the rate in force on a date, the tier function (person, role average over at
   least three, standard, none), billing-rate precedence; the person-level rate is sensitive in the audit trail.
   - Tests: the three-person boundary (two people: standard; three: average), a rate change mid-month by work date,
     precedence. `// req: FR-PRJ-06`
-- [ ] 3.3 The API: cost rates (Owner and Payroll administrator only), billing rates, the standard rate; the project
+- [x] 3.3 The API: cost rates (Owner and Payroll administrator only), billing rates, the standard rate; the project
   record's rates tab; the new matrix row; G4-050 on every surface that exists.
   - Tests: G4-050: a project manager without payroll rights opens per-person profitability, drills to time entries,
     calls the cost-rate API and asks the AI read tool: no person-level rate or cost anywhere; a differencing test.
     `// req: FR-PRJ-06`, `// req: FR-PAY-13`
-- [ ] 3.4 Web: the rates tab and My cost rates screen (Owner and Payroll administrator), help and guide.
+- [x] 3.4 Web: the rates tab and My cost rates screen (Owner and Payroll administrator), help and guide.
+
+Built (slice 3, PR 859): migration `000604` (`person_cost_rate`, `billing_rate`; the standard rate is a cost-rate row with no person, not a setting); `projectrate` (the
+tier function, billing precedence); the Appendix D row "Project cost rates, person level" (PRD-001 rev 0.295); the audit trail masks `cost_rate`; Cost rates and the
+project's Rates card; G4-050 tests.
 
 ## 4. Reports and checks (slice 4)
 
-- [ ] 4.1 `internal/domain/projectreport`: profitability per project, customer and person; direct costs excluding the
+- [x] 4.1 `internal/domain/projectreport`: profitability per project, customer and person; direct costs excluding the
   payroll-cost flag and the reconciliation line; utilisation and realisation; budget use; each through `balance.BySet`
   and approved time at the viewer's tier (design D6).
   - Tests: the tie-out against the trial balance (every project plus untagged equals the account totals); G4-049
     (S$5,000 salary tagged to Acme, same people's time: staff cost counted once, the tag on the reconciliation line);
     utilisation across a public holiday; the architecture test that no report reads lines around the service.
     `// req: FR-PRJ-12`, `// req: QA-RPT-01`
-- [ ] 4.2 The API: `projectReports` with drill-down to ledger entries and time entries; metrics for the semantic layer
+- [x] 4.2 The API: `projectReports` with drill-down to ledger entries and time entries; metrics for the semantic layer
   at the viewer's tier; export to CSV with the ASCII minus and plain decimals.
   - Tests: exports at both tiers; the drill sums to the figure. `// req: FR-PRJ-12`
-- [ ] 4.3 Checks C.1 #26, #27 and C.2 #40, #41 with fixtures that trigger each (QA-RPT-02), off while the module is off.
-- [ ] 4.4 Web: Project reports (`/reports/projects`, expert), the project record's profitability, budget-burn and
+- [x] 4.3 Checks C.1 #26, #27 and C.2 #40, #41 with fixtures that trigger each (QA-RPT-02), off while the module is off.
+- [x] 4.4 Web: Project reports (`/reports/projects`, expert), the project record's profitability, budget-burn and
   unbilled figures with drill, small-group warning, the basis chip; help and guide; the compiled page.
-- [ ] 4.5 The threat model `docs/security/threat-models/projects.md`, each abuse case with its test.
+- [x] 4.5 The threat model `docs/security/threat-models/projects.md`, each abuse case with its test.
+
+Built (slice 4, PR 864): `projectreport` (revenue and direct costs through `balance.BySet`, payroll-cost accounts listed apart, time at cost at the viewer's tier,
+utilisation, realisation, budget use); `GET /v1/reports/projects` and the time-entries drill (hours only); Reports > Projects; checks C.1 #26, C.1 #27 and
+C.2 #41; migration `000605` (a week's `submitted_at` from the application's clock); PRD-001 rev 0.296. Utilisation uses 8 hours a weekday less public holidays until
+FR-PPL-07 supplies working patterns. Deferred: the CSV export and the semantic-layer metrics of 4.2, and the project record's profitability tile (the report and
+the Unbilled card carry them).
 
 ## 5. Billing and project costs (slice 5)
 
-- [ ] 5.1 Billable and markup on bill and claim lines that carry a project; a project on a purchase order, carried to its
+- [x] 5.1 Billable and markup on bill and claim lines that carry a project; a project on a purchase order, carried to its
   bill (FR-PRJ-08); migrations 000606 and following.
   - Tests: a line with markup and no project refused; the markup amount by `RND-LINE`. `// req: FR-PRJ-08`
-- [ ] 5.2 The unbilled view and the draft invoice for time and materials; invoiced entries lock and a voided invoice
+- [x] 5.2 The unbilled view and the draft invoice for time and materials; invoiced entries lock and a voided invoice
   releases them; the C.2 #40 fixture (design D9).
   - Tests: UC-PRJ-02: 62.5 approved hours at billing rates plus a S$420 expense at 10% markup; posting locks them.
     `// req: FR-PRJ-10`
-- [ ] 5.3 Fixed fee by milestone and the retainer drawn down; internal projects never billed.
-- [ ] 5.4 Web: the Unbilled tab, milestones, retainer; help and guide.
+- [x] 5.3 Fixed fee by milestone and the retainer drawn down; internal projects never billed.
+- [x] 5.4 Web: the Unbilled tab, milestones, retainer; help and guide.
+
+Built (slice 5a, PR 866): `RND-MARKUP`; billable and markup on bill lines and claim receipts and trips (`PRJ-10`, `PRJ-11`); a project on a purchase order carried to its bill;
+PRD-001 rev 0.297. (slice 5b, PR 869): migration `000606` (`project_billed_item`, the invoice trigger, `FY606`); the unbilled view and `POST /v1/project-invoice-drafts`;
+`projectbilling`; check C.2 #40; PRD-001 rev 0.298. A flat route is used because a command under a record's path needs If-Match (FR-INT-09). (slice 5c, PR 872):
+migration `000608` (`project_milestone`, `FY607`, the trigger reads `milestone_id`); milestones, retainer periods and the drawdown balance; PRD-001 rev 0.301.
+Invoiced entries are locked by the trigger's marks (an entry is billed once), not by a column on the entry, and the marks are made when the invoice is posted.
 
 ## Left (named, not forgotten)
 
-- **Slices 3 to 5** (rates, reports and checks, billing and project costs) are not built: the design decides them (D5 to D10) and the
-  decisions A and C open the rates slice. They follow the same way: the PRD row for person-level cost rates, `person_cost_rate` and
-  `billing_rate` (000604), the tier function, then `balance.BySet` for the reports.
+- **Fixed-fee revenue over time** (FR-PRJ-11, P2), **the AI's draft** of a time-and-materials invoice (an AI read tool over the unbilled view), **the CSV export and metrics of 4.2** and
+  **the project record's profitability tile** (4.4): not built; the report and the Unbilled card carry the figures.
 
 - **FR-PRJ-09** per-task budgets, forecasts at completion, alerts at 80% and 100%, change orders: in this change's plan
   row, outside the commission; the project's own budget in hours and money and its use are built (slice 4).

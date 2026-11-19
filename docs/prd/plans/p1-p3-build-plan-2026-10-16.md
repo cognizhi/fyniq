@@ -172,6 +172,11 @@ bills.
 built. By the owner's decisions of that day it records customer receipts by hand until bank import, sets
 each recurring invoice to make drafts or, once its content is approved, to issue and send, tracks "viewed"
 through the online link instead of email opens, and holds reminders in the Inbox until bank import.
+`p1-projects` is proposed (19 Nov 2026) and built the same day, in slices (PRD-001 revs 0.293 to 0.302): projects as values of the Project dimension, time entry and the
+in-module weekly approval (decision B), cost rates for the Owner and Payroll administrator only (the Appendix D row; rev 0.295), project reports from the posted
+ledger through the balance service, billable costs with a markup (`RND-MARKUP`), the draft invoice from unbilled work with a trigger that bills each piece once,
+fixed-fee milestones, the retainer drawdown, checks C.1 #26 and #27 and C.2 #40 and #41, and the Friday reminder. All of it is provisional until the owner signs off
+the decisions in the change's design.
 
 **Wave 3 · Money in and out.** Connectors, bank import and reconciliation, payment files and payment
 providers.

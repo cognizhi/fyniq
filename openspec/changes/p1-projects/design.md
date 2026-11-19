@@ -164,8 +164,7 @@ stay (the ledger is immutable). The reminders and the checks of the module do no
   (FR-INT-09) asks If-Match of a command under a record's path.
 - **Slice 2:** migration `000602`; time entries, the timer, submissions; the in-module approval (decision B, provisional in PRD-001 rev 0.293);
   `RND-TIME`. A draft or returned entry a person removes is deleted (the one `DELETE` the application holds on time; the week's audit
-  event keeps it); an approved or submitted entry never goes (FY603). The Friday reminder is not built (it needs the scheduler and a
-  notification type): the grid and C.2 #41 show the days nobody entered.
+  event keeps it); an approved or submitted entry never goes (FY603). The Friday reminder (built later, rev 0.302) is the job `notify.timesheets`.
 
 ### D8. Costs on projects (FR-PRJ-08)
 
@@ -265,3 +264,6 @@ Numbers 000600 to 000619, by slice (each CHECK widening is `NOT VALID`, then val
 
 - The accountant confirms the standard hours (40) and that time at cost is the margin's staff cost (FR-PRJ-12).
 - Whether the Owner's grant of person-level rates to another person (FR-PRJ-06) is wanted before payroll exists.
+- **Slices 3 to 5 and the reminder (19 Nov 2026; PRs 859, 864, 866, 869, 872 and the reminder's):** as the task list says. Differences from the plan: the standard rate is a
+  person-less cost-rate row; the draft invoice is `POST /v1/project-invoice-drafts` (a flat route); work is marked billed by a database trigger when the invoice is
+  posted, not by a column on the entry; a cost is billed at its amount before GST [accountant to confirm]; the lines' GST code defaults to `SR` [verify with the tax agent].
