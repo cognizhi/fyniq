@@ -1703,6 +1703,18 @@ var matrixCalls = map[string]matrixCall{
 		e.api.deps.OAuthConsents = &fakeConsents{}
 		return e.call(http.MethodDelete, "/v1/connected-apps/connections/claude-code", asMatrixMember(e, tok), nil), nil
 	},
+	"listMCPConnections": func(e *env, tok string) (response, func() bool) {
+		was := e.api.deps.OAuthConsents
+		defer func() { e.api.deps.OAuthConsents = was }()
+		e.api.deps.OAuthConsents = &fakeConsents{}
+		return e.call(http.MethodGet, "/v1/connected-apps/connections", tok, nil), nil
+	},
+	"revokeMemberConnection": func(e *env, tok string) (response, func() bool) { // no such member: an allowed role is told so, a refused one is refused first
+		was := e.api.deps.OAuthConsents
+		defer func() { e.api.deps.OAuthConsents = was }()
+		e.api.deps.OAuthConsents = &fakeConsents{}
+		return e.call(http.MethodDelete, "/v1/connected-apps/people/"+uuid.NewString()+"/connections/claude-code", tok, nil), nil
+	},
 	"listMCPActivity": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/connected-apps/activity", asMatrixMember(e, tok), nil), nil
 	},

@@ -152,6 +152,11 @@ func (a *API) recordSetting(ctx context.Context, u storage.UnitOfWork, key, valu
 	if err := a.renderKnowledge(ctx, u); err != nil {
 		return Setting{}, err
 	}
+	if !from.After(today) {
+		if err := a.endAIAppTokens(ctx, u, d.Key, settings.On(d, changes, from).Value, value); err != nil {
+			return Setting{}, err
+		}
+	}
 	return settingOf(d, append(changes, c), today, true), nil
 }
 

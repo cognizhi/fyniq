@@ -736,6 +736,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | docs/user-guide/nemura/letters-kets.md, person.md -> nemura.letters.kets, nemura.person (key employment terms; p1-nemura-self-service-letters slice 2)
 
+## [2026-11-20] compile | settings.connected-apps recompiled: the Owner's view, last use and API clients (p1-mcp-first-party 3.3, 9.1, 9.2)
+
 ## [2026-11-20] compile | docs/user-guide/nemura/my-details.md, ask-hr.md, requests-queue.md, requests.md -> nemura.my-details, nemura.ask-hr, nemura.requests-queue, nemura.requests (p1-nemura-self-service-letters slice 3a)
 
 ## [2026-11-20] compile | docs/user-guide/nemura/leaver-account.md, home.md -> nemura.leaver-account, nemura.home (p1-nemura-self-service-letters 3.1, 3.4)

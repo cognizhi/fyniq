@@ -4636,6 +4636,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/connected-apps/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what everyone allowed AI apps
+         * @description For an Owner (AI-44): each member's allowed AI apps with the scopes they gave and when the consent must be renewed. Read-only; no side effects. Never on the AI's or MCP's tool list.
+         */
+        get: operations["listMCPConnections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/connected-apps/connections/{client_id}": {
         parameters: {
             query?: never;
@@ -4651,6 +4671,26 @@ export interface paths {
          * @description Revokes what you allowed one AI app: its access and refresh tokens end at once (AI-44). Only your own; idempotent. Side effects: the app's tokens at the OAuth server. Never on the AI's or MCP's tool list.
          */
         delete: operations["revokeMyConnection"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/connected-apps/people/{user_id}/connections/{client_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Disconnect a person's AI app
+         * @description An Owner revokes what one member allowed one AI app: its access and refresh tokens end at once (AI-44, AI-38). It narrows, so it is never held for a second person; idempotent. Only a member of this organisation. Side effects: the app's tokens at the OAuth server and an audit event. Never on the AI's or MCP's tool list.
+         */
+        delete: operations["revokeMemberConnection"];
         options?: never;
         head?: never;
         patch?: never;
@@ -19807,8 +19847,10 @@ export interface components {
             as_at: string;
             /** @description The quarters attested, latest first. */
             attestations: components["schemas"]["AccessReviewAttestation"][] | null;
-            /** @description The organisation's installed connectors. OAuth clients join with Connected apps (AI-46). */
+            /** @description The organisation's installed connectors. */
             connectors: components["schemas"]["AccessReviewConnector"][] | null;
+            /** @description The organisation's integration clients that are not revoked, each with its owner, class, scopes and end date (CTL-API-02). */
+            integration_clients: components["schemas"]["AccessReviewClient"][] | null;
             /** @description The pending invitations: who will join, with which roles. */
             invitations: components["schemas"]["MemberInvitation"][] | null;
             /** @description The active members, in the order they joined. */
@@ -19853,6 +19895,43 @@ export interface components {
              * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
              */
             report_sha256: string;
+        };
+        AccessReviewClient: {
+            /**
+             * @description Its client class (AI-34).
+             * @example integration
+             * @enum {string}
+             */
+            class: "integration" | "agent";
+            /**
+             * @description Its OAuth client ID.
+             * @example fy-int-0193a3c2
+             */
+            client_id: string;
+            /**
+             * Format: date-time
+             * @description When it stops working.
+             * @example 2027-01-01T00:00:00Z
+             */
+            expires_at: string;
+            /**
+             * @description Its name.
+             * @example Reporting export
+             */
+            name: string;
+            /**
+             * @description The member it acts for, whose rights it never exceeds; empty when that person is no longer a member.
+             * @example Ah Kow
+             */
+            owner: string;
+            /** @description What it may read or write. */
+            scopes: string[] | null;
+            /**
+             * @description live while it works; expired once its end date has passed and nobody revoked it.
+             * @example live
+             * @enum {string}
+             */
+            status: "live" | "expired";
         };
         AccessReviewConflict: {
             /**
@@ -40959,6 +41038,47 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
              */
             user_id: string;
+        };
+        MemberConnection: {
+            /**
+             * @description The app's client ID.
+             * @example claude-code
+             */
+            client_id: string;
+            /**
+             * Format: date-time
+             * @description When the consent must be renewed: 90 days after you gave it (AI-37).
+             * @example 2027-02-17T09:30:00Z
+             */
+            expires_at: string;
+            /**
+             * Format: date-time
+             * @description When you allowed it.
+             * @example 2026-11-19T09:30:00Z
+             */
+            granted_at: string;
+            /**
+             * @description The app's name.
+             * @example Claude Code
+             */
+            name: string;
+            /**
+             * @description Their name.
+             * @example Ah Kow
+             */
+            person: string;
+            /** @description What you allowed it. */
+            scopes: string[];
+            /**
+             * Format: uuid
+             * @description Whose connection it is.
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0e
+             */
+            user_id: string;
+        };
+        MemberConnections: {
+            /** @description Each person's allowed AI apps, by person. */
+            connections: components["schemas"]["MemberConnection"][];
         };
         MemberInvitation: {
             /**
@@ -90168,6 +90288,99 @@ export interface operations {
             };
         };
     };
+    listMCPConnections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberConnections"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     revokeMyConnection: {
         parameters: {
             query?: never;
@@ -90202,6 +90415,111 @@ export interface operations {
             };
             /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `MCP-APPS-01` Not a person who is a member. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    revokeMemberConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The person. */
+                user_id: string;
+                /** @description The app's client ID. */
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

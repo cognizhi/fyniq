@@ -90,6 +90,47 @@ func RemoveClientWork(o ports.OAuthClients) outbox.Work {
 	}
 }
 
+// AgentClientKind is the outbox kind that revokes what a person granted one AI app, run by the worker class: an organisation taking an
+// app off its allowlist (AI-35, AI-38).
+const AgentClientKind = "oauth.agent_client.revoke"
+
+// ActionAgentClientRevokeRequested is the audit action recorded with the change that asked for it.
+const ActionAgentClientRevokeRequested = "oauth.agent_client_tokens.revoke_requested"
+
+type clientPayload struct {
+	Subject  string `json:"subject"`
+	ClientID string `json:"client_id"`
+	Reason   string `json:"reason"`
+}
+
+// RevokeAgentClient asks, in the unit of work u, for the tokens subject holds for the one AI app clientID to be revoked once u commits,
+// and records why in the organisation's audit trail: their other apps, web session and integrations are left alone.
+func RevokeAgentClient(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org uuid.UUID, subject, clientID, reason string) error {
+	if subject == "" || clientID == "" || reason == "" {
+		return errors.New("tokens: a revocation needs a subject, a client and a reason")
+	}
+	b, err := json.Marshal(clientPayload{Subject: subject, ClientID: clientID, Reason: reason})
+	if err != nil {
+		return err
+	}
+	if _, err := d.Enqueue(ctx, u, org, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: AgentClientKind, Payload: b}); err != nil {
+		return err
+	}
+	return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionAgentClientRevokeRequested, ObjectType: "organisation", ObjectID: org,
+		Changes: map[string][2]any{"subject": {nil, subject}, "client": {nil, clientID}, "reason": {nil, reason}}})
+}
+
+// AgentClientWork is the worker's handler of AgentClientKind.
+func AgentClientWork(o ports.OAuthConsents) outbox.Work {
+	return func(ctx context.Context, _ uuid.UUID, row storage.OutboxRow) error {
+		var p clientPayload
+		if err := json.Unmarshal(row.Payload, &p); err != nil || p.Subject == "" || p.ClientID == "" {
+			return fmt.Errorf("tokens: outbox row %s is not an AI app revocation", row.ID)
+		}
+		return o.RevokeClientConsent(ctx, p.Subject, p.ClientID)
+	}
+}
+
 // AgentKind is the outbox kind that revokes what a person granted AI apps, run by the worker class (AI-35, AI-38).
 const AgentKind = "oauth.agent.revoke"
 

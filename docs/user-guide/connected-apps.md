@@ -18,7 +18,8 @@ change settings, and it never sees an NRIC, a full bank account number or a secr
 ## Who allows what
 
 - An **Owner** turns AI apps on for the organisation and adds each app that may connect, in the organisation's settings: each needs a
-  second approver. Taking an app off, or turning AI apps off, takes effect at once.
+  second approver. Taking an app off, or turning AI apps off, takes effect at once, and the tokens the people's apps hold for it end too:
+  the whole switch ends every app's tokens, and taking one app off ends only that app's.
 - **You** allow AI apps to work for you, with **Allow AI apps to work for me**. Nothing connects as you until you do. **Stop AI apps working
   for me** ends your apps' access at once, and their tokens.
 - Each time an app asks to connect, you sign in with your second factor and see what it asks for. Reports are the default; the other
@@ -43,6 +44,11 @@ change settings, and it never sees an NRIC, a full bank account number or a secr
 - **Waiting for an Owner**: apps that registered themselves, where each sends you to sign in. Check that address before you allow one. An Owner
   approves an app by adding its ID to the apps that may connect, or **Deny**s it.
 - **What the apps did**: which app read with which tool, and whether it was refused or limited.
+- **Last used** (Expert mode): beside each app, when it last made a call, or that it has not been used.
+- **What everyone has allowed** (an Owner): each person's connections, with **Disconnect** for any of them. It ends that person's
+  tokens for that app at once; their other apps, their sign-in and their integrations are not touched.
+- **Integration clients and personal access tokens**: the systems and the developer tokens that reach your books through the API, with
+  their class, access and end date. They are made and revoked under Settings, Integrations, not here.
 
 ## Changes an app proposes
 
