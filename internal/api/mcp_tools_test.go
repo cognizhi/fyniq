@@ -190,3 +190,75 @@ func toString(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)
 }
+
+// Every call that reaches the gates is in the trail, refusals and limits included, with hashes and no token, argument or result;
+// the organisation's limits are counted from it and answered with 429 and the time to wait, and free again as the window passes;
+// the trail cannot be changed by the API's role or by anyone (AI-43, AI-44, AI-45).
+// req: AI-43
+// req: AI-44
+// req: AI-45
+// asvs: V16.3.2, V8.1.1, V16.4.1
+func TestEveryMCPCallIsInTheTrailAndTheLimitsAreCountedFromIt(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	ahkow := f.as(f.ahkow, authz.Owner, authz.Controller)
+	service, _ := e.services.Token(ServiceMCP)
+	user := uuid.MustParse(f.ahkow)
+	reports := e.principal(authn.Principal{Via: authn.ViaToken, Subject: user.String(), UserID: user, Client: "mcp-delegation", Class: authn.ClassAgent,
+		Organisation: e.books.Org, Roles: []authz.Role{authz.Owner, authz.Controller}, Scopes: []string{"fyniq.read.reports"}})
+	y, m, d := e.clock.Now().In(appclock.Singapore).Date()
+	from := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		if _, err := u.Settings().Record(ctx, "features.mcp", "false", "true", from, 1); err != nil {
+			return err
+		}
+		if _, err := u.Settings().Record(ctx, "mcp.clients", "", "claude-code", from, 1); err != nil {
+			return err
+		}
+		_, err := u.Settings().Record(ctx, "mcp.requests_per_minute", "60", "3", from, 1)
+		return err
+	})
+	got := e.call(http.MethodGet, "/v1/me/mcp", ahkow, nil)
+	e.call(http.MethodPut, "/v1/me/mcp", ahkow, map[string]any{"opted_in": true}, "If-Match", got.str("etag"))
+	call := func(tool string, input map[string]any) response {
+		return e.call(http.MethodPost, "/internal/v1/mcp/tool-calls", reports, map[string]any{"app": "claude-code", "tool": tool, "input": input,
+			"ip": "203.0.113.77", "app_version": "claude-code/2.1.327", "token_id": "abababababababab"}, ServiceTokenHeader, service)
+	}
+	revenue := map[string]any{"measure": "revenue", "from": "2026-10", "to": "2026-10"}
+	if r := call("metrics.query", revenue); r.Status != 200 {
+		t.Fatalf("the first: %d %s", r.Status, r.Raw)
+	}
+	call("records.get", map[string]any{"kind": "invoice", "id": uuid.NewString()}) // refused: no sales scope
+	call("metrics.query", revenue)
+	limited := call("metrics.query", revenue)
+	if limited.Status != 429 || limited.str("code") != CodeMCPLimit {
+		t.Fatalf("the fourth in a minute with a limit of three: %d %s", limited.Status, limited.Raw)
+	}
+	if ra := limited.Header.Get("Retry-After"); ra == "" || ra == "0" {
+		t.Errorf("Retry-After: %q", ra)
+	}
+	e.clock.Advance(2 * time.Minute) // the window passes (and the service token's minute)
+	service, _ = e.services.Token(ServiceMCP)
+	if r := call("metrics.query", revenue); r.Status != 200 {
+		t.Errorf("after the window: %d %s", r.Status, r.Raw)
+	}
+
+	var rows []storage.MCPCall
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		rows, err = u.MCPCalls().List(ctx, uuid.Nil, 50)
+		return err
+	})
+	outcomes := map[string]int{}
+	for _, r := range rows {
+		outcomes[r.Outcome+":"+r.Code]++
+		if r.App != "claude-code" || r.UserID != user || r.TokenID != "abababababababab" || r.Network != "203.0.113.0/24" || r.AppVersion != "claude-code/2.1.327" {
+			t.Errorf("a row's who: %+v", r)
+		}
+		if strings.Contains(r.Network, "77") || len(r.InputSHA256) != 64 {
+			t.Errorf("the address is kept whole, or the input is not hashed: %+v", r)
+		}
+	}
+	if outcomes["read:"] != 3 || outcomes["refused:"+CodeMCPScope] != 1 || outcomes["limited:"+CodeMCPLimit] != 1 || len(rows) != 5 {
+		t.Errorf("the trail: %v", outcomes)
+	}
+}

@@ -2,11 +2,15 @@ package mcpserver
 
 import (
 	"bytes"
+	"cmp"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -57,7 +61,10 @@ func (b APIBackend) CallTool(ctx context.Context, c Call) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	body, _ := json.Marshal(map[string]any{"app": c.Token.ClientID, "tool": c.Tool, "input": c.Args})
+	sum := sha256.Sum256([]byte(c.Bearer))
+	ip, _, _ := net.SplitHostPort(c.RemoteIP)
+	body, _ := json.Marshal(map[string]any{"app": c.Token.ClientID, "tool": c.Tool, "input": c.Args, "ip": cmp.Or(ip, c.RemoteIP),
+		"app_version": truncate(c.Client, 200), "token_id": hex.EncodeToString(sum[:8])})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimSuffix(b.URL, "/")+"/mcp/tool-calls", bytes.NewReader(body))
 	if err != nil {
 		return Result{}, err

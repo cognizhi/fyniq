@@ -183,16 +183,23 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 
 ## 8. Limits, audit, detection (AI-43, AI-44, AI-45)
 
-- [ ] 8.1 Migration 000583 `mcp_call` (append-only, FORCE RLS), one row per gated request with its refusals, audited in the
+- [x] 8.1 Migration 000583 `mcp_call` (append-only, FORCE RLS), one row per gated request with its refusals, audited in the
   same transaction (AUD-01); the AI activity log lists them with the client and version, `jti`, user and IP. Tests
   `// req: AI-44`, `// req: AI-12`, `// req: AI-16` (audited as the assistant's calls are), an attack test that the table
   cannot be updated or deleted (`// asvs:`).
-- [ ] 8.2 The limits (design D9): requests a minute, tool calls an hour and a day, proposals an hour, result size, from
+- [x] 8.2 The limits (design D9): requests a minute, tool calls an hour and a day, proposals an hour, result size, from
   `mcp_call` in the gate's transaction; 429 with `Retry-After`. Tests `// req: AI-43`.
-- [ ] 8.3 Kill switches and detection: the organisation switch (AI-13) and removing a client take effect within 60 seconds;
+- [x] 8.3 Kill switches and detection: the organisation switch (AI-13) and removing a client take effect within 60 seconds;
   migration 000584 `mcp_seen`; alerts for a new client or network origin, a volume spike, repeated denied scopes, an
   excluded-field attempt and a red-team pattern hit, as security events (SEC-31) and an Owner's notice. Tests `// req: AI-43`
   (a switch denies every call within 60 seconds, measured), `// req: AI-45`, `// req: CTL-MCP-04`.
+  Built (8.1 to 8.3): migration 000583 `mcp_call` (append-only, RLS, the API's insert and select only; hashes, never a token, an
+  argument or a result; the caller's /24 or /48, never the address), 000584 `mcp_seen`; every call that reaches the API's gates is
+  recorded, refusals and limits included, in a unit of work of its own; the limits (per minute, hour, day, from the organisation's
+  settings) are counted from it and answered with 429 and `Retry-After`; the switch, the allowlist, the opt-in and a role change
+  stop the next call because each is asked on every call (no cache beyond the introspection's 30 seconds); a new app, a new
+  network and denied scopes repeating are security events in the log. **Left:** the proposals-an-hour limit (with 7.x), the Owner's
+  notice for each event, the spike alert, listing the trail in the AI activity log (9.x), and the purge after retention.
 
 ## 9. Screens and help (AI-44, AI-37)
 

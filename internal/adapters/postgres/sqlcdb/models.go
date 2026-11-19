@@ -1946,6 +1946,32 @@ type FyniqLedgerRevision struct {
 	Revision       int64
 }
 
+type FyniqMcpCall struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	App            string
+	AppVersion     string
+	TokenID        string
+	Tool           string
+	InputSha256    string
+	OutputSha256   string
+	Facts          int32
+	DurationMs     int32
+	Outcome        string
+	Code           string
+	Network        string
+	At             time.Time
+}
+
+type FyniqMcpSeen struct {
+	OrganisationID uuid.UUID
+	UserID         uuid.UUID
+	Kind           string
+	Value          string
+	FirstSeen      time.Time
+}
+
 type FyniqMcpUserOptin struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

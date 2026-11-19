@@ -678,10 +678,29 @@ components:
           maxLength: 64
           minLength: 1
           type: string
+        app_version:
+          description: The client as it reports itself (its user agent).
+          examples:
+            - claude-code/2.1.327
+          maxLength: 200
+          type: string
         input:
           additionalProperties: {}
           description: The input the client gave it, checked against the tool's input schema.
           type: object
+        ip:
+          description: The client's address, as the MCP service saw it; kept only as its network.
+          examples:
+            - 203.0.113.7
+          maxLength: 45
+          type: string
+        token_id:
+          description: "The MCP token's identity: the first 16 hex characters of its SHA-256."
+          examples:
+            - 0123456789abcdef
+          maxLength: 16
+          pattern: ^[0-9a-f]{16}$
+          type: string
         tool:
           description: The read tool, by its registry name.
           enum:
@@ -991,6 +1010,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
           description: Unprocessable Entity
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Too Many Requests
         "500":
           content:
             application/problem+json:
@@ -1025,6 +1050,7 @@ paths:
         - MCP-GATE-01
         - MCP-GATE-02
         - MCP-GATE-03
+        - MCP-LIMIT-01
         - MCP-SCOPE-01
   /internal/v1/model-calls:
     post:

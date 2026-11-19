@@ -305,6 +305,7 @@ var codeFacts = map[string]struct {
 	CodeToolGrant:                 {403, "Not one of the agent's tools"},
 	CodeMCPScope:                  {403, "The app was not granted what this call needs"},
 	CodeMCPNotAgent:               {403, "Not the delegated token of an agent for a person"},
+	CodeMCPLimit:                  {429, "This app has made too many requests"},
 	CodeMCPTooLarge:               {422, "The result is larger than an AI app may receive"},
 	mcpgate.CodeOrganisationOff:   {403, "AI apps are not turned on for this organisation"},
 	mcpgate.CodeNotAllowed:        {403, "This AI app is not allowed to connect"},
