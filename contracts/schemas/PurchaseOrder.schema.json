@@ -100,6 +100,14 @@
       "$ref": "Person.schema.json",
       "description": "Who saved the current version."
     },
+    "project_id": {
+      "description": "The project the order is for, when it has one.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "reference": {
       "description": "Its reference.",
       "examples": [
