@@ -395,6 +395,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerHelpState(a)
 	registerPreferences(a)
 	registerSavedItems(a)
+	registerInstallationConsole(a)
 	registerMCPOptIn(a)
 	registerConnectedApps(a)
 	registerOAuthConsent(a)
@@ -842,6 +843,9 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 		return
 	}
 	c := context.WithValue(ctx.Context(), decisionKey{}, d)
+	if policy.Need == authz.View || p.AI() {
+		c = storage.WithScopedReads(c) // a read binds the person's department scope in the database (FR-ADM-01)
+	}
 	next(huma.WithContext(ctx, context.WithValue(c, operationKey{}, op.OperationID)))
 	if _, audited := auditedReads[op.OperationID]; audited && ctx.Status() < 300 { // a mass export (SEC-31)
 		a.afterAuditedRead(ctx.Context(), p)

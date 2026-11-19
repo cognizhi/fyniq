@@ -645,3 +645,48 @@ Source: PRD-001 §9.3
 - **WHEN** an approved proposal executes
 - **THEN** the change is made as the approving human
 - **AND** the AI is recorded as originator
+
+### Requirement: AI-91 Undo is a person's act by the domain's own reversal
+A person who holds the task type's right SHALL undo an executed proposal in one action while its records are as the execution left them and its period is open, through the domain's own reversal, kept in an append-only record and audited.
+
+Source: PRD-001 §9.7 · Priority S · Phase P1
+
+#### Scenario: Entries are reversed and master data restored
+- **WHEN** a person undoes an executed proposal
+- **THEN** an entry it posted is reversed by a reversing entry and master data it changed returns to its previous version
+- **AND** posted history is never updated or deleted
+
+#### Scenario: Each undo carries its own policy
+- **WHEN** the reversal needs an approval when a person does it
+- **THEN** the undo needs that approval too
+
+#### Scenario: Not undoable
+- **WHEN** a task type's effect has no safe reversal, such as a draft, which posts nothing and is never deleted, or a message sent
+- **THEN** it declares itself not undoable and offers no undo
+
+#### Scenario: The undo is kept
+- **WHEN** an undo is made
+- **THEN** an append-only record keeps who, when, why and what was reversed, audited, and the proposal stays Executed
+
+### Requirement: AI-92 Approval quality and tier 3 as built
+The system SHALL give a tier-3 request two steps signed by two different people in every team mode, though no tier-3 task type loads in a release, and SHALL compute the approval-quality metrics of a month from the proposals' own records for a signed monthly review.
+
+Source: PRD-001 §9.7 · Priority M · Phase P1
+
+#### Scenario: Two different people sign tier 3
+- **GIVEN** a tier-3 request
+- **WHEN** the same person signs both steps
+- **THEN** the second signature is refused
+
+#### Scenario: Tier 3 does not load
+- **WHEN** a release's catalogue holds a tier-3 task type
+- **THEN** the catalogue refuses it
+
+#### Scenario: The month's metrics
+- **WHEN** a month's report is made
+- **THEN** it holds the proposals made, approved, rejected, expired, invalid and stale, the share approved within 10 seconds of the first view with no item changed, the median time to a decision, the approvals per approver, the share rejected with a reason and each task type's share
+
+#### Scenario: Signed review
+- **WHEN** the Owner or the DPO signs the month's review
+- **THEN** the signed review is kept as evidence
+

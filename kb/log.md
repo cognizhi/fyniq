@@ -732,6 +732,14 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | nemura requests, leave.approve, nemura.my-leave, nemura.home: hours worked, pay inputs, accrual, encashment, people tiles
 
+## [2026-11-20] compile | members-and-roles.md -> settings.members (an Approver's department scope)
+
+## [2026-11-20] compile | installation-console.md -> settings.console (new page: platform health and the Super admins)
+
+## [2026-11-20] compile | sign-in-providers.md -> settings.sign-in-providers (links the installation console)
+
+## [2026-11-20] compile | members-and-roles.md -> settings.members (last sign-in and passkeys)
+
 ## [2026-11-20] compile | nemura.letters.request, nemura.letters.issue, nemura.letters.templates new (p1-nemura-self-service-letters 1.6)
 
 ## [2026-11-20] compile | docs/user-guide/nemura/letters-kets.md, person.md -> nemura.letters.kets, nemura.person (key employment terms; p1-nemura-self-service-letters slice 2)
@@ -745,3 +753,9 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/nemura/letters-templates.md -> nemura.letters.templates (automatic issue; p1-nemura-self-service-letters 4.1)
 
 ## [2026-11-20] compile | docs/user-guide/nemura/onboarding.md, leaver-account.md -> nemura.onboarding, nemura.leaver-account (p1-nemura-self-service-letters 4.2)
+
+## [2026-11-20] compile | ai.proposals: the guide's section on ap.draft_bill and exp.draft_claim
+
+## [2026-11-20] compile | docs/user-guide/nemura/payroll-records.md -> nemura.payroll-records (p1-nemura-payroll 2.1, 2.3)
+
+## [2026-11-20] compile | docs/user-guide/nemura/payroll-records.md -> nemura.payroll-records (pay runs; p1-nemura-payroll 3.1, 3.2)

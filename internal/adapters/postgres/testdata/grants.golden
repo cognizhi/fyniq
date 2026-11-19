@@ -211,6 +211,7 @@ fyniq_api       INSERT    data_inventory_review (note, quarter, reviewed_at, rev
 fyniq_api       SELECT    data_inventory_review
 fyniq_api       EXECUTE   decide_installation_change()
 fyniq_api       EXECUTE   decide_join_request()
+fyniq_api       EXECUTE   dept_scope()
 fyniq_api       INSERT    dimension (kind, name, position)
 fyniq_api       SELECT    dimension
 fyniq_api       UPDATE    dimension (is_active, name, version)
@@ -358,6 +359,7 @@ fyniq_api       INSERT    mcp_seen (first_seen, kind, user_id, value)
 fyniq_api       SELECT    mcp_seen
 fyniq_api       INSERT    mcp_user_optin (opted_in, set_at, user_id)
 fyniq_api       SELECT    mcp_user_optin
+fyniq_api       EXECUTE   member_activity()
 fyniq_api       EXECUTE   member_emails()
 fyniq_api       INSERT    member_invitation (code_hash, created_at, display_name, expires_at, roles, roles_expire_at)
 fyniq_api       SELECT    member_invitation
@@ -473,6 +475,8 @@ fyniq_api       SELECT    person_key
 fyniq_api       INSERT    person_projection (bank_record_id, bank_version, cost_centre_value_id, department_value_id, display_name, held, hold_from, hold_id, hold_version, left_on, line_manager_person_id, person_id, removed, started_on, status, updated_at, user_id, version, work_email)
 fyniq_api       SELECT    person_projection
 fyniq_api       UPDATE    person_projection (bank_record_id, bank_version, cost_centre_value_id, department_value_id, display_name, held, hold_from, hold_id, hold_version, left_on, line_manager_person_id, removed, started_on, status, updated_at, user_id, version, work_email)
+fyniq_api       EXECUTE   platform_heartbeats()
+fyniq_api       EXECUTE   platform_outbox()
 fyniq_api       INSERT    policy_acknowledgement (acknowledged_at, acknowledged_by, key, version)
 fyniq_api       SELECT    policy_acknowledgement
 fyniq_api       INSERT    policy_draft (body, key, revision, saved_at, saved_by, sha256)
@@ -554,6 +558,8 @@ fyniq_api       SELECT    risk_version
 fyniq_api       INSERT    role_assignment (expires_at, membership_id, role)
 fyniq_api       SELECT    role_assignment
 fyniq_api       UPDATE    role_assignment (revoked_at)
+fyniq_api       INSERT    role_assignment_scope (assignment_id, dimension_value_id)
+fyniq_api       SELECT    role_assignment_scope
 fyniq_api       INSERT    sales_reminder (decided_by, document_id, outcome, reason, send_id, step)
 fyniq_api       SELECT    sales_reminder
 fyniq_api       USAGE     schema fyniq
@@ -590,6 +596,7 @@ fyniq_api       SELECT    statutory_pack_activation
 fyniq_api       SELECT    statutory_pack_rows
 fyniq_api       SELECT    statutory_pack_versions
 fyniq_api       EXECUTE   super_admin_for_identity()
+fyniq_api       EXECUTE   super_admin_list()
 fyniq_api       INSERT    team_mode (created_at, created_by, mode, request_id, version)
 fyniq_api       SELECT    team_mode
 fyniq_api       SELECT    tenants
@@ -654,6 +661,7 @@ fyniq_executor  SELECT    billing_rate
 fyniq_executor  SELECT    brand_version
 fyniq_executor  SELECT    break_glass
 fyniq_executor  SELECT    break_glass_use
+fyniq_executor  SELECT    claim_category
 fyniq_executor  SELECT    close_checklist_entry
 fyniq_executor  SELECT    close_checklist_template
 fyniq_executor  INSERT    compliance_task (created_at, detail, due_on, finding_key, owner_role, owner_user, proposal_id, source, title)
@@ -958,6 +966,7 @@ fyniq_readonly  SELECT    risk
 fyniq_readonly  SELECT    risk_review
 fyniq_readonly  SELECT    risk_version
 fyniq_readonly  SELECT    role_assignment
+fyniq_readonly  SELECT    role_assignment_scope
 fyniq_readonly  SELECT    sales_reminder
 fyniq_readonly  USAGE     schema fyniq
 fyniq_readonly  SELECT    security_incident
@@ -1318,6 +1327,7 @@ fyniq_worker    SELECT    risk
 fyniq_worker    SELECT    risk_review
 fyniq_worker    SELECT    risk_version
 fyniq_worker    SELECT    role_assignment
+fyniq_worker    SELECT    role_assignment_scope
 fyniq_worker    SELECT    sales_reminder
 fyniq_worker    EXECUTE   scheduled_issue_allowed()
 fyniq_worker    USAGE     schema fyniq

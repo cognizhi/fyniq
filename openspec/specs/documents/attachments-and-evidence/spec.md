@@ -511,3 +511,28 @@ Source: PRD-001 §8.16 · Priority M · Phase P1 (upload, paste, email-in) / P2 
 - **THEN** the draft shows the facts
 - **AND** eligibility stays "to confirm" until the approver confirms it
 - **AND** no claim is made from the GST figure alone
+
+### Requirement: FR-DOC-14 The document inbox
+The system SHALL list every captured file as one inbox row with a status, keep what the pipeline read apart from the original as the model's reading, and let a person who may enter bills or claims make the draft with one action; the reading never decides a figure, a GST eligibility or a posting.
+
+Source: PRD-001 §8.16 · Priority M · Phase P1
+
+#### Scenario: Statuses
+- **WHEN** a file is captured by upload, paste or an email-in address from an accepted sender
+- **THEN** its row is received, reading, read, duplicate, drafted, dismissed or failed
+- **AND** nothing is read from a quarantined or rejected message
+
+#### Scenario: The reading is apart and labelled
+- **WHEN** a document has been read
+- **THEN** each field shows its confidence, the IRAS particulars it lacks, the duplicates and the lines it may match
+- **AND** the reading is labelled as the model's, and the original is unchanged
+
+#### Scenario: The reading is a read
+- **WHEN** the pipeline reads a document
+- **THEN** it asks the agent document_capture with no tools and a strict output schema, screened before and after, within the AI switch and budgets
+- **AND** it reads a document once unless a person asks again
+
+#### Scenario: A person makes the draft
+- **WHEN** a person who may enter bills or claims chooses Draft from a read row
+- **THEN** one draft is made by the same function as `ap.draft_bill` or `exp.draft_claim`, from the reading as they corrected it
+- **AND** it follows the ordinary approval policy (AI-30), and no draft is made at arrival with nobody present

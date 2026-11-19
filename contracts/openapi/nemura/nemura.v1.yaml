@@ -1331,6 +1331,25 @@ components:
       required:
         - documents
       type: object
+    ElectionInputBody:
+      additionalProperties: false
+      properties:
+        effective_from:
+          description: The day the election starts.
+          examples:
+            - "2026-02-10"
+          format: date
+          type: string
+        evidence_document_id:
+          description: "A document on the person's file: the CPF Board's approval of the joint application."
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9
+          format: uuid
+          type: string
+      required:
+        - effective_from
+        - evidence_document_id
+      type: object
     EmergencyContact:
       additionalProperties: false
       properties:
@@ -1918,6 +1937,19 @@ components:
             - "null"
       required:
         - blocks
+      type: object
+    GroupsOutputBody:
+      additionalProperties: false
+      properties:
+        groups:
+          description: The pay groups by name.
+          items:
+            $ref: "#/components/schemas/PayGroup"
+          type:
+            - array
+            - "null"
+      required:
+        - groups
       type: object
     InfoOutputBody:
       additionalProperties: false
@@ -3255,6 +3287,188 @@ components:
       required:
         - invite_to_fyniq
       type: object
+    OneOff:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Dollars.
+          examples:
+            - "5000.00"
+          type: string
+        cpf_wages:
+          description: Whether it is CPF wages.
+          examples:
+            - true
+          type: boolean
+        for_month:
+          description: The month of employment it is for.
+          examples:
+            - "2025-12-01"
+          format: date
+          type: string
+        id:
+          description: The item.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f31
+          format: uuid
+          type: string
+        key:
+          description: Its key, used once for a person and month.
+          examples:
+            - bonus-2026
+          type: string
+        month:
+          description: The wage month it is paid in.
+          examples:
+            - "2026-06-01"
+          format: date
+          type: string
+        name:
+          description: As the payslip shows it.
+          examples:
+            - Annual bonus
+          type: string
+        nature:
+          description: What it is.
+          enum:
+            - bonus
+            - commission
+            - allowance
+            - other
+          examples:
+            - bonus
+          type: string
+        note:
+          description: A note.
+          examples:
+            - Annual bonus.
+          type: string
+        payable_on:
+          description: The day it is payable.
+          examples:
+            - "2026-06-30"
+          format: date
+          type: string
+        person:
+          description: Their legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        used:
+          description: Whether a run used it.
+          examples:
+            - false
+          type: boolean
+      required:
+        - id
+        - person_id
+        - person
+        - month
+        - key
+        - name
+        - nature
+        - amount
+        - cpf_wages
+        - used
+      type: object
+    OneOffAddInputBody:
+      additionalProperties: false
+      properties:
+        item:
+          $ref: "#/components/schemas/OneOffInput"
+          description: The item.
+        month:
+          description: The wage month, the first day.
+          examples:
+            - "2026-06-01"
+          format: date
+          type: string
+      required:
+        - month
+        - item
+      type: object
+    OneOffInput:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Dollars.
+          examples:
+            - "5000.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        cpf_wages:
+          description: Whether it is CPF wages.
+          examples:
+            - true
+          type: boolean
+        for_month:
+          description: The first day of the month of employment it is for; empty is the wage month.
+          examples:
+            - "2025-12-01"
+          format: date
+          type: string
+        key:
+          description: The item's key, used once for a person and month.
+          examples:
+            - bonus-2026
+          maxLength: 40
+          minLength: 1
+          type: string
+        name:
+          description: As the payslip shows it.
+          examples:
+            - Annual bonus
+          maxLength: 80
+          minLength: 1
+          type: string
+        nature:
+          description: What it is.
+          enum:
+            - bonus
+            - commission
+            - allowance
+            - other
+          examples:
+            - bonus
+          type: string
+        note:
+          description: A note.
+          examples:
+            - Annual bonus.
+          maxLength: 300
+          type: string
+        payable_on:
+          description: The day it is payable; empty is the pay day.
+          examples:
+            - "2026-06-30"
+          format: date
+          type: string
+      required:
+        - key
+        - name
+        - nature
+        - amount
+        - cpf_wages
+      type: object
+    OneOffsOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The month's one-off items.
+          items:
+            $ref: "#/components/schemas/OneOff"
+          type:
+            - array
+            - "null"
+      required:
+        - items
+      type: object
     OvertimeAsk:
       additionalProperties: false
       properties:
@@ -3623,6 +3837,85 @@ components:
       required:
         - passes
       type: object
+    PayGroup:
+      additionalProperties: false
+      properties:
+        approval_days:
+          description: The run is approved at the latest this many days before the pay day.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        cutoff_days:
+          description: Inputs are accepted until this many days before the pay day.
+          examples:
+            - 7
+          format: int64
+          type: integer
+        id:
+          description: The pay group.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+          format: uuid
+          type: string
+        name:
+          description: Its name.
+          examples:
+            - Monthly
+          type: string
+        pay_day:
+          description: The day of the month salary is paid; 0 is the last day of the month.
+          examples:
+            - 25
+          format: int64
+          type: integer
+      required:
+        - id
+        - name
+        - pay_day
+        - cutoff_days
+        - approval_days
+      type: object
+    PayGroupInput:
+      additionalProperties: false
+      properties:
+        approval_days:
+          description: The run is approved at the latest this many days before the pay day; no more than the cut-off.
+          examples:
+            - 3
+          format: int64
+          maximum: 20
+          minimum: 0
+          type: integer
+        cutoff_days:
+          description: Inputs are accepted until this many days before the pay day.
+          examples:
+            - 7
+          format: int64
+          maximum: 20
+          minimum: 0
+          type: integer
+        name:
+          description: Its name.
+          examples:
+            - Monthly
+          maxLength: 80
+          minLength: 1
+          type: string
+        pay_day:
+          description: The day of the month salary is paid; 0 is the last day of the month.
+          examples:
+            - 25
+          format: int64
+          maximum: 28
+          minimum: 0
+          type: integer
+      required:
+        - name
+        - pay_day
+        - cutoff_days
+        - approval_days
+      type: object
     PayInput:
       additionalProperties: false
       properties:
@@ -3719,6 +4012,158 @@ components:
       required:
         - inputs
       type: object
+    PayItem:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Dollars a month, as a decimal string.
+          examples:
+            - "100.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        cpf_wages:
+          description: Whether it is CPF wages (FR-PAY-17); a deduction never is.
+          examples:
+            - true
+          type: boolean
+        key:
+          description: The item's key, used once in a record.
+          examples:
+            - transport
+          maxLength: 40
+          minLength: 1
+          type: string
+        kind:
+          description: An allowance adds to pay; a fixed deduction takes from it.
+          enum:
+            - allowance
+            - fixed_deduction
+          examples:
+            - allowance
+          type: string
+        name:
+          description: As the payslip shows it.
+          examples:
+            - Transport allowance
+          maxLength: 80
+          minLength: 1
+          type: string
+        nature:
+          description: "What it is: an allowance's or a deduction's kind."
+          enum:
+            - allowance
+            - overtime
+            - other
+            - accommodation
+            - cooperative
+            - other_deduction
+          examples:
+            - allowance
+          type: string
+      required:
+        - key
+        - name
+        - kind
+        - nature
+        - amount
+        - cpf_wages
+      type: object
+    PayOutputBody:
+      additionalProperties: false
+      properties:
+        pay:
+          $ref: "#/components/schemas/PayView"
+          description: The pay.
+        recorded:
+          description: Whether the person has pay on the day.
+          examples:
+            - true
+          type: boolean
+      required:
+        - recorded
+        - pay
+      type: object
+    PaySetInputBody:
+      additionalProperties: false
+      properties:
+        effective_from:
+          description: The day the new pay record starts; the current one ends that day.
+          examples:
+            - "2026-07-01"
+          format: date
+          type: string
+        pay:
+          $ref: "#/components/schemas/PersonPayInput"
+          description: The pay record.
+      required:
+        - effective_from
+        - pay
+      type: object
+    PayView:
+      additionalProperties: false
+      properties:
+        basic_monthly:
+          description: The basic salary a month, in dollars.
+          examples:
+            - "4500.00"
+          type: string
+        effective_from:
+          description: The day this record started.
+          examples:
+            - "2026-01-05"
+          format: date
+          type: string
+        effective_to:
+          description: The day it ended, when it has.
+          examples:
+            - "2026-07-01"
+          format: date
+          type: string
+        items:
+          description: The allowances and fixed deductions.
+          items:
+            $ref: "#/components/schemas/PayItem"
+          type:
+            - array
+            - "null"
+        joint_election:
+          description: Whether a joint election to contribute at full employer rates is in force.
+          examples:
+            - false
+          type: boolean
+        pay_group:
+          description: Its name.
+          examples:
+            - Monthly
+          type: string
+        pay_group_id:
+          description: The pay group.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+          format: uuid
+          type: string
+        shg_fund:
+          description: The self-help group fund, when there is one.
+          examples:
+            - CDAC
+          type: string
+        shg_opt_out:
+          description: Whether the employee opted out of the fund.
+          examples:
+            - false
+          type: boolean
+        year_to_date:
+          $ref: "#/components/schemas/YearToDate"
+          description: The year to date for the year of the day asked, when there is one.
+      required:
+        - effective_from
+        - pay_group_id
+        - pay_group
+        - basic_monthly
+        - shg_opt_out
+        - joint_election
+        - items
+      type: object
     PersonInput:
       additionalProperties: false
       properties:
@@ -3774,6 +4219,49 @@ components:
       required:
         - legal_name
         - employment_start
+      type: object
+    PersonPayInput:
+      additionalProperties: false
+      properties:
+        basic_monthly:
+          description: The basic salary a month, in dollars.
+          examples:
+            - "4500.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        items:
+          description: The allowances and fixed deductions.
+          items:
+            $ref: "#/components/schemas/PayItem"
+          maxItems: 30
+          type:
+            - array
+            - "null"
+        pay_group_id:
+          description: The pay group.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+          format: uuid
+          type: string
+        shg_fund:
+          description: The self-help group fund, or empty for none.
+          enum:
+            - CDAC
+            - ECF
+            - MBMF
+            - SINDA
+            - ""
+          examples:
+            - CDAC
+          type: string
+        shg_opt_out:
+          description: The employee opted out of the fund.
+          examples:
+            - false
+          type: boolean
+      required:
+        - pay_group_id
+        - basic_monthly
       type: object
     PolicyOutputBody:
       additionalProperties: false
@@ -4326,6 +4814,644 @@ components:
             - "null"
       required:
         - requests
+      type: object
+    Run:
+      additionalProperties: false
+      properties:
+        id:
+          description: The run.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+          format: uuid
+          type: string
+        latest:
+          $ref: "#/components/schemas/RunVersion"
+          description: The newest version.
+        month:
+          description: The wage month.
+          examples:
+            - "2026-06-01"
+          format: date
+          type: string
+        pay_day:
+          description: The pay day.
+          examples:
+            - "2026-06-25"
+          format: date
+          type: string
+        pay_group:
+          description: Its name.
+          examples:
+            - Monthly
+          type: string
+        pay_group_id:
+          description: The pay group.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+          format: uuid
+          type: string
+      required:
+        - id
+        - month
+        - pay_group_id
+        - pay_group
+        - pay_day
+        - latest
+      type: object
+    RunDetail:
+      additionalProperties: false
+      properties:
+        id:
+          description: The run.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+          format: uuid
+          type: string
+        latest:
+          $ref: "#/components/schemas/RunVersion"
+          description: The newest version.
+        lines:
+          description: The newest version's lines, one for each person.
+          items:
+            $ref: "#/components/schemas/RunLine"
+          type:
+            - array
+            - "null"
+        month:
+          description: The wage month.
+          examples:
+            - "2026-06-01"
+          format: date
+          type: string
+        overrides:
+          description: The overrides in force on the run.
+          items:
+            $ref: "#/components/schemas/RunOverride"
+          type:
+            - array
+            - "null"
+        pay_day:
+          description: The pay day.
+          examples:
+            - "2026-06-25"
+          format: date
+          type: string
+        pay_group:
+          description: Its name.
+          examples:
+            - Monthly
+          type: string
+        pay_group_id:
+          description: The pay group.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+          format: uuid
+          type: string
+        versions:
+          description: Every version, newest first.
+          items:
+            $ref: "#/components/schemas/RunVersion"
+          type:
+            - array
+            - "null"
+      required:
+        - lines
+        - versions
+        - overrides
+        - id
+        - month
+        - pay_group_id
+        - pay_group
+        - pay_day
+        - latest
+      type: object
+    RunFlag:
+      additionalProperties: false
+      properties:
+        code:
+          description: What it is about.
+          examples:
+            - WAGE_CLASS
+          type: string
+        fail:
+          description: "True for ✖: the run cannot be approved with it."
+          examples:
+            - false
+          type: boolean
+        message:
+          description: In plain words, naming the person and what to do.
+          examples:
+            - "Commission: It is for the month's employment and payable by the 14th of the following month."
+          type: string
+      required:
+        - code
+        - fail
+        - message
+      type: object
+    RunItem:
+      additionalProperties: false
+      properties:
+        amount:
+          description: Dollars.
+          examples:
+            - "5000.00"
+          type: string
+        class:
+          description: Ordinary or additional CPF wages by the facts, none when it is not CPF wages, or a deduction.
+          enum:
+            - ordinary
+            - additional
+            - none
+            - deduction
+          examples:
+            - ordinary
+          type: string
+        key:
+          description: The item.
+          examples:
+            - basic
+          type: string
+        name:
+          description: As the payslip shows it.
+          examples:
+            - Basic salary
+          type: string
+        name_disagrees:
+          description: True when the item's name suggests another class than the facts give.
+          examples:
+            - false
+          type: boolean
+        source_id:
+          description: The record it came from.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f40
+          type: string
+        source_type:
+          description: "The kind of record it came from: person_pay, person_pay_item, pay_one_off, pay_input or overtime_entry."
+          examples:
+            - person_pay
+          type: string
+        why:
+          description: Why it is in that class.
+          examples:
+            - It is for the month's employment and payable by the 14th of the following month.
+          type: string
+      required:
+        - key
+        - name
+        - class
+        - amount
+      type: object
+    RunLine:
+      additionalProperties: false
+      properties:
+        aw_subject:
+          description: Additional wages subject to CPF.
+          examples:
+            - "0.00"
+          type: string
+        computed:
+          additionalProperties:
+            type: string
+          description: The figures the engine worked out, where an override replaced one.
+          type: object
+        cpf_employee:
+          description: The employee's CPF.
+          examples:
+            - "1000.00"
+          type: string
+        cpf_employer:
+          description: The employer's CPF.
+          examples:
+            - "850.00"
+          type: string
+        cpf_total:
+          description: The total CPF contribution.
+          examples:
+            - "1850.00"
+          type: string
+        deductions:
+          description: Authorised deductions.
+          examples:
+            - "0.00"
+          type: string
+        disburse:
+          description: The amount to disburse.
+          examples:
+            - "4000.00"
+          type: string
+        employer_cost:
+          description: Gross + employer CPF + SDL.
+          examples:
+            - "5861.25"
+          type: string
+        flags:
+          description: What the preparer or the approver must see.
+          items:
+            $ref: "#/components/schemas/RunFlag"
+          type:
+            - array
+            - "null"
+        gross:
+          description: Gross pay.
+          examples:
+            - "5000.00"
+          type: string
+        held:
+          description: Monies held under a clearance hold.
+          examples:
+            - "0.00"
+          type: string
+        items:
+          description: The pay items.
+          items:
+            $ref: "#/components/schemas/RunItem"
+          type:
+            - array
+            - "null"
+        net:
+          description: Net pay.
+          examples:
+            - "4000.00"
+          type: string
+        overridden:
+          description: The figures an override replaced.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        ow_subject:
+          description: Ordinary wages subject to CPF.
+          examples:
+            - "5000.00"
+          type: string
+        person:
+          description: Their legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        reimbursements:
+          description: Non-wage reimbursements paid with the salary.
+          examples:
+            - "0.00"
+          type: string
+        sdl:
+          description: The person's SDL before the employer-month rounding.
+          examples:
+            - "11.25"
+          type: string
+        shg:
+          description: The self-help group fund.
+          examples:
+            - "0.00"
+          type: string
+        working:
+          description: The steps of the calculation.
+          items:
+            $ref: "#/components/schemas/RunStep"
+          type:
+            - array
+            - "null"
+      required:
+        - person_id
+        - person
+        - gross
+        - ow_subject
+        - aw_subject
+        - cpf_total
+        - cpf_employee
+        - cpf_employer
+        - sdl
+        - shg
+        - deductions
+        - reimbursements
+        - held
+        - net
+        - disburse
+        - employer_cost
+        - items
+        - working
+        - flags
+      type: object
+    RunOverride:
+      additionalProperties: false
+      properties:
+        field:
+          description: The figure it replaces.
+          enum:
+            - cpf_employee
+            - cpf_employer
+            - sdl
+            - shg
+          examples:
+            - cpf_employee
+          type: string
+        id:
+          description: The override.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f42
+          format: uuid
+          type: string
+        person:
+          description: Their legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        reason:
+          description: Why.
+          examples:
+            - The CPF Board's own figure for the month.
+          type: string
+        value:
+          description: The figure it puts in place.
+          examples:
+            - "999.00"
+          type: string
+      required:
+        - id
+        - person_id
+        - person
+        - field
+        - value
+        - reason
+      type: object
+    RunOverrideInputBody:
+      additionalProperties: false
+      properties:
+        field:
+          description: The figure to replace.
+          enum:
+            - cpf_employee
+            - cpf_employer
+            - sdl
+            - shg
+          examples:
+            - cpf_employee
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        reason:
+          description: Why the calculated figure is wrong.
+          examples:
+            - The CPF Board's own figure for the month.
+          maxLength: 500
+          minLength: 10
+          type: string
+        value:
+          description: The figure to put in place, in dollars.
+          examples:
+            - "999.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+      required:
+        - person_id
+        - field
+        - value
+        - reason
+      type: object
+    RunStartInputBody:
+      additionalProperties: false
+      properties:
+        month:
+          description: The wage month, the first day.
+          examples:
+            - "2026-06-01"
+          format: date
+          type: string
+        pay_group_id:
+          description: The pay group.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+          format: uuid
+          type: string
+      required:
+        - month
+        - pay_group_id
+      type: object
+    RunStep:
+      additionalProperties: false
+      properties:
+        rule:
+          description: The rule or requirement.
+          examples:
+            - RND-CPF
+          type: string
+        text:
+          description: What it did.
+          examples:
+            - "Rates employer 0.17 and employee 0.20: total 1850."
+          type: string
+      required:
+        - rule
+        - text
+      type: object
+    RunTotals:
+      additionalProperties: false
+      properties:
+        cpf_employee:
+          description: Employee CPF.
+          examples:
+            - "1000.00"
+          type: string
+        cpf_employer:
+          description: Employer CPF.
+          examples:
+            - "850.00"
+          type: string
+        deductions:
+          description: Authorised deductions.
+          examples:
+            - "0.00"
+          type: string
+        disburse:
+          description: The amount to disburse.
+          examples:
+            - "4000.00"
+          type: string
+        employer_cost:
+          description: Gross + employer CPF + SDL payable.
+          examples:
+            - "5861.00"
+          type: string
+        gross:
+          description: Gross pay.
+          examples:
+            - "5000.00"
+          type: string
+        net:
+          description: Net pay.
+          examples:
+            - "4000.00"
+          type: string
+        reimbursements:
+          description: Reimbursements paid with the salary.
+          examples:
+            - "0.00"
+          type: string
+        sdl_payable:
+          description: The employer-month SDL, rounded down to the dollar.
+          examples:
+            - "11.00"
+          type: string
+        shg:
+          description: Self-help group funds.
+          examples:
+            - "0.00"
+          type: string
+      required:
+        - gross
+        - cpf_employee
+        - cpf_employer
+        - sdl_payable
+        - shg
+        - deductions
+        - reimbursements
+        - net
+        - disburse
+        - employer_cost
+      type: object
+    RunVersion:
+      additionalProperties: false
+      properties:
+        approved_at:
+          description: When.
+          examples:
+            - "2026-11-20T11:00:00Z"
+          format: date-time
+          type: string
+        approved_by:
+          description: The member who approved it, never its preparer.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e46
+          format: uuid
+          type: string
+        digest:
+          description: The SHA-256 of its figures, which an approver confirms.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        flags_failing:
+          description: How many ✖ it has.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        flags_warning:
+          description: How many ⚠ it has.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        id:
+          description: The version.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f41
+          format: uuid
+          type: string
+        pack_versions:
+          description: The pack versions it read.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        people:
+          description: How many people it pays.
+          examples:
+            - 12
+          format: int64
+          type: integer
+        prepared_at:
+          description: When.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        prepared_by:
+          description: The member who calculated it.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+          format: uuid
+          type: string
+        reason:
+          description: Why a correction was made.
+          examples:
+            - A bonus was missed.
+          type: string
+        state:
+          description: Where it is.
+          enum:
+            - calculated
+            - approved
+            - superseded
+            - posted
+            - paid_in_part
+            - paid
+            - closed
+          examples:
+            - calculated
+          type: string
+        totals:
+          $ref: "#/components/schemas/RunTotals"
+          description: Its totals.
+        version:
+          description: Its number in the run.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - version
+        - state
+        - digest
+        - prepared_by
+        - prepared_at
+        - people
+        - flags_failing
+        - flags_warning
+        - pack_versions
+        - totals
+      type: object
+    RunVersionInputBody:
+      additionalProperties: false
+      properties:
+        reason:
+          description: "Why: required for a correction of an approved run."
+          examples:
+            - A bonus was missed.
+          maxLength: 500
+          type: string
+      type: object
+    RunsOutputBody:
+      additionalProperties: false
+      properties:
+        runs:
+          description: The month's runs.
+          items:
+            $ref: "#/components/schemas/Run"
+          type:
+            - array
+            - "null"
+      required:
+        - runs
       type: object
     SecretOutputBody:
       additionalProperties: false
@@ -4942,6 +6068,94 @@ components:
         - effective_from
         - weekdays
         - hours_per_week
+      type: object
+    YTDInput:
+      additionalProperties: false
+      properties:
+        aw_paid:
+          description: Additional wages paid, subject or not.
+          examples:
+            - "0.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        aw_subject:
+          description: Additional wages subject to CPF.
+          examples:
+            - "0.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        ow:
+          description: Ordinary wages subject to CPF this employer has counted.
+          examples:
+            - "25000.00"
+          pattern: ^[0-9]{1,14}(\.[0-9]{1,2})?$
+          type: string
+        through_month:
+          description: The first day of the last month counted.
+          examples:
+            - "2026-05-01"
+          format: date
+          type: string
+        year:
+          description: The calendar year.
+          examples:
+            - 2026
+          format: int64
+          maximum: 2100
+          minimum: 2020
+          type: integer
+      required:
+        - year
+        - ow
+        - aw_subject
+        - aw_paid
+        - through_month
+      type: object
+    YearToDate:
+      additionalProperties: false
+      properties:
+        aw_paid:
+          description: Additional wages paid.
+          examples:
+            - "0.00"
+          type: string
+        aw_subject:
+          description: Additional wages subject to CPF.
+          examples:
+            - "0.00"
+          type: string
+        ow:
+          description: Ordinary wages subject to CPF.
+          examples:
+            - "25000.00"
+          type: string
+        source:
+          description: Imported at cut-over, or added to by a run.
+          enum:
+            - import
+            - run
+          examples:
+            - import
+          type: string
+        through_month:
+          description: The first day of the last month counted.
+          examples:
+            - "2026-05-01"
+          format: date
+          type: string
+        year:
+          description: The calendar year.
+          examples:
+            - 2026
+          format: int64
+          type: integer
+      required:
+        - year
+        - ow
+        - aw_subject
+        - aw_paid
+        - through_month
+        - source
       type: object
 info:
   contact:
@@ -9285,6 +10499,549 @@ paths:
       summary: What leave and time give the next pay run
       tags:
         - Leave
+  /v1/payroll/groups:
+    get:
+      description: "The pay groups: each has a pay day and the cut-offs for inputs and approval (NM-PAY-03). The Payroll administrator and the Owner. It changes nothing."
+      operationId: listPayGroups
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Pay groups
+      tags:
+        - Payroll
+    post:
+      description: Makes a pay group with its pay day and the cut-offs for inputs and approval. The Payroll administrator and the Owner. It is audited.
+      operationId: createPayGroup
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayGroupInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Make a pay group
+      tags:
+        - Payroll
+  /v1/payroll/one-offs:
+    get:
+      description: The one-off items (bonuses, commissions, allowances) of a wage month with the facts that class them. The Payroll administrator and the Owner. It changes nothing.
+      operationId: listPayOneOffs
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The wage month, the first day.
+          explode: false
+          in: query
+          name: month
+          schema:
+            description: The wage month, the first day.
+            examples:
+              - "2026-06-01"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OneOffsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A month's one-off items
+      tags:
+        - Payroll
+  /v1/payroll/overrides/{id}/withdrawal:
+    post:
+      description: Ends an override from the next calculation. The Payroll administrator and the Owner. It is audited.
+      operationId: withdrawPayRunOverride
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The override.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The override.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f42
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Withdraw an override
+      tags:
+        - Payroll
+  /v1/payroll/runs:
+    get:
+      description: The runs of a wage month, each with its newest version's state, digest, totals and flags. The Payroll administrator and the Owner. It changes nothing.
+      operationId: listPayRuns
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The wage month, the first day.
+          explode: false
+          in: query
+          name: month
+          schema:
+            description: The wage month, the first day.
+            examples:
+              - "2026-06-01"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A month's pay runs
+      tags:
+        - Payroll
+    post:
+      description: "Makes the run of a wage month for a pay group, once, and calculates version 1: every person with pay in the group, from their pay record and the inputs (one-off items, unpaid leave, approved overtime), each linked to its source. A person's missing fact (a legal classification, a date of birth, a year to date for additional wages) refuses the run and names them. The version is read-only; nothing is posted or paid. The Payroll administrator and the Owner. It is audited without any amount."
+      operationId: startPayRun
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunStartInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Run"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Start a pay run and calculate its first version
+      tags:
+        - Payroll
+  /v1/payroll/runs/{id}:
+    get:
+      description: The run with its newest version's lines (each person's figures, items, flags and working), every version and the overrides in force. The Payroll administrator and the Owner. It changes nothing.
+      operationId: getPayRun
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The run.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The run.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunDetail"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A pay run with its newest version
+      tags:
+        - Payroll
+  /v1/payroll/runs/{id}/overrides:
+    post:
+      description: Replaces the CPF employee or employer share, the SDL or the self-help group fund of one person's month with a figure and a reason of at least ten characters. It applies from the next calculation, is flagged ⚠ on the approval and is part of the version's digest. The Payroll administrator and the Owner. It is audited with the field and the person, never the figure.
+      operationId: addPayRunOverride
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The run.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The run.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunOverrideInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Override a calculated figure of a person's month
+      tags:
+        - Payroll
+  /v1/payroll/runs/{id}/versions:
+    post:
+      description: "Calculates the next version from the pay records, the inputs and the overrides now: a calculated version that is not approved is superseded; after an approved version it is a correction, which needs a reason and states the full corrected figures of its month. The Payroll administrator and the Owner. It is audited without any amount."
+      operationId: calculatePayRunVersion
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The run.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The run.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunVersionInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Run"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Calculate the next version of a pay run
+      tags:
+        - Payroll
   /v1/people:
     get:
       description: "Lists everyone who works for the organisation on a day (today when none is given): name, job title, department, work email and line manager, nothing restricted. Every signed-in person may read it (Appendix B: Directory and org chart). It changes nothing."
@@ -10883,6 +12640,366 @@ paths:
       summary: Withdraw a person's leaving
       tags:
         - Onboarding
+  /v1/people/{id}/pay:
+    get:
+      description: "The person's pay record on a day: the pay group, the monthly basic salary, the fund, the allowances and fixed deductions, whether a joint election is in force and the year to date. Pay is for the Payroll administrator and the Owner alone: anyone else is refused, and every read is of one person. It changes nothing."
+      operationId: getPersonPay
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+        - description: The day to show the pay on; today when empty.
+          explode: false
+          in: query
+          name: as_of
+          schema:
+            description: The day to show the pay on; today when empty.
+            examples:
+              - "2026-06-01"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A person's pay
+      tags:
+        - Payroll
+    post:
+      description: "Ends the current pay record the day the new one starts and starts it, with its allowances and fixed deductions. A record is history: it is ended, never edited. The Payroll administrator and the Owner. It is audited, and the audit event says that pay was set and from when, never what it was."
+      operationId: setPersonPay
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaySetInputBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Start a person's pay record
+      tags:
+        - Payroll
+  /v1/people/{id}/pay/one-offs:
+    post:
+      description: Adds a one-off item to the wage month with the month of employment it is for and the day it is payable, which decide whether it is ordinary or additional wages (FR-PAY-17). The Payroll administrator and the Owner. It is audited without the amount.
+      operationId: addPayOneOff
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OneOffAddInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Add a one-off item to a month's pay
+      tags:
+        - Payroll
+  /v1/people/{id}/pay/year-to-date:
+    post:
+      description: "Imports the CPF wages this employer has counted for the person in a year before Nemura's first run (FR-PAY-14): ordinary wages subject to CPF, additional wages subject and paid, and the last month counted. Once for a year; a run adds to it afterwards. A month that pays additional wages with no year to date cannot be calculated. The Payroll administrator and the Owner. It is audited without the figures."
+      operationId: importYearToDate
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/YTDInput"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Import a person's year to date of CPF wages
+      tags:
+        - Payroll
+  /v1/people/{id}/pr-election:
+    post:
+      description: Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file. The Payroll administrator and the Owner. It is audited.
+      operationId: setPersonElection
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ElectionInputBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Record a permanent resident's joint election
+      tags:
+        - Payroll
   /v1/people/{id}/secrets/{field}:
     get:
       description: "Returns the NRIC or FIN or the salary bank account at the level the caller's roles give (Appendix B): masked for the HR officer, in full for the HR administrator, the Payroll administrator and the Owner as the matrix says, and always in full for the person themselves. Every read, and every refusal, is audited. A field the caller may not see answers as if there were none."
@@ -11999,6 +14116,8 @@ tags:
     name: Packs
   - description: Working patterns, leave balances and the ledger behind them (NM-LV-01, NM-LV-02, NM-LV-13, NM-TIM-01).
     name: Leave
+  - description: "Pay groups, a person's pay, the year to date and one-off items: for the Payroll administrator and the Owner alone (NM-PAY-02, NM-PAY-03, FR-EMP-01)."
+    name: Payroll
   - description: The task to invite new people to Fyniq, and a leaver's dates, checklist and leave settlement (NM-ONB-02, NM-ONB-03).
     name: Onboarding
   - description: A person's own details and requests, and what waits for the people team (NM-ESS-03, NM-ESS-04).

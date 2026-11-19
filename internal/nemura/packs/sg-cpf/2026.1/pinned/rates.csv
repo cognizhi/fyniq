@@ -1,0 +1,13 @@
+case,month,group,age,wage,want_employer,want_employee,why,source
+CPF-01,2026-03,sc_spr3,30,7600.00,0.17,0.20,"55 and below: 17% by the employer and 20% by the employee",cpf-rates-2026
+CPF-02,2026-12,sc_spr3,55,8000.00,0.17,0.20,"55 itself is in 55 and below",cpf-rates-2026
+CPF-03,2026-06,sc_spr3,56,5000.00,0.16,0.18,"above 55 to 60 in 2026",cpf-rates-2026
+CPF-04,2026-06,sc_spr3,62,4000.00,0.125,0.125,"above 60 to 65 in 2026",cpf-rates-2026
+CPF-05,2026-06,sc_spr3,68,3000.00,0.09,0.075,"above 65 to 70",cpf-rates-2026
+CPF-06,2026-06,sc_spr3,71,2500.00,0.075,0.05,"above 70",cpf-rates-2026
+CPF-07,2027-01,sc_spr3,58,5000.00,0.165,0.19,"above 55 to 60 from 1 January 2027: 35.5% in all",cpf-rates-2027
+CPF-08,2027-01,sc_spr3,63,5000.00,0.13,0.13,"above 60 to 65 from 1 January 2027: 26% in all",cpf-rates-2027
+CPF-09,2027-01,sc_spr3,40,9000.00,0.17,0.20,"55 and below is unchanged in 2027",cpf-rates-2027
+CPF-10,2026-06,sc_spr3,30,750.00,none,none,"a wage of $750 is in the graduated range, not held by this version",cpf-rates-2026
+CPF-11,2025-12,sc_spr3,30,7600.00,none,none,"wages earned before 2026 are not held by this version",cpf-rates-2026
+CPF-12,2026-03,sc_spr3,30,12000.00,0.17,0.20,"above the Ordinary Wage ceiling the rate is the same; the ceiling limits the wages it applies to",cpf-rates-2026 iras-cpf-ceilings

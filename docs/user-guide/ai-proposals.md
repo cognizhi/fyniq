@@ -98,6 +98,24 @@ status: draft
   proposal is marked out of date and the AI can propose it again. A project that is internal, or has no customer or nothing
   to bill, is refused with the reason. The AI never sees what anyone is paid.
 
+## Review a bill or an expense claim the AI drafted
+
+- **Draft a bill from a supplier's document** (`ap.draft_bill`, tier 1) is a draft bill the AI asks Fyniq to make from an invoice
+  or receipt you gave it: the supplier, the supplier's own number, the date, the currency and each line's account, net amount,
+  GST code and the GST the document states. It is the same draft as **New bill**. Someone who may enter bills themselves, such
+  as the AP specialist or the accountant, approves it.
+- **Draft an expense claim from receipts** (`exp.draft_claim`, tier 1) is a draft of your own claim, from receipts you gave the
+  AI. It is always the claim of the person who asked, and only that person can approve it, so no one else's claim is made for
+  them.
+- The review shows the lines, the total, how each line's input tax is decided and what would stop the bill being posted or the
+  claim submitted. Both are drafts: nothing is posted or submitted, and the usual approval policies apply when a person posts
+  the bill or submits the claim.
+- The AI says only what the document states. If it is not sure what kind of document it is, the input tax is left out: you
+  confirm it from the document before the bill is posted. It never decides whether GST is claimable.
+- A bill is marked out of date, and drafts nothing, if the supplier changed after the review. A supplier that is not an active
+  supplier, an account that cannot be costed, a GST code that is not a purchase code and a category that is not one of your
+  claim categories are refused with the reason.
+
 ## Turn a task type on or off
 
 - Every task type starts off. **Turn on…** asks for a second approver, as the setting **AI task types** in

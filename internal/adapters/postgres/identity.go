@@ -362,6 +362,20 @@ func (r members) Assign(ctx context.Context, membershipID uuid.UUID, role string
 	return storage.RoleAssignment{ID: row.ID, MembershipID: row.MembershipID, Role: row.Role, ExpiresAt: row.ExpiresAt}, nil
 }
 
+func (r members) Narrow(ctx context.Context, assignmentID uuid.UUID, values []uuid.UUID) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	ids := make([]string, 0, len(values))
+	for _, v := range values {
+		if err := r.u.q.InsertRoleAssignmentScope(ctx, sqlcdb.InsertRoleAssignmentScopeParams{AssignmentID: assignmentID, DimensionValueID: v}); err != nil {
+			return mapError(err)
+		}
+		ids = append(ids, v.String())
+	}
+	return r.u.event(ctx, "role_assignment.scoped", "role_assignment_scope", assignmentID, nil, map[string][2]any{"department_values": {nil, ids}})
+}
+
 func (r members) Revoke(ctx context.Context, assignmentID uuid.UUID) error {
 	if err := r.u.check(); err != nil {
 		return err
@@ -416,6 +430,46 @@ func (r members) Roles(ctx context.Context, userID uuid.UUID, now time.Time) ([]
 	out := make([]storage.RoleAssignment, len(rows))
 	for i, a := range rows {
 		out[i] = storage.RoleAssignment{ID: a.ID, MembershipID: a.MembershipID, Role: a.Role, ExpiresAt: a.ExpiresAt, RevokedAt: a.RevokedAt}
+	}
+	return out, nil
+}
+
+// List is the active Super admins, longest-serving first (the super-admin console).
+func (r superAdmins) List(ctx context.Context) ([]storage.SuperAdminInfo, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.SuperAdminList(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.SuperAdminInfo, len(rows))
+	for i, x := range rows {
+		out[i] = storage.SuperAdminInfo{UserID: x.UserID, DisplayName: x.DisplayName, AddedAt: x.AddedAt}
+	}
+	return out, nil
+}
+
+// Health is the platform's health across every organisation: the platform jobs' latest beats and the outbox's backlog.
+func (r superAdmins) Health(ctx context.Context) (storage.PlatformHealth, error) {
+	if err := r.u.check(); err != nil {
+		return storage.PlatformHealth{}, err
+	}
+	beats, err := r.u.q.PlatformHeartbeats(ctx)
+	if err != nil {
+		return storage.PlatformHealth{}, mapError(err)
+	}
+	box, err := r.u.q.PlatformOutbox(ctx)
+	if err != nil {
+		return storage.PlatformHealth{}, mapError(err)
+	}
+	out := storage.PlatformHealth{OutboxPending: box.Pending, OutboxDead: box.Dead}
+	if box.OldestPending.Unix() > 0 {
+		t := box.OldestPending
+		out.OldestPending = &t
+	}
+	for _, b := range beats {
+		out.Heartbeats = append(out.Heartbeats, storage.Heartbeat{Name: b.Name, LastBeat: b.LastBeat, Detail: b.Detail})
 	}
 	return out, nil
 }

@@ -99,6 +99,8 @@ var Catalogue = []Code{
 	{CodeFeatureOff, http.StatusConflict, "That feature is switched off", "Switch the feature on under Settings, Features; its records are kept while it is off."},
 	{CodeLetterInvalid, http.StatusUnprocessableEntity, "The letter is not valid", "Correct what the message names and send it again."},
 	{CodeLeaverAccount, http.StatusForbidden, "That is not part of your account now", "After the last day an account keeps the person's own documents and letters, and a way to ask the people team a question."},
+	{CodePayrollInvalid, http.StatusUnprocessableEntity, "The pay is not valid", "Correct what the message names and send it again."},
+	{CodePayrollConflict, http.StatusConflict, "That cannot happen to the pay now", "A pay record and an election are history: start a new one from a later day. A name, a key and a year to date are used once."},
 	{CodeOnboardingInvalid, http.StatusUnprocessableEntity, "The leaving or the task is not valid", "Correct what the message names and send it again."},
 	{CodeOnboardingConflict, http.StatusConflict, "That cannot happen to the task or the leaving now", "A task is decided once; a leaving is withdrawn only before its last day."},
 	{CodeRequestInvalid, http.StatusUnprocessableEntity, "The request is not valid", "Correct what the message names and send it again."},

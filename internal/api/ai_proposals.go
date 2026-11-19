@@ -222,7 +222,7 @@ func (a *API) checkProposal(ctx context.Context, p authn.Principal, tt proposal.
 		if today, err = orgToday(ctx, a, u); err != nil {
 			return err
 		}
-		impact, err = cmd.DryRun(ctx, u, json.RawMessage(payload), proposal.Actor{User: p.UserID, Roles: p.Roles, Today: today})
+		impact, err = cmd.DryRun(ctx, u, json.RawMessage(payload), proposal.Actor{User: p.UserID, Requester: p.UserID, Roles: p.Roles, Today: today})
 		return err
 	})
 	switch {

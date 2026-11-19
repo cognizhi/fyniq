@@ -9133,6 +9133,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/installation/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the platform's health
+         * @description The platform's health across every organisation (FR-ADM-07): the platform jobs' latest beats, the Scheduler's tick among them, and the background work's backlog; degraded when the tick is late or has never run, or work is dead. Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). Read-only; no side effects.
+         */
+        get: operations["getPlatformHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/installation/private-endpoints": {
         parameters: {
             query?: never;
@@ -9195,6 +9215,26 @@ export interface paths {
          * @description Sets a provider's switches (FR-ADM-08): on or off (off refuses new sign-ins through it, and with end_sessions signs out every session it started), and the email domains it accepts (an account's verified email on one of them; empty: any). Refused when it leaves a Super admin no way to sign in. Needs an active Super admin who passed step-up in the last 5 minutes. With two Super admins the answer is 202 with the change the other one approves with approveInstallationChange (FR-ADM-07); with one it applies at once. Side effects: the switches, or the change request, their event in the installation's trail and a security notice to every Super admin. Idempotent with Idempotency-Key; Prefer: return=preview checks it and changes nothing.
          */
         patch: operations["changeSignInMethod"];
+        trace?: never;
+    };
+    "/v1/installation/super-admins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the Super admins
+         * @description The installation's active Super admins, longest-serving first (FR-ADM-07), with a warning while there is only one. Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1). Read-only; no side effects.
+         */
+        get: operations["listSuperAdmins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/instrument-template-enablements/{enablement_id}/approval": {
@@ -41154,6 +41194,18 @@ export interface components {
              */
             id: string;
             /**
+             * Format: date-time
+             * @description When they last signed in to Fyniq; absent when they never have (SEC-06).
+             * @example 2026-11-20T09:00:00Z
+             */
+            last_sign_in_at?: string;
+            /**
+             * Format: int64
+             * @description How many live passkeys they hold: none means they confirm it's you only by signing in again (SEC-01).
+             * @example 1
+             */
+            passkeys: number;
+            /**
              * @description true in the answer to removeMember: they are no longer a member.
              * @example false
              */
@@ -41318,6 +41370,8 @@ export interface components {
             next_cursor?: string;
         };
         MemberRole: {
+            /** @description For the Approver role: the department values it is narrowed to (FR-ADM-01). Appendix D's department-qualified cells reach only the records, lines and budgets of these values; an Approver role with none reaches none of them. */
+            department_value_ids?: string[] | null;
             /**
              * Format: date-time
              * @description When it ends, for an external user; absent while it lasts.
@@ -46774,6 +46828,69 @@ export interface components {
              */
             month: string;
         };
+        PlatformHealth: {
+            /**
+             * Format: date-time
+             * @description When it was read.
+             * @example 2026-11-20T09:30:00Z
+             */
+            as_at: string;
+            /** @description The platform jobs' latest beats, by name. */
+            jobs: components["schemas"]["PlatformJob"][];
+            /** @description The background work's backlog. */
+            outbox: components["schemas"]["PlatformOutbox"];
+            /**
+             * @description Why it is degraded, in words; empty when ok.
+             * @example [
+             *       "The Scheduler's tick last ran 40 minutes ago."
+             *     ]
+             */
+            reasons: string[];
+            /**
+             * @description degraded when the Scheduler's tick is late or has never run, or work is dead (§12.11).
+             * @example ok
+             * @enum {string}
+             */
+            status: "ok" | "degraded";
+        };
+        PlatformJob: {
+            /**
+             * @description What it reported, shortened.
+             * @example ok
+             */
+            detail?: string;
+            /**
+             * Format: date-time
+             * @description When it last ran.
+             * @example 2026-11-20T09:25:00Z
+             */
+            last_beat: string;
+            /**
+             * @description The job: tick is the Scheduler's, audit.anchor and audit.verify the audit trail's, and so on.
+             * @example tick
+             */
+            name: string;
+        };
+        PlatformOutbox: {
+            /**
+             * Format: int64
+             * @description Work that failed its attempts and needs someone.
+             * @example 0
+             */
+            dead: number;
+            /**
+             * Format: date-time
+             * @description Since when the oldest waiting work has waited.
+             * @example 2026-11-20T09:20:00Z
+             */
+            oldest_pending?: string;
+            /**
+             * Format: int64
+             * @description Work waiting or running.
+             * @example 3
+             */
+            pending: number;
+        };
         PlatformVersion: {
             /**
              * @description When the build was made, RFC 3339.
@@ -50915,6 +51032,8 @@ export interface components {
             items: components["schemas"]["RiskView"][];
         };
         RoleGrant: {
+            /** @description For the Approver role only: the department values to narrow it to (FR-ADM-01, rev 0.253). Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another role is refused. */
+            department_value_ids?: string[] | null;
             /**
              * Format: date-time
              * @description For an external user: when it ends. Never on the Owner role.
@@ -53930,6 +54049,25 @@ export interface components {
              */
             user_id: string;
         };
+        SuperAdminEntry: {
+            /**
+             * Format: date-time
+             * @description Since when they have been a Super admin.
+             * @example 2026-10-01T09:00:00Z
+             */
+            added_at: string;
+            /**
+             * @description Their name.
+             * @example Wei Ling Tan
+             */
+            display_name: string;
+            /**
+             * Format: uuid
+             * @description Their user.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            user_id: string;
+        };
         SuperAdminInvitation: {
             /**
              * @description Your name, as other users will see it; ignored when you are a user already.
@@ -53941,6 +54079,15 @@ export interface components {
              * @example ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z
              */
             invitation_code: string;
+        };
+        SuperAdminList: {
+            /** @description The active Super admins, longest-serving first (at most two in P0: the last is only replaced, FR-ADM-07). */
+            items: components["schemas"]["SuperAdminEntry"][];
+            /**
+             * @description Set while there is only one: a second keeps the installation recoverable (CTL-IAM-07).
+             * @example Only one Super admin: invite a second.
+             */
+            warning?: string;
         };
         SuperAdminRecovery: {
             /**
@@ -127442,6 +127589,99 @@ export interface operations {
             };
         };
     };
+    getPlatformHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformHealth"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listPrivateEndpoints: {
         parameters: {
             query?: {
@@ -127966,6 +128206,99 @@ export interface operations {
             };
             /** @description Precondition Required: `API-IF-MATCH-02` If-Match required. */
             428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listSuperAdmins: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuperAdminList"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-06` Not a Super admin; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

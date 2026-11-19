@@ -70,3 +70,4 @@ nobody decides expires after a week. Every Super admin is told of each change.
 - [Sign in to Fyniq](sign-in.md)
 - [Integrations and connectors](integrations.md)
 - [Invite people and give them roles](members-and-roles.md)
+- [The installation console](installation-console.md)

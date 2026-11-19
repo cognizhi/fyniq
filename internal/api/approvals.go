@@ -1758,7 +1758,17 @@ func (a *API) execute(ctx context.Context, u storage.UnitOfWork, r storage.Appro
 			}
 			expires = &t
 		}
-		if _, err = a.assignRoleNow(ctx, u, id, text("role"), expires); err != nil {
+		var departments []uuid.UUID
+		if ids, ok := x["department_value_ids"].([]any); ok {
+			for _, v := range ids {
+				d, err := uuid.Parse(fmt.Sprint(v))
+				if err != nil {
+					return err
+				}
+				departments = append(departments, d)
+			}
+		}
+		if _, err = a.assignRoleNow(ctx, u, id, text("role"), expires, departments...); err != nil {
 			return err
 		}
 		return a.recordOverride(ctx, u, r, x)

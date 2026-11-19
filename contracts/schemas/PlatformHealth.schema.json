@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "as_at": {
+      "description": "When it was read.",
+      "examples": [
+        "2026-11-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "jobs": {
+      "description": "The platform jobs' latest beats, by name.",
+      "items": {
+        "$ref": "PlatformJob.schema.json"
+      },
+      "type": "array"
+    },
+    "outbox": {
+      "$ref": "PlatformOutbox.schema.json",
+      "description": "The background work's backlog."
+    },
+    "reasons": {
+      "description": "Why it is degraded, in words; empty when ok.",
+      "examples": [
+        [
+          "The Scheduler's tick last ran 40 minutes ago."
+        ]
+      ],
+      "items": {
+        "examples": [
+          "The Scheduler's tick last ran 40 minutes ago."
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "status": {
+      "description": "degraded when the Scheduler's tick is late or has never run, or work is dead (§12.11).",
+      "enum": [
+        "ok",
+        "degraded"
+      ],
+      "examples": [
+        "ok"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "reasons",
+    "jobs",
+    "outbox",
+    "as_at"
+  ],
+  "title": "PlatformHealth",
+  "type": "object"
+}

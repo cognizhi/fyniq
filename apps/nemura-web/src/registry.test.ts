@@ -34,7 +34,7 @@ describe("the feature registry", () => {
     const app = readFileSync("src/App.tsx", "utf8");
     // The app serves the registry's routes, sign-in's own path and "/" (which sends a person to their landing); nothing else is a page.
     expect(app).not.toMatch(/path === "\/(?!sign-in"|join"|"\))/);
-    expect(routes.map((r) => r.path).sort()).toEqual(["/join", "/me", "/me/ask/hr", "/me/details", "/me/leave", "/me/leave/new", "/me/leave/sick", "/me/letters/new", "/me/requests", "/people", "/people/:id", "/people/:id/leave", "/people/directory", "/people/leave", "/people/leave/government-paid", "/people/letters", "/people/new", "/people/onboarding", "/people/requests", "/settings/features", "/settings/letters", "/settings/packs", "/settings/policy", "/sign-in"]);
+    expect(routes.map((r) => r.path).sort()).toEqual(["/join", "/me", "/me/ask/hr", "/me/details", "/me/leave", "/me/leave/new", "/me/leave/sick", "/me/letters/new", "/me/requests", "/people", "/people/:id", "/people/:id/leave", "/people/directory", "/people/leave", "/people/leave/government-paid", "/people/letters", "/people/new", "/people/onboarding", "/people/payroll", "/people/requests", "/settings/features", "/settings/letters", "/settings/packs", "/settings/policy", "/sign-in"]);
   });
 
   it("fails an entry without a mode, help key, help text or guide page", () => {

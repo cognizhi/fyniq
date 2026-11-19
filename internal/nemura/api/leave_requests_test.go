@@ -521,6 +521,58 @@ func TestInvitationTasksAndLeavingsAreForTheRolesThatHandleThem(t *testing.T) {
 	}
 }
 
+// Pay is for the Payroll administrator and the Owner alone: the HR officer and the HR administrator, a line manager and an employee are refused every pay operation, read or write, and
+// a malformed amount is refused with the field named (Appendix B: Pay, pay history, pay runs; FR-PAY-13; NM-PAY-02).
+// req: FR-PAY-13, NM-PAY-02
+// asvs: V8.2.1, V8.3.1
+func TestPayIsForThePayrollAdministratorAndTheOwnerAlone(t *testing.T) {
+	do := func(roles []authz.Role, method, path, body string) int {
+		testRoles = roles
+		defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	person := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"
+	calls := []struct{ method, path, body string }{
+		{"GET", "/v1/payroll/groups", ""}, {"POST", "/v1/payroll/groups", `{"name":"Monthly","pay_day":25,"cutoff_days":7,"approval_days":3}`},
+		{"GET", "/v1/people/" + person + "/pay", ""},
+		{"POST", "/v1/people/" + person + "/pay", `{"effective_from":"2026-07-01","pay":{"pay_group_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30","basic_monthly":"4500.00"}}`},
+		{"POST", "/v1/people/" + person + "/pr-election", `{"effective_from":"2026-02-10","evidence_document_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9"}`},
+		{"POST", "/v1/people/" + person + "/pay/year-to-date", `{"year":2026,"ow":"25000.00","aw_subject":"0.00","aw_paid":"0.00","through_month":"2026-05-01"}`},
+		{"GET", "/v1/payroll/one-offs?month=2026-06-01", ""},
+		{"POST", "/v1/payroll/runs", `{"month":"2026-06-01","pay_group_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30"}`}, {"GET", "/v1/payroll/runs?month=2026-06-01", ""}, {"GET", "/v1/payroll/runs/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43", ""},
+		{"POST", "/v1/payroll/runs/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43/versions", `{"reason":"A bonus was missed."}`},
+		{"POST", "/v1/payroll/runs/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43/overrides", `{"person_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61","field":"cpf_employee","value":"999.00","reason":"The CPF Board's own figure."}`},
+		{"POST", "/v1/payroll/overrides/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f42/withdrawal", ""},
+		{"POST", "/v1/people/" + person + "/pay/one-offs", `{"month":"2026-06-01","item":{"key":"bonus-2026","name":"Annual bonus","nature":"bonus","amount":"5000.00","cpf_wages":true}}`},
+	}
+	for _, roles := range [][]authz.Role{{authz.Employee}, {authz.LineManager}, {authz.HROfficer}, {authz.HRAdmin}, {authz.Administrator}} {
+		for _, c := range calls {
+			if got := do(roles, c.method, c.path, c.body); got != 403 {
+				t.Errorf("%v %s %s: %d, want 403", roles, c.method, c.path, got)
+			}
+		}
+	}
+	for _, roles := range [][]authz.Role{{authz.PayrollAdmin}, {authz.Owner}} {
+		for _, c := range calls {
+			if got := do(roles, c.method, c.path, c.body); got >= 300 {
+				t.Errorf("%v could not %s %s: %d", roles, c.method, c.path, got)
+			}
+		}
+	}
+	if got := do([]authz.Role{authz.PayrollAdmin}, "POST", "/v1/people/"+person+"/pay", `{"effective_from":"2026-07-01","pay":{"pay_group_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30","basic_monthly":"4500.005"}}`); got != 422 {
+		t.Errorf("an amount with a fraction of a cent: %d", got)
+	}
+	if got := do([]authz.Role{authz.PayrollAdmin}, "POST", "/v1/payroll/groups", `{"name":"Monthly","pay_day":40,"cutoff_days":7,"approval_days":3}`); got != 422 {
+		t.Errorf("a pay day that is not a day: %d", got)
+	}
+}
+
 // Letters are asked for by the person, checked by the people team (never their own), signed only by the signatory after a fresh passkey confirmation, and read by the person
 // and the people team; the people team writes templates, the HR administrator and the Owner approve them and set the letterhead and the types; a delivery link needs no
 // sign-in (NM-LTR-01, NM-LTR-02, NM-LTR-03).

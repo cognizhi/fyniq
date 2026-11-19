@@ -133,6 +133,17 @@ func (s Claims) Create(ctx context.Context, org uuid.UUID, d claim.Draft) (stora
 	return doc, err
 }
 
+// CreateClaimIn saves a draft claim in u, the caller's own unit of work: how an approved AI proposal's draft is made by the executor
+// (PRD-001 Appendix E, exp.draft_claim) and how a captured receipt's draft is made (FR-DOC-12), through the same encoding and numbering as a
+// person's draft.
+func CreateClaimIn(ctx context.Context, u storage.UnitOfWork, d claim.Draft) (storage.Document, error) {
+	b, err := claim.Encode(d)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	return createNumbered(ctx, u, storage.DocumentExpenseClaim, b)
+}
+
 // Revise saves a draft claim's new content as its next version, recording who saved it (FR-GL-01's preparer); a claim
 // returned to its claimant is revised this way, its earlier versions kept (UC-EXP-04).
 func (s Claims) Revise(ctx context.Context, org, id uuid.UUID, d claim.Draft) (storage.Document, error) {

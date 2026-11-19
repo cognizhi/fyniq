@@ -7,7 +7,7 @@ import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
 import { Button } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
-import { date } from "../../format/date";
+import { date, dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { guarded, useConfirm } from "../../stepup";
@@ -87,12 +87,32 @@ function endOfDay(day: string): string | undefined {
   return day ? `${day}T23:59:59+08:00` : undefined;
 }
 
-function Roles({ roles }: { roles: { role: string; expires_at?: string }[] }) {
+// departmentNames reads the organisation's department values, which an Approver's role is narrowed to (FR-ADM-01); empty
+// where the person's roles may not read the dimensions.
+function useDepartments() {
+  return useQuery({
+    queryKey: ["department-values"],
+    retry: false,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const dims = await api.GET("/v1/dimensions");
+      const dept = dims.data?.items?.find((d) => d.kind === "department");
+      if (!dept) return [];
+      const values = await api.GET("/v1/dimension-values", { params: { query: { dimension_id: dept.id, page_size: 200 } } });
+      return (values.data?.items ?? []).filter((v) => v.active).map((v) => ({ id: v.id, name: v.name }));
+    },
+  });
+}
+
+function Roles({ roles }: { roles: { role: string; expires_at?: string; department_value_ids?: string[] | null }[] }) {
+  const departments = useDepartments();
+  const name = (id: string) => departments.data?.find((d) => d.id === id)?.name ?? "a department";
   return (
     <span className="fy-row fy-row--wrap gap-1">
       {roles.map((r) => (
         <span key={r.role} className="fy-tag">
           {roleLabel(r.role)}
+          {r.role === "approver" ? ` for ${r.department_value_ids?.length ? r.department_value_ids.map(name).join(", ") : "no department yet"}` : ""}
           {r.expires_at ? ` to ${date(r.expires_at)}` : ""}
         </span>
       ))}
@@ -309,6 +329,8 @@ function MemberRoles({ member, conflict, blocks, onClose }: { member: Member | n
   const [role, setRole] = useState("");
   const [ends, setEnds] = useState("");
   const [why, setWhy] = useState("");
+  const [picked, setPicked] = useState<string[]>([]);
+  const departments = useDepartments();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<ApiProblem | null>(null);
   const [waits, setWaits] = useState<Approval | null>(null);
@@ -339,6 +361,7 @@ function MemberRoles({ member, conflict, blocks, onClose }: { member: Member | n
     setRole("");
     setEnds("");
     setWhy("");
+    setPicked([]);
     await Promise.all(["members", "approvals", "team-mode", "shell"].map((k) => queries.invalidateQueries({ queryKey: [k] })));
   };
 
@@ -349,7 +372,7 @@ function MemberRoles({ member, conflict, blocks, onClose }: { member: Member | n
     setProblem(null);
     setDone("");
     const key = newKey();
-    const body = { role, ...(ends ? { expires_at: endOfDay(ends) } : {}), ...(why.trim() ? { sod_override_reason: why.trim() } : {}) };
+    const body = { role, ...(role === "approver" && picked.length ? { department_value_ids: picked } : {}), ...(ends ? { expires_at: endOfDay(ends) } : {}), ...(why.trim() ? { sod_override_reason: why.trim() } : {}) };
     const out = await guarded(confirm, () =>
       api.POST("/v1/members/{member_id}/roles", { params: { path: { member_id: member.id }, header: { "Idempotency-Key": key } }, body }),
     );
@@ -464,6 +487,21 @@ function MemberRoles({ member, conflict, blocks, onClose }: { member: Member | n
             </span>
           </div>
         </div>
+        {role === "approver" && (
+          <fieldset className="fy-fieldset">
+            <legend className="fy-label">Departments this Approver acts for</legend>
+            <p className="fy-help">
+              Their views and approvals reach only these departments' records, lines and budgets. With none chosen, they reach none of them.
+            </p>
+            {(departments.data ?? []).length === 0 && <p className="fy-small fy-secondary">The organisation has no department values yet: add them under Accounting › Dimensions.</p>}
+            {(departments.data ?? []).map((d) => (
+              <label key={d.id} className="fy-row gap-2">
+                <input type="checkbox" checked={picked.includes(d.id)} onChange={(e) => setPicked(e.target.checked ? [...picked, d.id] : picked.filter((x) => x !== d.id))} />
+                {d.name}
+              </label>
+            ))}
+          </fieldset>
+        )}
         {blocks && (
           <div className="fy-field">
             <label className="fy-label" htmlFor={whyId}>
@@ -635,6 +673,11 @@ export function Members() {
                       {you ? " (you)" : ""}
                     </span>
                     <Roles roles={m.roles ?? []} />
+                    <span className="fy-list__meta whitespace-normal">
+                      {m.last_sign_in_at ? `Last signed in ${dateTime(m.last_sign_in_at)}` : "Has not signed in yet"}
+                      {" · "}
+                      {m.passkeys > 0 ? `${m.passkeys} ${m.passkeys === 1 ? "passkey" : "passkeys"}` : "No passkey: confirms it's you by signing in again"}
+                    </span>
                   </span>
                   {(m.roles ?? []).length === 0 && (m.expired_roles ?? []).length > 0 && (
                     <span className="fy-chip fy-chip--critical" title={(m.expired_roles ?? []).map((r) => `${roleLabel(r.role)} ended ${date(r.expires_at)}`).join(", ")}>

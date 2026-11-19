@@ -1388,6 +1388,154 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pay groups
+         * @description The pay groups: each has a pay day and the cut-offs for inputs and approval (NM-PAY-03). The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["listPayGroups"];
+        put?: never;
+        /**
+         * Make a pay group
+         * @description Makes a pay group with its pay day and the cut-offs for inputs and approval. The Payroll administrator and the Owner. It is audited.
+         */
+        post: operations["createPayGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/one-offs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A month's one-off items
+         * @description The one-off items (bonuses, commissions, allowances) of a wage month with the facts that class them. The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["listPayOneOffs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/overrides/{id}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw an override
+         * @description Ends an override from the next calculation. The Payroll administrator and the Owner. It is audited.
+         */
+        post: operations["withdrawPayRunOverride"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A month's pay runs
+         * @description The runs of a wage month, each with its newest version's state, digest, totals and flags. The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["listPayRuns"];
+        put?: never;
+        /**
+         * Start a pay run and calculate its first version
+         * @description Makes the run of a wage month for a pay group, once, and calculates version 1: every person with pay in the group, from their pay record and the inputs (one-off items, unpaid leave, approved overtime), each linked to its source. A person's missing fact (a legal classification, a date of birth, a year to date for additional wages) refuses the run and names them. The version is read-only; nothing is posted or paid. The Payroll administrator and the Owner. It is audited without any amount.
+         */
+        post: operations["startPayRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/runs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A pay run with its newest version
+         * @description The run with its newest version's lines (each person's figures, items, flags and working), every version and the overrides in force. The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["getPayRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/runs/{id}/overrides": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Override a calculated figure of a person's month
+         * @description Replaces the CPF employee or employer share, the SDL or the self-help group fund of one person's month with a figure and a reason of at least ten characters. It applies from the next calculation, is flagged ⚠ on the approval and is part of the version's digest. The Payroll administrator and the Owner. It is audited with the field and the person, never the figure.
+         */
+        post: operations["addPayRunOverride"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/runs/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Calculate the next version of a pay run
+         * @description Calculates the next version from the pay records, the inputs and the overrides now: a calculated version that is not approved is superseded; after an approved version it is a correction, which needs a reason and states the full corrected figures of its month. The Payroll administrator and the Owner. It is audited without any amount.
+         */
+        post: operations["calculatePayRunVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people": {
         parameters: {
             query?: never;
@@ -1762,6 +1910,90 @@ export interface paths {
          * @description Withdraws a leaving before its last day has passed, such as a resignation withdrawn: the leaving date on the record is cleared. The HR officer, the HR administrator and the Owner. It is audited.
          */
         post: operations["cancelLeaving"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's pay
+         * @description The person's pay record on a day: the pay group, the monthly basic salary, the fund, the allowances and fixed deductions, whether a joint election is in force and the year to date. Pay is for the Payroll administrator and the Owner alone: anyone else is refused, and every read is of one person. It changes nothing.
+         */
+        get: operations["getPersonPay"];
+        put?: never;
+        /**
+         * Start a person's pay record
+         * @description Ends the current pay record the day the new one starts and starts it, with its allowances and fixed deductions. A record is history: it is ended, never edited. The Payroll administrator and the Owner. It is audited, and the audit event says that pay was set and from when, never what it was.
+         */
+        post: operations["setPersonPay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/pay/one-offs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a one-off item to a month's pay
+         * @description Adds a one-off item to the wage month with the month of employment it is for and the day it is payable, which decide whether it is ordinary or additional wages (FR-PAY-17). The Payroll administrator and the Owner. It is audited without the amount.
+         */
+        post: operations["addPayOneOff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/pay/year-to-date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a person's year to date of CPF wages
+         * @description Imports the CPF wages this employer has counted for the person in a year before Nemura's first run (FR-PAY-14): ordinary wages subject to CPF, additional wages subject and paid, and the last month counted. Once for a year; a run adds to it afterwards. A month that pays additional wages with no year to date cannot be calculated. The Payroll administrator and the Owner. It is audited without the figures.
+         */
+        post: operations["importYearToDate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/pr-election": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a permanent resident's joint election
+         * @description Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file. The Payroll administrator and the Owner. It is audited.
+         */
+        post: operations["setPersonElection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2988,6 +3220,20 @@ export interface components {
             /** @description The documents the caller may see. */
             documents: components["schemas"]["Document"][] | null;
         };
+        ElectionInputBody: {
+            /**
+             * Format: date
+             * @description The day the election starts.
+             * @example 2026-02-10
+             */
+            effective_from: string;
+            /**
+             * Format: uuid
+             * @description A document on the person's file: the CPF Board's approval of the joint application.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9
+             */
+            evidence_document_id: string;
+        };
         EmergencyContact: {
             /**
              * @description Their name.
@@ -3381,6 +3627,10 @@ export interface components {
         GovListOutputBody: {
             /** @description Every block of government-paid leave, soonest claim deadline first. */
             blocks: components["schemas"]["GovBlock"][] | null;
+        };
+        GroupsOutputBody: {
+            /** @description The pay groups by name. */
+            groups: components["schemas"]["PayGroup"][] | null;
         };
         InfoOutputBody: {
             /**
@@ -4290,6 +4540,138 @@ export interface components {
              */
             invite_to_fyniq: boolean;
         };
+        OneOff: {
+            /**
+             * @description Dollars.
+             * @example 5000.00
+             */
+            amount: string;
+            /**
+             * @description Whether it is CPF wages.
+             * @example true
+             */
+            cpf_wages: boolean;
+            /**
+             * Format: date
+             * @description The month of employment it is for.
+             * @example 2025-12-01
+             */
+            for_month?: string;
+            /**
+             * Format: uuid
+             * @description The item.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f31
+             */
+            id: string;
+            /**
+             * @description Its key, used once for a person and month.
+             * @example bonus-2026
+             */
+            key: string;
+            /**
+             * Format: date
+             * @description The wage month it is paid in.
+             * @example 2026-06-01
+             */
+            month: string;
+            /**
+             * @description As the payslip shows it.
+             * @example Annual bonus
+             */
+            name: string;
+            /**
+             * @description What it is.
+             * @example bonus
+             * @enum {string}
+             */
+            nature: "bonus" | "commission" | "allowance" | "other";
+            /**
+             * @description A note.
+             * @example Annual bonus.
+             */
+            note?: string;
+            /**
+             * Format: date
+             * @description The day it is payable.
+             * @example 2026-06-30
+             */
+            payable_on?: string;
+            /**
+             * @description Their legal name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Whether a run used it.
+             * @example false
+             */
+            used: boolean;
+        };
+        OneOffAddInputBody: {
+            /** @description The item. */
+            item: components["schemas"]["OneOffInput"];
+            /**
+             * Format: date
+             * @description The wage month, the first day.
+             * @example 2026-06-01
+             */
+            month: string;
+        };
+        OneOffInput: {
+            /**
+             * @description Dollars.
+             * @example 5000.00
+             */
+            amount: string;
+            /**
+             * @description Whether it is CPF wages.
+             * @example true
+             */
+            cpf_wages: boolean;
+            /**
+             * Format: date
+             * @description The first day of the month of employment it is for; empty is the wage month.
+             * @example 2025-12-01
+             */
+            for_month?: string;
+            /**
+             * @description The item's key, used once for a person and month.
+             * @example bonus-2026
+             */
+            key: string;
+            /**
+             * @description As the payslip shows it.
+             * @example Annual bonus
+             */
+            name: string;
+            /**
+             * @description What it is.
+             * @example bonus
+             * @enum {string}
+             */
+            nature: "bonus" | "commission" | "allowance" | "other";
+            /**
+             * @description A note.
+             * @example Annual bonus.
+             */
+            note?: string;
+            /**
+             * Format: date
+             * @description The day it is payable; empty is the pay day.
+             * @example 2026-06-30
+             */
+            payable_on?: string;
+        };
+        OneOffsOutputBody: {
+            /** @description The month's one-off items. */
+            items: components["schemas"]["OneOff"][] | null;
+        };
         OvertimeAsk: {
             /**
              * @description For rest-day work, at whose request it was: the pay differs.
@@ -4544,6 +4926,62 @@ export interface components {
             /** @description The person's work passes, soonest to expire first. */
             passes: components["schemas"]["Pass"][] | null;
         };
+        PayGroup: {
+            /**
+             * Format: int64
+             * @description The run is approved at the latest this many days before the pay day.
+             * @example 3
+             */
+            approval_days: number;
+            /**
+             * Format: int64
+             * @description Inputs are accepted until this many days before the pay day.
+             * @example 7
+             */
+            cutoff_days: number;
+            /**
+             * Format: uuid
+             * @description The pay group.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+             */
+            id: string;
+            /**
+             * @description Its name.
+             * @example Monthly
+             */
+            name: string;
+            /**
+             * Format: int64
+             * @description The day of the month salary is paid; 0 is the last day of the month.
+             * @example 25
+             */
+            pay_day: number;
+        };
+        PayGroupInput: {
+            /**
+             * Format: int64
+             * @description The run is approved at the latest this many days before the pay day; no more than the cut-off.
+             * @example 3
+             */
+            approval_days: number;
+            /**
+             * Format: int64
+             * @description Inputs are accepted until this many days before the pay day.
+             * @example 7
+             */
+            cutoff_days: number;
+            /**
+             * @description Its name.
+             * @example Monthly
+             */
+            name: string;
+            /**
+             * Format: int64
+             * @description The day of the month salary is paid; 0 is the last day of the month.
+             * @example 25
+             */
+            pay_day: number;
+        };
         PayInput: {
             /**
              * Format: date
@@ -4608,6 +5046,108 @@ export interface components {
             /** @description The inputs no pay run has used yet, oldest first. */
             inputs: components["schemas"]["PayInput"][] | null;
         };
+        PayItem: {
+            /**
+             * @description Dollars a month, as a decimal string.
+             * @example 100.00
+             */
+            amount: string;
+            /**
+             * @description Whether it is CPF wages (FR-PAY-17); a deduction never is.
+             * @example true
+             */
+            cpf_wages: boolean;
+            /**
+             * @description The item's key, used once in a record.
+             * @example transport
+             */
+            key: string;
+            /**
+             * @description An allowance adds to pay; a fixed deduction takes from it.
+             * @example allowance
+             * @enum {string}
+             */
+            kind: "allowance" | "fixed_deduction";
+            /**
+             * @description As the payslip shows it.
+             * @example Transport allowance
+             */
+            name: string;
+            /**
+             * @description What it is: an allowance's or a deduction's kind.
+             * @example allowance
+             * @enum {string}
+             */
+            nature: "allowance" | "overtime" | "other" | "accommodation" | "cooperative" | "other_deduction";
+        };
+        PayOutputBody: {
+            /** @description The pay. */
+            pay: components["schemas"]["PayView"];
+            /**
+             * @description Whether the person has pay on the day.
+             * @example true
+             */
+            recorded: boolean;
+        };
+        PaySetInputBody: {
+            /**
+             * Format: date
+             * @description The day the new pay record starts; the current one ends that day.
+             * @example 2026-07-01
+             */
+            effective_from: string;
+            /** @description The pay record. */
+            pay: components["schemas"]["PersonPayInput"];
+        };
+        PayView: {
+            /**
+             * @description The basic salary a month, in dollars.
+             * @example 4500.00
+             */
+            basic_monthly: string;
+            /**
+             * Format: date
+             * @description The day this record started.
+             * @example 2026-01-05
+             */
+            effective_from: string;
+            /**
+             * Format: date
+             * @description The day it ended, when it has.
+             * @example 2026-07-01
+             */
+            effective_to?: string;
+            /** @description The allowances and fixed deductions. */
+            items: components["schemas"]["PayItem"][] | null;
+            /**
+             * @description Whether a joint election to contribute at full employer rates is in force.
+             * @example false
+             */
+            joint_election: boolean;
+            /**
+             * @description Its name.
+             * @example Monthly
+             */
+            pay_group: string;
+            /**
+             * Format: uuid
+             * @description The pay group.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+             */
+            pay_group_id: string;
+            /**
+             * @description The self-help group fund, when there is one.
+             * @example CDAC
+             */
+            shg_fund?: string;
+            /**
+             * @description Whether the employee opted out of the fund.
+             * @example false
+             */
+            shg_opt_out: boolean;
+            /** @description The year to date for the year of the day asked, when there is one. */
+            year_to_date?: components["schemas"]["YearToDate"];
+        };
         PersonInput: {
             /**
              * Format: date
@@ -4652,6 +5192,32 @@ export interface components {
              * @example ana@acme.example
              */
             work_email?: string;
+        };
+        PersonPayInput: {
+            /**
+             * @description The basic salary a month, in dollars.
+             * @example 4500.00
+             */
+            basic_monthly: string;
+            /** @description The allowances and fixed deductions. */
+            items?: components["schemas"]["PayItem"][] | null;
+            /**
+             * Format: uuid
+             * @description The pay group.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+             */
+            pay_group_id: string;
+            /**
+             * @description The self-help group fund, or empty for none.
+             * @example CDAC
+             * @enum {string}
+             */
+            shg_fund?: "CDAC" | "ECF" | "MBMF" | "SINDA" | "";
+            /**
+             * @description The employee opted out of the fund.
+             * @example false
+             */
+            shg_opt_out?: boolean;
         };
         PolicyOutputBody: {
             /**
@@ -5026,6 +5592,457 @@ export interface components {
         RequestsOutputBody: {
             /** @description The person's requests, newest first. */
             requests: components["schemas"]["RequestRow"][] | null;
+        };
+        Run: {
+            /**
+             * Format: uuid
+             * @description The run.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+             */
+            id: string;
+            /** @description The newest version. */
+            latest: components["schemas"]["RunVersion"];
+            /**
+             * Format: date
+             * @description The wage month.
+             * @example 2026-06-01
+             */
+            month: string;
+            /**
+             * Format: date
+             * @description The pay day.
+             * @example 2026-06-25
+             */
+            pay_day: string;
+            /**
+             * @description Its name.
+             * @example Monthly
+             */
+            pay_group: string;
+            /**
+             * Format: uuid
+             * @description The pay group.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+             */
+            pay_group_id: string;
+        };
+        RunDetail: {
+            /**
+             * Format: uuid
+             * @description The run.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+             */
+            id: string;
+            /** @description The newest version. */
+            latest: components["schemas"]["RunVersion"];
+            /** @description The newest version's lines, one for each person. */
+            lines: components["schemas"]["RunLine"][] | null;
+            /**
+             * Format: date
+             * @description The wage month.
+             * @example 2026-06-01
+             */
+            month: string;
+            /** @description The overrides in force on the run. */
+            overrides: components["schemas"]["RunOverride"][] | null;
+            /**
+             * Format: date
+             * @description The pay day.
+             * @example 2026-06-25
+             */
+            pay_day: string;
+            /**
+             * @description Its name.
+             * @example Monthly
+             */
+            pay_group: string;
+            /**
+             * Format: uuid
+             * @description The pay group.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+             */
+            pay_group_id: string;
+            /** @description Every version, newest first. */
+            versions: components["schemas"]["RunVersion"][] | null;
+        };
+        RunFlag: {
+            /**
+             * @description What it is about.
+             * @example WAGE_CLASS
+             */
+            code: string;
+            /**
+             * @description True for ✖: the run cannot be approved with it.
+             * @example false
+             */
+            fail: boolean;
+            /**
+             * @description In plain words, naming the person and what to do.
+             * @example Commission: It is for the month's employment and payable by the 14th of the following month.
+             */
+            message: string;
+        };
+        RunItem: {
+            /**
+             * @description Dollars.
+             * @example 5000.00
+             */
+            amount: string;
+            /**
+             * @description Ordinary or additional CPF wages by the facts, none when it is not CPF wages, or a deduction.
+             * @example ordinary
+             * @enum {string}
+             */
+            class: "ordinary" | "additional" | "none" | "deduction";
+            /**
+             * @description The item.
+             * @example basic
+             */
+            key: string;
+            /**
+             * @description As the payslip shows it.
+             * @example Basic salary
+             */
+            name: string;
+            /**
+             * @description True when the item's name suggests another class than the facts give.
+             * @example false
+             */
+            name_disagrees?: boolean;
+            /**
+             * @description The record it came from.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f40
+             */
+            source_id?: string;
+            /**
+             * @description The kind of record it came from: person_pay, person_pay_item, pay_one_off, pay_input or overtime_entry.
+             * @example person_pay
+             */
+            source_type?: string;
+            /**
+             * @description Why it is in that class.
+             * @example It is for the month's employment and payable by the 14th of the following month.
+             */
+            why?: string;
+        };
+        RunLine: {
+            /**
+             * @description Additional wages subject to CPF.
+             * @example 0.00
+             */
+            aw_subject: string;
+            /** @description The figures the engine worked out, where an override replaced one. */
+            computed?: {
+                [key: string]: string;
+            };
+            /**
+             * @description The employee's CPF.
+             * @example 1000.00
+             */
+            cpf_employee: string;
+            /**
+             * @description The employer's CPF.
+             * @example 850.00
+             */
+            cpf_employer: string;
+            /**
+             * @description The total CPF contribution.
+             * @example 1850.00
+             */
+            cpf_total: string;
+            /**
+             * @description Authorised deductions.
+             * @example 0.00
+             */
+            deductions: string;
+            /**
+             * @description The amount to disburse.
+             * @example 4000.00
+             */
+            disburse: string;
+            /**
+             * @description Gross + employer CPF + SDL.
+             * @example 5861.25
+             */
+            employer_cost: string;
+            /** @description What the preparer or the approver must see. */
+            flags: components["schemas"]["RunFlag"][] | null;
+            /**
+             * @description Gross pay.
+             * @example 5000.00
+             */
+            gross: string;
+            /**
+             * @description Monies held under a clearance hold.
+             * @example 0.00
+             */
+            held: string;
+            /** @description The pay items. */
+            items: components["schemas"]["RunItem"][] | null;
+            /**
+             * @description Net pay.
+             * @example 4000.00
+             */
+            net: string;
+            /** @description The figures an override replaced. */
+            overridden?: string[] | null;
+            /**
+             * @description Ordinary wages subject to CPF.
+             * @example 5000.00
+             */
+            ow_subject: string;
+            /**
+             * @description Their legal name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Non-wage reimbursements paid with the salary.
+             * @example 0.00
+             */
+            reimbursements: string;
+            /**
+             * @description The person's SDL before the employer-month rounding.
+             * @example 11.25
+             */
+            sdl: string;
+            /**
+             * @description The self-help group fund.
+             * @example 0.00
+             */
+            shg: string;
+            /** @description The steps of the calculation. */
+            working: components["schemas"]["RunStep"][] | null;
+        };
+        RunOverride: {
+            /**
+             * @description The figure it replaces.
+             * @example cpf_employee
+             * @enum {string}
+             */
+            field: "cpf_employee" | "cpf_employer" | "sdl" | "shg";
+            /**
+             * Format: uuid
+             * @description The override.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f42
+             */
+            id: string;
+            /**
+             * @description Their legal name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Why.
+             * @example The CPF Board's own figure for the month.
+             */
+            reason: string;
+            /**
+             * @description The figure it puts in place.
+             * @example 999.00
+             */
+            value: string;
+        };
+        RunOverrideInputBody: {
+            /**
+             * @description The figure to replace.
+             * @example cpf_employee
+             * @enum {string}
+             */
+            field: "cpf_employee" | "cpf_employer" | "sdl" | "shg";
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Why the calculated figure is wrong.
+             * @example The CPF Board's own figure for the month.
+             */
+            reason: string;
+            /**
+             * @description The figure to put in place, in dollars.
+             * @example 999.00
+             */
+            value: string;
+        };
+        RunStartInputBody: {
+            /**
+             * Format: date
+             * @description The wage month, the first day.
+             * @example 2026-06-01
+             */
+            month: string;
+            /**
+             * Format: uuid
+             * @description The pay group.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30
+             */
+            pay_group_id: string;
+        };
+        RunStep: {
+            /**
+             * @description The rule or requirement.
+             * @example RND-CPF
+             */
+            rule: string;
+            /**
+             * @description What it did.
+             * @example Rates employer 0.17 and employee 0.20: total 1850.
+             */
+            text: string;
+        };
+        RunTotals: {
+            /**
+             * @description Employee CPF.
+             * @example 1000.00
+             */
+            cpf_employee: string;
+            /**
+             * @description Employer CPF.
+             * @example 850.00
+             */
+            cpf_employer: string;
+            /**
+             * @description Authorised deductions.
+             * @example 0.00
+             */
+            deductions: string;
+            /**
+             * @description The amount to disburse.
+             * @example 4000.00
+             */
+            disburse: string;
+            /**
+             * @description Gross + employer CPF + SDL payable.
+             * @example 5861.00
+             */
+            employer_cost: string;
+            /**
+             * @description Gross pay.
+             * @example 5000.00
+             */
+            gross: string;
+            /**
+             * @description Net pay.
+             * @example 4000.00
+             */
+            net: string;
+            /**
+             * @description Reimbursements paid with the salary.
+             * @example 0.00
+             */
+            reimbursements: string;
+            /**
+             * @description The employer-month SDL, rounded down to the dollar.
+             * @example 11.00
+             */
+            sdl_payable: string;
+            /**
+             * @description Self-help group funds.
+             * @example 0.00
+             */
+            shg: string;
+        };
+        RunVersion: {
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-20T11:00:00Z
+             */
+            approved_at?: string;
+            /**
+             * Format: uuid
+             * @description The member who approved it, never its preparer.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e46
+             */
+            approved_by?: string;
+            /**
+             * @description The SHA-256 of its figures, which an approver confirms.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            digest: string;
+            /**
+             * Format: int64
+             * @description How many ✖ it has.
+             * @example 0
+             */
+            flags_failing: number;
+            /**
+             * Format: int64
+             * @description How many ⚠ it has.
+             * @example 1
+             */
+            flags_warning: number;
+            /**
+             * Format: uuid
+             * @description The version.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f41
+             */
+            id: string;
+            /** @description The pack versions it read. */
+            pack_versions: string[] | null;
+            /**
+             * Format: int64
+             * @description How many people it pays.
+             * @example 12
+             */
+            people: number;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-20T10:00:00Z
+             */
+            prepared_at: string;
+            /**
+             * Format: uuid
+             * @description The member who calculated it.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+             */
+            prepared_by: string;
+            /**
+             * @description Why a correction was made.
+             * @example A bonus was missed.
+             */
+            reason?: string;
+            /**
+             * @description Where it is.
+             * @example calculated
+             * @enum {string}
+             */
+            state: "calculated" | "approved" | "superseded" | "posted" | "paid_in_part" | "paid" | "closed";
+            /** @description Its totals. */
+            totals: components["schemas"]["RunTotals"];
+            /**
+             * Format: int64
+             * @description Its number in the run.
+             * @example 1
+             */
+            version: number;
+        };
+        RunVersionInputBody: {
+            /**
+             * @description Why: required for a correction of an approved run.
+             * @example A bonus was missed.
+             */
+            reason?: string;
+        };
+        RunsOutputBody: {
+            /** @description The month's runs. */
+            runs: components["schemas"]["Run"][] | null;
         };
         SecretOutputBody: {
             /**
@@ -5455,6 +6472,70 @@ export interface components {
              *     ]
              */
             weekdays: number[] | null;
+        };
+        YTDInput: {
+            /**
+             * @description Additional wages paid, subject or not.
+             * @example 0.00
+             */
+            aw_paid: string;
+            /**
+             * @description Additional wages subject to CPF.
+             * @example 0.00
+             */
+            aw_subject: string;
+            /**
+             * @description Ordinary wages subject to CPF this employer has counted.
+             * @example 25000.00
+             */
+            ow: string;
+            /**
+             * Format: date
+             * @description The first day of the last month counted.
+             * @example 2026-05-01
+             */
+            through_month: string;
+            /**
+             * Format: int64
+             * @description The calendar year.
+             * @example 2026
+             */
+            year: number;
+        };
+        YearToDate: {
+            /**
+             * @description Additional wages paid.
+             * @example 0.00
+             */
+            aw_paid: string;
+            /**
+             * @description Additional wages subject to CPF.
+             * @example 0.00
+             */
+            aw_subject: string;
+            /**
+             * @description Ordinary wages subject to CPF.
+             * @example 25000.00
+             */
+            ow: string;
+            /**
+             * @description Imported at cut-over, or added to by a run.
+             * @example import
+             * @enum {string}
+             */
+            source: "import" | "run";
+            /**
+             * Format: date
+             * @description The first day of the last month counted.
+             * @example 2026-05-01
+             */
+            through_month: string;
+            /**
+             * Format: int64
+             * @description The calendar year.
+             * @example 2026
+             */
+            year: number;
         };
     };
     responses: never;
@@ -10513,6 +11594,632 @@ export interface operations {
             };
         };
     };
+    listPayGroups: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createPayGroup: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayGroupInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPayOneOffs: {
+        parameters: {
+            query?: {
+                /** @description The wage month, the first day. */
+                month?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OneOffsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    withdrawPayRunOverride: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The override. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPayRuns: {
+        parameters: {
+            query?: {
+                /** @description The wage month, the first day. */
+                month?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    startPayRun: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunStartInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Run"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPayRun: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunDetail"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addPayRunOverride: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunOverrideInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    calculatePayRunVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunVersionInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Run"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listPeople: {
         parameters: {
             query?: {
@@ -12186,6 +13893,410 @@ export interface operations {
         responses: {
             /** @description No Content */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPersonPay: {
+        parameters: {
+            query?: {
+                /** @description The day to show the pay on; today when empty. */
+                as_of?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPersonPay: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaySetInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addPayOneOff: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OneOffAddInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    importYearToDate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YTDInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPersonElection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ElectionInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

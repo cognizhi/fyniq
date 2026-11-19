@@ -7,10 +7,19 @@ import (
 	"io/fs"
 )
 
-// FS holds every Nemura pack version.
+// FS holds every version of Nemura's people pack.
 //
 //go:embed sg-people
 var FS embed.FS
 
-// Files is the packs, rooted at the pack directories.
+// Files is the people packs, rooted at the pack directories.
 func Files() fs.FS { return FS }
+
+// Statutory holds the CPF, SDL and SHG packs that payroll reads (PRD-001 B.3; p1-nemura-payroll D1): copied from Fyniq's so that a standalone Nemura needs nothing of
+// Fyniq's, kept apart from the people packs so that the settings page lists only those, and kept equal to Fyniq's by a test (internal/archtest).
+//
+//go:embed sg-cpf sg-sdl sg-shg
+var Statutory embed.FS
+
+// StatutoryFiles is the statutory packs, rooted at the pack directories.
+func StatutoryFiles() fs.FS { return Statutory }

@@ -103,7 +103,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	if err != nil {
 		return err
 	}
-	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, People: nemura.PeopleService{Store: store, Clock: deps.Clock}, Features: nemura.FeatureService{Store: store, Clock: deps.Clock}, Restricted: restricted(store, deps, getenv), Packs: packsService(store, deps), Leave: leaveService(store, deps), Requests: leaveRequests(store, deps), Sick: sickService(store, deps, getenv), Government: governmentService(store, deps), Flex: flexService(store, deps), Time: timeService(store, deps), Letters: lettersService(store, deps, getenv), SelfService: selfService(store, deps, getenv), Onboarding: onboardingService(store, deps), Clock: deps.Clock,
+	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, People: nemura.PeopleService{Store: store, Clock: deps.Clock}, Features: nemura.FeatureService{Store: store, Clock: deps.Clock}, Restricted: restricted(store, deps, getenv), Packs: packsService(store, deps), Leave: leaveService(store, deps), Requests: leaveRequests(store, deps), Sick: sickService(store, deps, getenv), Government: governmentService(store, deps), Flex: flexService(store, deps), Time: timeService(store, deps), Letters: lettersService(store, deps, getenv), SelfService: selfService(store, deps, getenv), Onboarding: onboardingService(store, deps), Payroll: payrollService(store, deps), Clock: deps.Clock,
 		CookieNames: []string{auth.SessionCookie(true), auth.SessionCookie(false)}}
 	if provider != nil {
 		d.SignIn = signInInfo{provider: provider, store: store}
@@ -301,4 +301,12 @@ func onboardingService(store *nemura.Store, deps app.Deps) api.Onboarding {
 		panic(err) // a pack that does not validate is a build error: the files are embedded
 	}
 	return nemura.OnboardingService{Store: store, Clock: deps.Clock, Packs: p}
+}
+
+func payrollService(store *nemura.Store, deps app.Deps) api.Payroll {
+	p, err := nemura.NewPacksService(store, deps.Clock)
+	if err != nil {
+		panic(err) // a pack that does not validate is a build error: the files are embedded
+	}
+	return nemura.PayrollService{Store: store, Clock: deps.Clock, Packs: p}
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	"github.com/cognizhi/fyniq/internal/nemura/onboarding"
+	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
 	"github.com/cognizhi/fyniq/internal/nemura/policy"
 	"github.com/cognizhi/fyniq/internal/nemura/selfservice"
@@ -327,6 +328,43 @@ func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.
 }
 
 // fakeLetters answers letters with whatever the test says.
+type fakePayroll struct{ err error }
+
+func (f fakePayroll) StartRun(context.Context, Session, time.Time, uuid.UUID) (Run, error) {
+	return Run{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"}, f.err
+}
+func (f fakePayroll) Runs(context.Context, Session, time.Time) ([]Run, error) { return nil, f.err }
+func (f fakePayroll) RunDetail(context.Context, Session, uuid.UUID) (RunDetail, error) {
+	return RunDetail{}, f.err
+}
+func (f fakePayroll) Recalculate(context.Context, Session, uuid.UUID, string) (Run, error) {
+	return Run{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"}, f.err
+}
+func (f fakePayroll) AddOverride(context.Context, Session, uuid.UUID, uuid.UUID, string, string, string) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f42", f.err
+}
+func (f fakePayroll) WithdrawOverride(context.Context, Session, uuid.UUID) error { return f.err }
+func (f fakePayroll) Groups(context.Context, Session) ([]PayGroup, error)        { return nil, f.err }
+func (f fakePayroll) CreateGroup(context.Context, Session, PayGroupInput) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30", f.err
+}
+func (f fakePayroll) Pay(context.Context, Session, uuid.UUID, time.Time) (PayView, bool, error) {
+	return PayView{}, false, f.err
+}
+func (f fakePayroll) SetPay(context.Context, Session, uuid.UUID, time.Time, PersonPayInput) error {
+	return f.err
+}
+func (f fakePayroll) SetElection(context.Context, Session, uuid.UUID, time.Time, uuid.UUID) error {
+	return f.err
+}
+func (f fakePayroll) ImportYTD(context.Context, Session, uuid.UUID, YTDInput) error { return f.err }
+func (f fakePayroll) OneOffs(context.Context, Session, time.Time) ([]OneOff, error) {
+	return nil, f.err
+}
+func (f fakePayroll) AddOneOff(context.Context, Session, uuid.UUID, time.Time, OneOffInput) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f31", f.err
+}
+
 type fakeOnboarding struct{ err error }
 
 func (f fakeOnboarding) Settings(context.Context, Session) (bool, error)    { return true, f.err }
@@ -448,7 +486,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -646,6 +684,8 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodeLeaveConflict:      {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/working-pattern", body: patternBody, signedIn: true, err: &leave.Refusal{Code: leave.CodeConflict, Message: "Overlaps."}},
 		CodeFeatureOff:         {method: "GET", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026", signedIn: true, featuresOff: true},
 		CodeLeaverAccount:      {method: "GET", path: "/v1/me/details", signedIn: true, leaver: true},
+		CodePayrollInvalid:     {method: "POST", path: "/v1/payroll/groups", body: `{"name":"Monthly","pay_day":25,"cutoff_days":7,"approval_days":3}`, signedIn: true, owner: true, err: &payroll.Refusal{Code: payroll.CodeInvalid, Message: "The pay day is wrong."}},
+		CodePayrollConflict:    {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/pay/year-to-date", body: `{"year":2026,"ow":"25000.00","aw_subject":"0.00","aw_paid":"0.00","through_month":"2026-05-01"}`, signedIn: true, owner: true, err: &payroll.Refusal{Code: payroll.CodeConflict, Message: "Held already."}},
 		CodeOnboardingInvalid:  {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/offboarding", body: `{"kind":"resignation","last_day":"2026-11-30"}`, signedIn: true, err: &onboarding.Refusal{Code: onboarding.CodeInvalid, Message: "The last day is required."}},
 		CodeOnboardingConflict: {method: "POST", path: "/v1/onboarding/tasks/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20/decision", body: `{"state":"done"}`, signedIn: true, err: &onboarding.Refusal{Code: onboarding.CodeConflict, Message: "Decided already."}},
 		CodeRequestInvalid:     {method: "POST", path: "/v1/me/questions", body: `{"question":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeInvalid, Message: "Write your question."}},

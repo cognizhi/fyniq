@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
 // The client classes of AI-34. An agent-class client is proposal-only; the API treats it as the AI
@@ -136,6 +137,9 @@ type principalKey struct{}
 
 // WithPrincipal attaches the caller to ctx.
 func WithPrincipal(ctx context.Context, p Principal) context.Context {
+	if p.UserID != uuid.Nil {
+		ctx = storage.WithPerson(ctx, p.UserID) // the database applies the person's department scope (FR-ADM-01)
+	}
 	return context.WithValue(ctx, principalKey{}, p)
 }
 
