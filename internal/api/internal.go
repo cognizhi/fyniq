@@ -52,6 +52,7 @@ func (a *API) registerInternal(mux humago.Mux) {
 	registerToolCalls(a)
 	registerProposals(a)
 	registerAgentRunModel(a)
+	registerMCPTools(a)
 }
 
 // internalAuthenticate accepts a call only from the AI service, for a live turn or run: its service token, then the
@@ -72,6 +73,10 @@ func (a *API) internalAuthenticate(ctx huma.Context, next func(huma.Context)) {
 		audit := storage.AuditFrom(ctx.Context())
 		audit.Actor = &storage.Actor{Type: "service", ID: "worker"}
 		next(huma.WithContext(ctx, storage.WithAudit(ctx.Context(), audit)))
+		return
+	}
+	if ctx.Operation().OperationID == "callMCPTool" { // the MCP service's one way in, with its own service token and a delegated token
+		a.mcpAuthenticate(ctx, next, refuse)
 		return
 	}
 	if a.deps.Services == nil || a.deps.Services.Verify(ctx.Header(ServiceTokenHeader), ServiceAI) != nil {

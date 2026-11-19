@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cognizhi/fyniq/internal/mcpgate"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -302,6 +303,12 @@ var codeFacts = map[string]struct {
 	CodeToolRefused:               {422, "The tool's read was refused"},
 	CodeToolTimeout:               {504, "The tool took too long"},
 	CodeToolGrant:                 {403, "Not one of the agent's tools"},
+	CodeMCPScope:                  {403, "The app was not granted what this call needs"},
+	CodeMCPNotAgent:               {403, "Not the delegated token of an agent for a person"},
+	CodeMCPTooLarge:               {422, "The result is larger than an AI app may receive"},
+	mcpgate.CodeOrganisationOff:   {403, "AI apps are not turned on for this organisation"},
+	mcpgate.CodeNotAllowed:        {403, "This AI app is not allowed to connect"},
+	mcpgate.CodeNotOptedIn:        {403, "The person has not allowed AI apps to work for them"},
 	CodeProposeNotAllowed:         {403, "The AI may not propose this"},
 	CodeProposalType:              {422, "Not a task type the AI may propose"},
 	CodeTaskReason:                {422, "A dismissal needs a reason"},

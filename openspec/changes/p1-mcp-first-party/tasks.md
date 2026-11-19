@@ -134,7 +134,7 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   to start or to serve a tool whose definition's hash differs; descriptions free of organisation data. Tests `// req: AI-40`,
   `// req: AI-17` (a version per change; every tool's behaviour against its description and schema), `// req: CTL-MCP-02`
   (an altered definition is refused), the injection strings seeded in every organisation text field never in `tools/list`.
-- [ ] 5.3 Scope enforcement in the API (design D4): `authn.Principal.Scopes` read for agent-class callers by the MCP
+- [x] 5.3 Scope enforcement in the API (design D4): `authn.Principal.Scopes` read for agent-class callers by the MCP
   operations, 403 `insufficient_scope` with the scope needed, the person's rights and the AI exclusions still applying on top.
   Tests `// req: AI-37`, `// req: AI-16`; red-team rows: `fyniq.read.reports` cannot reach a bill or a journal through
   `records.get`, a payroll tool is unreachable without scope, setting and role (AI-02).
@@ -145,12 +145,20 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   and trust relationship registered at local start-up, `mcpdelegation.Delegator` used by `mcpserver`, an audit row for each
   delegated token. KMS and `private_key_jwt` are `[live-verify]`. Tests `// req: AI-36` (the MCP token never reaches the API,
   scopes are the intersection, an assertion used twice is refused), `// req: AI-45` (an alert on every delegated token).
-- [ ] 6.2 `ServiceMCP` and the internal operations (design D3): `/internal/v1/mcp/tool-calls` and the proposal operations, their
+- [x] 6.2 `ServiceMCP` and the internal operations (design D3): `/internal/v1/mcp/tool-calls` and the proposal operations, their
   contract in `fyniq-internal.v1.yaml`, the per-call gates in one transaction (organisation, opt-in, client, active member, grant
   age, scope, class `agent`), one stable problem code per refusal, and a matrix test that each service token opens only its own
   operations. Tests `// req: AI-35`, `// req: AI-34`, `// req: CTL-MCP-01` (every non-propose write with an agent token is 403),
   the authorisation matrix rows (`FYNIQ_MATRIX_ONLY`).
-- [ ] 6.3 Results (design D3, AI-41): the tool path of `callAITool` shared, not copied (`checkToolInput`, `runTool`,
+  Built (5.3, 6.2 and 6.3 together): `POST /internal/v1/mcp/tool-calls` (`callMCPTool`), for the MCP service's own service token
+  class `mcp` and the delegated token of an agent for a person, nothing else (the AI service's token, a turn's grant, a session, an
+  integration and an agent with no person are each refused). In order: the tool is in the manifest; the token holds every scope the
+  tool and its input need, read from the input (403 `MCP-SCOPE-01` with the scopes in `X-Fyniq-Needed-Scopes`); the organisation's
+  switch, the allowlist and the opt-in allow the app, asked on every call; then `checkToolInput`, `runTool` and `screenResult`, the
+  assistant's own path, as the person, followed by the output filter on every string and the `mcp.result_kb` ceiling (refused,
+  never cut silently). **Left:** the limits per minute, hour and day (8.2), the `mcp_call` audit (8.1), and the MCP service's
+  backend that obtains the delegated token and turns `X-Fyniq-Needed-Scopes` into the challenge (6.1).
+- [x] 6.3 Results (design D3, AI-41): the tool path of `callAITool` shared, not copied (`checkToolInput`, `runTool`,
   `screenResult`); `untrusted_text` labelling, the NRIC and bank-number output filter, rows and bytes capped at the lower of the
   tool's and the organisation's setting, what was left out counted, figures as typed facts. `tools/call` end to end against the
   sample company. Tests `// req: AI-41`, `// req: AI-16` (the same figures and exclusions as the assistant for the same
