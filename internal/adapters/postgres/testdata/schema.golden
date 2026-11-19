@@ -2174,12 +2174,14 @@ people_link_inbox | outcome | text | not null |
 people_link_inbox | code | text | null | 
 people_link_inbox | received_at | timestamp with time zone | not null | 
 people_link_key | organisation_id | uuid | not null | current_org()
+people_link_key | id | uuid | not null | uuidv7()
 people_link_key | link_id | uuid | not null | 
 people_link_key | nemura_client_id | text | not null | 
 people_link_key | link_public | bytea | not null | 
 people_link_key | client_public | jsonb | not null | 
 people_link_key | sequence | bigint | not null | 0
 people_link_secret | organisation_id | uuid | not null | current_org()
+people_link_secret | id | uuid | not null | uuidv7()
 people_link_secret | link_id | uuid | not null | 
 people_link_secret | link_private | bytea | not null | 
 people_link_secret | client_private | bytea | not null | 
@@ -6319,6 +6321,8 @@ people_link_inbox | people_link_inbox_type_not_null | NOT NULL type
 people_link_inbox | people_link_inbox_type_shape | CHECK (((type ~ '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$'::text) AND ((char_length(object_id) >= 1) AND (char_length(object_id) <= 100))))
 people_link_key | people_link_key_client_id | CHECK (((char_length(nemura_client_id) >= 1) AND (char_length(nemura_client_id) <= 200)))
 people_link_key | people_link_key_client_public_not_null | NOT NULL client_public
+people_link_key | people_link_key_id_key | UNIQUE (organisation_id, id)
+people_link_key | people_link_key_id_not_null | NOT NULL id
 people_link_key | people_link_key_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES people_link(organisation_id, id)
 people_link_key | people_link_key_link_id_not_null | NOT NULL link_id
 people_link_key | people_link_key_link_public_not_null | NOT NULL link_public
@@ -6331,6 +6335,8 @@ people_link_key | people_link_key_sequence | CHECK ((sequence >= 0))
 people_link_key | people_link_key_sequence_not_null | NOT NULL sequence
 people_link_key | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 people_link_secret | people_link_secret_client_private_not_null | NOT NULL client_private
+people_link_secret | people_link_secret_id_key | UNIQUE (organisation_id, id)
+people_link_secret | people_link_secret_id_not_null | NOT NULL id
 people_link_secret | people_link_secret_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES people_link(organisation_id, id)
 people_link_secret | people_link_secret_link_id_not_null | NOT NULL link_id
 people_link_secret | people_link_secret_link_private_not_null | NOT NULL link_private
@@ -8024,9 +8030,11 @@ CREATE UNIQUE INDEX pd_transfer_version_once ON fyniq.pd_transfer USING btree (o
 CREATE UNIQUE INDEX people_link_epoch ON fyniq.people_link USING btree (organisation_id, epoch)
 CREATE UNIQUE INDEX people_link_inbox_id_key ON fyniq.people_link_inbox USING btree (organisation_id, id)
 CREATE UNIQUE INDEX people_link_inbox_pkey ON fyniq.people_link_inbox USING btree (organisation_id, event_id)
+CREATE UNIQUE INDEX people_link_key_id_key ON fyniq.people_link_key USING btree (organisation_id, id)
 CREATE UNIQUE INDEX people_link_key_pkey ON fyniq.people_link_key USING btree (organisation_id, link_id)
 CREATE UNIQUE INDEX people_link_one_live ON fyniq.people_link USING btree (organisation_id) WHERE (state <> 'unlinked'::text)
 CREATE UNIQUE INDEX people_link_pkey ON fyniq.people_link USING btree (organisation_id, id)
+CREATE UNIQUE INDEX people_link_secret_id_key ON fyniq.people_link_secret USING btree (organisation_id, id)
 CREATE UNIQUE INDEX people_link_secret_pkey ON fyniq.people_link_secret USING btree (organisation_id, link_id)
 CREATE UNIQUE INDEX people_source_pkey ON fyniq.people_source USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_close_check_pkey ON fyniq.period_close_check USING btree (organisation_id, id)

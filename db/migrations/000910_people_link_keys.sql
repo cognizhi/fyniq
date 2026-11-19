@@ -14,12 +14,14 @@ SET LOCAL statement_timeout = '60s';
 
 CREATE TABLE fyniq.people_link_key (
   organisation_id  uuid   NOT NULL DEFAULT fyniq.current_org(),
+  id               uuid   NOT NULL DEFAULT uuidv7(),
   link_id          uuid   NOT NULL,
   nemura_client_id text   NOT NULL,           -- the ID Fyniq's client has at Nemura's OAuth server: Nemura chose it when it proposed the link
   link_public      bytea  NOT NULL,           -- Fyniq's Ed25519 public key, given to Nemura for what Fyniq sends
   client_public    jsonb  NOT NULL,           -- the public half of Fyniq's client key, as a JWK: Nemura registers it for Fyniq's client
   sequence         bigint NOT NULL DEFAULT 0, -- the last sequence number Fyniq sent on this link: for gap repair and the reconciliation checkpoint
   CONSTRAINT people_link_key_pkey PRIMARY KEY (organisation_id, link_id),
+  CONSTRAINT people_link_key_id_key UNIQUE (organisation_id, id),
   CONSTRAINT people_link_key_link_fkey FOREIGN KEY (organisation_id, link_id) REFERENCES fyniq.people_link (organisation_id, id),
   CONSTRAINT people_link_key_public_size CHECK (octet_length(link_public) = 32),
   CONSTRAINT people_link_key_client_id CHECK (char_length(nemura_client_id) BETWEEN 1 AND 200),
@@ -29,10 +31,12 @@ CREATE TABLE fyniq.people_link_key (
 
 CREATE TABLE fyniq.people_link_secret (
   organisation_id uuid  NOT NULL DEFAULT fyniq.current_org(),
+  id              uuid  NOT NULL DEFAULT uuidv7(),
   link_id         uuid  NOT NULL,
   link_private    bytea NOT NULL,   -- the Ed25519 private key: signs at send time
   client_private  bytea NOT NULL,   -- the ES256 private key, PKCS #8 in DER: signs the token assertion
   CONSTRAINT people_link_secret_pkey PRIMARY KEY (organisation_id, link_id),
+  CONSTRAINT people_link_secret_id_key UNIQUE (organisation_id, id),
   CONSTRAINT people_link_secret_link_fkey FOREIGN KEY (organisation_id, link_id) REFERENCES fyniq.people_link (organisation_id, id),
   CONSTRAINT people_link_secret_sizes CHECK (octet_length(link_private) = 64 AND octet_length(client_private) BETWEEN 32 AND 400)
 );

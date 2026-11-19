@@ -47,6 +47,9 @@ type Line struct {
 // recovered and the deductions' own accounts for the rest; Cr 2100 the amount to disburse plus the monies held (which stay in 2100, flagged, until released); Cr 2110 the employee and employer CPF,
 // the SDL payable and the self-help group funds. Fyniq posts it by department (p1-payroll-link); here it is the whole run, so that the entry's balance is proved.
 func Postings(t Totals) []Line {
+	if t.Advances == nil { // totals read back from a stored version carry no split of the advances: all of the deductions go to their own accounts
+		t.Advances = zero()
+	}
 	return []Line{
 		{"salary expense", t.Gross, zero(), "Gross pay"},
 		{"6020", t.EmployerCPF, zero(), "Employer CPF"},

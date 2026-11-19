@@ -36,6 +36,23 @@ the people assistant (`p1-nemura-assistant-external`).
   (the highest event sequence each side has acknowledged); after a restore, work after the checkpoint is held as unknown and reconciled against the other
   app's receipts before anything is sent or paid.
 
+- **D9. The handshake has three legs and a proposed state (decided 20 Nov 2026 while the owner was away; owner to confirm).** Each app holds the other's public keys, so neither can
+  be made first with the other's. Nemura *proposes* (an Owner, fresh passkey): it makes its two keys and the ID Fyniq's client will have at Nemura's own OAuth server, and keeps the link in
+  the new state `proposed`. Fyniq links with those (the dual-approved request of `p1-payroll-link` 2.2), makes *its* two keys and registers Nemura's client at Fyniq's OAuth server. Nemura
+  *activates* (another Owner or Administrator, fresh passkey) with Fyniq's envelope key and client ID, and registers Fyniq's client at Nemura's own OAuth server under the ID chosen at
+  the proposal. *Alternative:* the owner of the link page copies one bundle both ways with a third round trip (rejected: more manual steps, same trust).
+- **D10. Two keys per side, never one.** The envelope key (Ed25519) signs what the side sends; the client key (ES256) signs the `private_key_jwt` assertion that gets its token. A stolen token
+  has no envelope key, a stolen envelope key has no token (`p1-payroll-link` D1). Both private halves are written once by the API and readable by the worker role alone.
+- **D11. Fyniq's client at Nemura is not an ordinary API client.** Its scope, `link.events.write`, is not in `apiclient.Scopes`, so no registration (single Owner or second-approver
+  request) can grant it; the link registers the client itself, with that scope alone, under the proposal's ID. Nemura's resource server (`internal/nemura/linkauth`) introspects the bearer
+  token at every call (cached at most 30 seconds), accepts only Nemura's audience, the client's own token (subject = client ID) and that scope, and finds the organisation through a global
+  route written with the link (`nemura.link_client_route`, read through one function, as the identity directory is). It reads a bearer token on the inbox operation only; every other operation
+  still reads a session cookie only. The inbox then re-checks the same link, epoch and client with row-level security on.
+- **D12. Endpoints are deployment configuration (owner to confirm).** Where each side's API and token endpoint are comes from the deployment's settings, not from a row of the link, so the
+  egress allow-list is fixed when the service starts and a link cannot point the worker at another host.
+- **D13. A retry is the same event.** The sender fixes the event ID and sequence when the event is queued and signs the time at each attempt; Fyniq's dedupe by event ID then
+  absorbs a retry after a lost answer.
+
 ## Risks / Trade-offs
 
 - Cross-app tests need two databases and two services: the stack tests use each app's own Testcontainers database and a loopback pair, never the cloud.

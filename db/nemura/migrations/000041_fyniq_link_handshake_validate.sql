@@ -1,4 +1,4 @@
--- Validates what 000036 widened: the link's states, the keys' shape, the proposer and the clients' shape.
+-- Validates what 000040 widened: the link's states, the keys' shape, the proposer and the clients' shape.
 
 -- +goose Up
 SET LOCAL lock_timeout = '5s';
