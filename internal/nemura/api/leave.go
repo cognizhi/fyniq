@@ -79,9 +79,6 @@ type Leave interface {
 }
 
 func init() {
-	IdempotencyExempt["PUT /v1/people/{id}/working-pattern"] = "a repeat starts a pattern on the current pattern's own start day, which is refused (NM_LEAVE_CONFLICT)"
-	IdempotencyExempt["POST /v1/people/{id}/leave/{year}/annual-grant"] = "naturally idempotent: a second run finds the ledger right and writes nothing"
-	IdempotencyExempt["POST /v1/people/{id}/leave/{year}/carry-forward"] = "naturally idempotent: a second run carries only what has become unused since, which is nothing"
 }
 
 type leaveInput struct {

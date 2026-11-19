@@ -435,20 +435,6 @@ type Payroll interface {
 }
 
 func init() {
-	IdempotencyExempt["POST /v1/payroll/runs/{id}/approval"] = "a version is approved once: a repeat is refused (NM_PAYROLL_CONFLICT)"
-	IdempotencyExempt["POST /v1/payroll/runs/{id}/payslips"] = "a version's payslips are published once: a repeat is refused (NM_PAYROLL_CONFLICT)"
-	IdempotencyExempt["POST /v1/payroll/runs/{id}/payments"] = "a payment's state moves one legal step at a time: a repeat of the same state is refused (NM_PAYROLL_CONFLICT)"
-	IdempotencyExempt["POST /v1/people/{id}/tax-hold"] = "a hold is put on once and released once: a repeat is refused (NM_PAYROLL_CONFLICT)"
-	IdempotencyExempt["POST /v1/payroll/runs/{id}/exports"] = "each request is a file with a manifest of its own: a repeat is another file and another manifest, never a second payment"
-	IdempotencyExempt["POST /v1/payroll/runs"] = "a month has one run for a pay group: a repeat is refused (NM_PAYROLL_CONFLICT)"
-	IdempotencyExempt["POST /v1/payroll/runs/{id}/versions"] = "each calculation is its own version of the run, with its own digest"
-	IdempotencyExempt["POST /v1/payroll/runs/{id}/overrides"] = "each override is its own record with its own reason: a repeat replaces nothing and the next calculation applies both in order"
-	IdempotencyExempt["POST /v1/payroll/overrides/{id}/withdrawal"] = "an override is withdrawn once: a repeat is refused (NM_NOT_FOUND)"
-	IdempotencyExempt["POST /v1/payroll/groups"] = "a pay group's name is used once: a repeat is refused (NM_PAYROLL_CONFLICT)"
-	IdempotencyExempt["POST /v1/people/{id}/pay"] = "a repeat starts a record on the current one's own start day, which is refused (NM_PAYROLL_CONFLICT)"
-	IdempotencyExempt["POST /v1/people/{id}/pr-election"] = "a repeat starts an election on the current one's own start day, which is refused (NM_PAYROLL_CONFLICT)"
-	IdempotencyExempt["POST /v1/people/{id}/pay/year-to-date"] = "a year's year to date is imported once: a repeat is refused (NM_PAYROLL_CONFLICT)"
-	IdempotencyExempt["POST /v1/people/{id}/pay/one-offs"] = "an item's key is used once for a person and month: a repeat is refused (NM_PAYROLL_CONFLICT)"
 }
 
 func payrollError(err error) error {

@@ -26,8 +26,10 @@ const description = `Nemura's public API: the optional people platform of PRD-00
 Conventions (PRD-002 NM-ARC-03, PRD-001 §8.18.1):
 - Errors are RFC 9457 problem details (application/problem+json) with a stable code from the catalogue at GET /v1/errors, what is
   wrong, and how to fix it; validation errors list every invalid field at once.
-- Every POST that creates or changes state accepts an Idempotency-Key header: a repeat returns the original response, and the same
-  key with a different request returns 422.
+- Every write that creates or changes state accepts an Idempotency-Key header, kept 24 hours per person: a repeat returns the first
+  response with Idempotent-Replayed: true, the same key with a different request returns 422, and two identical requests at once run
+  once. A response that may carry pay, a bank account, an NRIC or the text of a question is not stored (only its status is): a repeat
+  of such a write that returned a body answers 409 and the result is read from the record.
 - Versioned records return an ETag; commands that change one require If-Match and return 412 when the record changed since, 428
   without it.
 - Changes inside /v1 are additive: a field, an operation or an enum value may be added, and nothing is removed or changed in meaning.
@@ -137,6 +139,8 @@ type Deps struct {
 	SelfService SelfService
 	Onboarding  Onboarding
 	Payroll     Payroll
+	// Idempotency stores the Idempotency-Keys of writes; nil turns the header off (a deployment with no database for it never runs).
+	Idempotency Idempotency
 	Assistant   AssistantAdmin
 	Asker       Asker
 	SignIn      SignInInfo
@@ -153,7 +157,9 @@ type API struct {
 
 // New registers the API on mux (an http.ServeMux, or the service's httpserver.Server).
 func New(mux humago.Mux, d Deps) *API {
-	a := &API{API: humago.New(mux, Config(version.Version)), d: d}
+	a := &API{d: d}
+	a.API = humago.New(idemMux{Mux: mux, a: a}, Config(version.Version))
+	a.OpenAPI().OnAddOperation = append(a.OpenAPI().OnAddOperation, addIdempotencyHeader)
 	a.register()
 	a.registerSession()
 	a.registerPasskeys()

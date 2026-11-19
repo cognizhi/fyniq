@@ -99,6 +99,8 @@ var Catalogue = []Code{
 	{CodeFeatureOff, http.StatusConflict, "That feature is switched off", "Switch the feature on under Settings, Features; its records are kept while it is off."},
 	{CodeLetterInvalid, http.StatusUnprocessableEntity, "The letter is not valid", "Correct what the message names and send it again."},
 	{CodeLeaverAccount, http.StatusForbidden, "That is not part of your account now", "After the last day an account keeps the person's own documents and letters, and a way to ask the people team a question."},
+	{CodeIdempotencyMismatch, http.StatusUnprocessableEntity, "That Idempotency-Key was used for a different request", "Use a new key for a new request, or send the same request again with the same key."},
+	{CodeIdempotencyConflict, http.StatusConflict, "That request already ran or is still running", "Read the record for the result: an answer that may carry pay or restricted data is not stored, and an identical request may still be running."},
 	{CodeAINever, http.StatusUnprocessableEntity, "The assistant never does that", "The assistant drafts and explains; a person approves, issues and changes records. Ask for a draft instead."},
 	{CodeAIInvalid, http.StatusUnprocessableEntity, "The assistant's draft or settings are not valid", "Correct what the message names and send it again."},
 	{CodeAIOff, http.StatusConflict, "The assistant is off", "The Owner turns the assistant, and each kind of draft, on in the assistant's settings."},

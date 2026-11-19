@@ -71,13 +71,6 @@ type Restricted interface {
 }
 
 func init() {
-	IdempotencyExempt["PUT /v1/people/{id}/nric"] = "naturally idempotent: the same NRIC leaves the same sealed value"
-	IdempotencyExempt["POST /v1/people/{id}/work-passes"] = "a pass is a record; a repeat adds a second, identical record that changes nothing a reader relies on (renewals are later passes)"
-	IdempotencyExempt["POST /v1/people/{id}/dependants"] = "a repeat adds an identical record that changes no entitlement: leave is worked out per child"
-	IdempotencyExempt["POST /v1/people/{id}/documents"] = "a repeat adds a second record of the same file, identified by its hash in the list"
-	IdempotencyExempt["POST /v1/people/{id}/bank-account-changes"] = "a repeat proposes the same account again, which is a second open change that needs its own approval"
-	IdempotencyExempt["POST /v1/bank-account-changes/{id}/decision"] = "a change is decided once: a repeat finds it decided (NM_PERSON_NOT_FOUND)"
-	IdempotencyExempt["POST /v1/bank-account-changes/{id}/confirm"] = "a change is confirmed once: a repeat finds it confirmed (NM_PERSON_NOT_FOUND)"
 }
 
 type idInput struct {

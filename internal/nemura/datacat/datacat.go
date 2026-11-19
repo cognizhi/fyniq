@@ -142,6 +142,9 @@ var Categories = []Category{
 
 // NotPersonal are columns whose names look personal and are not, with why. A column here needs a reason a reviewer can read.
 var NotPersonal = map[string]string{
+	"idempotency_key.body":         "the stored answer of a write that cannot carry pay or restricted data, kept 24 hours; an answer that may is never stored",
+	"idempotency_key.had_body":     "whether the first answer had a body: a flag",
+	"idempotency_key.body_kept":    "whether that body was stored: a flag",
 	"api_client_request.name":      "the name an Owner gives an API client, such as Payroll bridge, not a person",
 	"link_inbox.payload_sha256":    "the SHA-256 of a message from Fyniq, which holds none of it",
 	"link_inbox.outcome":           "the code of what the link did with a message (applied, duplicate or a refusal), not a person's data",

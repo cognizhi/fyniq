@@ -107,20 +107,6 @@ type Letters interface {
 }
 
 func init() {
-	IdempotencyExempt["POST /v1/letters/delegations"] = "a type has one live delegation: a repeat is refused (NM_LETTER_CONFLICT)"
-	IdempotencyExempt["POST /v1/letters/delegations/{id}/revocation"] = "a delegation is revoked once: a repeat is refused (NM_LETTER_CONFLICT)"
-	IdempotencyExempt["POST /v1/people/{id}/terms"] = "a repeat starts terms on the current ones' own start day, which is refused (NM_LETTER_CONFLICT)"
-	IdempotencyExempt["POST /v1/people/{id}/letters"] = "each request is its own record with its own date: the people team may ask for the same letter twice"
-	IdempotencyExempt["PUT /v1/letters/settings"] = "naturally idempotent: the same body leaves the same letterhead"
-	IdempotencyExempt["PUT /v1/letters/types/{key}"] = "naturally idempotent: the same body leaves the same setting"
-	IdempotencyExempt["PUT /v1/letters/types/{key}/template"] = "naturally idempotent: the same body leaves the same draft"
-	IdempotencyExempt["POST /v1/letters/templates/{id}/publication"] = "a draft is published once: a repeat is refused (NM_NOT_FOUND)"
-	IdempotencyExempt["POST /v1/me/letters"] = "each request is its own record with its own date: a person may ask for the same letter twice"
-	IdempotencyExempt["POST /v1/letters/{id}/check"] = "a request is checked once: a repeat is refused (NM_LETTER_CONFLICT)"
-	IdempotencyExempt["POST /v1/letters/{id}/signature"] = "a letter is issued once: a repeat is refused (NM_LETTER_CONFLICT)"
-	IdempotencyExempt["POST /v1/letters/{id}/refusal"] = "a request is closed once: a repeat is refused (NM_LETTER_CONFLICT)"
-	IdempotencyExempt["POST /v1/letters/{id}/withdrawal"] = "a request is closed once: a repeat is refused (NM_LETTER_CONFLICT)"
-	IdempotencyExempt["POST /v1/letters/{id}/link"] = "each link is its own expiring token"
 }
 
 func lettersError(err error) error {

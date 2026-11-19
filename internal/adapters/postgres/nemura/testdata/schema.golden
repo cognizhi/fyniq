@@ -24,6 +24,7 @@ gov_claim | nemura_migrator | true | true
 gov_claim_event | nemura_migrator | true | true
 gov_leave | nemura_migrator | true | true
 hr_question | nemura_migrator | true | true
+idempotency_key | nemura_migrator | true | true
 identity_directory | nemura_migrator | false | false
 installation | nemura_migrator | false | false
 invitation | nemura_migrator | true | true
@@ -333,6 +334,20 @@ hr_question | due_on | date | true |
 hr_question | reply | text | false | 
 hr_question | replied_by | uuid | false | 
 hr_question | replied_at | timestamp with time zone | false | 
+idempotency_key | organisation_id | uuid | true | nemura.current_org()
+idempotency_key | principal_id | uuid | true | 
+idempotency_key | key | text | true | 
+idempotency_key | request_hash | bytea | true | 
+idempotency_key | state | text | true | 'in_flight'::text
+idempotency_key | status | integer | false | 
+idempotency_key | content_type | text | false | 
+idempotency_key | location | text | false | 
+idempotency_key | etag | text | false | 
+idempotency_key | body | bytea | false | 
+idempotency_key | had_body | boolean | true | false
+idempotency_key | body_kept | boolean | true | false
+idempotency_key | created_at | timestamp with time zone | true | 
+idempotency_key | expires_at | timestamp with time zone | true | 
 identity_directory | issuer | text | true | 
 identity_directory | subject | text | true | 
 identity_directory | tenant | text | true | 
@@ -1364,6 +1379,23 @@ hr_question | hr_question_replied_by_fkey | FOREIGN KEY (organisation_id, replie
 hr_question | hr_question_state_known | CHECK ((state = ANY (ARRAY['open'::text, 'answered'::text, 'withdrawn'::text])))
 hr_question | hr_question_state_not_null | NOT NULL state
 hr_question | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+idempotency_key | idempotency_key_body_kept_not_null | NOT NULL body_kept
+idempotency_key | idempotency_key_body_only_if_kept | CHECK (((body IS NULL) OR (body_kept AND had_body)))
+idempotency_key | idempotency_key_created_at_not_null | NOT NULL created_at
+idempotency_key | idempotency_key_done_whole | CHECK (((state = 'in_flight'::text) = (status IS NULL)))
+idempotency_key | idempotency_key_expires_at_not_null | NOT NULL expires_at
+idempotency_key | idempotency_key_had_body_not_null | NOT NULL had_body
+idempotency_key | idempotency_key_hash | CHECK ((octet_length(request_hash) = 32))
+idempotency_key | idempotency_key_key_not_null | NOT NULL key
+idempotency_key | idempotency_key_length | CHECK (((length(key) >= 1) AND (length(key) <= 255)))
+idempotency_key | idempotency_key_member_fkey | FOREIGN KEY (organisation_id, principal_id) REFERENCES nemura.member(organisation_id, id)
+idempotency_key | idempotency_key_organisation_id_not_null | NOT NULL organisation_id
+idempotency_key | idempotency_key_pkey | PRIMARY KEY (organisation_id, principal_id, key)
+idempotency_key | idempotency_key_principal_id_not_null | NOT NULL principal_id
+idempotency_key | idempotency_key_request_hash_not_null | NOT NULL request_hash
+idempotency_key | idempotency_key_state | CHECK ((state = ANY (ARRAY['in_flight'::text, 'done'::text])))
+idempotency_key | idempotency_key_state_not_null | NOT NULL state
+idempotency_key | idempotency_key_window | CHECK ((expires_at = (created_at + '24:00:00'::interval)))
 identity_directory | identity_directory_active_not_null | NOT NULL active
 identity_directory | identity_directory_issuer_length | CHECK (((length(issuer) >= 1) AND (length(issuer) <= 500)))
 identity_directory | identity_directory_issuer_not_null | NOT NULL issuer
@@ -2401,6 +2433,8 @@ CREATE UNIQUE INDEX gov_leave_pkey ON nemura.gov_leave USING btree (organisation
 CREATE INDEX hr_question_open_idx ON nemura.hr_question USING btree (organisation_id, due_on) WHERE (state = 'open'::text)
 CREATE INDEX hr_question_person_idx ON nemura.hr_question USING btree (organisation_id, person_id, asked_at)
 CREATE UNIQUE INDEX hr_question_pkey ON nemura.hr_question USING btree (organisation_id, id)
+CREATE INDEX idempotency_key_expiry_idx ON nemura.idempotency_key USING btree (expires_at)
+CREATE UNIQUE INDEX idempotency_key_pkey ON nemura.idempotency_key USING btree (organisation_id, principal_id, key)
 CREATE UNIQUE INDEX identity_directory_member_key ON nemura.identity_directory USING btree (organisation_id, member_id, issuer, tenant)
 CREATE UNIQUE INDEX identity_directory_pkey ON nemura.identity_directory USING btree (issuer, subject, tenant, organisation_id)
 CREATE UNIQUE INDEX installation_pkey ON nemura.installation USING btree (singleton)
@@ -2704,6 +2738,7 @@ gov_claim | tenant_isolation | (organisation_id = nemura.current_org()) | (organ
 gov_claim_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_leave | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 hr_question | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+idempotency_key | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 invitation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 join_task | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_accrual | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())

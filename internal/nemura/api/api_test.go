@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -116,6 +117,10 @@ func (f fakePeople) Get(_ context.Context, _ Session, id uuid.UUID, _ time.Time,
 	return Record{ID: id.String(), LegalName: "Ana Tan", Jobs: []Job{}}, f.err
 }
 func (f fakePeople) Create(context.Context, Session, uuid.UUID, people.Person, people.Job, *people.Classification) error {
+	if testPeopleCreates != nil {
+		testPeopleCreates.Add(1)
+		time.Sleep(testPeopleDelay)
+	}
 	return f.err
 }
 func (f fakePeople) Update(context.Context, Session, uuid.UUID, people.Person) error { return f.err }
@@ -535,6 +540,8 @@ func (f fakeClients) List(context.Context, Session) ([]Client, error)  { return 
 func (f fakeClients) Revoke(context.Context, Session, uuid.UUID) error { return f.err }
 
 var (
+	testPeopleCreates                                                                              *atomic.Int32 // counts the runs of POST /v1/people
+	testPeopleDelay                                                                                time.Duration
 	passkeyErr, clientsErr, peopleErr, featuresErr, restrictedErr, packsErr, leaveErr, requestsErr error
 	requestsScope                                                                                  *LeaveScope
 	featuresOff                                                                                    bool
@@ -548,7 +555,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, Assistant: fakeAssistant{err: requestsErr}, Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -716,10 +723,12 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 	type trigger struct {
 		method, path, body string
 		signedIn           bool
-		err                error // what the passkey or client service answers
-		owner, stepUp      bool  // the person is the Owner, and confirmed with a passkey
-		featuresOff        bool  // Leave is switched off
-		leaver             bool  // the person has left
+		err                error            // what the passkey or client service answers
+		owner, stepUp      bool             // the person is the Owner, and confirmed with a passkey
+		featuresOff        bool             // Leave is switched off
+		leaver             bool             // the person has left
+		seed               func(m *memIdem) // keys already claimed
+		header             map[string]string
 	}
 	triggers := map[string]trigger{ // code -> a request that returns it
 		CodeNotFound:           {method: "GET", path: "/v1/errors/NM_NOPE"},
@@ -746,6 +755,14 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodeLeaveConflict:      {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/working-pattern", body: patternBody, signedIn: true, err: &leave.Refusal{Code: leave.CodeConflict, Message: "Overlaps."}},
 		CodeFeatureOff:         {method: "GET", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026", signedIn: true, featuresOff: true},
 		CodeLeaverAccount:      {method: "GET", path: "/v1/me/details", signedIn: true, leaver: true},
+		CodeIdempotencyMismatch: {method: "POST", path: "/v1/people", body: personBody, signedIn: true, header: map[string]string{"Idempotency-Key": "k-1"},
+			seed: func(m *memIdem) {
+				m.seed("k-1", idemHash("POST", "/v1/people", `{"other":1}`), IdemRecord{Status: 201})
+			}},
+		CodeIdempotencyConflict: {method: "POST", path: "/v1/people", body: personBody, signedIn: true, header: map[string]string{"Idempotency-Key": "k-2"},
+			seed: func(m *memIdem) {
+				m.seed("k-2", idemHash("POST", "/v1/people", personBody), IdemRecord{Status: 201, HadBody: true})
+			}},
 		CodeAINever:            {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeNever, Message: "The assistant never approves."}},
 		CodeAIInvalid:          {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeInvalid, Message: "reply: text of up to 4000 characters."}},
 		CodeAIOff:              {method: "PUT", path: "/v1/assistant/settings", body: `{"enabled":false,"route":"none","task_types":[]}`, signedIn: true, owner: true, stepUp: true, err: &assistant.Refusal{Code: assistant.CodeOff, Message: "The assistant is off."}},
@@ -771,7 +788,13 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 			testRoles = []authz.Role{authz.Owner}
 		}
 		testStepUp, featuresOff, testLeaver = tr.stepUp, tr.featuresOff, tr.leaver
+		testIdem = nil
+		if tr.seed != nil {
+			testIdem = newMemIdem()
+			tr.seed(testIdem)
+		}
 		_, mux := testAPI(t)
+		testIdem = nil
 		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, requestsErr, testRoles, testStepUp, featuresOff, testLeaver = nil, nil, nil, nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false, false, false
 		req := httptest.NewRequest(tr.method, tr.path, strings.NewReader(tr.body))
 		if tr.body != "" {
@@ -779,6 +802,9 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		}
 		if tr.signedIn {
 			req.Header.Set("Cookie", "nemura_session=good-token")
+		}
+		for k, v := range tr.header {
+			req.Header.Set(k, v)
 		}
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)

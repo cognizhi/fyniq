@@ -189,10 +189,6 @@ type aiDecisionInput struct {
 }
 
 func (a *API) registerAssistant() {
-	IdempotencyExempt["POST /v1/assistant/proposals/{id}/decision"] = "a proposal is decided once: a repeat is refused (NM_AI_CONFLICT)"
-	IdempotencyExempt["POST /v1/assistant/drafts"] = "each request for a draft is a proposal of its own, which a person decides or lets expire"
-	IdempotencyExempt["POST /v1/assistant/ask"] = "a question changes nothing"
-	IdempotencyExempt["PUT /v1/assistant/settings"] = "a put of the same settings is the same settings"
 	team := func(ctx context.Context, cookie string) (Session, error) {
 		s, err := a.signedIn(ctx, cookie)
 		if err != nil {
