@@ -251,7 +251,7 @@ services:
       # Where the browser reaches Hydra and the sign-in pages, through Caddy: FYNIQ_HTTP_PORT moves them all.
       URLS_SELF_ISSUER: http://localhost:${FYNIQ_HTTP_PORT:-8080}/oauth/
       URLS_LOGIN: http://localhost:${FYNIQ_HTTP_PORT:-8080}/api/auth/login
-      URLS_CONSENT: http://localhost:${FYNIQ_HTTP_PORT:-8080}/api/auth/consent
+      URLS_CONSENT: http://localhost:${FYNIQ_HTTP_PORT:-8080}/auth/consent
       SECRETS_SYSTEM: fyniq-local-only-oauth-system-key   # local only; Secret Manager in the cloud
       OAUTH2_PKCE_ENFORCED: "true"                         # the authorisation code with PKCE only (AI-36)
       STRATEGIES_ACCESS_TOKEN: opaque                      # introspected, so revocation is seen (AI-38)

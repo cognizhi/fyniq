@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "class": {
+      "description": "Its class: an agent only reads and proposes (AI-34).",
+      "enum": [
+        "user",
+        "integration",
+        "agent"
+      ],
+      "examples": [
+        "agent"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The app's client ID.",
+      "examples": [
+        "claude-code"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "The name it is registered with.",
+      "examples": [
+        "Claude Code"
+      ],
+      "type": "string"
+    },
+    "proposal_only": {
+      "description": "Whether it can only read and propose.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "publisher": {
+      "description": "The publisher Fyniq verified: only for an app the release pre-registered.",
+      "examples": [
+        "Anthropic"
+      ],
+      "type": "string"
+    },
+    "redirect_uris": {
+      "description": "For an app Fyniq has not verified: where it sends you after you answer.",
+      "items": {
+        "description": "An exact https or loopback redirect URI.",
+        "examples": [
+          "https://acme.example/oauth/callback"
+        ],
+        "type": "string"
+      },
+      "maxItems": 5,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "verified": {
+      "description": "Whether Fyniq verified who publishes it.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "class",
+    "verified",
+    "proposal_only"
+  ],
+  "title": "ConsentClient",
+  "type": "object"
+}

@@ -52,6 +52,7 @@ type oauthStack struct {
 	gate   *testGate           // what the MCP gate says: admits unless a test sets why
 	in     *authn.Introspector // the API's own, to which a test may add the delegation
 	api    *API                // the API on srv
+	flow   oauthflow.Flow      // the consent app's flow on srv
 }
 
 // testGate stands in for internal/mcpgate, whose settings and opt-in tests live with it: here it says yes, or the refusal a test sets.
@@ -91,7 +92,9 @@ func startOAuth(t *testing.T, ttl time.Duration) *oauthStack {
 	auth := authn.Local{Dev: dev, OAuth: s.in}
 	s.api = New(mux, Deps{Store: e.store, Clock: s.clock, Auth: auth, Log: slog.New(slog.DiscardHandler), Version: "0.0.0-test", Services: e.services, Screening: local.Screen{}, MCPClients: e.store, OAuthClients: s.admin, MCPAudience: mcpAudience, MCPServerOn: true})
 	s.gate = &testGate{}
-	oauthflow.Flow{OAuth: s.admin, SignedIn: dev, Clock: clock.System{}, APIAudience: apiAudience, MCPAudience: mcpAudience, MCP: s.gate}.Register(mux)
+	flow := oauthflow.Flow{OAuth: s.admin, SignedIn: dev, Clock: clock.System{}, APIAudience: apiAudience, MCPAudience: mcpAudience, MCP: s.gate}
+	flow.Register(mux)
+	s.flow, s.api.deps.Consent = flow, flow
 	s.user, s.userID = authn.DevPrefix+uuid.NewString(), uuid.New()
 	dev.mu.Lock()
 	// A person who signed in with a second factor just now, as an MCP consent needs (AI-37).

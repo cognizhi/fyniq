@@ -201,6 +201,8 @@ export const routes = [
   { kind: "route", id: "settings-ai-routes", path: "/settings/ai/routes", mode: "expert", signedIn: true, help: "settings.ai-routes", guide: "settings.ai-routes" },
   { kind: "route", id: "settings-ai-route", path: "/settings/ai/routes/$agent", mode: "expert", signedIn: true, help: "settings.ai-route", guide: "settings.ai-routes#change-an-agents-route" },
   { kind: "route", id: "settings-ai-activity", path: "/settings/ai/activity", mode: "expert", signedIn: true, help: "settings.ai-activity", guide: "settings.ai-activity" },
+  // The page an AI app's request to connect lands on (AI-37; Hydra's consent URL): signed in, then Allow or Deny.
+  { kind: "route", id: "oauth-consent", path: "/auth/consent", mode: "basic", signedIn: true, help: "oauth.consent", guide: "settings.connected-apps#when-an-app-asks-to-connect" },
   // Settings › Connected apps (AI-44, AI-35, AI-90): the AI apps that work for a person, and the registrations waiting for an Owner.
   { kind: "route", id: "settings-connected-apps", path: "/settings/connected-apps", mode: "basic", signedIn: true, help: "settings.connected-apps", guide: "settings.connected-apps" },
   { kind: "route", id: "settings-ai-plan", path: "/settings/profile/ai-plan", mode: "basic", signedIn: true, help: "settings.ai-plan", guide: "settings.ai-activity#your-own-ai-plan" },

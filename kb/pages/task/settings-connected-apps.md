@@ -4,7 +4,7 @@ type: task
 title: Connect an AI app, and see what it did
 summary: Settings › Connected apps: allow AI apps for yourself, what an Owner allows, verified apps, disconnecting, waiting registrations and what the apps did
 sources:
-  - docs/user-guide/connected-apps.md sha256:776b693a79648543cc446aefd159f59f44fd211f04949e2ee7b94f54e219c109
+  - docs/user-guide/connected-apps.md sha256:cf32c111be8991580a4f32d0893feb0109f2b1406d666cf9c7b2acda78fce22d
 data_class: general
 taint: trusted
 status: draft
@@ -38,6 +38,15 @@ aliases:
 - Each time an app asks to connect, you sign in with your second factor and see what it asks for: reports are the default, the other areas are your choice, and payroll and equity are never given by default.
 
 (src: docs/user-guide/connected-apps.md#who-allows-what)
+
+## When an app asks to connect
+
+- The app sends you to **Connect an app** in Fyniq; sign in if asked, and confirm it's you with your second factor, without which nothing is allowed.
+- The page says which app asks and whether Fyniq verified who publishes it; an app that registered itself says so and shows where it sends you afterwards, which you should check.
+- Each area it asks for has a tick box and you keep only the ones you want; an area that cannot be allowed (payroll and equity, or one an Owner has not granted) shows **Not granted**.
+- **Allow** sends you back to the app, which can then read as you; **Deny** tells the app you refused.
+
+(src: docs/user-guide/connected-apps.md#when-an-app-asks-to-connect)
 
 ## What you see
 

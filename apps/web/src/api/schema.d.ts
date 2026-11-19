@@ -11409,6 +11409,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/oauth/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what an app asks to do for you
+         * @description The consent screen's first step (AI-37): the app that asks to connect, whether Fyniq has verified who publishes it (an unverified app shows where it sends you), what it asks for and what would be granted, what each scope reaches, and how long it lasts; or why it cannot be granted (an organisation that has not turned AI apps on, an app that is not allowed, your own opt-in, a second factor you must pass first). Only your own signed-in session reaches it. Read-only; no side effects.
+         */
+        get: operations["getOAuthConsent"];
+        put?: never;
+        /**
+         * Allow or refuse an app
+         * @description The consent screen's second step (AI-37): records your answer to the app's request and says where to send the browser next. Allowing grants only what the screen showed, checked again here against every gate; a gate that refuses is answered to the app as a refusal. Only your own signed-in session reaches it. Side effects: the OAuth server's consent record. Never on the AI's or MCP's tool list.
+         */
+        post: operations["answerOAuthConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/oauth/register": {
         parameters: {
             query?: never;
@@ -26528,12 +26552,101 @@ export interface components {
              */
             registered_by: "connector" | "operator";
         };
+        ConsentAnswer: {
+            /**
+             * @description The consent request, from the address the OAuth server sent the browser to.
+             * @example nRq8
+             */
+            consent_challenge: string;
+            /**
+             * @description accept to grant what the screen shows; deny to refuse.
+             * @example accept
+             * @enum {string}
+             */
+            decision: "accept" | "deny";
+            /** @description Only these of the scopes the screen showed (and always openid). Omit to grant all that the screen showed; a scope it did not show is never added. */
+            scopes?: string[] | null;
+        };
+        ConsentCategory: {
+            /**
+             * @description In plain words.
+             * @example Reports and key figures
+             */
+            reaches: string;
+            /** @example fyniq.read.reports */
+            scope: string;
+        };
         ConsentChange: {
             data_classes: ("know-how" | "business-figures" | "personal-data" | "payroll" | "restricted")[] | null;
             destinations: components["schemas"]["ConnectorDestination"][] | null;
             /** @description The provider's and Fyniq's scopes. */
             scopes: string[] | null;
             webhooks: string[] | null;
+        };
+        ConsentClient: {
+            /**
+             * @description Its class: an agent only reads and proposes (AI-34).
+             * @example agent
+             * @enum {string}
+             */
+            class: "user" | "integration" | "agent";
+            /**
+             * @description The app's client ID.
+             * @example claude-code
+             */
+            id: string;
+            /**
+             * @description The name it is registered with.
+             * @example Claude Code
+             */
+            name: string;
+            /**
+             * @description Whether it can only read and propose.
+             * @example true
+             */
+            proposal_only: boolean;
+            /**
+             * @description The publisher Fyniq verified: only for an app the release pre-registered.
+             * @example Anthropic
+             */
+            publisher?: string;
+            /** @description For an app Fyniq has not verified: where it sends you after you answer. */
+            redirect_uris?: string[] | null;
+            /**
+             * @description Whether Fyniq verified who publishes it.
+             * @example true
+             */
+            verified: boolean;
+        };
+        ConsentDecision: {
+            /** @description Who the token is for. */
+            audiences: string[];
+            /**
+             * @description The stable code of the problem.
+             * @example MCP-GATE-01
+             */
+            code?: string;
+            /**
+             * @description When set, consent is refused whatever you say, in plain words.
+             * @example AI apps are not turned on for this organisation.
+             */
+            problem?: string;
+            /** @description What was asked for and cannot be granted. */
+            refused_scopes: string[];
+            /** @description What would be granted. */
+            scopes: string[];
+        };
+        ConsentExpiry: {
+            /**
+             * Format: int64
+             * @example 60
+             */
+            access_token_minutes: number;
+            /**
+             * Format: int64
+             * @example 90
+             */
+            consent_valid_days: number;
         };
         ConsentInput: {
             /**
@@ -26558,6 +26671,14 @@ export interface components {
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5e10
              */
             purpose_id: string;
+        };
+        ConsentNext: {
+            /**
+             * Format: uri
+             * @description Where to send the browser next: the OAuth server, which carries the app's authorisation on.
+             * @example http://localhost:8080/oauth/oauth2/auth?consent_verifier=abc
+             */
+            redirect_to: string;
         };
         ConsentPurposeInput: {
             /**
@@ -26631,6 +26752,16 @@ export interface components {
         ConsentPurposesOutputBody: {
             /** @description The organisation's purposes, oldest first. None is defined by default. */
             items: components["schemas"]["ConsentPurposeView"][];
+        };
+        ConsentScreen: {
+            client: components["schemas"]["ConsentClient"];
+            /** @description What each scope reaches, in plain words (an AI app's consent). */
+            data_categories?: components["schemas"]["ConsentCategory"][] | null;
+            decision: components["schemas"]["ConsentDecision"];
+            /** @description How long the consent and its tokens last (an AI app's consent). */
+            expiry?: components["schemas"]["ConsentExpiry"];
+            /** @description What the app asked for. */
+            requested_scopes: string[];
         };
         ConsentView: {
             /**
@@ -141112,6 +141243,181 @@ export interface operations {
             };
             /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getOAuthConsent: {
+        parameters: {
+            query: {
+                /** @description The consent request. */
+                consent_challenge: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentScreen"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `MCP-CONSENT-02` The request to connect is for another person. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `MCP-CONSENT-01` The request to connect is gone; `MCP-CONSENT-03` Consent is not available here. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    answerOAuthConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentAnswer"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentNext"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `MCP-CONSENT-02` The request to connect is for another person. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `MCP-CONSENT-01` The request to connect is gone; `MCP-CONSENT-03` Consent is not available here. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

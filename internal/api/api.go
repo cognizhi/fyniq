@@ -74,8 +74,10 @@ type Deps struct {
 	MCPClients storage.MCPClients
 	// OAuthConsents lists and revokes what a person granted AI apps; nil: none is listed.
 	OAuthConsents ports.OAuthConsents
-	MCPAudience   string
-	MCPServerOn   bool
+	// Consent is the consent app's two steps for the web app's consent screen (AI-37); nil: consent is not available here.
+	Consent     ConsentFlow
+	MCPAudience string
+	MCPServerOn bool
 	// Staging keeps uploads until their record is final, and Scanner checks them for malware (FR-DOC-13,
 	// FR-DOC-01); without either, no file can be attached.
 	Staging ports.BlobStore
@@ -386,6 +388,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerHelpState(a)
 	registerMCPOptIn(a)
 	registerConnectedApps(a)
+	registerOAuthConsent(a)
 	registerOAuthRegistration(a)
 	registerBanners(a)
 	registerDelivery(a)

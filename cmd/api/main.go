@@ -26,6 +26,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/mailhooks"
 	"github.com/cognizhi/fyniq/internal/notify"
+	"github.com/cognizhi/fyniq/internal/oauthflow"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -47,6 +48,8 @@ var (
 	webOrigin     func() string
 	registerOAuth func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, store storage.Store)
 	// oauthAudience is the API's audience at the OAuth server: the audience of every integration client's tokens.
+	// consentFlow is the consent app's flow, set by registerOAuth, which the API's contract operations for the web app's consent screen use.
+	consentFlow   *oauthflow.Flow
 	oauthAudience = func() string { return os.Getenv("FYNIQ_API_AUDIENCE") }
 )
 
@@ -92,6 +95,9 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		fmt.Fprintln(os.Stderr, "api: serving without a database or background work:", err)
 		api.New(s, d) // without a store it accepts no credentials: the document only
 		return nil
+	}
+	if consentFlow != nil {
+		d.Consent = *consentFlow
 	}
 	d.Store, d.Installation = kit.Store, kit.Store
 	// The internal API takes the AI service's service tokens (p1-ai-assistant design D4): HMAC locally, Google's OIDC

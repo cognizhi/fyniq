@@ -285,7 +285,12 @@ func (f Flow) showConsent(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	d := f.Admit(r.Context(), c, p)
+	_ = json.NewEncoder(w).Encode(f.view(r.Context(), c, p))
+}
+
+// view is what the consent screen shows for a pending consent and the person it is for.
+func (f Flow) view(ctx context.Context, c ports.OAuthConsent, p authn.Principal) map[string]any {
+	d := f.Admit(ctx, c, p)
 	client := map[string]any{"id": c.Client.ID, "name": c.Client.Name, "class": c.Client.Class}
 	out := map[string]any{"client": client, "requested_scopes": c.RequestedScopes, "decision": d}
 	if slices.Contains(d.Audiences, f.MCPAudience) {
@@ -305,7 +310,66 @@ func (f Flow) showConsent(w http.ResponseWriter, r *http.Request) {
 		out["data_categories"] = cats
 		out["expiry"] = map[string]any{"consent_valid_days": int(ConsentDays), "access_token_minutes": 60}
 	}
-	_ = json.NewEncoder(w).Encode(out)
+	return out
+}
+
+// ErrOtherUser is a consent that belongs to another person than the one answering.
+var ErrOtherUser = errors.New("the consent belongs to another user")
+
+// ConsentView is the consent screen's data for challenge, for the person p (their first-party session): the web app's way to the
+// consent app's first step, as an operation of the API's contract. A consent that is not p's is ErrOtherUser.
+func (f Flow) ConsentView(ctx context.Context, challenge string, p authn.Principal) (map[string]any, error) {
+	c, err := f.pending(ctx, challenge, p)
+	if err != nil {
+		return nil, err
+	}
+	return f.view(ctx, c, p), nil
+}
+
+// AnswerConsent records the person's answer to challenge and returns where to send the browser next: the OAuth server's own address,
+// to which the client's authorisation request carries on. A refusal, or a consent the gates refuse, is answered to the client as
+// access_denied.
+//
+// only, when not nil, narrows what is granted to those of the scopes the screen showed that the person kept (and always "openid"): a
+// scope the gates would not grant is never added by it.
+func (f Flow) AnswerConsent(ctx context.Context, challenge string, accept bool, only []string, p authn.Principal) (string, error) {
+	c, err := f.pending(ctx, challenge, p)
+	if err != nil {
+		return "", err
+	}
+	return f.answer(ctx, challenge, accept, only, c, p)
+}
+
+func (f Flow) pending(ctx context.Context, challenge string, p authn.Principal) (ports.OAuthConsent, error) {
+	c, err := f.OAuth.ConsentRequest(ctx, challenge)
+	if err != nil {
+		return c, err
+	}
+	if p.UserID == uuid.Nil || p.UserID.String() != c.Subject {
+		return c, ErrOtherUser
+	}
+	return c, nil
+}
+
+func (f Flow) answer(ctx context.Context, challenge string, accept bool, only []string, c ports.OAuthConsent, p authn.Principal) (string, error) {
+	d := f.Admit(ctx, c, p)
+	if only != nil {
+		d.Scopes = slices.DeleteFunc(slices.Clone(d.Scopes), func(s string) bool { return s != "openid" && !slices.Contains(only, s) })
+	}
+	switch {
+	case !accept:
+		return f.OAuth.RejectConsent(ctx, challenge, ports.OAuthRejection{Error: "access_denied", Description: "The user refused"})
+	case d.Problem != "":
+		return f.OAuth.RejectConsent(ctx, challenge, ports.OAuthRejection{Error: "access_denied", Description: d.Problem})
+	}
+	roles := make([]string, len(p.Roles))
+	for i, role := range p.Roles {
+		roles[i] = string(role)
+	}
+	// The claims the API reads back through introspection: a snapshot at consent (authn.Introspector).
+	// granted_at dates the grant: the API refuses it after 90 days, refreshed or not (AI-38).
+	claims := map[string]any{"class": c.Client.Class, "org": p.Organisation.String(), "roles": roles, "granted_at": f.Clock.Now().Unix()}
+	return f.OAuth.AcceptConsent(ctx, challenge, ports.ConsentAcceptance{Scopes: d.Scopes, Audiences: d.Audiences, AccessTokenClaims: claims})
 }
 
 func (f Flow) recordConsent(w http.ResponseWriter, r *http.Request) {
@@ -318,28 +382,9 @@ func (f Flow) recordConsent(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	d := f.Admit(r.Context(), c, p)
-	switch {
-	case r.PostForm.Get("decision") != "accept":
-		f.redirect(w, r, func() (string, error) {
-			return f.OAuth.RejectConsent(r.Context(), challenge, ports.OAuthRejection{Error: "access_denied", Description: "The user refused"})
-		})
-	case d.Problem != "":
-		f.redirect(w, r, func() (string, error) {
-			return f.OAuth.RejectConsent(r.Context(), challenge, ports.OAuthRejection{Error: "access_denied", Description: d.Problem})
-		})
-	default:
-		roles := make([]string, len(p.Roles))
-		for i, role := range p.Roles {
-			roles[i] = string(role)
-		}
-		// The claims the API reads back through introspection: a snapshot at consent (authn.Introspector).
-		// granted_at dates the grant: the API refuses it after 90 days, refreshed or not (AI-38).
-		claims := map[string]any{"class": c.Client.Class, "org": p.Organisation.String(), "roles": roles, "granted_at": f.Clock.Now().Unix()}
-		f.redirect(w, r, func() (string, error) {
-			return f.OAuth.AcceptConsent(r.Context(), challenge, ports.ConsentAcceptance{Scopes: d.Scopes, Audiences: d.Audiences, AccessTokenClaims: claims})
-		})
-	}
+	f.redirect(w, r, func() (string, error) {
+		return f.answer(r.Context(), challenge, r.PostForm.Get("decision") == "accept", nil, c, p)
+	})
 }
 
 // ConsentDays is how long a consent lasts before it must be renewed (AI-37).

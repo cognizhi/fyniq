@@ -1667,6 +1667,18 @@ var matrixCalls = map[string]matrixCall{
 		e.api.deps.MCPClients, e.api.deps.OAuthClients, e.api.deps.MCPAudience, e.api.deps.MCPServerOn = openRegistration{}, fakeOAuthClients{}, mcpAudience, true
 		return e.call(http.MethodPost, "/v1/oauth/register", tok, map[string]any{"client_name": "Acme", "redirect_uris": []string{"https://acme.example/cb"}}), nil
 	},
+	"getOAuthConsent": func(e *env, tok string) (response, func() bool) {
+		was := e.api.deps.Consent
+		defer func() { e.api.deps.Consent = was }()
+		e.api.deps.Consent = fakeConsentFlow{}
+		return e.call(http.MethodGet, "/v1/oauth/consent?consent_challenge=abc", tok, nil), nil
+	},
+	"answerOAuthConsent": func(e *env, tok string) (response, func() bool) {
+		was := e.api.deps.Consent
+		defer func() { e.api.deps.Consent = was }()
+		e.api.deps.Consent = fakeConsentFlow{}
+		return e.call(http.MethodPost, "/v1/oauth/consent", tok, map[string]any{"consent_challenge": "abc", "decision": "deny"}), nil
+	},
 	"getConnectedApps": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/connected-apps", asMatrixMember(e, tok), nil), nil
 	},

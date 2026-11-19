@@ -92,8 +92,10 @@ func init() {
 		log, mcpAudience, oauth := logging.New(os.Stderr, slog.LevelInfo), os.Getenv("FYNIQ_MCP_AUDIENCE"), wiring.Hydra(admin)
 		gate, publishers := mcpConsent(oauth, mcpAudience, store, clock, log)
 		registerMetadata(s, store, clock)
-		oauthflow.Flow{OAuth: oauth, SignedIn: signedIn, Clock: clock, APIAudience: os.Getenv("FYNIQ_API_AUDIENCE"), MCPAudience: mcpAudience,
-			MCP: gate, Publishers: publishers, Log: log, SignInPage: "/", Base: "/api"}.Register(s)
+		flow := oauthflow.Flow{OAuth: oauth, SignedIn: signedIn, Clock: clock, APIAudience: os.Getenv("FYNIQ_API_AUDIENCE"), MCPAudience: mcpAudience,
+			MCP: gate, Publishers: publishers, Log: log, SignInPage: "/", Base: "/api"}
+		consentFlow = &flow
+		flow.Register(s)
 	}
 }
 

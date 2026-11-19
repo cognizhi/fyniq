@@ -213,12 +213,19 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 - [ ] 9.1 The Connected apps operations (design D12): the organisation's MCP state and its change as approval objects, the
   person's connections, revoke, the Owner's revoke of any; the contract, the generated client, the authorisation matrix rows.
   Tests `// req: AI-44`, `// req: AI-35`, `// req: CTL-API-02` (integration clients listed and registered here).
-- [ ] 9.2 Settings → Connected apps (`connected-apps`): the switch, the allowlist with per-client state and last use, my
+- [~] 9.2 Settings → Connected apps (`connected-apps`): the switch, the allowlist with per-client state and last use, my
   connections, revoke, the integration clients and personal access tokens `p1-public-api` built; Basic and Expert; states for
   off, not allowlisted and needs a second approver; Vitest with axe; the screen's fragment updated locally.
-  Tests `// req: AI-44`.
-- [ ] 9.3 The consent screen (`oauth-consent`): client, publisher, class (proposal-only), requested scopes in plain language,
-  data categories, expiry, Allow and Deny, shown only after the second factor; the refused states. Tests `// req: AI-37`.
+  Tests `// req: AI-44`. Built (#865): the page in Basic mode over the Connected apps operations (your access and opt-in, the apps
+  with Verified or Not verified, what you allowed with Disconnect, registrations waiting with Deny, the activity); switching AI apps
+  on and allowing an app stay organisation settings with a second approver, linked from the page. Left: Expert-mode detail
+  (last use per app) and the integration clients and personal access tokens (CTL-API-02).
+- [~] 9.3 The consent screen (`oauth-consent`): client, publisher, class (proposal-only), requested scopes in plain language,
+  data categories, expiry, Allow and Deny, shown only after the second factor; the refused states. Tests `// req: AI-37`. Built: two API operations
+  (`getOAuthConsent`, `answerOAuthConsent`: the person's own session only, a token or an AI never) behind the web route
+  `/auth/consent`, which Hydra's `URLS_CONSENT` now names; the person may keep fewer areas than asked, never more; the second
+  factor is a button on the page (AUTH-FLOW-08). Tested end to end against real Hydra. The old `/api/auth/consent` form stays for
+  clients that cannot run the page. Left: the screen's fragment checked against the built page in the five frames.
 - [ ] 9.4 Help keys, `docs/user-guide/` pages, tour step (the first-run path does not include MCP; the page is linked from AI
   settings), compiled into `kb/` (`fyniq-knowledge-base`), and the agent guide's MCP section (FR-INT-13: Fyniq answers for its
   tools and results, not an external model's wording; cite fact IDs). Tests `// req: AI-41`, `// req: QA-UI-05`.

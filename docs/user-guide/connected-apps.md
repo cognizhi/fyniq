@@ -24,6 +24,16 @@ change settings, and it never sees an NRIC, a full bank account number or a secr
 - Each time an app asks to connect, you sign in with your second factor and see what it asks for. Reports are the default; the other
   areas are your choice, one at a time. Payroll and equity are never given to an app by default.
 
+## When an app asks to connect
+
+- The app sends you to Fyniq, to **Connect an app**. Sign in if you are asked, and confirm it's you with your second factor: nothing is
+  allowed without it.
+- The page says which app asks and whether Fyniq verified who publishes it. An app that registered itself says so, and shows where it sends
+  you after you answer: check that address.
+- Each area it asks for has a tick box, and you keep only the ones you want. An area that cannot be allowed (payroll and equity, or one an
+  Owner has not granted) is shown as **Not granted**.
+- **Allow** sends you back to the app, which can then read as you; **Deny** tells the app you refused. Either way, nothing else changes.
+
 ## What you see
 
 - **Apps**: the apps the organisation can allow, with **Verified** for those Fyniq registered (with their publisher) and **Not verified** for

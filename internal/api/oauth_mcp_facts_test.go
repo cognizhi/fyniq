@@ -22,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/authn"
+	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/mcpgate"
 	"github.com/cognizhi/fyniq/internal/mcpserver"
@@ -413,4 +414,148 @@ func TestAnOptOutRevokesTheAIAppsTokensAndNothingElse(t *testing.T) {
 	if err := oauthtokens.AgentWork(s.admin)(ctx, s.e.books.Org, row); err != nil { // again: nothing left to revoke, and no error
 		t.Errorf("revoking twice: %v", err)
 	}
+}
+
+// The consent screen's two steps as the API's own operations (AI-37; task 9.3): the web app shows what Claude Code asks for and
+// records the answer with the person's session, and the OAuth server carries the authorisation on from the address it returns. Only
+// that person may answer it.
+// req: AI-37
+// req: AI-36
+// asvs: V10.4.2, V10.4.8, V4.2.1
+func TestTheConsentScreenIsTwoOperationsOfTheAPI(t *testing.T) {
+	s := startOAuth(t, 0)
+	ctx := context.Background()
+	if err := mcpgate.Register(ctx, s.admin, mcpAudience); err != nil {
+		t.Fatal(err)
+	}
+	const redirect = "http://localhost:3118/callback"
+	start := func() (*http.Client, url.Values, string, string) {
+		b := s.browser()
+		b.CheckRedirect = func(r *http.Request, _ []*http.Request) error {
+			if r.URL.Host == "localhost:3118" {
+				return http.ErrUseLastResponse
+			}
+			return nil
+		}
+		q, verifier := pkceQuery("claude-code", "openid fyniq.read.reports")
+		q.Set("resource", mcpAudience)
+		q.Set("redirect_uri", redirect)
+		resp, err := b.Get("http://hydra.test/oauth2/auth?" + q.Encode())
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		challenge := resp.Request.URL.Query().Get("consent_challenge")
+		if challenge == "" {
+			t.Fatalf("no consent challenge: %d %s", resp.StatusCode, resp.Request.URL)
+		}
+		return b, q, verifier, challenge
+	}
+	onAPI := &env{t: t, srv: s.srv} // the API that serves the consent app's flow, as the web app reaches it
+	api := func(method, path, token string, body any) response { return onAPI.call(method, path, token, body) }
+
+	flow := s.flow
+	flow.Publishers = map[string]string{"claude-code": "Anthropic"} // a pre-registered app, as the release has it
+	s.api.deps.Consent = flow
+	b, q, verifier, challenge := start()
+	// The first step: who asks, what for, in plain words, and how long.
+	r := api(http.MethodGet, "/v1/oauth/consent?consent_challenge="+url.QueryEscape(challenge), s.user, nil)
+	if r.Status != http.StatusOK {
+		t.Fatalf("the screen: %d %s", r.Status, r.Raw)
+	}
+	var screen ConsentScreen
+	if err := json.Unmarshal([]byte(r.Raw), &screen); err != nil {
+		t.Fatal(err)
+	}
+	if screen.Client.ID != "claude-code" || screen.Client.Class != "agent" || !screen.Client.ProposalOnly || !screen.Client.Verified || screen.Client.Publisher == "" ||
+		screen.Decision.Problem != "" || len(screen.DataCategories) == 0 || screen.Expiry == nil || screen.Expiry.ConsentValidDays != 90 || screen.Expiry.AccessTokenMinutes != 60 {
+		t.Errorf("the screen: %+v", screen)
+	}
+	// Another person's session cannot read or answer it; a token is not a session; nobody at all is refused.
+	other := authn.DevPrefix + uuid.NewString()
+	s.e.tokens.mu.Lock()
+	s.e.tokens.m[other] = authn.Principal{Via: authn.ViaSession, Subject: "user-other", UserID: uuid.New(), Client: "web", Class: authn.ClassUser,
+		Organisation: s.e.books.Org, Roles: []authz.Role{authz.Accountant}, StepUpAt: clock.System{}.Now()}
+	s.e.tokens.mu.Unlock()
+	if r := api(http.MethodGet, "/v1/oauth/consent?consent_challenge="+url.QueryEscape(challenge), other, nil); r.Status != http.StatusForbidden || r.problemCode() != CodeConsentOther {
+		t.Errorf("another person's session: %d %s", r.Status, r.Raw)
+	}
+	if r := api(http.MethodPost, "/v1/oauth/consent", other, map[string]any{"consent_challenge": challenge, "decision": "accept"}); r.Status != http.StatusForbidden {
+		t.Errorf("another person answered: %d %s", r.Status, r.Raw)
+	}
+	if r := api(http.MethodGet, "/v1/oauth/consent?consent_challenge="+url.QueryEscape(challenge), "", nil); r.Status != http.StatusUnauthorized {
+		t.Errorf("nobody signed in: %d", r.Status)
+	}
+	// Allow: the answer is where the OAuth server carries on, and the client gets a code and then a token for the MCP audience only.
+	r = api(http.MethodPost, "/v1/oauth/consent", s.user, map[string]any{"consent_challenge": challenge, "decision": "accept"})
+	if r.Status != http.StatusOK {
+		t.Fatalf("allow: %d %s", r.Status, r.Raw)
+	}
+	var next ConsentNext
+	_ = json.Unmarshal([]byte(r.Raw), &next)
+	resp, err := b.Get(next.RedirectTo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	back := mustQuery(t, resp.Header.Get("Location"))
+	if back.Get("code") == "" || back.Get("error") != "" {
+		t.Fatalf("the client's callback: %v", back)
+	}
+	tok, err := b.PostForm("http://hydra.test/oauth2/token", url.Values{"grant_type": {"authorization_code"}, "code": {back.Get("code")},
+		"redirect_uri": {redirect}, "client_id": {q.Get("client_id")}, "code_verifier": {verifier}, "resource": {mcpAudience}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tok.Body.Close()
+	var out map[string]any
+	_ = json.NewDecoder(tok.Body).Decode(&out)
+	in, _ := s.admin.Introspect(ctx, out["access_token"].(string))
+	if !in.Active || len(in.Audiences) != 1 || in.Audiences[0] != mcpAudience || in.Claims["class"] != "agent" || in.Claims["granted_at"] == nil {
+		t.Errorf("the token: %+v", in)
+	}
+	if r := api(http.MethodGet, "/v1/oauth/consent?consent_challenge=never-issued", s.user, nil); r.Status != http.StatusNotFound || r.problemCode() != CodeConsentGone {
+		t.Errorf("a request that does not exist: %d %s", r.Status, r.Raw)
+	}
+
+	// Narrowing: the person keeps only a scope the screen did not show, so the grant is just openid: what they keep can only narrow
+	// what the screen showed, never add to it.
+	{
+		b, _, _, challenge := start()
+		r := api(http.MethodPost, "/v1/oauth/consent", s.user, map[string]any{"consent_challenge": challenge, "decision": "accept", "scopes": []string{"fyniq.read.sales"}})
+		if r.Status != http.StatusOK {
+			t.Fatalf("narrowed: %d %s", r.Status, r.Raw)
+		}
+		_ = json.Unmarshal([]byte(r.Raw), &next)
+		resp, err := b.Get(next.RedirectTo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		if back := mustQuery(t, resp.Header.Get("Location")); back.Get("code") == "" || back.Get("scope") != "openid" {
+			t.Errorf("the grant: %v", back)
+		}
+	}
+	// Deny, and a gate that says no even to an Allow: the client is told access_denied, with no code.
+	for _, c := range []struct{ name, decision, code string }{{"deny", "deny", ""}, {"a gate refuses", "accept", "MCP-GATE-03"}} {
+		s.gate.code = c.code
+		if c.code != "" {
+			s.gate.why = "not opted in"
+		}
+		b, _, _, challenge := start()
+		r := api(http.MethodPost, "/v1/oauth/consent", s.user, map[string]any{"consent_challenge": challenge, "decision": c.decision})
+		if r.Status != http.StatusOK {
+			t.Fatalf("%s: %d %s", c.name, r.Status, r.Raw)
+		}
+		_ = json.Unmarshal([]byte(r.Raw), &next)
+		resp, err := b.Get(next.RedirectTo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		if back := mustQuery(t, resp.Header.Get("Location")); back.Get("error") != "access_denied" || back.Get("code") != "" {
+			t.Errorf("%s: the client's callback: %v", c.name, back)
+		}
+	}
+	s.gate.code, s.gate.why = "", ""
 }

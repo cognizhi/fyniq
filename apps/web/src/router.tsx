@@ -133,6 +133,7 @@ const screens: Record<RouteId, RouteComponent> = {
   "settings-ai-routes": lazyRouteComponent(() => import("./screens/settings/AIRoutes"), "AIRoutes"),
   "settings-ai-route": lazyRouteComponent(() => import("./screens/settings/AIRoutes"), "AIRouteEditor"),
   "settings-ai-activity": lazyRouteComponent(() => import("./screens/settings/AIActivity"), "AIActivity"),
+  "oauth-consent": lazyRouteComponent(() => import("./screens/OAuthConsent"), "OAuthConsent"),
   "settings-connected-apps": lazyRouteComponent(() => import("./screens/settings/ConnectedApps"), "ConnectedApps"),
   "settings-ai-plan": lazyRouteComponent(() => import("./screens/settings/MyAIPlan"), "MyAIPlan"),
   "settings-import": lazyRouteComponent(() => import("./screens/settings/WorkbookImport"), "WorkbookImport"),

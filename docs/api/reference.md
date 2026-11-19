@@ -22777,6 +22777,43 @@ Opts you in to AI apps acting for you over MCP, or out (AI-35). Opting out stops
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `MCP-OPT-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
 
+### `GET /v1/oauth/consent`
+
+**See what an app asks to do for you** (`getOAuthConsent`)
+
+The consent screen's first step (AI-37): the app that asks to connect, whether Fyniq has verified who publishes it (an unverified app shows where it sends you), what it asks for and what would be granted, what each scope reaches, and how long it lasts; or why it cannot be granted (an organisation that has not turned AI apps on, an app that is not allowed, your own opt-in, a second factor you must pass first). Only your own signed-in session reaches it. Read-only; no side effects.
+
+- **Permission:** View on (your session)
+- **Parameters:**
+  - `consent_challenge` (query, required): The consent request.
+- **Responses:**
+  - `200` OK [`ConsentScreen`](../../contracts/schemas/ConsentScreen.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `MCP-CONSENT-02` The request to connect is for another person.
+  - `404` Not Found: `MCP-CONSENT-01` The request to connect is gone; `MCP-CONSENT-03` Consent is not available here.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `MCP-CONSENT-01`, `MCP-CONSENT-02`, `MCP-CONSENT-03`
+
+### `POST /v1/oauth/consent`
+
+**Allow or refuse an app** (`answerOAuthConsent`)
+
+The consent screen's second step (AI-37): records your answer to the app's request and says where to send the browser next. Allowing grants only what the screen showed, checked again here against every gate; a gate that refuses is answered to the app as a refusal. Only your own signed-in session reaches it. Side effects: the OAuth server's consent record. Never on the AI's or MCP's tool list.
+
+- **Permission:** Create on (your session)
+- **Request body:** [`ConsentAnswer`](../../contracts/schemas/ConsentAnswer.schema.json)
+- **Responses:**
+  - `200` OK [`ConsentNext`](../../contracts/schemas/ConsentNext.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required; `MCP-CONSENT-02` The request to connect is for another person.
+  - `404` Not Found: `MCP-CONSENT-01` The request to connect is gone; `MCP-CONSENT-03` Consent is not available here.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `MCP-CONSENT-01`, `MCP-CONSENT-02`, `MCP-CONSENT-03`
+
 ### `POST /v1/oauth/register`
 
 **Register an AI app (RFC 7591)** (`registerOAuthClient`)

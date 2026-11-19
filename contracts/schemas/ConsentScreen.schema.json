@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "client": {
+      "$ref": "ConsentClient.schema.json"
+    },
+    "data_categories": {
+      "description": "What each scope reaches, in plain words (an AI app's consent).",
+      "items": {
+        "$ref": "ConsentCategory.schema.json"
+      },
+      "maxItems": 30,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "decision": {
+      "$ref": "ConsentDecision.schema.json"
+    },
+    "expiry": {
+      "$ref": "ConsentExpiry.schema.json",
+      "description": "How long the consent and its tokens last (an AI app's consent)."
+    },
+    "requested_scopes": {
+      "description": "What the app asked for.",
+      "items": {
+        "description": "A scope an AI app was granted.",
+        "examples": [
+          "fyniq.read.reports"
+        ],
+        "type": "string"
+      },
+      "maxItems": 30,
+      "type": "array"
+    }
+  },
+  "required": [
+    "client",
+    "requested_scopes",
+    "decision"
+  ],
+  "title": "ConsentScreen",
+  "type": "object"
+}
