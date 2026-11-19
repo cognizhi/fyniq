@@ -2607,6 +2607,45 @@ type FyniqPrivateEndpoint struct {
 	ChangeID   *uuid.UUID
 }
 
+type FyniqProject struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	CustomerID     *uuid.UUID
+	Currency       string
+	MinorUnits     int16
+	Status         string
+	BillingMethod  string
+	StartsOn       pgtype.Date
+	EndsOn         pgtype.Date
+	BudgetMinutes  *int32
+	BudgetAmount   *string
+	Version        int32
+	CreatedAt      time.Time
+	ChangedAt      time.Time
+}
+
+type FyniqProjectMember struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	UserID         uuid.UUID
+	IsManager      bool
+	IsActive       bool
+	CreatedAt      time.Time
+}
+
+type FyniqProjectTask struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Name           string
+	Billable       bool
+	IsActive       bool
+	Version        int32
+	CreatedAt      time.Time
+	ChangedAt      time.Time
+}
+
 type FyniqQuoteOutcome struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

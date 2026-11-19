@@ -22,11 +22,28 @@
     account's file as it writes it and refuses, releasing nothing, a file the bank no longer takes or Fyniq no longer
     writes. `TestAMoneyAccountSaysWhichFileItsBatchesGive` runs it with a stand-in writer for Wise's file, since no
     bank's file is built yet; `TestEachBankTakesItsOwnFile`, `TestAnAccountsBankIsRecognisedByName`.
-- [ ] 1.3 The screens `add-bank-account` and `bank-accounts`: the money account's Payment file setting, and the batch page's download label naming the
+- [x] 1.3 The screens `add-bank-account` and `bank-accounts`: the money account's Payment file setting, and the batch page's download label naming the
   file. Help keys; the guide pages `banking.accounts` and `purchases.payment-batches`, compiled into `kb/`.
   Design the screens first (fyniq-openspec Recipe C).
+  - Built: designed first (fragments `AddBankAccount`, `BankAccounts` and `PaymentBatch`, and their `inventory.json` rows,
+    with FR-BNK-12; `build.py check` clean, heights measured; **not published** to Claude Design, so the canvas
+    `banking-claims` still shows the old frames: republish it with the design account). Web: `PaymentFileSetting` (the
+    choices the server offers, its reason for each that is not, saved by the account's own PUT with the whole account as
+    it is), shown on each bank or wallet card of Banking (a Payment file row, and a button that opens it) and beside the
+    data source on step 2 of Add account (which reads the account's version again after a save); step 1 suggests the
+    banks Fyniq recognises (a Go test keeps the web list equal to `banking.Institutions`); the batch page names the file
+    from the release's writer (heading, download button, what to do next). Help keys `bank-account.payment-file`,
+    `batch.download-wise`, `batch.download-dbs` (registry and `en-SG.json`); guide pages `banking.accounts` (The file its
+    payment batches give) and `purchases.payment-batches` (Pay it in the bank), compiled into `kb/`. Tests:
+    `banking.test.tsx`, `paymentBatches.test.tsx`, `TestTheWebAppsListOfBanksIsFynisList`, `// req: FR-BNK-12`.
+  - **Left:** the Wise and DBS download buttons and upload wording are exercised only with a stand-in writer name, since no
+    bank's file is built; check their words against the real upload in tasks 2.2 and 3.2 [live-verify]. No walkthrough
+    was recorded.
 
 ## 2. Wise's batch payment file (waits for the owner's blank Wise template)
+
+**Needs from the owner:** the blank Wise batch template (CSV), downloaded from Wise's template builder for SGD paid to
+bank accounts. Nothing here is written from the help centre's partial column list.
 
 - [ ] 2.1 `wise-batch@1` from the blank template (design D3); formula-safe cells; the reference cut to Wise's
   limit.
@@ -35,6 +52,9 @@
 
 ## 3. DBS IDEAL's UFF (waits for "DBS UFF Version 2.2", once IDEAL is set up)
 
+**Needs from the owner:** the specification "DBS UFF Version 2.2" (behind the DBS IDEAL login, once IDEAL is set up on the
+DBS account), with its FAST and GIRO record layouts and examples. Nothing here is written from unofficial copies (rev 0.156).
+
 - [ ] 3.1 `dbs-uff@2.2` for FAST and GIRO from the specification (design D4).
   - Tests: each record pinned to the specification's example. `// req: FR-BNK-12`
 - [ ] 3.2 `[live-verify]` One test upload to IDEAL with the owner.
@@ -42,3 +62,6 @@
 ## 4. Close
 
 - [ ] 4.1 The threat model gains the new formats; the PR lists what was not verified; archive.
+  - Built so far: the threat model has B10 to B13 for the setting, the sealed file and the screens (B13, task 1.3); each
+    format's own row (B12) is completed when its writer is built.
+  - **Left:** the formats themselves (2.1, 3.1), their live uploads, and the archive, once 2 and 3 are done.

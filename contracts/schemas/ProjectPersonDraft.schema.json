@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "manager": {
+      "description": "true to make them a manager of the project.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "user_id": {
+      "description": "An active member's user ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id"
+  ],
+  "title": "ProjectPersonDraft",
+  "type": "object"
+}
