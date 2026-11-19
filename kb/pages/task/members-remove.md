@@ -34,7 +34,7 @@ aliases:
 ## Narrow an Approver to departments
 
 - When giving the **Approver** role, **Departments this Approver acts for** lists the organisation's department values: tick the ones the role reaches.
-- Their views and approvals that Fyniq limits by department then reach only those departments' records, lines and budgets; a report's totals count only those lines.
+- Their views and approvals that Fyniq limits by department then reach only those departments' records, lines and budgets; the profit and loss they open counts only those lines (the balance sheet, cash flow, trial balance, budget comparatives and exports are the whole company's, so they are not shown to them).
 - An Approver role given with no department reaches none of them, so tick at least one; the choice is fixed when the role is given, so to change it end the role and give it again.
 - The people's list shows it beside the role, such as "Approver for Engineering"; the assistant and connected apps acting for that person are limited the same way.
 - A person who holds any other role besides Employee is not narrowed by this: that role's own rights decide.
