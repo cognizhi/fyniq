@@ -433,3 +433,43 @@ func (r members) Roles(ctx context.Context, userID uuid.UUID, now time.Time) ([]
 	}
 	return out, nil
 }
+
+// List is the active Super admins, longest-serving first (the super-admin console).
+func (r superAdmins) List(ctx context.Context) ([]storage.SuperAdminInfo, error) {
+	if err := r.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := r.u.q.SuperAdminList(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.SuperAdminInfo, len(rows))
+	for i, x := range rows {
+		out[i] = storage.SuperAdminInfo{UserID: x.UserID, DisplayName: x.DisplayName, AddedAt: x.AddedAt}
+	}
+	return out, nil
+}
+
+// Health is the platform's health across every organisation: the platform jobs' latest beats and the outbox's backlog.
+func (r superAdmins) Health(ctx context.Context) (storage.PlatformHealth, error) {
+	if err := r.u.check(); err != nil {
+		return storage.PlatformHealth{}, err
+	}
+	beats, err := r.u.q.PlatformHeartbeats(ctx)
+	if err != nil {
+		return storage.PlatformHealth{}, mapError(err)
+	}
+	box, err := r.u.q.PlatformOutbox(ctx)
+	if err != nil {
+		return storage.PlatformHealth{}, mapError(err)
+	}
+	out := storage.PlatformHealth{OutboxPending: box.Pending, OutboxDead: box.Dead}
+	if box.OldestPending.Unix() > 0 {
+		t := box.OldestPending
+		out.OldestPending = &t
+	}
+	for _, b := range beats {
+		out.Heartbeats = append(out.Heartbeats, storage.Heartbeat{Name: b.Name, LastBeat: b.LastBeat, Detail: b.Detail})
+	}
+	return out, nil
+}

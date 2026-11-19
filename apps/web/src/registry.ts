@@ -226,6 +226,7 @@ export const routes = [
   { kind: "route", id: "settings-announcements", path: "/settings/announcements", mode: "expert", signedIn: true, help: "settings.announcements", guide: "settings.announcements" },
   { kind: "route", id: "settings-integrations", path: "/settings/integrations", mode: "expert", signedIn: true, help: "settings.integrations", guide: "settings.integrations" },
   { kind: "route", id: "settings-brand", path: "/settings/brand", mode: "basic", signedIn: true, help: "settings.brand", guide: "settings.brand" },
+  { kind: "route", id: "settings-console", path: "/settings/installation", mode: "expert", signedIn: true, help: "settings.console", guide: "settings.console" },
   { kind: "route", id: "settings-sign-in-providers", path: "/settings/sign-in-providers", mode: "expert", signedIn: true, help: "settings.sign-in-providers", guide: "settings.sign-in-providers" },
   { kind: "route", id: "settings-integration", path: "/settings/integrations/$connector", mode: "expert", signedIn: true, help: "settings.integration", guide: "settings.integrations#a-connectors-page" },
   { kind: "route", id: "settings-template", path: "/settings/templates/$templateId", mode: "basic", signedIn: true, help: "settings.template", guide: "settings.templates#edit-a-template" },
@@ -824,6 +825,7 @@ export const settingsNav = [
   { kind: "nav", id: "settings.ai", route: "/settings/ai", icon: Bot, group: "organisation", roles: ["owner", "administrator", "controller", "auditor", "dpo"], mode: "expert", help: "settings.ai", guide: "settings.ai" },
   { kind: "nav", id: "settings.import", route: "/settings/import", icon: FileSpreadsheet, group: "organisation", roles: ["owner", "controller", "accountant", "auditor"], mode: "expert", help: "settings.import", guide: "settings.import" },
   // The installation's pages show to Super admins only (super_admin, from GET /v1/session).
+  { kind: "nav", id: "settings.console", route: "/settings/installation", icon: ShieldCheck, group: "installation", roles: ["super_admin"], mode: "expert", help: "settings.console", guide: "settings.console" },
   { kind: "nav", id: "settings.sign-in-providers", route: "/settings/sign-in-providers", icon: KeyRound, group: "installation", roles: ["super_admin"], mode: "expert", help: "settings.sign-in-providers", guide: "settings.sign-in-providers" },
 ] as const satisfies readonly NavFeature[];
 

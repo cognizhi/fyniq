@@ -458,6 +458,8 @@ fyniq_api       INSERT    person_cost_rate (created_by, currency, effective_from
 fyniq_api       SELECT    person_cost_rate
 fyniq_api       INSERT    person_key (cohort, person, wrapped)
 fyniq_api       SELECT    person_key
+fyniq_api       EXECUTE   platform_heartbeats()
+fyniq_api       EXECUTE   platform_outbox()
 fyniq_api       INSERT    policy_acknowledgement (acknowledged_at, acknowledged_by, key, version)
 fyniq_api       SELECT    policy_acknowledgement
 fyniq_api       INSERT    policy_draft (body, key, revision, saved_at, saved_by, sha256)
@@ -577,6 +579,7 @@ fyniq_api       SELECT    statutory_pack_activation
 fyniq_api       SELECT    statutory_pack_rows
 fyniq_api       SELECT    statutory_pack_versions
 fyniq_api       EXECUTE   super_admin_for_identity()
+fyniq_api       EXECUTE   super_admin_list()
 fyniq_api       INSERT    team_mode (created_at, created_by, mode, request_id, version)
 fyniq_api       SELECT    team_mode
 fyniq_api       SELECT    tenants

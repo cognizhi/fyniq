@@ -221,6 +221,12 @@
   recovery codes, and a second authenticator (recommended), each Done or To do from what the API holds, and "You are set up"
   when the first two are done; guide `sign-in.md` (Set up how you confirm it's you), compiled into `auth.sign-in`; test
   `enrol.test.tsx`. Not a first-run tour step: the founder's tour is at its seven.)
+  (20 Nov 2026, super-admin-console built, PRD-001 rev 0.332: `GET /v1/installation/health` and `GET /v1/installation/super-admins` for a
+  Super admin (counts, times and names only, through definer functions: migration 000703), and Settings › Installation console
+  (`AdminConsole.tsx`): healthy or degraded and why, the platform jobs' beats, the outbox's backlog, the Super admins with the
+  warning while there is one; guide `installation-console.md`, compiled into `settings.console`. Tests
+  `TestTheSuperAdminConsoleReadsHealthAndSuperAdmins`, `adminConsole.test.tsx`. Not shown: installation email senders, whose
+  SPF, DKIM and DMARC status has its own page.)
 - [x] 4.2 Run the walkthrough test for each role (QA-UI-08) on the workspaces these rights produce
   (20 Nov 2026, found built: `apps/web/journeys/walkthroughs.spec.ts` runs QA-UI-08 for each of the sixteen roles of §7.1
   in an organisation of its own: landing page, sidebar, Home blocks, Inbox, the "not part of your access" page and

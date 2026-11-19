@@ -80,6 +80,33 @@ type SuperAdmins interface {
 	// Super admin's confirmation, or a deployment recovery. The signed-in identity replaces their
 	// others, and their recovery codes are replaced with ten new ones.
 	Recover(ctx context.Context, r Recovery) (Recovered, error)
+	// List is the active Super admins, longest-serving first (the super-admin console).
+	List(ctx context.Context) ([]SuperAdminInfo, error)
+	// Health is the platform's health across every organisation: the platform jobs' latest beats and the outbox's backlog.
+	// Counts, times and names only (FR-ADM-07).
+	Health(ctx context.Context) (PlatformHealth, error)
+}
+
+// SuperAdminInfo is a Super admin as the console lists them.
+type SuperAdminInfo struct {
+	UserID      uuid.UUID
+	DisplayName string
+	AddedAt     time.Time
+}
+
+// Heartbeat is a platform job's latest beat.
+type Heartbeat struct {
+	Name     string
+	LastBeat time.Time
+	Detail   string
+}
+
+// PlatformHealth is what the super-admin console shows of the platform.
+type PlatformHealth struct {
+	Heartbeats    []Heartbeat
+	OutboxPending int64
+	OutboxDead    int64
+	OldestPending *time.Time
 }
 
 // AcceptInvitation is what SuperAdmins.AcceptInvitation needs.

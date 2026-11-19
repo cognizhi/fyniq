@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "description": "The active Super admins, longest-serving first (at most two in P0: the last is only replaced, FR-ADM-07).",
+      "items": {
+        "$ref": "SuperAdminEntry.schema.json"
+      },
+      "type": "array"
+    },
+    "warning": {
+      "description": "Set while there is only one: a second keeps the installation recoverable (CTL-IAM-07).",
+      "examples": [
+        "Only one Super admin: invite a second."
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "SuperAdminList",
+  "type": "object"
+}

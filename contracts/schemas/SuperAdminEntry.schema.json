@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "added_at": {
+      "description": "Since when they have been a Super admin.",
+      "examples": [
+        "2026-10-01T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "display_name": {
+      "description": "Their name.",
+      "examples": [
+        "Wei Ling Tan"
+      ],
+      "type": "string"
+    },
+    "user_id": {
+      "description": "Their user.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "display_name",
+    "added_at"
+  ],
+  "title": "SuperAdminEntry",
+  "type": "object"
+}

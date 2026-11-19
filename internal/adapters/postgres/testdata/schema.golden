@@ -9187,6 +9187,8 @@ period_guard() → trigger | security definer | v | search_path=pg_catalog, fyni
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
 person_key_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1fbad8774b781c2cf93169089adca3e3
+platform_heartbeats() → TABLE(name text, last_beat timestamp with time zone, detail text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | c82582dd84a7a5a8e815aad623e9d8d7
+platform_outbox() → TABLE(pending bigint, dead bigint, oldest_pending timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02c3afdff78c9f7db854d1d98424b830
 policy_library_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0442aa22bfdc40bc5031d622db019681
 private_endpoint_address_ok(p_address cidr) → boolean | security invoker | i | search_path=pg_catalog, fyniq, pg_temp | 87d398986e40ebaa5d612f9346df33d1
 private_endpoint_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 495b7d8c5db1f4005355e12e03026057
@@ -9277,6 +9279,7 @@ statutory_pack_activation_guard() → trigger | security invoker | v | search_pa
 statutory_pack_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c9f66a7d4fd181c1348790e46eaba6d7
 super_admin_for_identity(p_issuer text, p_subject text) → uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | dc4916e4ee7460c18329392b923b6a4a
 super_admin_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 69611a1d7f11f9c63fa128f901944024
+super_admin_list() → TABLE(user_id uuid, display_name text, added_at timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | ecec0ff442d71114cafff37710451386
 super_admin_no_delete() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 54ab8e3adb579022cf3b8de46100e62c
 super_admin_users() → SETOF uuid | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4ddf2dc2a0fe3a9cd3600725e7bf0f97
 team_mode_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | fe7cdb44517d02103801c6dd386d11b9

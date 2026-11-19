@@ -638,6 +638,12 @@ var matrixCalls = map[string]matrixCall{
 	"withdrawAnnouncement": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/announcements/"+matrixBanner(e)+"/withdraw", tok, nil), nil
 	},
+	"getPlatformHealth": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/installation/health", tok, nil), nil
+	},
+	"listSuperAdmins": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/installation/super-admins", tok, nil), nil
+	},
 	"listInstallationAnnouncements": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/installation/announcements", tok, nil), nil
 	},

@@ -729,3 +729,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura requests, leave.approve, nemura.my-leave, nemura.home: hours worked, pay inputs, accrual, encashment, people tiles
 
 ## [2026-11-20] compile | members-and-roles.md -> settings.members (an Approver's department scope)
+
+## [2026-11-20] compile | installation-console.md -> settings.console (new page: platform health and the Super admins)
+
+## [2026-11-20] compile | sign-in-providers.md -> settings.sign-in-providers (links the installation console)

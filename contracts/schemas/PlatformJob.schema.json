@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "description": "What it reported, shortened.",
+      "examples": [
+        "ok"
+      ],
+      "type": "string"
+    },
+    "last_beat": {
+      "description": "When it last ran.",
+      "examples": [
+        "2026-11-20T09:25:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "name": {
+      "description": "The job: tick is the Scheduler's, audit.anchor and audit.verify the audit trail's, and so on.",
+      "examples": [
+        "tick"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "last_beat"
+  ],
+  "title": "PlatformJob",
+  "type": "object"
+}
