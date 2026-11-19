@@ -11,9 +11,9 @@ behind the specs or the screens.
 
 <!-- roadmap:summary -->
 
-That is all 1,389 requirements:
+That is all 1,390 requirements:
 - 115 belong to the P0 changes, which built them or hold them for the cloud gate;
-- the other 1,274 are spread over 66 changes below;
+- the other 1,275 are spread over 66 changes below;
 - all 202 designed screens after P0 sit with the change that owns most of their requirements.
 
 <!-- /roadmap -->
@@ -601,7 +601,7 @@ Several things wait beyond it:
 | 6 | `p1-knowledge-base` | The organisation knowledge base from trusted sources, context assembly, compile, index and lint, trust, versioning and publishing | 17 | 1 | `p1-ai-assistant` | — | — | Security (#4) | After go-live |
 | 6 | `p1-ai-proposals-core` | The proposal principles and store, the catalogue as dual-controlled data with its tiers and never-list, approval of AI work in the Inbox with rejection reasons fed back, idempotent execution through the executor as the approving human, the proposal evals' harness and the controls | 27 | 2 | `p1-ai-assistant`, `p1-approval-engine` | — | — | Security (#4) | Launch (owner, 15 Nov 2026: the proposals the company secretary's agent needs) |
 | 6 | `p1-ai-proposals` | The rest of the task catalogue of Appendix E (bank, sales, purchases, journals, contacts, planning, reports, knowledge pages), two approvers for tier 3, undo, approval-quality metrics | 21 | 0 | `p1-ai-proposals-core` | — | — | Security (#4) | After go-live |
-| 6 | `p1-mcp-first-party` | The MCP server for first-party clients: client classes, off by default, audience-bound tokens with option (b), consent and scopes, transport, the tool surface, limits, audit and detection; the local MCP endpoint; QA-MCP-01 | 24 | 2 | `p1-ai-proposals` | Option (b) with a local key; Cloud KMS at the cloud gate | Security review #4 | Security (#4) | After go-live |
+| 6 | `p1-mcp-first-party` | The MCP server for first-party clients: client classes, off by default, audience-bound tokens with option (b), consent and scopes, transport, the tool surface, limits, audit and detection; the local MCP endpoint; QA-MCP-01 | 25 | 2 | `p1-ai-proposals` | Option (b) with a local key; Cloud KMS at the cloud gate | Security review #4 | Security (#4) | After go-live |
 | 6 | `p1-scheduled-agents` | Agent skills, schedules and triggers, identity and permissions, deterministic first, outputs with their Inbox tasks and the sec.create_task and sec.draft_reminder proposals, the never-list, budgets and failure | 14 | 2 | `p1-ai-assistant`, `p1-ai-proposals-core` | — | — | Security (#4) | Launch (owner, 13 Nov 2026: the company secretary in full, with the AI changes it needs) |
 | 6 | `p1-company-secretary` | The corporate profile, ACRA pack, cross-checks, the company secretary workspace and role, document drafts, the named human secretary, and the AI secretary's scheduled checks | 13 | 1 | `p1-scheduled-agents`, `p1-equity-register` | — | A corporate secretarial firm appointed (Q19) | Accountant | Launch (owner, 13 Nov 2026: in full, with the AI secretary's scheduled checks) |
 | 6 | `p1-document-capture` | Smart document capture (upload, paste, email-in), bill capture and automated bill entry, as drafts a person confirms | 3 | 1 | `p1-ai-providers`, `p1-purchases`, `p1-templates-email` | Inbound email through Mailpit | — | Security (#4) | After go-live |
@@ -765,7 +765,7 @@ as a posting rule or a use case; `openspec show <capability> --type spec` lists 
 | `p1-knowledge-base` | `ai/evaluation`: QA-AI-06; `ai/knowledge-base`: AI-48, AI-49, AI-50, AI-51, AI-52, AI-53, AI-54, AI-55, AI-56, AI-57, AI-58, AI-60, 2 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-08; `platform/release-and-versioning`: 1 unnumbered<br>Screens: knowledge-base |
 | `p1-ai-proposals-core` | `ai/evaluation`: QA-AI-02; `ai/proposals`: AI-P3, AI-P4, AI-P5, AI-06, AI-07, AI-10, AI-11, AI-14, AI-30, AI-32, AI-89, 5 unnumbered; `ai/task-catalogue`: 5 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-02, CTL-AI-03, CTL-AI-04; `controls/platform-checks`: C.2 #19; `platform/release-and-versioning`: 1 unnumbered<br>Screens: ai-proposal-review, ai-tasks |
 | `p1-ai-proposals` | `ai/proposals`: AI-09, AI-31; `ai/task-catalogue`: 18 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-07 |
-| `p1-mcp-first-party` | `ai/guardrails`: 1 unnumbered; `ai/mcp-and-agents`: AI-15, AI-16, AI-17, AI-34, AI-35, AI-36, AI-37, AI-38, AI-39, AI-40, AI-41, AI-42, AI-43, AI-44, AI-45, 1 unnumbered; `compliance/ai-and-api-controls`: CTL-API-02, CTL-MCP-01, CTL-MCP-02, CTL-MCP-03, CTL-MCP-04; `integrations/public-api`: FR-INT-03; `platform/local-mode`: DEV-06<br>Screens: connected-apps, oauth-consent |
+| `p1-mcp-first-party` | `ai/guardrails`: 1 unnumbered; `ai/mcp-and-agents`: AI-15, AI-16, AI-17, AI-34, AI-35, AI-36, AI-37, AI-38, AI-39, AI-40, AI-41, AI-42, AI-43, AI-44, AI-45, AI-90, 1 unnumbered; `compliance/ai-and-api-controls`: CTL-API-02, CTL-MCP-01, CTL-MCP-02, CTL-MCP-03, CTL-MCP-04; `integrations/public-api`: FR-INT-03; `platform/local-mode`: DEV-06<br>Screens: connected-apps, oauth-consent |
 | `p1-scheduled-agents` | `ai/evaluation`: QA-AI-07; `ai/scheduled-agents`: AI-61, AI-62, AI-63, AI-64, AI-65, AI-66, AI-67, 2 unnumbered; `ai/task-catalogue`: 2 unnumbered; `compliance/ai-and-api-controls`: CTL-AI-09; `controls/platform-checks`: C.2 #36<br>Screens: agent-run-report, company-secretary |
 | `p1-company-secretary` | `ai/task-catalogue`: 1 unnumbered; `controls/platform-checks`: C.2 #32, C.2 #33, C.2 #34, C.2 #35, C.2 #54; `governance/company-secretary`: FR-CS-01, FR-CS-02, FR-CS-03, FR-CS-04, FR-CS-05, FR-CS-06, FR-CS-08<br>Screens: corporate-profile |
 | `p1-document-capture` | `documents/attachments-and-evidence`: FR-DOC-12; `purchases/payables`: FR-AP-04, FR-AP-12<br>Screens: document-inbox |
