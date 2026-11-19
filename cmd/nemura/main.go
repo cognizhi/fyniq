@@ -27,7 +27,6 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/app"
 	"github.com/cognizhi/fyniq/internal/httpserver"
-	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/identity"
 	"github.com/cognizhi/fyniq/internal/nemura/outbox"
 	"github.com/cognizhi/fyniq/internal/nemura/role"
@@ -105,8 +104,7 @@ func routes(r role.Role, s *httpserver.Server, deps app.Deps, getenv func(string
 	if r == role.Worker {
 		return workerRoutes(s, deps, getenv, store)
 	}
-	api.New(s) // the public API under /v1 (NM-ARC-03)
-	return nil
+	return apiRoutes(s, deps, getenv, store)
 }
 
 // workerRoutes is the worker class (ADR-T7): POST /tasks delivers one outbox row's work, POST /tick sweeps the rows that never

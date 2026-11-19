@@ -7,10 +7,16 @@ package api
 import (
 	"context"
 	"regexp"
+	"slices"
+	"strings"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
+	"github.com/google/uuid"
 
+	"github.com/cognizhi/fyniq/internal/nemura/authz"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/version"
 )
 
@@ -42,17 +48,42 @@ func Config(v string) huma.Config {
 			Description: "http://localhost:8180/api behind Nemura's edge (PEOPLE=yes make up); http://localhost:8087 for the api service"}}}}
 	cfg.Tags = []*huma.Tag{
 		{Name: "Platform", Description: "What the service is and the error codes it returns (NM-ARC-03)."},
+		{Name: "Session", Description: "Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02)."},
 	}
 	return cfg
 }
 
+// Session is who a request's session is: the person, their organisation and the roles they hold now.
+type Session struct {
+	Organisation, Member uuid.UUID
+}
+
+// Sessions is what the API needs of sign-in and the database to know who is asking. Roles are read again on every request, so a
+// change of roles is seen on the next one.
+type Sessions interface {
+	Authenticate(ctx context.Context, token string, now time.Time) (Session, error)
+	RolesAt(ctx context.Context, org, member uuid.UUID, on time.Time) ([]authz.Role, error)
+}
+
+// Deps are what the API is given.
+type Deps struct {
+	Sessions Sessions
+	Clock    ports.Clock
+	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
+	CookieNames []string
+}
+
 // API is Nemura's API.
-type API struct{ huma.API }
+type API struct {
+	huma.API
+	d Deps
+}
 
 // New registers the API on mux (an http.ServeMux, or the service's httpserver.Server).
-func New(mux humago.Mux) *API {
-	a := &API{humago.New(mux, Config(version.Version))}
+func New(mux humago.Mux, d Deps) *API {
+	a := &API{API: humago.New(mux, Config(version.Version)), d: d}
 	a.register()
+	a.registerSession()
 	return a
 }
 
@@ -109,5 +140,65 @@ func (a *API) register() {
 			}
 		}
 		return nil, Err(CodeNotFound, "There is no error code "+in.Code+".")
+	})
+}
+
+// Landing is where a person lands, by their highest role (PRD-002 §3): the people team on People home, everyone else on My home. The
+// pages arrive with the web app; the path is the contract's.
+func Landing(roles []authz.Role) string {
+	for _, r := range []authz.Role{authz.Owner, authz.Administrator, authz.PayrollAdmin, authz.HRAdmin, authz.HROfficer} {
+		if slices.Contains(roles, r) {
+			return "/people"
+		}
+	}
+	return "/me"
+}
+
+type sessionInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+}
+
+type sessionOutput struct {
+	Body struct {
+		Organisation string   `json:"organisation_id" format:"uuid" doc:"The organisation the session is in." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
+		Member       string   `json:"member_id" format:"uuid" doc:"The person who is signed in." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
+		Roles        []string `json:"roles" doc:"The roles the person holds today, from PRD-002 Appendix B." example:"[\"hr_admin\"]"`
+		Landing      string   `json:"landing" doc:"The page the person lands on: /people for the people team, /me for everyone else." example:"/people"`
+	}
+}
+
+func (a *API) cookie(header string) string {
+	for _, name := range a.d.CookieNames {
+		for _, part := range strings.Split(header, ";") {
+			if k, v, ok := strings.Cut(strings.TrimSpace(part), "="); ok && k == name {
+				return v
+			}
+		}
+	}
+	return ""
+}
+
+func (a *API) registerSession() {
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getSession", Method: "GET", Path: "/v1/session", Tags: []string{"Session"}, Summary: "Who is signed in",
+		Description: "Returns the person the session cookie names, the organisation they are in, the roles they hold today and the page they land on. Roles are read again on each request, so a change is seen at once. It changes nothing; without a valid session it is NM_UNAUTHENTICATED.",
+		Errors:      []int{401},
+	}, func(ctx context.Context, in *sessionInput) (*sessionOutput, error) {
+		now := a.d.Clock.Now()
+		s, err := a.d.Sessions.Authenticate(ctx, a.cookie(in.Cookie), now)
+		if err != nil {
+			return nil, Err(CodeUnauthenticated, "There is no valid session in this request.")
+		}
+		roles, err := a.d.Sessions.RolesAt(ctx, s.Organisation, s.Member, now)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("The roles could not be read.")
+		}
+		out := &sessionOutput{}
+		out.Body.Organisation, out.Body.Member, out.Body.Landing = s.Organisation.String(), s.Member.String(), Landing(roles)
+		out.Body.Roles = make([]string, len(roles))
+		for i, r := range roles {
+			out.Body.Roles[i] = string(r)
+		}
+		return out, nil
 	})
 }

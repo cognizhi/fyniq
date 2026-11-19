@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/identity"
 )
 
@@ -276,4 +277,45 @@ func DeactivateMember(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Tim
 	}
 	return Audit(ctx, tx, org, at, user(by), "nemura.member.deactivated", audit.Object{Type: "member", ID: member},
 		map[string]audit.Change{"deactivated_at": {nil, at.UTC().Format(time.RFC3339)}}, "")
+}
+
+// OpenSession starts a session for a member of the organisation in a transaction of its own and returns its token.
+func (s *Store) OpenSession(ctx context.Context, org, member uuid.UUID, now time.Time) (string, error) {
+	var token string
+	err := s.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		token, err = StartSession(ctx, tx, org, now, member)
+		return err
+	})
+	return token, err
+}
+
+// CloseSession ends the session a token opens (signing out), whatever its expiry; a token that opens none is not an error.
+func (s *Store) CloseSession(ctx context.Context, token string, now time.Time) error {
+	org, hash, err := identity.Parse(token)
+	if err != nil {
+		return nil
+	}
+	return s.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
+		var id, member uuid.UUID
+		err := tx.QueryRow(ctx, "SELECT id, member_id FROM nemura.session WHERE token_hash = $1 AND revoked_at IS NULL", hash).Scan(&id, &member)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		return Revoke(ctx, tx, org, now, member, id)
+	})
+}
+
+// RolesAt are the roles a member holds on a day, in a transaction of their own: what a request reads again each time.
+func (s *Store) RolesAt(ctx context.Context, org, member uuid.UUID, on time.Time) ([]authz.Role, error) {
+	var out []authz.Role
+	err := s.InOrg(ctx, org, func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		out, err = ActiveRoles(ctx, tx, member, on)
+		return err
+	})
+	return out, err
 }

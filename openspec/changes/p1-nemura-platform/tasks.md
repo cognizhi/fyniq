@@ -133,6 +133,7 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   separate identities and roles, the standalone profile (the list of what Nemura needs) and **sign-in with every
   Fyniq service stopped**, proven by a new `scripts/local-smoke-people.sh` that CI runs beside QA-LOCAL-01.
   (Built in part, 19 Nov 2026: sessions as opaque hashed tokens, expiry, revocation, deactivation and the step-up window (`TestSessionsAreOpaqueExpireAndEndWithTheMember`). **Left, so unticked:** the `SignIn` port's local adapter and the sign-in page, the Identity Platform adapter [live-verify], the `__Host-` cookie, `scripts/local-smoke-people.sh`, and `// req: NM-ARC-06`'s full proof.)
+  (Built in part, 19 Nov 2026, later: `internal/nemura/auth` (`GET /auth/signin`, `GET /auth/callback`, `POST /auth/signout`; state, PKCE and nonce through the shared `SignIn` port; `nemura_session` cookie, `__Host-nemura_session` over https; `SafeReturn`), the local sign-in page wired in the local build, `GET /v1/session` with `Landing`, `nemura-edge` on `NEMURA_HTTP_PORT` and `deploy/local/Caddyfile.people`; `TestAPersonSignsInThroughTheLocalProviderAndSeesTheirSession` signs in with no Fyniq running (`// req: NM-ARC-01`). **Left, so unticked:** the Identity Platform adapter [live-verify], `scripts/local-smoke-people.sh` in CI, Nemura's own Hydra (5.2) and `// req: NM-ARC-06`'s full proof.)
 - [ ] 5.4 Passkeys and step-up: WebAuthn with the relying-party ID from `NEMURA_RP_ID` (locally `localhost`), single-use
   server-side challenges, assertions kept for re-verification, step-up for approvals and role changes; and Nemura's
   own API clients, audience-bound, with the scopes of NM-ARC-06's own token issuer (question 11). Tests: a step-up is
@@ -170,6 +171,7 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 - [ ] 6.5 Landing by role: the session operation returns the person's landing page and effective rights (the table of
   PRD-002 §3). Tests: each role's landing; no ledger, bank, revenue, cash or company-financial field in any
   Nemura operation's schema (a contract scan), `// req: NM-ROLE-02`, completed with the web app in 7.4.
+  (Built in part, 19 Nov 2026: `GET /v1/session` returns the person, organisation, roles and landing (`api.Landing`; `TestEachRoleLandsWhereThePRDSays`, `// req: NM-ROLE-02`). **Left, so unticked:** the contract scan that no operation carries a ledger, bank, revenue, cash or company-financial field, and the web shell's landing (7.4).)
 - [ ] 6.6 Verify: `TestNemuraAuthorisationMatrix` rows for every new operation (`FYNIQ_MATRIX_ONLY=<regex>` while
   working), `make openapi`, `make check`, `make test`.
 
