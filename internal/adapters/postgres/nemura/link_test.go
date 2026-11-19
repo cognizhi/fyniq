@@ -7,6 +7,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -19,6 +20,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/apiclient"
+	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/link"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
 )
@@ -191,5 +194,87 @@ func TestTheLinkReceivesFyniqsEventsOnceAndSignsTheHoldsItSends(t *testing.T) {
 	}
 	if hold.Header.Type != "people.tax_hold.changed" || hold.Header.ObjectVersion != 1 || hold.Header.Sequence != 1 || strings.Contains(string(hold.Payload), "resigned") {
 		t.Errorf("the hold event: %+v %s", hold.Header, hold.Payload)
+	}
+}
+
+// A linked organisation's API client needs a second approver, from the day the link exists and no longer than it does (NM-ARC-04, rev 0.14; p1-payroll-link design D11): an Owner alone
+// registers one before the link; with the link a request waits for an Owner or Administrator who is not the asker, with a fresh passkey; after unlinking the Owner registers one alone again;
+// and a new link brings the second approver back.
+// part of NM-ARC-04 (the second approver; the link flow around it is not built)
+// asvs: V8.2.1, V6.4.1, V13.2.1
+func TestAFinalLinkNeedsASecondApproverForAPIClientsOnlyWhileItLasts(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := today.Add(10 * time.Hour)
+	oauth := &fakeOAuth{}
+	svc := nemura.APIClientService{Store: store(t, "nemura_api"), OAuth: oauth, Clock: clock.NewFrozen(now)}
+	owner := api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now}
+	stale := now.Add(-time.Hour)
+	register := func(name string) error {
+		_, err := svc.Register(ctx, owner, name, []string{"directory.read"}, "ES256", json.RawMessage(jwk))
+		return err
+	}
+	if err := register("Before the link"); err != nil {
+		t.Fatalf("an Owner alone registers a client before the link: %v", err)
+	}
+	pub, _, _ := ed25519.GenerateKey(rand.Reader)
+	link := func() {
+		lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+			_, err := nemura.MakeLink(ctx, tx, lt.c.org, now, audit.Actor{Type: "user", ID: lt.c.owner.String()}, uuid.New(), pub)
+			return err
+		})
+	}
+	link()
+	var r *apiclient.Refusal
+	if err := register("While linked"); !errors.As(err, &r) || r.Code != nemura.CodeSecondApprover {
+		t.Fatalf("a linked organisation registers alone: %v", err)
+	}
+	asked, err := svc.RequestRegistration(ctx, owner, "While linked", []string{"directory.read"}, "ES256", json.RawMessage(jwk))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.RequestRegistration(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &stale}, "Stale", []string{"directory.read"}, "ES256", json.RawMessage(jwk)); err == nil {
+		t.Error("a request without a fresh passkey")
+	}
+	if _, err := svc.ApproveRegistration(ctx, owner, asked); !errors.As(err, &r) || r.Code != nemura.CodeSecondApprover {
+		t.Errorf("the asker approved their own request: %v", err)
+	}
+	hr := api.Session{Organisation: lt.c.org, Member: lt.c.hr, StepUpAt: &now}
+	if _, err := svc.ApproveRegistration(ctx, hr, asked); !errors.As(err, &r) || r.Code != nemura.CodeSecondApprover {
+		t.Errorf("someone who is neither Owner nor Administrator approved: %v", err)
+	}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		_, err := nemura.GrantRole(ctx, tx, lt.c.org, now, lt.c.owner, lt.c.hr, authz.Administrator, today, nil)
+		return err
+	})
+	if _, err := svc.ApproveRegistration(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr, StepUpAt: &stale}, asked); err == nil {
+		t.Error("an approval without a fresh passkey")
+	}
+	before := len(oauth.registered)
+	if c, err := svc.ApproveRegistration(ctx, hr, asked); err != nil || c.Name != "While linked" || len(oauth.registered) != before+1 {
+		t.Fatalf("the second approver approves: %+v %v", c, err)
+	}
+	if _, err := svc.ApproveRegistration(ctx, hr, asked); err == nil {
+		t.Error("a request decided twice")
+	}
+	// Unlinked, the Owner registers alone again; a new link brings the second approver back.
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.EndLink(ctx, tx, lt.c.org, now, audit.Actor{Type: "user", ID: lt.c.owner.String()})
+	})
+	if err := register("After unlinking"); err != nil {
+		t.Errorf("an Owner alone registers a client after unlinking: %v", err)
+	}
+	link()
+	if err := register("Linked again"); !errors.As(err, &r) || r.Code != nemura.CodeSecondApprover {
+		t.Errorf("a second link: %v", err)
+	}
+	var epoch int
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		l, err := nemura.LiveLink(ctx, tx)
+		epoch = l.Epoch
+		return err
+	})
+	if epoch != 2 {
+		t.Errorf("a later link is the next epoch: %d", epoch)
 	}
 }

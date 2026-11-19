@@ -270,3 +270,21 @@ func ReceiveLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Ti
 	}
 	return outcome, applyErr
 }
+
+// EndLink ends the link: it moves through unlinking to unlinked (NM-INT-11), after the caller settled work in flight (runs approved and not posted, payments with an unknown outcome,
+// events waiting), and both sides keep their data. A credential or event of its epoch is refused from then, and a later link is a new row at the next epoch.
+func EndLink(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, actor audit.Actor) error {
+	l, err := LiveLink(ctx, tx)
+	if err != nil {
+		return err
+	}
+	for i, state := range []string{"unlinking", "unlinked"} {
+		if _, err := tx.Exec(ctx, `UPDATE nemura.fyniq_link SET state = $2, version = version + 1, changed_at = $3 WHERE id = $1`, l.ID, state, at); err != nil {
+			return linkError(err)
+		}
+		if err := Audit(ctx, tx, org, at, actor, "nemura.fyniq_link."+state, audit.Object{Type: "fyniq_link", ID: l.ID}, map[string]audit.Change{"state": {map[int]string{0: "active", 1: "unlinking"}[i], state}, "epoch": {nil, l.Epoch}}, ""); err != nil {
+			return err
+		}
+	}
+	return nil
+}

@@ -2,6 +2,7 @@
 access_request | nemura_migrator | true | true
 access_request_item | nemura_migrator | true | true
 api_client | nemura_migrator | true | true
+api_client_request | nemura_migrator | true | true
 approval_request | nemura_migrator | true | true
 audit_chain | nemura_migrator | true | true
 audit_event | nemura_migrator | true | true
@@ -109,6 +110,14 @@ api_client | hydra_client_id | text | true |
 api_client | created_by | uuid | true | 
 api_client | created_at | timestamp with time zone | true | now()
 api_client | revoked_at | timestamp with time zone | false | 
+api_client_request | organisation_id | uuid | true | nemura.current_org()
+api_client_request | id | uuid | true | uuidv7()
+api_client_request | name | text | true | 
+api_client_request | scopes | text[] | true | 
+api_client_request | alg | text | true | 
+api_client_request | public_key | jsonb | true | 
+api_client_request | requested_by | uuid | true | 
+api_client_request | created_at | timestamp with time zone | true | 
 approval_request | organisation_id | uuid | true | nemura.current_org()
 approval_request | id | uuid | true | uuidv7()
 approval_request | object_type | text | true | 
@@ -970,6 +979,19 @@ api_client | api_client_pkey | PRIMARY KEY (organisation_id, id)
 api_client | api_client_scopes_not_null | NOT NULL scopes
 api_client | api_client_scopes_some | CHECK (((cardinality(scopes) >= 1) AND (cardinality(scopes) <= 20)))
 api_client | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+api_client_request | api_client_request_alg_not_null | NOT NULL alg
+api_client_request | api_client_request_by_fkey | FOREIGN KEY (organisation_id, requested_by) REFERENCES nemura.member(organisation_id, id)
+api_client_request | api_client_request_created_at_not_null | NOT NULL created_at
+api_client_request | api_client_request_id_not_null | NOT NULL id
+api_client_request | api_client_request_name | CHECK (((length(name) >= 1) AND (length(name) <= 100)))
+api_client_request | api_client_request_name_not_null | NOT NULL name
+api_client_request | api_client_request_no_private | CHECK ((NOT (public_key ?| ARRAY['d'::text, 'p'::text, 'q'::text, 'dp'::text, 'dq'::text, 'qi'::text, 'k'::text])))
+api_client_request | api_client_request_organisation_id_not_null | NOT NULL organisation_id
+api_client_request | api_client_request_pkey | PRIMARY KEY (organisation_id, id)
+api_client_request | api_client_request_public_key_not_null | NOT NULL public_key
+api_client_request | api_client_request_requested_by_not_null | NOT NULL requested_by
+api_client_request | api_client_request_scopes_not_null | NOT NULL scopes
+api_client_request | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 approval_request | approval_request_created_at_not_null | NOT NULL created_at
 approval_request | approval_request_decided_by_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
 approval_request | approval_request_decision_whole | CHECK (((state = ANY (ARRAY['approved'::text, 'refused'::text])) = ((decided_by IS NOT NULL) AND (decided_at IS NOT NULL))))
@@ -2251,6 +2273,7 @@ CREATE UNIQUE INDEX access_request_pkey ON nemura.access_request USING btree (or
 CREATE UNIQUE INDEX api_client_hydra_key ON nemura.api_client USING btree (hydra_client_id)
 CREATE UNIQUE INDEX api_client_live_name_key ON nemura.api_client USING btree (organisation_id, lower(name)) WHERE (revoked_at IS NULL)
 CREATE UNIQUE INDEX api_client_pkey ON nemura.api_client USING btree (organisation_id, id)
+CREATE UNIQUE INDEX api_client_request_pkey ON nemura.api_client_request USING btree (organisation_id, id)
 CREATE INDEX approval_request_object_idx ON nemura.approval_request USING btree (organisation_id, object_type, object_id)
 CREATE UNIQUE INDEX approval_request_pkey ON nemura.approval_request USING btree (organisation_id, id)
 CREATE UNIQUE INDEX audit_chain_pkey ON nemura.audit_chain USING btree (organisation_id)
@@ -2421,6 +2444,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.access_
 CREATE TRIGGER access_request_item_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.access_request_item FOR EACH ROW EXECUTE FUNCTION nemura.access_request_item_guard()
 CREATE TRIGGER api_client_guard BEFORE DELETE OR UPDATE ON nemura.api_client FOR EACH ROW EXECUTE FUNCTION nemura.api_client_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.api_client DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('api_client', 'id')
+CREATE TRIGGER api_client_request_guard BEFORE DELETE OR UPDATE ON nemura.api_client_request FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.api_client_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('api_client_request', 'id')
 CREATE TRIGGER approval_request_guard BEFORE DELETE OR UPDATE ON nemura.approval_request FOR EACH ROW EXECUTE FUNCTION nemura.approval_request_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.approval_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('approval_request', 'id')
 CREATE TRIGGER audit_chain_guard BEFORE DELETE OR UPDATE ON nemura.audit_chain FOR EACH ROW EXECUTE FUNCTION nemura.audit_chain_guard()
@@ -2559,6 +2584,7 @@ CREATE TRIGGER working_pattern_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura
 access_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 access_request_item | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 api_client | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+api_client_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 approval_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 audit_chain | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 audit_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())

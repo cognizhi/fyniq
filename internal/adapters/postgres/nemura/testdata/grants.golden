@@ -21,6 +21,13 @@ nemura_api | column nemura.api_client.id | INSERT
 nemura_api | column nemura.api_client.name | INSERT
 nemura_api | column nemura.api_client.revoked_at | UPDATE
 nemura_api | column nemura.api_client.scopes | INSERT
+nemura_api | column nemura.api_client_request.alg | INSERT
+nemura_api | column nemura.api_client_request.created_at | INSERT
+nemura_api | column nemura.api_client_request.id | INSERT
+nemura_api | column nemura.api_client_request.name | INSERT
+nemura_api | column nemura.api_client_request.public_key | INSERT
+nemura_api | column nemura.api_client_request.requested_by | INSERT
+nemura_api | column nemura.api_client_request.scopes | INSERT
 nemura_api | column nemura.approval_request.decided_at | UPDATE
 nemura_api | column nemura.approval_request.decided_by | UPDATE
 nemura_api | column nemura.approval_request.digest | INSERT
@@ -775,6 +782,7 @@ nemura_api | schema nemura | USAGE
 nemura_api | table nemura.access_request | SELECT
 nemura_api | table nemura.access_request_item | SELECT
 nemura_api | table nemura.api_client | SELECT
+nemura_api | table nemura.api_client_request | SELECT
 nemura_api | table nemura.approval_request | SELECT
 nemura_api | table nemura.bank_account_change | SELECT
 nemura_api | table nemura.company_policy | SELECT
@@ -891,6 +899,7 @@ nemura_readonly | schema nemura | USAGE
 nemura_readonly | table nemura.access_request | SELECT
 nemura_readonly | table nemura.access_request_item | SELECT
 nemura_readonly | table nemura.api_client | SELECT
+nemura_readonly | table nemura.api_client_request | SELECT
 nemura_readonly | table nemura.approval_request | SELECT
 nemura_readonly | table nemura.audit_chain | SELECT
 nemura_readonly | table nemura.audit_event | SELECT
@@ -1021,6 +1030,7 @@ nemura_worker | schema nemura | USAGE
 nemura_worker | table nemura.access_request | SELECT
 nemura_worker | table nemura.access_request_item | SELECT
 nemura_worker | table nemura.api_client | SELECT
+nemura_worker | table nemura.api_client_request | SELECT
 nemura_worker | table nemura.approval_request | SELECT
 nemura_worker | table nemura.audit_chain | SELECT
 nemura_worker | table nemura.audit_event | SELECT
