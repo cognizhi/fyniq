@@ -9,12 +9,12 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-  "hypothesis==6.168.3",  # the scenario generator (task 2.4) runs from the command line too
+  "hypothesis==6.170.14",  # the scenario generator (task 2.4) runs from the command line too
   "jsonschema==4.26.0",   # test/differential/*.schema.json
 ]
 
 [dependency-groups]
-dev = ["pytest==9.1.1"]
+dev = ["pytest==9.2.0"]
 
 [build-system]
 requires = ["hatchling==1.33.0"]
