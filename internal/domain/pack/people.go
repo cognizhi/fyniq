@@ -31,7 +31,9 @@ func init() {
 			"retirement":   {"born_from", "born_to", "retirement_age", "reemployment_age", "effective_from", "effective_to", "status", "source"},
 			// The government-paid parental leave schemes (sg-people@2026.2): effective_from and effective_to are the first and last birth date a row applies to.
 			// The flexible work arrangement request rules (sg-people@2026.3).
-			"flexible_work":  {"rule", "months", "effective_from", "effective_to", "status", "source"},
+			"flexible_work": {"rule", "months", "effective_from", "effective_to", "status", "source"},
+			// Part IV of the Employment Act: the overtime rate, the monthly limit and who is covered (sg-people@2026.4).
+			"part_iv":        {"rule", "value", "effective_from", "effective_to", "status", "source"},
 			"parental_leave": {"scheme", "total_weeks", "employer_weeks", "government_weeks", "min_service_months", "cap_per_period", "cap_period_weeks", "cap_total", "claim_months", "effective_from", "effective_to", "status", "source"},
 		},
 		Pinned: map[string][]string{
@@ -43,9 +45,10 @@ func init() {
 			"records":        {"case", "person", "date", "want_months", "why", "source"},
 			"retirement":     {"case", "born", "date", "want", "why", "source"},
 			"flexible_work":  {"case", "rule", "date", "want_months", "why", "source"},
+			"part_iv":        {"case", "rule", "date", "want", "why", "source"},
 			"parental_leave": {"case", "scheme", "birth", "want", "why", "source"},
 		},
-		Since: map[string][2]int{"parental_leave": {2026, 2}, "flexible_work": {2026, 3}},
+		Since: map[string][2]int{"parental_leave": {2026, 2}, "flexible_work": {2026, 3}, "part_iv": {2026, 4}},
 	}
 }
 
@@ -99,6 +102,14 @@ func checkPeople(dir string, v Version) Problems {
 	nums("timing", "days")
 	nums("records", "months", "keep_after_leaving_months")
 	nums("retirement", "retirement_age", "reemployment_age")
+	if t, ok := v.Tables["part_iv"]; ok {
+		for i, row := range t.Rows {
+			if n, ok := atoi(row[t.Col("value")]); !ok || n < 0 {
+				add(CodeValue, fmt.Sprintf("part_iv.csv row %d", i+2), fmt.Sprintf("value %q is not a whole number", row[t.Col("value")]), "Write a whole number: the rate as hundredths (150 is 1.5 times), hours and dollars as they are")
+			}
+		}
+		periods(add, "part_iv.csv", t.Rows, func(r []string) string { return r[0] }, 2, 3)
+	}
 	if t, ok := v.Tables["flexible_work"]; ok {
 		for i, row := range t.Rows {
 			if n, ok := atoi(row[t.Col("months")]); !ok || n < 0 {
@@ -263,6 +274,9 @@ func peopleTables(v Version) []string {
 	if _, ok := v.Tables["flexible_work"]; ok {
 		names = append(names, "flexible_work")
 	}
+	if _, ok := v.Tables["part_iv"]; ok {
+		names = append(names, "part_iv")
+	}
 	return names
 }
 
@@ -298,6 +312,22 @@ func ParentalLeave(v Version, scheme string, born time.Time) (ParentalLeaveSchem
 // request in writing (NM-LV-10).
 func FlexibleWorkMonths(v Version, rule string, on time.Time) (int, bool) {
 	t, ok := v.Tables["flexible_work"]
+	if !ok {
+		return 0, false
+	}
+	for _, r := range t.Rows {
+		if r[0] == rule && peopleInForce(r[2], r[3], on) {
+			n, _ := atoi(r[1])
+			return n, true
+		}
+	}
+	return 0, false
+}
+
+// PartIV is a Part IV rule in force on a day: overtime_rate_hundredths (150 is 1.5 times the hourly basic rate), overtime_hours_per_month, non_workman_basic_cap and
+// workman_basic_cap (dollars a month) (NM-TIM-02, NM-TIM-04).
+func PartIV(v Version, rule string, on time.Time) (int, bool) {
+	t, ok := v.Tables["part_iv"]
 	if !ok {
 		return 0, false
 	}
@@ -401,6 +431,15 @@ func runPeople(v Version) []Result {
 		r := Result{Table: "records", Case: row[0], Why: row[4], Want: row[3]}
 		if d, ok := day(&r, row[2]); ok {
 			n, _, found := RecordKeeping(v, row[1], d)
+			r.Got = num(n, found)
+			r.Pass = r.Got == r.Want
+		}
+		out = append(out, r)
+	}
+	for _, row := range v.Pinned["part_iv"].Rows {
+		r := Result{Table: "part_iv", Case: row[0], Why: row[4], Want: row[3]}
+		if d, ok := day(&r, row[2]); ok {
+			n, found := PartIV(v, row[1], d)
 			r.Got = num(n, found)
 			r.Pass = r.Got == r.Want
 		}

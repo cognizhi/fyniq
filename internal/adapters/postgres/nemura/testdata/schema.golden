@@ -17,6 +17,7 @@ gov_leave | nemura_migrator | true | true
 identity_directory | nemura_migrator | false | false
 installation | nemura_migrator | false | false
 invitation | nemura_migrator | true | true
+leave_accrual | nemura_migrator | true | true
 leave_head | nemura_migrator | true | true
 leave_ledger | nemura_migrator | true | true
 leave_request | nemura_migrator | true | true
@@ -24,11 +25,13 @@ legal_hold | nemura_migrator | true | true
 member | nemura_migrator | true | true
 organisation | nemura_migrator | true | true
 outbox | nemura_migrator | true | true
+overtime_entry | nemura_migrator | true | true
 owner_recovery | nemura_migrator | true | true
 pack_acceptance | nemura_migrator | true | true
 pack_decision | nemura_migrator | true | true
 passkey | nemura_migrator | true | true
 passkey_challenge | nemura_migrator | true | true
+pay_input | nemura_migrator | true | true
 person | nemura_migrator | true | true
 person_classification | nemura_migrator | true | true
 person_dependant | nemura_migrator | true | true
@@ -39,6 +42,7 @@ reporting_line | nemura_migrator | true | true
 role_assignment | nemura_migrator | true | true
 session | nemura_migrator | true | true
 sick_notification | nemura_migrator | true | true
+sick_unpaid_decision | nemura_migrator | true | true
 tenant_directory | nemura_migrator | false | false
 tenants | nemura_migrator | false | false
 transfer_assessment | nemura_migrator | true | true
@@ -210,6 +214,17 @@ invitation | created_by | uuid | true |
 invitation | created_at | timestamp with time zone | true | now()
 invitation | expires_at | timestamp with time zone | true | 
 invitation | accepted_at | timestamp with time zone | false | 
+leave_accrual | organisation_id | uuid | true | nemura.current_org()
+leave_accrual | id | uuid | true | uuidv7()
+leave_accrual | month | date | true | 
+leave_accrual | person_id | uuid | true | 
+leave_accrual | carried_days | numeric(8,2) | true | 
+leave_accrual | annual_left | numeric(8,2) | true | 
+leave_accrual | state | text | true | 'draft'::text
+leave_accrual | drafted_by | uuid | true | 
+leave_accrual | drafted_at | timestamp with time zone | true | 
+leave_accrual | approved_by | uuid | false | 
+leave_accrual | approved_at | timestamp with time zone | false | 
 leave_head | organisation_id | uuid | true | nemura.current_org()
 leave_head | person_id | uuid | true | 
 leave_head | type_key | text | true | 
@@ -279,6 +294,23 @@ outbox | deadline_at | timestamp with time zone | false |
 outbox | last_error | text | false | 
 outbox | created_at | timestamp with time zone | true | now()
 outbox | updated_at | timestamp with time zone | true | now()
+overtime_entry | organisation_id | uuid | true | nemura.current_org()
+overtime_entry | id | uuid | true | uuidv7()
+overtime_entry | person_id | uuid | true | 
+overtime_entry | work_date | date | true | 
+overtime_entry | kind | text | true | 
+overtime_entry | hours | numeric(4,2) | true | 
+overtime_entry | branch | text | false | 
+overtime_entry | over_limit | boolean | true | 
+overtime_entry | note | text | false | 
+overtime_entry | state | text | true | 'pending'::text
+overtime_entry | requested_by | uuid | true | 
+overtime_entry | requested_at | timestamp with time zone | true | 
+overtime_entry | decided_by | uuid | false | 
+overtime_entry | decided_at | timestamp with time zone | false | 
+overtime_entry | decision_reason | text | false | 
+overtime_entry | used_in_run | uuid | false | 
+overtime_entry | used_at | timestamp with time zone | false | 
 owner_recovery | organisation_id | uuid | true | nemura.current_org()
 owner_recovery | id | uuid | true | 
 owner_recovery | member_id | uuid | true | 
@@ -325,6 +357,20 @@ passkey_challenge | challenge | bytea | true |
 passkey_challenge | created_at | timestamp with time zone | true | now()
 passkey_challenge | expires_at | timestamp with time zone | true | 
 passkey_challenge | used_at | timestamp with time zone | false | 
+pay_input | organisation_id | uuid | true | nemura.current_org()
+pay_input | id | uuid | true | uuidv7()
+pay_input | person_id | uuid | true | 
+pay_input | kind | text | true | 
+pay_input | days | numeric(8,2) | true | 
+pay_input | from_date | date | true | 
+pay_input | to_date | date | true | 
+pay_input | source_type | text | true | 
+pay_input | source_id | uuid | true | 
+pay_input | note | text | false | 
+pay_input | created_by | uuid | true | 
+pay_input | created_at | timestamp with time zone | true | 
+pay_input | used_in_run | uuid | false | 
+pay_input | used_at | timestamp with time zone | false | 
 person | organisation_id | uuid | true | nemura.current_org()
 person | id | uuid | true | uuidv7()
 person | member_id | uuid | false | 
@@ -437,6 +483,11 @@ sick_notification | issuer | text | false |
 sick_notification | certificate_added_at | timestamp with time zone | false | 
 sick_notification | verified_by | uuid | false | 
 sick_notification | verified_at | timestamp with time zone | false | 
+sick_unpaid_decision | organisation_id | uuid | true | nemura.current_org()
+sick_unpaid_decision | notification_id | uuid | true | 
+sick_unpaid_decision | treatment | text | true | 
+sick_unpaid_decision | decided_by | uuid | true | 
+sick_unpaid_decision | decided_at | timestamp with time zone | true | 
 tenant_directory | organisation_id | uuid | true | 
 tenant_directory | created_at | timestamp with time zone | true | now()
 transfer_assessment | organisation_id | uuid | true | nemura.current_org()
@@ -739,6 +790,26 @@ invitation | invitation_organisation_fkey | FOREIGN KEY (organisation_id) REFERE
 invitation | invitation_organisation_id_not_null | NOT NULL organisation_id
 invitation | invitation_pkey | PRIMARY KEY (organisation_id, id)
 invitation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+leave_accrual | leave_accrual_annual_left_not_null | NOT NULL annual_left
+leave_accrual | leave_accrual_approved_by_fkey | FOREIGN KEY (organisation_id, approved_by) REFERENCES nemura.member(organisation_id, id)
+leave_accrual | leave_accrual_approved_whole | CHECK ((((state = 'approved'::text) = (approved_by IS NOT NULL)) AND ((state = 'approved'::text) = (approved_at IS NOT NULL))))
+leave_accrual | leave_accrual_carried_days_not_null | NOT NULL carried_days
+leave_accrual | leave_accrual_days | CHECK (((carried_days >= (0)::numeric) AND (annual_left >= (0)::numeric)))
+leave_accrual | leave_accrual_drafted_at_not_null | NOT NULL drafted_at
+leave_accrual | leave_accrual_drafted_by_fkey | FOREIGN KEY (organisation_id, drafted_by) REFERENCES nemura.member(organisation_id, id)
+leave_accrual | leave_accrual_drafted_by_not_null | NOT NULL drafted_by
+leave_accrual | leave_accrual_id_not_null | NOT NULL id
+leave_accrual | leave_accrual_month_first | CHECK ((EXTRACT(day FROM month) = (1)::numeric))
+leave_accrual | leave_accrual_month_not_null | NOT NULL month
+leave_accrual | leave_accrual_not_own_approval | CHECK (((approved_by IS NULL) OR (approved_by <> drafted_by)))
+leave_accrual | leave_accrual_once | UNIQUE (organisation_id, month, person_id)
+leave_accrual | leave_accrual_organisation_id_not_null | NOT NULL organisation_id
+leave_accrual | leave_accrual_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+leave_accrual | leave_accrual_person_id_not_null | NOT NULL person_id
+leave_accrual | leave_accrual_pkey | PRIMARY KEY (organisation_id, id)
+leave_accrual | leave_accrual_state_known | CHECK ((state = ANY (ARRAY['draft'::text, 'approved'::text])))
+leave_accrual | leave_accrual_state_not_null | NOT NULL state
+leave_accrual | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 leave_head | leave_head_leave_year_not_null | NOT NULL leave_year
 leave_head | leave_head_organisation_id_not_null | NOT NULL organisation_id
 leave_head | leave_head_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
@@ -847,6 +918,30 @@ outbox | outbox_task_name_length | CHECK ((length(task_name) <= 500))
 outbox | outbox_updated_at_not_null | NOT NULL updated_at
 outbox | outbox_worker_class_known | CHECK ((worker_class = ANY (ARRAY['worker'::text, 'executor'::text])))
 outbox | outbox_worker_class_not_null | NOT NULL worker_class
+overtime_entry | overtime_entry_branch | CHECK ((((kind = 'rest_day'::text) = (branch IS NOT NULL)) AND ((branch IS NULL) OR (branch = ANY (ARRAY['employer_request'::text, 'employee_request'::text])))))
+overtime_entry | overtime_entry_by_fkey | FOREIGN KEY (organisation_id, requested_by) REFERENCES nemura.member(organisation_id, id)
+overtime_entry | overtime_entry_decided_by_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
+overtime_entry | overtime_entry_decided_whole | CHECK ((((state = 'pending'::text) = (decided_by IS NULL)) AND ((state = 'pending'::text) = (decided_at IS NULL))))
+overtime_entry | overtime_entry_hours | CHECK (((hours > (0)::numeric) AND (hours <= (24)::numeric)))
+overtime_entry | overtime_entry_hours_not_null | NOT NULL hours
+overtime_entry | overtime_entry_id_not_null | NOT NULL id
+overtime_entry | overtime_entry_kind_known | CHECK ((kind = ANY (ARRAY['overtime'::text, 'rest_day'::text, 'public_holiday'::text])))
+overtime_entry | overtime_entry_kind_not_null | NOT NULL kind
+overtime_entry | overtime_entry_note_length | CHECK (((note IS NULL) OR (length(note) <= 500)))
+overtime_entry | overtime_entry_organisation_id_not_null | NOT NULL organisation_id
+overtime_entry | overtime_entry_over_limit_not_null | NOT NULL over_limit
+overtime_entry | overtime_entry_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+overtime_entry | overtime_entry_person_id_not_null | NOT NULL person_id
+overtime_entry | overtime_entry_pkey | PRIMARY KEY (organisation_id, id)
+overtime_entry | overtime_entry_reason_length | CHECK (((decision_reason IS NULL) OR (length(decision_reason) <= 500)))
+overtime_entry | overtime_entry_refusal_reason | CHECK (((state <> 'refused'::text) OR (length(btrim(COALESCE(decision_reason, ''::text))) > 0)))
+overtime_entry | overtime_entry_requested_at_not_null | NOT NULL requested_at
+overtime_entry | overtime_entry_requested_by_not_null | NOT NULL requested_by
+overtime_entry | overtime_entry_state_known | CHECK ((state = ANY (ARRAY['pending'::text, 'approved'::text, 'refused'::text])))
+overtime_entry | overtime_entry_state_not_null | NOT NULL state
+overtime_entry | overtime_entry_used_whole | CHECK ((((used_in_run IS NULL) = (used_at IS NULL)) AND ((used_in_run IS NULL) OR (state = 'approved'::text))))
+overtime_entry | overtime_entry_work_date_not_null | NOT NULL work_date
+overtime_entry | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 owner_recovery | owner_recovery_code_hash_not_null | NOT NULL code_hash
 owner_recovery | owner_recovery_code_key | UNIQUE (organisation_id, code_hash)
 owner_recovery | owner_recovery_code_sha256 | CHECK ((length(code_hash) = 32))
@@ -922,6 +1017,28 @@ passkey_challenge | passkey_challenge_purpose_known | CHECK ((purpose = ANY (ARR
 passkey_challenge | passkey_challenge_purpose_not_null | NOT NULL purpose
 passkey_challenge | passkey_challenge_session_fkey | FOREIGN KEY (organisation_id, session_id) REFERENCES nemura.session(organisation_id, id)
 passkey_challenge | passkey_challenge_session_id_not_null | NOT NULL session_id
+pay_input | pay_input_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+pay_input | pay_input_created_at_not_null | NOT NULL created_at
+pay_input | pay_input_created_by_not_null | NOT NULL created_by
+pay_input | pay_input_dates | CHECK ((to_date >= from_date))
+pay_input | pay_input_days | CHECK ((days > (0)::numeric))
+pay_input | pay_input_days_not_null | NOT NULL days
+pay_input | pay_input_from_date_not_null | NOT NULL from_date
+pay_input | pay_input_id_not_null | NOT NULL id
+pay_input | pay_input_kind_known | CHECK ((kind = ANY (ARRAY['unpaid_leave'::text, 'encashment'::text])))
+pay_input | pay_input_kind_not_null | NOT NULL kind
+pay_input | pay_input_note_length | CHECK (((note IS NULL) OR (length(note) <= 500)))
+pay_input | pay_input_once_per_source | UNIQUE (organisation_id, source_type, source_id, kind)
+pay_input | pay_input_organisation_id_not_null | NOT NULL organisation_id
+pay_input | pay_input_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+pay_input | pay_input_person_id_not_null | NOT NULL person_id
+pay_input | pay_input_pkey | PRIMARY KEY (organisation_id, id)
+pay_input | pay_input_source_id_not_null | NOT NULL source_id
+pay_input | pay_input_source_known | CHECK ((source_type = ANY (ARRAY['sick_notification'::text, 'leave_ledger'::text])))
+pay_input | pay_input_source_type_not_null | NOT NULL source_type
+pay_input | pay_input_to_date_not_null | NOT NULL to_date
+pay_input | pay_input_used_whole | CHECK (((used_in_run IS NULL) = (used_at IS NULL)))
+pay_input | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 person | person_created_at_not_null | NOT NULL created_at
 person | person_employment_start_not_null | NOT NULL employment_start
 person | person_id_not_null | NOT NULL id
@@ -1094,6 +1211,16 @@ sick_notification | sick_notification_start_date_not_null | NOT NULL start_date
 sick_notification | sick_notification_unpaid_days_not_null | NOT NULL unpaid_days
 sick_notification | sick_notification_verified_whole | CHECK ((((verified_by IS NULL) = (verified_at IS NULL)) AND ((verified_by IS NULL) OR (certificate_id IS NOT NULL))))
 sick_notification | sick_notification_verifier_fkey | FOREIGN KEY (organisation_id, verified_by) REFERENCES nemura.member(organisation_id, id)
+sick_unpaid_decision | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+sick_unpaid_decision | sick_unpaid_decision_by_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
+sick_unpaid_decision | sick_unpaid_decision_decided_at_not_null | NOT NULL decided_at
+sick_unpaid_decision | sick_unpaid_decision_decided_by_not_null | NOT NULL decided_by
+sick_unpaid_decision | sick_unpaid_decision_notification_fkey | FOREIGN KEY (organisation_id, notification_id) REFERENCES nemura.sick_notification(organisation_id, id)
+sick_unpaid_decision | sick_unpaid_decision_notification_id_not_null | NOT NULL notification_id
+sick_unpaid_decision | sick_unpaid_decision_organisation_id_not_null | NOT NULL organisation_id
+sick_unpaid_decision | sick_unpaid_decision_pkey | PRIMARY KEY (organisation_id, notification_id)
+sick_unpaid_decision | sick_unpaid_decision_treatment | CHECK ((treatment = ANY (ARRAY['unpaid'::text, 'annual'::text])))
+sick_unpaid_decision | sick_unpaid_decision_treatment_not_null | NOT NULL treatment
 tenant_directory | tenant_directory_created_at_not_null | NOT NULL created_at
 tenant_directory | tenant_directory_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
 tenant_directory | tenant_directory_organisation_id_not_null | NOT NULL organisation_id
@@ -1174,6 +1301,8 @@ CREATE UNIQUE INDEX identity_directory_pkey ON nemura.identity_directory USING b
 CREATE UNIQUE INDEX installation_pkey ON nemura.installation USING btree (singleton)
 CREATE UNIQUE INDEX invitation_code_key ON nemura.invitation USING btree (organisation_id, code_hash)
 CREATE UNIQUE INDEX invitation_pkey ON nemura.invitation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX leave_accrual_once ON nemura.leave_accrual USING btree (organisation_id, month, person_id)
+CREATE UNIQUE INDEX leave_accrual_pkey ON nemura.leave_accrual USING btree (organisation_id, id)
 CREATE UNIQUE INDEX leave_head_pkey ON nemura.leave_head USING btree (organisation_id, person_id, type_key, leave_year)
 CREATE INDEX leave_ledger_person_idx ON nemura.leave_ledger USING btree (organisation_id, person_id, type_key, leave_year, created_at)
 CREATE UNIQUE INDEX leave_ledger_pkey ON nemura.leave_ledger USING btree (organisation_id, id)
@@ -1186,6 +1315,9 @@ CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organi
 CREATE UNIQUE INDEX outbox_business_key ON nemura.outbox USING btree (organisation_id, kind, business_key)
 CREATE UNIQUE INDEX outbox_pkey ON nemura.outbox USING btree (organisation_id, id)
 CREATE INDEX outbox_state_idx ON nemura.outbox USING btree (organisation_id, state, deadline_at)
+CREATE UNIQUE INDEX overtime_entry_once ON nemura.overtime_entry USING btree (organisation_id, person_id, work_date, kind) WHERE (state <> 'refused'::text)
+CREATE UNIQUE INDEX overtime_entry_pkey ON nemura.overtime_entry USING btree (organisation_id, id)
+CREATE INDEX overtime_entry_state_idx ON nemura.overtime_entry USING btree (organisation_id, state, work_date)
 CREATE UNIQUE INDEX owner_recovery_code_key ON nemura.owner_recovery USING btree (organisation_id, code_hash)
 CREATE INDEX owner_recovery_member_idx ON nemura.owner_recovery USING btree (organisation_id, member_id, created_at)
 CREATE UNIQUE INDEX owner_recovery_pkey ON nemura.owner_recovery USING btree (organisation_id, id)
@@ -1198,6 +1330,9 @@ CREATE INDEX passkey_challenge_session_idx ON nemura.passkey_challenge USING btr
 CREATE UNIQUE INDEX passkey_credential_key ON nemura.passkey USING btree (organisation_id, credential_id)
 CREATE INDEX passkey_member_idx ON nemura.passkey USING btree (organisation_id, member_id)
 CREATE UNIQUE INDEX passkey_pkey ON nemura.passkey USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pay_input_once_per_source ON nemura.pay_input USING btree (organisation_id, source_type, source_id, kind)
+CREATE INDEX pay_input_open_idx ON nemura.pay_input USING btree (organisation_id, from_date) WHERE (used_in_run IS NULL)
+CREATE UNIQUE INDEX pay_input_pkey ON nemura.pay_input USING btree (organisation_id, id)
 CREATE INDEX person_classification_person_idx ON nemura.person_classification USING btree (organisation_id, person_id, effective_from)
 CREATE UNIQUE INDEX person_classification_pkey ON nemura.person_classification USING btree (organisation_id, id)
 CREATE INDEX person_dependant_person_idx ON nemura.person_dependant USING btree (organisation_id, person_id, effective_from)
@@ -1221,6 +1356,7 @@ CREATE UNIQUE INDEX session_pkey ON nemura.session USING btree (organisation_id,
 CREATE UNIQUE INDEX session_token_key ON nemura.session USING btree (organisation_id, token_hash)
 CREATE INDEX sick_notification_person_idx ON nemura.sick_notification USING btree (organisation_id, person_id, start_date)
 CREATE UNIQUE INDEX sick_notification_pkey ON nemura.sick_notification USING btree (organisation_id, id)
+CREATE UNIQUE INDEX sick_unpaid_decision_pkey ON nemura.sick_unpaid_decision USING btree (organisation_id, notification_id)
 CREATE UNIQUE INDEX tenant_directory_pkey ON nemura.tenant_directory USING btree (organisation_id)
 CREATE UNIQUE INDEX transfer_assessment_pkey ON nemura.transfer_assessment USING btree (organisation_id, id)
 CREATE INDEX work_pass_person_idx ON nemura.work_pass USING btree (organisation_id, person_id, expires_on)
@@ -1258,6 +1394,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.gov_claim_event D
 CREATE TRIGGER gov_leave_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.gov_leave FOR EACH ROW EXECUTE FUNCTION nemura.gov_leave_guard('A government-paid leave record')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.gov_leave DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('gov_leave', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('invitation', 'id')
+CREATE TRIGGER leave_accrual_guard BEFORE DELETE OR UPDATE ON nemura.leave_accrual FOR EACH ROW EXECUTE FUNCTION nemura.leave_accrual_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.leave_accrual DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('leave_accrual', 'id')
 CREATE TRIGGER leave_ledger_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.leave_ledger FOR EACH ROW EXECUTE FUNCTION nemura.leave_ledger_guard()
 CREATE TRIGGER leave_ledger_no_truncate BEFORE TRUNCATE ON nemura.leave_ledger FOR EACH STATEMENT EXECUTE FUNCTION nemura.leave_ledger_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.leave_ledger DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('leave_ledger', 'id')
@@ -1272,6 +1410,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.organis
 CREATE TRIGGER outbox_guard BEFORE UPDATE ON nemura.outbox FOR EACH ROW EXECUTE FUNCTION nemura.outbox_guard()
 CREATE TRIGGER outbox_no_delete BEFORE DELETE ON nemura.outbox FOR EACH ROW EXECUTE FUNCTION nemura.outbox_no_delete()
 CREATE TRIGGER outbox_no_truncate BEFORE TRUNCATE ON nemura.outbox FOR EACH STATEMENT EXECUTE FUNCTION nemura.outbox_no_delete()
+CREATE TRIGGER overtime_entry_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.overtime_entry FOR EACH ROW EXECUTE FUNCTION nemura.overtime_entry_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.overtime_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('overtime_entry', 'id')
 CREATE TRIGGER owner_recovery_guard BEFORE DELETE OR UPDATE ON nemura.owner_recovery FOR EACH ROW EXECUTE FUNCTION nemura.owner_recovery_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.owner_recovery DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('owner_recovery', 'id')
 CREATE TRIGGER pack_acceptance_guard BEFORE DELETE OR UPDATE ON nemura.pack_acceptance FOR EACH ROW EXECUTE FUNCTION nemura.pack_record_guard('An acceptance')
@@ -1281,6 +1421,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pack_de
 CREATE TRIGGER passkey_guard BEFORE DELETE OR UPDATE ON nemura.passkey FOR EACH ROW EXECUTE FUNCTION nemura.passkey_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.passkey DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('passkey', 'id')
 CREATE TRIGGER passkey_challenge_guard BEFORE DELETE OR UPDATE ON nemura.passkey_challenge FOR EACH ROW EXECUTE FUNCTION nemura.passkey_challenge_guard()
+CREATE TRIGGER pay_input_guard BEFORE DELETE OR UPDATE ON nemura.pay_input FOR EACH ROW EXECUTE FUNCTION nemura.pay_input_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_input DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_input', 'id')
 CREATE TRIGGER person_guard BEFORE DELETE OR UPDATE ON nemura.person FOR EACH ROW EXECUTE FUNCTION nemura.person_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.person DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('person', 'id')
 CREATE TRIGGER person_classification_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.person_classification FOR EACH ROW EXECUTE FUNCTION nemura.person_classification_guard()
@@ -1301,6 +1443,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.session
 CREATE TRIGGER session_guard BEFORE DELETE OR UPDATE ON nemura.session FOR EACH ROW EXECUTE FUNCTION nemura.session_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.sick_notification DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('sick_notification', 'id')
 CREATE TRIGGER sick_notification_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.sick_notification FOR EACH ROW EXECUTE FUNCTION nemura.sick_notification_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.sick_unpaid_decision DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('sick_unpaid_decision', 'notification_id')
+CREATE TRIGGER sick_unpaid_decision_guard BEFORE DELETE OR UPDATE ON nemura.sick_unpaid_decision FOR EACH ROW EXECUTE FUNCTION nemura.decision_once_guard('A decision on unpaid sick days')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.transfer_assessment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('transfer_assessment', 'id')
 CREATE TRIGGER transfer_assessment_append_only BEFORE DELETE OR UPDATE ON nemura.transfer_assessment FOR EACH ROW EXECUTE FUNCTION nemura.append_only()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.work_pass DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('work_pass', 'id')
@@ -1325,6 +1469,7 @@ gov_claim | tenant_isolation | (organisation_id = nemura.current_org()) | (organ
 gov_claim_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_leave | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 invitation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+leave_accrual | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_head | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_ledger | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -1332,11 +1477,13 @@ legal_hold | tenant_isolation | (organisation_id = nemura.current_org()) | (orga
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 outbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+overtime_entry | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 owner_recovery | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pack_acceptance | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pack_decision | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 passkey | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 passkey_challenge | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+pay_input | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person_classification | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person_dependant | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -1347,6 +1494,7 @@ reporting_line | tenant_isolation | (organisation_id = nemura.current_org()) | (
 role_assignment | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 session | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 sick_notification | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+sick_unpaid_decision | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 transfer_assessment | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 work_pass | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 working_pattern | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -1543,6 +1691,16 @@ AS $function$
   SELECT CAST(nullif(pg_catalog.current_setting('app.person_id', true), '') AS pg_catalog.uuid)
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.decision_once_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  RAISE EXCEPTION '% is evidence: a decision is made once', TG_ARGV[0] USING ERRCODE = 'NM155';
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.feature_state_guard()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1658,6 +1816,21 @@ BEGIN
   INSERT INTO nemura.owner_recovery (id, member_id, code_hash, operators, created_at, expires_at)
   VALUES (p_id, p_member, p_hash, names, now(), expires);
   RETURN expires;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.leave_accrual_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.month IS DISTINCT FROM OLD.month OR NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.carried_days IS DISTINCT FROM OLD.carried_days
+     OR NEW.annual_left IS DISTINCT FROM OLD.annual_left OR NEW.drafted_by IS DISTINCT FROM OLD.drafted_by OR NEW.drafted_at IS DISTINCT FROM OLD.drafted_at
+     OR (OLD.state = 'approved' AND NEW IS DISTINCT FROM OLD) THEN
+    RAISE EXCEPTION 'An accrual draft is evidence: it is approved once and never edited or deleted' USING ERRCODE = 'NM156';
+  END IF;
+  RETURN NEW;
 END
 $function$
 
@@ -1830,6 +2003,42 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.overtime_entry_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'An overtime record is never deleted: work beyond the limit stays recorded' USING ERRCODE = 'NM153';
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.state <> 'pending' OR NEW.used_in_run IS NOT NULL THEN
+      RAISE EXCEPTION 'An overtime record starts pending and unused' USING ERRCODE = 'NM153';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.work_date IS DISTINCT FROM OLD.work_date OR NEW.kind IS DISTINCT FROM OLD.kind OR NEW.hours IS DISTINCT FROM OLD.hours
+     OR NEW.branch IS DISTINCT FROM OLD.branch OR NEW.over_limit IS DISTINCT FROM OLD.over_limit OR NEW.note IS DISTINCT FROM OLD.note
+     OR NEW.requested_by IS DISTINCT FROM OLD.requested_by OR NEW.requested_at IS DISTINCT FROM OLD.requested_at THEN
+    RAISE EXCEPTION 'An overtime record is evidence: only its decision and its use change' USING ERRCODE = 'NM153';
+  END IF;
+  IF NEW.state IS DISTINCT FROM OLD.state AND OLD.state <> 'pending' THEN
+    RAISE EXCEPTION 'A % overtime record cannot become %', OLD.state, NEW.state USING ERRCODE = 'NM153';
+  END IF;
+  IF OLD.decided_by IS NOT NULL AND (NEW.decided_by IS DISTINCT FROM OLD.decided_by OR NEW.decided_at IS DISTINCT FROM OLD.decided_at OR NEW.decision_reason IS DISTINCT FROM OLD.decision_reason) THEN
+    RAISE EXCEPTION 'A decision is written once' USING ERRCODE = 'NM153';
+  END IF;
+  IF OLD.used_in_run IS NOT NULL AND (NEW.used_in_run IS DISTINCT FROM OLD.used_in_run OR NEW.used_at IS DISTINCT FROM OLD.used_at) THEN
+    RAISE EXCEPTION 'A record used by a pay run is used once' USING ERRCODE = 'NM153';
+  END IF;
+  IF NEW.state IN ('approved', 'refused') AND OLD.state = 'pending' AND EXISTS (SELECT 1 FROM nemura.person p WHERE p.organisation_id = NEW.organisation_id AND p.id = NEW.person_id AND p.member_id = NEW.decided_by) THEN
+    RAISE EXCEPTION 'Nobody decides their own overtime' USING ERRCODE = 'NM154';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.owner_recovery_guard()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1886,6 +2095,21 @@ BEGIN
   END IF;
   IF NEW.sign_count < OLD.sign_count AND NEW.sign_count <> 0 THEN
     RAISE EXCEPTION 'A passkey''s signature counter never goes back: the authenticator may be cloned' USING ERRCODE = 'NM103';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.pay_input_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.kind IS DISTINCT FROM OLD.kind OR NEW.days IS DISTINCT FROM OLD.days OR NEW.from_date IS DISTINCT FROM OLD.from_date
+     OR NEW.to_date IS DISTINCT FROM OLD.to_date OR NEW.source_type IS DISTINCT FROM OLD.source_type OR NEW.source_id IS DISTINCT FROM OLD.source_id OR NEW.note IS DISTINCT FROM OLD.note
+     OR NEW.created_by IS DISTINCT FROM OLD.created_by OR NEW.created_at IS DISTINCT FROM OLD.created_at OR (OLD.used_in_run IS NOT NULL AND (NEW.used_in_run IS DISTINCT FROM OLD.used_in_run OR NEW.used_at IS DISTINCT FROM OLD.used_at)) THEN
+    RAISE EXCEPTION 'A pay input is evidence: it is written once and used once' USING ERRCODE = 'NM155';
   END IF;
   RETURN NEW;
 END

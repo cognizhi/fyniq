@@ -11,7 +11,7 @@ import (
 
 func version(t *testing.T) pack.Version {
 	t.Helper()
-	v, err := pack.Load(packs.Files(), "sg-people/2026.3")
+	v, err := pack.Load(packs.Files(), "sg-people/2026.4")
 	if err != nil {
 		t.Fatal(err)
 	}

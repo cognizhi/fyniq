@@ -102,7 +102,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	if err != nil {
 		return err
 	}
-	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, People: nemura.PeopleService{Store: store, Clock: deps.Clock}, Features: nemura.FeatureService{Store: store, Clock: deps.Clock}, Restricted: restricted(store, deps, getenv), Packs: packsService(store, deps), Leave: leaveService(store, deps), Requests: leaveRequests(store, deps), Sick: sickService(store, deps, getenv), Government: governmentService(store, deps), Flex: flexService(store, deps), Clock: deps.Clock,
+	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, People: nemura.PeopleService{Store: store, Clock: deps.Clock}, Features: nemura.FeatureService{Store: store, Clock: deps.Clock}, Restricted: restricted(store, deps, getenv), Packs: packsService(store, deps), Leave: leaveService(store, deps), Requests: leaveRequests(store, deps), Sick: sickService(store, deps, getenv), Government: governmentService(store, deps), Flex: flexService(store, deps), Time: timeService(store, deps), Clock: deps.Clock,
 		CookieNames: []string{auth.SessionCookie(true), auth.SessionCookie(false)}}
 	if provider != nil {
 		d.SignIn = signInInfo{provider: provider, store: store}
@@ -266,4 +266,12 @@ func flexService(store *nemura.Store, deps app.Deps) api.Flex {
 		panic(err) // a pack that does not validate is a build error: the files are embedded
 	}
 	return nemura.FlexService{Store: store, Clock: deps.Clock, Packs: p}
+}
+
+func timeService(store *nemura.Store, deps app.Deps) api.Time {
+	p, err := nemura.NewPacksService(store, deps.Clock)
+	if err != nil {
+		panic(err) // a pack that does not validate is a build error: the files are embedded
+	}
+	return nemura.TimeService{Store: store, Clock: deps.Clock, Packs: p}
 }
