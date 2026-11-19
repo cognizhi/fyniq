@@ -762,6 +762,18 @@ bill_payment_plan | bill_id | uuid | not null |
 bill_payment_plan | planned_on | date | null | 
 bill_payment_plan | recorded_by | text | not null | 
 bill_payment_plan | recorded_at | timestamp with time zone | not null | now()
+billing_rate | organisation_id | uuid | not null | current_org()
+billing_rate | id | uuid | not null | uuidv7()
+billing_rate | project_id | uuid | null | 
+billing_rate | customer_id | uuid | null | 
+billing_rate | user_id | uuid | null | 
+billing_rate | role_name | text | null | 
+billing_rate | effective_from | date | not null | 
+billing_rate | hourly_rate | numeric(20,6) | not null | 
+billing_rate | currency | text | not null | 
+billing_rate | minor_units | smallint | not null | 
+billing_rate | created_by | text | not null | 
+billing_rate | created_at | timestamp with time zone | not null | now()
 brand_version | organisation_id | uuid | not null | current_org()
 brand_version | id | uuid | not null | uuidv7()
 brand_version | version | integer | not null | 
@@ -1992,6 +2004,16 @@ period_variance_explanation | explanation | text | not null |
 period_variance_explanation | written_by | text | not null | 
 period_variance_explanation | written_at | timestamp with time zone | not null | 
 period_variance_explanation | kind | text | not null | 'month'::text
+person_cost_rate | organisation_id | uuid | not null | current_org()
+person_cost_rate | id | uuid | not null | uuidv7()
+person_cost_rate | user_id | uuid | null | 
+person_cost_rate | role_name | text | not null | 
+person_cost_rate | effective_from | date | not null | 
+person_cost_rate | hourly_rate | numeric(20,6) | not null | 
+person_cost_rate | currency | text | not null | 
+person_cost_rate | minor_units | smallint | not null | 
+person_cost_rate | created_by | text | not null | 
+person_cost_rate | created_at | timestamp with time zone | not null | now()
 person_key | organisation_id | uuid | not null | current_org()
 person_key | id | uuid | not null | uuidv7()
 person_key | person | text | not null | 
@@ -3681,6 +3703,23 @@ bill_payment_plan | bill_payment_plan_recorded_at_not_null | NOT NULL recorded_a
 bill_payment_plan | bill_payment_plan_recorded_by_format | CHECK ((recorded_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 bill_payment_plan | bill_payment_plan_recorded_by_not_null | NOT NULL recorded_by
 bill_payment_plan | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+billing_rate | billing_rate_amount | CHECK (((hourly_rate <> 'NaN'::numeric) AND (hourly_rate >= (0)::numeric) AND (hourly_rate = trunc(hourly_rate, 6))))
+billing_rate | billing_rate_created_at_not_null | NOT NULL created_at
+billing_rate | billing_rate_created_by_not_null | NOT NULL created_by
+billing_rate | billing_rate_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
+billing_rate | billing_rate_currency_not_null | NOT NULL currency
+billing_rate | billing_rate_customer_fkey | FOREIGN KEY (organisation_id, customer_id) REFERENCES contact(organisation_id, id)
+billing_rate | billing_rate_effective_from_not_null | NOT NULL effective_from
+billing_rate | billing_rate_hourly_rate_not_null | NOT NULL hourly_rate
+billing_rate | billing_rate_id_not_null | NOT NULL id
+billing_rate | billing_rate_minor_units_not_null | NOT NULL minor_units
+billing_rate | billing_rate_organisation_id_not_null | NOT NULL organisation_id
+billing_rate | billing_rate_pkey | PRIMARY KEY (organisation_id, id)
+billing_rate | billing_rate_project_fkey | FOREIGN KEY (organisation_id, project_id) REFERENCES project(organisation_id, id)
+billing_rate | billing_rate_role_length | CHECK (((role_name IS NULL) OR ((length(btrim(role_name)) >= 1) AND (length(btrim(role_name)) <= 80))))
+billing_rate | billing_rate_scope | CHECK ((((project_id IS NULL) <> (customer_id IS NULL)) AND (NOT ((user_id IS NOT NULL) AND (role_name IS NOT NULL)))))
+billing_rate | billing_rate_user_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+billing_rate | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 brand_version | brand_version_accent | CHECK (((accent IS NULL) OR (accent ~ '^#[0-9A-F]{6}$'::text)))
 brand_version | brand_version_cleaned_not_null | NOT NULL cleaned
 brand_version | brand_version_cleaned_object | CHECK ((jsonb_typeof(cleaned) = 'object'::text))
@@ -5683,6 +5722,23 @@ period_variance_explanation | period_variance_explanation_previous_amount_not_nu
 period_variance_explanation | period_variance_explanation_written_at_not_null | NOT NULL written_at
 period_variance_explanation | period_variance_explanation_written_by_not_null | NOT NULL written_by
 period_variance_explanation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+person_cost_rate | person_cost_rate_amount | CHECK (((hourly_rate <> 'NaN'::numeric) AND (hourly_rate >= (0)::numeric) AND (hourly_rate = trunc(hourly_rate, 6))))
+person_cost_rate | person_cost_rate_created_at_not_null | NOT NULL created_at
+person_cost_rate | person_cost_rate_created_by_not_null | NOT NULL created_by
+person_cost_rate | person_cost_rate_currency_fkey | FOREIGN KEY (currency, minor_units) REFERENCES currency(code, minor_units)
+person_cost_rate | person_cost_rate_currency_not_null | NOT NULL currency
+person_cost_rate | person_cost_rate_day_key | UNIQUE NULLS NOT DISTINCT (organisation_id, user_id, effective_from)
+person_cost_rate | person_cost_rate_effective_from_not_null | NOT NULL effective_from
+person_cost_rate | person_cost_rate_hourly_rate_not_null | NOT NULL hourly_rate
+person_cost_rate | person_cost_rate_id_not_null | NOT NULL id
+person_cost_rate | person_cost_rate_minor_units_not_null | NOT NULL minor_units
+person_cost_rate | person_cost_rate_organisation_id_not_null | NOT NULL organisation_id
+person_cost_rate | person_cost_rate_pkey | PRIMARY KEY (organisation_id, id)
+person_cost_rate | person_cost_rate_role_length | CHECK (((length(btrim(role_name)) >= 1) AND (length(btrim(role_name)) <= 80)))
+person_cost_rate | person_cost_rate_role_name_not_null | NOT NULL role_name
+person_cost_rate | person_cost_rate_standard | CHECK (((user_id IS NOT NULL) OR (role_name = 'Standard'::text)))
+person_cost_rate | person_cost_rate_user_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+person_cost_rate | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 person_key | person_key_cohort_not_null | NOT NULL cohort
 person_key | person_key_created_at_not_null | NOT NULL created_at
 person_key | person_key_id_not_null | NOT NULL id
@@ -6773,6 +6829,8 @@ CREATE UNIQUE INDEX bank_transfer_from_line ON fyniq.bank_transfer USING btree (
 CREATE UNIQUE INDEX bank_transfer_pkey ON fyniq.bank_transfer USING btree (organisation_id, id)
 CREATE UNIQUE INDEX bank_transfer_to_line ON fyniq.bank_transfer USING btree (organisation_id, to_line_id) WHERE ((to_line_id IS NOT NULL) AND (undone_at IS NULL))
 CREATE UNIQUE INDEX bill_payment_plan_pkey ON fyniq.bill_payment_plan USING btree (organisation_id, id)
+CREATE UNIQUE INDEX billing_rate_day_key ON fyniq.billing_rate USING btree (organisation_id, COALESCE(project_id, customer_id), COALESCE(user_id, '00000000-0000-0000-0000-000000000000'::uuid), COALESCE(role_name, ''::text), effective_from)
+CREATE UNIQUE INDEX billing_rate_pkey ON fyniq.billing_rate USING btree (organisation_id, id)
 CREATE UNIQUE INDEX brand_version_number ON fyniq.brand_version USING btree (organisation_id, version)
 CREATE UNIQUE INDEX brand_version_pkey ON fyniq.brand_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX break_glass_pkey ON fyniq.break_glass USING btree (organisation_id, id)
@@ -6973,6 +7031,8 @@ CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id
 CREATE UNIQUE INDEX period_reopen_close_key ON fyniq.period_reopen USING btree (organisation_id, close_id)
 CREATE UNIQUE INDEX period_reopen_pkey ON fyniq.period_reopen USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_variance_explanation_pkey ON fyniq.period_variance_explanation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX person_cost_rate_day_key ON fyniq.person_cost_rate USING btree (organisation_id, user_id, effective_from) NULLS NOT DISTINCT
+CREATE UNIQUE INDEX person_cost_rate_pkey ON fyniq.person_cost_rate USING btree (organisation_id, id)
 CREATE UNIQUE INDEX person_key_once ON fyniq.person_key USING btree (organisation_id, person, cohort)
 CREATE UNIQUE INDEX person_key_pkey ON fyniq.person_key USING btree (organisation_id, id)
 CREATE UNIQUE INDEX policy_acknowledgement_once ON fyniq.policy_acknowledgement USING btree (organisation_id, key, version, acknowledged_by)
@@ -7095,6 +7155,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.audit_recovery DEF
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.audit_recovery_acknowledgement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('audit_recovery_acknowledgement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bank_statement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('bank_statement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.bill_payment_plan DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'bill_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.billing_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('billing_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.break_glass_use DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('break_glass', 'break_glass_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.capture_sender DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('capture_sender', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.check_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('check_review', 'id')
@@ -7145,6 +7206,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFER
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_reopen DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_reopen', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_variance_explanation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_variance_explanation', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.person_cost_rate DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('person_cost_rate', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_acknowledgement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_acknowledgement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_draft DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_draft', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_version', 'id')
@@ -7348,6 +7410,8 @@ CREATE TRIGGER bank_signal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank
 CREATE TRIGGER bank_statement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_statement FOR EACH ROW EXECUTE FUNCTION bank_statement_guard()
 CREATE TRIGGER bank_transfer_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.bank_transfer FOR EACH ROW EXECUTE FUNCTION bank_transfer_guard()
 CREATE TRIGGER bill_payment_plan_immutable BEFORE DELETE OR UPDATE ON fyniq.bill_payment_plan FOR EACH ROW EXECUTE FUNCTION bill_payment_plan_immutable()
+CREATE TRIGGER billing_rate_immutable BEFORE DELETE OR UPDATE ON fyniq.billing_rate FOR EACH ROW EXECUTE FUNCTION rate_immutable()
+CREATE TRIGGER billing_rate_no_truncate BEFORE TRUNCATE ON fyniq.billing_rate FOR EACH STATEMENT EXECUTE FUNCTION rate_immutable()
 CREATE TRIGGER brand_version_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.brand_version FOR EACH ROW EXECUTE FUNCTION brand_version_guard()
 CREATE TRIGGER break_glass_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.break_glass FOR EACH ROW EXECUTE FUNCTION break_glass_guard()
 CREATE TRIGGER break_glass_no_truncate BEFORE TRUNCATE ON fyniq.break_glass FOR EACH STATEMENT EXECUTE FUNCTION break_glass_guard()
@@ -7577,6 +7641,8 @@ CREATE TRIGGER period_reopen_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pe
 CREATE TRIGGER period_reopen_no_truncate BEFORE TRUNCATE ON fyniq.period_reopen FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_variance_explanation_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_variance_explanation FOR EACH ROW EXECUTE FUNCTION period_variance_explanation_guard()
 CREATE TRIGGER period_variance_explanation_no_truncate BEFORE TRUNCATE ON fyniq.period_variance_explanation FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER person_cost_rate_immutable BEFORE DELETE OR UPDATE ON fyniq.person_cost_rate FOR EACH ROW EXECUTE FUNCTION rate_immutable()
+CREATE TRIGGER person_cost_rate_no_truncate BEFORE TRUNCATE ON fyniq.person_cost_rate FOR EACH STATEMENT EXECUTE FUNCTION rate_immutable()
 CREATE TRIGGER person_key_guard BEFORE DELETE OR UPDATE ON fyniq.person_key FOR EACH ROW EXECUTE FUNCTION person_key_guard()
 CREATE TRIGGER person_key_no_truncate BEFORE TRUNCATE ON fyniq.person_key FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER policy_acknowledgement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_acknowledgement FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
@@ -7703,6 +7769,7 @@ bank_signal | tenant_isolation | * | (organisation_id = current_org()) | (organi
 bank_statement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_transfer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bill_payment_plan | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+billing_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 brand_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 break_glass | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 break_glass_use | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7803,6 +7870,7 @@ period_close | tenant_isolation | * | (organisation_id = current_org()) | (organ
 period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_reopen | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_variance_explanation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+person_cost_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 person_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_draft | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -7900,6 +7968,7 @@ bank_signal | enabled | forced
 bank_statement | enabled | forced
 bank_transfer | enabled | forced
 bill_payment_plan | enabled | forced
+billing_rate | enabled | forced
 brand_version | enabled | forced
 break_glass | enabled | forced
 break_glass_use | enabled | forced
@@ -8019,6 +8088,7 @@ period_close | enabled | forced
 period_close_check | enabled | forced
 period_reopen | enabled | forced
 period_variance_explanation | enabled | forced
+person_cost_rate | enabled | forced
 person_key | enabled | forced
 policy_acknowledgement | enabled | forced
 policy_draft | enabled | forced
@@ -8361,6 +8431,7 @@ publish_installation_announcement(p_by uuid, p_message text, p_link text, p_seve
 purge_ip_rate_windows(p_before timestamp with time zone) → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 81de58d9129c046ca2aa53b08d3607c8
 purge_switched_on(p_org uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 90114d368d5bac0773307d5f4b014509
 quote_outcome_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b0e30fb295e3f4b5d5634a5a0be9f9fa
+rate_immutable() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 188a389db4f1658b1f0563d7d26487a6
 reapply_shredding(p_run uuid, p_cohort date, p_keys uuid[], p_listed_at timestamp with time zone, p_approved_by text, p_approved_at timestamp with time zone, p_register text) → integer | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 479b5993ee4000e36ae2f505d9db0fb9
 rebuild_balances() → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 954a578019c93ea55f9a346d84e9c317
 record_ai_call(p_run uuid, p_agent text, p_route_version integer, p_step integer, p_fell_back_from integer, p_connection uuid, p_model_requested text, p_model_reported text, p_version_reported text, p_actor text, p_classes text[], p_outcome text, p_detail text, p_input bigint, p_output bigint, p_cache_read bigint, p_cache_write bigint, p_reasoning bigint, p_cost numeric, p_currency text, p_price uuid, p_cost_base numeric, p_latency_ms integer, p_started_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 33e64917db0b8feb3947f2a84fe7710b

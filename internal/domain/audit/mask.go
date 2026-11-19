@@ -132,7 +132,7 @@ func MaskChanges(changes map[string]Change) map[string]Change {
 
 // payKeys are field names whose values are a person's pay. They match whole names only: a forecast's
 // salary_increase is a rate, not anyone's pay.
-var payKeys = []string{"salary", "monthly_salary", "annual_salary", "gross_salary", "wage", "wages", "gross_pay", "basic_pay", "net_pay"}
+var payKeys = []string{"salary", "monthly_salary", "annual_salary", "gross_salary", "wage", "wages", "gross_pay", "basic_pay", "net_pay", "cost_rate"}
 
 // Sensitive reports whether a field's value is proved by its fingerprint, never kept (AUD-02): an identifier
 // (the names masked to their last four characters) or a person's pay.

@@ -950,6 +950,21 @@ type FyniqBillPaymentPlan struct {
 	RecordedAt     time.Time
 }
 
+type FyniqBillingRate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      *uuid.UUID
+	CustomerID     *uuid.UUID
+	UserID         *uuid.UUID
+	RoleName       *string
+	EffectiveFrom  time.Time
+	HourlyRate     string
+	Currency       string
+	MinorUnits     int16
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
 type FyniqBrandVersion struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2547,6 +2562,19 @@ type FyniqPeriodVarianceExplanation struct {
 	WrittenBy      string
 	WrittenAt      time.Time
 	Kind           string
+}
+
+type FyniqPersonCostRate struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         *uuid.UUID
+	RoleName       string
+	EffectiveFrom  time.Time
+	HourlyRate     string
+	Currency       string
+	MinorUnits     int16
+	CreatedBy      string
+	CreatedAt      time.Time
 }
 
 type FyniqPersonKey struct {

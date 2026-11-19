@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "effective_from": {
+      "description": "The first day it applies; a person's rate of a day is the latest starting on or before it. A rate never changes: enter the new one from its day.",
+      "examples": [
+        "2026-01-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "hourly_rate": {
+      "description": "The cost of an hour in the base currency: payroll cost divided by standard hours, or an agreed rate; a plain decimal, at most 6 decimals.",
+      "examples": [
+        "62.50"
+      ],
+      "type": "string"
+    },
+    "role": {
+      "description": "The role the person is grouped under for role-average rates (at least three people share a role); required with a person.",
+      "examples": [
+        "Consultant"
+      ],
+      "maxLength": 80,
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The person, an active member; left out, the organisation's standard rate (the Owner's fallback for viewers who may not see a person's own).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "effective_from",
+    "hourly_rate"
+  ],
+  "title": "CostRateDraft",
+  "type": "object"
+}

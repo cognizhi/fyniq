@@ -35,3 +35,14 @@ var (
 	ApproveTimesheetSubmission = Policy{Operation: "approveTimesheetSubmission", Capability: Timesheets, Need: Approve}
 	ReturnTimesheetSubmission  = Policy{Operation: "returnTimesheetSubmission", Capability: Timesheets, Need: Approve}
 )
+
+// Rates (FR-PRJ-06; decisions A and C, 19 Nov 2026): a person's cost rate is payroll data, entered and read by the Owner and the
+// Payroll administrator only, through its own row; billing rates are kept by those who keep projects and read by those who read
+// projects; time at cost is read under "Project reports and cost rates", at the viewer's tier (design D5).
+var (
+	ListCostRates      = Policy{Operation: "listCostRates", Capability: ProjectCostRates, Need: View}
+	SetCostRate        = Policy{Operation: "setCostRate", Capability: ProjectCostRates, Need: Create}
+	ListBillingRates   = Policy{Operation: "listBillingRates", Capability: Timesheets, Need: View}
+	SetBillingRate     = Policy{Operation: "setBillingRate", Capability: ChartOfAccounts, Need: Create}
+	GetProjectTimeCost = Policy{Operation: "getProjectTimeCost", Capability: ProjectReports, Need: View}
+)

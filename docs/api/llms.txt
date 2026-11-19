@@ -148,6 +148,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bill-payments/{payment_id}/void` (voidBillPayment): Void a payment of bills
 - `POST /v1/bill-payments/{payment_id}/void-approval` (requestBillPaymentVoid): Ask for approval to void a payment of bills
 - `GET /v1/bill-reminders` (listBillReminders): List the bills to pay soon
+- `POST /v1/billing-rates` (setBillingRate): Enter a billing rate
 - `GET /v1/bills` (listBills): List the bills
 - `POST /v1/bills` (createBill): Save a draft bill
 - `GET /v1/bills/{bill_id}` (getBill): Get a bill
@@ -349,6 +350,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}` (getStatementsApprovalEvidence): Get a statements approval's file
 - `DELETE /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}` (removeStatementsApprovalEvidence): Remove a file from a drafted statements approval
 - `GET /v1/corporate-profile/templates` (getCorporateTemplates): Get the corporate document templates
+- `GET /v1/cost-rates` (listCostRates): List the cost rates
+- `POST /v1/cost-rates` (setCostRate): Enter a cost rate
 - `POST /v1/credit-applications` (applyCredit): Apply a supplier credit to a bill
 - `GET /v1/credit-applications/{application_id}` (getCreditApplication): Get a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void` (voidCreditApplication): Void a credit applied to a bill
@@ -835,7 +838,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/projects` (createProject): Add a project
 - `GET /v1/projects/{project_id}` (getProject): Get a project
 - `PUT /v1/projects/{project_id}` (replaceProject): Change a project, or set up a value of the Project dimension as one
+- `GET /v1/projects/{project_id}/billing-rates` (listBillingRates): List a project's billing rates
 - `GET /v1/projects/{project_id}/tasks` (listProjectTasks): List a project's tasks
+- `GET /v1/projects/{project_id}/time-cost` (getProjectTimeCost): Read a project's approved time and what it costs
 - `GET /v1/public/document` (getPublicDocument): Open a quote or invoice through its link
 - `POST /v1/public/document/accept` (acceptQuoteByLink): Accept a quote through its link
 - `POST /v1/public/document/decline` (declineQuoteByLink): Decline a quote through its link

@@ -77,6 +77,7 @@ export const routes = [
   { kind: "route", id: "project-record", path: "/projects/$projectId", mode: "basic", signedIn: true, help: "projects.record", guide: "projects.projects#set-up-a-project" },
   { kind: "route", id: "my-time", path: "/me/time", mode: "basic", signedIn: true, help: "time.my-time", guide: "projects.time" },
   { kind: "route", id: "timesheet", path: "/projects/timesheet", mode: "basic", signedIn: true, help: "time.timesheet", guide: "projects.time#approve-the-teams-time" },
+  { kind: "route", id: "cost-rates", path: "/projects/cost-rates", mode: "expert", signedIn: true, help: "rates.cost-page", guide: "projects.rates#enter-cost-rates" },
   { kind: "route", id: "global-search", path: "/search", mode: "basic", signedIn: true, help: "shell.search", guide: "shell.search" },
   // The user guide, built from docs/user-guide/ (FR-UX-32).
   { kind: "route", id: "help", path: "/help", mode: "basic", signedIn: true, help: "help.guide", guide: "help.guide" },
@@ -326,6 +327,9 @@ export const actions = [
   { kind: "action", id: "time.approve", mode: "basic", help: "time.approve", guide: "projects.time#approve-the-teams-time" },
   { kind: "action", id: "time.correct", mode: "basic", help: "time.correct", guide: "projects.time#correct-approved-time" },
   { kind: "action", id: "time.missing", mode: "basic", help: "time.missing", guide: "projects.time#days-with-no-time" },
+  { kind: "action", id: "rates.cost", mode: "expert", help: "rates.cost", guide: "projects.rates#enter-cost-rates" },
+  { kind: "action", id: "rates.billing", mode: "basic", help: "rates.billing", guide: "projects.rates#enter-billing-rates" },
+  { kind: "action", id: "rates.time-cost", mode: "basic", help: "rates.time-cost", guide: "projects.rates#what-time-costs-and-who-sees-it" },
   { kind: "action", id: "claim.line-dimensions", mode: "basic", help: "claim.line-dimensions", guide: "claims.my-claims#say-which-team-or-project-it-was-for" },
   { kind: "action", id: "claim.keep-as-loan", mode: "basic", help: "claim.keep-as-loan", guide: "claims.my-claims#keep-it-as-a-loan-to-the-company" },
   { kind: "action", id: "access-review.attest", mode: "expert", help: "access-review.attest", guide: "settings.access-review#attest-the-quarter" },

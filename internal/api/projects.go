@@ -691,6 +691,7 @@ func registerProjects(a *API) {
 	registerProjectTasks(a)
 	registerTimesheets(a)
 	registerTimesheetOps(a)
+	registerProjectRates(a)
 }
 
 // projectNow reads a project again, as it stands in the unit of work.

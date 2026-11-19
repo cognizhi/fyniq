@@ -132,6 +132,8 @@ type UnitOfWork interface {
 	Projects() Projects
 	// Timesheets are time entries, weekly submissions and running timers (FR-PRJ-02, FR-PRJ-05, FR-PRJ-07).
 	Timesheets() Timesheets
+	// Rates are cost rates and billing rates (FR-PRJ-06).
+	Rates() Rates
 	// ClaimPlaces are the members' saved places for mileage claims (FR-AP-16).
 	ClaimPlaces() ClaimPlaces
 	// AssetSources are the bill lines and bank lines registered assets came from (FR-FA-01).

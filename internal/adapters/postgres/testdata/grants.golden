@@ -144,6 +144,8 @@ fyniq_api       UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, und
 fyniq_api       EXECUTE   beat()
 fyniq_api       INSERT    bill_payment_plan (bill_id, planned_on, recorded_by)
 fyniq_api       SELECT    bill_payment_plan
+fyniq_api       INSERT    billing_rate (created_by, currency, customer_id, effective_from, hourly_rate, minor_units, project_id, role_name, user_id)
+fyniq_api       SELECT    billing_rate
 fyniq_api       EXECUTE   bootstrap_installation_connectors()
 fyniq_api       INSERT    brand_version
 fyniq_api       SELECT    brand_version
@@ -423,6 +425,8 @@ fyniq_api       INSERT    period_reopen (after_hash, after_snapshot, approval_id
 fyniq_api       SELECT    period_reopen
 fyniq_api       INSERT    period_variance_explanation (account_id, current_amount, explanation, kind, period_id, previous_amount, written_at, written_by)
 fyniq_api       SELECT    period_variance_explanation
+fyniq_api       INSERT    person_cost_rate (created_by, currency, effective_from, hourly_rate, minor_units, role_name, user_id)
+fyniq_api       SELECT    person_cost_rate
 fyniq_api       INSERT    person_key (cohort, person, wrapped)
 fyniq_api       SELECT    person_key
 fyniq_api       INSERT    policy_acknowledgement (acknowledged_at, acknowledged_by, key, version)
@@ -581,6 +585,7 @@ fyniq_executor  SELECT    audit_recovery_acknowledgement
 fyniq_executor  INSERT    audit_request_detail (country, id, ip, occurred_at, region, user_agent)
 fyniq_executor  SELECT    balance
 fyniq_executor  SELECT    bill_payment_plan
+fyniq_executor  SELECT    billing_rate
 fyniq_executor  SELECT    brand_version
 fyniq_executor  SELECT    break_glass
 fyniq_executor  SELECT    break_glass_use
@@ -643,6 +648,7 @@ fyniq_executor  SELECT    period_close
 fyniq_executor  SELECT    period_close_check
 fyniq_executor  SELECT    period_reopen
 fyniq_executor  SELECT    period_variance_explanation
+fyniq_executor  SELECT    person_cost_rate
 fyniq_executor  INSERT    person_key (cohort, person, wrapped)
 fyniq_executor  SELECT    person_key
 fyniq_executor  SELECT    project
@@ -730,6 +736,7 @@ fyniq_readonly  SELECT    bank_signal
 fyniq_readonly  SELECT    bank_statement
 fyniq_readonly  SELECT    bank_transfer
 fyniq_readonly  SELECT    bill_payment_plan
+fyniq_readonly  SELECT    billing_rate
 fyniq_readonly  SELECT    brand_version
 fyniq_readonly  SELECT    break_glass
 fyniq_readonly  SELECT    break_glass_use
@@ -835,6 +842,7 @@ fyniq_readonly  SELECT    period_close
 fyniq_readonly  SELECT    period_close_check
 fyniq_readonly  SELECT    period_reopen
 fyniq_readonly  SELECT    period_variance_explanation
+fyniq_readonly  SELECT    person_cost_rate
 fyniq_readonly  SELECT    policy_acknowledgement
 fyniq_readonly  SELECT    policy_draft
 fyniq_readonly  SELECT    policy_version
@@ -970,6 +978,7 @@ fyniq_worker    SELECT    bank_transfer
 fyniq_worker    UPDATE    bank_transfer (entry_id, from_line_id, to_line_id, undo_reason, undone_at, undone_by, version)
 fyniq_worker    EXECUTE   beat()
 fyniq_worker    SELECT    bill_payment_plan
+fyniq_worker    SELECT    billing_rate
 fyniq_worker    SELECT    brand_version
 fyniq_worker    SELECT    break_glass
 fyniq_worker    SELECT    break_glass_use
@@ -1139,6 +1148,7 @@ fyniq_worker    SELECT    period_close
 fyniq_worker    SELECT    period_close_check
 fyniq_worker    SELECT    period_reopen
 fyniq_worker    SELECT    period_variance_explanation
+fyniq_worker    SELECT    person_cost_rate
 fyniq_worker    INSERT    person_key (cohort, person, wrapped)
 fyniq_worker    SELECT    person_key
 fyniq_worker    SELECT    policy_acknowledgement

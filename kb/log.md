@@ -649,3 +649,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | docs/user-guide/projects-projects.md → projects.projects (the projects screens, p1-projects slice 1)
 
 ## [2026-11-19] compile | docs/user-guide/projects-time.md → projects.time (time entry, timer and approval, p1-projects slice 2)
+
+## [2026-11-19] compile | docs/user-guide/projects-rates.md → projects.rates (rates and time at cost, p1-projects slice 3)

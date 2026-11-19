@@ -142,3 +142,45 @@ func TestAttackTimeIsDecidedByTheProjectsManagerAndApprovedTimeNeverChanges(t *t
 		t.Error("an entry was reversed twice")
 	}
 }
+
+// A rate never changes or goes, in any role, and one starts on a day once for its person (FR-PRJ-06; FY605).
+// req: FR-PRJ-06
+// req: QA-ENG-05
+// asvs: V13.2.2
+func TestAttackARateNeverChangesOrGoes(t *testing.T) {
+	ctx0 := context.Background()
+	b := books(t, "Attack rates Pte Ltd")
+	enter := `INSERT INTO fyniq.person_cost_rate (role_name, effective_from, hourly_rate, currency, minor_units, created_by) VALUES ('Standard', '2030-01-01', 70, 'SGD', 2, 'user:x')`
+	// Rows exist only through the unit of work; the guards are tried on the owner's role with a committed rate.
+	if err := asOrg(ctx0, conn(t, "fyniq_migrator"), b.Org, func(tx pgx.Tx) error {
+		var id uuid.UUID
+		if err := tx.QueryRow(ctx0, enter+` RETURNING id`).Scan(&id); err != nil {
+			return err
+		}
+		if err := auditRaw(ctx0, tx, "cost_rate.entered", "person_cost_rate", id); err != nil {
+			return err
+		}
+		for name, sql := range map[string]string{"changing": `UPDATE fyniq.person_cost_rate SET hourly_rate = 1`, "deleting": `DELETE FROM fyniq.person_cost_rate`} {
+			if _, err := tx.Exec(ctx0, "SAVEPOINT x"); err != nil {
+				return err
+			}
+			_, err := tx.Exec(ctx0, sql)
+			if err == nil || !strings.Contains(err.Error(), "FY605") {
+				t.Errorf("%s a rate: %v", name, err)
+			}
+			if _, err := tx.Exec(ctx0, "ROLLBACK TO SAVEPOINT x"); err != nil {
+				return err
+			}
+		}
+		if _, err := tx.Exec(ctx0, "SAVEPOINT y"); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx0, enter); err == nil || !strings.Contains(err.Error(), "person_cost_rate_day_key") {
+			t.Errorf("a day twice: %v", err)
+		}
+		_, err := tx.Exec(ctx0, "ROLLBACK TO SAVEPOINT y")
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+}

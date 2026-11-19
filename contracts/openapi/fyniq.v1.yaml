@@ -11161,6 +11161,117 @@ components:
       required:
         - residence
       type: object
+    BillingRate:
+      additionalProperties: false
+      properties:
+        currency:
+          description: The project's currency.
+          examples:
+            - SGD
+          type: string
+        customer_id:
+          description: The customer whose projects it is for.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e41
+          format: uuid
+          type: string
+        effective_from:
+          description: The first day it applies.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        hourly_rate:
+          description: The price of an hour in the currency.
+          examples:
+            - "150.00"
+          type: string
+        id:
+          description: The rate's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5301
+          format: uuid
+          type: string
+        project_id:
+          description: The project it is for.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+          format: uuid
+          type: string
+        role:
+          description: The role it is for.
+          examples:
+            - Consultant
+          type: string
+        user_id:
+          description: The person it is for; absent for a role or everyone.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+          format: uuid
+          type: string
+      required:
+        - id
+        - effective_from
+        - hourly_rate
+        - currency
+      type: object
+    BillingRateDraft:
+      additionalProperties: false
+      properties:
+        customer_id:
+          description: A customer, for all their projects, in the base currency; give this or project_id.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e41
+          format: uuid
+          type: string
+        effective_from:
+          description: The first day it applies.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        hourly_rate:
+          description: The price of an hour, a plain decimal with at most 6 decimals.
+          examples:
+            - "150.00"
+          type: string
+        project_id:
+          description: The project it is for, in the project's currency; give this or customer_id.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+          format: uuid
+          type: string
+        role:
+          description: "One role; not with user_id. Neither: everyone on it."
+          examples:
+            - Consultant
+          maxLength: 80
+          type: string
+        user_id:
+          description: One person; not with role.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+          format: uuid
+          type: string
+      required:
+        - effective_from
+        - hourly_rate
+      type: object
+    BillingRatePage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/BillingRate"
+          type: array
+        next_cursor:
+          description: Pass it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEwMCJ9
+          type: string
+      required:
+        - items
+      type: object
     Brand:
       additionalProperties: false
       properties:
@@ -18843,6 +18954,105 @@ components:
       required:
         - templates
         - note
+      type: object
+    CostRate:
+      additionalProperties: false
+      properties:
+        currency:
+          description: The base currency.
+          examples:
+            - SGD
+          type: string
+        effective_from:
+          description: The first day it applies.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        hourly_rate:
+          description: The cost of an hour in the base currency, an exact decimal with at most 6 decimals.
+          examples:
+            - "62.500000"
+          type: string
+        id:
+          description: The rate's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5201
+          format: uuid
+          type: string
+        person_name:
+          description: Their name.
+          examples:
+            - Priya Nair
+          type: string
+        role:
+          description: The role the person's rate is grouped under, for role-average rates; Standard for the standard rate.
+          examples:
+            - Consultant
+          type: string
+        user_id:
+          description: The person; absent for the organisation's standard rate.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+          format: uuid
+          type: string
+      required:
+        - id
+        - role
+        - effective_from
+        - hourly_rate
+        - currency
+      type: object
+    CostRateDraft:
+      additionalProperties: false
+      properties:
+        effective_from:
+          description: "The first day it applies; a person's rate of a day is the latest starting on or before it. A rate never changes: enter the new one from its day."
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        hourly_rate:
+          description: "The cost of an hour in the base currency: payroll cost divided by standard hours, or an agreed rate; a plain decimal, at most 6 decimals."
+          examples:
+            - "62.50"
+          type: string
+        role:
+          description: The role the person is grouped under for role-average rates (at least three people share a role); required with a person.
+          examples:
+            - Consultant
+          maxLength: 80
+          type: string
+        user_id:
+          description: The person, an active member; left out, the organisation's standard rate (the Owner's fallback for viewers who may not see a person's own).
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+          format: uuid
+          type: string
+      required:
+        - effective_from
+        - hourly_rate
+      type: object
+    CostRatePage:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/CostRate"
+          type: array
+        next_cursor:
+          description: Pass it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjEwMCJ9
+          type: string
+        people:
+          description: "The active members a rate can be entered for, by name: the Payroll administrator may not read the members list, so it comes with the rates."
+          items:
+            $ref: "#/components/schemas/ProjectPerson"
+          type: array
+      required:
+        - items
+        - people
       type: object
     CreditApplication:
       additionalProperties: false
@@ -50443,6 +50653,112 @@ components:
         - title
         - email
       type: object
+    TimeCost:
+      additionalProperties: false
+      properties:
+        billable_minutes:
+          description: Of them, the billable minutes.
+          examples:
+            - 4200
+          format: int64
+          type: integer
+        cost:
+          description: "The time at cost in the base currency (RND-TIME per entry): at each person's rate for the Owner and the Payroll administrator, else at the role-average rate of at least three people, else the standard rate; absent when no rate may be used."
+          examples:
+            - "4687.50"
+          type: string
+        currency:
+          description: The base currency.
+          examples:
+            - SGD
+          type: string
+        from:
+          description: The first day.
+          examples:
+            - "2026-11-01"
+          format: date
+          type: string
+        minutes:
+          description: "The approved net minutes: a reversing entry takes away what it reverses."
+          examples:
+            - 4500
+          format: int64
+          type: integer
+        people:
+          description: Each person's hours; their cost only at the payroll tier.
+          items:
+            $ref: "#/components/schemas/TimeCostPerson"
+          type: array
+        project_id:
+          description: The project.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+          format: uuid
+          type: string
+        rate_basis:
+          description: "Where the rates came from: person (each person's own), role_average, standard, mixed when more than one applied, none (hours only)."
+          enum:
+            - person
+            - role_average
+            - standard
+            - mixed
+            - none
+          examples:
+            - role_average
+          type: string
+        to:
+          description: The last day.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+      required:
+        - project_id
+        - from
+        - to
+        - minutes
+        - billable_minutes
+        - rate_basis
+        - currency
+        - people
+      type: object
+    TimeCostPerson:
+      additionalProperties: false
+      properties:
+        billable_minutes:
+          description: Of them, the billable minutes.
+          examples:
+            - 2100
+          format: int64
+          type: integer
+        cost:
+          description: "Their time at their own cost rate, in the base currency: present only for the Owner and the Payroll administrator (payroll data, FR-PAY-13)."
+          examples:
+            - "2343.75"
+          type: string
+        minutes:
+          description: Their approved net minutes.
+          examples:
+            - 2250
+          format: int64
+          type: integer
+        person_name:
+          description: Their name.
+          examples:
+            - Priya Nair
+          type: string
+        user_id:
+          description: The person.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+          format: uuid
+          type: string
+      required:
+        - user_id
+        - person_name
+        - minutes
+        - billable_minutes
+      type: object
     TimeEntry:
       additionalProperties: false
       properties:
@@ -75078,6 +75394,198 @@ paths:
       x-fyniq-permission:
         capability: Bills, vendor credits
         right: V
+  /v1/billing-rates:
+    post:
+      description: "Enters the price of an hour from a day for a project, in its currency, or for a customer's projects in the base currency; for one person, one role or everyone (FR-PRJ-06). The rate in force for an entry is the project's for the person, then their role, then everyone, then the customer's the same way. A rate never changes: a later day's replaces it. Side effects: the rate and its audit event. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: setBillingRate
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BillingRateDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingRate"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingRate"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RATE-01` The rate does not allow that."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Enter a billing rate
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PRJ-09
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RATE-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Chart of accounts, dimensions
+        right: C
   /v1/bills:
     get:
       description: The organisation's bills at their current version, newest date first (a draft without a date last), a page at a time, narrowed by status, dates and text in the number (FR-AP-02). Each has its supplier, total, due date and states. Read-only; no side effects.
@@ -109335,6 +109843,304 @@ paths:
       x-fyniq-permission:
         capability: "Corporate profile and registers: the name, registered office and SSIC code, the officers, the nominee registers and the directors' approval of the financial statements (rev 0.282)"
         right: V
+  /v1/cost-rates:
+    get:
+      description: "Every person's cost rate and the organisation's standard rate, oldest first, a page at a time. Payroll data (FR-PAY-13): only the Owner and the Payroll administrator, through the Appendix D row \"Project cost rates, person level\"; never the AI. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects."
+      operationId: listCostRates
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CostRatePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the cost rates
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - PRJ-09
+      x-fyniq-permission:
+        capability: Project cost rates, person level (rev 0.295)
+        right: V
+    post:
+      description: "Enters a person's cost rate from a day, or the standard rate when no person is named (FR-PRJ-06; the owner's decision of 19 Nov 2026). Until payroll supplies it the rate is typed in; a payroll-derived rate replaces it later. A rate never changes: a later day's replaces it from that day, and the same day twice is refused. Only the Owner and the Payroll administrator, never the AI. Side effects: the rate, and its audit event, in which the rate is proved by fingerprint and never kept (AUD-02). Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: setCostRate
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CostRateDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CostRate"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CostRate"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RATE-01` The rate does not allow that."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Enter a cost rate
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - PRJ-09
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RATE-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Project cost rates, person level (rev 0.295)
+        right: C
   /v1/credit-applications:
     post:
       description: "Applies a credit with a supplier (a posted vendor credit, or what a payment of bills left unapplied) to one of the supplier's posted bills in its currency (FR-AP-03, FR-AR-18): it settles both by the amount, at most what the bill has open and what is left of the credit (CREDIT-05), and posts under credit_application@1 only what their stored rates make differ, the realised FX to 7030 (ENG-41); in the base currency it posts nothing. Side effects: the application, two allocations, the entry when one posts, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview applies nothing."
@@ -194143,6 +194949,137 @@ paths:
       x-fyniq-permission:
         capability: Chart of accounts, dimensions
         right: C
+  /v1/projects/{project_id}/billing-rates:
+    get:
+      description: The project's own billing rates and its customer's, oldest first (FR-PRJ-06). A person who reads only the projects they are on gets 404 for another one. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+      operationId: listBillingRates
+      parameters:
+        - description: The project's ID.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            description: The project's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+            format: uuid
+            type: string
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingRatePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List a project's billing rates
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PRJ-09
+      x-fyniq-permission:
+        capability: Timesheets and project time (rev 0.7)
+        right: V
   /v1/projects/{project_id}/tasks:
     get:
       description: "What time on the project is logged against (FR-PRJ-05): by name, those out of use after the live ones, a page at a time. A person who reads only the projects they are on gets 404 for another one. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects."
@@ -194273,6 +195210,135 @@ paths:
         - PRJ-09
       x-fyniq-permission:
         capability: Timesheets and project time (rev 0.7)
+        right: V
+  /v1/projects/{project_id}/time-cost:
+    get:
+      description: "The approved net minutes on the project between two days, each person's hours, and the time at cost (FR-PRJ-06, FR-PRJ-12), valued per entry by RND-TIME at the caller's tier and never otherwise: the Owner and the Payroll administrator see each person's own rate and cost; the Controller, the Accountant, the Auditor, the Tax agent and the Approver (own projects) see the cost at the role-average rate of at least three people, else the standard rate, and no per-person cost; the AR specialist sees hours only. rate_basis says which. The AI never reads it. Time posts nothing: it is a management view. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects."
+      operationId: getProjectTimeCost
+      parameters:
+        - description: The project's ID.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            description: The project's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+            format: uuid
+            type: string
+        - description: The first day.
+          explode: false
+          in: query
+          name: from
+          required: true
+          schema:
+            description: The first day.
+            examples:
+              - "2026-11-01"
+            format: date
+            type: string
+        - description: The last day, on or after the first, at most 366 days after it.
+          explode: false
+          in: query
+          name: to
+          required: true
+          schema:
+            description: The last day, on or after the first, at most 366 days after it.
+            examples:
+              - "2026-11-30"
+            format: date
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeCost"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: Read a project's approved time and what it costs
+      tags:
+        - Projects
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PRJ-09
+      x-fyniq-permission:
+        capability: Project reports and cost rates (rev 0.8)
         right: V
   /v1/public/document:
     get:

@@ -2516,6 +2516,78 @@ Changes a dimension's name, or puts it out of use or back in use; it is never de
 
 Projects and time: projects as values of the Project dimension with their people and tasks, off until the organisation switches them on (FR-PRJ-01, FR-ORG-06).
 
+### `POST /v1/billing-rates`
+
+**Enter a billing rate** (`setBillingRate`)
+
+Enters the price of an hour from a day for a project, in its currency, or for a customer's projects in the base currency; for one person, one role or everyone (FR-PRJ-06). The rate in force for an entry is the project's for the person, then their role, then everyone, then the customer's the same way. A rate never changes: a later day's replaces it. Side effects: the rate and its audit event. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Chart of accounts, dimensions
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`BillingRateDraft`](../../contracts/schemas/BillingRateDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`BillingRate`](../../contracts/schemas/BillingRate.schema.json)
+  - `201` Created [`BillingRate`](../../contracts/schemas/BillingRate.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RATE-01` The rate does not allow that.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RATE-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/cost-rates`
+
+**List the cost rates** (`listCostRates`)
+
+Every person's cost rate and the organisation's standard rate, oldest first, a page at a time. Payroll data (FR-PAY-13): only the Owner and the Payroll administrator, through the Appendix D row "Project cost rates, person level"; never the AI. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+
+- **Permission:** View on Project cost rates, person level (rev 0.295)
+- **Parameters:**
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`CostRatePage`](../../contracts/schemas/CostRatePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PRJ-09`
+
+### `POST /v1/cost-rates`
+
+**Enter a cost rate** (`setCostRate`)
+
+Enters a person's cost rate from a day, or the standard rate when no person is named (FR-PRJ-06; the owner's decision of 19 Nov 2026). Until payroll supplies it the rate is typed in; a payroll-derived rate replaces it later. A rate never changes: a later day's replaces it from that day, and the same day twice is refused. Only the Owner and the Payroll administrator, never the AI. Side effects: the rate, and its audit event, in which the rate is proved by fingerprint and never kept (AUD-02). Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+
+- **Permission:** Create on Project cost rates, person level (rev 0.295)
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`CostRateDraft`](../../contracts/schemas/CostRateDraft.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`CostRate`](../../contracts/schemas/CostRate.schema.json)
+  - `201` Created [`CostRate`](../../contracts/schemas/CostRate.schema.json)
+  - `400` Bad Request: `API-INPUT-01` The request cannot be read.
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RATE-01` The rate does not allow that.
+  - `413` Request Entity Too Large: `API-INPUT-03` The request is too large.
+  - `415` Unsupported Media Type: `API-INPUT-04` The request is not JSON.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-RATE-01`, `PRJ-09`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-RATE-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/project-people`
 
 **List the members a project can name** (`listProjectPeople`)
@@ -2685,6 +2757,27 @@ Changes a project's name, customer, status, billing method, dates, budgets and, 
   - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-01`, `API-INPUT-02`, `API-INPUT-03`, `API-INPUT-04`, `API-NOT-FOUND-01`, `API-RATE-01`, `DIM-01`, `DIM-02`, `DIM-03`, `DIM-04`, `PRJ-01`, `PRJ-02`, `PRJ-03`, `PRJ-04`, `PRJ-05`, `PRJ-06`, `PRJ-07`, `PRJ-08`, `PRJ-09`, `STORAGE-DIM-02`, `STORAGE-DUPLICATE-01`, `STORAGE-LOCK-01`, `STORAGE-PRJ-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+### `GET /v1/projects/{project_id}/billing-rates`
+
+**List a project's billing rates** (`listBillingRates`)
+
+The project's own billing rates and its customer's, oldest first (FR-PRJ-06). A person who reads only the projects they are on gets 404 for another one. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+
+- **Permission:** View on Timesheets and project time (rev 0.7)
+- **Parameters:**
+  - `project_id` (path, required): The project's ID.
+  - `page_size` (query): How many items per page, up to 500.
+  - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
+- **Responses:**
+  - `200` OK [`BillingRatePage`](../../contracts/schemas/BillingRatePage.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`
+
 ### `GET /v1/projects/{project_id}/tasks`
 
 **List a project's tasks** (`listProjectTasks`)
@@ -2705,6 +2798,27 @@ What time on the project is logged against (FR-PRJ-05): by name, those out of us
   - `429` Too Many Requests: `API-RATE-01` Too many requests.
   - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
 - **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-CURSOR-01`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`
+
+### `GET /v1/projects/{project_id}/time-cost`
+
+**Read a project's approved time and what it costs** (`getProjectTimeCost`)
+
+The approved net minutes on the project between two days, each person's hours, and the time at cost (FR-PRJ-06, FR-PRJ-12), valued per entry by RND-TIME at the caller's tier and never otherwise: the Owner and the Payroll administrator see each person's own rate and cost; the Controller, the Accountant, the Auditor, the Tax agent and the Approver (own projects) see the cost at the role-average rate of at least three people, else the standard rate, and no per-person cost; the AR specialist sees hours only. rate_basis says which. The AI never reads it. Time posts nothing: it is a management view. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+
+- **Permission:** View on Project reports and cost rates (rev 0.8)
+- **Parameters:**
+  - `project_id` (path, required): The project's ID.
+  - `from` (query, required): The first day.
+  - `to` (query, required): The last day, on or after the first, at most 366 days after it.
+- **Responses:**
+  - `200` OK [`TimeCost`](../../contracts/schemas/TimeCost.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `PRJ-09`
 
 ### `POST /v1/time-entries/{entry_id}/reverse`
 

@@ -2352,6 +2352,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/billing-rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enter a billing rate
+         * @description Enters the price of an hour from a day for a project, in its currency, or for a customer's projects in the base currency; for one person, one role or everyone (FR-PRJ-06). The rate in force for an entry is the project's for the person, then their role, then everyone, then the customer's the same way. A rate never changes: a later day's replaces it. Side effects: the rate and its audit event. Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["setBillingRate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/bills": {
         parameters: {
             query?: never;
@@ -5534,6 +5554,30 @@ export interface paths {
         get: operations["getCorporateTemplates"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/cost-rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the cost rates
+         * @description Every person's cost rate and the organisation's standard rate, oldest first, a page at a time. Payroll data (FR-PAY-13): only the Owner and the Payroll administrator, through the Appendix D row "Project cost rates, person level"; never the AI. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+         */
+        get: operations["listCostRates"];
+        put?: never;
+        /**
+         * Enter a cost rate
+         * @description Enters a person's cost rate from a day, or the standard rate when no person is named (FR-PRJ-06; the owner's decision of 19 Nov 2026). Until payroll supplies it the rate is typed in; a payroll-derived rate replaces it later. A rate never changes: a later day's replaces it from that day, and the same day twice is refused. Only the Owner and the Payroll administrator, never the AI. Side effects: the rate, and its audit event, in which the rate is proved by fingerprint and never kept (AUD-02). Refused with PRJ-09 while Projects and time are switched off. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["setCostRate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13469,6 +13513,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project_id}/billing-rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a project's billing rates
+         * @description The project's own billing rates and its customer's, oldest first (FR-PRJ-06). A person who reads only the projects they are on gets 404 for another one. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+         */
+        get: operations["listBillingRates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_id}/tasks": {
         parameters: {
             query?: never;
@@ -13481,6 +13545,26 @@ export interface paths {
          * @description What time on the project is logged against (FR-PRJ-05): by name, those out of use after the live ones, a page at a time. A person who reads only the projects they are on gets 404 for another one. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
          */
         get: operations["listProjectTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_id}/time-cost": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a project's approved time and what it costs
+         * @description The approved net minutes on the project between two days, each person's hours, and the time at cost (FR-PRJ-06, FR-PRJ-12), valued per entry by RND-TIME at the caller's tier and never otherwise: the Owner and the Payroll administrator see each person's own rate and cost; the Controller, the Accountant, the Auditor, the Tax agent and the Approver (own projects) see the cost at the role-average rate of at least three people, else the standard rate, and no per-person cost; the AR specialist sees hours only. rate_basis says which. The AI never reads it. Time posts nothing: it is a management view. Refused with PRJ-09 while Projects and time are switched off. Read-only; no side effects.
+         */
+        get: operations["getProjectTimeCost"];
         put?: never;
         post?: never;
         delete?: never;
@@ -23338,6 +23422,97 @@ export interface components {
             /** @description The tax withheld, in the base currency, as posting writes it (or wrote it) to the withholding tax payable (RND-WHT). */
             tax?: components["schemas"]["Money"];
         };
+        BillingRate: {
+            /**
+             * @description The project's currency.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: uuid
+             * @description The customer whose projects it is for.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e41
+             */
+            customer_id?: string;
+            /**
+             * Format: date
+             * @description The first day it applies.
+             * @example 2026-01-01
+             */
+            effective_from: string;
+            /**
+             * @description The price of an hour in the currency.
+             * @example 150.00
+             */
+            hourly_rate: string;
+            /**
+             * Format: uuid
+             * @description The rate's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5301
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description The project it is for.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+             */
+            project_id?: string;
+            /**
+             * @description The role it is for.
+             * @example Consultant
+             */
+            role?: string;
+            /**
+             * Format: uuid
+             * @description The person it is for; absent for a role or everyone.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+             */
+            user_id?: string;
+        };
+        BillingRateDraft: {
+            /**
+             * Format: uuid
+             * @description A customer, for all their projects, in the base currency; give this or project_id.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e41
+             */
+            customer_id?: string;
+            /**
+             * Format: date
+             * @description The first day it applies.
+             * @example 2026-01-01
+             */
+            effective_from: string;
+            /**
+             * @description The price of an hour, a plain decimal with at most 6 decimals.
+             * @example 150.00
+             */
+            hourly_rate: string;
+            /**
+             * Format: uuid
+             * @description The project it is for, in the project's currency; give this or customer_id.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+             */
+            project_id?: string;
+            /**
+             * @description One role; not with user_id. Neither: everyone on it.
+             * @example Consultant
+             */
+            role?: string;
+            /**
+             * Format: uuid
+             * @description One person; not with role.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+             */
+            user_id?: string;
+        };
+        BillingRatePage: {
+            items: components["schemas"]["BillingRate"][];
+            /**
+             * @description Pass it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjEwMCJ9
+             */
+            next_cursor?: string;
+        };
         Brand: {
             /**
              * @description The accent colour of documents and emails; absent for the design's default. The app keeps its own colours.
@@ -28630,6 +28805,80 @@ export interface components {
             note: string;
             /** @description Every template, by kind. */
             templates: components["schemas"]["CorporateTemplate"][];
+        };
+        CostRate: {
+            /**
+             * @description The base currency.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: date
+             * @description The first day it applies.
+             * @example 2026-01-01
+             */
+            effective_from: string;
+            /**
+             * @description The cost of an hour in the base currency, an exact decimal with at most 6 decimals.
+             * @example 62.500000
+             */
+            hourly_rate: string;
+            /**
+             * Format: uuid
+             * @description The rate's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c5201
+             */
+            id: string;
+            /**
+             * @description Their name.
+             * @example Priya Nair
+             */
+            person_name?: string;
+            /**
+             * @description The role the person's rate is grouped under, for role-average rates; Standard for the standard rate.
+             * @example Consultant
+             */
+            role: string;
+            /**
+             * Format: uuid
+             * @description The person; absent for the organisation's standard rate.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+             */
+            user_id?: string;
+        };
+        CostRateDraft: {
+            /**
+             * Format: date
+             * @description The first day it applies; a person's rate of a day is the latest starting on or before it. A rate never changes: enter the new one from its day.
+             * @example 2026-01-01
+             */
+            effective_from: string;
+            /**
+             * @description The cost of an hour in the base currency: payroll cost divided by standard hours, or an agreed rate; a plain decimal, at most 6 decimals.
+             * @example 62.50
+             */
+            hourly_rate: string;
+            /**
+             * @description The role the person is grouped under for role-average rates (at least three people share a role); required with a person.
+             * @example Consultant
+             */
+            role?: string;
+            /**
+             * Format: uuid
+             * @description The person, an active member; left out, the organisation's standard rate (the Owner's fallback for viewers who may not see a person's own).
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+             */
+            user_id?: string;
+        };
+        CostRatePage: {
+            items: components["schemas"]["CostRate"][];
+            /**
+             * @description Pass it as cursor for the next page; absent on the last page.
+             * @example eyJhZnRlciI6IjEwMCJ9
+             */
+            next_cursor?: string;
+            /** @description The active members a rate can be entered for, by name: the Payroll administrator may not read the members list, so it comes with the rates. */
+            people: components["schemas"]["ProjectPerson"][];
         };
         CreditApplication: {
             /** @description What was applied, in their currency. */
@@ -50748,6 +50997,86 @@ export interface components {
              */
             title: string;
         };
+        TimeCost: {
+            /**
+             * Format: int64
+             * @description Of them, the billable minutes.
+             * @example 4200
+             */
+            billable_minutes: number;
+            /**
+             * @description The time at cost in the base currency (RND-TIME per entry): at each person's rate for the Owner and the Payroll administrator, else at the role-average rate of at least three people, else the standard rate; absent when no rate may be used.
+             * @example 4687.50
+             */
+            cost?: string;
+            /**
+             * @description The base currency.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-11-01
+             */
+            from: string;
+            /**
+             * Format: int64
+             * @description The approved net minutes: a reversing entry takes away what it reverses.
+             * @example 4500
+             */
+            minutes: number;
+            /** @description Each person's hours; their cost only at the payroll tier. */
+            people: components["schemas"]["TimeCostPerson"][];
+            /**
+             * Format: uuid
+             * @description The project.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31
+             */
+            project_id: string;
+            /**
+             * @description Where the rates came from: person (each person's own), role_average, standard, mixed when more than one applied, none (hours only).
+             * @example role_average
+             * @enum {string}
+             */
+            rate_basis: "person" | "role_average" | "standard" | "mixed" | "none";
+            /**
+             * Format: date
+             * @description The last day.
+             * @example 2026-11-30
+             */
+            to: string;
+        };
+        TimeCostPerson: {
+            /**
+             * Format: int64
+             * @description Of them, the billable minutes.
+             * @example 2100
+             */
+            billable_minutes: number;
+            /**
+             * @description Their time at their own cost rate, in the base currency: present only for the Owner and the Payroll administrator (payroll data, FR-PAY-13).
+             * @example 2343.75
+             */
+            cost?: string;
+            /**
+             * Format: int64
+             * @description Their approved net minutes.
+             * @example 2250
+             */
+            minutes: number;
+            /**
+             * @description Their name.
+             * @example Priya Nair
+             */
+            person_name: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e61
+             */
+            user_id: string;
+        };
         TimeEntry: {
             /**
              * @description Whether it is billed.
@@ -68775,6 +69104,160 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setBillingRate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BillingRateDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingRate"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingRate"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RATE-01` The rate does not allow that. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -95006,6 +95489,231 @@ export interface operations {
             };
             /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCostRates: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostRatePage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setCostRate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CostRateDraft"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostRate"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostRate"];
+                };
+            };
+            /** @description Bad Request: `API-INPUT-01` The request cannot be read. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-RATE-01` The rate does not allow that. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large: `API-INPUT-03` The request is too large. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type: `API-INPUT-04` The request is not JSON. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -158082,6 +158790,98 @@ export interface operations {
             };
         };
     };
+    listBillingRates: {
+        parameters: {
+            query?: {
+                /** @description How many items per page, up to 500. */
+                page_size?: number;
+                /** @description The next_cursor of the previous page; leave it out for the first page. */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project's ID. */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingRatePage"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listProjectTasks: {
         parameters: {
             query?: {
@@ -158140,6 +158940,98 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getProjectTimeCost: {
+        parameters: {
+            query: {
+                /** @description The first day. */
+                from: string;
+                /** @description The last day, on or after the first, at most 366 days after it. */
+                to: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project's ID. */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeCost"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PRJ-09` Projects and time are switched off. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

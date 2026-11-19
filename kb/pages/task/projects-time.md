@@ -51,4 +51,4 @@ aliases:
 - Approved time never changes: **Correct it** adds a reversing entry with the opposite time, the right time is entered as a new entry,
   and the week is sent again. (src: docs/user-guide/projects-time.md#correct-approved-time)
 
-Related: [[projects.projects]].
+Related: [[projects.projects]], [[projects.rates]].

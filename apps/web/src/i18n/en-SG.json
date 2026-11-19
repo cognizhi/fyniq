@@ -2251,6 +2251,22 @@
       "label": "Days with no time",
       "tooltip": "Working days up to today with no time entered, less public holidays. Enter the time, or ignore a day you did not work."
     },
+    "rates.cost-page": {
+      "label": "Cost rates",
+      "tooltip": "What an hour of each person's time costs, and the organisation's standard rate. Only the Owner and the Payroll administrator see a person's rate."
+    },
+    "rates.cost": {
+      "label": "Enter a cost rate",
+      "tooltip": "A person's cost of an hour from a day, grouped under a role. A rate never changes: a later day's replaces it. Until payroll fills it in, you type it."
+    },
+    "rates.billing": {
+      "label": "Billing rates",
+      "tooltip": "The price of an hour for the project, a role or a person, in the project's currency. The rate in force on the day of the time is used."
+    },
+    "rates.time-cost": {
+      "label": "Time at cost",
+      "tooltip": "Approved time this month valued by the server for you: each person's own rate only if you may see it, else the average of a role with three people or more, else the standard rate, else hours only."
+    },
     "claim.line-dimensions": {
       "label": "Team or project",
       "tooltip": "The department, project or other dimension the receipt or trip was for; a category that needs one says so."

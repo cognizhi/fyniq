@@ -91,6 +91,11 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **THEN** it is at a role or department average rate computed over at least 3 people, or else at an Owner-set standard rate
 - **AND** per-person profitability shows hours, not person-level cost
 
+#### Scenario: Who enters a person-level rate
+- **WHEN** a person-level cost rate is entered or read
+- **THEN** only the Owner and the Payroll administrator may, through the Appendix D row for project cost rates
+- **AND** until payroll supplies one the rate is typed in, and a payroll-derived rate replaces it later
+
 #### Scenario: Billing rates
 - **WHEN** billing rates are set
 - **THEN** they can be set per project, role, person or customer, effective-dated, in the project's currency
