@@ -1283,3 +1283,87 @@ func TestImportPinnedCases(t *testing.T) {
 		}
 	}
 }
+
+// RND-TIME (PRD-001 §10.4; FR-PRJ-02, FR-PRJ-06): minutes × the hourly rate ÷ 60 to the cent, half away from zero, per entry; a
+// reversing entry costs exactly the negative of what it reverses.
+// req: RND-TIME
+// req: FR-PRJ-02
+func TestTimeCostIsTheMinutesAtTheHourlyRateRoundedOnce(t *testing.T) {
+	sgd := money.MustLookup("SGD")
+	rate := func(s string) money.UnitPrice {
+		r, err := money.ParseUnitPrice(s, sgd, "rate")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return r
+	}
+	for _, c := range []struct {
+		minutes int
+		rate    string
+		want    string
+	}{
+		{135, "90", "202.50"}, // 2 h 15 min at S$90 an hour
+		{1, "100", "1.67"},    // 1.666… rounds up
+		{7, "55.55", "6.48"},  // 6.4808…
+		{3, "1.50", "0.08"},   // 0.075 is a tie: half away from zero
+		{-3, "1.50", "-0.08"}, // and the same, negated, for its reversal
+		{60, "0", "0.00"},
+		{450, "123.456789", "925.93"}, // an hourly rate with six decimals, worked exactly
+	} {
+		got, err := Time(c.minutes, rate(c.rate))
+		if err != nil || got.String() != c.want {
+			t.Errorf("%d min at %s: %v %v, want %s", c.minutes, c.rate, got, err, c.want)
+		}
+	}
+	for m := 1; m <= 1440; m += 7 {
+		a, _ := Time(m, rate("87.65"))
+		b, _ := Time(-m, rate("87.65"))
+		if sum, _ := a.Add(b); !sum.IsZero() {
+			t.Fatalf("a reversal of %d minutes does not net out: %v + %v", m, a, b)
+		}
+	}
+	if _, err := Time(60, rate("1")); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// RND-MARKUP (PRD-001 §10.4; FR-PRJ-08): the markup on a billable expense = cost × percent ÷ 100 to the cent, half away from zero.
+// req: RND-MARKUP
+// req: FR-PRJ-08
+func TestMarkupIsTheCostTimesThePercentRoundedOnceHalfAwayFromZero(t *testing.T) {
+	sgd := money.MustLookup("SGD")
+	cost := func(s string) money.Money {
+		m, err := money.Parse(s, sgd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	for _, c := range []struct{ cost, pct, want string }{
+		{"420.00", "10", "42.00"},
+		{"0.05", "10", "0.01"},   // 0.005 is a tie: away from zero
+		{"-0.05", "10", "-0.01"}, // and negated for a credit
+		{"0.04", "10", "0.00"},   // 0.004 rounds down
+		{"100.00", "0", "0.00"},
+		{"100.00", "999.99", "999.99"},
+		{"33.33", "12.5", "4.17"}, // 4.16625
+		{"1.00", "250", "2.50"},
+		{"7.77", "0.01", "0.00"},
+	} {
+		got, err := Markup(cost(c.cost), c.pct)
+		if err != nil || got.String() != c.want {
+			t.Errorf("%s at %s%%: %v %v, want %s", c.cost, c.pct, got, err, c.want)
+		}
+	}
+	for _, bad := range []string{"", "10%", "-1", "1000", "1.234", "ten", " 10"} {
+		if _, err := Markup(cost("1.00"), bad); err == nil {
+			t.Errorf("markup %q is accepted", bad)
+		}
+		if IsMarkup(bad) {
+			t.Errorf("IsMarkup(%q)", bad)
+		}
+	}
+	if !IsMarkup("0") || !IsMarkup("999.99") || !IsMarkup("5.5") {
+		t.Error("a plain percentage is refused")
+	}
+}

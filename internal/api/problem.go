@@ -80,6 +80,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/statement"
 	"github.com/cognizhi/fyniq/internal/domain/succession"
 	"github.com/cognizhi/fyniq/internal/domain/team"
+	"github.com/cognizhi/fyniq/internal/domain/timesheet"
 	"github.com/cognizhi/fyniq/internal/domain/writeoff"
 	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -371,6 +372,16 @@ var codeFacts = map[string]struct {
 	project.CodePeople:            {422, "The project's people do not fit"},
 	project.CodeTask:              {422, "The task does not fit"},
 	project.CodeOff:               {403, "Projects and time are switched off"},
+	timesheet.CodeMinutes:         {422, "The time does not fit"},
+	timesheet.CodeDay:             {422, "The day does not fit"},
+	timesheet.CodeProject:         {422, "The project does not fit"},
+	timesheet.CodeTask:            {422, "The task does not fit"},
+	timesheet.CodeBillable:        {422, "The time cannot be billable"},
+	timesheet.CodeLocked:          {409, "The entry is locked"},
+	timesheet.CodeTimer:           {409, "The timer does not allow that"},
+	timesheet.CodeDecide:          {403, "The week cannot be decided that way"},
+	timesheet.CodeSubmit:          {422, "Nothing to submit"},
+	timesheet.CodeReverse:         {409, "The entry cannot be reversed"},
 	ledger.CodeDimensionRequired:  {422, "The line needs a value its account requires"},
 	ledger.CodeDimensionValue:     {422, "The line's dimension values are not valid"},
 	fx.CodeNotOpen:                {409, "The period is not open"},
@@ -536,6 +547,8 @@ var codeFacts = map[string]struct {
 	bill.CodeTooLong:              {422, "A text of the bill is too long"},
 	bill.CodeInputTax:             {422, "An input-tax fact of the bill is not one Fyniq reads"},
 	bill.CodeBusinessShare:        {422, "A line's business share is not a percentage from 0 to 100"},
+	project.CodeMarkup:            {422, "A markup is not a percentage from 0 to 999.99, or is on a line that is not billable"},
+	project.CodeLine:              {422, "A billable line needs a project"},
 	bill.CodeNature:               {422, "The bill does not say what the non-resident supplier's payment is for"},
 	bill.CodeWithholding:          {422, "The withholding decision cannot be recorded"},
 	CodeBillNeedsApproval:         {409, "The bill needs another person's approval"},
@@ -1008,6 +1021,8 @@ var codeFacts = map[string]struct {
 	storage.CodeDimension:            {422, "The dimension values are not valid"},
 	storage.CodeDimensionFixed:       {409, "The dimension does not change that way"},
 	storage.CodeProject:              {409, "The project record does not allow that"},
+	storage.CodeTime:                 {409, "The time record does not allow that"},
+	storage.CodeRate:                 {409, "The rate does not allow that"},
 	storage.CodeDimensionRequirement: {422, "The account cannot require those dimensions"},
 	equity.CodeIssue:                 {422, "The share issue does not fit"},
 	equity.CodeNotRecord:             {422, "Not the holder record or share class asked for"},
@@ -1127,6 +1142,8 @@ var storageFixes = map[string]string{
 	storage.CodeStatutoryFiling:      "Record the item the calendar gives once, as filed with its day and reference or as not required with the reason; withdraw a record before recording the item again",
 	storage.CodeDimension:            "Name at most one value of each of the organisation's dimensions",
 	storage.CodeDimensionFixed:       "Rename it or put it out of use: a dimension keeps its kind and place and a value its code, and neither is deleted",
+	storage.CodeRate:                 "A rate never changes or goes: enter the new rate from the day it starts, and a day only once for a person or a scope",
+	storage.CodeTime:                 "Change only draft or returned entries of your own, on a project you are on and a task in use; a week is decided by a manager of the project or the Controller, never by the person",
 	storage.CodeProject:              "Close the project instead of deleting it, name an active member of the organisation, and a customer that is marked as one; a closed project takes no new task",
 	storage.CodeDimensionRequirement: "Name each of the organisation's dimensions once",
 	storage.CodeBatchHeld:            "Release the approved batch that holds it, or cancel the batch first and then record the payment",

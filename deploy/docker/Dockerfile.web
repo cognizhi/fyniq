@@ -14,7 +14,9 @@ WORKDIR /src
 RUN corepack enable
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/web/package.json apps/web/
+COPY sdk/typescript/package.json sdk/typescript/
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile --filter @fyniq/web
+COPY sdk/typescript sdk/typescript
 COPY apps/web apps/web
 COPY docs/design-system/fyniq/tokens.css docs/design-system/fyniq/tokens.css
 COPY docs/design/screens/kit/ui.css docs/design/screens/kit/ui.css

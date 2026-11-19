@@ -148,6 +148,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/bill-payments/{payment_id}/void` (voidBillPayment): Void a payment of bills
 - `POST /v1/bill-payments/{payment_id}/void-approval` (requestBillPaymentVoid): Ask for approval to void a payment of bills
 - `GET /v1/bill-reminders` (listBillReminders): List the bills to pay soon
+- `POST /v1/billing-rates` (setBillingRate): Enter a billing rate
 - `GET /v1/bills` (listBills): List the bills
 - `POST /v1/bills` (createBill): Save a draft bill
 - `GET /v1/bills/{bill_id}` (getBill): Get a bill
@@ -349,6 +350,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}` (getStatementsApprovalEvidence): Get a statements approval's file
 - `DELETE /v1/corporate-profile/statements-approvals/{statements_approval_id}/evidence/{evidence_id}` (removeStatementsApprovalEvidence): Remove a file from a drafted statements approval
 - `GET /v1/corporate-profile/templates` (getCorporateTemplates): Get the corporate document templates
+- `GET /v1/cost-rates` (listCostRates): List the cost rates
+- `POST /v1/cost-rates` (setCostRate): Enter a cost rate
 - `POST /v1/credit-applications` (applyCredit): Apply a supplier credit to a bill
 - `GET /v1/credit-applications/{application_id}` (getCreditApplication): Get a credit applied to a bill
 - `POST /v1/credit-applications/{application_id}/void` (voidCreditApplication): Void a credit applied to a bill
@@ -835,7 +838,10 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/projects` (createProject): Add a project
 - `GET /v1/projects/{project_id}` (getProject): Get a project
 - `PUT /v1/projects/{project_id}` (replaceProject): Change a project, or set up a value of the Project dimension as one
+- `GET /v1/projects/{project_id}/billing-rates` (listBillingRates): List a project's billing rates
 - `GET /v1/projects/{project_id}/tasks` (listProjectTasks): List a project's tasks
+- `GET /v1/projects/{project_id}/time-cost` (getProjectTimeCost): Read a project's approved time and what it costs
+- `GET /v1/projects/{project_id}/time-entries` (listProjectTimeEntries): The approved time entries behind a project's figures
 - `GET /v1/public/document` (getPublicDocument): Open a quote or invoice through its link
 - `POST /v1/public/document/accept` (acceptQuoteByLink): Accept a quote through its link
 - `POST /v1/public/document/decline` (declineQuoteByLink): Decline a quote through its link
@@ -886,6 +892,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/report-exports/{export_id}/file` (getReportExportFile): Download one of my exports
 - `GET /v1/reports/budget-vs-actual` (getBudgetVsActual): Get Budget vs Actual
 - `GET /v1/reports/general-ledger` (getGeneralLedger): Get the general ledger report
+- `GET /v1/reports/projects` (getProjectReport): Project profitability, utilisation and realisation
 - `GET /v1/reports/sales-by-customer` (getSalesByCustomer): Get sales by customer
 - `GET /v1/reports/sales-by-item` (getSalesByItem): Get sales by item
 - `GET /v1/reports/schedules` (getSchedules): Get the prepayment and deferral schedules
@@ -963,6 +970,18 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/tenant-exports` (listTenantExports): List the organisation's full exports
 - `POST /v1/tenant-exports` (requestTenantExport): Ask for the organisation's full export
 - `POST /v1/tenant-exports/{export_id}/download` (createTenantExportDownload): Get a link that saves the full export
+- `POST /v1/time-entries/{entry_id}/reverse` (reverseTimeEntry): Reverse an approved entry of the caller's
+- `GET /v1/timer` (getTimer): Read the caller's running timer
+- `POST /v1/timer/drop` (dropTimer): Drop the caller's timer without an entry
+- `POST /v1/timer/start` (startTimer): Start the caller's timer
+- `POST /v1/timer/stop` (stopTimer): Stop the caller's timer into a draft entry
+- `GET /v1/timesheet-submissions` (listTimesheetSubmissions): List submitted weeks
+- `GET /v1/timesheet-submissions/{submission_id}` (getTimesheetSubmission): Read a submitted week with its entries
+- `POST /v1/timesheet-submissions/{submission_id}/approve` (approveTimesheetSubmission): Approve a submitted week
+- `POST /v1/timesheet-submissions/{submission_id}/return` (returnTimesheetSubmission): Return a submitted week with a comment
+- `GET /v1/timesheet/{week_start}` (getTimesheet): Read the caller's own week of time
+- `PUT /v1/timesheet/{week_start}` (saveTimesheet): Save the caller's week of time
+- `POST /v1/timesheet/{week_start}/submit` (submitTimesheet): Submit the caller's week for approval
 - `GET /v1/write-offs` (listWriteOffs): List the write-offs
 - `POST /v1/write-offs` (createWriteOff): Save a draft write-off
 - `GET /v1/write-offs/{write_off_id}` (getWriteOff): Get a write-off

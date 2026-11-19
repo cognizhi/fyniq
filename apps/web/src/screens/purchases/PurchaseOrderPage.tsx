@@ -1,3 +1,4 @@
+import { ProjectChoice } from "../projects/BillableFields";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { CircleCheck, CircleX, Lock, Plus, ReceiptText, Save, Trash2, UserCheck } from "lucide-react";
@@ -41,6 +42,7 @@ export interface OrderForm {
   expected_on: string;
   currency: string;
   notes: string;
+  project_id?: string; // the project the order is for (FR-PRJ-08); blank for none
   lines: Line[];
 }
 
@@ -67,6 +69,7 @@ function orderFormOf(o: Order): OrderForm {
     expected_on: o.expected_on ?? "",
     currency: o.currency,
     notes: o.notes ?? "",
+    project_id: o.project_id ?? "",
     lines: o.lines.map((l) => ({ key: `ol-${++keys}`, account_id: l.account_id, description: l.description ?? "", quantity: l.quantity, unit_price: l.unit_price, gst_code: l.gst_code })),
   };
 }
@@ -101,6 +104,7 @@ export function checkOrder(f: OrderForm, base: string): { draft?: Draft; errors:
       expected_on: f.expected_on || undefined,
       currency,
       notes: f.notes.trim() || undefined,
+      project_id: f.project_id || undefined,
       lines,
     },
   };
@@ -530,6 +534,7 @@ export function PurchaseOrderPage() {
                   ))}
                 </select>
               </div>
+              <ProjectChoice id={`${id}-project`} value={f.project_id ?? ""} disabled={!editable} onChange={(v) => set({ project_id: v })} />
               <div className="fy-field">
                 <label className="fy-label" htmlFor={`${id}-reference`}>
                   Reference (optional)

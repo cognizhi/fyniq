@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry": {
+      "$ref": "TimeEntry.schema.json",
+      "description": "The draft entry a stopped timer made."
+    },
+    "running": {
+      "description": "true while a timer runs.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "timer": {
+      "$ref": "TimerView.schema.json",
+      "description": "The running timer."
+    }
+  },
+  "required": [
+    "running"
+  ],
+  "title": "TimerState",
+  "type": "object"
+}

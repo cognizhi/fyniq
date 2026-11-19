@@ -10,6 +10,13 @@
       "format": "uuid",
       "type": "string"
     },
+    "billable": {
+      "description": "The line is a cost of a project that is billed on to its customer (FR-PRJ-08). It carries a project in dimension_value_ids; the project's unbilled view then lists it once the bill is posted, at its cost plus markup_percent.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
     "business_share": {
       "description": "The percentage of the purchase used for the business, with at most two decimals (FR-AP-20). Only that share of the line's GST is claimed, rounded half up to the cent (RND-GST-SHARE); the rest stays in the cost, and 0 claims none (a private purchase). Left out, 100.",
       "examples": [
@@ -52,6 +59,14 @@
         "TX"
       ],
       "pattern": "^[A-Z]{2,4}$",
+      "type": "string"
+    },
+    "markup_percent": {
+      "description": "The markup on the cost when it is billed on, a percentage from 0 to 999.99 with at most two decimals; the markup is rounded to the cent half away from zero (RND-MARKUP). Only on a billable line.",
+      "examples": [
+        "10"
+      ],
+      "pattern": "^[0-9]{1,3}(\\.[0-9]{1,2})?$",
       "type": "string"
     },
     "net": {
