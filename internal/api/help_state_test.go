@@ -183,6 +183,15 @@ func TestAPersonOptsInToAIAppsAndNobodyElseDoes(t *testing.T) {
 	if saves != 2 {
 		t.Fatalf("the choices' audit events: %v", actions)
 	}
+	revokes := 0
+	for _, a := range actions {
+		if a == "oauth.agent_tokens.revoke_requested" {
+			revokes++
+		}
+	}
+	if revokes != 1 { // opting out asks for the AI apps' tokens to be revoked, once; opting in does not
+		t.Errorf("the revocations asked for: %d in %v", revokes, actions)
+	}
 
 	// Only a person chooses: not a client, an integration or an AI, and not an Employee, an Auditor or the Board.
 	for name, p := range map[string]authn.Principal{

@@ -375,3 +375,38 @@ func (a *Admin) RegisterPublicClient(ctx context.Context, c ports.PublicRegistra
 	}
 	return out.ClientID, nil
 }
+
+var _ ports.OAuthConsents = (*Admin)(nil)
+
+// RevokeAgentConsents implements ports.OAuthConsents: the subject's consent sessions are listed, and those of an agent-class client
+// are deleted, one client at a time, which revokes every token issued under them.
+func (a *Admin) RevokeAgentConsents(ctx context.Context, subject string) error {
+	if subject == "" {
+		return errors.New("hydra: revoke needs a subject")
+	}
+	var sessions []struct {
+		ConsentRequest struct {
+			Client client `json:"client"`
+		} `json:"consent_request"`
+	}
+	err := a.do(ctx, http.MethodGet, "/admin/oauth2/auth/sessions/consent", url.Values{"subject": {subject}}, nil, nil, &sessions)
+	if errors.Is(err, ports.ErrNoChallenge) {
+		return nil // nothing to revoke
+	}
+	if err != nil {
+		return err
+	}
+	seen := map[string]bool{}
+	for _, s := range sessions {
+		c := s.ConsentRequest.Client
+		if c.Metadata["class"] != "agent" || c.ClientID == "" || seen[c.ClientID] {
+			continue
+		}
+		seen[c.ClientID] = true
+		err := a.do(ctx, http.MethodDelete, "/admin/oauth2/auth/sessions/consent", url.Values{"subject": {subject}, "client": {c.ClientID}}, nil, nil, nil)
+		if err != nil && !errors.Is(err, ports.ErrNoChallenge) {
+			return err
+		}
+	}
+	return nil
+}

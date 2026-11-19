@@ -139,3 +139,11 @@ type PublicRegistration struct {
 	// a client that registered itself.
 	App string
 }
+
+// OAuthConsents revokes what a person granted the AI apps (agent-class clients) at the OAuth server, without touching what they
+// granted anything else: their own opt-out of AI apps stops the tokens of every app at once (AI-35, AI-38), while their web
+// session and integrations are untouched.
+type OAuthConsents interface {
+	// RevokeAgentConsents revokes every access and refresh token issued to subject by an agent-class client.
+	RevokeAgentConsents(ctx context.Context, subject string) error
+}

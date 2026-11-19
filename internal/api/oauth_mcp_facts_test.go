@@ -20,12 +20,16 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/mcpgate"
 	"github.com/cognizhi/fyniq/internal/mcpserver"
 	"github.com/cognizhi/fyniq/internal/mcpsurface"
+	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
+	oauthtokens "github.com/cognizhi/fyniq/internal/tokens"
 )
 
 // loginRequestOf starts an authorisation request with q and returns the pending login the server hands the login app,
@@ -341,5 +345,72 @@ func TestAClaudeCodeFlowEndsInATokenOnlyThroughTheGates(t *testing.T) {
 	q.Set("resource", mcpAudience)
 	if l, _ := s.loginRequestOf(q, "http://evil.test/callback"); l.Challenge != "" {
 		t.Error("an unregistered redirect reached the login")
+	}
+}
+
+// A person's opt-out of AI apps asks, in the unit of work that records it, for the tokens their AI apps hold to be revoked; the
+// worker revokes them, and only them: the same person's token for an integration or the web stays valid. The per-call gate stops the
+// next call anyway; this ends the tokens too (AI-35, AI-38).
+// req: AI-35
+// req: AI-38
+// req: CTL-MCP-04
+// asvs: V10.4.9, V7.4.1
+func TestAnOptOutRevokesTheAIAppsTokensAndNothingElse(t *testing.T) {
+	s := startOAuth(t, 0)
+	ctx := context.Background()
+	if err := mcpgate.Register(ctx, s.admin, mcpAudience); err != nil {
+		t.Fatal(err)
+	}
+	q, verifier := pkceQuery("claude-code", "openid offline_access fyniq.read.reports")
+	q.Set("resource", mcpAudience)
+	_, agent, _ := s.walk(q, verifier, "http://localhost:3118/callback", url.Values{"resource": {mcpAudience}})
+	integration, err := s.admin.CreateClient(ctx, hydra.NewClient{Name: "Test integration", Class: authn.ClassIntegration, Audiences: []string{apiAudience},
+		RedirectURIs: []string{callback}, Scopes: []string{"openid", "fyniq.read.accounting"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, refused := s.authorize(integration.ID, apiAudience, "openid fyniq.read.accounting", true, "accept")
+	if refused != "" || agent["access_token"] == nil {
+		t.Fatalf("the tokens: %q %v", refused, agent)
+	}
+	active := func(token any) bool {
+		in, err := s.admin.Introspect(ctx, token.(string))
+		return err == nil && in.Active
+	}
+	if !active(agent["access_token"]) || !active(other["access_token"]) {
+		t.Fatal("both tokens should be live")
+	}
+	var row storage.OutboxRow
+	err = s.e.store.Do(ctx, s.e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		if err := oauthtokens.RevokeAgents(ctx, outbox.Dispatcher{Store: s.e.store, Queue: local.NewMemory(), Clock: s.clock}, u, s.e.books.Org, s.userID.String(), "the person opted out"); err != nil {
+			return err
+		}
+		rows, err := u.Sweeping().Due(ctx, s.clock.Now().Add(time.Hour), s.clock.Now().Add(time.Hour))
+		for _, r := range rows {
+			if r.Kind == oauthtokens.AgentKind {
+				row = r
+			}
+		}
+		return err
+	})
+	if err != nil || row.Kind != oauthtokens.AgentKind {
+		t.Fatalf("the revocation was not queued with the change: %v", err)
+	}
+	if err := oauthtokens.AgentWork(s.admin)(ctx, s.e.books.Org, row); err != nil {
+		t.Fatal(err)
+	}
+	if active(agent["access_token"]) {
+		t.Error("the AI app's token survives the opt-out")
+	}
+	if rt, _ := agent["refresh_token"].(string); rt != "" {
+		if _, refusedRefresh := s.refresh("claude-code", rt); refusedRefresh == "" {
+			t.Error("the AI app's refresh token survives the opt-out")
+		}
+	}
+	if !active(other["access_token"]) {
+		t.Error("the opt-out revoked a token that is not an AI app's")
+	}
+	if err := oauthtokens.AgentWork(s.admin)(ctx, s.e.books.Org, row); err != nil { // again: nothing left to revoke, and no error
+		t.Errorf("revoking twice: %v", err)
 	}
 }

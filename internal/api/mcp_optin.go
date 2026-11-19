@@ -13,6 +13,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	oauthtokens "github.com/cognizhi/fyniq/internal/tokens"
 )
 
 // CodeMCPNoUser refuses an MCP choice from a caller that is not a person who is a member: only a person opts in, never a
@@ -170,6 +171,11 @@ func registerMCPOptIn(a *API) {
 			saved, err := u.MCPOptIns().Set(ctx, storage.MCPOptIn{UserID: p.UserID, OptedIn: in.Body.OptedIn})
 			if err != nil {
 				return MCPAccess{}, err
+			}
+			if !in.Body.OptedIn && a.deps.Outbox != nil { // opting out also ends the tokens their AI apps hold, once this commits (AI-35, AI-38)
+				if err := oauthtokens.RevokeAgents(ctx, *a.deps.Outbox, u, p.Organisation, p.UserID.String(), "the person opted out of AI apps"); err != nil {
+					return MCPAccess{}, err
+				}
 			}
 			on, apps, err := mcpOrganisation(ctx, a, u)
 			if err != nil {
