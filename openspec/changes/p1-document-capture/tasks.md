@@ -33,7 +33,8 @@
   with `save_defaults` keeps the first line's as the contact's defaults, as them, where it has none (a default it holds is never replaced).
   The terms and dimensions the PRD names stay with the contact's own fields; the web form pre-selects the suggested account for the person
   to check.
-- [ ] 3.3 Suggested bank or card lines for a receipt (design D8). Test `// req: FR-DOC-12`.
+- [x] 3.3 Suggested bank lines for a read document (design D8): waiting lines of the same amount and currency within five days of its date, the
+  supplier's name first, for those who may see bank lines (`matches`; the web shows them). A suggestion only. Card lines are not matched.
 
 ## 4. The screen, the guide, the evals
 
@@ -46,7 +47,9 @@
   for those who may not enter bills. The guide is `docs/user-guide/document-inbox.md`, compiled to `kb/pages/task/documents-inbox.md`.
 - [x] 4.3 The web form for a draft claim from a receipt, the list of accepted mail waiting to be captured (one click each), and the NRIC
   flag's words on the row. Built with the masker (D3a).
-- [ ] 4.4 **Left:** the background reading of mail as it arrives (a worker job and its service token); bank matching (3.3: only after the bank
-  transaction lines can be queried by amount and date); the capture evals (4.2).
+- [ ] 4.4 **Left [live-verify]:** the background reading of mail as it arrives. The existing pattern is the knowledge-base compiler's own service token
+  and class in `cmd/worker`, a security-identity addition; until the owner approves a `document_capture` service class the reading is on a
+  person's request (D3). The capture evals (4.2) need the eval harness to ask a model a document's text and judge the reading's fields; it asks questions of
+  the sample company today.
 - [ ] 4.2 The `capture` eval suite and the red team's injected document; the threat model `email-in.md` grows (design D10).
   Tests `// req: QA-AI-02`, `// req: AI-18`.

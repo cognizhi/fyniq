@@ -673,6 +673,25 @@ export function DocumentInbox() {
             </p>
           )}
           <ReadingCard c={chosen} />
+          {(chosen.matches ?? []).length > 0 && (
+            <section className="fy-card" aria-label="Bank lines it may match">
+              <div className="fy-card__head">
+                <h3 className="fy-h3">Bank lines it may match</h3>
+              </div>
+              <ul className="fy-list fy-card__body">
+                {(chosen.matches ?? []).map((m) => (
+                  <li key={m.line_id} className="fy-row gap-2">
+                    <span className="fy-small">
+                      {m.booking_date}, {m.amount} {m.currency}
+                      {m.counterparty ? `, ${m.counterparty}` : ""}
+                      {m.name_matches ? " (the supplier's name matches)" : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="fy-small fy-muted fy-card__body">A suggestion: match it in the bank screen, where the line is reconciled.</p>
+            </section>
+          )}
           {mayDraft && ["received", "reading", "failed", "read"].includes(chosen.status) && (
             <div className="fy-row fy-row--wrap gap-2">
               <Button variant="secondary" onClick={() => void read(chosen)} disabled={busy !== ""}>

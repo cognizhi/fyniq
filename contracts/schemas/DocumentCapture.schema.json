@@ -96,6 +96,13 @@
       },
       "type": "array"
     },
+    "matches": {
+      "description": "Waiting bank lines of the same amount within five days of its date, for someone who may see bank lines: a suggestion to follow in the bank screen (FR-DOC-12).",
+      "items": {
+        "$ref": "CaptureLineMatch.schema.json"
+      },
+      "type": "array"
+    },
     "media_type": {
       "description": "Its type, decided from its content.",
       "examples": [

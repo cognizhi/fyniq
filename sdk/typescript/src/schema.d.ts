@@ -26267,6 +26267,40 @@ export interface components {
              */
             message_id: string;
         };
+        CaptureLineMatch: {
+            /**
+             * @description Its amount as a decimal string, as the bank shows it.
+             * @example -109.00
+             */
+            amount: string;
+            /**
+             * Format: date
+             * @description Its booking date.
+             * @example 2026-10-15
+             */
+            booking_date: string;
+            /**
+             * @description Who the bank says it was with.
+             * @example ATLASSIAN
+             */
+            counterparty?: string;
+            /**
+             * @description Its currency.
+             * @example SGD
+             */
+            currency: string;
+            /**
+             * Format: uuid
+             * @description The bank line.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f50
+             */
+            line_id: string;
+            /**
+             * @description true when the counterparty or the description holds the supplier's name.
+             * @example true
+             */
+            name_matches: boolean;
+        };
         CaptureSupplier: {
             /**
              * @description How it matched.
@@ -33055,6 +33089,8 @@ export interface components {
              *     ]
              */
             low_confidence?: string[];
+            /** @description Waiting bank lines of the same amount within five days of its date, for someone who may see bank lines: a suggestion to follow in the bank screen (FR-DOC-12). */
+            matches?: components["schemas"]["CaptureLineMatch"][];
             /**
              * @description Its type, decided from its content.
              * @example application/pdf

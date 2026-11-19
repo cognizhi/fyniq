@@ -508,3 +508,19 @@ func TestAcceptedMailIsCapturedByAPersonAndAnotherMembersMailIsNot(t *testing.T)
 		}
 	}
 }
+
+// A read document suggests the waiting bank lines of the same amount and currency within five days of its date, for someone who may see bank lines, the supplier's
+// name first; it matches nothing itself (FR-DOC-12's receipt matching: a suggestion to follow in the bank screen). Every role that may see bills may also see
+// bank lines today, so the gate (`ListBankLines`) is not exercised by a refusal here. Not tagged FR-DOC-12: the pipeline is only partly built.
+func TestAReadDocumentSuggestsTheBankLinesItMayMatch(t *testing.T) {
+	e, _ := captureEnv(t, captureReading("AU-5001", "109.00", func(r map[string]any) { r["date"] = map[string]any{"value": "2026-10-18", "confidence": 0.9} }))
+	acc := e.as(authz.Accountant)
+	e.bankLine("-109.00") // booked 20 October: within five days of the 18th
+	e.bankLine("-50.00")  // another amount
+	c := e.capture(acc, "m.txt", []byte("Tax invoice AU-5001\nTotal 109.00\n"))
+	r := e.call(http.MethodPost, "/v1/captures/"+c.str("id")+"/read", acc, nil, "If-Match", c.Header.Get("ETag"))
+	m, _ := r.Body["matches"].([]any)
+	if r.Status != http.StatusOK || len(m) != 1 || m[0].(map[string]any)["amount"] != "-109.0000" {
+		t.Fatalf("the suggested lines: %d %s", r.Status, r.Raw)
+	}
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "Its amount as a decimal string, as the bank shows it.",
+      "examples": [
+        "-109.00"
+      ],
+      "type": "string"
+    },
+    "booking_date": {
+      "description": "Its booking date.",
+      "examples": [
+        "2026-10-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "counterparty": {
+      "description": "Who the bank says it was with.",
+      "examples": [
+        "ATLASSIAN"
+      ],
+      "type": "string"
+    },
+    "currency": {
+      "description": "Its currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "line_id": {
+      "description": "The bank line.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f50"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name_matches": {
+      "description": "true when the counterparty or the description holds the supplier's name.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "line_id",
+    "booking_date",
+    "amount",
+    "currency",
+    "name_matches"
+  ],
+  "title": "CaptureLineMatch",
+  "type": "object"
+}

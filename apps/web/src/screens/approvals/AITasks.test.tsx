@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { components } from "../../api/schema";
-import { answer, type Handler } from "../../test/api";
+import { answer, ownerSession, type Handler } from "../../test/api";
 import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { noAuthenticator } from "../../test/webauthn";
@@ -114,5 +114,26 @@ describe("the AI tasks page", () => {
     renderPage(AITasks, { path: "/inbox/ai-tasks" });
     fireEvent.click(await screen.findByRole("tab", { name: "Catalogue" }));
     expect(await screen.findByText("The AI is switched off")).toBeTruthy();
+  });
+
+  it("shows the Owner the month's approval quality and lets them sign its review, once", async () => {
+    const metrics = { made: 10, approved: 8, rejected: 1, expired: 1, invalid: 0, stale: 0, quick_share: 0.25, median_decision_seconds: 90, rejected_with_reason_share: 1, per_approver: [], task_types: [] };
+    const seen = serve([createTask], "", {
+      "GET /v1/ai/approval-quality": { status: 200, body: { month: "2026-11", metrics } },
+      "POST /v1/ai/approval-reviews": { status: 201, body: { month: "2026-11", metrics, signed_by: "u1", signed_at: "2026-12-01T01:00:00Z", note: "Fine" } },
+    });
+    renderPage(AITasks, { path: "/inbox/ai-tasks", session: { ...ownerSession, roles: ["owner"] } as never });
+    fireEvent.click(await screen.findByRole("tab", { name: "Approval quality" }));
+    expect(await screen.findByText("25%")).toBeTruthy();
+    expect(screen.getByText("Proposals made")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Sign the review of/ }));
+    await waitFor(() => expect(seen.some((s) => s.path === "/v1/ai/approval-reviews")).toBe(true));
+  });
+
+  it("offers the approval quality only to the Owner and the DPO", async () => {
+    serve();
+    renderPage(AITasks, { path: "/inbox/ai-tasks", session: { ...ownerSession, roles: ["accountant"] } as never });
+    await screen.findByRole("tab", { name: "Catalogue" });
+    expect(screen.queryByRole("tab", { name: "Approval quality" })).toBeNull();
   });
 });
