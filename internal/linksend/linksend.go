@@ -1,0 +1,228 @@
+// Package linksend is how Fyniq tells Nemura what became of what Nemura sent (PRD-001 FR-PPL-04, FR-PPL-11, FR-PPL-12, FR-PPL-15; PRD-002 NM-INT-03, NM-INT-10; p1-payroll-link task 5.3): the
+// answer to a pay run (`payroll.run.posted`) and, when salary payments exist, the state of each payment (`payroll.payments.status`). An event is queued in the unit of work of the change it
+// reports (the transactional outbox, ADR-T7), with its identity and sequence fixed then, and the worker signs it with the link's envelope key, gets the link's token from Nemura's own OAuth server
+// with the link's client key (private_key_jwt) and posts it to Nemura's inbox. A retry after a lost answer is the same event, which Nemura's dedupe by event ID absorbs. Nothing here logs a payload or
+// a token, and the worker's role alone can read the keys.
+package linksend
+
+import (
+	"bytes"
+	"context"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/x509"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"sync"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/cognizhi/fyniq/internal/adapters/hydra"
+	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
+	"github.com/cognizhi/fyniq/internal/outbox"
+	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/ports/storage"
+)
+
+// Kind is the outbox kind of an event for Nemura.
+const Kind = "people_link.send"
+
+// The event types Fyniq sends (PRD-002 Appendix E).
+const (
+	TypeRunPosted      = "payroll.run.posted"
+	TypePaymentsStatus = "payroll.payments.status"
+)
+
+// Scope of Nemura's own OAuth server that the link's client holds: it reaches Nemura's event inbox and nothing else.
+const Scope = "link.events.write"
+
+// path is where each event type goes on Nemura's API.
+var path = map[string]string{TypeRunPosted: "/v1/link/events", TypePaymentsStatus: "/v1/link/events"}
+
+// Queued is what the outbox row keeps of an event. Only an event whose payload carries no pay or bank figure may keep it here (payroll.run.posted: a run's ID, its version, the posting's reference or
+// the refusal's stable code and plain message): a type with figures is built from its source when it is sent, never kept in a row (design D5).
+type Queued struct {
+	EventID       string          `json:"event_id"`
+	Sequence      int64           `json:"sequence"`
+	Type          string          `json:"type"`
+	ObjectType    string          `json:"object_type"`
+	ObjectID      string          `json:"object_id"`
+	ObjectVersion int             `json:"object_version"`
+	CorrelationID string          `json:"correlation_id"`
+	Payload       json.RawMessage `json:"payload,omitempty"`
+}
+
+// RunPosted is the payload of payroll.run.posted: the posting's reference, or the stable code and the plain words of a refusal.
+type RunPosted struct {
+	RunID      string `json:"run_id"`
+	Version    int    `json:"version"`
+	Status     string `json:"status"` // posted or refused
+	PostingRef string `json:"posting_ref"`
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+}
+
+// Queue queues an event about an object for Nemura in the unit of work that changed the object, when the organisation's link is active and has keys, and returns its event ID; otherwise it does
+// nothing and returns "". The sequence is the link's next number, taken under the row's lock, so events leave in the order they were committed. The row's business key is "link:" and the event ID.
+func Queue(ctx context.Context, u storage.UnitOfWork, typ, objectType, objectID string, version int, payload any) (string, error) {
+	if typ != TypeRunPosted {
+		return "", fmt.Errorf("Fyniq does not queue %s with a payload: build it from its source when it is sent", typ)
+	}
+	l, err := u.PeopleLinks().Live(ctx)
+	if errors.Is(err, ports.ErrNotFound) || (err == nil && l.State != storage.LinkActive) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	if _, err := u.PeopleLinks().Keys(ctx, l.ID); errors.Is(err, ports.ErrNotFound) {
+		return "", nil // a link made before it had keys cannot send
+	} else if err != nil {
+		return "", err
+	}
+	seq, err := u.PeopleLinks().NextSequence(ctx, l.ID)
+	if err != nil {
+		return "", err
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+	q := Queued{EventID: uuid.NewString(), Sequence: seq, Type: typ, ObjectType: objectType, ObjectID: objectID, ObjectVersion: version, CorrelationID: uuid.NewString(), Payload: raw}
+	row, err := json.Marshal(q)
+	if err != nil {
+		return "", err
+	}
+	if _, err := u.Outbox().Enqueue(ctx, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: Kind, Payload: row, BusinessKey: "link:" + q.EventID, MaxAttempts: 8}); err != nil {
+		return "", err
+	}
+	return q.EventID, u.Audit().Record(ctx, storage.AuditRecord{Action: "people_link.event_queued", ObjectType: "people_link", ObjectID: l.ID,
+		Changes: map[string][2]any{"event": {nil, map[string]any{"type": typ, "sequence": seq}}}}) // the type and the number, never the payload
+}
+
+// Sender sends the queued events: the link's token (the client-credentials grant at Nemura's OAuth server, signed by the link's client key), then the signed envelope to Nemura's inbox. Nemura's API URL,
+// token endpoint and audience come from the deployment's settings, so the egress allow-list is fixed when the service starts and no link row can point the worker at another host.
+type Sender struct {
+	Store    storage.Store // the worker's
+	Clock    ports.Clock
+	HTTP     *http.Client // through internal/egress, to Nemura's API and token hosts only
+	APIURL   string       // Nemura's API, without a trailing slash and with its /api base
+	TokenURL string       // Nemura's OAuth server's token endpoint
+	Audience string       // Nemura's API audience
+
+	mu     sync.Mutex
+	tokens map[uuid.UUID]*hydra.TokenSource
+}
+
+func (s *Sender) source(link storage.PeopleLinkRow, clientID string, key *ecdsa.PrivateKey) *hydra.TokenSource {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.tokens == nil {
+		s.tokens = map[uuid.UUID]*hydra.TokenSource{}
+	}
+	t, ok := s.tokens[link.ID]
+	if !ok {
+		t = &hydra.TokenSource{TokenURL: s.TokenURL, ClientID: clientID, Key: key, Audience: s.Audience, HTTP: s.HTTP, Clock: s.Clock}
+		s.tokens[link.ID] = t
+	}
+	return t
+}
+
+// Work is the worker's delivery of one queued event. It signs in a unit of work of its own and sends after it ends, so no database lock is held over the network. A 2xx answer finishes the row (a
+// duplicate is the same); anything else fails it with Nemura's status and stable code and never the payload, and the outbox tries again until its attempts are used up.
+func (s *Sender) Work() outbox.Work {
+	return func(ctx context.Context, org uuid.UUID, row storage.OutboxRow) error {
+		var q Queued
+		if err := json.Unmarshal(row.Payload, &q); err != nil || q.EventID == "" {
+			return fmt.Errorf("the link row %s is not a queued event", row.ID)
+		}
+		p, ok := path[q.Type]
+		if !ok {
+			return fmt.Errorf("Fyniq does not send %s", q.Type)
+		}
+		if s.APIURL == "" || s.TokenURL == "" || s.Audience == "" || s.HTTP == nil {
+			return errors.New("the link's endpoints are not configured: set FYNIQ_NEMURA_API_URL, FYNIQ_NEMURA_TOKEN_URL and FYNIQ_NEMURA_API_AUDIENCE")
+		}
+		var env peoplelink.Envelope
+		var link storage.PeopleLinkRow
+		var clientID string
+		var key *ecdsa.PrivateKey
+		gone := false
+		if err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			var err error
+			link, err = u.PeopleLinks().Live(ctx)
+			if errors.Is(err, ports.ErrNotFound) {
+				gone = true
+				return nil // the link ended with this event unsent: there is no one to tell
+			}
+			if err != nil {
+				return err
+			}
+			if link.State != storage.LinkActive && link.State != storage.LinkUnlinking { // unlinking settles what is queued first
+				return fmt.Errorf("the link is %s: the event waits", link.State)
+			}
+			keys, err := u.PeopleLinks().Keys(ctx, link.ID)
+			if err != nil {
+				return err
+			}
+			sec, err := u.PeopleLinks().Secrets(ctx, link.ID)
+			if err != nil {
+				return err
+			}
+			der, err := x509.ParsePKCS8PrivateKey(sec.ClientPrivate)
+			if err != nil {
+				return errors.New("the link's client key cannot be read")
+			}
+			var ok bool
+			if key, ok = der.(*ecdsa.PrivateKey); !ok {
+				return errors.New("the link's client key is not an EC key")
+			}
+			clientID = keys.NemuraClientID
+			now := s.Clock.Now().UTC().Format(time.RFC3339)
+			env, err = peoplelink.Sign(ed25519.PrivateKey(sec.LinkPrivate), peoplelink.Header{EventID: q.EventID, Type: q.Type, SchemaVersion: 1, SourceSystem: "fyniq",
+				SourceOrganisation: org.String(), TargetOrganisation: link.NemuraOrganisationID.String(), Epoch: link.Epoch, Sequence: q.Sequence, ObjectType: q.ObjectType, ObjectID: q.ObjectID,
+				ObjectVersion: q.ObjectVersion, EffectiveAt: now, RecordedAt: now, SignedAt: now, CorrelationID: q.CorrelationID}, q.Payload)
+			return err
+		}); err != nil {
+			return err
+		}
+		if gone {
+			return nil
+		}
+		token, err := s.source(link, clientID, key).Token(ctx, Scope)
+		if err != nil {
+			return err
+		}
+		body, err := json.Marshal(env)
+		if err != nil {
+			return err
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.APIURL+p, bytes.NewReader(body))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+		resp, err := s.HTTP.Do(req)
+		if err != nil {
+			return fmt.Errorf("Nemura did not answer: %w", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		answer, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<16))
+		if resp.StatusCode/100 != 2 {
+			var pr struct {
+				Code string `json:"code"`
+			}
+			_ = json.Unmarshal(answer, &pr)
+			return fmt.Errorf("Nemura answered %d %s", resp.StatusCode, pr.Code) // the status and Nemura's code only, never the payload or the answer's text
+		}
+		return s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			return u.Audit().Record(ctx, storage.AuditRecord{Action: "people_link.event_sent", ObjectType: "people_link", ObjectID: link.ID,
+				Changes: map[string][2]any{"event": {nil, map[string]any{"type": q.Type, "sequence": q.Sequence}}}})
+		})
+	}
+}

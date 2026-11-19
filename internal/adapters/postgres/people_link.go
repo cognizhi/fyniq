@@ -102,6 +102,59 @@ func (r peopleLinks) SetState(ctx context.Context, id uuid.UUID, version int, st
 	return out, r.u.event(ctx, "people_link."+state, "people_link", out.ID, &out.Version, map[string][2]any{"link": {linkView(before), linkView(out)}})
 }
 
+func (r peopleLinks) SaveKeys(ctx context.Context, k storage.PeopleLinkKeys, sec storage.PeopleLinkSecrets) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	if err := r.u.q.InsertPeopleLinkKey(ctx, sqlcdb.InsertPeopleLinkKeyParams{LinkID: k.LinkID, NemuraClientID: k.NemuraClientID, LinkPublic: k.LinkPublic, ClientPublic: k.ClientPublic}); err != nil {
+		return mapError(err)
+	}
+	if err := r.u.q.InsertPeopleLinkSecret(ctx, sqlcdb.InsertPeopleLinkSecretParams{LinkID: sec.LinkID, LinkPrivate: sec.LinkPrivate, ClientPrivate: sec.ClientPrivate}); err != nil {
+		return mapError(err)
+	}
+	// The audit event says that the link has keys and which client they are for; no key, public or private.
+	return r.u.event(ctx, "people_link.keys_made", "people_link_key", k.LinkID, nil, map[string][2]any{"nemura_client_id": {nil, k.NemuraClientID}})
+}
+
+func (r peopleLinks) Keys(ctx context.Context, link uuid.UUID) (storage.PeopleLinkKeys, error) {
+	if err := r.u.check(); err != nil {
+		return storage.PeopleLinkKeys{}, err
+	}
+	x, err := r.u.q.PeopleLinkKeys(ctx, link)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.PeopleLinkKeys{}, ports.ErrNotFound
+	}
+	if err != nil {
+		return storage.PeopleLinkKeys{}, mapError(err)
+	}
+	return storage.PeopleLinkKeys{LinkID: x.LinkID, NemuraClientID: x.NemuraClientID, LinkPublic: slices.Clone(x.LinkPublic), ClientPublic: slices.Clone(x.ClientPublic), Sequence: x.Sequence}, nil
+}
+
+func (r peopleLinks) NextSequence(ctx context.Context, link uuid.UUID) (int64, error) {
+	if err := r.u.check(); err != nil {
+		return 0, err
+	}
+	n, err := r.u.q.NextPeopleLinkSequence(ctx, link)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, ports.ErrNotFound
+	}
+	return n, mapError(err)
+}
+
+func (r peopleLinks) Secrets(ctx context.Context, link uuid.UUID) (storage.PeopleLinkSecrets, error) {
+	if err := r.u.check(); err != nil {
+		return storage.PeopleLinkSecrets{}, err
+	}
+	x, err := r.u.q.PeopleLinkSecret(ctx, link)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.PeopleLinkSecrets{}, ports.ErrNotFound
+	}
+	if err != nil {
+		return storage.PeopleLinkSecrets{}, mapError(err)
+	}
+	return storage.PeopleLinkSecrets{LinkID: x.LinkID, LinkPrivate: slices.Clone(x.LinkPrivate), ClientPrivate: slices.Clone(x.ClientPrivate)}, nil
+}
+
 func (r peopleLinks) SetSource(ctx context.Context, s storage.PeopleSource) error {
 	if err := r.u.check(); err != nil {
 		return err
