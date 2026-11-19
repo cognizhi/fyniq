@@ -10,8 +10,10 @@ taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
-schema: kb-schema@1
+schema: kb-schema@2
 compiled_at: 2026-11-07
+packs:
+  - sg-gst@2026.3
 aliases:
   - must I register for GST
   - GST threshold

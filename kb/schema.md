@@ -1,4 +1,4 @@
-# Knowledge-base schema (kb-schema@1)
+# Knowledge-base schema (kb-schema@2)
 
 The single schema for the compiled knowledge base (PRD-001 §9.11, ADR-T6). Two compilers read
 it: an agent in this repository, following the `fyniq-knowledge-base` skill, and the runtime
@@ -40,18 +40,26 @@ taint: trusted                            # trusted | untrusted (untrusted: P2 o
 status: draft                             # draft | published; draft if any source is a draft
 human_edited: false                       # true after an admin edit; a recompile must not overwrite it
 compiled_by: <model id> via <tool>        # e.g. claude-opus-5-5 via Claude Code
-schema: kb-schema@1
+schema: kb-schema@2
 compiled_at: 2026-10-12
 ---
 ```
 
-Optional field:
+Optional fields:
 
 ```
 aliases:                                  # other words users type for this topic (full-text search)
   - director loan
   - money I lent the company
+packs:                                    # kb-schema@2: the statutory pack versions its values were read from
+  - sg-gst@2026.3
 ```
+
+`packs` lists each statutory pack (`packs/<pack>/<year>.<n>/`) a page states a value from: a rate, a threshold, a
+deadline or a rule with effective dates. Each line is `<pack>@<year>.<n>` and names a version that exists. The lint
+(`make kb-lint`, `make kb-stale`) flags the page as out of date when a newer version of the pack exists (`KB-PACK-STALE`,
+AI-53): recompile it from its sources and the new pack, then set `packs` to the new version. A page that states no
+statutory value leaves the field out. The assistant still re-reads every statutory value with `packs.get`.
 
 ## Body rules
 
@@ -59,8 +67,8 @@ aliases:                                  # other words users type for this topi
    `(src: <path>#<heading-anchor>)`, where the path is listed in `sources` and the anchor is
    the source heading's GitHub-style slug.
 2. **No organisation figures, ever.** Statutory or programme values only as the source states
-   them, with the source cited; the assistant re-reads statutory values with `packs.get` before
-   stating them (AI-53).
+   them, with the source cited, and the pack version they were read from in `packs`; the assistant
+   re-reads statutory values with `packs.get` before stating them (AI-53).
 3. **Every number in a page appears verbatim in one of its sources.** The linter checks this.
    Write ranges and amounts exactly as the source does.
 4. Link related pages with `[[key]]`. Every page should have at least one inbound link from
@@ -79,6 +87,6 @@ aliases:                                  # other words users type for this topi
 |---|---|---|
 | Compile | Follow the `fyniq-knowledge-base` skill: read the changed sources, update or create the affected pages, record each source's hash (`scripts/kb.py hash <path>`) | Whenever a source changes |
 | Index | `make kb-index` | After every compile or edit |
-| Deterministic lint | `make kb-lint` (part of `make check`; CI fails on errors) | Every change |
+| Deterministic lint | `make kb-lint` (part of `make check`; CI fails on errors); `make kb-stale` lists the pages whose sources or statutory packs changed | Every change; every new pack version |
 | Semantic lint | The skill's checklist: contradictions, superseded claims, orphans, missing pages and cross-references | Each release; weekly for organisation pages |
 | Log | `python3 scripts/kb.py log <compile|edit|lint> "<what changed>"` | After each operation |

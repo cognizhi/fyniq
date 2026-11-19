@@ -37,6 +37,9 @@ RULES = [
     (r"source line must be", "KB-SOURCE-LINE"),
     (r"is internal and may not be a source", "KB-SOURCE-BANNED"),
     (r"source not found", "KB-SOURCE-GONE"),
+    (r"packs must be a non-empty list|packs line must be", "KB-PACK-LINE"),
+    (r"pack not found", "KB-PACK-GONE"),
+    (r"pack \S+ is out of date: the page read", "KB-PACK-STALE"),
     (r"STALE", "KB-STALE"),
     (r"published, but its source", "KB-PUBLISH-DRAFT"),
     (r"the body should start with", "KB-TITLE"),
@@ -80,6 +83,26 @@ class TheLintsAgree(unittest.TestCase):
             with self.subTest(case=case.name):
                 want = set((case / "expect.txt").read_text().split("\n")) - {""}
                 self.assertEqual(findings(case), want)
+
+
+class StaleListsAPageWhosePackChanged(unittest.TestCase):
+    """`make kb-stale` lists a page whose statutory pack has a newer version (kb-schema@2 `packs`; AI-53), and no other."""
+
+    def stale(self, name):
+        case = FIXTURES / name
+        out = subprocess.run([sys.executable, str(ROOT / "scripts" / "kb.py"), "stale"], capture_output=True, text=True,
+                             env=dict(os.environ, KB_ROOT=str(case)))
+        self.assertEqual(out.returncode, 0, out.stderr)
+        return out.stdout.splitlines()
+
+    def test_a_newer_pack_version_makes_the_page_stale(self):
+        lines = self.stale("pack-stale")
+        self.assertEqual(len(lines), 1, lines)
+        self.assertTrue(lines[0].startswith("stale-pack kb/pages/task/a.md"), lines)
+        self.assertIn("sg-test@2026.2", lines[0])
+
+    def test_a_current_page_is_not_listed(self):
+        self.assertEqual(self.stale("pack-current"), [])
 
 
 if __name__ == "__main__":
