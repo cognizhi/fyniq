@@ -113,6 +113,18 @@ pack's months). The audit event of a direct change names the fields that changed
 **Decided: A.** The retention months are the data inventory's 12 (MOM: employment records for 1 year after the person leaves). The API refuses every operation a leaver does not
 keep with `NM_LEAVER_ACCOUNT`; the list is the person's own documents, their own letters (read, link), asking a question and their own requests.
 
+### O6. When the invitation task is raised before the link exists
+
+| Option | Pros | Cons |
+|---|---|---|
+| **A. A setting "invite new people to Fyniq", off by default; the link switches it on** | A Nemura-only company sees no noise; the task is a real list the link later closes; nothing in the link's contract is assumed | One more setting until the link arrives |
+| B. Always raise the task | No setting | Noise for a company without Fyniq, and a task nobody can complete |
+| C. Wait for the link | Nothing to undo | NM-ONB-02 (M, P1) is unmet until then |
+
+**Decided: A.** The offboarding record keeps the dates that start statutory clocks apart and no figure of money: final pay, IR21 and the tax-clearance hold are payroll's. The leave
+settlement is days only; whether untaken days are paid, and the recovery of days taken beyond the prorated entitlement, follow the contract and the Employment Act
+`[accountant to confirm]` and are not decided here. The retrenchment notification to MOM is recorded as the date employees were told; its rule is not stated here `[verify]`.
+
 ## Risks / Trade-offs
 
 - [A letter is edited after issue] -> the hash of the exact bytes is kept in a row nothing can change; a replacement is a new row.

@@ -11,17 +11,16 @@ tools and the same `propose` tool** as the in-app assistant (PRD-001 rev 0.2 §9
 by design (any MCP client can be connected) and closed by default (nothing connects until the
 Owner allows it).
 
-> **Status (19 Nov 2026):** `cmd/mcp` serves the launch shell (`internal/mcpshell`): no tool, every call refused with
-> `MCP-OFF-01`. Built already: the consent app (`internal/oauthflow`), the MCP-audience refusal and the delegation tokens in
-> `internal/authn`, option (b) delegation (`internal/mcpdelegation`, ADR-T3 spike), the tool registry and `callAITool`. The
-> server, the gates, the scope map, the manifest, Connected apps and the suite are the planned change
-> `openspec/changes/p1-mcp-first-party` (read its design.md first; it lists what is verified and what is decided). Statements
-> below describe the target design (§9.7, ADR-T3 §12.2.1, Appendix F.7a) until a slice of that change builds them.
-> MCP specification details are flagged **[verify against the MCP spec revision in force]**. The revision in force on
-> 19 Nov 2026 is **2026-07-28**: it removes protocol-level sessions (`Mcp-Session-Id`) and the GET stream, requires
-> `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` headers checked against the body (`-32020`), makes `server/discover`
-> mandatory, deprecates dynamic client registration and has the authorisation server send `iss` (RFC 9207). The session rows
-> below describe the 2025-11-25 and earlier shape and apply only to a compatibility layer.
+> **Status (20 Nov 2026):** built and closed. `cmd/mcp` serves the server only when `FYNIQ_MCP_SERVER=on` (otherwise the launch shell
+> answers `MCP-OFF-01`); the deployment switch is not set until security review #4. It speaks MCP revision **2026-07-28 only**
+> (PRD-001 rev 0.294): no protocol sessions and no GET stream, an `Mcp-Session-Id` is ignored and never minted, the token is checked on
+> every request, and `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` must match the body (`-32020`). Delegation is option (b)
+> (ADR-T3: an ES256 assertion exchanged at Hydra for a delegated API token of at most 5 minutes). The gates all live in the API; tools,
+> scopes and the manifest are `contracts/ai/mcp-*.json`; `kb.*` is not offered over MCP; proposals over MCP need another approver or a
+> fresh step-up (owner decision B); client registration is Fyniq's own RFC 7591 endpoint, closed by default (AI-90). The PRD rows and
+> `docs/security/threat-models/mcp-server.md` are the record of what is built; statements below that describe an earlier revision's
+> sessions apply only to a compatibility layer that is not built. MCP specification details stay flagged
+> **[verify against the MCP spec revision in force]**.
 
 ## Non-negotiables
 
@@ -124,12 +123,12 @@ the audit trail. The registry build fails if a tool maps to any of these domain 
   HTTP+SSE in production.
 - Validate `Origin` against the allowlist (DNS-rebinding defence); reject a missing `Origin`
   from browsers.
-- `Mcp-Session-Id` is random, bound to the token's subject and client ID, and never accepted as
+- (rev 0.294: not built, the revision in force has no sessions) `Mcp-Session-Id` is random, bound to the token's subject and client ID, and never accepted as
   authentication.
 
 ## Limits, kill switches, audit (AI-43…45)
 
-AI-43 names the limits but not their values; the numbers below are proposed defaults to confirm
+AI-43's values are built (rev 0.340) as organisation settings with the recommended values below; a result is capped by the tool registry at 50 rows and 4,000 tokens. Proposed defaults, as built
 at P1.
 
 | Control | Proposed default |

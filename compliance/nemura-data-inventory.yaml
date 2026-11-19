@@ -30,7 +30,7 @@ classes:
     retention: "MOM: employment records of a former employee are kept for 1 year after they leave"
     protection: "Row-level security per organisation; every change is audited; job history is never edited, only ended"
     transfers: "None"
-    columns: [person.legal_name, person.preferred_name, person.work_email, person.phone, person.leaving_reason]
+    columns: [person.legal_name, person.preferred_name, person.work_email, person.phone, person.leaving_reason, join_task.note]
   - key: legal-classification
     what: "A person's legal classification: contract of service or for service, Employment Act cover and Part IV class, residency and the date residence began, and date of birth"
     why: "To apply the right statutory rules to the person (leave, hours, retirement and re-employment) and no others"
@@ -111,7 +111,7 @@ classes:
     retention: "Kept with the employment record: an issued letter is evidence of what the company stated about the person"
     protection: "Row-level security; a request, a checked letter and an issued letter are evidence that never change; the PDF's SHA-256 is checked whenever it is read; a link's token is kept as a hash; the audit event carries the reference and the hash, never the letter's text"
     transfers: "None"
-    columns: [letter_request.purpose, letter_request.data, letter_request.decision_reason, letter_issued.data, letter_template_version.note]
+    columns: [letter_request.purpose, letter_request.data, letter_request.decision_reason, letter_issued.data, letter_template_version.note, letter_delegation.revoked_reason]
   - key: access-requests
     what: "A person's request for their own data, the decision for each category of record and the written outcome"
     why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"

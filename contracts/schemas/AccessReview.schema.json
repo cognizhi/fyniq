@@ -21,9 +21,19 @@
       ]
     },
     "connectors": {
-      "description": "The organisation's installed connectors. OAuth clients join with Connected apps (AI-46).",
+      "description": "The organisation's installed connectors.",
       "items": {
         "$ref": "AccessReviewConnector.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "integration_clients": {
+      "description": "The organisation's integration clients that are not revoked, each with its owner, class, scopes and end date (CTL-API-02).",
+      "items": {
+        "$ref": "AccessReviewClient.schema.json"
       },
       "type": [
         "array",
@@ -77,6 +87,7 @@
     "members",
     "invitations",
     "connectors",
+    "integration_clients",
     "attestations"
   ],
   "title": "AccessReview",

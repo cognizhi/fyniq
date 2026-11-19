@@ -50,6 +50,21 @@ func TestTheAccessReview(t *testing.T) {
 		return r
 	}
 
+	// The review lists the integration clients that are not revoked, with their owner, class and end date (CTL-API-02), and its version moves with them.
+	before := read(f.as(f.ann)).Header.Get("ETag")
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		approval, now := uuid.Must(uuid.NewV7()), e.clock.Now()
+		_, err := u.APIClients().Create(ctx, storage.APIClient{Kind: storage.APIClientIntegration, ClientID: "review-" + uuid.NewString()[:8], Name: "Reporting export", Class: authn.ClassIntegration,
+			OwnerID: uuid.MustParse(f.ann), Scopes: []string{"fyniq.read.reports"}, KeyThumbprint: thumbprint, ExpiresAt: now.AddDate(0, 6, 0), ApprovalID: &approval,
+			CreatedBy: "user:test", CreatedAt: now})
+		return err
+	})
+	withClient := read(f.as(f.ann))
+	if cl, _ := withClient.Body["integration_clients"].([]any); len(cl) != 1 || cl[0].(map[string]any)["owner"] != "Ann" || cl[0].(map[string]any)["class"] != "integration" ||
+		cl[0].(map[string]any)["status"] != "live" || withClient.Header.Get("ETag") == before {
+		t.Errorf("the review's integration clients: %s", withClient.Raw)
+	}
+
 	// Every founder administers users and approves transactions: SOD-6, which Founder mode allows.
 	r := read(f.as(f.ann))
 	ann := reviewMember(r, "Ann")
@@ -139,7 +154,7 @@ func TestTheAccessReview(t *testing.T) {
 
 	// The export: one row per member, nothing a spreadsheet would evaluate, and its audit event.
 	x := e.call(http.MethodGet, "/v1/access-review/export", e.as(authz.Auditor), nil)
-	if x.Status != http.StatusOK || x.Body["media_type"] != "text/csv; charset=utf-8" || x.Body["rows"] != float64(3) {
+	if x.Status != http.StatusOK || x.Body["media_type"] != "text/csv; charset=utf-8" || x.Body["rows"] != float64(4) {
 		t.Fatalf("the export: %d %s", x.Status, x.Raw)
 	}
 	csv, _ := base64.StdEncoding.DecodeString(x.Body["content_base64"].(string))

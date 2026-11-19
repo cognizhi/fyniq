@@ -42,7 +42,7 @@ var Categories = []Category{
 		Purpose:    "To run employment: who works here, in what role and under whom, and to meet the employer's record-keeping duties (Employment Act)",
 		Capability: "People records (not restricted)",
 		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "MOM: employment records of a former employee are kept for 1 year after they leave"},
-		Columns:    []string{"person.legal_name", "person.preferred_name", "person.work_email", "person.phone", "person.leaving_reason"},
+		Columns:    []string{"person.legal_name", "person.preferred_name", "person.work_email", "person.phone", "person.leaving_reason", "join_task.note"},
 	},
 	{
 		Key: "legal-classification", What: "A person's legal classification: contract of service or for service, Employment Act cover and Part IV class, residency and the date residence began, and date of birth",
@@ -107,7 +107,7 @@ var Categories = []Category{
 		Purpose:    "To issue letters the person asked for, exactly and attributably, and to keep the issued letter as evidence of what was said and who signed it",
 		Capability: "Letters and templates",
 		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: an issued letter is evidence of what the company stated about the person"},
-		Columns:    []string{"letter_request.purpose", "letter_request.data", "letter_request.decision_reason", "letter_issued.data", "letter_template_version.note"},
+		Columns:    []string{"letter_request.purpose", "letter_request.data", "letter_request.decision_reason", "letter_issued.data", "letter_template_version.note", "letter_delegation.revoked_reason"},
 	},
 	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",

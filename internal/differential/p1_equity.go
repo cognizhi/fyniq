@@ -65,13 +65,19 @@ func (r *p1) commit() {
 			r.options = append(r.options, gone)
 		}
 	}
+	if x := r.stagedPayroll; x != nil {
+		if r.payrolls == nil {
+			r.payrolls = map[string]ledger.PayrollPosted{}
+		}
+		r.payrolls[x.run] = x.posted
+	}
 	r.unstage()
 }
 
 // unstage forgets what the document being posted staged.
 func (r *p1) unstage() {
 	r.staged, r.stagedSAFE, r.stagedConverted, r.stagedRound, r.stagedPool, r.stagedGrant, r.stagedEvent = nil, nil, nil, nil, nil, nil, nil
-	r.stagedUse = nil
+	r.stagedUse, r.stagedPayroll = nil, nil
 }
 
 // stagedExercise is an exercise being posted, and its grant.

@@ -39,3 +39,4 @@ period the company keeps a former employee's records.
 
 - [Ask for a letter](letters-request.md)
 - [Ask the people team a question](ask-hr.md)
+- [Invite new people to Fyniq and record who is leaving](onboarding.md)

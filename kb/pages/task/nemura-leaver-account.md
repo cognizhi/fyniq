@@ -4,7 +4,7 @@ type: task
 title: Use your Nemura account after you leave
 summary: What a leaver's narrow account keeps, how to ask for a lost document, and when the account ends
 sources:
-  - docs/user-guide/nemura/leaver-account.md sha256:ded0af148a903b90bf29d5786c8de15f139e6552a1dcc57a3aecb0d767b96868
+  - docs/user-guide/nemura/leaver-account.md sha256:3c3d9bd53a0a2fd1364cc5badb355b28c48f8c9f8d32273cc3eeae7822d99315
 data_class: personal
 taint: trusted
 status: published
@@ -43,4 +43,4 @@ aliases:
 
 - "That is not part of your account now": after the last day only documents, letters and a question to the people team are open.
 - A wrong last day: ask the people team to correct it; the account follows it.
-- Cannot sign in: the 12 months have passed. See also [[nemura.ask-hr]]. (src: docs/user-guide/nemura/leaver-account.md#common-problems)
+- Cannot sign in: the 12 months have passed. See also [[nemura.ask-hr]] and, for the people team recording a leaving, [[nemura.onboarding]]. (src: docs/user-guide/nemura/leaver-account.md#common-problems)

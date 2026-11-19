@@ -24,6 +24,8 @@ import { Person } from "./pages/Person";
 import { TermsPanel } from "./components/TermsPanel";
 import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
+import { PeopleOnboarding } from "./pages/PeopleOnboarding";
+import { Delegations } from "./components/Delegations";
 import { AskQuestion } from "./pages/AskQuestion";
 import { PeopleRequests } from "./pages/PeopleRequests";
 import { RequestSteps } from "./components/RequestSteps";
@@ -1072,5 +1074,93 @@ describe("a leaver's home", () => {
     fireEvent.change(screen.getByLabelText("Your question"), { target: { value: "Please send my KETs again." } });
     fireEvent.submit(screen.getByRole("form", { name: "Ask for a copy of a lost document" }));
     expect(await screen.findByText("Sent. The people team answers by 2027-01-05.")).toBeTruthy();
+  });
+});
+
+// req: NM-LTR-04
+describe("automatic issue", () => {
+  const did = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f10";
+  const types = [
+    { key: "employment_confirmation", title: "Employment confirmation", statement: "x", enabled: true, due_days: 3, published_version: 1, fields: [] },
+    { key: "salary_certificate", title: "Salary certificate", statement: "x", enabled: false, due_days: 3, published_version: 0, needs: "salary", fields: [] },
+    { key: "kets", title: "Key employment terms", statement: "x", enabled: true, due_days: 14, published_version: 1, fields: [] },
+  ];
+  const live = { id: did, type: "employment_confirmation", who: "active_employees", fields: [], monthly_limit: 50, issued_this_month: 3, created_on: "2026-11-20", ends_on: "2027-06-30", state: "active" };
+
+  it("lets the signatory delegate a standard letter only after a fresh passkey, never pay, and revoke it", async () => {
+    answer("GET /v1/letters/delegations", { status: 200, body: { delegations: [live] } });
+    answer("POST /v1/letters/delegations", { status: 201, body: { id: did } });
+    answer(`POST /v1/letters/delegations/${did}/revocation`, { status: 204, body: undefined });
+    const { container } = render(<Delegations types={types as never} signatory />);
+    expect(await screen.findByText(/3 of 50 this month, until 2027-06-30 \(active\)/)).toBeTruthy();
+    expect(screen.queryByRole("option", { name: "Salary certificate" })).toBeNull();
+    expect(screen.queryByRole("option", { name: "Key employment terms" })).toBeNull();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Ends on (within twelve months)"), { target: { value: "2027-06-30" } });
+    stepUp.result = "Passkey failed.";
+    fireEvent.submit(screen.getByRole("form", { name: "Let a letter type be issued automatically" }));
+    expect(await screen.findByText("Passkey failed.")).toBeTruthy();
+    expect(calls).not.toContain("POST /v1/letters/delegations");
+    stepUp.result = undefined;
+    fireEvent.submit(screen.getByRole("form", { name: "Let a letter type be issued automatically" }));
+    expect(await screen.findByText("Delegated. Requests for that letter are now issued at once.")).toBeTruthy();
+    expect(bodies.get("POST /v1/letters/delegations")).toMatchObject({ type: "employment_confirmation", monthly_limit: 50, ends_on: "2027-06-30" });
+    fireEvent.click(screen.getByRole("button", { name: "Revoke automatic issue of employment_confirmation" }));
+    expect(await screen.findByText("Revoked. Letters already issued stay as they are.")).toBeTruthy();
+  });
+
+  it("shows the HR administrator the delegations and no way to make or revoke one", async () => {
+    answer("GET /v1/letters/delegations", { status: 200, body: { delegations: [{ ...live, state: "replaced" }] } });
+    render(<Delegations types={types as never} signatory={false} />);
+    expect(await screen.findByText(/ended because the template changed/)).toBeTruthy();
+    expect(screen.queryByRole("form")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Revoke/ })).toBeNull();
+  });
+});
+
+// req: NM-ONB-02, NM-ONB-03
+describe("joiners and leavers", () => {
+  const person = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61";
+  const task = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20", person_id: person, person: "Eve On", start_date: "2026-12-01", state: "open", raised_at: "2026-11-20T10:00:00Z" };
+  const leaving = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f21", person_id: person, person: "Chen Yu", kind: "resignation", notice_given_on: "2026-10-01", last_day: "2026-11-30", equipment_returned_on: "2026-11-30", nemura_access_narrows_on: "2026-12-01", service_letter: "none",
+    leave_settlement: { year: 2026, entitled: "13.00", taken: "10.00", booked: "0.00", untaken: "3.00", basis: [] } };
+
+  it("lists the invitation tasks and the leavers with their dates apart and their leave, and records and withdraws a leaving", async () => {
+    answer("GET /v1/onboarding/tasks", { status: 200, body: { tasks: [task] } });
+    answer("GET /v1/onboarding/settings", { status: 200, body: { invite_to_fyniq: true } });
+    answer("GET /v1/offboardings", { status: 200, body: { leavings: [leaving] } });
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: person, name: "Chen Yu" }] } });
+    answer(`POST /v1/onboarding/tasks/${task.id}/decision`, { status: 204, body: undefined });
+    answer(`PUT /v1/people/${person}/offboarding`, { status: 204, body: undefined });
+    answer(`POST /v1/people/${person}/offboarding/cancellation`, { status: 204, body: undefined });
+    const { container } = render(<PeopleOnboarding roles={["hr_admin"]} />);
+    expect(await screen.findByText("Invite Eve On, who starts 2026-12-01, to Fyniq as an employee")).toBeTruthy();
+    expect(await screen.findByText("Chen Yu: Resignation, last day 2026-11-30")).toBeTruthy();
+    expect(screen.getByText(/Notice given 2026-10-01; employees told of a retrenchment –/)).toBeTruthy();
+    expect(screen.getByText(/entitled 13.00 days, taken 10.00, untaken 3.00/)).toBeTruthy();
+    expect(screen.getByText(/becomes the narrow one for their documents on 2026-12-01/)).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Mark Eve On invited" }));
+    expect(await screen.findByText("Done.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/onboarding/tasks/${task.id}/decision`)).toMatchObject({ state: "done" });
+    expect(screen.queryByLabelText("Employees told of the retrenchment")).toBeNull();
+    fireEvent.change(screen.getByLabelText("How the employment ends"), { target: { value: "retrenchment" } });
+    expect(screen.getByLabelText("Employees told of the retrenchment")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Last day of employment"), { target: { value: "2026-12-31" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Record a leaving" }));
+    expect(await screen.findByText("Saved. The leaving date is on the person's record.")).toBeTruthy();
+    expect(bodies.get(`PUT /v1/people/${person}/offboarding`)).toMatchObject({ kind: "retrenchment", last_day: "2026-12-31" });
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw Chen Yu's leaving" }));
+    expect(await screen.findByText("Withdrawn. The leaving date on the record is cleared.")).toBeTruthy();
+  });
+
+  it("shows an HR officer the leavers and no invitation tasks", async () => {
+    answer("GET /v1/offboardings", { status: 200, body: { leavings: [] } });
+    answer("GET /v1/people", { status: 200, body: { people: [] } });
+    render(<PeopleOnboarding roles={["hr_officer"]} />);
+    expect(await screen.findByText("No one is leaving.")).toBeTruthy();
+    expect(screen.queryByText("Invite new people to Fyniq")).toBeNull();
   });
 });

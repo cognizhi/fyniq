@@ -539,6 +539,7 @@ export const actions = [
   { kind: "action", id: "risk.save", mode: "expert", help: "risk.save", guide: "compliance.risks#add-or-change-a-risk" },
   { kind: "action", id: "risk.review", mode: "expert", help: "risk.review", guide: "compliance.risks#review-a-risk" },
   { kind: "action", id: "kb.recompile", mode: "expert", help: "kb.recompile", guide: "settings.ai-knowledge-base#recompile" },
+  { kind: "action", id: "mcp.revoke-member", mode: "expert", help: "mcp.revoke-member", guide: "settings.connected-apps#what-you-see" },
   { kind: "action", id: "policy.acknowledge", mode: "basic", help: "policy.acknowledge", guide: "compliance.policies#acknowledge-a-policy" },
   { kind: "action", id: "policy.publish", mode: "expert", help: "policy.publish", guide: "compliance.policies#draft-and-publish-a-policy" },
   { kind: "action", id: "statutory-filing.attach-evidence", mode: "basic", help: "statutory-filing.attach-evidence", guide: "compliance.calendar#record-a-filing" },

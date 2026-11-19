@@ -2555,6 +2555,10 @@
       "label": "Reviews to sign off",
       "tooltip": "The recurring reviews your roles sign off that are due or overdue, such as the access review or the close."
     },
+    "mcp.revoke-member": {
+      "label": "Disconnect for a person",
+      "tooltip": "End one person's access for one AI app at once. Their other apps, their sign-in and their integrations are not touched."
+    },
     "policy.acknowledge": {
       "label": "Acknowledge policy",
       "tooltip": "Read the version of a policy now in force and confirm you accept it, within 30 days of its publication or of joining."
