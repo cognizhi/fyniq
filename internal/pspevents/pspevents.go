@@ -163,7 +163,7 @@ func (h *Hooks) store(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, 
 		return row, err
 	}
 	if b.BankData != nil {
-		err = bankfeed.Queue(ctx, h.Dispatcher, u, org, c.ID, now)
+		err = bankfeed.QueueOnce(ctx, h.Dispatcher, u, org, c.ID, now)
 	}
 	return row, err
 }

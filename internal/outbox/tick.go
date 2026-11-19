@@ -142,6 +142,10 @@ var PlatformSchedules = []Schedule{
 	// Hourly, each organisation's enabled bank-data connectors pull their accounts' transactions since their feeds'
 	// cursors, as the connector (FR-BNK-15, FR-BNK-16; rev 0.144).
 	{Job: "bank.sync", Every: time.Hour, Offset: 5 * time.Minute, Lease: 45 * time.Minute, Stale: 3 * time.Hour},
+	// Hourly after the bank sync, each organisation's payment-provider connectors mirror their balance transactions and
+	// payouts and balance, from four days before the day each account is complete to (FR-PSP-01, FR-PSP-06;
+	// p1-payment-providers); the worker posts nothing, the lines are reconciled in the API.
+	{Job: "psp.sweep", Every: time.Hour, Offset: 10 * time.Minute, Lease: 45 * time.Minute, Stale: 3 * time.Hour},
 	// Daily at 03:25 in Singapore, the incoming-funds signals that no statement line closed within the organisation's
 	// bank.signal_expiry_days expire (FR-BNK-16, UC-BNK-02; rev 0.145).
 	{Job: "bank.signals-expiry", Every: 24 * time.Hour, Offset: 19*time.Hour + 25*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},

@@ -12,7 +12,7 @@ from oracle.scenario import load_scenario
 
 PENDING = Path(__file__).resolve().parents[2] / "test" / "differential" / "pending"
 GOLDEN = PENDING.parent / "golden"
-MOVED = {"bank", "purchases", "sales", "claims", "assets", "founders", "statements", "general-ledger", "fx-revaluation", "equity"}  # the cases the engine reads now, in golden/
+MOVED = {"bank", "purchases", "sales", "claims", "assets", "founders", "statements", "general-ledger", "fx-revaluation", "equity", "payment-providers"}  # the cases the engine reads now, in golden/
 
 
 def _run(name: str) -> dict:
@@ -828,3 +828,19 @@ def test_pending_fx_revaluation():
 
 def _neg(text: str) -> str:
     return text[1:] if text.startswith("-") else f"-{text}"
+
+
+# req: QA-ENG-02
+# req: FR-PSP-06
+def test_payment_providers_month_nets_to_the_unpaid_charge():
+    """A provider's clearing account (1050), worked by hand from the rules (p1-payment-providers 2.6): three charges of
+    100.00 and their fees of 3.90 leave 288.30; the dispute takes 50.00 and its fee 15.00 to 1055 and the win brings 65.00
+    back; the payout of the first two charges' net, 2 x 96.10 = 192.20, goes to the bank; what is left in 1050 is the third
+    charge's net, 96.10, which is what the provider still holds for the company (check C.2 #50)."""
+    r = _run("payment-providers")
+    assert r["rejected"] == []
+    assert _lines(r, "STR-C1F") == [("1050", "SGD", "-3.90", "-3.90"), ("5040", "SGD", "3.90", "3.90")]
+    assert _lines(r, "STR-D1F") == [("1050", "SGD", "-15.00", "-15.00"), ("1055", "SGD", "15.00", "15.00")]
+    assert _lines(r, "STR-PO1") == [("1020", "SGD", "192.20", "192.20"), ("1050", "SGD", "-192.20", "-192.20")]
+    # 1055 nets to zero (50.00 + 15.00 - 65.00) and is left out; 4010 is 3 x 100.00; 5040 is 3 x 3.90.
+    assert r["trial_balance"] == {"2026-10": {"1020": "192.20", "1050": "96.10", "4010": "-300.00", "5040": "11.70"}}

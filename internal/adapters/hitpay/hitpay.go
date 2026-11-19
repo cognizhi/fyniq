@@ -412,6 +412,9 @@ func object(kind ports.ProviderKind, doc obj, raw []byte) (ports.ProviderObject,
 
 // List implements ports.PaymentProvider: the period's charges or payouts, oldest first.
 func (c *Client) List(ctx context.Context, kind ports.ProviderKind, from, to time.Time, _ string) (ports.ProviderPage, error) {
+	if kind == ports.ProviderBalanceTransaction {
+		return c.listTransactions(ctx, from, to)
+	}
 	var items []obj
 	var err error
 	day := func(t time.Time) string { return dayOf(t).Format("2006-01-02") }
@@ -438,6 +441,78 @@ func (c *Client) List(ctx context.Context, kind ports.ProviderKind, from, to tim
 			return page, err
 		}
 		page.Objects = append(page.Objects, o)
+	}
+	slices.SortStableFunc(page.Objects, func(a, b ports.ProviderObject) int {
+		if d := a.Created.Compare(b.Created); d != 0 {
+			return d
+		}
+		return strings.Compare(a.ID, b.ID)
+	})
+	return page, nil
+}
+
+// listTransactions are the period's succeeded charges, each with its fee and net, and its paid payouts, as HitPay's
+// balance transactions (HitPay's own list covers the cards balance only): the references are the IDs the statement lines
+// carry.
+func (c *Client) listTransactions(ctx context.Context, from, to time.Time) (ports.ProviderPage, error) {
+	day := func(t time.Time) string { return dayOf(t).Format("2006-01-02") }
+	last := to.Add(-time.Second)
+	charges, err := c.pages(ctx, "/v1/charges", url.Values{"date_from": {day(from)}, "date_to": {day(last)}, "status": {"succeeded"}})
+	if err != nil {
+		return ports.ProviderPage{}, err
+	}
+	payouts, err := c.pages(ctx, "/v1/payouts", url.Values{"created_at_from": {day(from)}, "created_at_to": {day(last)}, "status": {"paid"}})
+	if err != nil {
+		return ports.ProviderPage{}, err
+	}
+	var page ports.ProviderPage
+	for _, ch := range charges {
+		code := strings.ToUpper(str(ch, "currency"))
+		cur, err := money.Lookup(code)
+		if err != nil {
+			return page, fmt.Errorf("hitpay: currency %q: %w", code, err)
+		}
+		gross, err := amount(ch, "amount", cur)
+		if err != nil {
+			return page, err
+		}
+		fixed, err := amount(ch, "fixed_fee", cur)
+		if err != nil {
+			return page, err
+		}
+		pct, err := amount(ch, "discount_fee", cur)
+		if err != nil {
+			return page, err
+		}
+		fee, err := fixed.Add(pct)
+		if err != nil {
+			return page, err
+		}
+		net, err := gross.Sub(fee)
+		if err != nil {
+			return page, err
+		}
+		id := str(ch, "id")
+		raw, _ := json.Marshal(ch)
+		page.Objects = append(page.Objects, ports.ProviderObject{Kind: ports.ProviderBalanceTransaction, ID: id, Status: str(ch, "status"),
+			Created: when(ch, "closed_at", "created_at"), Amount: gross.String(), Currency: code, Type: "charge", Category: "charge", Fee: fee.String(),
+			Net: net.String(), Links: map[ports.ProviderKind][]string{ports.ProviderCharge: {id}}, Raw: raw})
+	}
+	for _, po := range payouts {
+		code := strings.ToUpper(str(po, "currency"))
+		cur, err := money.Lookup(code)
+		if err != nil {
+			return page, fmt.Errorf("hitpay: currency %q: %w", code, err)
+		}
+		a, err := amount(po, "amount", cur)
+		if err != nil {
+			return page, err
+		}
+		id := str(po, "id")
+		raw, _ := json.Marshal(po)
+		page.Objects = append(page.Objects, ports.ProviderObject{Kind: ports.ProviderBalanceTransaction, ID: id, Status: str(po, "status"),
+			Created: when(po, "arrival_date", "created_at"), Amount: a.Neg().String(), Currency: code, Type: "payout", Category: "payout", Fee: money.Zero(cur).String(),
+			Net: a.Neg().String(), Links: map[ports.ProviderKind][]string{ports.ProviderPayout: {id}}, Raw: raw})
 	}
 	slices.SortStableFunc(page.Objects, func(a, b ports.ProviderObject) int {
 		if d := a.Created.Compare(b.Created); d != 0 {

@@ -25,6 +25,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
+	"github.com/cognizhi/fyniq/internal/psp"
 	"github.com/cognizhi/fyniq/internal/pspevents"
 	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/reportexport"
@@ -77,8 +78,9 @@ func main() {
 			kinds[bankingest.Kind] = kit.BankReports(deps.Clock).Work() // FR-BNK-17: an accepted bank report, imported
 		}
 		kinds[bankfeed.Kind] = kit.BankFeeds(deps.Clock).Work() // FR-BNK-15: an early sync a bank's verified webhook asked for
-		psp := kit.PSPEvents(deps.Clock)
-		kinds[pspevents.Kind] = psp.Work()                       // FR-PSP-01: a provider's event worked: its object fetched and posted
+		events := kit.PSPEvents(deps.Clock)
+		kinds[pspevents.Kind] = events.Work()
+		kinds[psp.Kind] = kit.PSPRunner(deps.Clock).Work()       // FR-PSP-06: a provider's sweep, after its events                       // FR-PSP-01: a provider's event worked: its object fetched and posted
 		kinds[notify.FanoutKind] = kit.Fanout(deps.Clock).Work() // FR-NTF-05: one event, every person it concerns
 		kinds[agents.RunKind] = kit.AgentRuns(deps.Clock).Work   // AI-64, AI-65: a scheduled agent's run at its slot
 		kinds[notify.RelayKind] = kit.Relays(deps.Clock).Work()  // FR-ADM-07: the installation's notices, in each Super admin's organisation
@@ -87,7 +89,7 @@ func main() {
 		}
 		s.Handle("POST /tasks", &outbox.Handler{Class: storage.ClassWorker, Store: kit.Store, Tokens: kit.Tokens,
 			Clock: deps.Clock, Holder: app.Holder("worker"), Kinds: kinds, Dead: func(ctx context.Context, u storage.UnitOfWork, org uuid.UUID, row storage.OutboxRow, why string) error {
-				return errors.Join(kit.JobDead(deps.Clock)(ctx, u, org, row, why), psp.Dead()(ctx, u, org, row, why))
+				return errors.Join(kit.JobDead(deps.Clock)(ctx, u, org, row, why), events.Dead()(ctx, u, org, row, why))
 			}})
 		s.Handle("POST /jobs", &outbox.JobsHandler{Tokens: kit.Tokens, Platform: kit.Store, Clock: deps.Clock,
 			Jobs: kit.PlatformJobs(deps.Clock)})

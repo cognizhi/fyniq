@@ -47,6 +47,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/proposal"
+	"github.com/cognizhi/fyniq/internal/psp"
 	"github.com/cognizhi/fyniq/internal/pspevents"
 	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/render"
@@ -254,6 +255,9 @@ func (k *Kit) PlatformJobs(clock ports.Clock) map[string]func(ctx context.Contex
 		},
 		"bank.sync": func(ctx context.Context) error { // FR-BNK-15, FR-BNK-16: the bank-data connectors' pulls
 			return k.BankFeeds(clock).SyncAll(ctx)
+		},
+		psp.Job: func(ctx context.Context) error { // FR-PSP-01, FR-PSP-06: the providers' sweep (the mirror of what their lines cannot say)
+			return k.PSPRunner(clock).RunAll(ctx)
 		},
 		"bank.review-sample": func(ctx context.Context) error { // FR-BNK-14, FM-3: the week's sample into the review
 			return banking.SampleAll(ctx, k.Store, clock.Now())
@@ -475,7 +479,13 @@ func (k *Kit) PSPEvents(clock ports.Clock) pspevents.Processor {
 
 // PSPHandlers are the posting rules of each kind of provider object.
 func (k *Kit) PSPHandlers(clock ports.Clock) map[ports.ProviderKind]pspevents.Handler {
-	return map[ports.ProviderKind]pspevents.Handler{}
+	h := psp.Handler{Dispatcher: k.dispatcher(clock), Clock: clock}
+	return map[ports.ProviderKind]pspevents.Handler{ports.ProviderPayout: h, ports.ProviderCharge: h, ports.ProviderRefund: h, ports.ProviderDispute: h}
+}
+
+// PSPRunner sweeps the payment-provider connectors (FR-PSP-06); their lines are reconciled in the API.
+func (k *Kit) PSPRunner(clock ports.Clock) psp.Runner {
+	return psp.Runner{Store: k.Store, Runtime: k.Runtime(clock), Clock: clock}
 }
 
 // BankReports imports the banks' emailed reports accepted at the bank-ingest address (FR-BNK-17).

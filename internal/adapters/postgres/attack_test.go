@@ -450,6 +450,11 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"bank_transfer.to_amount":      func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "to", v) },
 	"bank_transfer.fee":            func(t *testing.T, b porttest.Books, v string) error { return rawTransfer(t, b, "fee", v) },
 	"bank_signal.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawSignal(t, b, v) },
+	"psp_txn.gross":                func(t *testing.T, b porttest.Books, v string) error { return rawPSPTxn(t, b, "gross", v) },
+	"psp_txn.fee":                  func(t *testing.T, b porttest.Books, v string) error { return rawPSPTxn(t, b, "fee", v) },
+	"psp_txn.net":                  func(t *testing.T, b porttest.Books, v string) error { return rawPSPTxn(t, b, "net", v) },
+	"psp_payout.amount":            func(t *testing.T, b porttest.Books, v string) error { return rawPSPPayout(t, b, v) },
+	"psp_balance.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawPSPBalance(t, b, v) },
 	"payment_batch_release.total":  func(t *testing.T, b porttest.Books, v string) error { return rawRelease(t, b, v) },
 	"break_glass.cap":              func(t *testing.T, b porttest.Books, v string) error { return rawBreakGlassCap(t, b, v) },
 	"break_glass_use.total":        func(t *testing.T, b porttest.Books, v string) error { return rawBreakGlassUse(t, b, v) },
@@ -1499,6 +1504,55 @@ func rawSignal(t *testing.T, b porttest.Books, value string) error {
 	return asOrg(ctx, conn(t, "fyniq_worker"), b.Org, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.bank_signal (money_account_id, amount, currency, minor_units, received_at)
 VALUES ($1, $2::numeric, 'SGD', 2, now())`, uuid.New(), value)
+		return err
+	})
+}
+
+// shortConn is a connection the caller closes at once: the attacks open two a column, and the server's slots are few.
+func shortConn(t *testing.T, role string) *pgx.Conn {
+	t.Helper()
+	c, err := pgx.Connect(context.Background(), db.URL(role))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+
+// rawPSPTxn inserts a provider transaction with value in column col and 1 in the others (a connector that does not exist
+// is refused only after the CHECKs, which are what is attacked).
+func rawPSPTxn(t *testing.T, b porttest.Books, col, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	v := map[string]string{"gross": "1", "fee": "0", "net": "1"}
+	v[col] = value
+	c := shortConn(t, "fyniq_worker")
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.psp_txn (connector_id, txn_id, type, category, currency, gross, fee, net, provider_at, seen_at)
+VALUES ($1, 'txn_1', 'charge', 'charge', 'SGD', $2::numeric, $3::numeric, $4::numeric, now(), now())`, uuid.New(), v["gross"], v["fee"], v["net"])
+		return err
+	})
+}
+
+func rawPSPPayout(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c := shortConn(t, "fyniq_worker")
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.psp_payout (connector_id, payout_id, currency, amount, status, provider_at, seen_at)
+VALUES ($1, 'po_1', 'SGD', $2::numeric, 'paid', now(), now())`, uuid.New(), value)
+		return err
+	})
+}
+
+func rawPSPBalance(t *testing.T, b porttest.Books, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c := shortConn(t, "fyniq_worker")
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.psp_balance (connector_id, currency, amount, taken_at) VALUES ($1, 'SGD', $2::numeric, now())`, uuid.New(), value)
 		return err
 	})
 }

@@ -99,35 +99,43 @@ See proposal.md for why. What exists (read on `origin/main`, 19 Nov 2026):
   review (UC-PSP-01), and posts nothing.
 - A forged signature is 401, never stored. A body over the cap is 413. Neither says why in more words than the status.
 
-### D4. Posting identity is its own table
+### D4. Posting identity: the provider's reference on a line, and the one mapping of an invoice
 
-- `psp_posting (organisation_id, connector_id, identity, kind, target_id)` is unique on `(organisation_id, connector_id,
-  identity)`. The identity names the provider object and the action: `bt:<id>` for a money leg, `bt:<id>:fee`,
-  `in:<id>:finalised|paid|voided|credited`, `dp:<id>:opened|won|lost`, `po:<id>`. The processor inserts the row and
-  runs the command in one unit of work: a second event, a redelivery or a backfill finds the row and does nothing.
+- Every money leg is a statement line whose reference is the provider's own: a balance transaction's ID, and `<id>:fee` for
+  its fee (D1). A line is reconciled once (the database moves its status forward only, and import refuses a second line of
+  the same reference), so **the balance transaction ID is the money leg's posting identity** and a redelivery, a late
+  event or a backfill finds the line already posted and does nothing. No separate table repeats it (decided in
+  building: the first design's `psp_posting` was redundant).
+- Invoice legs (task 3.2) are keyed by a unique `(connector, provider invoice ID)` row in the mirror, which names the Fyniq
+  document, so the same invoice reported by several events posts once.
 - Events never order anything. The processor takes an event's object ID, **fetches the object** through the port, and works
   from what it fetched, so a late `invoice.paid` before `invoice.finalised` simply finds both states on the invoice
   (G4-040). A fetched object the processor needs but cannot find is retried by the outbox with backoff, then parked.
 
-### D5. Money legs use the rules that exist
+### D5. Money legs use the rules that exist, posted by auto-reconcile
 
-| Provider fact | Posts as | Rule | Who |
+The worker holds no right to make a document (`INSERT` on `document` is the API's, and the owner decided on 26 Oct 2026 that
+the bank sync "posts nothing: the lines wait for Reconcile now", rev 0.143), and this change does not widen a grant. So the
+worker **mirrors** (D7) and the API **posts**: auto-reconcile (`banking.AutoReconcile`, which runs after an import and on a
+person's Reconcile now) gains one more exact case, a line of a provider money account whose provider transaction the sweep
+has mirrored. It keeps the S$500 per-line cap, the audit actor `service bank.auto-reconcile` acting for the person who
+pressed the button, the preview (`Plan`), the weekly sample (FM-3) and undo, and its basis is `exact`.
+
+| Provider fact | Posts as | Rule | When |
 |---|---|---|---|
-| Charge succeeded (invoice paid) | receipt of the mirrored invoice into the clearing account: Dr clearing · Cr 1100 | `customer_receipt@1` via `MatchInvoices` | the connector's principal, exact: the line's reference names the provider invoice mapped to one Fyniq document |
-| Charge with no mirrored invoice (HitPay PayNow, a Stripe one-off) | stays an unreconciled line; a person matches it, and auto-reconcile's exact match proposes it | `customer_receipt@1` | a person, or `AutoReconcile` within its caps |
-| Fee | Dr 5040 payment fees · Cr clearing | `bank_transaction@1` via `Categorise`, one part | the connector's principal |
-| Fee's GST | only from the provider's tax invoice (D8) | `bank_transaction@1` | a person confirms the match |
-| Payout | transfer from the clearing account to the bank: Dr bank · Cr clearing | `bank_transfer@1` via `RecordTransfer`; the bank line completes it | `AutoReconcile` (the S$500 cap stays: a larger payout is confirmed by a person, who sees the breakdown) |
-| Refund | credit note on the mirrored invoice (Model B) and a customer refund from clearing | credit note + `customer_refund@1` | the connector's principal |
-| Dispute opened | disputed amount and dispute fee: Dr disputes clearing (new account) · Cr clearing | `bank_transaction@1` | the connector's principal |
-| Dispute won | back: Dr clearing · Cr disputes clearing | `bank_transaction@1` | the connector's principal |
-| Dispute lost | Dr dispute loss (new account) · Cr disputes clearing | `bank_transaction@1`-shaped journal (D9) | the connector's principal |
+| Charge succeeded (invoice paid) | receipt of the mirrored invoice into the clearing account: Dr clearing · Cr 1100 | `customer_receipt@1` via `MatchInvoices` | task 3.2: the line's charge is mapped to one Fyniq document |
+| Charge with no mirrored invoice (HitPay PayNow, a Stripe one-off) | stays an unreconciled line; auto-reconcile's existing exact match (amount, number, contact) or a person matches it | `customer_receipt@1` | existing paths |
+| Fee (`<id>:fee`, or a fee-category transaction) | Dr the fee account (5040 by default) · Cr clearing, GST code `OP` (no claimable GST, D8) | `bank_transaction@1` via `Categorise` | exact, once the sweep has mirrored it |
+| Payout | transfer from the clearing account to the bank account it lands in: Dr bank · Cr clearing | `bank_transfer@1` via `RecordTransfer`; the bank's own line completes it | exact; a payout above the cap waits for a person, who sees its breakdown |
+| Refund | credit note on the mirrored invoice (Model B) and a customer refund from clearing | credit note + `customer_refund@1` | task 3.2 |
+| Dispute opened (funds and fee withdrawn) | Dr disputes clearing · Cr clearing, GST code `NA` | `bank_transaction@1` | exact, when the account has a disputes account |
+| Dispute won (funds and fee reinstated) | Dr clearing · Cr disputes clearing | `bank_transaction@1` | exact |
+| Dispute lost | nothing is posted: the amount stays in disputes clearing until a person posts it (D9) | manual journal | a person |
 
-- The connector's principal is the connector's own service identity (`connector.Principal`, an `integration` actor): its audit
-  trail says so, with the event ID as the reason. It posts only into open periods; a leg whose period is locked is parked
-  with ⚠ for a person to date it into an open one.
+- The audit trail names the connector and the provider's reference, and a locked period or any refusal of the rules leaves
+  the line for a person with the reason, as every auto-reconcile does.
 - A negative provider balance or a payout that debits the bank has the same legs reversed (FR-PSP-06): the signs of the
-  lines carry it, and a test shows it.
+  lines carry it; a payout line that brings money in waits for a person.
 
 ### D6. Model B: the mirror is read-only and is an AR document
 
@@ -176,29 +184,31 @@ See proposal.md for why. What exists (read on `origin/main`, 19 Nov 2026):
   fee; Dr 2200 · Cr AP when billed apart). Its capture waits for `p1-document-capture`; the matching function and its ⚠
   are built and tested on a fixture.
 
-### D9. New accounts, and what a lost dispute does `[accountant to confirm]`
+### D9. A lost dispute, and the accounts `[accountant to confirm]`
 
-- The standard chart gains **1055 Payment disputes clearing** (asset) and **5045 Dispute losses** (expense), settings
-  `psp.disputes_account` and `psp.dispute_loss_account`. A PRD revision records them.
-- The PRD's FR-PSP-04 says a lost dispute goes "to revenue reversal and an expense". This change posts a lost dispute
-  to 5045 only and leaves revenue and GST as invoiced, since reversing revenue needs the customer's invoice and
-  GST treatment the provider does not report on a dispute. Revenue reversal by credit note stays a person's step, offered
-  from the dispute. This is a **decision for the owner** (below).
+- A dispute's money waits in a **disputes clearing** account the Owner names on the provider account (`psp_account`), by
+  convention 1055; with none named, a dispute's lines wait for a person. The standard chart gains no row in this change (it
+  is provisional until the accountant's chart review, and every added account moves its fixtures): the Owner adds 1055
+  "Payment disputes clearing" and, for what is lost, 5045 "Dispute losses".
+- The PRD's FR-PSP-04 says a lost dispute goes "to revenue reversal and an expense". The books do not know a dispute is lost
+  until Stripe says so, and posting it needs a journal between two ledger accounts, which no auto-reconcile path makes. So
+  this change posts **nothing** for a lost dispute: the amount stays in disputes clearing, where the balance sheet and the chart
+  show it, and a person decides, with the accountant, between an expense (5045) and a credit note that reverses
+  the revenue and its GST. This is a decision for the owner (below).
 
 ### D10. Migrations, 000620 to 000639
 
 | No. | Content |
 |---|---|
 | 000620 | `psp_event` (sealed raw payload, unique event ID per connector), FORCE RLS, grants |
-| 000622 | `psp_posting` (unique identity), `psp_txn`, `psp_payout`, `psp_balance` |
-| 000624 | `psp_customer`, `psp_subscription`, `psp_invoice` (collection state) |
-| 000626 | chart rows 1055 and 5045 for new organisations; settings |
-| 000628 | any CHECK widening (document-type or audit-event names) added `NOT VALID` |
-| 000629 | the validation of 000628 |
-| 000630 to 000639 | spare |
+| 000622 | `psp_account` (a provider money account's setup and how far the sweep is complete), `psp_txn`, `psp_payout`, `psp_balance` |
+| 000624 | `psp_customer`, `psp_subscription`, `psp_invoice` (collection state, the one mapping of a provider invoice to its document) |
+| 000626 to 000639 | spare |
 
 Every table has `organisation_id`, `FORCE ROW LEVEL SECURITY` and grants for `fyniq_api` and the worker role only; payloads
 are sealed, so a leak of the table is not a leak of customer data. Each saved change is audited in the same transaction.
+Amounts are `NUMERIC(20,4)` with a CHECK refusing NaN, and the mirror is never rewritten but for the payout that settles a
+transaction (set once) and a payout's standing.
 
 ### D11. Local mode
 
@@ -227,10 +237,11 @@ are sealed, so a leak of the table is not a leak of customer data. Each saved ch
 - **Dispute handling, accounts and service periods:** the defaults of D6 and D9, built now, `[accountant to confirm]`.
 
 **Decisions needed from the owner (with the recommendation):**
-1. **A lost dispute's revenue.** Options: (a) expense only, revenue as invoiced (built; simple, GST untouched; but revenue
-   stays overstated until a person credits it); (b) always a credit note on the invoice plus the expense (matches the PRD,
-   corrects revenue and GST; needs a customer match and a person's choice for a card holder who never was a Fyniq customer,
-   more code). **Recommendation: (a) now, (b) offered as a one-click step from the dispute, decided with the accountant.**
+1. **A lost dispute's revenue.** Options: (a) a person posts it to an expense (5045) from disputes clearing, revenue as invoiced
+   (simple, GST untouched; revenue stays overstated until credited); (b) a credit note on the invoice plus the expense (matches
+   the PRD, corrects revenue and GST; needs the customer match, and more code). Nothing is posted by itself either way (D9).
+   **Recommendation: (a) for a small dispute, (b) when the invoice is known and the accountant agrees; build a one-click
+   step from the dispute for (b) after go-live.**
 2. **HitPay's charge leg in P1.** FR-PSP-02's automatic AR leg is P2, but HitPay's connector is P1. Options: (a) charges
    arrive as unreconciled lines on the HitPay clearing account and are matched by the existing exact-reference reconcile or
    by a person (built); (b) wait for P2. **Recommendation: (a): no new rule, nothing posts without an invoice or a person.**

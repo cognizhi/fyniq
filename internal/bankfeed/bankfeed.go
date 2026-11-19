@@ -271,8 +271,22 @@ func Queue(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org, 
 		return err
 	}
 	_, err = d.Enqueue(ctx, u, org, storage.NewOutboxItem{Class: storage.ClassWorker, Kind: Kind, Payload: b,
-		BusinessKey: "bank-sync:" + id.String() + ":" + now.UTC().Truncate(time.Minute).Format(time.RFC3339)})
+		BusinessKey: key(id, now)})
 	return err
+}
+
+// key is the business key of an early sync of connector id queued at now.
+func key(id uuid.UUID, now time.Time) string {
+	return "bank-sync:" + id.String() + ":" + now.UTC().Truncate(time.Minute).Format(time.RFC3339)
+}
+
+// QueueOnce is Queue that does nothing when a sync of the connector is already queued for the minute, so a burst of events
+// (a payment provider's webhooks) queues one and none fails on the business key.
+func QueueOnce(ctx context.Context, d outbox.Dispatcher, u storage.UnitOfWork, org, id uuid.UUID, now time.Time) error {
+	if row, err := u.Outbox().ByKey(ctx, Kind, key(id, now)); err != nil || row != nil {
+		return err
+	}
+	return Queue(ctx, d, u, org, id, now)
 }
 
 // Work is the worker's handler of Kind: a sync of the connector its row names. A connector no longer enabled syncs

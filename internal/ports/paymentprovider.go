@@ -72,8 +72,13 @@ type ProviderObject struct {
 	Created  time.Time
 	Amount   string // gross, as the provider reports it; "" for an object with none
 	Currency string
-	Links    map[ProviderKind][]string
-	Raw      []byte
+	// Of a balance transaction (ProviderBalanceTransaction): its provider type, how Fyniq reads it (one of storage's PSPCat
+	// categories: charge, refund, dispute, dispute_reversal, fee, payout or other), the fee the provider keeps and the net,
+	// as exact decimal strings (Amount is the gross, signed), and the date it becomes available.
+	Type, Category, Fee, Net string
+	AvailableOn              time.Time
+	Links                    map[ProviderKind][]string
+	Raw                      []byte
 }
 
 // ProviderPage is a page of objects: Cursor continues after the last, and More says another page waits.

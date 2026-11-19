@@ -206,7 +206,11 @@ func syncsOnSchedule(ctx context.Context, u storage.UnitOfWork, e *Env) (Result,
 	if err != nil {
 		return Result{}, err
 	}
-	if len(feeds) == 0 {
+	sweeps, err := sweepsBehind(ctx, u, e)
+	if err != nil {
+		return Result{}, err
+	}
+	if len(feeds) == 0 && len(sweeps) == 0 {
 		return Fine("No money account is fed by a connector"), nil
 	}
 	monies, err := moneyAccounts(ctx, u)
@@ -230,6 +234,7 @@ func syncsOnSchedule(ctx context.Context, u storage.UnitOfWork, e *Env) (Result,
 		}
 		items = append(items, Item{Kind: "money_account", ID: f.MoneyAccountID.String(), Label: m.Name, Detail: why, Version: fmt.Sprint(f.Version)})
 	}
+	items = append(items, sweeps...)
 	if len(items) == 0 {
 		return Fine(fmt.Sprintf("Each of the %d connected account(s) synced on schedule", len(feeds))), nil
 	}
@@ -444,4 +449,41 @@ func runway(ctx context.Context, u storage.UnitOfWork, e *Env) (Result, error) {
 	it := PeriodItem(*p, fmt.Sprintf("%s months of runway at the average net burn of the last three months", v.Figure))
 	return Found(Warning, []Item{it}, fmt.Sprintf("The runway is %s months at the end of %s", v.Figure, Month(*p)),
 		"Plan the next raise or cuts; mark it reviewed once the plan is agreed"), nil
+}
+
+// sweepStale is how long a payment provider's completeness sweep may go without making its account complete: the sweep
+// runs hourly, and reads back past Stripe's three days of retries (FR-PSP-01).
+const sweepStale = 3 * time.Hour
+
+// sweepsBehind: a payment provider's account whose last sweep failed, or that has not made it complete within its schedule
+// (C.2 #43, FR-PSP-01): a gap the sweep cannot close.
+func sweepsBehind(ctx context.Context, u storage.UnitOfWork, e *Env) ([]Item, error) {
+	accounts, err := u.PSP().Accounts(ctx)
+	if err != nil || len(accounts) == 0 {
+		return nil, err
+	}
+	monies, err := moneyAccounts(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	var items []Item
+	for _, a := range accounts {
+		m, ok := monies[a.MoneyAccountID]
+		if ok && m.ClosedOn != nil {
+			continue
+		}
+		var why string
+		switch {
+		case a.SweepError != "":
+			why = "Its provider's completeness sweep could not close a gap: " + a.SweepError
+		case a.SweptAt == nil:
+			why = "The provider's completeness sweep has not run yet"
+		case a.SweptAt.Before(e.Now.Add(-sweepStale)):
+			why = "The provider's completeness sweep last ran " + a.SweptAt.UTC().Format("2 Jan 2006 15:04") + " UTC: it is late"
+		default:
+			continue
+		}
+		items = append(items, Item{Kind: "money_account", ID: a.MoneyAccountID.String(), Label: m.Name, Detail: why, Version: fmt.Sprint(a.Version)})
+	}
+	return items, nil
 }

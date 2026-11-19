@@ -350,7 +350,7 @@ func cloneValues(q url.Values) url.Values {
 var resources = map[ports.ProviderKind]string{
 	ports.ProviderCharge: "charges", ports.ProviderRefund: "refunds", ports.ProviderDispute: "disputes", ports.ProviderPayout: "payouts",
 	ports.ProviderInvoice: "invoices", ports.ProviderCreditNote: "credit_notes", ports.ProviderSubscription: "subscriptions",
-	ports.ProviderCustomer: "customers",
+	ports.ProviderCustomer: "customers", ports.ProviderBalanceTransaction: "balance_transactions",
 }
 
 // Object implements ports.PaymentProvider: the object as Stripe has it now, with the objects it belongs to as links.
@@ -396,6 +396,9 @@ func object(kind ports.ProviderKind, doc map[string]any, raw []byte) (ports.Prov
 	cur := str(doc, "currency")
 	o := ports.ProviderObject{Kind: kind, ID: str(doc, "id"), Status: str(doc, "status"), Created: seconds(doc, "created"),
 		Currency: strings.ToUpper(cur), Links: map[ports.ProviderKind][]string{}, Raw: raw}
+	if kind == ports.ProviderBalanceTransaction {
+		return balanceTransaction(doc, raw)
+	}
 	field := map[ports.ProviderKind]string{ports.ProviderCharge: "amount", ports.ProviderRefund: "amount", ports.ProviderDispute: "amount",
 		ports.ProviderPayout: "amount", ports.ProviderInvoice: "total", ports.ProviderCreditNote: "total"}[kind]
 	if field != "" && cur != "" {
@@ -418,6 +421,52 @@ func object(kind ports.ProviderKind, doc map[string]any, raw []byte) (ports.Prov
 	link(ports.ProviderCharge, "charge")
 	link(ports.ProviderCustomer, "customer")
 	link(ports.ProviderSubscription, "subscription")
+	return o, nil
+}
+
+// categories are how Stripe's reporting categories are read; any other is "other", which no rule posts by itself.
+var categories = map[string]string{"charge": "charge", "refund": "refund", "dispute": "dispute", "dispute_reversal": "dispute_reversal",
+	"fee": "fee", "payout": "payout"}
+
+// sourceKind reads what a balance transaction is of from its source's ID prefix.
+func sourceKind(id string) ports.ProviderKind {
+	switch {
+	case strings.HasPrefix(id, "ch_"), strings.HasPrefix(id, "py_"):
+		return ports.ProviderCharge
+	case strings.HasPrefix(id, "re_"), strings.HasPrefix(id, "pyr_"):
+		return ports.ProviderRefund
+	case strings.HasPrefix(id, "dp_"), strings.HasPrefix(id, "du_"):
+		return ports.ProviderDispute
+	case strings.HasPrefix(id, "po_"):
+		return ports.ProviderPayout
+	}
+	return ""
+}
+
+// balanceTransaction reads a balance transaction: gross (signed), fee, net, how Fyniq reads its category, and its source.
+func balanceTransaction(doc map[string]any, raw []byte) (ports.ProviderObject, error) {
+	cur := str(doc, "currency")
+	o := ports.ProviderObject{Kind: ports.ProviderBalanceTransaction, ID: str(doc, "id"), Status: str(doc, "status"), Created: seconds(doc, "created"),
+		Currency: strings.ToUpper(cur), Type: str(doc, "type"), AvailableOn: seconds(doc, "available_on"), Links: map[ports.ProviderKind][]string{}, Raw: raw}
+	cat, ok := categories[str(doc, "reporting_category")]
+	if !ok {
+		cat = "other"
+	}
+	o.Category = cat
+	for field, dst := range map[string]*string{"amount": &o.Amount, "fee": &o.Fee, "net": &o.Net} {
+		n, err := minor(doc, field)
+		if err != nil {
+			return o, err
+		}
+		if *dst, err = Decimal(n, cur); err != nil {
+			return o, err
+		}
+	}
+	if src := str(doc, "source"); src != "" {
+		if k := sourceKind(src); k != "" {
+			o.Links[k] = []string{src}
+		}
+	}
 	return o, nil
 }
 

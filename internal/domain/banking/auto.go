@@ -147,6 +147,7 @@ type plan struct {
 	doc      *Suggestion
 	recorded *Suggestion // a released batch's payment the line names (rev 0.160)
 	rule     *Rule
+	provider *providerStep // a payment provider's own line the sweep has classified (FR-PSP-06)
 }
 
 // decide works out, in u and writing nothing, what the system may do with a line on its own.
@@ -189,6 +190,15 @@ func decide(ctx context.Context, u storage.UnitOfWork, line storage.BankLine, ru
 	}
 	if len(sides) == 1 {
 		return plan{basis: storage.BasisTransfer, transfer: &sides[0]}, "", nil
+	}
+
+	// A payment provider's line the sweep has classified: a fee, a dispute's money or a payout (FR-PSP-04..06).
+	step, err := providerPlan(ctx, u, line, amount)
+	if err != nil {
+		return plan{}, "", err
+	}
+	if step != nil {
+		return plan{basis: storage.BasisExact, provider: step}, "", nil
 	}
 
 	// Exactly one open document: its amount, its number named exactly, and its contact named by the counterparty.
@@ -338,7 +348,9 @@ func AutoReconcile(ctx context.Context, txns journal.BankTransactions, org uuid.
 			}
 		case storage.BasisExact:
 			var x journal.Matched
-			if p.recorded != nil {
+			if p.provider != nil {
+				x.Match, err = applyProvider(ctx, txns, org, line, *p.provider, at)
+			} else if p.recorded != nil {
 				x, err = txns.MatchRecorded(ctx, org, line.ID, p.recorded.DocumentID, storage.BasisExact, at)
 			} else if p.doc.Kind == storage.MatchReceipt {
 				x, err = txns.MatchInvoices(ctx, org, journal.InvoiceMatch{LineID: line.ID, CustomerID: p.doc.ContactID, Currency: p.doc.Open.Currency(),
