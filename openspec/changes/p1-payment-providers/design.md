@@ -235,11 +235,13 @@ transaction (set once) and a payout's standing.
 
 **Decided (not re-asked):**
 - Stripe Billing for Model B and HitPay for Model A's PayNow QR, both read-only connectors from P1; one adapter per
-  capability (PRD-001 open questions 23 and 45, rev 0.25, 16 Oct 2026). After go-live (rev 0.146).
+  capability (PRD-001 open questions 23 and 45, rev 0.25). After go-live (rev 0.146).
 - **Who may enable a connector:** the existing `connector.change` (Owner plus a second approver, step-up; Appendix D
   "Organisation integrations"), pause by one person. No new approval path.
 - **Fees:** from the provider's data, per transaction, no claimable GST without a tax invoice (FR-PSP-05).
-- **Dispute handling, accounts and service periods:** the defaults of D6 and D9, built now, `[accountant to confirm]`.
+- **Disputes, fee GST and the accounts:** the defaults of D5, D8 and D9 (a dispute's money waits in disputes clearing, a lost
+  dispute posts nothing, a fee carries the GST code OP), built now, `[accountant to confirm]`. The service-period rule of D6
+  waits with the Model B mirror.
 
 **Decisions needed from the owner (with the recommendation):**
 1. **A lost dispute's revenue.** Options: (a) a person posts it to an expense (5045) from disputes clearing, revenue as invoiced
