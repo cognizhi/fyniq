@@ -17,32 +17,24 @@
 # commit's time, and clamp every file's time in the layers to it, so the same commit gives the same digests.
 
 # ---- Nemura's web app (PRD-002 NM-ARC-02, design D11) -------------------------------------
-# Only the nemura image carries it, inside the binary (go:embed): `--build-arg NEMURA_WEB=nemura-web-build` builds it; every other
-# service takes the committed placeholder and runs no Node. The build stage below refuses a release build of nemura with the placeholder.
-ARG NEMURA_WEB=nemura-web-placeholder
-
-FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS nemura-web-node
+# Only the nemura image carries it, inside the binary (go:embed): `--build-arg NEMURA_WEB=build` builds it; every other service takes the committed
+# placeholder, and this stage then runs no Node. The build stage below refuses a release build of nemura with the placeholder.
+FROM --platform=$BUILDPLATFORM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS nemura-web
+ARG NEMURA_WEB=placeholder
 WORKDIR /src
-RUN corepack enable
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/nemura-web/package.json apps/nemura-web/
 COPY sdk/typescript/package.json sdk/typescript/
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile --filter @fyniq/nemura-web
 COPY apps/nemura-web apps/nemura-web
 COPY docs/design-system/nemura docs/design-system/nemura
 COPY docs/design/screens/kit docs/design/screens/kit
 # The review register (the "Needs additional verification" banner, NM-UX-06) and the user guide, built into the app.
 COPY docs/prd/reviews/review-status.json docs/prd/reviews/review-status.json
 COPY docs/user-guide/nemura docs/user-guide/nemura
-RUN pnpm --filter @fyniq/nemura-web build
-
-FROM scratch AS nemura-web-build
-COPY --from=nemura-web-node /src/apps/nemura-web/dist /dist
-
-FROM scratch AS nemura-web-placeholder
-COPY apps/nemura-web/embedded /dist
-
-FROM ${NEMURA_WEB} AS nemura-web
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    if [ "${NEMURA_WEB}" = build ]; then \
+      corepack enable && pnpm install --frozen-lockfile --filter @fyniq/nemura-web && pnpm --filter @fyniq/nemura-web build && mv apps/nemura-web/dist /dist; \
+    else mkdir /dist && cp apps/nemura-web/embedded/index.html /dist/index.html; fi
 
 # ---- build stage ------------------------------------------------------------------------
 # Go 1.27.4, as mise.toml pins it: the patch release that fixes the standard library's vulnerabilities govulncheck
@@ -80,7 +72,7 @@ ARG TARGETARCH
 
 # Nemura's release image never carries the placeholder web app: Dockerfile refuses a release build of it without the web stage.
 RUN if [ "${SERVICE}" = nemura ] && [ "${FLAVOUR}" = release ] && grep -q nemura-web-placeholder apps/nemura-web/embedded/index.html; then \
-      echo "nemura's web app is the placeholder: pass --build-arg NEMURA_WEB=nemura-web-build (the Dockerfile refuses a release build without it)" >&2; exit 1; fi
+      echo "nemura's web app is the placeholder: pass --build-arg NEMURA_WEB=build (the Dockerfile refuses a release build without it)" >&2; exit 1; fi
 
 # CGO_ENABLED=0: a static binary for distroless/static. -trimpath, -buildid= and stamped values
 # make the build reproducible (NFR-IMG-07); -s -w strip symbols; timetzdata embeds the zone data.

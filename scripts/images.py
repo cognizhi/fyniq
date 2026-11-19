@@ -513,7 +513,7 @@ def build_command(svc: str, builder: str, version: str, sha: str, release: str, 
                 "--build-arg", f"SERVICE={svc}", "--build-arg", "FLAVOUR=release", "--build-arg", f"VERSION={version}",
                 "--build-arg", f"GIT_SHA={sha[:12]}", "--build-arg", f"RELEASE={release}"]
         if svc == "nemura":  # the web app is inside its binary (PRD-002 NM-ARC-02); no other image runs Node
-            cmd += ["--build-arg", "NEMURA_WEB=nemura-web-build"]
+            cmd += ["--build-arg", "NEMURA_WEB=build"]
     return [*cmd, *extra, "."]
 
 

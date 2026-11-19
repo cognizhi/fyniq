@@ -196,7 +196,7 @@ images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the e
 	  tag=$$( [ "$$f" = local ] && echo local || echo "$(VERSION)" ); \
 	  target=$$( case "$$svc" in render|clamd) echo "$$svc" ;; *) echo service ;; esac ); \
 	  docker build -q $(if $(PLATFORM),--platform $(PLATFORM)) -f deploy/docker/Dockerfile.go-service --target $$target --build-arg SERVICE=$$svc --build-arg FLAVOUR=$$f \
-	    $$( [ "$$svc" = nemura ] && echo --build-arg NEMURA_WEB=nemura-web-build ) --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) --build-arg RELEASE=$(RELEASE) -t fyniq-$$svc:$$tag . >/dev/null; \
+	    $$( [ "$$svc" = nemura ] && echo --build-arg NEMURA_WEB=build ) --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) --build-arg RELEASE=$(RELEASE) -t fyniq-$$svc:$$tag . >/dev/null; \
 	  echo "✔ fyniq-$$svc:$$tag"; done; done
 	@docker build -q $(if $(PLATFORM),--platform $(PLATFORM)) -f deploy/docker/Dockerfile.web -t fyniq-web:local . >/dev/null && echo "✔ fyniq-web:local"
 	@python3 scripts/images.py check --version $(VERSION) --flavours "$(FLAVOURS)" --platform "$(PLATFORM)"

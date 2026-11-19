@@ -90,13 +90,8 @@ func TestImagesArePinnedByDigest(t *testing.T) {
 	for _, f := range files {
 		src, _ := os.ReadFile(f)
 		var stages []string
-		args := map[string]string{} // ARG NAME=default, for `FROM ${NAME}`
 		for _, line := range strings.Split(string(src), "\n") {
 			fields := strings.Fields(line)
-			if len(fields) == 2 && strings.EqualFold(fields[0], "ARG") && strings.Contains(fields[1], "=") {
-				k, v, _ := strings.Cut(fields[1], "=")
-				args[k] = v
-			}
 			if len(fields) < 2 || !strings.EqualFold(fields[0], "FROM") {
 				continue
 			}
@@ -104,11 +99,7 @@ func TestImagesArePinnedByDigest(t *testing.T) {
 			if strings.HasPrefix(ref, "--") && len(fields) > 2 {
 				ref = fields[2]
 			}
-			if name, ok := strings.CutSuffix(strings.TrimPrefix(ref, "${"), "}"); ok && strings.HasPrefix(ref, "${") {
-				ref = args[name] // a stage chosen by a build argument: its default must be an earlier stage or pinned
-			}
-			// FROM an earlier stage needs no digest, and FROM scratch is the empty image: nothing to pin.
-			if ref != "scratch" && !slices.Contains(stages, ref) && !pinned.MatchString(ref) {
+			if !slices.Contains(stages, ref) && !pinned.MatchString(ref) { // FROM an earlier stage needs no digest
 				t.Errorf("%s: FROM %s is not pinned by digest", filepath.Base(f), ref)
 			}
 			if len(fields) >= 4 && strings.EqualFold(fields[len(fields)-2], "AS") {
