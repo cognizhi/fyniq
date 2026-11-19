@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "access_token_minutes": {
+      "examples": [
+        60
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "consent_valid_days": {
+      "examples": [
+        90
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "consent_valid_days",
+    "access_token_minutes"
+  ],
+  "title": "ConsentExpiry",
+  "type": "object"
+}

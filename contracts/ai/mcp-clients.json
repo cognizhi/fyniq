@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "note": "The first-party MCP clients, pre-registered at the OAuth server with fixed IDs, PKCE and exact redirect URIs (AI-35; p1-mcp-first-party tasks 3.1, 3.2). The ID is the app's name on an organisation's allowlist (mcp.clients). Redirects are exact. Hydra matches a registered portless 127.0.0.1 or [::1] URI on any port (RFC 8252) and does NOT do so for localhost, which Claude Code uses: its URI is registered with the port Claude Code is told to use (claude mcp add --callback-port 3118). Claude Desktop's redirect is Anthropic's hosted callback and is [live-verify].",
+  "clients": [
+    {
+      "id": "claude-code",
+      "name": "Claude Code",
+      "publisher": "Anthropic",
+      "redirect_uris": [
+        "http://localhost:3118/callback",
+        "http://127.0.0.1/callback"
+      ],
+      "verify": "Claude Code 2.1.327 asks for http://localhost:<port>/callback and takes a fixed port with --callback-port; Hydra matches localhost exactly, so the port is part of the registration"
+    },
+    {
+      "id": "claude-desktop",
+      "name": "Claude Desktop",
+      "publisher": "Anthropic",
+      "redirect_uris": [
+        "https://claude.ai/api/mcp/auth_callback"
+      ],
+      "verify": "[live-verify] Anthropic's hosted callback for remote connectors; not provable on a local stack"
+    }
+  ]
+}

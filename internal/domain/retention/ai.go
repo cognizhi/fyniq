@@ -14,7 +14,8 @@ import (
 
 // The purge of the assistant's conversations (PRD-001 §11.9, AI-P8; p1-ai-assistant task 6.3, design D11): daily, in
 // every organisation, the conversations whose last question is older than retention.ai_conversations_days (365 unless
-// changed), and those their people deleted, go with their turns, reads and feedback; each organisation's purge is
+// changed), and those their people deleted, go with their turns, reads and feedback, and with them the trail of the AI apps'
+// calls of that age (AI-44); each organisation's purge is
 // recorded in its audit trail with how many went.
 const (
 	AIConversationsJob          = "ai.conversations.purge"
@@ -47,12 +48,17 @@ func PurgeAIConversations(ctx context.Context, store storage.Store, clock ports.
 			}
 			before := now.Add(-time.Duration(days) * 24 * time.Hour)
 			conversations, turns, err := u.AIConversations().Purge(ctx, before)
-			if err != nil || conversations == 0 {
+			if err != nil {
+				return err
+			}
+			// The AI apps' trail of calls goes with them (AI-44): its evidence stays in the audit trail.
+			calls, err := u.MCPCalls().Purge(ctx, before)
+			if err != nil || conversations == 0 && calls == 0 {
 				return err
 			}
 			total += conversations
 			return u.Audit().Record(ctx, storage.AuditRecord{Action: ActionAIConversationsPurged, ObjectType: "ai_conversation", ObjectID: org,
-				Changes: map[string][2]any{"purged": {nil, map[string]any{"conversations": conversations, "turns": turns, "days": days,
+				Changes: map[string][2]any{"purged": {nil, map[string]any{"conversations": conversations, "turns": turns, "mcp_calls": calls, "days": days,
 					"before": before.UTC().Format(time.RFC3339)}}}})
 		})
 		if err != nil {

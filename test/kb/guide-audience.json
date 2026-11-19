@@ -352,6 +352,25 @@
     "status": "published"
   },
   {
+    "file": "connected-apps.md",
+    "key": "settings.connected-apps",
+    "roles": [
+      "owner",
+      "administrator",
+      "controller",
+      "accountant",
+      "bookkeeper",
+      "ar_specialist",
+      "ap_specialist",
+      "payroll_administrator",
+      "payment_releaser",
+      "approver",
+      "tax_agent",
+      "dpo"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "contacts-and-items.md",
     "key": "contacts.manage",
     "roles": [

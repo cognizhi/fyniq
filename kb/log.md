@@ -646,6 +646,16 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-18] edit | added aliases for users' own wording to 17 pages after the QA-AI-06 retrieval baseline (a retrieval miss is fixed in the compile step, AI-58)
 
+## [2026-11-19] compile | organisation-settings: AI apps through MCP and AI app limits (p1-mcp-first-party 2.1)
+
+## [2026-11-19] compile | organisation-settings: AI apps may register themselves (p1-mcp-first-party 11.1)
+
+## [2026-11-19] compile | connected-apps: the Connected apps guide page (p1-mcp-first-party 9.4)
+
+## [2026-11-19] compile | connected-apps: when an app asks to connect (p1-mcp-first-party 9.3)
+
+## [2026-11-19] compile | connected-apps: changes an app proposes (p1-mcp-first-party 7.x)
+
 ## [2026-11-19] compile | docs/user-guide/knowledge-base.md, docs/user-guide/ai-settings.md → settings.ai-knowledge-base, settings.ai (the knowledge-base administration page and its link)
 
 ## [2026-11-19] compile | docs/user-guide/projects-projects.md → projects.projects (the projects screens, p1-projects slice 1)

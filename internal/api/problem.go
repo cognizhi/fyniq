@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cognizhi/fyniq/internal/mcpgate"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -100,6 +101,9 @@ type Problem struct {
 	Fix      string         `json:"fix,omitempty" doc:"How to fix it." example:"Only a draft can be posted; reverse a posted journal instead."`
 	Instance string         `json:"instance,omitempty" format:"uri" doc:"The request this occurrence belongs to; quote it to support." example:"urn:fyniq:request:01JA2B3C4D5E6F7G8H9J0K1M2N"`
 	Errors   []FieldProblem `json:"errors,omitempty" doc:"Every invalid field, all at once."`
+	// OAuthError and OAuthErrorDescription are RFC 7591's error and error_description, which a registering client reads.
+	OAuthError            string `json:"error,omitempty" doc:"An OAuth error code, on a client registration's refusal (RFC 7591)." example:"invalid_redirect_uri"`
+	OAuthErrorDescription string `json:"error_description,omitempty" doc:"The same, in words." example:"The redirect URI is not exact."`
 
 	headers http.Header
 }
@@ -312,6 +316,22 @@ var codeFacts = map[string]struct {
 	CodeToolRefused:               {422, "The tool's read was refused"},
 	CodeToolTimeout:               {504, "The tool took too long"},
 	CodeToolGrant:                 {403, "Not one of the agent's tools"},
+	CodeMCPScope:                  {403, "The app was not granted what this call needs"},
+	CodeMCPNotAgent:               {403, "Not the delegated token of an agent for a person"},
+	CodeConsentGone:               {404, "The request to connect is gone"},
+	CodeConsentOther:              {403, "The request to connect is for another person"},
+	CodeConsentNoPath:             {404, "Consent is not available here"},
+	CodeConnectedNoUser:           {422, "Not a person who is a member"},
+	CodeConnectedNoRegist:         {404, "No registration is waiting under that ID"},
+	CodeRegClosed:                 {403, "AI apps cannot register here"},
+	CodeRegPolicy:                 {400, "The registration breaks the policy"},
+	CodeRegLimit:                  {429, "Too many registrations"},
+	CodeRegBackend:                {502, "The sign-in service did not take the registration"},
+	CodeMCPLimit:                  {429, "This app has made too many requests"},
+	CodeMCPTooLarge:               {422, "The result is larger than an AI app may receive"},
+	mcpgate.CodeOrganisationOff:   {403, "AI apps are not turned on for this organisation"},
+	mcpgate.CodeNotAllowed:        {403, "This AI app is not allowed to connect"},
+	mcpgate.CodeNotOptedIn:        {403, "The person has not allowed AI apps to work for them"},
 	CodeProposeNotAllowed:         {403, "The AI may not propose this"},
 	CodeProposalType:              {422, "Not a task type the AI may propose"},
 	CodeTaskReason:                {422, "A dismissal needs a reason"},
@@ -426,6 +446,7 @@ var codeFacts = map[string]struct {
 	CodeCaptureTaken:              {409, "The name belongs to another organisation"},
 	CodeCaptureNoUser:             {422, "Not a person with an address of their own"},
 	CodeHelpNoUser:                {422, "Not a person with a tour of their own"},
+	CodeMCPNoUser:                 {422, "Not a person who may choose whether AI apps work for them"},
 	CodeSenderNotAddress:          {422, "Not one email address"},
 	CodeNotifyLocked:              {409, "A security notice is always on"},
 	CodeNotifyTime:                {422, "Not a time of day"},

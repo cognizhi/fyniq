@@ -851,6 +851,14 @@
       "label": "AI activity",
       "tooltip": "Every model call the AI made: for whom, on which connection and model, what happened, the tokens and the cost. Yours, or everyone's for the Owner and the DPO."
     },
+    "oauth.consent": {
+      "label": "Connect an app",
+      "tooltip": "An AI app asks to read your company's books as you. Check who it is and what it asks for, keep only the areas you want, then allow or deny. It can only read and suggest."
+    },
+    "settings.connected-apps": {
+      "label": "Connected apps",
+      "tooltip": "AI apps, such as Claude Code, that work for you: what the organisation allows, what you have allowed each, and what they did. They read as you and can only propose changes."
+    },
     "settings.ai-plan": {
       "label": "Use your own AI plan",
       "tooltip": "Running your own assistant chats on your own provider plan. Not offered yet: the assistant uses the organisation's own connections."

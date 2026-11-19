@@ -67,6 +67,9 @@ type OAuthConsent struct {
 	RequestedScopes    []string
 	RequestedAudiences []string
 	Context            map[string]any
+	// RequestURL is the authorisation request as the client sent it: it carries the RFC 8707 resource parameter, which the
+	// OAuth server does not turn into an audience (p1-mcp-first-party task 1.1).
+	RequestURL string
 }
 
 // ConsentAcceptance is what consent grants.
@@ -101,6 +104,11 @@ type OAuthClients interface {
 	// client-credentials grant only, authenticating with private_key_jwt (RFC 7523) signed by the key it names. It
 	// returns the server's client ID.
 	RegisterIntegration(ctx context.Context, c IntegrationRegistration) (string, error)
+	// RegisterPublicClient registers, or replaces, a public client with a fixed ID: the authorisation code with PKCE and refresh
+	// tokens only, for the audience it names, with exact redirect URIs (a loopback one matches on any port, RFC 8252). It
+	// returns the client's ID. Used for the first-party MCP clients (AI-35); a client that registers itself goes through the
+	// API's registration endpoint (AI-90), which calls this.
+	RegisterPublicClient(ctx context.Context, c PublicRegistration) (string, error)
 	// RegisterPersonal registers a confidential client for a developer's personal access token (FR-INT-02): the
 	// client-credentials grant only, authenticated with a secret the server generates and returns once, and keeps only
 	// as a hash. Fyniq never holds the secret. It returns the server's client ID and that secret.
@@ -132,4 +140,36 @@ type IntegrationRegistration struct {
 	// TokenLifespan is how long each access token lives (AI-38: at most 60 minutes).
 	TokenLifespan time.Duration
 	Organisation  string // kept in the client's metadata, for the operator; never trusted from it
+}
+
+// PublicRegistration is a public client as the OAuth server registers it.
+type PublicRegistration struct {
+	ID           string // the client's ID: fixed for a first-party client, chosen by the server otherwise when empty
+	Name         string
+	Class        string // AI-34: agent for an MCP client
+	Audience     string
+	Scopes       []string
+	RedirectURIs []string
+	// App is the first-party app's name on the organisation's allowlist (mcp.clients), kept in the client's metadata; empty for
+	// a client that registered itself.
+	App string
+}
+
+// OAuthConsents revokes what a person granted the AI apps (agent-class clients) at the OAuth server, without touching what they
+// granted anything else: their own opt-out of AI apps stops the tokens of every app at once (AI-35, AI-38), while their web
+// session and integrations are untouched.
+type OAuthConsents interface {
+	// RevokeAgentConsents revokes every access and refresh token issued to subject by an agent-class client.
+	RevokeAgentConsents(ctx context.Context, subject string) error
+	// AgentConsents are what subject has granted agent-class clients now: each client, the scopes, and when.
+	AgentConsents(ctx context.Context, subject string) ([]AgentConsent, error)
+	// RevokeClientConsent revokes what subject granted one client: its access and refresh tokens.
+	RevokeClientConsent(ctx context.Context, subject, clientID string) error
+}
+
+// AgentConsent is what a person granted an AI app, as the OAuth server holds it.
+type AgentConsent struct {
+	ClientID, ClientName string
+	Scopes               []string
+	GrantedAt            time.Time
 }

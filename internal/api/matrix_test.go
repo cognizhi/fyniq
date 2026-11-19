@@ -13,9 +13,11 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	appclock "github.com/cognizhi/fyniq/internal/clock"
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/adapters/local"
@@ -587,6 +589,12 @@ var matrixCalls = map[string]matrixCall{
 	},
 	"getHelpState": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/help-state", asMatrixMember(e, tok), nil), nil
+	},
+	"getMyMCP": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/me/mcp", asMatrixMember(e, tok), nil), nil
+	},
+	"setMyMCP": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPut, "/v1/me/mcp", asMatrixMember(e, tok), map[string]any{"opted_in": true}, "If-Match", "*"), nil
 	},
 	"setTourState": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPut, "/v1/help-state/tour", asMatrixMember(e, tok), map[string]any{"tour": "started", "step": 0}, "If-Match", "*"), nil
@@ -1650,6 +1658,59 @@ var matrixCalls = map[string]matrixCall{
 	},
 	"listSignInProviders": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/sign-in-providers", tok, nil), nil
+	},
+	"registerOAuthClient": func(e *env, tok string) (response, func() bool) { // public, and open here: closed until an Owner opens it (AI-90)
+		clients, oauth, audience, on := e.api.deps.MCPClients, e.api.deps.OAuthClients, e.api.deps.MCPAudience, e.api.deps.MCPServerOn
+		defer func() {
+			e.api.deps.MCPClients, e.api.deps.OAuthClients, e.api.deps.MCPAudience, e.api.deps.MCPServerOn = clients, oauth, audience, on
+		}()
+		e.api.deps.MCPClients, e.api.deps.OAuthClients, e.api.deps.MCPAudience, e.api.deps.MCPServerOn = openRegistration{}, fakeOAuthClients{}, mcpAudience, true
+		return e.call(http.MethodPost, "/v1/oauth/register", tok, map[string]any{"client_name": "Acme", "redirect_uris": []string{"https://acme.example/cb"}}), nil
+	},
+	"getOAuthConsent": func(e *env, tok string) (response, func() bool) {
+		was := e.api.deps.Consent
+		defer func() { e.api.deps.Consent = was }()
+		e.api.deps.Consent = fakeConsentFlow{}
+		return e.call(http.MethodGet, "/v1/oauth/consent?consent_challenge=abc", tok, nil), nil
+	},
+	"answerOAuthConsent": func(e *env, tok string) (response, func() bool) {
+		was := e.api.deps.Consent
+		defer func() { e.api.deps.Consent = was }()
+		e.api.deps.Consent = fakeConsentFlow{}
+		return e.call(http.MethodPost, "/v1/oauth/consent", tok, map[string]any{"consent_challenge": "abc", "decision": "deny"}), nil
+	},
+	"getConnectedApps": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/connected-apps", asMatrixMember(e, tok), nil), nil
+	},
+	"revokeMyConnection": func(e *env, tok string) (response, func() bool) {
+		was := e.api.deps.OAuthConsents
+		defer func() { e.api.deps.OAuthConsents = was }()
+		e.api.deps.OAuthConsents = &fakeConsents{}
+		return e.call(http.MethodDelete, "/v1/connected-apps/connections/claude-code", asMatrixMember(e, tok), nil), nil
+	},
+	"listMCPActivity": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/connected-apps/activity", asMatrixMember(e, tok), nil), nil
+	},
+	"listMCPRegistrations": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/connected-apps/registrations", tok, nil), nil
+	},
+	"denyMCPRegistration": func(e *env, tok string) (response, func() bool) { // a registration waiting for an Owner, made afresh for each call
+		clients, oauth := e.api.deps.MCPClients, e.api.deps.OAuthClients
+		defer func() { e.api.deps.MCPClients, e.api.deps.OAuthClients = clients, oauth }()
+		e.api.deps.MCPClients, e.api.deps.OAuthClients = e.store, fakeOAuthClients{}
+		id := "mcp-" + strings.ReplaceAll(uuid.NewString(), "-", "")[:20]
+		matrixRegistration.Do(func() { // registration on for the organisation, once
+			y, m, d := e.clock.Now().In(appclock.Singapore).Date()
+			e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+				_, err := u.Settings().Record(ctx, "mcp.registration", "false", "true", time.Date(y, m, d, 0, 0, 0, 0, time.UTC), 1)
+				return err
+			})
+		})
+		if _, err := e.store.Register(context.Background(), storage.MCPClientRegistration{ID: id, Name: "Acme", RedirectURIs: []string{"https://acme.example/cb"}, At: e.clock.Now()},
+			storage.MCPClientLimits{PerHour: 1000, PerDay: 1000, PendingCap: 1000}); err != nil {
+			e.t.Fatal(err)
+		}
+		return e.call(http.MethodPost, "/v1/connected-apps/registrations/"+id+"/deny", tok, nil), nil
 	},
 	"getSession": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/session", tok, nil), nil
@@ -2757,3 +2818,17 @@ func matrixExport(e *env, tok string, ready bool) string {
 	}
 	return id
 }
+
+// openRegistration stands in for the installation's record in the matrix: registration is open and every registration is taken.
+type openRegistration struct{ storage.MCPClients }
+
+func (openRegistration) RegistrationOpen(context.Context, time.Time) (bool, error) { return true, nil }
+func (openRegistration) ExpireClients(context.Context, time.Time, time.Duration, time.Duration) ([]string, error) {
+	return nil, nil
+}
+func (openRegistration) Register(context.Context, storage.MCPClientRegistration, storage.MCPClientLimits) (string, error) {
+	return "", nil
+}
+
+// matrixRegistration turns registration on once for the matrix's organisation.
+var matrixRegistration sync.Once

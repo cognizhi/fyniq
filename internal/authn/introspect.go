@@ -199,18 +199,40 @@ const MaxDelegated = 5 * time.Minute
 type Delegation struct {
 	Client string
 	Lookup func(ctx context.Context, user uuid.UUID) (org uuid.UUID, roles []authz.Role, err error)
+	// LookupIn, when set, serves a subject that names the organisation too, "<organisation>:<user>" (DelegatedSubject): the
+	// MCP server names the organisation the person consented in, and the API checks the person is an active member of it
+	// and reads their roles there now. A person who is in no such organisation gets no token. Lookup serves the plain form.
+	LookupIn func(ctx context.Context, org, user uuid.UUID) (roles []authz.Role, err error)
 }
 
+// DelegatedSubject is the subject of an assertion for a person in an organisation.
+func DelegatedSubject(org, user uuid.UUID) string { return org.String() + ":" + user.String() }
+
 func (d *Delegation) principal(ctx context.Context, in ports.Introspection) (Principal, error) {
-	user, err := uuid.Parse(in.Subject)
+	orgPart, userPart, named := strings.Cut(in.Subject, ":")
+	if !named {
+		orgPart, userPart = "", in.Subject
+	}
+	user, err := uuid.Parse(userPart)
 	switch {
 	case err != nil:
 		return Principal{}, errors.Join(ErrUnauthenticated, errors.New("a delegated token's subject is not a user"))
 	case in.IssuedAt.IsZero() || in.ExpiresAt.Sub(in.IssuedAt) > MaxDelegated+time.Second: // iat and exp are whole seconds
 		return Principal{}, errors.Join(ErrUnauthenticated, fmt.Errorf("a delegated token lives at most %s", MaxDelegated))
 	}
-	org, roles, err := d.Lookup(ctx, user)
-	if err != nil {
+	var org uuid.UUID
+	var roles []authz.Role
+	if named {
+		if d.LookupIn == nil {
+			return Principal{}, errors.Join(ErrUnauthenticated, errors.New("this server takes no delegated subject that names an organisation"))
+		}
+		if org, err = uuid.Parse(orgPart); err != nil || org == uuid.Nil {
+			return Principal{}, errors.Join(ErrUnauthenticated, errors.New("a delegated token's organisation is not an organisation"))
+		}
+		if roles, err = d.LookupIn(ctx, org, user); err != nil {
+			return Principal{}, errors.Join(ErrUnauthenticated, err)
+		}
+	} else if org, roles, err = d.Lookup(ctx, user); err != nil {
 		return Principal{}, errors.Join(ErrUnauthenticated, err)
 	}
 	return Principal{Via: ViaToken, Subject: in.Subject, UserID: user, Client: in.ClientID, Class: ClassAgent, Organisation: org,
