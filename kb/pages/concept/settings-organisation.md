@@ -4,7 +4,7 @@ type: concept
 title: Organisation settings and their recommended values
 summary: Company-wide settings: GST and its monitor, cash buffer, numbering, features, AI, terms, tolerances, banking, claims, thresholds, disposals, email-in, retention
 sources:
-  - docs/user-guide/organisation-settings.md sha256:f8d4a9bf48c27c9f75088e5b8ebd838752de7f7b8e0ba0aa7869462e2439dc85
+  - docs/user-guide/organisation-settings.md sha256:e5e14b1a67922c3ab35222e1fa27f33d7362bb5f66b070391939432fa96ad9c7
 data_class: general
 taint: trusted
 status: draft
@@ -372,6 +372,7 @@ The calendar itself: [[compliance.calendar]].
 
 - **Evidence for bills**: a bill posts only with the supplier's invoice or receipt attached.
 - **Evidence for manual journals**: a manual journal whose debits are above S$1,000 posts only with a supporting calculation or document attached; **Evidence for manual journals above** sets the amount.
+- **Largest evidence file**: a file larger than this is refused when it is attached; it is 25 MB by default, the most Fyniq takes, and an organisation may lower it.
 - **Evidence for statutory filings and payments**: an item of the statutory calendar is recorded as filed only with its acknowledgement attached, such as IRAS's or ACRA's acknowledgement of a return, CPF Board's of a payment, or an AGM's minutes.
 - Each is **required** by default; **recommended** lets the record post without a file and **Checks** lists it; **optional** asks for nothing. Changing any of them needs a second approver.
 - A record's **Evidence** panel lists **Rules for this activity**: a cross and **Required** while a required item has no file, a warning and **Recommended** while a recommended one has none, and **Attached** once a file meets it. A bill, an expense claim and a founder's cost are recommended to carry a business purpose note; a change of a supplier's bank details, a call-back note; a manual journal, an explanation; a filing, its working papers. Say what a file is when you attach it and it meets that item. Where evidence is optional, the panel says it asks for none.

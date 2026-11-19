@@ -1,5 +1,5 @@
 # Nemura's own origin, as behind its production hostname (PRD-002 NM-INT-12: each app has its own origin and its own session). `PEOPLE=yes make up`
-# serves it on http://localhost:8180 (NEMURA_HTTP_PORT). The API is under /api; its OAuth issuer and the web app arrive with the next slices.
+# serves it on http://localhost:8180 (NEMURA_HTTP_PORT). The API is under /api, its OAuth server's public endpoints under /oauth, and the web app, embedded in the nemura binary, is everything else.
 {
 	auto_https off
 	admin off
@@ -16,8 +16,9 @@
 		reverse_proxy nemura-oauth:4444
 	}
 	# The sign-in routes are browser navigations on the API (/auth/…), reached through /api like every route.
+	# Everything else is Nemura's web app, embedded in the nemura binary (NM-ARC-02), with its own security headers.
 	handle {
-		respond "Nemura's web app arrives with p1-nemura-platform's web slice." 404
+		reverse_proxy nemura-api:8080
 	}
 
 	header {

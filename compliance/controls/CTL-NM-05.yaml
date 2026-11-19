@@ -1,0 +1,19 @@
+# CTL-NM-05: PRD-001 Appendix F (F.9). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-NM-05
+section: "F.9"
+control: "API clients are registered and revoked only by the Owner with a passkey confirmed in the last five minutes, for Nemura's audience and the scopes given, with no private key accepted (a second approver arrives with the Fyniq link, NM-ARC-04)"
+mapping: "ISO 5.15, 8.2; SOC2 CC6.1; ASVS V6.4, V13.2"
+automated_check: "Role and step-up tests; registration and revocation tests with a fake authorisation server"
+frequency: "CI"
+evidence: "Test report; the trail's `nemura.client.created` and `nemura.client.revoked` events"
+owner: Owner
+checks:
+  - frequency: CI
+    status: running
+    how: "test TestOnlyTheOwnerManagesAPIClientsWithAFreshPasskeyConfirmation"
+    evidence: "only the Owner, with a passkey confirmed in the last five minutes, registers, lists or revokes an API client; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestAnAPIClientIsRegisteredWithTheOAuthServerAndRecorded"
+    evidence: "a client is registered for Nemura's audience with no private key accepted, recorded and audited, a repeat refused, revoked at the authorisation server first; CI artefact test-report (90 days)"

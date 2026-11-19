@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -221,10 +222,23 @@ func (a *API) upload(ctx context.Context, up *EvidenceUpload) (evidence.File, ev
 		}
 		d.RelatesOn = &t
 	}
-	file, problems, err := evidence.Check(ctx, a.deps.Scanner, up.File.Filename, data)
+	limit := evidence.MaxBytes // the organisation's setting, never above 25 MB (FR-DOC-08)
+	if err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		v, err := settingToday(ctx, a, u, "evidence.max_file_mb")
+		if err != nil {
+			return err
+		}
+		if mb, err := strconv.Atoi(v); err == nil && mb >= 1 && mb<<20 < limit {
+			limit = mb << 20
+		}
+		return nil
+	}); err != nil {
+		return evidence.File{}, evidence.Details{}, err
+	}
+	file, problems, err := evidence.CheckWith(ctx, evidence.Checker{Scanner: a.deps.Scanner, Converter: a.deps.Converter, MaxBytes: limit}, up.File.Filename, data)
 	if err != nil {
 		logFailure(ctx, err)
-		return evidence.File{}, evidence.Details{}, problem(CodeUnavailable, "The malware scan is not available, so the file was not attached.", "Try again in a few minutes.")
+		return evidence.File{}, evidence.Details{}, problem(CodeUnavailable, "The malware scan, or a photo's conversion, is not available, so the file was not attached.", "Try again in a few minutes.")
 	}
 	for _, x := range append(problems, evidence.CheckDetails(d)...) {
 		bad = append(bad, FieldProblem{Code: x.Code, Field: "body." + x.Field, Message: x.Message, Fix: x.Fix})

@@ -73,6 +73,8 @@ type Deps struct {
 	// FR-DOC-01); without either, no file can be attached.
 	Staging ports.BlobStore
 	Scanner ports.Scanner
+	// Converter turns a HEIC photo into a JPEG before it is attached (FR-DOC-08); nil: a HEIC photo is refused.
+	Converter ports.Converter
 	// Evidence is the retention-locked store committed files are read from (FR-DOC-01, FR-DOC-13; rev 0.188): the API
 	// only reads it. Nil: a committed file cannot be opened.
 	Evidence ports.BlobStore

@@ -21,6 +21,19 @@
   `FuzzCheckArchive`, `FuzzUnmaskedNRIC` and `FuzzSafeName`, seeded with a file of each accepted type and each refused
   one, made in code. Tests `TestHEICIsRefusedWithItsOwnMessage` and the fuzz targets. **Left:** HEIC's conversion and
   safe PDF previews, which wait for the owner's choice of a converter and a renderer)
+  (18 Nov 2026, PRD-001 rev 0.292, the owner's decision of the same day: conversion behind a port and a service of its own.
+  `ports.Converter` (HEIC to JPEG; a file to a preview PNG), `internal/convertservice` (handler and client, with its own
+  task-token class and refusals CONV-01…05), `local.StandInConverter` (a flat-colour picture from the file's hash, so tests
+  prove what surrounds a conversion; on in local mode only with `FYNIQ_CONVERTER_STANDIN=1`), release wiring (`converter`
+  callers) and `evidence.CheckWith`: the HEIC photo is scanned as received, converted, the picture scanned again, checked
+  to be a JPEG, stripped and kept as a JPEG named .jpg with both hashes; unconfigured, HEIC is refused as before (DOC-01);
+  a photo the converter cannot read is DOC-11. The 25 MB limit is the setting `evidence.max_file_mb` (a choice of 1, 5, 10 or 25 MB; a new settings kind would widen the contract's kind enum, which the last release's
+  breaking-change check refuses). Tests `TestAHEICPhotoIsConvertedWhereTheInstallationHasAConverter`,
+  `TestAHEICPhotoIsConvertedOnceTheInstallationHasAConverter`, `TestAnOrganisationMayLowerTheLargestEvidenceFile`,
+  `TestTheConverterServiceConvertsForItsCallers`. **Left, `[live-verify]`:** `cmd/converter`, its image, budget and Cloud
+  Run service, which need a pinned HEIC decoder and PDF renderer (none is in the toolchain, and each has a licence to
+  check against `make scan`); the converter's own infra; the safe PDF preview (an endpoint, where derived previews are kept
+  and audited with both hashes), which the port already has a kind for.)
 
 ## 2. Upload, attach, finalise
 

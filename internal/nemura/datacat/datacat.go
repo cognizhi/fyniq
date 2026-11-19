@@ -32,10 +32,10 @@ var Categories = []Category{
 		Columns:   []string{"member.display_name"},
 	},
 	{
-		Key: "sign-in-identities", What: "Each person's name at the identity provider: its issuer, subject and tenant, and the invitations and sessions that let them in (kept as hashes)",
+		Key: "sign-in-identities", What: "Each person's name at the identity provider: its issuer, subject and tenant, and the invitations, recovery codes and sessions that let them in (kept as hashes), with the names of the two operators who issued a recovery",
 		Purpose:   "To recognise a person who signs in, never by email alone, and to keep them signed in until they sign out or are deactivated",
 		Retention: Rule{After: "leaving", Reason: "Kept while a member; a deactivated member's identity is switched off and kept for the audit trail"},
-		Columns:   []string{"identity_directory.subject", "passkey.name"},
+		Columns:   []string{"identity_directory.subject", "passkey.name", "owner_recovery.operators"},
 	},
 	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",

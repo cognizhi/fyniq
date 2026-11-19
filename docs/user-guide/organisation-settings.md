@@ -451,6 +451,8 @@ Some records need a file to show they are real before they post:
 - **Evidence for bills**: a bill posts only with the supplier's invoice or receipt attached.
 - **Evidence for manual journals**: a manual journal whose debits are above S$1,000 posts only with a
   supporting calculation or document attached. **Evidence for manual journals above** sets the amount.
+- **Largest evidence file**: a file larger than this is refused when you attach it. It is 25 MB by
+  default, which is the most Fyniq takes; you can lower it, and a change takes effect at once.
 - **Evidence for statutory filings and payments**: an item of the statutory calendar is recorded as
   filed only with its acknowledgement attached, such as IRAS's or ACRA's acknowledgement of a return,
   CPF Board's of a payment, or an AGM's minutes.
