@@ -97,8 +97,9 @@ type CustomerRefundRule func(r CustomerRefund, s Settings) (Entry, Settlement, e
 // CustomerRefundRules are every customer refund rule version the engine has posted with, by name: like Rules, a
 // version is never removed or changed while an entry names it.
 var CustomerRefundRules = map[string]CustomerRefundRule{
-	RuleCustomerRefund: PostCustomerRefund,
-	RuleDepositRefund:  PostDepositRefund,
+	RuleCustomerRefund:    PostCustomerRefund,
+	RuleDepositRefund:     PostDepositRefund,
+	RuleDisputeSettlement: PostDisputeSettlement,
 }
 
 // ReplayCustomerRefund re-runs the rule version that posted a customer refund's entry over the same version (ENG-06).

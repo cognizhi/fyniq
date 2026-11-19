@@ -22090,6 +22090,57 @@ components:
         - by_origin
         - closing
       type: object
+    DisputeCreditDraft:
+      additionalProperties: false
+      properties:
+        credit_note_id:
+          description: The issued credit note that credits the disputed charge's invoice, whose credit is settled.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b90
+          format: uuid
+          type: string
+        date:
+          description: The settlement's date; today when left out.
+          examples:
+            - "2026-11-19"
+          format: date
+          type: string
+        money_account_id:
+          description: The provider's clearing money account the dispute is on.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+          format: uuid
+          type: string
+      required:
+        - money_account_id
+        - credit_note_id
+      type: object
+    DisputeCreditSettled:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: What it settled of the credit.
+        dispute_id:
+          description: The provider's ID.
+          examples:
+            - dp_1Q3
+          type: string
+        settlement_id:
+          description: "The refund document: Dr accounts receivable, Cr disputes clearing, under dispute_settlement@1."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b81
+          format: uuid
+          type: string
+        still_held:
+          $ref: "#/components/schemas/Money"
+          description: What the dispute still holds in disputes clearing, such as its fee, for the expense route.
+      required:
+        - dispute_id
+        - settlement_id
+        - amount
+        - still_held
+      type: object
     DisputeLossDraft:
       additionalProperties: false
       properties:
@@ -40545,11 +40596,17 @@ components:
           examples:
             - true
           type: boolean
+        credited:
+          $ref: "#/components/schemas/Money"
+          description: What a customer credit was settled against it.
         dispute_id:
           description: The provider's ID.
           examples:
             - dp_1Q3
           type: string
+        disputed:
+          $ref: "#/components/schemas/Money"
+          description: The disputed amount alone, without the dispute fee.
         held:
           $ref: "#/components/schemas/Money"
           description: What its posted lines have moved into disputes clearing and the provider has not given back.
@@ -40570,12 +40627,19 @@ components:
           examples:
             - false
           type: boolean
+        settlement_id:
+          description: The refund document that settled the customer credit against it (dispute_settlement@1).
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b81
+          format: uuid
+          type: string
         status:
-          description: "open: its money waits; won: the provider gave it all back; written_off: a draft journal was prepared to write it off."
+          description: "open: its money waits; won: the provider gave it all back; written_off: a draft journal was prepared to write it off; credited: a customer credit was settled against all of it."
           enum:
             - open
             - won
             - written_off
+            - credited
           examples:
             - open
           type: string
@@ -40586,6 +40650,8 @@ components:
         - status
         - all_posted
         - over_limit
+        - disputed
+        - credited
       type: object
     PaymentProviderEvent:
       additionalProperties: false
@@ -194306,6 +194372,211 @@ paths:
       x-fyniq-permission:
         capability: Bank transactions, categorise
         right: V
+  /v1/payment-providers/disputes/{dispute_id}/credit-settlement:
+    post:
+      description: "Settles the credit an issued credit note left with a customer against the money a lost dispute holds in disputes clearing (FR-PSP-04, dispute_settlement@1): Dr accounts receivable with the credit, Cr disputes clearing, as a refund records money paid back, with the disputes clearing account in the place of the money account. The credit note is issued first, under Invoices, with its own approval: it reverses the invoice's revenue and GST. The credit may not exceed the disputed amount, and is in the base currency; what is left in disputes clearing (the dispute fee) is written off by the draft journal of prepareDisputeLoss. Once per dispute. Needs the right to post on Invoices. [accountant to confirm the GST of the credit note.] Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: settleDisputeCredit
+      parameters:
+        - description: The provider's ID of the dispute.
+          in: path
+          name: dispute_id
+          required: true
+          schema:
+            description: The provider's ID of the dispute.
+            examples:
+              - dp_1Q3
+            maxLength: 255
+            minLength: 1
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisputeCreditDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisputeCreditSettled"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisputeCreditSettled"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PSP-05` The dispute cannot be written off now; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `APPLY-03` Not an issued credit note or a receipt with an amount unapplied; `APPLY-05` More than the invoice has open or the credit has left; `PSP-08` The credit cannot settle the dispute."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Settle a customer's credit against a lost dispute
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - APPLY-03
+        - APPLY-05
+        - PSP-05
+        - PSP-08
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Invoices, credit notes
+        right: P
   /v1/payment-providers/disputes/{dispute_id}/loss:
     post:
       description: "Prepares a draft journal for a dispute the provider has lost for the organisation (FR-PSP-04): Dr the provider account's dispute loss account, Cr disputes clearing, for what the dispute holds. It posts nothing: the draft is posted under Journals with that row's own approval. Up to the limit psp.dispute_expense_limit (S$100 by default) nothing more is needed; above it the request must confirm that the invoice's revenue stays as invoiced and give a reason. Once per dispute; every line of the dispute must have posted first. Needs a right on Journals. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."

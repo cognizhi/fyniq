@@ -821,6 +821,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/payment-providers/accounts` (listPaymentProviderAccounts): List the payment providers' accounts
 - `PUT /v1/payment-providers/accounts/{money_account_id}` (setPaymentProviderAccount): Set up a payment provider's money account
 - `GET /v1/payment-providers/disputes` (listPaymentProviderDisputes): List the payment providers' disputes
+- `POST /v1/payment-providers/disputes/{dispute_id}/credit-settlement` (settleDisputeCredit): Settle a customer's credit against a lost dispute
 - `POST /v1/payment-providers/disputes/{dispute_id}/loss` (prepareDisputeLoss): Prepare the journal that writes a lost dispute off
 - `GET /v1/payment-providers/events` (listPaymentProviderEvents): List the payment providers' webhook events
 - `POST /v1/payment-providers/events/{event_id}/resolution` (resolvePaymentProviderEvent): Mark a parked provider event as dealt with

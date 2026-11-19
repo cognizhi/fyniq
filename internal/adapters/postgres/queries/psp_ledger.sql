@@ -92,3 +92,13 @@ RETURNING id, connector_id, dispute_id, document_id, currency, amount, accepted_
 -- name: PSPDisputeLosses :many
 SELECT id, connector_id, dispute_id, document_id, currency, amount, accepted_overstated_revenue, reason, created_by, created_at
   FROM fyniq.psp_dispute_loss WHERE connector_id = sqlc.arg(connector_id) ORDER BY created_at, dispute_id;
+
+-- name: InsertPSPDisputeCredit :one
+INSERT INTO fyniq.psp_dispute_credit (connector_id, dispute_id, credit_note_id, refund_id, currency, amount, created_by, created_at)
+VALUES (sqlc.arg(connector_id), sqlc.arg(dispute_id), sqlc.arg(credit_note_id), sqlc.arg(refund_id), sqlc.arg(currency), sqlc.arg(amount)::numeric,
+  sqlc.arg(created_by), sqlc.arg(created_at))
+RETURNING id, connector_id, dispute_id, credit_note_id, refund_id, currency, amount, created_by, created_at;
+
+-- name: PSPDisputeCredits :many
+SELECT id, connector_id, dispute_id, credit_note_id, refund_id, currency, amount, created_by, created_at
+  FROM fyniq.psp_dispute_credit WHERE connector_id = sqlc.arg(connector_id) ORDER BY created_at, dispute_id;

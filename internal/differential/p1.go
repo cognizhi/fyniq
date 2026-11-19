@@ -32,9 +32,12 @@ type Settings struct {
 	FirstYearEnd  string            `json:"first_year_end,omitempty"`
 	Accounts      map[string]string `json:"accounts,omitempty"`
 	MoneyAccounts map[string]string `json:"money_accounts,omitempty"`
-	MileageRates  []MileageRate     `json:"mileage_rates,omitempty"`
-	Tolerance     map[string]string `json:"tolerance,omitempty"`
-	GST           *GSTSettings      `json:"gst,omitempty"`
+	// DisputeAccounts are a payment provider's disputes clearing accounts and their currencies (FR-PSP-04, rev 0.308): accounts that
+	// hold no money, which a dispute_settlement credits.
+	DisputeAccounts map[string]string `json:"dispute_accounts,omitempty"`
+	MileageRates    []MileageRate     `json:"mileage_rates,omitempty"`
+	Tolerance       map[string]string `json:"tolerance,omitempty"`
+	GST             *GSTSettings      `json:"gst,omitempty"`
 	// PeriodEndRates are the currencies' rates for months' last days, which the month-end revaluation reads (FR-GL-04).
 	PeriodEndRates []PeriodEndRate `json:"period_end_rates,omitempty"`
 }
@@ -243,6 +246,8 @@ func (r *p1) post(i int, d Document) (ledger.Entry, bool) {
 		return r.customerReceipt(d, date)
 	case "deposit_refund":
 		return r.depositRefund(d, date)
+	case "dispute_settlement":
+		return r.disputeSettlement(d, date)
 	case "write_off":
 		return r.writeOff(d, date)
 	case "expense_claim":

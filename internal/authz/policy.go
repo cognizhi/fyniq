@@ -1079,6 +1079,9 @@ var (
 	// one off, which is posted under "Journals" like any other; ResolvePaymentProviderEvent marks a parked event dealt with.
 	ListPaymentProviderDisputes = Policy{Operation: "listPaymentProviderDisputes", Capability: BankTransactions, Need: View}
 	PrepareDisputeLoss          = Policy{Operation: "prepareDisputeLoss", Capability: Journals, Need: Create}
+	// SettleDisputeCredit settles an issued credit note's credit against a lost dispute's money (dispute_settlement@1), as a refund
+	// is recorded: under "Invoices" with the right to post.
+	SettleDisputeCredit         = Policy{Operation: "settleDisputeCredit", Capability: Invoices, Need: Post}
 	ResolvePaymentProviderEvent = Policy{Operation: "resolvePaymentProviderEvent", Capability: BankTransactions, Need: Create}
 	ResolveBankGap              = Policy{Operation: "resolveBankGap", Capability: BankTransactions, Need: Create}
 	ListStatementMappings       = Policy{Operation: "listStatementMappings", Capability: BankTransactions, Need: View}
@@ -2046,7 +2049,7 @@ var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegra
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
 	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid, RequestBankRuleAutoApply,
-	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ListPaymentProviderDisputes, PrepareDisputeLoss, ResolvePaymentProviderEvent, ResolveBankGap, ListStatementMappings,
+	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ListPaymentProviderDisputes, PrepareDisputeLoss, SettleDisputeCredit, ResolvePaymentProviderEvent, ResolveBankGap, ListStatementMappings,
 	CreateStatementMapping, ReplaceStatementMapping, ImportBankStatements, ListBankStatements, ListBankLines, GetBankLine,
 	CategoriseBankLine, SuspendBankLine, MatchBankLineInvoices, MatchBankLineBills, MatchBankLineRecorded, KeepBankLine, ExcludeBankLine,
 	UnreconcileBankLine, AutoReconcileBankLines, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,

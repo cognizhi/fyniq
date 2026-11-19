@@ -2820,6 +2820,19 @@ type FyniqPspBalance struct {
 	TakenAt        time.Time
 }
 
+type FyniqPspDisputeCredit struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectorID    uuid.UUID
+	DisputeID      string
+	CreditNoteID   uuid.UUID
+	RefundID       uuid.UUID
+	Currency       string
+	Amount         string
+	CreatedBy      string
+	CreatedAt      time.Time
+}
+
 type FyniqPspDisputeLoss struct {
 	OrganisationID            uuid.UUID
 	ID                        uuid.UUID
