@@ -299,6 +299,9 @@ type fakeOAuthClients struct{}
 func (fakeOAuthClients) RegisterIntegration(context.Context, ports.IntegrationRegistration) (string, error) {
 	return "fake-" + uuid.NewString(), nil
 }
+func (fakeOAuthClients) RegisterPersonal(context.Context, ports.PersonalRegistration) (string, string, error) {
+	return "fake-" + uuid.NewString(), "fake-secret", nil
+}
 func (fakeOAuthClients) RemoveClient(context.Context, string) error { return nil }
 
 // matrixIntegrationClient is a live integration client of the matrix's organisation, made once.

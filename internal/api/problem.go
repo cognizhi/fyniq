@@ -261,6 +261,7 @@ var codeFacts = map[string]struct {
 	apiclient.CodeKey:             {422, "Not a public key an integration may sign with"},
 	apiclient.CodeOwner:           {422, "The client's member is not an active member with a role"},
 	apiclient.CodeState:           {409, "The client is revoked already"},
+	apiclient.CodeDisabled:        {403, "Personal access tokens are off for this organisation"},
 	aiconnection.CodeProvider:     {422, "Not a model provider of this release"},
 	aiconnection.CodeAuth:         {422, "Not an authentication the provider offers"},
 	aiconnection.CodeConfig:       {422, "The configuration does not match the provider's"},
