@@ -624,6 +624,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-18] compile | docs/user-guide/approvals.md → approvals.decide (FM-6: unusual items in the weekly review, rev 0.287)
 
+## [2026-11-18] compile | docs/user-guide/journals.md → accounting.journals (the Evidence panel's date it relates to, paste, drop and details)
+
 ## [2026-11-18] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the Evidence panel's Rules for this activity)
 
 ## [2026-11-18] compile | docs/user-guide/home.md → home.overview (the Approver's requests waiting on Home; QA-UI-08)
@@ -645,6 +647,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | docs/user-guide/projects-time.md → projects.time (time entry, timer and approval, p1-projects slice 2)
 
 ## [2026-11-19] compile | docs/user-guide/projects-rates.md → projects.rates (rates and time at cost, p1-projects slice 3)
+
+## [2026-11-19] compile | every page → kb-schema@2 (the optional packs field; content unchanged); compliance.gst declares sg-gst@2026.3 and compliance.calendar sg-deadlines@2026.1 (AI-53)
 
 ## [2026-11-19] compile | docs/user-guide/integrations.md → settings.integrations (Stripe and HitPay as read-only payment providers: set up, what arrives, what posts on Reconcile now, a lost dispute, the checks; p1-payment-providers, PRD rev 0.304)
 

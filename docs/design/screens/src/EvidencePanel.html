@@ -18,11 +18,16 @@
         <div class="fy-row fy-row--between"><span class="fy-row"><i data-icon="phone" class="fy-muted"></i>Call-back note</span><span class="fy-chip fy-chip--warning"><i data-icon="triangle-alert"></i>Recommended</span></div>
       </div>
       <div class="fy-dropzone"><i data-icon="upload" class="fy-i--24"></i><span><strong>Drop files</strong>, paste a screenshot or <button class="fy-btn fy-btn--ghost fy-btn--sm" type="button">choose a file</button></span><span class="fy-small fy-muted">PDF, PNG, JPEG, HEIC or email · up to 25 MB</span></div>
+      <div class="fy-stack fy-stack--3">
+        <div class="fy-field"><label class="fy-label" for="ev-kind">What it is</label><input class="fy-input" id="ev-kind" value="bank_letter" /></div>
+        <div class="fy-field"><label class="fy-label" for="ev-note">Note (optional)</label><input class="fy-input" id="ev-note" /></div>
+        <div class="fy-field"><label class="fy-label" for="ev-date">Date it relates to (optional)</label><input class="fy-input" id="ev-date" type="date" /><span class="fy-help">The day on the document, such as the invoice date or the day of the call, so the file is found by it.</span></div>
+      </div>
       <ul class="fy-stack fy-stack--3">
         <li class="fy-card fy-card--flat fy-card--pad fy-stack fy-stack--2">
           <div class="fy-row fy-row--between"><span class="fy-row"><i data-icon="mail"></i><span class="fy-strong">Email from accounts@wework.sg</span></span><span class="fy-chip fy-chip--good"><i data-icon="lock"></i>Approved</span></div>
           <span class="fy-small fy-muted">Payee notice · relates to 8 Oct 2026 · data class: bank · uploaded by Arjun Rao</span>
-          <span class="fy-small fy-mono fy-muted">SHA-256 4be1…09fa</span>
+          <details class="fy-small fy-muted"><summary>Details · SHA-256 <span class="fy-mono">4be1…09fa</span></summary>Uploaded · no personal data · added by you</details>
           <span class="fy-small fy-muted">Append-only. Replace it with a newer file and a reason; both are kept.</span>
         </li>
         <li class="fy-card fy-card--flat fy-card--pad fy-stack fy-stack--2">

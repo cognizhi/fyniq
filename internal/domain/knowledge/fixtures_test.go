@@ -24,6 +24,9 @@ func TestTheGoLintAgreesWithKbPyOnTheFixtures(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			if err := c.LoadPacks(os.DirFS(filepath.Join(dir, "packs"))); err != nil {
+				t.Fatal(err)
+			}
 			got := map[string]bool{}
 			for _, f := range knowledge.Lint(c) {
 				level := "error"
