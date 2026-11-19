@@ -122,6 +122,8 @@ type Deps struct {
 	Requests   LeaveRequests
 	Sick       Sick
 	Government Government
+	Flex       Flex
+	Time       Time
 	SignIn     SignInInfo
 	Clock      ports.Clock
 	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
@@ -149,6 +151,9 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerLeaveRequests()
 	a.registerSick()
 	a.registerGov()
+	a.registerFlex()
+	a.registerTime()
+	a.registerAccrual()
 	a.registerSignIn()
 	return a
 }

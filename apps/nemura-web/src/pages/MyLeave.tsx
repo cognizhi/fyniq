@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
+import { Encashment } from "../components/TimePanels";
 import { LeaveCalendar } from "../components/LeaveCalendar";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
@@ -67,6 +68,7 @@ export function MyLeave({ roles, personId }: { roles: readonly string[]; personI
               <button className="fy-btn fy-btn--primary" type="button" onClick={grant}>{t("leave.grant")}</button>
               <button className="fy-btn fy-btn--secondary" type="button" onClick={carry}>{t("leave.carry")}</button>
             </div>
+            <Encashment person={personId ?? ""} year={year} saved={load} />
             <PatternForm id={personId ?? ""} saved={async (m) => { setNote(m); await load(); }} />
           </section>
         )}

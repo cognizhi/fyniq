@@ -1,0 +1,5 @@
+rule,value,effective_from,effective_to,status,source
+overtime_rate_hundredths,150,2000-01-01,,researched,mom-hours-overtime
+overtime_hours_per_month,72,2000-01-01,,researched,mom-hours-overtime
+non_workman_basic_cap,2600,2019-04-01,,researched,mom-hours-overtime
+workman_basic_cap,4500,2000-01-01,,researched,mom-hours-overtime

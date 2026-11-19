@@ -4,7 +4,7 @@ type: task
 title: See a Nemura leave balance and how it was worked out
 summary: What the My leave page shows, how annual leave is pro-rated and carried forward, what the people team can do on it, and what common refusals mean
 sources:
-  - docs/user-guide/nemura/my-leave.md sha256:d92ec471428156eaeed1c90ee5f6380c1a7e0eb8e19a58d849f7339ddb5cafc6
+  - docs/user-guide/nemura/my-leave.md sha256:ba01e84261d13aed0693f916a158625726fce1ec3087ac4f7a3c6371670e1328
 data_class: general
 taint: trusted
 status: published
@@ -42,6 +42,7 @@ aliases:
 
 - From a person's record, **Leave and working pattern** shows their leave. The HR officer and the HR administrator can **Work out annual leave** (run again, it writes only the difference as a correction), **Carry unused days forward** and **Set pattern** from a day; a working pattern is history, so a new one ends the old one the day before.
 - Maternity, paternity and shared parental leave are recorded separately, with the employer's claim: [[nemura.leave.government-paid]].
+- **Pay out annual leave** takes days out of the balance, never more than the balance, and gives the next pay run an input; nothing is paid out by itself.
 - Nothing is edited or deleted: every grant, correction, carry-forward and expiry is a new ledger entry, and each is audited. (src: docs/user-guide/nemura/my-leave.md#for-the-people-team)
 
 ## When it looks wrong

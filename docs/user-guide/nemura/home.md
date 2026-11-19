@@ -13,6 +13,10 @@ requirements: [NM-ROLE-02, NM-UX-02]
 After you sign in, Nemura opens the home page that suits your roles. Everyone except the people team
 lands on **My home**; the people team lands on **People home**. Neither shows the company's finances.
 
+The people team's **People home** also shows **Today**: the leave requests waiting, who is away today, certificates to verify,
+flexible work requests waiting, government-paid leave with no claim filed, and what needs a look. Each is a link to the page that
+deals with it; a figure you may not see shows a dash.
+
 ## Before you start
 
 - Sign in first: see [Sign in to Nemura](sign-in.md).

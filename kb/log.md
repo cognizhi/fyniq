@@ -701,8 +701,13 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura.leave.government-paid (p1-nemura-leave-time 3.1, 3.2)
 
 ## [2026-11-20] compile | nemura.my-leave links nemura.leave.government-paid
+
 ## [2026-11-20] compile | home.md -> home.overview (the Auditor's engagement opens the trial balance, general ledger and access list)
+
+## [2026-11-20] compile | nemura.requests new; leave.approve: flexible work replies (p1-nemura-leave-time 3.3)
 
 ## [2026-11-20] compile | appearance.md -> preferences.appearance (Expert starts Compact)
 
 ## [2026-11-20] compile | home.md -> home.overview (favourites and saved views)
+
+## [2026-11-20] compile | nemura requests, leave.approve, nemura.my-leave, nemura.home: hours worked, pay inputs, accrual, encashment, people tiles

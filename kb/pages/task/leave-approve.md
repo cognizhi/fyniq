@@ -4,7 +4,7 @@ type: task
 title: Approve or refuse leave in Nemura
 summary: Who sees and decides leave requests in Nemura, how to approve or refuse with a reason, and why nobody decides their own
 sources:
-  - docs/user-guide/nemura/leave-approve.md sha256:19053276bd71b744e50157ed049d7e6f6096ff638118f8df5f62c5397495771e
+  - docs/user-guide/nemura/leave-approve.md sha256:cc91c8e2fcfdd8db239474fa7b5092e46cd30d8a5559738a4c7ea19320aa8dbb
 data_class: general
 taint: trusted
 status: published
@@ -49,6 +49,21 @@ aliases:
 - The HR officer and the HR administrator see **Certificates to verify** and select **Verify** once a certificate is checked: once, and never for their own. A manager cannot refuse a certified sick day and does not see the certificate. See [[leave.report-sick]].
 
 (src: docs/user-guide/nemura/leave-approve.md#verify-medical-certificates)
+
+## Answer flexible work requests
+
+- The HR officer, the HR administrator and the Owner see each flexible work request waiting for its written reply, soonest deadline first: choose accepted, refused or an alternative, write the reply and select **Send reply**. A refusal or an alternative gives the business grounds; the reply is kept as the record, and nobody answers their own request. See [[nemura.requests]].
+
+(src: docs/user-guide/nemura/leave-approve.md#answer-flexible-work-requests)
+
+## Hours worked, sick days beyond the limit and the pay run
+
+- **Hours waiting for approval**: **Approve**, or write a reason and **Refuse**; nobody approves their own hours; a day flagged beyond the monthly limit stays recorded and is paid, so HR applies for an overtime exemption or changes the working pattern.
+- **Sick days beyond the paid limit** (HR officer, HR administrator): choose **Unpaid leave** or **Take from annual leave**, once.
+- **What the next pay run takes from leave and time** lists unpaid leave, encashed annual leave and approved hours not yet used, each linked to its source.
+- **Month-end leave accrual**: choose a month, **Draft the month** and **Approve the month** (not by the drafter); Nemura also drafts the previous month by itself while Leave is on; amounts and the journal come from payroll and the Fyniq link.
+
+(src: docs/user-guide/nemura/leave-approve.md#hours-worked-sick-days-beyond-the-limit-and-the-pay-run)
 
 ## When it looks wrong
 

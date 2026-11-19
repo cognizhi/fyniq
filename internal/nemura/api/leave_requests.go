@@ -134,6 +134,7 @@ type appliedOutput struct {
 type requestListInput struct {
 	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
 	State  string `query:"state" enum:"pending,approved,refused,cancelled" doc:"Only requests in this state; all when absent." example:"pending"`
+	Mine   bool   `query:"mine" doc:"Only the caller's own, whatever else their roles let them read." example:"true"`
 }
 
 type requestListOutput struct {
@@ -260,6 +261,9 @@ func (a *API) registerLeaveRequests() {
 		sc, err := a.leaveScope(ctx, s)
 		if err != nil {
 			return nil, err
+		}
+		if in.Mine {
+			sc = LeaveScope{}
 		}
 		list, err := a.d.Requests.List(ctx, s, sc, in.State)
 		if err != nil {

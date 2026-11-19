@@ -1,0 +1,5 @@
+case,months,date,want,why,source
+at 3 months,3,2026-11-19,5/15,"MOM table row 3",mom-sick-leave
+at 5 months,5,2026-11-19,11/45,"MOM table row 5",mom-sick-leave
+at 8 months,8,2026-11-19,14/60,"MOM: 6 and thereafter",mom-sick-leave
+before 3 months,2,2026-11-19,none,"MOM: paid sick leave from 3 months of service",mom-sick-leave
