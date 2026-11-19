@@ -1335,6 +1335,21 @@ describe("approving a pay run", () => {
     expect(bodies.get(`POST /v1/payroll/runs/${rid}/payments`)).toMatchObject({ person_id: person, state: "paid", amount: "3963.21", evidence_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60" });
   });
 
+  it("makes the journal file and, with a passkey, the payment file of the approved version, and says who was left out", async () => {
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: { ...run(0), latest: { ...version(2, 0), state: "approved" }, versions: [{ ...version(2, 0), state: "approved" }] } });
+    answer(`GET /v1/payroll/runs/${rid}/changes`, { status: 200, body: { ...changes, has_previous: false } });
+    answer(`GET /v1/payroll/runs/${rid}/payments`, { status: 200, body: { version: 2, state: "approved", lines: [] } });
+    answer(`POST /v1/payroll/runs/${rid}/exports`, { status: 201, body: { id: "x", kind: "payments", version: 2, wage_month: "2026-06-01", lines: 1, total: "3598.50", sha256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", note: "n", skipped: [{ person_id: "p", person: "Cy Wong", reason: "No salary bank account is on record." }], content_base64: btoa("payee\n") } });
+    stepUp.result = undefined;
+    URL.createObjectURL = () => "blob:x";
+    HTMLAnchorElement.prototype.click = () => undefined;
+    render(<PayRunApproval id={rid} roles={["owner"]} member={other} />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(await screen.findByRole("button", { name: "Make the payment file" }));
+    expect(await screen.findByText(/File made with 1 lines \(SHA-256 9f86d081884c.*Cy Wong: No salary bank account is on record\./)).toBeTruthy();
+    expect(bodies.get(`POST /v1/payroll/runs/${rid}/exports`)).toMatchObject({ version: 2, kind: "payments" });
+  });
+
   it("is refused in words to anyone but the Payroll administrator and the Owner", () => {
     render(<PayRunApproval id={rid} roles={["hr_admin"]} member={other} />);
     expect(screen.getByRole("alert").textContent).toContain("Only the Payroll administrator and the Owner");

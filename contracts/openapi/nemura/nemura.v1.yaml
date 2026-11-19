@@ -1430,6 +1430,130 @@ components:
       required:
         - codes
       type: object
+    ExportFile:
+      additionalProperties: false
+      properties:
+        content_base64:
+          description: "The CSV, base64-encoded. It is not kept: only its manifest is."
+          type: string
+        id:
+          description: The manifest's ID.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f70
+          format: uuid
+          type: string
+        kind:
+          description: The journal file or the bank payment file.
+          enum:
+            - journal
+            - payments
+          examples:
+            - payments
+          type: string
+        lines:
+          description: How many lines the file has.
+          examples:
+            - 12
+          format: int64
+          type: integer
+        note:
+          description: Always says the file is not proof of payment.
+          examples:
+            - This file is not proof of payment.
+          type: string
+        reference:
+          description: The payment reference in a payment file.
+          examples:
+            - Salary 2026-06
+          type: string
+        sha256:
+          description: The SHA-256 of the exact bytes handed out; kept in the manifest.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        skipped:
+          description: The people left out of a payment file, with why.
+          items:
+            $ref: "#/components/schemas/ExportSkipped"
+          type:
+            - array
+            - "null"
+        total:
+          description: The payment file's total in dollars, or the journal's debit total.
+          examples:
+            - "42000.00"
+          type: string
+        version:
+          description: The approved version it was made from.
+          examples:
+            - 2
+          format: int64
+          minimum: 1
+          type: integer
+        wage_month:
+          description: The wage month.
+          examples:
+            - "2026-06-01"
+          format: date
+          type: string
+      required:
+        - id
+        - kind
+        - version
+        - wage_month
+        - lines
+        - total
+        - sha256
+        - note
+        - skipped
+        - content_base64
+      type: object
+    ExportInput:
+      additionalProperties: false
+      properties:
+        kind:
+          description: The journal file or the bank payment file.
+          enum:
+            - journal
+            - payments
+          examples:
+            - payments
+          type: string
+        version:
+          description: The approved version to make the file from.
+          examples:
+            - 2
+          format: int64
+          minimum: 1
+          type: integer
+      required:
+        - version
+        - kind
+      type: object
+    ExportSkipped:
+      additionalProperties: false
+      properties:
+        person:
+          description: Their name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+          format: uuid
+          type: string
+        reason:
+          description: Why they are not in the file.
+          examples:
+            - No salary bank account is on record.
+          type: string
+      required:
+        - person_id
+        - person
+        - reason
+      type: object
     Feature:
       additionalProperties: false
       properties:
@@ -12007,6 +12131,87 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Internal Server Error
       summary: A pay run against last month's
+      tags:
+        - Payroll
+  /v1/payroll/runs/{id}/exports:
+    post:
+      description: Makes the standalone journal file (the run's balanced entry, one line for each account) or the bank payment file (one row for each person owed money with a bank account on record) of an approved version, as generic CSV with a manifest of the run, the version, the totals and the SHA-256 of the exact bytes. The file is not kept, only its manifest is. A person is left out of a payment file, and listed with why, when nothing is owed (a tax-clearance hold), no bank account is on record, the payment is on its way or paid, or its outcome is unknown. A file is never proof of payment. The payment file holds bank account numbers, so it needs a passkey confirmation in the last five minutes. The Payroll administrator and the Owner. It is audited, never with an amount or an account.
+      operationId: exportPayRunFile
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The run.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The run.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportInput"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportFile"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Make a hand-off file for an approved version
       tags:
         - Payroll
   /v1/payroll/runs/{id}/overrides:

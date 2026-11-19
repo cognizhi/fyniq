@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
+	"encoding/csv"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -14,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cockroachdb/apd/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
@@ -22,6 +25,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	"github.com/cognizhi/fyniq/internal/nemura/onboarding"
@@ -876,4 +880,142 @@ func TestAFinalPayHasItsDeadlineItsItemsAndATaxClearanceHoldThatHoldsEverything(
 	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F-])(4500\.00|1000\.00|IR21 clearance)([^0-9a-fA-F-]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
 		t.Errorf("amounts in the audit trail: %d %v", leaks, err)
 	}
+}
+
+// The standalone hand-off files of an approved version: the journal is B.3's balanced entry with a manifest and the SHA-256 of the exact bytes; the payment file lists each person owed money with a bank
+// account on record, the account opened from its sealed form with the read audited, and leaves out, with why, a person with no account, a payment already on its way and an unknown outcome; neither is made
+// from a version nobody approved, and neither is ever proof of payment (NM-PAY-05, NM-PAY-10).
+// req: NM-PAY-05
+// asvs: V8.2.1, V8.3.1, V12.2.1
+func TestTheHandOffFilesAreMadeFromAnApprovedVersionWithAManifestAndNeverProveAPayment(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := d("2026-11-20").Add(10 * time.Hour)
+	st := store(t, "nemura_api")
+	packsSvc, err := nemura.NewPacksService(st, clock.NewFrozen(now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cipher, _ := local.NewFieldKeys(bytes.Repeat([]byte{7}, 64))
+	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Cipher: cipher}
+	noKeys := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc}
+	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
+	approver := api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now}
+	birth := d("1990-05-20")
+	gid, _ := svc.CreateGroup(ctx, prep, api.PayGroupInput{Name: "Monthly", PayDay: 25, CutoffDays: 7, ApprovalDays: 3})
+	for _, p := range []uuid.UUID{lt.ben, lt.cy} {
+		if err := svc.SetPay(ctx, prep, p, d("2026-01-05"), api.PersonPayInput{GroupID: gid, BasicMonthly: "4500.00", SHGFund: "CDAC"}); err != nil {
+			t.Fatal(err)
+		}
+		lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+			return nemura.SetClassification(ctx, tx, lt.c.org, now, lt.c.owner, p, d("2026-01-06"), people.Classification{ContractType: "service", EACovered: true, PartIVClass: "none", Residency: "citizen", BirthDate: &birth})
+		})
+	}
+	run, err := svc.StartRun(ctx, prep, d("2026-06-01"), mustUUID(gid))
+	if err != nil {
+		t.Fatal(err)
+	}
+	runID := mustUUID(run.ID)
+	if _, err := svc.Export(ctx, prep, runID, api.ExportInput{Version: 1, Kind: "journal"}); payCode(err) != payroll.CodeConflict {
+		t.Errorf("a journal of a version nobody approved: %v", err)
+	}
+	if err := svc.Approve(ctx, approver, runID, 1, run.Latest.Digest); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Export(ctx, prep, runID, api.ExportInput{Version: 9, Kind: "journal"}); payCode(err) != payroll.CodeNotFound {
+		t.Errorf("a version that is not there: %v", err)
+	}
+	if _, err := svc.Export(ctx, prep, runID, api.ExportInput{Version: 1, Kind: "giro"}); payCode(err) != payroll.CodeInvalid {
+		t.Errorf("a format we do not make: %v", err)
+	}
+	// The journal balances and its manifest holds the digest of the bytes.
+	j, err := svc.Export(ctx, prep, runID, api.ExportInput{Version: 1, Kind: "journal"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := base64.StdEncoding.DecodeString(j.ContentBase64)
+	sum := sha256.Sum256(raw)
+	if hex.EncodeToString(sum[:]) != j.SHA256 || j.Kind != "journal" || j.Month != "2026-06-01" || !strings.Contains(j.Note, "not proof of payment") || j.Version != 1 {
+		t.Errorf("manifest: %+v", j)
+	}
+	rows, err := csv.NewReader(bytes.NewReader(raw)).ReadAll()
+	if err != nil || len(rows) < 6 || strings.Join(rows[0], ",") != "run_id,version,wage_month,account,debit,credit,description" {
+		t.Fatalf("journal: %v %v", rows, err)
+	}
+	debit, credit := apd.New(0, 0), apd.New(0, 0)
+	for _, r := range rows[1:] {
+		debit = addApd(debit, r[4])
+		credit = addApd(credit, r[5])
+	}
+	if debit.Cmp(credit) != 0 || j.Total != debit.Text('f') {
+		t.Errorf("the journal does not balance: debit %s credit %s total %s", debit.Text('f'), credit.Text('f'), j.Total)
+	}
+	// The payment file: nobody has a bank account yet.
+	if _, err := noKeys.Export(ctx, prep, runID, api.ExportInput{Version: 1, Kind: "payments"}); err == nil || !strings.Contains(err.Error(), "NM_UNAVAILABLE") {
+		t.Errorf("no key service: %v", err)
+	}
+	p1, err := svc.Export(ctx, prep, runID, api.ExportInput{Version: 1, Kind: "payments"})
+	if err != nil || p1.Lines != 0 || len(p1.Skipped) != 2 || !strings.Contains(p1.Skipped[0].Reason, "No salary bank account") || p1.Reference != "Salary 2026-06" {
+		t.Fatalf("payments with no account: %+v %v", p1, err)
+	}
+	// Ben's account: proposed by Ben, approved by HR, confirmed by Ben.
+	var change uuid.UUID
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		change, err = nemura.ProposeBankChange(ctx, tx, cipher, lt.c.org, now, lt.benLogin, lt.ben, "123-456-7890")
+		return err
+	})
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.DecideBankChange(ctx, tx, lt.c.org, now, lt.c.owner, []authz.Role{authz.Owner}, change, true, "")
+	})
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.ConfirmBankChange(ctx, tx, lt.c.org, now, lt.benLogin, change, true)
+	})
+	p2, err := svc.Export(ctx, prep, runID, api.ExportInput{Version: 1, Kind: "payments"})
+	if err != nil || p2.Lines != 1 || len(p2.Skipped) != 1 || p2.Skipped[0].Person != "Cy Wong" && !strings.Contains(p2.Skipped[0].Reason, "No salary bank account") {
+		t.Fatalf("payments with Ben's account: %+v %v", p2, err)
+	}
+	praw, _ := base64.StdEncoding.DecodeString(p2.ContentBase64)
+	prows, _ := csv.NewReader(bytes.NewReader(praw)).ReadAll()
+	owed := run.Latest.Totals.Disburse
+	if len(prows) != 2 || prows[1][0] != "Ben Lim" || prows[1][1] != "1234567890" || prows[1][3] != "SGD" || prows[1][4] != "Salary 2026-06" || p2.Total != prows[1][2] {
+		t.Errorf("payment file: %v (the run owes %s in all)", prows, owed)
+	}
+	// A payment on its way or paid, or with an unknown outcome, is left out.
+	for _, tc := range [][2]string{{"sent", "already on its way"}, {"unknown", "unknown"}} {
+		state, why := tc[0], tc[1]
+		lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+			return nemura.RecordPaymentState(ctx, tx, lt.c.org, now, audit.Actor{Type: "service", ID: "link"}, nemura.PaymentInput{Run: runID, Person: lt.ben, State: state, Instruction: "I-1", Amount: p2.Total, PaidOn: d("2026-06-25"), Source: "fyniq"})
+		})
+		p3, err := svc.Export(ctx, prep, runID, api.ExportInput{Version: 1, Kind: "payments"})
+		if err != nil || p3.Lines != 0 || len(p3.Skipped) != 2 || !strings.Contains(p3.Skipped[1].Reason+p3.Skipped[0].Reason, why) {
+			t.Errorf("%s: %+v %v", state, p3, err)
+		}
+	}
+	// Evidence: the manifests are written once and the trail holds no account and no amount.
+	su := connect(t, db.SuperURL())
+	var n int
+	if err := su.QueryRow(ctx, "SELECT count(*) FROM nemura.pay_export").Scan(&n); err != nil || n != 5 {
+		t.Errorf("manifests: %d %v", n, err)
+	}
+	for _, q := range []string{"UPDATE nemura.pay_export SET line_count = 0", "DELETE FROM nemura.pay_export"} {
+		if _, err := su.Exec(ctx, q); err == nil || !strings.Contains(err.Error(), "NM127") {
+			t.Errorf("%s: %v", q, err)
+		}
+	}
+	var leaks int
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(123-456-7890|1234567890|(^|[^0-9a-fA-F-])(4500\.00|3598\.50)([^0-9a-fA-F-]|$))'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
+		t.Errorf("an account or an amount in the audit trail: %d %v", leaks, err)
+	}
+	var reads int
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body LIKE '%nemura.restricted.read%' AND body LIKE '%Salary bank account%'`, lt.c.org).Scan(&reads); err != nil || reads != 1 {
+		t.Errorf("one read of the bank account for the one file that opened it: %d %v", reads, err)
+	}
+}
+
+func addApd(a *apd.Decimal, s string) *apd.Decimal {
+	b, _, _ := apd.NewFromString(s)
+	out := new(apd.Decimal)
+	_, _ = apd.BaseContext.WithPrecision(30).Add(out, a, b)
+	return out
 }

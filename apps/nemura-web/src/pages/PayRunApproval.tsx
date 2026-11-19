@@ -25,7 +25,8 @@ export function PayRunApproval({ id, roles, member }: { id: string; roles: reado
   useEffect(load, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   const allowed = roles.some((r) => r === "payroll_admin" || r === "owner");
   const v = run?.latest;
-  const hasApproved = (run?.versions ?? []).some((x) => x.state === "approved");
+  const approvedNumber = (run?.versions ?? []).find((x) => x.state === "approved")?.version ?? 0;
+  const hasApproved = approvedNumber > 0;
   const mine = !!v && v.prepared_by === member;
   const flagged = (run?.lines ?? []).flatMap((l) => (l.flags ?? []).map((f) => ({ key: l.person_id + f.code + f.message, fail: f.fail, message: `${l.person}: ${f.message}` })));
   const approve = async () => {
@@ -40,6 +41,22 @@ export function PayRunApproval({ id, roles, member }: { id: string; roles: reado
     if (!v) return;
     const { data, error } = await api.POST("/v1/payroll/runs/{id}/payslips", { params: { path: { id } }, body: { version: v.version } });
     setNote(data ? { ok: true, text: t("approval.published", { n: String(data.published) }) } : { ok: false, text: problem(error) });
+  };
+  const makeFile = async (kind: "journal" | "payments") => {
+    if (!v) return;
+    if (kind === "payments") {
+      const failed = await confirmWithPasskey().catch(() => "");
+      if (failed !== undefined) return setNote({ ok: false, text: failed || t("letters.passkeyFailed") });
+    }
+    const { data, error } = await api.POST("/v1/payroll/runs/{id}/exports", { params: { path: { id } }, body: { version: approvedNumber, kind } });
+    if (!data) return setNote({ ok: false, text: problem(error) });
+    const bytes = Uint8Array.from(atob(data.content_base64), (c) => c.charCodeAt(0));
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([bytes], { type: "text/csv" }));
+    link.download = `${kind}-${data.wage_month.slice(0, 7)}-v${data.version}.csv`;
+    link.click();
+    const left = (data.skipped ?? []).map((k) => `${k.person}: ${k.reason}`).join(" ");
+    setNote({ ok: true, text: t("exports.done", { lines: String(data.lines), sha: data.sha256.slice(0, 12), left }) });
   };
   return (
     <Shell roles={roles} directory={team(roles)} features={admin(roles)}>
@@ -98,6 +115,16 @@ export function PayRunApproval({ id, roles, member }: { id: string; roles: reado
             {v.state === "calculated" && !mine && v.flags_failing > 0 && <p role="alert" className="fy-secondary">{t("approval.failing", { n: String(v.flags_failing) })}</p>}
             {v.state === "calculated" && !mine && v.flags_failing === 0 && <button className="fy-btn fy-btn--primary" type="button" onClick={approve}>{t("approval.approve", { version: String(v.version) })}</button>}
             {v.state === "approved" && <p role="status" className="fy-secondary">{t("approval.approved")}</p>}
+            {hasApproved && (
+              <section className="fy-stack fy-stack--2" aria-labelledby="exports-h">
+                <h2 className="fy-h2" id="exports-h">{t("exports.title")}</h2>
+                <p className="fy-secondary">{t("exports.lead")}</p>
+                <div className="fy-row" style={{ gap: "var(--space-3)" }}>
+                  <button className="fy-btn fy-btn--secondary" type="button" onClick={() => makeFile("journal")}>{t("exports.journal")}</button>
+                  <button className="fy-btn fy-btn--secondary" type="button" onClick={() => makeFile("payments")}>{t("exports.payments")}</button>
+                </div>
+              </section>
+            )}
             {hasApproved && <PayPayments run={id} />}
             {v.state === "approved" && <button className="fy-btn fy-btn--secondary" type="button" onClick={publish}>{t("approval.publish", { version: String(v.version) })}</button>}
           </>

@@ -117,6 +117,7 @@ var Matrix = map[string]string{ // #nosec G101 -- operation names and who may ca
 	"GET /v1/people/{id}/final-pay":                   "Payroll administrator, Owner",
 	"GET /v1/people/{id}/tax-hold":                    "Payroll administrator, Owner",
 	"POST /v1/people/{id}/tax-hold":                   "Payroll administrator, Owner",
+	"POST /v1/payroll/runs/{id}/exports":              "Payroll administrator, Owner (a fresh passkey for the payment file)",
 	"GET /v1/payroll/runs/{id}/payments":              "Payroll administrator, Owner",
 	"POST /v1/payroll/runs/{id}/payments":             "Payroll administrator, Owner",
 	"POST /v1/payroll/runs/{id}/payslips":             "Payroll administrator, Owner",
