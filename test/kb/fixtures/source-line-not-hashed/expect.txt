@@ -1,0 +1,4 @@
+error KB-CITE-SOURCE kb/pages/task/a.md
+error KB-NUMBER kb/pages/task/a.md
+error KB-SOURCE-LINE kb/pages/task/a.md
+error KB-UNCOVERED docs/user-guide/a.md

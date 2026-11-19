@@ -27,6 +27,21 @@ Source: PRD-001 §12.9
 - **WHEN** a Go service image is built
 - **THEN** it is ≤ 30 MB compressed
 
+### Requirement: Nemura image
+The `nemura` image (rev 0.290; the people platform, PRD-002 ADR-N1) SHALL be a static Go binary on `gcr.io/distroless/static-debian12:nonroot` within ≤ 30 MB compressed, whose role (api, worker, executor, assistant, migrate) is chosen at start by `NEMURA_ROLE`, so each service has its own identity and database role from one digest.
+
+Source: PRD-001 §12.9
+
+#### Scenario: One image, the role chosen at start
+- **WHEN** the `nemura` image starts
+- **THEN** it runs the role named by `NEMURA_ROLE`, and refuses to start, with a stable code and a plain fix, when the role is unset, unknown or not yet built
+- **AND** it answers `/healthz`, `/readyz` and `/version` and its own `healthcheck` as every image does (NFR-IMG-06)
+
+#### Scenario: Nemura image budget and base
+- **WHEN** the `nemura` image is built
+- **THEN** it is ≤ 30 MB compressed, on `gcr.io/distroless/static-debian12:nonroot`, non-root, with no shell
+- **AND** it joins the scan, the signature and the reproducibility checks like every other image
+
 ### Requirement: Render image
 The `render` image (Typst PDF service, rev 0.96; formerly a job) SHALL contain the Go binary plus the pinned Typst binary and self-hosted fonts on `gcr.io/distroless/static-debian12:nonroot` (rev 0.96; formerly cc), within ≤ 90 MB compressed.
 

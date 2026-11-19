@@ -1,0 +1,6 @@
+error KB-CLASS kb/pages/task/a.md
+error KB-DATE kb/pages/task/a.md
+error KB-HUMAN-EDITED kb/pages/task/a.md
+error KB-SCHEMA kb/pages/task/a.md
+error KB-STATUS kb/pages/task/a.md
+error KB-TAINT kb/pages/task/a.md

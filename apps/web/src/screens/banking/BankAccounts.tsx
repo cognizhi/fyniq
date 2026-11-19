@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CircleCheck, Coins, CreditCard, FileQuestion, FileSpreadsheet, Info, Landmark, Mail, Plug, Plus, TriangleAlert, Upload, Wallet, type LucideIcon } from "lucide-react";
+import { CircleCheck, Coins, CreditCard, FileDown, FileQuestion, FileSpreadsheet, Info, Landmark, Mail, Plug, Plus, TriangleAlert, Upload, Wallet, type LucideIcon } from "lucide-react";
+import { useState } from "react";
 import { api } from "../../api/client";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
@@ -10,6 +11,8 @@ import { date, dateTime } from "../../format/date";
 import { helpText } from "../../i18n";
 import { useSignedIn } from "../../session";
 import { Icon, problemOf } from "../../ui";
+import { paysOut, paymentFiles } from "./paymentFiles";
+import { PaymentFileSetting } from "./PaymentFileSetting";
 
 export type MoneyAccount = components["schemas"]["MoneyAccount"];
 type CashPosition = components["schemas"]["CashPosition"];
@@ -256,6 +259,8 @@ function AccountCard({ account: a, balance, may }: { account: MoneyAccount; bala
   const k = kinds[a.kind];
   const title = `account-${a.id}`;
   const complete = helpText("bank-account.complete-to");
+  const file = helpText("bank-account.payment-file");
+  const [setting, setSetting] = useState(false);
   return (
     <article className="fy-card" aria-labelledby={title}>
       <div className="fy-card__head">
@@ -306,6 +311,12 @@ function AccountCard({ account: a, balance, may }: { account: MoneyAccount; bala
               <SourceLine account={a} />
             </dd>
           </div>
+          {paysOut(a.kind) && (
+            <div>
+              <dt title={file.tooltip}>{file.label}</dt>
+              <dd>{paymentFiles[a.payment_file].words}</dd>
+            </div>
+          )}
           <div>
             <dt>Waiting</dt>
             <dd>{a.waiting === 0 ? "Nothing to categorise" : a.waiting === 1 ? "1 line to categorise" : `${a.waiting} lines to categorise`}</dd>
@@ -318,6 +329,11 @@ function AccountCard({ account: a, balance, may }: { account: MoneyAccount; bala
           </p>
         )}
       </div>
+      {setting && (
+        <div className="fy-card__body" id={`${title}-file`}>
+          <PaymentFileSetting account={a} may={may} />
+        </div>
+      )}
       {may && !a.closed_on && (
         <div className="fy-card__foot">
           <Link className="fy-btn fy-btn--secondary fy-btn--sm" to="/banking/import" search={{ account: a.id }}>
@@ -327,6 +343,12 @@ function AccountCard({ account: a, balance, may }: { account: MoneyAccount; bala
           <Link className="fy-btn fy-btn--ghost fy-btn--sm" to="/banking/accounts/$accountId" params={{ accountId: a.id }}>
             Open
           </Link>
+          {paysOut(a.kind) && (
+            <button type="button" className="fy-btn fy-btn--ghost fy-btn--sm" aria-expanded={setting} aria-controls={`${title}-file`} onClick={() => setSetting(!setting)} title={file.tooltip}>
+              <Icon of={FileDown} />
+              {file.label}
+            </button>
+          )}
         </div>
       )}
     </article>

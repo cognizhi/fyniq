@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billing_method": {
+      "description": "How it is billed.",
+      "enum": [
+        "time_and_materials",
+        "fixed_fee",
+        "retainer",
+        "internal"
+      ],
+      "examples": [
+        "time_and_materials"
+      ],
+      "type": "string"
+    },
+    "budget_amount": {
+      "description": "The money budget in the project's currency.",
+      "examples": [
+        "60000.00"
+      ],
+      "type": "string"
+    },
+    "budget_minutes": {
+      "description": "The hours budget in whole minutes.",
+      "examples": [
+        24000
+      ],
+      "format": "int64",
+      "maximum": 100000000,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "currency": {
+      "description": "Required when the project has no record yet; afterwards it must be the one it has.",
+      "examples": [
+        "SGD"
+      ],
+      "maxLength": 3,
+      "minLength": 3,
+      "type": "string"
+    },
+    "customer_id": {
+      "description": "A customer contact (none for an internal project).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e41"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "ends_on": {
+      "description": "The last day of the work.",
+      "examples": [
+        "2027-02-28"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name, unique among the projects.",
+      "examples": [
+        "Acme rollout"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    },
+    "people": {
+      "description": "The members and managers; this replaces the project's people.",
+      "items": {
+        "$ref": "ProjectPersonDraft.schema.json"
+      },
+      "maxItems": 200,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "starts_on": {
+      "description": "The first day of the work.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "status": {
+      "description": "Closing a project puts its dimension value out of use; reopening puts it back.",
+      "enum": [
+        "planned",
+        "active",
+        "on_hold",
+        "closed"
+      ],
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "status",
+    "billing_method"
+  ],
+  "title": "ProjectChange",
+  "type": "object"
+}

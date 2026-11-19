@@ -32,6 +32,8 @@ COPY packs ./packs
 COPY connectors ./connectors
 COPY evals ./evals
 COPY agents ./agents
+COPY kb ./kb
+COPY docs/user-guide ./docs/user-guide
 COPY contracts/ai ./contracts/ai
 
 ARG SERVICE
