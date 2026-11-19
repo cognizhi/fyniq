@@ -29,6 +29,7 @@ export type Entry = RouteFeature | ActionFeature;
 
 export const registry: Entry[] = [
   { kind: "route", id: "sign-in", path: "/sign-in", signedIn: false, screen: "nm-sign-in", mode: "basic", help: "signin.page", guide: "nemura.sign-in" },
+  { kind: "route", id: "join", path: "/join", signedIn: false, screen: "nm-join", mode: "basic", help: "join.page", guide: "nemura.sign-in#joining-with-a-code" },
   { kind: "route", id: "my-home", path: "/me", signedIn: true, screen: "nm-my-home", mode: "basic", help: "home.me", guide: "nemura.home" },
   { kind: "route", id: "people-home", path: "/people", signedIn: true, screen: "nm-people-home", mode: "expert", help: "home.people", guide: "nemura.home" },
   { kind: "action", id: "sign-out", mode: "basic", help: "nav.signOut", guide: "nemura.sign-in#signing-out" },

@@ -2,9 +2,9 @@
 key: nemura.sign-in
 type: task
 title: Sign in to Nemura and sign out
-summary: How a person signs in to Nemura with their company's provider, what the sign-in page says when it is not ready, and how to sign out
+summary: How a person signs in to Nemura, joins with an invitation or the one-time setup code, what the page says when it is not ready, and how to sign out
 sources:
-  - docs/user-guide/nemura/sign-in.md sha256:3583866a664a23acc6610718ca6588b8f4749394c103dfec16125195ee46dea1
+  - docs/user-guide/nemura/sign-in.md sha256:af78e71e9466f971ed2b48ff1ee5ae57835ab70956ff296b1222bb92393a675c
 data_class: general
 taint: trusted
 status: published
@@ -17,6 +17,8 @@ aliases:
   - Nemura login
   - sign out of Nemura
   - Nemura is not set up yet
+  - invitation code
+  - setup code
 ---
 
 # Sign in to Nemura and sign out
@@ -39,6 +41,14 @@ aliases:
 
 (src: docs/user-guide/nemura/sign-in.md#steps)
 
+## Join with a code
+
+- **I have an invitation**: choose it on the sign-in page, pick the provider and type the invitation code. The code links the account to the place the company made; it works once and expires.
+- **Set up Nemura** is for the person who installs it, once, with the one-time setup code the installation prints; that person becomes the first organisation's Owner.
+- The code is never in the address bar. A wrong, used or expired code returns to sign-in with a message; ask for a new one.
+
+(src: docs/user-guide/nemura/sign-in.md#joining-with-a-code)
+
 ## Sign out
 
 - **Sign out** is at the top of every page. It ends the session on this device only; other devices stay signed in. (src: docs/user-guide/nemura/sign-in.md#signing-out)
@@ -47,4 +57,5 @@ aliases:
 
 - **No way to sign in is set up yet**: no provider is connected; ask whoever runs Nemura.
 - **We could not reach Nemura**: check the connection and select **Try again**.
+- **Not a member of any organisation here**: ask the company for an invitation, then choose **I have an invitation**.
 - Sent back to sign-in after a while: the session ended; sign in again. (src: docs/user-guide/nemura/sign-in.md#common-problems)

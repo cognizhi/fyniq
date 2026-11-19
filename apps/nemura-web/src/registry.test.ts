@@ -33,8 +33,8 @@ describe("the feature registry", () => {
   it("lists every page the app serves", () => {
     const app = readFileSync("src/App.tsx", "utf8");
     // The app serves the registry's routes, sign-in's own path and "/" (which sends a person to their landing); nothing else is a page.
-    expect(app).not.toMatch(/path === "\/(?!sign-in"|"\))/);
-    expect(routes.map((r) => r.path).sort()).toEqual(["/me", "/people", "/sign-in"]);
+    expect(app).not.toMatch(/path === "\/(?!sign-in"|join"|"\))/);
+    expect(routes.map((r) => r.path).sort()).toEqual(["/join", "/me", "/people", "/sign-in"]);
   });
 
   it("fails an entry without a mode, help key, help text or guide page", () => {

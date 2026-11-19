@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { t } from "./i18n";
 import { Home } from "./pages/Home";
+import { Join } from "./pages/Join";
 import { NotFound } from "./pages/NotFound";
 import { SignIn } from "./pages/SignIn";
 import { navigate } from "./route";
@@ -29,11 +30,12 @@ export function App() {
     if (state.status === "loading") return;
     if (path === "/") navigate(landing, true);
     else if (route?.signedIn && signedOut) navigate("/sign-in", true);
-    else if (route?.id === "sign-in" && state.status === "in") navigate(landing, true);
+    else if ((route?.id === "sign-in" || route?.id === "join") && state.status === "in") navigate(landing, true);
   }, [path, route, state.status, landing, signedOut]);
 
   const body = (() => {
     if (state.status === "loading") return <p role="status" className="fy-secondary">{t("session.loading")}</p>;
+    if (path === "/join") return <Join kind={new URLSearchParams(window.location.search).get("kind") === "setup" ? "setup" : "invitation"} />;
     if (path === "/sign-in") return <SignIn returnTo={landing === "/sign-in" ? "/" : landing} />;
     if (!route) return <NotFound home={landing} />;
     if (state.status === "in") return <Home session={state.session} screen={route.id === "people-home" ? "people" : "me"} />;

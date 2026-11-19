@@ -189,6 +189,9 @@ jobs:
         env:
           FYNIQ_PG_PORT: "25432"   # cmd/seed makes each journey's organisation in the stack's database
       - run: make down   # the journeys' stack: the visual snapshots start their own
+      - run: scripts/local-smoke-people.sh   # NM-ARC-06: Nemura on its own, every Fyniq service stopped, first-run sign-in and sign-out
+        env:
+          FYNIQ_PG_PORT: "25432"
       - name: A changed visual baseline is approved by its label (p1-launch-readiness design D5)
         if: github.event_name == 'pull_request'
         env:

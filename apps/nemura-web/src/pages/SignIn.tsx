@@ -1,7 +1,7 @@
 import { LogIn, Mail, TreePalm, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, type SignInInfo } from "../api/client";
-import { helpText, t } from "../i18n";
+import { helpText, t, textKeys } from "../i18n";
 
 type State = { status: "loading" } | { status: "failed" } | { status: "ready"; info: SignInInfo };
 
@@ -13,6 +13,9 @@ export const signInURL = (provider: string, returnTo: string): string => `/api/a
 export function SignIn({ returnTo = "/" }: { returnTo?: string }) {
   const [state, set] = useState<State>({ status: "loading" });
   const [attempt, again] = useState(0);
+  // The API sends a refused sign-in back here with its code (internal/nemura/auth): say it in plain words, or nothing for a code we do not know.
+  const code = new URLSearchParams(window.location.search).get("signin_error") ?? "";
+  const error = textKeys.includes(`signin.error.${code}`) ? t(`signin.error.${code}`) : "";
   useEffect(() => {
     let live = true;
     api.GET("/v1/sign-in").then(
@@ -57,6 +60,7 @@ export function SignIn({ returnTo = "/" }: { returnTo?: string }) {
             <h1 className="fy-h1" title={helpText("signin.page").tooltip}>{t("signin.title")}</h1>
             <p className="fy-secondary">{t("signin.lead")}</p>
           </div>
+          {error && <p role="alert" className="fy-secondary">{error}</p>}
           {state.status === "loading" && <p role="status" className="fy-secondary">{t("signin.loading")}</p>}
           {state.status === "failed" && (
             <div className="fy-stack fy-stack--3">
@@ -77,6 +81,10 @@ export function SignIn({ returnTo = "/" }: { returnTo?: string }) {
             </div>
           )}
           <p className="fy-small fy-muted">{t("signin.invite")}</p>
+          <p className="fy-row fy-small" style={{ gap: "var(--space-4)" }}>
+            <a href="/join?kind=invitation">{t("signin.haveInvitation")}</a>
+            {state.status === "ready" && !state.info.setup_done && <a href="/join?kind=setup">{t("signin.setup")}</a>}
+          </p>
         </div>
       </main>
     </div>

@@ -37,7 +37,30 @@
     "role.recruiter": "Recruiter",
     "role.interviewer": "Interviewer",
     "role.administrator": "Administrator",
-    "role.ai": "AI assistant"
+    "role.ai": "AI assistant",
+    "signin.setup": "Set up Nemura",
+    "signin.haveInvitation": "I have an invitation",
+    "signin.error.NM_SIGNIN_01": "That way of signing in does not exist. Choose one of the buttons below.",
+    "signin.error.NM_SIGNIN_02": "The sign-in took too long, or started in another browser. Start again here.",
+    "signin.error.NM_SIGNIN_03": "The sign-in provider's answer did not pass its checks. Try again; if it keeps happening, tell whoever runs Nemura.",
+    "signin.error.NM_SIGNIN_04": "We could not reach the sign-in provider. Try again in a moment.",
+    "signin.error.NM_SIGNIN_05": "Your account is not a member of any organisation here. Ask your company for an invitation, then choose I have an invitation.",
+    "signin.error.NM_SIGNIN_06": "Sign-out was sent from another site. Sign out from Nemura itself.",
+    "signin.error.NM_SIGNIN_07": "Nemura is not set up yet. Choose Set up Nemura and use the one-time setup code.",
+    "signin.error.NM_SIGNIN_08": "That code is wrong, was used already or has expired. Check it, or ask for a new one.",
+    "join.title.setup": "Set up Nemura",
+    "join.title.invitation": "Join with an invitation",
+    "join.lead.setup": "The person who installs Nemura creates the first organisation with the one-time setup code, and becomes its Owner.",
+    "join.lead.invitation": "Use the code in your invitation. It works once, for you, and expires.",
+    "join.provider": "Sign in with",
+    "join.code.setup": "Setup code",
+    "join.code.invitation": "Invitation code",
+    "join.organisation": "Organisation name",
+    "join.name": "Your name",
+    "join.submit": "Continue to sign-in",
+    "join.help": "You sign in with the provider next, and the code is used once, with the account you sign in with.",
+    "join.noProvider": "No way to sign in is set up yet. Ask whoever runs Nemura.",
+    "join.back": "Back to sign-in"
   },
   "help": {
     "signin.page": {
@@ -59,6 +82,10 @@
     "review.awaiting-verification": {
       "label": "Needs additional verification",
       "tooltip": "The rules this page uses have not had their second review yet. Check what it shows before you rely on it."
+    },
+    "join.page": {
+      "label": "Join",
+      "tooltip": "Take your place in Nemura with the code you were given: an invitation's, or the one-time setup code for the first organisation."
     }
   }
 }

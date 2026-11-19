@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { App } from "./App";
 import { ReviewBanner } from "./components/ReviewBanner";
 import { Home } from "./pages/Home";
+import { Join } from "./pages/Join";
 import { SignIn, signInURL } from "./pages/SignIn";
 import { reviewsFor, review, type Register } from "./review";
 import { SessionProvider } from "./session";
@@ -56,6 +57,61 @@ describe("sign-in", () => {
 
   it("only ever sends the browser back to a path on this origin, encoded", () => {
     expect(signInURL("a b", "/me?x=1&y=2")).toBe("/api/auth/signin?provider=a%20b&return_to=%2Fme%3Fx%3D1%26y%3D2");
+  });
+});
+
+// req: NM-ARC-01
+describe("joining with a code", () => {
+  it("posts the setup form to the API with a hidden code, the organisation and the person's name", async () => {
+    answer("GET /v1/sign-in", { status: 200, body: { providers: [{ id: "local", name: "Local sign-in" }], setup_done: false } });
+    const { container } = render(<Join kind="setup" />);
+    await screen.findByRole("option", { name: "Local sign-in" });
+    const form = container.querySelector("form");
+    expect(form?.getAttribute("method")).toBe("post");
+    expect(form?.getAttribute("action")).toBe("/api/auth/join");
+    expect(container.querySelector("input[name=kind]")?.getAttribute("value")).toBe("setup");
+    expect(container.querySelector("input[name=code]")?.getAttribute("type")).toBe("password");
+    for (const f of ["organisation", "name"]) expect(container.querySelector(`input[name=${f}]`), f).not.toBeNull();
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("asks an invitation's holder for the code alone", async () => {
+    answer("GET /v1/sign-in", { status: 200, body: providers });
+    const { container } = render(<Join kind="invitation" />);
+    await screen.findByRole("option", { name: "Google" });
+    expect(container.querySelector("input[name=kind]")?.getAttribute("value")).toBe("invitation");
+    expect(container.querySelector("input[name=organisation]")).toBeNull();
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("says no way to sign in is set up when no provider is", async () => {
+    answer("GET /v1/sign-in", { status: 200, body: { providers: [], setup_done: true } });
+    render(<Join kind="invitation" />);
+    expect(await screen.findByText(/No way to sign in/)).toBeTruthy();
+  });
+
+  it("explains a refused sign-in in plain words from its code, and says nothing for a code it does not know", async () => {
+    answer("GET /v1/sign-in", { status: 200, body: providers });
+    window.history.replaceState(null, "", "/sign-in?signin_error=NM_SIGNIN_08");
+    const { unmount } = render(<SignIn />);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/wrong, was used already or has expired/);
+    unmount();
+    window.history.replaceState(null, "", "/sign-in?signin_error=<script>");
+    render(<SignIn />);
+    await screen.findByRole("link", { name: /Continue with Google/ });
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("links sign-in to both ways in, and setup only before setup is done", async () => {
+    answer("GET /v1/sign-in", { status: 200, body: { providers: [], setup_done: false } });
+    const { unmount } = render(<SignIn />);
+    expect((await screen.findByRole("link", { name: "Set up Nemura" })).getAttribute("href")).toBe("/join?kind=setup");
+    expect(screen.getByRole("link", { name: "I have an invitation" }).getAttribute("href")).toBe("/join?kind=invitation");
+    unmount();
+    answer("GET /v1/sign-in", { status: 200, body: providers });
+    render(<SignIn />);
+    await screen.findByRole("link", { name: /Continue with Google/ });
+    expect(screen.queryByRole("link", { name: "Set up Nemura" })).toBeNull();
   });
 });
 
