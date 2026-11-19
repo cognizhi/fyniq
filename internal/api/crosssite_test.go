@@ -48,7 +48,9 @@ func TestNoWriteFromAnotherSiteWithASession(t *testing.T) {
 	sort.Strings(other)
 	// The operations a session does not authorise answer for another reason: a link's token, or a webhook's signature.
 	for _, o := range other {
-		if !strings.HasPrefix(o, "acceptQuoteByLink ") && !strings.HasPrefix(o, "declineQuoteByLink ") {
+		// An AI app's registration (RFC 7591) has no session and no credential: it is closed until an Owner opens it, policy-checked and
+		// limited by network, so there is no cookie for another site to ride (AI-90).
+		if !strings.HasPrefix(o, "acceptQuoteByLink ") && !strings.HasPrefix(o, "declineQuoteByLink ") && !strings.HasPrefix(o, "registerOAuthClient ") {
 			t.Errorf("a write from another site with a session was not refused as cross-site: %s", o)
 		}
 	}
