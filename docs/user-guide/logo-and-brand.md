@@ -38,6 +38,15 @@ Quotes, invoices, statements and remittance advice show it, and so does the page
 opens from a quote's or invoice's link. A document always shows the logo and accent that were in
 force when it was issued, so changing your logo later never changes a document you already sent.
 
+## Your logo on reports
+
+A report you print as a PDF, such as the profit and loss, the balance sheet, the cash flow, the
+trial balance, the cap table or a director's statement, shows your logo above its title. A report is
+not an issued document: it always shows the logo in force when you print it, so a new logo appears
+on the next one at once. If the logo cannot be read when you print, the report is made without it.
+Your accent colour does not colour reports, and the logo is not yet in emails, which are plain
+text, or on the sign-in page, which does not know your company before you sign in.
+
 ## What Fyniq cleans from an SVG
 
 An SVG can carry more than shapes. Before it is used, Fyniq keeps only the shapes, colours,

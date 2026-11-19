@@ -91,7 +91,13 @@
   remittance advice, previews and the customer's page show the logo, and the platform's starter the accent, of the brand
   in force when the document was issued. Tests `TestTheRenderServiceRasterisesTheLogo`, `TestAnIssuedDocumentKeepsItsLogo`,
   `TestTheBrandInForceAndItsAccent`, `documentView.test.tsx`.)
-  **Left:** the logo in emails (HTML email), PDF reports and board packs, and the sign-in page.)
+  (20 Nov 2026, PRD-001 rev 0.320: PDF reports show the logo in force when printed (`render.Report.Logo`, `report.typ`,
+  `API.reportLogo`; a financial statement, the cap table, a director's statement); a logo that cannot be read leaves the
+  report without it. Tests `TestAReportShowsTheLogo`, `TestTheRenderServiceRendersAReport`, `TestFinancialStatementsThroughTheAPI`
+  (the logo sent with the PDF); guide `logo-and-brand.md`, compiled.)
+  **Left:** the logo in emails, which are plain text until HTML email is built (a change to the `Email` port and its
+  three adapters, which no change plans); board packs, which are not built; and the sign-in page, which knows no
+  organisation before sign-in.
 
 ## 3. Chart of accounts and dimensions
 
@@ -301,8 +307,8 @@
 
 ## 5. API and screens
 
-- [ ] 5.1 Add every operation to the contract with `make openapi`, then regenerate the client; the authorisation-matrix rows for each new endpoint pass (QA-SEC-03)
-- [ ] 5.2 Build the screens as designed:
+- [x] 5.1 Add every operation to the contract with `make openapi`, then regenerate the client; the authorisation-matrix rows for each new endpoint pass (QA-SEC-03)
+- [x] 5.2 Build the screens as designed:
   - chart-of-accounts, contact-record, contacts-list, items, logo-brand and organisation-settings;
   - help keys, tooltips and a page in `docs/user-guide/` for each, compiled into `kb/` (`make kb-index`, `make kb-lint`).
 
@@ -331,4 +337,9 @@
   Tests `Organisation.test.tsx` (`// req: FR-ORG-03`, `// req: FR-ORG-04`). contact-record's documents, ageing,
   timeline and bank details arrived with FR-CT-02 and FR-CT-03; logo-brand with FR-ORG-09 (rev 0.200, rev 0.201).
   **Left:** the balances on chart-of-accounts, which have no operation yet.)
+  (20 Nov 2026: the balances are built from the trial balance (`getFinancialStatement` with kind `tb`), which is the
+  operation they needed: a Balance column at the end of the current month on the account's usual side, a group's
+  total, a link to the general ledger, and no column without the reports or a period. Tests `ChartOfAccounts.test.tsx`
+  (`// req: FR-RPT-01`); the fragment `ChartOfAccounts.html` already drew the column; guide `chart-of-accounts.md`,
+  compiled.)
 - [ ] 5.3 Finish with `make check` and `make test`

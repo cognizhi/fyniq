@@ -669,3 +669,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md → nemura.sign-in (joining with an invitation or the setup code)
 
 ## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md → nemura.sign-in (the Owner recovery code)
+
+## [2026-11-20] compile | accounting.chart: the Balance column from the trial balance (p1-organisation-chart 5.2)
+
+## [2026-11-20] compile | settings.brand: the logo on PDF reports (p1-organisation-chart 2.4)

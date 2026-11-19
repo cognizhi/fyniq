@@ -6,7 +6,9 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"net/http"
 	"strconv"
 	"strings"
@@ -148,8 +150,25 @@ func TestFinancialStatementsThroughTheAPI(t *testing.T) {
 		none.str("code") != CodeReportRender {
 		t.Errorf("a PDF with no render service: %d %s", none.Status, none.Raw)
 	}
+	// The organisation's logo in force now is sent to the render service with the report (FR-ORG-09), and none when it has none.
+	rec := &recordingRenderer{Renderer: testRenderer(t)}
+	e.api.deps.Renderer = rec
+	if r := e.call(http.MethodGet, "/v1/reports/statements/pl/export?from=2026-10&to=2026-10&format=pdf", e.as(authz.Controller), nil); r.Status != 200 || rec.last.Report == nil || len(rec.last.Logo) != 0 {
+		t.Errorf("a PDF before any logo: %d logo %d bytes", r.Status, len(rec.last.Logo))
+	}
+	up := e.put("/v1/organisation/brand/files/light", steppedUp(e, e.as(authz.Administrator)), nil, "logo.svg",
+		[]byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#0F766E"/></svg>`), "If-Match", `"0"`)
+	if up.Status != 200 {
+		t.Fatalf("uploading the logo: %d %s", up.Status, up.Raw)
+	}
+	if r := e.call(http.MethodGet, "/v1/reports/statements/pl/export?from=2026-10&to=2026-10&format=pdf", e.as(authz.Controller), nil); r.Status != 200 || rec.last.Report == nil {
+		t.Errorf("a PDF with the logo: %d", r.Status)
+	} else if sum := sha256.Sum256(rec.last.Logo); hex.EncodeToString(sum[:]) != up.str("print", "sha256") {
+		t.Errorf("the report was rendered with another logo than the brand's (%d bytes)", len(rec.last.Logo))
+	}
 	e.api.deps.Renderer = testRenderer(t)
-	if trail := auditTrail(t, e); strings.Count(trail, `"action":"report.exported"`) != 3 || !strings.Contains(trail, csv.str("sha256")) ||
+	e.api.deps.Renderer = testRenderer(t)
+	if trail := auditTrail(t, e); strings.Count(trail, `"action":"report.exported"`) != 5 || !strings.Contains(trail, csv.str("sha256")) ||
 		!strings.Contains(trail, pdf.str("sha256")) {
 		t.Errorf("the exports' audit events: %s", trail)
 	}

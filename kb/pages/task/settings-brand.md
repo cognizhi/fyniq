@@ -4,14 +4,14 @@ type: task
 title: Upload the company logo and choose the accent colour
 summary: The logo for light and dark backgrounds, the icon, what Fyniq cleans from an SVG, the logo on documents, versions and the accent colour
 sources:
-  - docs/user-guide/logo-and-brand.md sha256:f10a560536849ecd2fb1e5a77f6798ac0d37937e350563029494285ebabda0f5
+  - docs/user-guide/logo-and-brand.md sha256:05b09f164a3d0a2783618e89442f7325752278fe6076b0623a84b4d02508aa08
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-07
+compiled_at: 2026-11-20
 aliases:
   - logo
   - company logo
@@ -52,6 +52,14 @@ aliases:
 - Quotes, invoices, statements, remittance advice and the page a customer opens from a quote's or invoice's link show it; a document always shows the logo and accent in force when it was issued, so a later change never alters a document already sent.
 
 (src: docs/user-guide/logo-and-brand.md#your-logo-on-documents)
+
+## The logo on reports
+
+- A report printed as a PDF (a financial statement, the cap table or a director's statement) shows the logo above its title.
+- A report is not an issued document: it shows the logo in force when it is printed, so a new logo appears on the next one at once. A logo that cannot be read is left off, never a reason to refuse the report.
+- The accent colour does not colour reports. Emails are plain text and the sign-in page does not know the company yet, so neither shows the logo.
+
+(src: docs/user-guide/logo-and-brand.md#your-logo-on-reports)
 
 ## Accent colour and problems
 

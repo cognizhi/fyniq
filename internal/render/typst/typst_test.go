@@ -3,6 +3,9 @@ package typst
 import (
 	"bufio"
 	"bytes"
+	"image"
+	"image/color"
+	"image/png"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -349,5 +352,56 @@ func TestAPaperRendersArchivalAndAccessible(t *testing.T) {
 		if err := os.WriteFile("testdata/paper-sha256.golden", []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+// logoPNG is a small logo: a teal block, as a PNG.
+func logoPNG(t *testing.T) []byte {
+	t.Helper()
+	img := image.NewRGBA(image.Rect(0, 0, 96, 40))
+	for x := range 96 {
+		for y := range 40 {
+			img.Set(x, y, color.RGBA{R: 0x0F, G: 0x76, B: 0x6E, A: 0xFF})
+		}
+	}
+	var b bytes.Buffer
+	if err := png.Encode(&b, img); err != nil {
+		t.Fatal(err)
+	}
+	return b.Bytes()
+}
+
+// A report shows the organisation's logo above its title when the service is given one, and is still PDF/A-2a and
+// PDF/UA-1 (the logo carries its alternative text, which the compile flags insist on), the same bytes every time; the
+// same report without a logo is a different file and shows none.
+// req: FR-ORG-09
+// req: FR-RPT-05
+func TestAReportShowsTheLogo(t *testing.T) {
+	c := compiler(t)
+	r := sampleReport("Profit and loss", 2, 3)
+	plain, err := c.PDF(context.Background(), Input{Report: &r, Created: issued})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.Logo = true
+	in := Input{Report: &r, Logo: logoPNG(t), Created: issued}
+	with, err := c.PDF(context.Background(), in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, err := c.PDF(context.Background(), in)
+	if err != nil || !bytes.Equal(with, again) {
+		t.Errorf("two renders differ (%v)", err)
+	}
+	if bytes.Equal(plain, with) {
+		t.Error("the logo changed nothing on the page")
+	}
+	for _, want := range []string{"%PDF-", "<pdfaid:part>2</pdfaid:part>", "<pdfuaid:part>1</pdfuaid:part>", "/Subtype/Image"} {
+		if !bytes.Contains(with, []byte(want)) && !(want == "/Subtype/Image" && bytes.Contains(with, []byte("/Subtype /Image"))) {
+			t.Errorf("the PDF with the logo lacks %s", want)
+		}
+	}
+	if bytes.Contains(plain, []byte("/Subtype/Image")) || bytes.Contains(plain, []byte("/Subtype /Image")) {
+		t.Error("the PDF without a logo holds an image")
 	}
 }

@@ -132,6 +132,21 @@ func TestTheRenderServiceRendersAReport(t *testing.T) {
 	if w, out := call(t, h, "ok", both); w.Code != http.StatusBadRequest || out["code"] != render.CodeRequest {
 		t.Errorf("a report that names a document type: %d %v", w.Code, out)
 	}
+	// Only a report may carry the logo; a PNG, or nothing.
+	logo := req
+	logo.Logo = testLogo()
+	w, _ = call(t, h, "ok", logo)
+	if err := json.Unmarshal(w.Body.Bytes(), &res); w.Code != http.StatusOK || err != nil || !bytes.HasPrefix(res.PDF, []byte("%PDF-")) {
+		t.Fatalf("a report with the logo: %d %s", w.Code, w.Body.String())
+	}
+	logo.Logo = []byte("<svg/>")
+	if w, out := call(t, h, "ok", logo); w.Code != http.StatusBadRequest || out["code"] != render.CodeRequest {
+		t.Errorf("a report with a logo that is no PNG: %d %v", w.Code, out)
+	}
+	if w, out := call(t, h, "ok", render.Request{Paper: &render.Paper{Title: "Resolution"}, Logo: testLogo(), Created: req.Created}); w.Code != http.StatusBadRequest ||
+		out["code"] != render.CodeRequest {
+		t.Errorf("a paper with a logo: %d %v", w.Code, out)
+	}
 	short := report
 	short.Rows = append(slices.Clone(report.Rows), render.ReportRow{Kind: render.RowLine, Label: "Cash", Cells: []string{"1", "2"}})
 	if w, out := call(t, h, "ok", render.Request{Report: &short, Created: req.Created}); w.Code != http.StatusUnprocessableEntity || out["code"] != render.CodeRequest ||
@@ -248,4 +263,12 @@ func TestTheRenderServiceRasterisesTheLogo(t *testing.T) {
 	if w, _ := call(t, h, "", render.Request{Raster: []byte(hostile)}); w.Code != http.StatusUnauthorized {
 		t.Errorf("a logo without a token: %d", w.Code)
 	}
+}
+
+// testLogo is a small PNG, as the brand's drawing is.
+func testLogo() []byte {
+	img := image.NewRGBA(image.Rect(0, 0, 48, 20))
+	var b bytes.Buffer
+	_ = png.Encode(&b, img)
+	return b.Bytes()
 }

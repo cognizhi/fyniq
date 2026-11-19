@@ -80,9 +80,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	x := typst.Input{Logo: in.Logo, Created: in.Created.UTC()}
 	if in.Report != nil || in.Paper != nil {
 		// A report or a paper is laid out by its caller: it names no document type, and has no particulars to find.
-		if in.DocumentType != "" || len(in.Logo) > 0 || in.Check || (in.Report != nil && in.Paper != nil) {
+		if in.DocumentType != "" || (len(in.Logo) > 0 && in.Report == nil) || in.Check || (in.Report != nil && in.Paper != nil) {
 			reply(w, http.StatusBadRequest, render.Problem{Code: render.CodeRequest,
-				Message: "a report or a paper names no document type, logo or particulars check, and comes alone"})
+				Message: "a report or a paper names no document type or particulars check, and comes alone; only a report may carry the logo"})
 			return
 		}
 		var err error
@@ -94,6 +94,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			reply(w, http.StatusUnprocessableEntity, render.Problem{Code: render.CodeRequest, Message: err.Error()})
 			return
+		}
+		if in.Report != nil {
+			r := *in.Report
+			r.Logo = len(in.Logo) > 0
+			in.Report = &r
 		}
 		x.Report, x.Paper = in.Report, in.Paper
 	} else {
