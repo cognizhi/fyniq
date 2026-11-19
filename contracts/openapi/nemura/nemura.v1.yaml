@@ -4177,6 +4177,181 @@ components:
         - joint_election
         - items
       type: object
+    PaymentEvent:
+      additionalProperties: false
+      properties:
+        amount:
+          description: The amount in dollars.
+          examples:
+            - "3963.21"
+          type: string
+        date:
+          description: The date of the payment.
+          examples:
+            - "2026-06-25"
+          format: date
+          type: string
+        evidence_id:
+          description: The document of the person paid that evidences a manual record.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60
+          format: uuid
+          type: string
+        instruction_id:
+          description: The payment instruction, from Fyniq.
+          examples:
+            - INSTR-2026-06-0001
+          type: string
+        note:
+          description: A note of up to 500 characters.
+          examples:
+            - Seen on the 25 June statement.
+          type: string
+        recorded_at:
+          description: When it was recorded.
+          examples:
+            - "2026-06-25T10:00:00Z"
+          format: date-time
+          type: string
+        seq:
+          description: The event's number among the payment's events.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        source:
+          description: Fyniq's status event, or a person with evidence.
+          enum:
+            - fyniq
+            - manual
+          examples:
+            - fyniq
+          type: string
+        state:
+          description: The state it moved the payment to.
+          enum:
+            - scheduled
+            - released
+            - sent
+            - accepted
+            - paid
+            - rejected
+            - returned
+            - unknown
+          examples:
+            - paid
+          type: string
+      required:
+        - seq
+        - state
+        - amount
+        - date
+        - source
+        - recorded_at
+      type: object
+    PaymentLine:
+      additionalProperties: false
+      properties:
+        amount_mismatch:
+          description: True when it was confirmed paid for an amount other than the one owed.
+          examples:
+            - false
+          type: boolean
+        attention:
+          description: "True when the payment was rejected, returned or has an unknown outcome: ✖ on Checks, and an unknown outcome blocks a new payment."
+          examples:
+            - false
+          type: boolean
+        events:
+          description: Every change, oldest first.
+          items:
+            $ref: "#/components/schemas/PaymentEvent"
+          type:
+            - array
+            - "null"
+        owed:
+          description: The amount to pay, in dollars.
+          examples:
+            - "3963.21"
+          type: string
+        person:
+          description: Their name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+          format: uuid
+          type: string
+        state:
+          description: The latest state; empty while nothing is recorded.
+          examples:
+            - paid
+          type: string
+      required:
+        - person_id
+        - person
+        - owed
+        - attention
+        - amount_mismatch
+        - events
+      type: object
+    PaymentRecord:
+      additionalProperties: false
+      properties:
+        amount:
+          description: The amount in dollars and cents.
+          examples:
+            - "3963.21"
+          pattern: ^[0-9]+(\.[0-9]{1,2})?$
+          type: string
+        date:
+          description: The date of the payment; not in the future for paid, rejected or returned.
+          examples:
+            - "2026-06-25"
+          format: date
+          type: string
+        evidence_id:
+          description: "A document of the person paid that shows the outcome, such as a bank statement line. Required: a bare word is never enough."
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60
+          format: uuid
+          type: string
+        note:
+          description: A note.
+          examples:
+            - Seen on the 25 June statement.
+          maxLength: 500
+          type: string
+        person_id:
+          description: The person paid.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+          format: uuid
+          type: string
+        state:
+          description: The new state; only a legal move after the last one.
+          enum:
+            - scheduled
+            - released
+            - sent
+            - accepted
+            - paid
+            - rejected
+            - returned
+            - unknown
+          examples:
+            - paid
+          type: string
+      required:
+        - person_id
+        - state
+        - amount
+        - date
+        - evidence_id
+      type: object
     PayslipFileOutputBody:
       additionalProperties: false
       properties:
@@ -5611,6 +5786,37 @@ components:
         - field
         - value
         - reason
+      type: object
+    RunPayments:
+      additionalProperties: false
+      properties:
+        lines:
+          description: Each person owed money in the version.
+          items:
+            $ref: "#/components/schemas/PaymentLine"
+          type:
+            - array
+            - "null"
+        state:
+          description: The run's payment state from its people's.
+          enum:
+            - approved
+            - paid in part
+            - paid
+          examples:
+            - approved
+          type: string
+        version:
+          description: The approved version being paid.
+          examples:
+            - 2
+          format: int64
+          minimum: 1
+          type: integer
+      required:
+        - version
+        - state
+        - lines
       type: object
     RunStartInputBody:
       additionalProperties: false
@@ -11681,6 +11887,145 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Internal Server Error
       summary: Override a calculated figure of a person's month
+      tags:
+        - Payroll
+  /v1/payroll/runs/{id}/payments:
+    get:
+      description: Each person owed money in the run's approved version with the state of their payment and every change to it (scheduled, released, sent, accepted, paid, rejected, returned or unknown), what is owed and what was confirmed, and the run's own payment state (approved, paid in part, paid). The Payroll administrator and the Owner. It changes nothing.
+      operationId: getPayRunPayments
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The run.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The run.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunPayments"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A run's payments
+      tags:
+        - Payroll
+    post:
+      description: "Records a change of a person's payment as a person, with a document of the person paid as evidence: a bank statement line or a transfer receipt. 'Paid' is never a bare word, and an exported file or a posted journal is never 'paid'. Only the legal moves after the last state are accepted, and an unknown outcome is resolved as paid, rejected or returned before a new payment can be scheduled. Fyniq's status events arrive through the link and use the same rules. The Payroll administrator and the Owner. It is audited with the state, never the amount."
+      operationId: recordPayment
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The run.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The run.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentRecord"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Record a payment's outcome
       tags:
         - Payroll
   /v1/payroll/runs/{id}/payslips:

@@ -330,6 +330,12 @@ func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.
 // fakeLetters answers letters with whatever the test says.
 type fakePayroll struct{ err error }
 
+func (f fakePayroll) Payments(context.Context, Session, uuid.UUID) (RunPayments, error) {
+	return RunPayments{}, f.err
+}
+func (f fakePayroll) RecordPayment(context.Context, Session, uuid.UUID, PaymentRecord) error {
+	return f.err
+}
 func (f fakePayroll) PublishPayslips(context.Context, Session, uuid.UUID, int) (int, error) {
 	return 2, f.err
 }

@@ -135,3 +135,10 @@ func (p Payslip) Lines() []SlipRow {
 	}
 	return out
 }
+
+// SlipFields maps each key of the pack's `payslip_items` (sg-people@2026.7) to the field of Payslip that holds it, so that a payslip is checked against the pack's list of what MOM requires
+// and a new item in a later version cannot be left out unnoticed (a test reads every item of the newest version).
+var SlipFields = map[string]string{
+	"employer_name": "Employer", "employee_name": "Employee", "payment_date": "PaymentDate", "basic_salary": "Basic", "salary_period": "PeriodStart", "allowances": "Allowances",
+	"additional_payments": "Additional", "deductions": "Deductions", "overtime_hours": "OvertimeHours", "overtime_pay": "OvertimePay", "overtime_period": "OvertimePeriod", "net_salary": "Net",
+}

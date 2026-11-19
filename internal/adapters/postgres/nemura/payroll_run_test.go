@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/leave"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
@@ -364,7 +366,16 @@ func TestPayslipsAreMadeOnceFromAnApprovedVersionAndReadOnlyByTheirOwner(t *test
 		t.Fatal(err)
 	}
 	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
-		return nemura.SetClassification(ctx, tx, lt.c.org, now, lt.c.owner, lt.ben, d("2026-01-06"), people.Classification{ContractType: "service", EACovered: true, PartIVClass: "none", Residency: "citizen", BirthDate: &birth})
+		return nemura.SetClassification(ctx, tx, lt.c.org, now, lt.c.owner, lt.ben, d("2026-01-06"), people.Classification{ContractType: "service", EACovered: true, PartIVClass: "non_workman", Residency: "citizen", BirthDate: &birth})
+	})
+	var otID uuid.UUID
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		otID, _, err = nemura.RecordOvertime(ctx, tx, lt.c.org, now, lt.benLogin, peoplePack(lt.c.t), nemura.OvertimeAsk{Person: lt.ben, Date: d("2026-06-10"), Kind: "overtime", Hours: leave.Whole(3)})
+		if err != nil {
+			return err
+		}
+		return nemura.DecideOvertime(ctx, tx, lt.c.org, now, lt.c.owner, otID, true, "")
 	})
 	if _, err := svc.AddOneOff(ctx, prep, lt.ben, d("2026-06-01"), api.OneOffInput{Key: "bonus", Name: "Monthly bonus", Nature: "bonus", Amount: "500.00", CPFWages: true, ForMonth: "2026-06-01", PayableOn: "2026-06-25"}); err != nil {
 		t.Fatal(err)
@@ -388,6 +399,10 @@ func TestPayslipsAreMadeOnceFromAnApprovedVersionAndReadOnlyByTheirOwner(t *test
 	if _, err := bare.PublishPayslips(ctx, prep, mustUUID(run.ID), 1); err == nil || !strings.Contains(err.Error(), "NM_UNAVAILABLE") {
 		t.Errorf("no renderer or file store: %v", err)
 	}
+	// The payment is confirmed paid on 26 June, a day after the pay day: the payslip's date of payment is the confirmed one.
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.RecordPaymentState(ctx, tx, lt.c.org, now, audit.Actor{Type: "service", ID: "link"}, nemura.PaymentInput{Run: mustUUID(run.ID), Person: lt.ben, State: "paid", Instruction: "I-1", Amount: "3963.21", PaidOn: d("2026-06-26"), Source: "fyniq"})
+	})
 	n, err := svc.PublishPayslips(ctx, prep, mustUUID(run.ID), 1)
 	if err != nil || n != 1 {
 		t.Fatalf("publish: %d %v", n, err)
@@ -395,9 +410,11 @@ func TestPayslipsAreMadeOnceFromAnApprovedVersionAndReadOnlyByTheirOwner(t *test
 	if _, err := svc.PublishPayslips(ctx, prep, mustUUID(run.ID), 1); payCode(err) != payroll.CodeConflict {
 		t.Errorf("publishing twice: %v", err)
 	}
-	// Gross 4,500 + 100 + 500 = 5,100; the employee's CPF is 20% of it, 1,020; the CDAC fund on 5,100 is 2.00; the dormitory 200: net 5,100 − 1,020 − 2.00 − 200 = 3,878.00.
+	// (Overtime is paid to Ben as a Part IV non-workman: see the payslip's overtime items.)
+	// Gross 4,500 + 100 + 500 + overtime 106.21 (3 hours at 12 × 4,500 / (52 × 44) = 23.60 an hour, 1.5 times: RND-PAY-RATIO) = 5,206.21; the employee's CPF is 20% of it, 1,041.24 taken as 1,041; the CDAC
+	// fund 2.00; the dormitory 200: net 5,206.21 − 1,041 − 2.00 − 200 = 3,963.21.
 	list, err := svc.MyPayslips(ctx, ben)
-	if err == nil && (len(list) != 1 || list[0].Reference != "PS-202606-0001" || list[0].Net != "3878.00" || list[0].Corrected || list[0].PayDate != "2026-06-25") {
+	if err == nil && (len(list) != 1 || list[0].Reference != "PS-202606-0001" || list[0].Net != "3963.21" || list[0].Corrected || list[0].PayDate != "2026-06-26") {
 		t.Errorf("list: %+v", list)
 	}
 	if err != nil || len(list) != 1 {
@@ -405,7 +422,7 @@ func TestPayslipsAreMadeOnceFromAnApprovedVersionAndReadOnlyByTheirOwner(t *test
 	}
 	view, err := svc.MyPayslip(ctx, ben, mustUUID(list[0].ID))
 	if err != nil || view.Employer != "Acme Pte. Ltd." || view.Employee != "Ben Lim" || view.Basic != "4500.00" || view.PeriodStart != "2026-06-01" || view.PeriodEnd != "2026-06-30" || len(view.Allowances) != 1 || len(view.Additional) != 1 ||
-		view.Additional[0].Name != "Monthly bonus" || len(view.SHA256) != 64 {
+		view.Additional[0].Name != "Monthly bonus" || len(view.SHA256) != 64 || view.OvertimePay != "106.21" || view.OvertimeHours != "3.00" || view.OvertimePeriod != "" {
 		t.Fatalf("the payslip: %+v %v", view, err)
 	}
 	names := []string{}
@@ -471,5 +488,214 @@ func TestPayslipsAreMadeOnceFromAnApprovedVersionAndReadOnlyByTheirOwner(t *test
 	var leaks int
 	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F])(4500\.00|3500\.00|5100\.00|1020|500\.00)([^0-9a-fA-F]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
 		t.Errorf("amounts in the audit trail: %d %v", leaks, err)
+	}
+}
+
+// A person's payment moves through states one legal step at a time; "paid" and a return need evidence or Fyniq's instruction; an unknown outcome blocks a new payment of that person in that
+// run until it is resolved; the database holds the same moves as the Go list, and an event is never changed (NM-PAY-10).
+// req: NM-PAY-10
+// asvs: V8.2.1, V8.3.1
+func TestAPaymentMovesThroughLegalStatesAndAnUnknownOutcomeBlocksANewPayment(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := d("2026-11-20").Add(10 * time.Hour)
+	st := store(t, "nemura_api")
+	packsSvc, err := nemura.NewPacksService(st, clock.NewFrozen(now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	blobs, _ := local.NewDir(t.TempDir())
+	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs}
+	rs := nemura.RestrictedService{Store: st, Blobs: blobs, Clock: clock.NewFrozen(now)}
+	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
+	approver := api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now}
+	birth := d("1990-05-20")
+	gid, _ := svc.CreateGroup(ctx, prep, api.PayGroupInput{Name: "Monthly", PayDay: 25, CutoffDays: 7, ApprovalDays: 3})
+	if err := svc.SetPay(ctx, prep, lt.ben, d("2026-01-05"), api.PersonPayInput{GroupID: gid, BasicMonthly: "4500.00", SHGFund: "CDAC"}); err != nil {
+		t.Fatal(err)
+	}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.SetClassification(ctx, tx, lt.c.org, now, lt.c.owner, lt.ben, d("2026-01-06"), people.Classification{ContractType: "service", EACovered: true, PartIVClass: "none", Residency: "citizen", BirthDate: &birth})
+	})
+	run, err := svc.StartRun(ctx, prep, d("2026-06-01"), mustUUID(gid))
+	if err != nil {
+		t.Fatal(err)
+	}
+	runID := mustUUID(run.ID)
+	owed := run.Latest.Totals.Disburse
+	pay := func(source, state string, mod func(*nemura.PaymentInput)) error {
+		return lt.c.do(func(ctx context.Context, tx pgx.Tx) error {
+			in := nemura.PaymentInput{Run: runID, Person: lt.ben, State: state, Amount: owed, PaidOn: d("2026-06-25"), Source: source}
+			if source == "fyniq" {
+				in.Instruction = "INSTR-1"
+			}
+			if mod != nil {
+				mod(&in)
+			}
+			actor := audit.Actor{Type: "service", ID: "link"}
+			if in.By != nil {
+				actor = audit.Actor{Type: "user", ID: in.By.String()}
+			}
+			return nemura.RecordPaymentState(ctx, tx, lt.c.org, now, actor, in)
+		})
+	}
+	if err := pay("fyniq", "scheduled", nil); payCode(err) != payroll.CodeConflict {
+		t.Errorf("a payment in a run nobody approved: %v", err)
+	}
+	if err := svc.Approve(ctx, approver, runID, 1, run.Latest.Digest); err != nil {
+		t.Fatal(err)
+	}
+	doc, err := rs.AddDocument(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr}, lt.ben, "other", "Bank statement 25 Jun", "employment_record", "application/pdf", []byte("%PDF statement"), []string{"payroll_admin"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := rs.AddDocument(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr}, lt.cy, "other", "Somebody else's", "employment_record", "application/pdf", []byte("%PDF other"), []string{"payroll_admin"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	manual := func(c *nemura.PaymentInput) { c.By, c.Evidence = &lt.c.pay, &doc }
+	// What is refused, in words.
+	for name, tc := range map[string]struct {
+		source, state string
+		mod           func(*nemura.PaymentInput)
+		code, text    string
+	}{
+		"a bare word from a person":              {"manual", "paid", func(c *nemura.PaymentInput) { c.By = &lt.c.pay }, payroll.CodeInvalid, "evidence"},
+		"a state from Fyniq with no instruction": {"fyniq", "sent", func(c *nemura.PaymentInput) { c.Instruction = "" }, payroll.CodeInvalid, "instruction_id"},
+		"an unknown state":                       {"fyniq", "paidish", nil, payroll.CodeInvalid, "state"},
+		"a person owed nothing":                  {"fyniq", "sent", func(c *nemura.PaymentInput) { c.Person = lt.cy }, payroll.CodeInvalid, "nothing is paid"},
+		"the evidence of somebody else":          {"manual", "paid", func(c *nemura.PaymentInput) { c.By, c.Evidence = &lt.c.pay, &other }, payroll.CodeInvalid, "document of the person"},
+		"a payment dated in the future":          {"fyniq", "paid", func(c *nemura.PaymentInput) { c.PaidOn = d("2027-01-01") }, payroll.CodeInvalid, "future"},
+		"an amount of 4000.005":                  {"fyniq", "sent", func(c *nemura.PaymentInput) { c.Amount = "4000.005" }, payroll.CodeInvalid, "amount"},
+	} {
+		if err := pay(tc.source, tc.state, tc.mod); payCode(err) != tc.code || !strings.Contains(err.Error(), tc.text) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	// The ordinary path, then the illegal moves.
+	for _, s := range []string{"scheduled", "released", "sent", "accepted"} {
+		if err := pay("fyniq", s, nil); err != nil {
+			t.Fatalf("%s: %v", s, err)
+		}
+	}
+	if err := pay("fyniq", "scheduled", nil); payCode(err) != payroll.CodeConflict || !strings.Contains(err.Error(), "from accepted to scheduled") {
+		t.Errorf("a new payment while one is on its way: %v", err)
+	}
+	if err := pay("fyniq", "accepted", nil); payCode(err) != payroll.CodeConflict {
+		t.Errorf("the same state twice: %v", err)
+	}
+	if err := pay("fyniq", "unknown", nil); err != nil {
+		t.Fatal(err)
+	}
+	view := func() nemura.PaymentsRow {
+		var v nemura.PaymentsRow
+		lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+			var err error
+			v, err = nemura.PaymentsOf(ctx, tx, runID)
+			return err
+		})
+		return v
+	}
+	if v := view(); v.State != "approved" || len(v.Lines) != 1 || v.Lines[0].State != "unknown" || !v.Lines[0].Attention || len(v.Lines[0].Events) != 5 {
+		t.Errorf("an unknown outcome: %+v", v)
+	}
+	payChecks := func() string {
+		all, err := packsSvc.Checks(ctx, prep, now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []string
+		for _, f := range all {
+			if f.Check == 9 || f.Check == 14 {
+				out = append(out, fmt.Sprintf("#%d %s", f.Check, f.Status))
+			}
+		}
+		return strings.Join(out, ", ")
+	}
+	if got := payChecks(); got != "#14 fail" {
+		t.Errorf("Checks after an unknown outcome: %q", got)
+	}
+	var blocked bool
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		blocked, err = nemura.PaymentBlocked(ctx, tx, runID, lt.ben)
+		return err
+	})
+	if !blocked {
+		t.Error("an unknown outcome does not block")
+	}
+	if err := pay("fyniq", "scheduled", nil); payCode(err) != payroll.CodeConflict || !strings.Contains(err.Error(), "from unknown to scheduled") {
+		t.Errorf("a new payment after an unknown outcome: %v", err)
+	}
+	// A corrected version does not clear it: the events are of the run and the person.
+	c2, err := svc.Recalculate(ctx, prep, runID, "Checked.")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Approve(ctx, approver, runID, 2, c2.Latest.Digest); err != nil {
+		t.Fatal(err)
+	}
+	if err := pay("fyniq", "scheduled", nil); payCode(err) != payroll.CodeConflict {
+		t.Errorf("a new payment after a corrected version: %v", err)
+	}
+	// Resolved by the person with evidence: paid, but not the amount owed, which Checks will show.
+	if err := pay("manual", "paid", func(c *nemura.PaymentInput) { manual(c); c.Amount = "3999.00" }); err != nil {
+		t.Fatal(err)
+	}
+	if v := view(); v.State != "paid" || !v.Lines[0].AmountMismatch || v.Lines[0].Attention || v.Version != 2 {
+		t.Errorf("paid: %+v", v)
+	}
+	// Paid on 25 June for the wrong amount, and five months on no payslip: #14 warns and #9 fails.
+	if got := payChecks(); got != "#14 warn, #9 fail" && got != "#9 fail, #14 warn" {
+		t.Errorf("Checks after a payment confirmed for the wrong amount: %q", got)
+	}
+	if err := pay("fyniq", "returned", nil); err != nil {
+		t.Fatal(err)
+	}
+	if v := view(); v.State != "approved" || !v.Lines[0].Attention {
+		t.Errorf("returned: %+v", v)
+	}
+	for _, s := range []string{"scheduled", "sent", "paid"} {
+		if err := pay("fyniq", s, nil); err != nil {
+			t.Fatalf("a new payment after a return, %s: %v", s, err)
+		}
+	}
+	if v := view(); v.State != "paid" || v.Lines[0].AmountMismatch || len(v.Lines[0].Events) != 10 {
+		t.Errorf("paid again: %+v", v)
+	}
+	// Evidence: nothing changes an event, no step is skipped, and the audit trail has the states and never the amounts.
+	su := connect(t, db.SuperURL())
+	for _, q := range []string{"UPDATE nemura.pay_payment_event SET state = 'paid'", "DELETE FROM nemura.pay_payment_event"} {
+		if _, err := su.Exec(ctx, q); err == nil || !strings.Contains(err.Error(), "NM127") {
+			t.Errorf("%s: %v", q, err)
+		}
+	}
+	if _, err := su.Exec(ctx, "INSERT INTO nemura.pay_payment_event (organisation_id, run_id, person_id, seq, state, instruction_id, amount, paid_on, source, recorded_at) VALUES ($1, $2, $3, 20, 'paid', 'X', 1, '2026-06-25', 'fyniq', now())", lt.c.org, runID, lt.ben); err == nil || !strings.Contains(err.Error(), "NM175") {
+		t.Errorf("an event number skipped: %v", err)
+	}
+	var leaks int
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F])(3999\.00|3999|4000\.00)([^0-9a-fA-F]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
+		t.Errorf("amounts in the audit trail: %d %v", leaks, err)
+	}
+	// The database holds the same moves as the Go list: every pair of states, in a transaction that is rolled back.
+	for _, from := range payroll.PaymentStates {
+		for _, to := range payroll.PaymentStates {
+			tx, err := su.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ins := func(seq int, state string) error {
+				_, err := tx.Exec(ctx, "INSERT INTO nemura.pay_payment_event (organisation_id, run_id, person_id, seq, state, instruction_id, amount, paid_on, source, recorded_at) VALUES ($1, $2, $3, $4, $5, 'X', 1, '2026-06-25', 'fyniq', now())", lt.c.org, runID, lt.cy, seq, state)
+				return err
+			}
+			if err := ins(1, from); err != nil {
+				t.Fatal(err)
+			}
+			err = ins(2, to)
+			if got := err == nil; got != payroll.LegalMove(from, to) {
+				t.Errorf("%s to %s: the database allows %v, the Go list %v (%v)", from, to, got, payroll.LegalMove(from, to), err)
+			}
+			_ = tx.Rollback(ctx)
+		}
 	}
 }

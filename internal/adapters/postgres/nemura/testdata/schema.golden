@@ -48,6 +48,7 @@ passkey_challenge | nemura_migrator | true | true
 pay_group | nemura_migrator | true | true
 pay_input | nemura_migrator | true | true
 pay_one_off | nemura_migrator | true | true
+pay_payment_event | nemura_migrator | true | true
 pay_run | nemura_migrator | true | true
 pay_run_line | nemura_migrator | true | true
 pay_run_override | nemura_migrator | true | true
@@ -571,6 +572,20 @@ pay_one_off | created_by | uuid | true |
 pay_one_off | created_at | timestamp with time zone | true | 
 pay_one_off | used_in_run | uuid | false | 
 pay_one_off | used_at | timestamp with time zone | false | 
+pay_payment_event | organisation_id | uuid | true | nemura.current_org()
+pay_payment_event | id | uuid | true | uuidv7()
+pay_payment_event | run_id | uuid | true | 
+pay_payment_event | person_id | uuid | true | 
+pay_payment_event | seq | integer | true | 
+pay_payment_event | state | text | true | 
+pay_payment_event | instruction_id | text | false | 
+pay_payment_event | amount | numeric(20,4) | true | 
+pay_payment_event | paid_on | date | true | 
+pay_payment_event | source | text | true | 
+pay_payment_event | evidence_id | uuid | false | 
+pay_payment_event | note | text | false | 
+pay_payment_event | recorded_by | uuid | false | 
+pay_payment_event | recorded_at | timestamp with time zone | true | 
 pay_run | organisation_id | uuid | true | nemura.current_org()
 pay_run | id | uuid | true | uuidv7()
 pay_run | month | date | true | 
@@ -1635,6 +1650,28 @@ pay_one_off | pay_one_off_pkey | PRIMARY KEY (organisation_id, id)
 pay_one_off | pay_one_off_text | CHECK ((((length(btrim(key)) >= 1) AND (length(btrim(key)) <= 40)) AND ((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 80)) AND (COALESCE(length(note), 0) <= 300)))
 pay_one_off | pay_one_off_used_whole | CHECK (((used_in_run IS NULL) = (used_at IS NULL)))
 pay_one_off | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+pay_payment_event | pay_payment_event_amount | CHECK ((amount >= (0)::numeric))
+pay_payment_event | pay_payment_event_amount_not_null | NOT NULL amount
+pay_payment_event | pay_payment_event_by_fkey | FOREIGN KEY (organisation_id, recorded_by) REFERENCES nemura.member(organisation_id, id)
+pay_payment_event | pay_payment_event_evidence_fkey | FOREIGN KEY (organisation_id, evidence_id) REFERENCES nemura.person_document(organisation_id, id)
+pay_payment_event | pay_payment_event_id_not_null | NOT NULL id
+pay_payment_event | pay_payment_event_note | CHECK (((note IS NULL) OR (length(note) <= 500)))
+pay_payment_event | pay_payment_event_organisation_id_not_null | NOT NULL organisation_id
+pay_payment_event | pay_payment_event_paid_on_not_null | NOT NULL paid_on
+pay_payment_event | pay_payment_event_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+pay_payment_event | pay_payment_event_person_id_not_null | NOT NULL person_id
+pay_payment_event | pay_payment_event_pkey | PRIMARY KEY (organisation_id, id)
+pay_payment_event | pay_payment_event_recorded_at_not_null | NOT NULL recorded_at
+pay_payment_event | pay_payment_event_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES nemura.pay_run(organisation_id, id)
+pay_payment_event | pay_payment_event_run_id_not_null | NOT NULL run_id
+pay_payment_event | pay_payment_event_seq | UNIQUE (organisation_id, run_id, person_id, seq)
+pay_payment_event | pay_payment_event_seq_not_null | NOT NULL seq
+pay_payment_event | pay_payment_event_seq_positive | CHECK ((seq >= 1))
+pay_payment_event | pay_payment_event_source | CHECK ((((source = 'fyniq'::text) AND (recorded_by IS NULL) AND (instruction_id IS NOT NULL) AND (length(btrim(instruction_id)) > 0)) OR ((source = 'manual'::text) AND (recorded_by IS NOT NULL) AND (evidence_id IS NOT NULL))))
+pay_payment_event | pay_payment_event_source_not_null | NOT NULL source
+pay_payment_event | pay_payment_event_state | CHECK ((state = ANY (ARRAY['scheduled'::text, 'released'::text, 'sent'::text, 'accepted'::text, 'paid'::text, 'rejected'::text, 'returned'::text, 'unknown'::text])))
+pay_payment_event | pay_payment_event_state_not_null | NOT NULL state
+pay_payment_event | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 pay_run | pay_run_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
 pay_run | pay_run_created_at_not_null | NOT NULL created_at
 pay_run | pay_run_created_by_not_null | NOT NULL created_by
@@ -2153,6 +2190,9 @@ CREATE UNIQUE INDEX pay_input_pkey ON nemura.pay_input USING btree (organisation
 CREATE UNIQUE INDEX pay_one_off_key_once ON nemura.pay_one_off USING btree (organisation_id, person_id, month, key)
 CREATE INDEX pay_one_off_month_idx ON nemura.pay_one_off USING btree (organisation_id, month)
 CREATE UNIQUE INDEX pay_one_off_pkey ON nemura.pay_one_off USING btree (organisation_id, id)
+CREATE INDEX pay_payment_event_person_idx ON nemura.pay_payment_event USING btree (organisation_id, person_id, run_id, seq)
+CREATE UNIQUE INDEX pay_payment_event_pkey ON nemura.pay_payment_event USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pay_payment_event_seq ON nemura.pay_payment_event USING btree (organisation_id, run_id, person_id, seq)
 CREATE UNIQUE INDEX pay_run_line_once ON nemura.pay_run_line USING btree (organisation_id, version_id, person_id)
 CREATE INDEX pay_run_line_person_idx ON nemura.pay_run_line USING btree (organisation_id, person_id)
 CREATE UNIQUE INDEX pay_run_line_pkey ON nemura.pay_run_line USING btree (organisation_id, id)
@@ -2290,6 +2330,8 @@ CREATE TRIGGER pay_input_guard BEFORE DELETE OR UPDATE ON nemura.pay_input FOR E
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_input DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_input', 'id')
 CREATE TRIGGER pay_one_off_guard BEFORE DELETE OR UPDATE ON nemura.pay_one_off FOR EACH ROW EXECUTE FUNCTION nemura.pay_one_off_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_one_off DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_one_off', 'id')
+CREATE TRIGGER pay_payment_event_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.pay_payment_event FOR EACH ROW EXECUTE FUNCTION nemura.pay_payment_event_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.pay_payment_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_payment_event', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_run', 'id')
 CREATE TRIGGER pay_run_line_append_only BEFORE DELETE OR UPDATE ON nemura.pay_run_line FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('A pay run line')
 CREATE TRIGGER pay_run_override_guard BEFORE DELETE OR UPDATE ON nemura.pay_run_override FOR EACH ROW EXECUTE FUNCTION nemura.pay_run_override_guard()
@@ -2384,6 +2426,7 @@ passkey_challenge | tenant_isolation | (organisation_id = nemura.current_org()) 
 pay_group | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pay_input | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pay_one_off | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+pay_payment_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pay_run | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pay_run_line | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pay_run_override | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -3164,6 +3207,47 @@ BEGIN
      OR NEW.nature IS DISTINCT FROM OLD.nature OR NEW.cpf_wages IS DISTINCT FROM OLD.cpf_wages OR NEW.for_month IS DISTINCT FROM OLD.for_month OR NEW.payable_on IS DISTINCT FROM OLD.payable_on
      OR (OLD.used_in_run IS NOT NULL AND NEW.used_in_run IS DISTINCT FROM OLD.used_in_run) THEN
     RAISE EXCEPTION 'A one-off item keeps its words and its figures, and is used by one run once' USING ERRCODE = 'NM171';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.pay_payment_event_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  prev text;
+  last_seq integer;
+  ok boolean;
+BEGIN
+  IF TG_OP <> 'INSERT' THEN
+    RAISE EXCEPTION 'A payment state is evidence: a change is a new event' USING ERRCODE = 'NM127';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('pay-payment:' || NEW.organisation_id::text || NEW.run_id::text || NEW.person_id::text, 0));
+  SELECT state, seq INTO prev, last_seq FROM nemura.pay_payment_event
+   WHERE organisation_id = NEW.organisation_id AND run_id = NEW.run_id AND person_id = NEW.person_id ORDER BY seq DESC LIMIT 1;
+  IF NEW.seq IS DISTINCT FROM COALESCE(last_seq, 0) + 1 THEN
+    RAISE EXCEPTION 'A payment state follows the last one: expected event number %', COALESCE(last_seq, 0) + 1 USING ERRCODE = 'NM175';
+  END IF;
+  IF prev IS NOT NULL THEN
+    ok := CASE prev
+      WHEN 'scheduled' THEN NEW.state IN ('released', 'sent', 'accepted', 'paid', 'rejected', 'unknown')
+      WHEN 'released'  THEN NEW.state IN ('sent', 'accepted', 'paid', 'rejected', 'unknown')
+      WHEN 'sent'      THEN NEW.state IN ('accepted', 'paid', 'rejected', 'returned', 'unknown')
+      WHEN 'accepted'  THEN NEW.state IN ('paid', 'rejected', 'returned', 'unknown')
+      WHEN 'paid'      THEN NEW.state IN ('returned')
+      WHEN 'rejected'  THEN NEW.state IN ('scheduled')
+      WHEN 'returned'  THEN NEW.state IN ('scheduled')
+      WHEN 'unknown'   THEN NEW.state IN ('paid', 'rejected', 'returned')
+      ELSE false END;
+    IF NOT ok THEN
+      RAISE EXCEPTION 'A payment cannot go from % to %: an unknown outcome is resolved as paid, rejected or returned before a new payment', prev, NEW.state USING ERRCODE = 'NM175';
+    END IF;
+  END IF;
+  IF NEW.evidence_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM nemura.person_document WHERE organisation_id = NEW.organisation_id AND id = NEW.evidence_id AND person_id = NEW.person_id) THEN
+    RAISE EXCEPTION 'The evidence of a payment is a document of the person paid' USING ERRCODE = 'NM176';
   END IF;
   RETURN NEW;
 END

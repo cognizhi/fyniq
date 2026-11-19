@@ -71,15 +71,26 @@ func PublishPayslips(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time
 		return 0, err
 	}
 	for _, l := range lines {
-		in := payroll.PayslipInput{Employer: settings.Name, Employee: l.PersonName, Month: run.Month, PayDate: run.PayDate, EmployeeCPF: dec(l.CPFEmployee), SHG: dec(l.SHG), Net: dec(l.Net), Reimbursements: dec(l.Reimbursements)}
+		// The date of payment is the confirmed one when the payment is already confirmed paid, and the pay group's scheduled pay day before that; Checks flags a payslip whose date differs from the
+		// payment confirmed later, and the correction is the next version's payslip.
+		payDate := run.PayDate
+		var paidOn time.Time
+		switch err := tx.QueryRow(ctx, "SELECT paid_on FROM nemura.pay_payment_event WHERE run_id = $1 AND person_id = $2 AND state = 'paid' ORDER BY seq DESC LIMIT 1", runID, l.Person).Scan(&paidOn); {
+		case err == nil:
+			payDate = paidOn
+		case !errors.Is(err, pgx.ErrNoRows):
+			return 0, err
+		}
+		in := payroll.PayslipInput{Employer: settings.Name, Employee: l.PersonName, Month: run.Month, PayDate: payDate, EmployeeCPF: dec(l.CPFEmployee), SHG: dec(l.SHG), Net: dec(l.Net), Reimbursements: dec(l.Reimbursements)}
 		hours := apd.New(0, 0)
 		for _, it := range l.Items {
 			in.Items = append(in.Items, payroll.SlipLine{Key: it.Key, Name: it.Name, Class: it.Class, Amount: it.Amount, SourceType: it.SourceType, Nature: it.Nature})
 			if it.SourceType == "overtime_entry" {
 				var h string
-				if err := tx.QueryRow(ctx, "SELECT hours::text FROM nemura.overtime_entry WHERE id = $1", it.SourceID).Scan(&h); err == nil {
-					hours = addDec(hours, dec(h))
+				if err := tx.QueryRow(ctx, "SELECT hours::text FROM nemura.overtime_entry WHERE id = $1", it.SourceID).Scan(&h); err != nil {
+					return 0, err
 				}
+				hours = addDec(hours, dec(h))
 			}
 		}
 		if hours.Sign() > 0 {
@@ -113,7 +124,7 @@ func PublishPayslips(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time
 		}
 		data, _ := json.Marshal(slip)
 		if _, err := tx.Exec(ctx, `INSERT INTO nemura.payslip (id, version_id, person_id, month, pay_date, reference, sha256, blob_key, data, published_by, published_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11)`,
-			id, v.ID, l.Person, day(run.Month), day(run.PayDate), ref, sum[:], key, string(data), by, at); err != nil {
+			id, v.ID, l.Person, day(run.Month), day(payDate), ref, sum[:], key, string(data), by, at); err != nil {
 			return 0, runError(err)
 		}
 		if err := Audit(ctx, tx, org, at, user(by), "nemura.payslip.published", audit.Object{Type: "payslip", ID: id}, map[string]audit.Change{"run": {nil, runID.String()}, "version": {nil, version}, "reference": {nil, ref}, "sha256": {nil, hex.EncodeToString(sum[:])}}, ""); err != nil {
