@@ -2707,6 +2707,10 @@
       "label": "Your work",
       "tooltip": "What waits in your areas, by your roles: bank lines to categorise, drafts to finish, overdue invoices and bills, receipts to apply, quotes waiting, payment batches and claims to pay or release, people asking to join, data requests and the like. Each opens its list."
     },
+    "home.approver-work": {
+      "label": "Waiting for your approval",
+      "tooltip": "The requests that wait for you as an approver, the oldest first, each with its step and who that step needs. Open one to see what approving it posts."
+    },
     "home.auditor-access": {
       "label": "Your engagement",
       "tooltip": "Your access as the auditor: read-only, and until when. Opens the journals, the evidence and the audit trail."
