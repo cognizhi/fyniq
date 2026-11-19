@@ -1,4 +1,4 @@
-<!-- fyniq-screen {"nav": "banking", "title": "Add account", "mode": "basic", "heights": {"compact": 2500, "medium": 2150, "expanded": 1720}} -->
+<!-- fyniq-screen {"nav": "banking", "title": "Add account", "mode": "basic", "heights": {"compact": 3400, "medium": 2700, "expanded": 2200}} -->
 <div class="fy-page fy-enter">
   <nav class="fy-breadcrumb" aria-label="Breadcrumb"><a href="#banking">Banking</a><i data-icon="chevron-right"></i><span>Add an account</span></nav>
   <div class="fy-pagehead">
@@ -25,7 +25,7 @@
         <div class="fy-card__body">
           <dl class="fy-dl fy-dl--3">
             <div><dt>Type</dt><dd>Bank account</dd></div>
-            <div><dt>Bank</dt><dd>DBS Business Multi-Currency, USD wallet</dd></div>
+            <div><dt>Bank</dt><dd>DBS, picked from the list: Business Multi-Currency, USD wallet</dd></div>
             <div><dt>Currency</dt><dd>US dollars (USD)</dd></div>
             <div><dt>Opening balance date</dt><dd>1 Oct 2026, US$0.00</dd></div>
             <div class="fy-expert-only"><dt>Ledger account</dt><dd><span class="fy-mono">1012</span> DBS Multi-Currency USD</dd></div>
@@ -83,6 +83,40 @@
             <li class="fy-row fy-row--top"><span class="fy-step__n" style="flex: none">4</span><span class="fy-small">At month end, the DBS e-statement confirms the closing balance.</span></li>
           </ol>
           <p class="fy-plain fy-small"><i data-icon="shield-check"></i><span>Fyniq accepts only emails that pass SPF, DKIM and DMARC checks for DBS. Anything else waits in quarantine until you accept it. Attachments are scanned for malware.</span></p>
+        </div>
+      </section>
+
+      <section class="fy-card" aria-labelledby="pf-title">
+        <div class="fy-card__head"><h2 class="fy-h3" id="pf-title">How its payments are written</h2><a class="fy-btn fy-btn--ghost fy-btn--sm" href="#help/payment-files">Guide</a></div>
+        <div class="fy-card__body fy-stack fy-stack--3">
+          <p class="fy-small fy-secondary">The file a payment batch paying from this account gives when it is released: the payment list for any bank, or the bank's own file once Fyniq writes it. A batch already released keeps its file.</p>
+          <div class="fy-stack fy-stack--3" role="radiogroup" aria-labelledby="pf-label">
+            <span class="fy-label" id="pf-label">Payment file</span>
+            <button class="fy-choice" type="button" role="radio" aria-checked="true">
+              <span class="fy-radio"></span>
+              <span class="fy-stack fy-grow" style="gap: 4px">
+                <span class="fy-strong">The payment list</span>
+                <span class="fy-small fy-secondary">A CSV you key into your bank's bulk payment screen. It works for any bank.</span>
+              </span>
+            </button>
+            <button class="fy-choice" type="button" role="radio" aria-checked="false" aria-disabled="true" style="opacity: 0.6">
+              <span class="fy-radio"></span>
+              <span class="fy-stack fy-grow" style="gap: 4px">
+                <span class="fy-strong">DBS IDEAL's UFF</span>
+                <span class="fy-small fy-secondary">The file you upload to DBS IDEAL to pay by FAST or GIRO.</span>
+                <span class="fy-small fy-muted">Not available yet: Fyniq writes it once DBS's specification, DBS UFF Version 2.2, is in hand.</span>
+              </span>
+            </button>
+            <button class="fy-choice" type="button" role="radio" aria-checked="false" aria-disabled="true" style="opacity: 0.6">
+              <span class="fy-radio"></span>
+              <span class="fy-stack fy-grow" style="gap: 4px">
+                <span class="fy-strong">Wise's batch payment file</span>
+                <span class="fy-small fy-secondary">A CSV in Wise's batch template, which you upload to Wise.</span>
+                <span class="fy-small fy-muted">Only for a Wise account, and this account is not at Wise.</span>
+              </span>
+            </button>
+          </div>
+          <div class="fy-row"><button class="fy-btn fy-btn--secondary" type="button" disabled="disabled">Save the payment file</button></div>
         </div>
       </section>
 

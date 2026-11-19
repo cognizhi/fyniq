@@ -1,0 +1,3 @@
+error KB-FRONT kb/pages/task/a.md
+error KB-LINK kb/pages/concept/b.md
+error KB-UNCOVERED docs/user-guide/a.md
