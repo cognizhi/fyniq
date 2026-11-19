@@ -8,7 +8,7 @@ import { AssistantPanel } from "./AssistantPanel";
 
 const revenue = { id: "F00000000000000aa", measure: "revenue", name: "Revenue", value: "48200.00", figure: "SGD 48,200.00", unit: "amount", currency: "SGD",
   from: "2026-10-01", to: "2026-10-31", ledger_revision: 1204, source: "the profit and loss's revenue", lineage: "/v1/reports/statements/pl?from=2026-10&to=2026-10&as_at_revision=1204" };
-const turn = (t: Record<string, unknown>) => ({ id: "t-1", question: "What was our revenue last month?", status: "answered", answer: "", segments: [], cited: [],
+const turn = (t: Record<string, unknown>) => ({ id: "t-1", question: "What was our revenue last month?", status: "answered", answer: "", segments: [], cited: [], sources: [],
   regenerated: false, withheld: 0, asked_at: "2026-11-15T01:00:00Z", ...t });
 const stream = (...events: [string, unknown][]) => ({ status: 200, events: events.map(([e, d]) => `event: ${e}\ndata: ${JSON.stringify(d)}\n\n`).join("") });
 
@@ -21,6 +21,29 @@ function panel(props: { enabled?: boolean; mode?: "basic" | "expert"; context?: 
 // req: AI-68
 // req: FR-UX-17
 describe("The assistant panel", () => {
+  it("shows a know-how answer with a chip to the guide page it comes from, never to a compiled page (AI-51)", async () => {
+    answer({
+      "POST /v1/assistant/conversations": { status: 201, body: { id: "c-1", title: "How soon must a claim be submitted?", created_at: "2026-11-15T01:00:00Z" } },
+      "POST /v1/assistant/conversations/c-1/turns": stream(
+        ["answer", turn({
+          segments: [{ text: "A claim is submitted within 30 days of the receipt date.", sources: [{ guide: "claims.approve-team", title: "Approving your team's claims", anchor: "who-approves", href: "/help/claims.approve-team#who-approves" }] }],
+          sources: [{ guide: "claims.approve-team", title: "Approving your team's claims", anchor: "who-approves", href: "/help/claims.approve-team#who-approves" },
+            { guide: "claims.make-a-claim", title: "Make a claim", anchor: "receipts", draft: true, href: "/help/claims.make-a-claim#receipts" }],
+        })],
+      ),
+    });
+    renderPage(panel());
+    fireEvent.click(await screen.findByRole("button", { name: "What was our revenue last month?" }));
+    const words = await screen.findByText(/within 30 days of the receipt date/);
+    const message = words.closest(".fy-msg--ai") as HTMLElement;
+    const group = within(message).getByRole("group", { name: "Where the explanation comes from" });
+    const chip = within(group).getByRole("link", { name: /Approving your team's claims/ });
+    expect(chip.getAttribute("href")).toBe("/help/claims.approve-team#who-approves");
+    expect(within(group).getByRole("link", { name: /Make a claim \(awaiting review\)/ })).toBeTruthy();
+    for (const a of within(message).getAllByRole("link")) expect(a.getAttribute("href") ?? "").not.toMatch(/knowledge|kb\//);
+    await noViolations();
+  });
+
   it("answers in violet with the AI badge, each figure from its fact with a chip to its report, streaming its status; axe finds nothing", async () => {
     const seen = answer({
       "POST /v1/assistant/conversations": { status: 201, body: { id: "c-1", title: "What was our revenue last month?", created_at: "2026-11-15T01:00:00Z" } },

@@ -344,10 +344,11 @@ func TestTheMappingIsSignedByTheAccountantAlone(t *testing.T) {
 // import's difference register needs a committed import, and the matrix's organisation posts as it goes, so it never
 // commits one (rev 0.266), nor uploads the parallel month's workbook (rev 0.268), nor signs it to archive (rev 0.269).
 // Nor does it turn the company secretary assistant on, which waits for a second approver, so Run now finds it off.
-var pastPolicy = map[string]string{"runCompanySecretary": CodeAgentOff, "decideMigrationDifference": migration.CodeCommit, "signMigrationReconciliation": migration.CodeCommit,
+var pastPolicy = map[string]string{"createKBNote": CodeSessionRequired, "reviseKBNote": CodeSessionRequired, "editKBPage": CodeSessionRequired, "rollbackKBPage": CodeSessionRequired, "publishKBPages": CodeSessionRequired, "requestKBPublication": CodeSessionRequired, "resolveKBFinding": CodeSessionRequired, "listKBPageVersions": CodeNotFound, "runCompanySecretary": CodeAgentOff, "decideMigrationDifference": migration.CodeCommit, "signMigrationReconciliation": migration.CodeCommit,
 	"uploadMigrationParallelWorkbook": migration.CodeCommit, "decideMigrationParallelDifference": migration.CodeCommit,
 	"signMigrationParallel": migration.CodeCommit, "getMigrationParallelReport": CodeNotFound,
-	"uploadMigrationArchivePDF": migration.CodeCommit, "archiveMigration": migration.CodeParallel}
+	"uploadMigrationArchivePDF": migration.CodeCommit, "archiveMigration": migration.CodeParallel,
+	"prepareDisputeLoss": CodePSPDisputeState, "resolvePaymentProviderEvent": CodePSPEventState}
 
 // matrixMigrations are the authorisation matrix's rows for the workbook migration (FR-MIG-01, Appendix D "Workbook
 // import (migration)"). The matrix's organisation posts entries as it goes, so its migration is started, with the sample

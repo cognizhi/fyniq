@@ -51,6 +51,26 @@ $$`); err != nil {
 			return fmt.Errorf("create the %s database: %w", Database, err)
 		}
 	}
+	// The OAuth server's own database on the same server (Nemura's own instance of the authorisation server, question 11), owned by a role that
+	// holds nothing in the nemura database.
+	if _, err := conn.Exec(ctx, `
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'nemura_hydra') THEN
+    CREATE ROLE nemura_hydra LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '`+LocalPassword+`';
+  END IF;
+END
+$$`); err != nil {
+		return fmt.Errorf("create the nemura_hydra role: %w", err)
+	}
+	if err := conn.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_database WHERE datname = 'nemura_hydra')").Scan(&exists); err != nil {
+		return err
+	}
+	if !exists {
+		if _, err := conn.Exec(ctx, "CREATE DATABASE nemura_hydra OWNER nemura_hydra"); err != nil {
+			return fmt.Errorf("create the nemura_hydra database: %w", err)
+		}
+	}
 	return nil
 }
 

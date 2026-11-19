@@ -246,7 +246,7 @@ func (a *API) switchTeamMode(ctx context.Context, u storage.UnitOfWork, r storag
 			return err
 		}
 	}
-	return nil
+	return a.renderKnowledge(ctx, u)
 }
 
 // recordOverride records the override an approved role change carries, for the team mode in force.

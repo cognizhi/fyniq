@@ -127,7 +127,7 @@ const (
 // registration (FR-INT-02, p1-public-api task 3.1).
 var ApprovalRows = []Capability{OrganisationProfile, UsersAndRoles, ApprovalPolicies, StatutoryParameters, PeriodClose, Journals, Bills, DocumentTemplates,
 	Invoices, Integrations, BankTransactions, ExpenseClaims, PaymentBatches, FixedAssets, VendorBankDetails, DirectorAccounts, ChartOfAccounts, CapTable,
-	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile, ConnectedApps}
+	Budgets, WorkbookImport, TenantExport, AIProviders, CorporateProfile, ConnectedApps, KnowledgeBase}
 
 // Cell is one cell of Appendix D: the rights it grants and its qualifier, such as "limit".
 type Cell struct {
@@ -197,7 +197,7 @@ var Grants = map[Capability]map[string]Cell{
 		"Owner": {"C", ""}, "Admin": {}, "Controller": {"C", ""}, "Accountant": {"C", ""}, "Bookkeeper": {"C", ""}, "AR": {"C", ""}, "AP": {"C", ""}, "Payroll": {"C", "payroll"}, "Releaser": {"C", ""}, "Approver": {"C", ""}, "Employee": {"C", "own"}, "Auditor": {"V", ""}, "Tax agent": {"C", ""}, "Board": {}, "DPO": {"V", ""}, "AI": {"", "Proposal (`doc.attach`)"},
 	},
 	KnowledgeBase: {
-		"Owner": {"VC", "edit, publish"}, "Admin": {"VC", "edit, publish"}, "Controller": {}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {"", "Reads, filtered to the user (AI-54)"},
+		"Owner": {"VCA", "edit, publish; signs a publication, rev 0.300"}, "Admin": {"VC", "edit, publish"}, "Controller": {}, "Accountant": {}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {}, "Board": {}, "DPO": {}, "AI": {"", "Reads, filtered to the user (AI-54)"},
 	},
 	AICompanySecretary: {
 		"Owner": {"A", "+ second approver (enable); C (schedule)"}, "Admin": {"C", "schedule"}, "Controller": {"V", ""}, "Accountant": {"V", ""}, "Bookkeeper": {}, "AR": {}, "AP": {}, "Payroll": {}, "Releaser": {}, "Approver": {}, "Employee": {}, "Auditor": {"V", ""}, "Tax agent": {"V", ""}, "Board": {"V", "summaries"}, "DPO": {}, "AI": {"", "Runs as the agent principal (AI-63)"},
@@ -1066,19 +1066,30 @@ var (
 
 	// Banking (FR-BNK-01…18; p1-bank-import-reconcile task 9.1): money accounts, their imports and lines under "Bank
 	// transactions, categorise"; a source fed by email or a connector under "Bank data… connections".
-	ListMoneyAccounts       = Policy{Operation: "listMoneyAccounts", Capability: BankTransactions, Need: View}
-	CreateMoneyAccount      = Policy{Operation: "createMoneyAccount", Capability: BankTransactions, Need: Create}
-	GetMoneyAccount         = Policy{Operation: "getMoneyAccount", Capability: BankTransactions, Need: View}
-	ReplaceMoneyAccount     = Policy{Operation: "replaceMoneyAccount", Capability: BankTransactions, Need: Create}
-	AddMoneyAccountSource   = Policy{Operation: "addMoneyAccountSource", Capability: BankConnections, Need: Create}
-	ResolveBankGap          = Policy{Operation: "resolveBankGap", Capability: BankTransactions, Need: Create}
-	ListStatementMappings   = Policy{Operation: "listStatementMappings", Capability: BankTransactions, Need: View}
-	CreateStatementMapping  = Policy{Operation: "createStatementMapping", Capability: BankTransactions, Need: Create}
-	ReplaceStatementMapping = Policy{Operation: "replaceStatementMapping", Capability: BankTransactions, Need: Create}
-	ImportBankStatements    = Policy{Operation: "importBankStatements", Capability: BankTransactions, Need: Create}
-	ListBankStatements      = Policy{Operation: "listBankStatements", Capability: BankTransactions, Need: View}
-	ListBankLines           = Policy{Operation: "listBankLines", Capability: BankTransactions, Need: View}
-	GetBankLine             = Policy{Operation: "getBankLine", Capability: BankTransactions, Need: View}
+	ListMoneyAccounts     = Policy{Operation: "listMoneyAccounts", Capability: BankTransactions, Need: View}
+	CreateMoneyAccount    = Policy{Operation: "createMoneyAccount", Capability: BankTransactions, Need: Create}
+	GetMoneyAccount       = Policy{Operation: "getMoneyAccount", Capability: BankTransactions, Need: View}
+	ReplaceMoneyAccount   = Policy{Operation: "replaceMoneyAccount", Capability: BankTransactions, Need: Create}
+	AddMoneyAccountSource = Policy{Operation: "addMoneyAccountSource", Capability: BankConnections, Need: Create}
+	// Payment providers (FR-PSP-04..06; p1-payment-providers): their accounts' setup, which lets Reconcile now post a provider's
+	// own lines, under "Bank data… connections" as a source is; their payouts and events are read under "Bank transactions".
+	ListPaymentProviderAccounts = Policy{Operation: "listPaymentProviderAccounts", Capability: BankTransactions, Need: View}
+	SetPaymentProviderAccount   = Policy{Operation: "setPaymentProviderAccount", Capability: BankConnections, Need: Create}
+	ListPaymentProviderPayouts  = Policy{Operation: "listPaymentProviderPayouts", Capability: BankTransactions, Need: View}
+	ListPaymentProviderEvents   = Policy{Operation: "listPaymentProviderEvents", Capability: BankTransactions, Need: View}
+	// ListPaymentProviderDisputes reads the disputes' money; PrepareDisputeLoss prepares the draft journal that writes a lost
+	// one off, which is posted under "Journals" like any other; ResolvePaymentProviderEvent marks a parked event dealt with.
+	ListPaymentProviderDisputes = Policy{Operation: "listPaymentProviderDisputes", Capability: BankTransactions, Need: View}
+	PrepareDisputeLoss          = Policy{Operation: "prepareDisputeLoss", Capability: Journals, Need: Create}
+	ResolvePaymentProviderEvent = Policy{Operation: "resolvePaymentProviderEvent", Capability: BankTransactions, Need: Create}
+	ResolveBankGap              = Policy{Operation: "resolveBankGap", Capability: BankTransactions, Need: Create}
+	ListStatementMappings       = Policy{Operation: "listStatementMappings", Capability: BankTransactions, Need: View}
+	CreateStatementMapping      = Policy{Operation: "createStatementMapping", Capability: BankTransactions, Need: Create}
+	ReplaceStatementMapping     = Policy{Operation: "replaceStatementMapping", Capability: BankTransactions, Need: Create}
+	ImportBankStatements        = Policy{Operation: "importBankStatements", Capability: BankTransactions, Need: Create}
+	ListBankStatements          = Policy{Operation: "listBankStatements", Capability: BankTransactions, Need: View}
+	ListBankLines               = Policy{Operation: "listBankLines", Capability: BankTransactions, Need: View}
+	GetBankLine                 = Policy{Operation: "getBankLine", Capability: BankTransactions, Need: View}
 	// A line's actions and transfers post, or undo what posted (FR-BNK-05…09): "Bank transactions, categorise" with P; keeping or
 	// excluding a line posts nothing, so C.
 	CategoriseBankLine    = Policy{Operation: "categoriseBankLine", Capability: BankTransactions, Need: Post}
@@ -1825,6 +1836,24 @@ var (
 	ListRisks  = Policy{Operation: "listRisks", Capability: ComplianceCenter, Need: View}
 	CreateRisk = Policy{Operation: "createRisk", Capability: ComplianceCenter, Need: Create}
 	ReviseRisk = Policy{Operation: "reviseRisk", Capability: ComplianceCenter, Need: Create}
+
+	// The organisation's knowledge base (AI-55; p1-knowledge-base): the Owner and the Administrator write notes and policies, the
+	// Auditor reads them. Nothing here is offered to the AI, which only reads pages through the knowledge-base tools (AI-54).
+	ListKBNotes  = Policy{Operation: "listKBNotes", Capability: KnowledgeBase, Need: View}
+	CreateKBNote = Policy{Operation: "createKBNote", Capability: KnowledgeBase, Need: Create}
+	ReviseKBNote = Policy{Operation: "reviseKBNote", Capability: KnowledgeBase, Need: Create}
+	EditKBPage   = Policy{Operation: "editKBPage", Capability: KnowledgeBase, Need: Create,
+		Note: "A human-edited version of an organisation page, or an overlay of a platform page for this organisation: a draft until published (AI-55, AI-56)."}
+	RollbackKBPage = Policy{Operation: "rollbackKBPage", Capability: KnowledgeBase, Need: Create, Note: "A new version restoring an earlier one's content (AI-56)."}
+	PublishKBPages = Policy{Operation: "publishKBPages", Capability: KnowledgeBase, Need: Approve,
+		Note: "In Founder mode an Owner publishes alone, listed for the weekly review (FM-3); in Team mode another Owner signs a request (AI-56, open question 18)."}
+	RequestKBPublication = Policy{Operation: "requestKBPublication", Capability: KnowledgeBase, Need: Create}
+	ListKBPages          = Policy{Operation: "listKBPages", Capability: KnowledgeBase, Need: View}
+	ListKBPageVersions   = Policy{Operation: "listKBPageVersions", Capability: KnowledgeBase, Need: View}
+	ListKBSnapshots      = Policy{Operation: "listKBSnapshots", Capability: KnowledgeBase, Need: View}
+	ListKBFindings       = Policy{Operation: "listKBFindings", Capability: KnowledgeBase, Need: View}
+	ResolveKBFinding     = Policy{Operation: "resolveKBFinding", Capability: KnowledgeBase, Need: Create,
+		Note: "Closes a lint finding with what was done about it; an open finding stops its page's publication (AI-56)."}
 	ReviewRisk = Policy{Operation: "reviewRisk", Capability: ComplianceCenter, Need: Approve}
 	// The policy library (CMP-07; Appendix D "Policy library"): the Owner and the Compliance officer draft and publish;
 	// every member reads and acknowledges their own.
@@ -2019,7 +2048,7 @@ var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegra
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
 	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid, RequestBankRuleAutoApply,
-	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ResolveBankGap, ListStatementMappings,
+	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ListPaymentProviderDisputes, PrepareDisputeLoss, ResolvePaymentProviderEvent, ResolveBankGap, ListStatementMappings,
 	CreateStatementMapping, ReplaceStatementMapping, ImportBankStatements, ListBankStatements, ListBankLines, GetBankLine,
 	CategoriseBankLine, SuspendBankLine, MatchBankLineInvoices, MatchBankLineBills, MatchBankLineRecorded, KeepBankLine, ExcludeBankLine,
 	UnreconcileBankLine, AutoReconcileBankLines, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,
@@ -2059,7 +2088,7 @@ var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegra
 	ListStatutoryFilings, CreateStatutoryFiling, GetStatutoryFiling, ReplaceStatutoryFiling, RecordStatutoryFiling, WithdrawStatutoryFiling,
 	AddStatutoryFilingEvidence, ListStatutoryFilingEvidence, GetStatutoryFilingEvidence, RemoveStatutoryFilingEvidence,
 	ListForecasts, CreateForecast, GetForecast, ReplaceForecast, RecordForecast, GetForecastResults, CompareForecastScenarios, RunForecast,
-	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, GetMigrationMapping, ChangeMigrationMapping, SignMigrationMapping, RequestMigrationCommit, RunMigrationCommit, GetMigrationCommit, GetMigrationReconciliation, DecideMigrationDifference, SignMigrationReconciliation, UploadMigrationParallelWorkbook, GetMigrationParallelReport, GetMigrationParallel, DecideMigrationParallelDifference, SignMigrationParallel, UploadMigrationArchivePDF, GetMigrationArchive, ArchiveMigration, GetContactsTemplate, ImportContacts, GetItemsTemplate, ImportItems, GetAccountsTemplate, ImportAccounts, GetJournalsTemplate, ImportJournals, GetInvoicesTemplate, ImportInvoices, GetBillsTemplate, ImportBills, GetFxRatesTemplate, ImportFxRates, GetBankRulesTemplate, ImportBankRules, GetOpeningBalancesTemplate, ImportOpeningBalances, GetBudgetsTemplate, ImportBudgets, RequestTenantExport, ListTenantExports, CreateTenantExportDownload, GetTenantExportDownload, ListAIConnections, GetAIConnection, CreateAIConnection, ChangeAIConnection, SetAIConnectionCredential, EnableAIConnection, DisableAIConnection, GetAIDataPolicy, ChangeAIDataPolicy, GetAIConnectionModels, RefreshAIConnectionModels, ProbeAIConnectionModel, AllowAIConnectionModel, RemoveAIConnectionModel, ListAIPriceCatalogues, ReviewAIPrice, PriceAIConnectionModel, WithdrawAIPrice, GetAIRoutes, GetAIRoute, SetAIRoute, GetAIPresets, GetAIBudgets, SetAIBudget, GetAIUsage, QualifyAIConnectionModel, ListAIActivity, CreateAIConversation, ListAIConversations, GetAIConversation, DeleteAIConversation, AskAIConversation, ListAITurnActivity, GiveAIFeedback, ListAIFeedback, ReviewAIFeedback, ListAIProposals, GetAIProposal, ListAITaskTypes, ListComplianceTasks, GetComplianceTask, CompleteComplianceTask, DismissComplianceTask, GetCompanySecretary, ListAgentRuns, GetAgentRun, RunCompanySecretary, GetAISettings, SwitchOffAI, GetAIInventory, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
+	ListBudgets, CreateBudget, GetBudget, ReplaceBudget, CopyBudget, ImportBudget, RequestBudgetApproval, GetBudgetVsActual, GetPlanningSummary, GetCashProjection, WhatIfCashProjection, GetAuditVerification, ListAuditEvents, GetAuditEvent, RequestAuditTrailExport, ListAuditRecoveries, AcknowledgeAuditRecovery, ListAuditPurges, ListControls, GetControl, ListComplianceReviews, ListConsentPurposes, CreateConsentPurpose, ListConsents, RecordConsent, GetDataInventory, CreateDataInventoryEntry, ReviseDataInventoryEntry, ReviewDataInventory, ListDPIAs, GetDPIA, CreateDPIA, SaveDPIA, ApproveDPIA, ListPDRequests, CreatePDRequest, StepPDRequest, GetPersonalDataReport, ListMyPDRequests, AskAboutMyPersonalData, ListBreaches, RecordBreach, StepBreach, ListBreachExercises, RecordBreachExercise, GetTransfers, CreateTransfer, ReviseTransfer, ListShreddingRuns, ApproveShreddingRun, ListAnonymisations, AnonymiseContact, ListIncidents, OpenIncident, StepIncident, ListRestoreDrills, RecordRestoreDrill, ListMigrations, StartMigration, GetMigration, UploadMigrationWorkbook, GetMigrationReport, GetMigrationMapping, ChangeMigrationMapping, SignMigrationMapping, RequestMigrationCommit, RunMigrationCommit, GetMigrationCommit, GetMigrationReconciliation, DecideMigrationDifference, SignMigrationReconciliation, UploadMigrationParallelWorkbook, GetMigrationParallelReport, GetMigrationParallel, DecideMigrationParallelDifference, SignMigrationParallel, UploadMigrationArchivePDF, GetMigrationArchive, ArchiveMigration, GetContactsTemplate, ImportContacts, GetItemsTemplate, ImportItems, GetAccountsTemplate, ImportAccounts, GetJournalsTemplate, ImportJournals, GetInvoicesTemplate, ImportInvoices, GetBillsTemplate, ImportBills, GetFxRatesTemplate, ImportFxRates, GetBankRulesTemplate, ImportBankRules, GetOpeningBalancesTemplate, ImportOpeningBalances, GetBudgetsTemplate, ImportBudgets, RequestTenantExport, ListTenantExports, CreateTenantExportDownload, GetTenantExportDownload, ListAIConnections, GetAIConnection, CreateAIConnection, ChangeAIConnection, SetAIConnectionCredential, EnableAIConnection, DisableAIConnection, GetAIDataPolicy, ChangeAIDataPolicy, GetAIConnectionModels, RefreshAIConnectionModels, ProbeAIConnectionModel, AllowAIConnectionModel, RemoveAIConnectionModel, ListAIPriceCatalogues, ReviewAIPrice, PriceAIConnectionModel, WithdrawAIPrice, GetAIRoutes, GetAIRoute, SetAIRoute, GetAIPresets, GetAIBudgets, SetAIBudget, GetAIUsage, QualifyAIConnectionModel, ListAIActivity, CreateAIConversation, ListAIConversations, GetAIConversation, DeleteAIConversation, AskAIConversation, ListAITurnActivity, GiveAIFeedback, ListAIFeedback, ReviewAIFeedback, ListAIProposals, GetAIProposal, ListAITaskTypes, ListComplianceTasks, GetComplianceTask, CompleteComplianceTask, DismissComplianceTask, GetCompanySecretary, ListAgentRuns, GetAgentRun, RunCompanySecretary, GetAISettings, SwitchOffAI, GetAIInventory, ListHeartbeatDrills, RecordHeartbeatDrill, ListRisks, CreateRisk, ReviseRisk, ReviewRisk, ListKBNotes, CreateKBNote, ReviseKBNote, EditKBPage, RollbackKBPage, PublishKBPages, RequestKBPublication, ListKBPages, ListKBPageVersions, ListKBSnapshots, ListKBFindings, ResolveKBFinding, ListPolicies, GetPolicy, SavePolicyDraft, PublishPolicyVersion, AcknowledgePolicyVersion, ListFeasibilityStudies, CreateFeasibilityStudy, GetFeasibilityStudy, ReplaceFeasibilityStudy,
 	GetFeasibilityResults, GetCorporateProfile, CreateCorporateDetail, GetCorporateDetail, ReplaceCorporateDetail, RequestCorporateDetailApproval,
 	AddCorporateDetailEvidence, ListCorporateDetailEvidence, GetCorporateDetailEvidence, RemoveCorporateDetailEvidence, CreateCorporateOfficer,
 	GetCorporateOfficer, ReplaceCorporateOfficer, RequestCorporateOfficerApproval, AddCorporateOfficerEvidence, ListCorporateOfficerEvidence,

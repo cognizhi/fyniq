@@ -70,7 +70,7 @@ fyniq_api       SELECT    ai_route
 fyniq_api       INSERT    ai_route_step (cache, connection_id, effort, model, position, route_id)
 fyniq_api       SELECT    ai_route_step
 fyniq_api       EXECUTE   ai_settle()
-fyniq_api       INSERT    ai_tool_call (code, duration_ms, facts, input, n, omitted, outcome, output_sha256, tool, turn_id, version, withheld)
+fyniq_api       INSERT    ai_tool_call (code, duration_ms, facts, input, kb_pages, n, omitted, outcome, output_sha256, tool, turn_id, version, withheld)
 fyniq_api       SELECT    ai_tool_call
 fyniq_api       INSERT    ai_turn (asked_at, context, conversation_id, question, user_id)
 fyniq_api       SELECT    ai_turn
@@ -315,12 +315,26 @@ fyniq_api       INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_api       SELECT    journal_entry
 fyniq_api       INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_api       SELECT    journal_line
+fyniq_api       INSERT    kb_lint_finding (created_at, detail, kind, page_key, page_version)
+fyniq_api       SELECT    kb_lint_finding
+fyniq_api       UPDATE    kb_lint_finding (resolution, resolved_at, resolved_by, status)
+fyniq_api       SELECT    kb_live_page
+fyniq_api       INSERT    kb_note (body, created_at, created_by, data_class, key, kind, title, updated_at, updated_by)
+fyniq_api       SELECT    kb_note
+fyniq_api       UPDATE    kb_note (body, data_class, kind, title, updated_at, updated_by, version)
+fyniq_api       EXECUTE   kb_org_search()
+fyniq_api       INSERT    kb_page_version (aliases, author_kind, author_user, base_digest, base_key, body, compiler, created_at, data_class, human_edited, key, number, origin, prompt_version, restores, search, sources, summary, taint, title, type)
+fyniq_api       SELECT    kb_page_version
 fyniq_api       EXECUTE   kb_platform_index()
 fyniq_api       EXECUTE   kb_platform_info()
 fyniq_api       EXECUTE   kb_platform_page_get()
 fyniq_api       EXECUTE   kb_platform_page_guides()
 fyniq_api       EXECUTE   kb_platform_readable()
 fyniq_api       EXECUTE   kb_platform_search()
+fyniq_api       INSERT    kb_snapshot (approval_id, created_at, created_by, number, reason)
+fyniq_api       SELECT    kb_snapshot
+fyniq_api       INSERT    kb_snapshot_page (key, snapshot_number, version)
+fyniq_api       SELECT    kb_snapshot_page
 fyniq_api       INSERT    kpi_input (entered_at, entered_by, headcount, lost_customers, month, new_customers, paying_customers)
 fyniq_api       SELECT    kpi_input
 fyniq_api       UPDATE    kpi_input (entered_at, entered_by, headcount, lost_customers, new_customers, paying_customers, version)
@@ -464,6 +478,17 @@ fyniq_api       UPDATE    project_milestone (accepted_on, changed_at, version)
 fyniq_api       INSERT    project_task (billable, name, project_id)
 fyniq_api       SELECT    project_task
 fyniq_api       UPDATE    project_task (billable, changed_at, is_active, name, version)
+fyniq_api       INSERT    psp_account (connector_id, created_at, created_by, dispute_loss_account_id, disputes_account_id, fee_account_id, money_account_id, payout_account_id)
+fyniq_api       SELECT    psp_account
+fyniq_api       UPDATE    psp_account (dispute_loss_account_id, disputes_account_id, fee_account_id, payout_account_id, version)
+fyniq_api       SELECT    psp_balance
+fyniq_api       INSERT    psp_dispute_loss (accepted_overstated_revenue, amount, connector_id, created_at, created_by, currency, dispute_id, document_id, reason)
+fyniq_api       SELECT    psp_dispute_loss
+fyniq_api       INSERT    psp_event (api_version, connector_id, event_id, event_type, id, object_id, object_kind, parser_version, payload, payload_sha256, provider, received_at)
+fyniq_api       SELECT    psp_event
+fyniq_api       UPDATE    psp_event (last_error, parked_reason, processed_at, status)
+fyniq_api       SELECT    psp_payout
+fyniq_api       SELECT    psp_txn
 fyniq_api       EXECUTE   publish_installation_announcement()
 fyniq_api       INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
 fyniq_api       SELECT    quote_outcome
@@ -818,6 +843,12 @@ fyniq_readonly  SELECT    job_slots
 fyniq_readonly  SELECT    join_request
 fyniq_readonly  SELECT    journal_entry
 fyniq_readonly  SELECT    journal_line
+fyniq_readonly  SELECT    kb_lint_finding
+fyniq_readonly  SELECT    kb_live_page
+fyniq_readonly  SELECT    kb_note
+fyniq_readonly  SELECT    kb_page_version
+fyniq_readonly  SELECT    kb_snapshot
+fyniq_readonly  SELECT    kb_snapshot_page
 fyniq_readonly  SELECT    kpi_input
 fyniq_readonly  SELECT    ledger_boundary
 fyniq_readonly  SELECT    ledger_purged_entry
@@ -874,6 +905,12 @@ fyniq_readonly  SELECT    project_billed_item
 fyniq_readonly  SELECT    project_member
 fyniq_readonly  SELECT    project_milestone
 fyniq_readonly  SELECT    project_task
+fyniq_readonly  SELECT    psp_account
+fyniq_readonly  SELECT    psp_balance
+fyniq_readonly  SELECT    psp_dispute_loss
+fyniq_readonly  SELECT    psp_event
+fyniq_readonly  SELECT    psp_payout
+fyniq_readonly  SELECT    psp_txn
 fyniq_readonly  SELECT    quote_outcome
 fyniq_readonly  SELECT    rate_limit_window
 fyniq_readonly  SELECT    recurring_bill
@@ -1108,6 +1145,12 @@ fyniq_worker    INSERT    journal_entry (memo, posting_date, posting_identity, r
 fyniq_worker    SELECT    journal_entry
 fyniq_worker    INSERT    journal_line (account_id, amount, base_amount, currency, description, dimension_set_id, entry_id, fx_rate, fx_rate_source, instrument_id, line_no, party_id)
 fyniq_worker    SELECT    journal_line
+fyniq_worker    SELECT    kb_lint_finding
+fyniq_worker    SELECT    kb_live_page
+fyniq_worker    SELECT    kb_note
+fyniq_worker    SELECT    kb_page_version
+fyniq_worker    SELECT    kb_snapshot
+fyniq_worker    SELECT    kb_snapshot_page
 fyniq_worker    SELECT    kpi_input
 fyniq_worker    INSERT    ledger_boundary (anchor_key, approval, boundary, counts, purged_hash, written_at)
 fyniq_worker    SELECT    ledger_boundary
@@ -1190,6 +1233,19 @@ fyniq_worker    SELECT    project_billed_item
 fyniq_worker    SELECT    project_member
 fyniq_worker    SELECT    project_milestone
 fyniq_worker    SELECT    project_task
+fyniq_worker    SELECT    psp_account
+fyniq_worker    UPDATE    psp_account (sweep_error, swept_at, swept_through)
+fyniq_worker    INSERT    psp_balance (amount, connector_id, currency, taken_at)
+fyniq_worker    SELECT    psp_balance
+fyniq_worker    SELECT    psp_dispute_loss
+fyniq_worker    SELECT    psp_event
+fyniq_worker    UPDATE    psp_event (last_error, parked_reason, processed_at, status)
+fyniq_worker    INSERT    psp_payout (amount, arrival_date, automatic, connector_id, currency, payout_id, provider_at, seen_at, status)
+fyniq_worker    SELECT    psp_payout
+fyniq_worker    UPDATE    psp_payout (arrival_date, automatic, status)
+fyniq_worker    INSERT    psp_txn (available_on, category, connector_id, currency, fee, gross, net, payout_id, provider_at, seen_at, source_id, source_kind, txn_id, type)
+fyniq_worker    SELECT    psp_txn
+fyniq_worker    UPDATE    psp_txn (payout_id)
 fyniq_worker    EXECUTE   purge_ip_rate_windows()
 fyniq_worker    INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
 fyniq_worker    SELECT    quote_outcome

@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "book_balance": {
+      "$ref": "Money.schema.json",
+      "description": "What the books hold in the clearing account."
+    },
+    "connector_id": {
+      "description": "The organisation connector that feeds it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "currency": {
+      "description": "Its currency, the provider balance's.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "dispute_loss_account_id": {
+      "description": "The expense account a lost dispute is written off to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b14"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "dispute_loss_account_name": {
+      "description": "Its code and name.",
+      "examples": [
+        "5045 Dispute losses"
+      ],
+      "type": "string"
+    },
+    "disputes_account_id": {
+      "description": "The chart account a disputed amount waits in; none: a dispute waits for a person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b13"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "disputes_account_name": {
+      "description": "Its code and name.",
+      "examples": [
+        "1055 Payment disputes clearing"
+      ],
+      "type": "string"
+    },
+    "fee_account_id": {
+      "description": "The chart account fees expense to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b12"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "fee_account_name": {
+      "description": "Its code and name.",
+      "examples": [
+        "5040 Payment processing fees"
+      ],
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The provider's clearing money account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "money_account_name": {
+      "description": "Its name.",
+      "examples": [
+        "Stripe SGD"
+      ],
+      "type": "string"
+    },
+    "payout_account_id": {
+      "description": "The money account payouts land in; none: a payout waits for a person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "payout_account_name": {
+      "description": "Its name.",
+      "examples": [
+        "DBS Operating"
+      ],
+      "type": "string"
+    },
+    "provider": {
+      "description": "The connector's manifest ID.",
+      "examples": [
+        "stripe"
+      ],
+      "type": "string"
+    },
+    "provider_balance": {
+      "$ref": "Money.schema.json",
+      "description": "What the provider said it holds for the organisation and has not paid out, at the last sweep."
+    },
+    "sweep_error": {
+      "description": "Why the last sweep could not close a gap (C.2 #43).",
+      "examples": [
+        "the provider answered 503"
+      ],
+      "type": "string"
+    },
+    "swept_through": {
+      "description": "The day the daily sweep has made the account complete to (FR-PSP-01).",
+      "examples": [
+        "2026-11-18"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "version": {
+      "description": "Its version, for If-Match.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "money_account_id",
+    "money_account_name",
+    "currency",
+    "connector_id",
+    "provider",
+    "fee_account_id",
+    "fee_account_name",
+    "version"
+  ],
+  "title": "PaymentProviderAccount",
+  "type": "object"
+}

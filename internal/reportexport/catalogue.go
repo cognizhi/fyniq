@@ -20,7 +20,7 @@ var Exported = []string{
 	"document_template_default", "document_template_version", "document_version", "dpia_approval", "dpia_version",
 	"email_event", "email_message", "email_sender", "email_suppression", "equity_step", "evidence",
 	"fixed_asset_source", "fx_rate", "gst_registration", "holding_movement", "inbound_file", "inbound_message", "item",
-	"item_price", "join_request", "journal_entry", "journal_line", "kpi_input", "ledger_boundary",
+	"item_price", "join_request", "journal_entry", "journal_line", "kb_lint_finding", "kb_note", "kb_page_version", "kb_snapshot", "kb_snapshot_page", "kpi_input", "ledger_boundary",
 	"ledger_purged_entry", "ledger_revision", "mcp_call", "mcp_seen", "mcp_user_optin", "member_invitation", "migration_archive", "migration_commit",
 	"migration_difference", "migration_file", "migration_mapping", "migration_record", "migration_run",
 	"migration_signoff", "migration_step", "money_account", "money_account_source", "notification",
@@ -34,6 +34,7 @@ var Exported = []string{
 	"review_log_entry", "review_log_review", "risk", "risk_review", "risk_version", "role_assignment", "sales_reminder",
 	"security_incident", "security_incident_step", "share_issue", "sod_override", "statement_mapping",
 	"statutory_pack_activation", "team_mode", "tick_drill", "user_help_state", "user_membership", "withholding_decision",
+	"psp_account", "psp_balance", "psp_dispute_loss", "psp_event", "psp_payout", "psp_txn",
 }
 
 // Excluded are the tables the export leaves out, with why: no secret, key, token, idempotency key or job in flight
@@ -57,4 +58,5 @@ var Dropped = map[string]map[string]string{
 	"payee_bank_account": {"number_sealed": "sealed: exported in clear as the column number",
 		"number_fingerprint": "a keyed hash, under the platform's key, of the number exported in clear"},
 	"payment_batch_release": {"file_sealed": "sealed: the file exported in clear under files/payment-batch-releases/"},
+	"psp_event":             {"payload": "sealed: a payment provider's raw webhook payload, which holds customers' names and emails; the export keeps its SHA-256 [counsel to confirm]"},
 }

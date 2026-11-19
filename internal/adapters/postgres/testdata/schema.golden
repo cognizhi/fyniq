@@ -419,6 +419,7 @@ ai_tool_call | facts | integer | not null | 0
 ai_tool_call | omitted | integer | not null | 0
 ai_tool_call | withheld | boolean | not null | false
 ai_tool_call | duration_ms | integer | not null | 0
+ai_tool_call | kb_pages | jsonb | not null | '[]'::jsonb
 ai_turn | organisation_id | uuid | not null | current_org()
 ai_turn | id | uuid | not null | uuidv7()
 ai_turn | conversation_id | uuid | not null | 
@@ -1503,6 +1504,70 @@ journal_line | recorded_at | timestamp with time zone | not null | now()
 journal_line | party_id | uuid | null | 
 journal_line | dimension_set_id | uuid | null | 
 journal_line | instrument_id | uuid | null | 
+kb_lint_finding | organisation_id | uuid | not null | current_org()
+kb_lint_finding | id | uuid | not null | uuidv7()
+kb_lint_finding | kind | text | not null | 
+kb_lint_finding | page_key | text | null | 
+kb_lint_finding | page_version | integer | null | 
+kb_lint_finding | detail | text | not null | 
+kb_lint_finding | status | text | not null | 'open'::text
+kb_lint_finding | created_at | timestamp with time zone | not null | 
+kb_lint_finding | resolved_by | uuid | null | 
+kb_lint_finding | resolved_at | timestamp with time zone | null | 
+kb_lint_finding | resolution | text | not null | ''::text
+kb_live_page | organisation_id | uuid | null | 
+kb_live_page | key | text | null | 
+kb_live_page | number | integer | null | 
+kb_live_page | type | text | null | 
+kb_live_page | title | text | null | 
+kb_live_page | summary | text | null | 
+kb_live_page | aliases | text[] | null | 
+kb_live_page | body | text | null | 
+kb_live_page | sources | jsonb | null | 
+kb_live_page | data_class | text | null | 
+kb_live_page | taint | text | null | 
+kb_live_page | origin | text | null | 
+kb_live_page | human_edited | boolean | null | 
+kb_live_page | base_key | text | null | 
+kb_live_page | base_digest | text | null | 
+kb_live_page | created_at | timestamp with time zone | null | 
+kb_live_page | search | tsvector | null | 
+kb_live_page | snapshot_number | integer | null | 
+kb_note | organisation_id | uuid | not null | current_org()
+kb_note | id | uuid | not null | uuidv7()
+kb_note | key | text | not null | 
+kb_note | kind | text | not null | 
+kb_note | title | text | not null | 
+kb_note | body | text | not null | 
+kb_note | data_class | text | not null | 'general'::text
+kb_note | version | integer | not null | 1
+kb_note | created_by | uuid | not null | 
+kb_note | created_at | timestamp with time zone | not null | 
+kb_note | updated_by | uuid | not null | 
+kb_note | updated_at | timestamp with time zone | not null | 
+kb_page_version | organisation_id | uuid | not null | current_org()
+kb_page_version | id | uuid | not null | uuidv7()
+kb_page_version | key | text | not null | 
+kb_page_version | number | integer | not null | 
+kb_page_version | type | text | not null | 
+kb_page_version | title | text | not null | 
+kb_page_version | summary | text | not null | 
+kb_page_version | aliases | text[] | not null | '{}'::text[]
+kb_page_version | body | text | not null | 
+kb_page_version | sources | jsonb | not null | '[]'::jsonb
+kb_page_version | data_class | text | not null | 'general'::text
+kb_page_version | taint | text | not null | 'trusted'::text
+kb_page_version | origin | text | not null | 
+kb_page_version | human_edited | boolean | not null | false
+kb_page_version | base_key | text | null | 
+kb_page_version | base_digest | text | null | 
+kb_page_version | restores | integer | null | 
+kb_page_version | compiler | text | not null | ''::text
+kb_page_version | prompt_version | text | not null | ''::text
+kb_page_version | author_kind | text | not null | 
+kb_page_version | author_user | uuid | null | 
+kb_page_version | created_at | timestamp with time zone | not null | 
+kb_page_version | search | tsvector | not null | 
 kb_platform_page | key | text | not null | 
 kb_platform_page | type | text | not null | 
 kb_platform_page | title | text | not null | 
@@ -1534,6 +1599,18 @@ kb_platform_source | roles | text[] | not null |
 kb_platform_source | status | text | not null | 
 kb_platform_source | body | text | not null | 
 kb_platform_source | search | tsvector | not null | 
+kb_snapshot | organisation_id | uuid | not null | current_org()
+kb_snapshot | id | uuid | not null | uuidv7()
+kb_snapshot | number | integer | not null | 
+kb_snapshot | approval_id | uuid | null | 
+kb_snapshot | created_by | uuid | null | 
+kb_snapshot | reason | text | not null | ''::text
+kb_snapshot | created_at | timestamp with time zone | not null | 
+kb_snapshot_page | organisation_id | uuid | not null | current_org()
+kb_snapshot_page | id | uuid | not null | uuidv7()
+kb_snapshot_page | snapshot_number | integer | not null | 
+kb_snapshot_page | key | text | not null | 
+kb_snapshot_page | version | integer | not null | 
 kpi_input | organisation_id | uuid | not null | current_org()
 kpi_input | id | uuid | not null | uuidv7()
 kpi_input | month | date | not null | 
@@ -2140,6 +2217,81 @@ project_task | is_active | boolean | not null | true
 project_task | version | integer | not null | 1
 project_task | created_at | timestamp with time zone | not null | now()
 project_task | changed_at | timestamp with time zone | not null | now()
+psp_account | organisation_id | uuid | not null | current_org()
+psp_account | id | uuid | not null | uuidv7()
+psp_account | money_account_id | uuid | not null | 
+psp_account | connector_id | uuid | not null | 
+psp_account | payout_account_id | uuid | null | 
+psp_account | fee_account_id | uuid | not null | 
+psp_account | disputes_account_id | uuid | null | 
+psp_account | swept_through | date | null | 
+psp_account | swept_at | timestamp with time zone | null | 
+psp_account | sweep_error | text | null | 
+psp_account | created_by | text | not null | 
+psp_account | created_at | timestamp with time zone | not null | 
+psp_account | version | integer | not null | 1
+psp_account | dispute_loss_account_id | uuid | null | 
+psp_balance | organisation_id | uuid | not null | current_org()
+psp_balance | id | uuid | not null | uuidv7()
+psp_balance | connector_id | uuid | not null | 
+psp_balance | currency | text | not null | 
+psp_balance | amount | numeric(20,4) | not null | 
+psp_balance | taken_at | timestamp with time zone | not null | 
+psp_dispute_loss | organisation_id | uuid | not null | current_org()
+psp_dispute_loss | id | uuid | not null | uuidv7()
+psp_dispute_loss | connector_id | uuid | not null | 
+psp_dispute_loss | dispute_id | text | not null | 
+psp_dispute_loss | document_id | uuid | not null | 
+psp_dispute_loss | currency | text | not null | 
+psp_dispute_loss | amount | numeric(20,4) | not null | 
+psp_dispute_loss | accepted_overstated_revenue | boolean | not null | false
+psp_dispute_loss | reason | text | null | 
+psp_dispute_loss | created_by | text | not null | 
+psp_dispute_loss | created_at | timestamp with time zone | not null | 
+psp_event | organisation_id | uuid | not null | current_org()
+psp_event | id | uuid | not null | uuidv7()
+psp_event | connector_id | uuid | not null | 
+psp_event | provider | text | not null | 
+psp_event | event_id | text | not null | 
+psp_event | event_type | text | not null | 
+psp_event | api_version | text | null | 
+psp_event | parser_version | text | not null | 
+psp_event | object_kind | text | null | 
+psp_event | object_id | text | null | 
+psp_event | payload | bytea | not null | 
+psp_event | payload_sha256 | text | not null | 
+psp_event | received_at | timestamp with time zone | not null | 
+psp_event | status | text | not null | 'received'::text
+psp_event | parked_reason | text | null | 
+psp_event | processed_at | timestamp with time zone | null | 
+psp_event | last_error | text | null | 
+psp_payout | organisation_id | uuid | not null | current_org()
+psp_payout | id | uuid | not null | uuidv7()
+psp_payout | connector_id | uuid | not null | 
+psp_payout | payout_id | text | not null | 
+psp_payout | currency | text | not null | 
+psp_payout | amount | numeric(20,4) | not null | 
+psp_payout | status | text | not null | 
+psp_payout | arrival_date | date | null | 
+psp_payout | automatic | boolean | not null | true
+psp_payout | provider_at | timestamp with time zone | not null | 
+psp_payout | seen_at | timestamp with time zone | not null | 
+psp_txn | organisation_id | uuid | not null | current_org()
+psp_txn | id | uuid | not null | uuidv7()
+psp_txn | connector_id | uuid | not null | 
+psp_txn | txn_id | text | not null | 
+psp_txn | type | text | not null | 
+psp_txn | category | text | not null | 
+psp_txn | source_kind | text | null | 
+psp_txn | source_id | text | null | 
+psp_txn | currency | text | not null | 
+psp_txn | gross | numeric(20,4) | not null | 
+psp_txn | fee | numeric(20,4) | not null | 
+psp_txn | net | numeric(20,4) | not null | 
+psp_txn | available_on | date | null | 
+psp_txn | payout_id | text | null | 
+psp_txn | provider_at | timestamp with time zone | not null | 
+psp_txn | seen_at | timestamp with time zone | not null | 
 quote_outcome | organisation_id | uuid | not null | current_org()
 quote_outcome | id | uuid | not null | uuidv7()
 quote_outcome | document_id | uuid | not null | 
@@ -3173,6 +3325,8 @@ ai_tool_call | ai_tool_call_facts_not_null | NOT NULL facts
 ai_tool_call | ai_tool_call_id_not_null | NOT NULL id
 ai_tool_call | ai_tool_call_input_not_null | NOT NULL input
 ai_tool_call | ai_tool_call_input_size | CHECK ((pg_column_size(input) <= 16384))
+ai_tool_call | ai_tool_call_kb_pages | CHECK (((jsonb_typeof(kb_pages) = 'array'::text) AND (jsonb_array_length(kb_pages) <= 20) AND (pg_column_size(kb_pages) <= 4096)))
+ai_tool_call | ai_tool_call_kb_pages_not_null | NOT NULL kb_pages
 ai_tool_call | ai_tool_call_n | CHECK (((n >= 1) AND (n <= 100)))
 ai_tool_call | ai_tool_call_n_not_null | NOT NULL n
 ai_tool_call | ai_tool_call_omitted_not_null | NOT NULL omitted
@@ -3334,7 +3488,7 @@ approval_policy | approval_policy_created_at_not_null | NOT NULL created_at
 approval_policy | approval_policy_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
 approval_policy | approval_policy_created_by_not_null | NOT NULL created_by
 approval_policy | approval_policy_id_not_null | NOT NULL id
-approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text, 'bank_rule'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'asset_disposal'::text, 'fixed_asset'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'contact_member_link'::text, 'director_fee'::text, 'director_settlement'::text, 'director_repayment'::text, 'account'::text, 'bank_reconciliation'::text, 'holder_record'::text, 'share_class'::text, 'equity_transaction'::text, 'instrument'::text, 'instrument_template'::text, 'option_pool'::text, 'option_grant'::text, 'option_event'::text, 'round_scenario'::text, 'investor_right'::text, 'controller_entry'::text, 'budget'::text, 'migration_commit'::text, 'tenant_export'::text, 'ai_connection'::text, 'ai_data_policy'::text, 'ai_route'::text, 'ai_proposal'::text, 'corporate_detail'::text, 'corporate_officer'::text, 'nominee_entry'::text, 'statements_approval'::text, 'corporate_document'::text, 'api_client'::text])))
+approval_policy | approval_policy_object_known | CHECK ((object_type = ANY (ARRAY['organisation_setting'::text, 'membership'::text, 'member_invitation'::text, 'statutory_pack'::text, 'team_mode'::text, 'period'::text, 'journal'::text, 'opening_balance'::text, 'bill'::text, 'bill_payment'::text, 'credit_application'::text, 'supplier_refund'::text, 'purchase_order'::text, 'document_template'::text, 'invoice'::text, 'customer_receipt'::text, 'write_off'::text, 'customer_credit_application'::text, 'customer_refund'::text, 'customer_deposit'::text, 'recurring_invoice'::text, 'connector'::text, 'bank_rule'::text, 'expense_claim'::text, 'claim_reimbursement'::text, 'cash_advance'::text, 'asset_disposal'::text, 'fixed_asset'::text, 'payee_bank_change'::text, 'claimant_bank_change'::text, 'payment_batch'::text, 'contact_member_link'::text, 'director_fee'::text, 'director_settlement'::text, 'director_repayment'::text, 'account'::text, 'bank_reconciliation'::text, 'holder_record'::text, 'share_class'::text, 'equity_transaction'::text, 'instrument'::text, 'instrument_template'::text, 'option_pool'::text, 'option_grant'::text, 'option_event'::text, 'round_scenario'::text, 'investor_right'::text, 'controller_entry'::text, 'budget'::text, 'migration_commit'::text, 'tenant_export'::text, 'ai_connection'::text, 'ai_data_policy'::text, 'ai_route'::text, 'ai_proposal'::text, 'corporate_detail'::text, 'corporate_officer'::text, 'nominee_entry'::text, 'statements_approval'::text, 'corporate_document'::text, 'api_client'::text, 'kb_publication'::text])))
 approval_policy | approval_policy_object_type_not_null | NOT NULL object_type
 approval_policy | approval_policy_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
 approval_policy | approval_policy_organisation_id_not_null | NOT NULL organisation_id
@@ -3364,7 +3518,7 @@ approval_request | approval_request_key_length | CHECK (((length(object_key) >= 
 approval_request | approval_request_mfa_fresh | CHECK (((requester_mfa_at <= requested_at) AND ((requested_at - requester_mfa_at) <= '00:05:00'::interval)))
 approval_request | approval_request_mfa_known | CHECK (((requester_mfa_method = ANY (ARRAY['session_step_up'::text, 'passkey'::text, 'totp'::text])) OR ((object_type = 'ai_proposal'::text) AND (requester_mfa_method = ANY (ARRAY['ai_turn'::text, 'ai_run'::text, 'mcp_token'::text])))))
 approval_request | approval_request_object_key_not_null | NOT NULL object_key
-approval_request | approval_request_object_known | CHECK ((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'membership'::text) AND (operation = 'member.remove'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))) OR ((object_type = 'fixed_asset'::text) AND (operation = 'fixed_asset.void'::text))) OR ((object_type = 'payee_bank_change'::text) AND (operation = 'payee_bank_change.approve'::text))) OR ((object_type = 'claimant_bank_change'::text) AND (operation = 'claimant_bank_change.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.reapprove'::text))) OR ((object_type = 'contact_member_link'::text) AND (operation = 'contact_member_link.change'::text))) OR ((object_type = 'director_fee'::text) AND (operation = 'director_fee.post'::text))) OR ((object_type = 'director_settlement'::text) AND (operation = 'director_settlement.approve'::text))) OR ((object_type = 'director_repayment'::text) AND (operation = 'director_repayment.void'::text))) OR ((object_type = 'account'::text) AND (operation = 'account.merge'::text))) OR ((object_type = 'bank_reconciliation'::text) AND (operation = 'bank_reconciliation.sign'::text))) OR ((object_type = 'holder_record'::text) AND (operation = 'holder_record.record'::text))) OR ((object_type = 'share_class'::text) AND (operation = 'share_class.record'::text))) OR ((object_type = 'equity_transaction'::text) AND (operation = 'equity_transaction.approve'::text))) OR ((object_type = 'instrument'::text) AND (operation = 'instrument.record'::text))) OR ((object_type = 'instrument_template'::text) AND (operation = 'instrument_template.enable'::text))) OR ((object_type = 'option_pool'::text) AND (operation = 'option_pool.record'::text))) OR ((object_type = 'option_grant'::text) AND (operation = 'option_grant.record'::text))) OR ((object_type = 'option_event'::text) AND (operation = 'option_event.record'::text))) OR ((object_type = 'round_scenario'::text) AND (operation = 'round_scenario.approve'::text))) OR ((object_type = 'investor_right'::text) AND (operation = 'investor_right.record'::text))) OR ((object_type = 'controller_entry'::text) AND (operation = 'controller_entry.record'::text))) OR ((object_type = 'budget'::text) AND (operation = 'budget.record'::text))) OR ((object_type = 'migration_commit'::text) AND (operation = 'migration.commit'::text))) OR ((object_type = 'tenant_export'::text) AND (operation = 'tenant_export.prepare'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.create'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.change'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.credential'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.enable'::text))) OR ((object_type = 'ai_data_policy'::text) AND (operation = 'ai_data_policy.change'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.allow_model'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.price'::text))) OR ((object_type = 'ai_route'::text) AND (operation = 'ai_route.change'::text))) OR ((object_type = 'ai_proposal'::text) AND (operation = 'ai_proposal.execute'::text))) OR ((object_type = 'corporate_detail'::text) AND (operation = 'corporate_detail.record'::text))) OR ((object_type = 'corporate_officer'::text) AND (operation = 'corporate_officer.record'::text))) OR ((object_type = 'nominee_entry'::text) AND (operation = 'nominee_entry.record'::text))) OR ((object_type = 'statements_approval'::text) AND (operation = 'statements_approval.record'::text))) OR ((object_type = 'corporate_document'::text) AND (operation = 'corporate_document.record'::text))) OR ((object_type = 'api_client'::text) AND (operation = 'api_client.create'::text))) OR ((object_type = 'api_client'::text) AND (operation = 'api_client.reclass'::text))))
+approval_request | approval_request_object_known | CHECK (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((object_type = 'organisation_setting'::text) AND (operation = 'organisation_setting.change'::text)) OR ((object_type = 'membership'::text) AND (operation = 'role.assign'::text))) OR ((object_type = 'membership'::text) AND (operation = 'role.revoke'::text))) OR ((object_type = 'membership'::text) AND (operation = 'member.remove'::text))) OR ((object_type = 'member_invitation'::text) AND (operation = 'member_invitation.create'::text))) OR ((object_type = 'approval_policy'::text) AND (operation = 'approval_policy.change'::text))) OR ((object_type = 'statutory_pack'::text) AND (operation = 'statutory_pack.activate'::text))) OR ((object_type = 'team_mode'::text) AND (operation = 'team_mode.change'::text))) OR ((object_type = 'period'::text) AND (operation = 'period.reopen'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.post'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.reverse'::text))) OR ((object_type = 'journal'::text) AND (operation = 'journal.edit'::text))) OR ((object_type = 'opening_balance'::text) AND (operation = 'opening_balance.edit'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.post'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.void'::text))) OR ((object_type = 'bill'::text) AND (operation = 'bill.edit'::text))) OR ((object_type = 'bill_payment'::text) AND (operation = 'bill_payment.void'::text))) OR ((object_type = 'credit_application'::text) AND (operation = 'credit_application.void'::text))) OR ((object_type = 'supplier_refund'::text) AND (operation = 'supplier_refund.void'::text))) OR ((object_type = 'purchase_order'::text) AND (operation = 'purchase_order.approve'::text))) OR ((object_type = 'document_template'::text) AND (operation = 'document_template.publish'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.post'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.void'::text))) OR ((object_type = 'invoice'::text) AND (operation = 'invoice.edit'::text))) OR ((object_type = 'customer_receipt'::text) AND (operation = 'customer_receipt.void'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.post'::text))) OR ((object_type = 'write_off'::text) AND (operation = 'write_off.void'::text))) OR ((object_type = 'customer_credit_application'::text) AND (operation = 'customer_credit_application.void'::text))) OR ((object_type = 'customer_refund'::text) AND (operation = 'customer_refund.void'::text))) OR ((object_type = 'customer_deposit'::text) AND (operation = 'customer_deposit.void'::text))) OR ((object_type = 'recurring_invoice'::text) AND (operation = 'recurring_invoice.approve'::text))) OR ((object_type = 'connector'::text) AND (operation = 'connector.change'::text))) OR ((object_type = 'bank_rule'::text) AND (operation = 'bank_rule.auto_apply'::text))) OR ((object_type = 'expense_claim'::text) AND (operation = 'expense_claim.post'::text))) OR ((object_type = 'claim_reimbursement'::text) AND (operation = 'claim_reimbursement.void'::text))) OR ((object_type = 'cash_advance'::text) AND (operation = 'cash_advance.void'::text))) OR ((object_type = 'asset_disposal'::text) AND (operation = 'asset_disposal.void'::text))) OR ((object_type = 'fixed_asset'::text) AND (operation = 'fixed_asset.void'::text))) OR ((object_type = 'payee_bank_change'::text) AND (operation = 'payee_bank_change.approve'::text))) OR ((object_type = 'claimant_bank_change'::text) AND (operation = 'claimant_bank_change.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.approve'::text))) OR ((object_type = 'payment_batch'::text) AND (operation = 'payment_batch.reapprove'::text))) OR ((object_type = 'contact_member_link'::text) AND (operation = 'contact_member_link.change'::text))) OR ((object_type = 'director_fee'::text) AND (operation = 'director_fee.post'::text))) OR ((object_type = 'director_settlement'::text) AND (operation = 'director_settlement.approve'::text))) OR ((object_type = 'director_repayment'::text) AND (operation = 'director_repayment.void'::text))) OR ((object_type = 'account'::text) AND (operation = 'account.merge'::text))) OR ((object_type = 'bank_reconciliation'::text) AND (operation = 'bank_reconciliation.sign'::text))) OR ((object_type = 'holder_record'::text) AND (operation = 'holder_record.record'::text))) OR ((object_type = 'share_class'::text) AND (operation = 'share_class.record'::text))) OR ((object_type = 'equity_transaction'::text) AND (operation = 'equity_transaction.approve'::text))) OR ((object_type = 'instrument'::text) AND (operation = 'instrument.record'::text))) OR ((object_type = 'instrument_template'::text) AND (operation = 'instrument_template.enable'::text))) OR ((object_type = 'option_pool'::text) AND (operation = 'option_pool.record'::text))) OR ((object_type = 'option_grant'::text) AND (operation = 'option_grant.record'::text))) OR ((object_type = 'option_event'::text) AND (operation = 'option_event.record'::text))) OR ((object_type = 'round_scenario'::text) AND (operation = 'round_scenario.approve'::text))) OR ((object_type = 'investor_right'::text) AND (operation = 'investor_right.record'::text))) OR ((object_type = 'controller_entry'::text) AND (operation = 'controller_entry.record'::text))) OR ((object_type = 'budget'::text) AND (operation = 'budget.record'::text))) OR ((object_type = 'migration_commit'::text) AND (operation = 'migration.commit'::text))) OR ((object_type = 'tenant_export'::text) AND (operation = 'tenant_export.prepare'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.create'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.change'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.credential'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.enable'::text))) OR ((object_type = 'ai_data_policy'::text) AND (operation = 'ai_data_policy.change'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.allow_model'::text))) OR ((object_type = 'ai_connection'::text) AND (operation = 'ai_connection.price'::text))) OR ((object_type = 'ai_route'::text) AND (operation = 'ai_route.change'::text))) OR ((object_type = 'ai_proposal'::text) AND (operation = 'ai_proposal.execute'::text))) OR ((object_type = 'corporate_detail'::text) AND (operation = 'corporate_detail.record'::text))) OR ((object_type = 'corporate_officer'::text) AND (operation = 'corporate_officer.record'::text))) OR ((object_type = 'nominee_entry'::text) AND (operation = 'nominee_entry.record'::text))) OR ((object_type = 'statements_approval'::text) AND (operation = 'statements_approval.record'::text))) OR ((object_type = 'corporate_document'::text) AND (operation = 'corporate_document.record'::text))) OR ((object_type = 'api_client'::text) AND (operation = 'api_client.create'::text))) OR ((object_type = 'api_client'::text) AND (operation = 'api_client.reclass'::text))) OR ((object_type = 'kb_publication'::text) AND (operation = 'kb_publication.publish'::text))))
 approval_request | approval_request_object_type_not_null | NOT NULL object_type
 approval_request | approval_request_operation_not_null | NOT NULL operation
 approval_request | approval_request_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
@@ -4939,6 +5093,82 @@ journal_line | journal_line_party_fkey | FOREIGN KEY (organisation_id, party_id)
 journal_line | journal_line_pkey | PRIMARY KEY (organisation_id, id)
 journal_line | journal_line_posting_date_not_null | NOT NULL posting_date
 journal_line | journal_line_recorded_at_not_null | NOT NULL recorded_at
+kb_lint_finding | kb_lint_finding_created_at_not_null | NOT NULL created_at
+kb_lint_finding | kb_lint_finding_detail_not_null | NOT NULL detail
+kb_lint_finding | kb_lint_finding_id_not_null | NOT NULL id
+kb_lint_finding | kb_lint_finding_kind | CHECK ((kind = ANY (ARRAY['stale'::text, 'contradiction'::text, 'number_not_in_source'::text, 'source_without_page'::text, 'orphan'::text, 'human_edit_conflict'::text, 'superseded'::text, 'missing_cross_reference'::text, 'citation'::text, 'front_matter'::text])))
+kb_lint_finding | kb_lint_finding_kind_not_null | NOT NULL kind
+kb_lint_finding | kb_lint_finding_organisation_id_not_null | NOT NULL organisation_id
+kb_lint_finding | kb_lint_finding_pkey | PRIMARY KEY (organisation_id, id)
+kb_lint_finding | kb_lint_finding_resolution_not_null | NOT NULL resolution
+kb_lint_finding | kb_lint_finding_resolver_fkey | FOREIGN KEY (resolved_by) REFERENCES app_user(user_id)
+kb_lint_finding | kb_lint_finding_state | CHECK (((status = ANY (ARRAY['open'::text, 'resolved'::text])) AND ((status = 'resolved'::text) = (resolved_at IS NOT NULL)) AND ((status = 'resolved'::text) = (resolved_by IS NOT NULL))))
+kb_lint_finding | kb_lint_finding_status_not_null | NOT NULL status
+kb_lint_finding | kb_lint_finding_text | CHECK ((((length(btrim(detail)) >= 1) AND (length(btrim(detail)) <= 1000)) AND (length(resolution) <= 1000)))
+kb_lint_finding | kb_lint_finding_version | CHECK (((page_version IS NULL) OR ((page_key IS NOT NULL) AND (page_version >= 1))))
+kb_lint_finding | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+kb_note | kb_note_body_not_null | NOT NULL body
+kb_note | kb_note_class | CHECK ((data_class = ANY (ARRAY['general'::text, 'personal'::text, 'payroll'::text, 'equity'::text, 'identity'::text])))
+kb_note | kb_note_created_at_not_null | NOT NULL created_at
+kb_note | kb_note_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+kb_note | kb_note_created_by_not_null | NOT NULL created_by
+kb_note | kb_note_data_class_not_null | NOT NULL data_class
+kb_note | kb_note_id_not_null | NOT NULL id
+kb_note | kb_note_key | UNIQUE (organisation_id, key)
+kb_note | kb_note_key_format | CHECK ((key ~ '^[a-z0-9][a-z0-9.-]{0,99}$'::text))
+kb_note | kb_note_key_not_null | NOT NULL key
+kb_note | kb_note_kind | CHECK ((kind = ANY (ARRAY['note'::text, 'policy'::text, 'decision'::text])))
+kb_note | kb_note_kind_not_null | NOT NULL kind
+kb_note | kb_note_organisation_id_not_null | NOT NULL organisation_id
+kb_note | kb_note_pkey | PRIMARY KEY (organisation_id, id)
+kb_note | kb_note_text | CHECK ((((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)) AND ((length(body) >= 1) AND (length(body) <= 20000))))
+kb_note | kb_note_title_not_null | NOT NULL title
+kb_note | kb_note_updated | CHECK ((updated_at >= created_at))
+kb_note | kb_note_updated_at_not_null | NOT NULL updated_at
+kb_note | kb_note_updated_by_fkey | FOREIGN KEY (updated_by) REFERENCES app_user(user_id)
+kb_note | kb_note_updated_by_not_null | NOT NULL updated_by
+kb_note | kb_note_version | CHECK ((version >= 1))
+kb_note | kb_note_version_not_null | NOT NULL version
+kb_note | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+kb_page_version | kb_page_version_alias_count | CHECK ((cardinality(aliases) <= 30))
+kb_page_version | kb_page_version_aliases_not_null | NOT NULL aliases
+kb_page_version | kb_page_version_author | CHECK (((author_kind = ANY (ARRAY['person'::text, 'compiler'::text, 'system'::text])) AND ((author_kind = 'person'::text) = (author_user IS NOT NULL))))
+kb_page_version | kb_page_version_author_fkey | FOREIGN KEY (author_user) REFERENCES app_user(user_id)
+kb_page_version | kb_page_version_author_kind_not_null | NOT NULL author_kind
+kb_page_version | kb_page_version_body_not_null | NOT NULL body
+kb_page_version | kb_page_version_class | CHECK ((data_class = ANY (ARRAY['general'::text, 'personal'::text, 'payroll'::text, 'equity'::text, 'identity'::text])))
+kb_page_version | kb_page_version_compiler_not_null | NOT NULL compiler
+kb_page_version | kb_page_version_created_at_not_null | NOT NULL created_at
+kb_page_version | kb_page_version_data_class_not_null | NOT NULL data_class
+kb_page_version | kb_page_version_human | CHECK ((human_edited = (origin = ANY (ARRAY['human_edited'::text, 'overlay'::text, 'rollback'::text]))))
+kb_page_version | kb_page_version_human_edited_not_null | NOT NULL human_edited
+kb_page_version | kb_page_version_id_not_null | NOT NULL id
+kb_page_version | kb_page_version_key_format | CHECK ((key ~ '^[a-z0-9][a-z0-9.-]{0,99}$'::text))
+kb_page_version | kb_page_version_key_not_null | NOT NULL key
+kb_page_version | kb_page_version_number | UNIQUE (organisation_id, key, number)
+kb_page_version | kb_page_version_number_not_null | NOT NULL number
+kb_page_version | kb_page_version_number_positive | CHECK ((number >= 1))
+kb_page_version | kb_page_version_org_key | CHECK (((origin = ANY (ARRAY['overlay'::text, 'rollback'::text])) OR (key ~~ 'org.%'::text)))
+kb_page_version | kb_page_version_organisation_id_not_null | NOT NULL organisation_id
+kb_page_version | kb_page_version_origin | CHECK ((origin = ANY (ARRAY['rendered'::text, 'compiled'::text, 'human_edited'::text, 'overlay'::text, 'rollback'::text])))
+kb_page_version | kb_page_version_origin_author | CHECK ((((origin = 'compiled'::text) AND (author_kind = 'compiler'::text)) OR ((origin = 'rendered'::text) AND (author_kind = 'system'::text)) OR ((origin = ANY (ARRAY['human_edited'::text, 'overlay'::text, 'rollback'::text])) AND (author_kind = 'person'::text))))
+kb_page_version | kb_page_version_origin_not_null | NOT NULL origin
+kb_page_version | kb_page_version_overlay | CHECK ((((origin = 'overlay'::text) = ((base_key IS NOT NULL) AND (base_digest IS NOT NULL))) AND ((base_digest IS NULL) OR (base_digest ~ '^[0-9a-f]{64}$'::text))))
+kb_page_version | kb_page_version_pkey | PRIMARY KEY (organisation_id, id)
+kb_page_version | kb_page_version_prompt_version_not_null | NOT NULL prompt_version
+kb_page_version | kb_page_version_rollback | CHECK ((((origin = 'rollback'::text) = (restores IS NOT NULL)) AND ((restores IS NULL) OR (restores < number))))
+kb_page_version | kb_page_version_search_not_null | NOT NULL search
+kb_page_version | kb_page_version_sources | CHECK (((jsonb_typeof(sources) = 'array'::text) AND (jsonb_array_length(sources) <= 200)))
+kb_page_version | kb_page_version_sources_not_null | NOT NULL sources
+kb_page_version | kb_page_version_summary_not_null | NOT NULL summary
+kb_page_version | kb_page_version_taint | CHECK ((taint = ANY (ARRAY['trusted'::text, 'untrusted'::text])))
+kb_page_version | kb_page_version_taint_not_null | NOT NULL taint
+kb_page_version | kb_page_version_text | CHECK ((((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 200)) AND ((length(summary) >= 1) AND (length(summary) <= 160)) AND ((length(body) >= 1) AND (length(body) <= 60000))))
+kb_page_version | kb_page_version_title_not_null | NOT NULL title
+kb_page_version | kb_page_version_trusted | CHECK ((taint = 'trusted'::text))
+kb_page_version | kb_page_version_type | CHECK ((type = ANY (ARRAY['concept'::text, 'task'::text, 'reference'::text, 'policy'::text, 'decision'::text])))
+kb_page_version | kb_page_version_type_not_null | NOT NULL type
+kb_page_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 kb_platform_page | kb_platform_page_aliases_not_null | NOT NULL aliases
 kb_platform_page | kb_platform_page_body_not_null | NOT NULL body
 kb_platform_page | kb_platform_page_class | CHECK ((data_class = ANY (ARRAY['general'::text, 'personal'::text, 'payroll'::text, 'equity'::text, 'identity'::text])))
@@ -4992,6 +5222,27 @@ kb_platform_source | kb_platform_source_search_not_null | NOT NULL search
 kb_platform_source | kb_platform_source_status | CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text])))
 kb_platform_source | kb_platform_source_status_not_null | NOT NULL status
 kb_platform_source | kb_platform_source_title_not_null | NOT NULL title
+kb_snapshot | kb_snapshot_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES approval_request(organisation_id, id)
+kb_snapshot | kb_snapshot_created_at_not_null | NOT NULL created_at
+kb_snapshot | kb_snapshot_created_by_fkey | FOREIGN KEY (created_by) REFERENCES app_user(user_id)
+kb_snapshot | kb_snapshot_id | UNIQUE (organisation_id, id)
+kb_snapshot | kb_snapshot_id_not_null | NOT NULL id
+kb_snapshot | kb_snapshot_number | CHECK ((number >= 1))
+kb_snapshot | kb_snapshot_number_not_null | NOT NULL number
+kb_snapshot | kb_snapshot_organisation_id_not_null | NOT NULL organisation_id
+kb_snapshot | kb_snapshot_pkey | PRIMARY KEY (organisation_id, number)
+kb_snapshot | kb_snapshot_reason | CHECK ((length(reason) <= 1000))
+kb_snapshot | kb_snapshot_reason_not_null | NOT NULL reason
+kb_snapshot | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+kb_snapshot_page | kb_snapshot_page_id | UNIQUE (organisation_id, id)
+kb_snapshot_page | kb_snapshot_page_id_not_null | NOT NULL id
+kb_snapshot_page | kb_snapshot_page_key_not_null | NOT NULL key
+kb_snapshot_page | kb_snapshot_page_organisation_id_not_null | NOT NULL organisation_id
+kb_snapshot_page | kb_snapshot_page_pkey | PRIMARY KEY (organisation_id, snapshot_number, key)
+kb_snapshot_page | kb_snapshot_page_snapshot_fkey | FOREIGN KEY (organisation_id, snapshot_number) REFERENCES kb_snapshot(organisation_id, number)
+kb_snapshot_page | kb_snapshot_page_snapshot_number_not_null | NOT NULL snapshot_number
+kb_snapshot_page | kb_snapshot_page_version_fkey | FOREIGN KEY (organisation_id, key, version) REFERENCES kb_page_version(organisation_id, key, number)
+kb_snapshot_page | kb_snapshot_page_version_not_null | NOT NULL version
 kpi_input | kpi_input_customers_together | CHECK ((((paying_customers IS NULL) = (new_customers IS NULL)) AND ((new_customers IS NULL) = (lost_customers IS NULL))))
 kpi_input | kpi_input_entered_at_not_null | NOT NULL entered_at
 kpi_input | kpi_input_entered_by | CHECK (((length(btrim(entered_by)) >= 1) AND (length(btrim(entered_by)) <= 200)))
@@ -6002,6 +6253,118 @@ project_task | project_task_project_id_not_null | NOT NULL project_id
 project_task | project_task_version_not_null | NOT NULL version
 project_task | project_task_version_positive | CHECK ((version >= 1))
 project_task | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_account | psp_account_by_form | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+psp_account | psp_account_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_account | psp_account_connector_id_not_null | NOT NULL connector_id
+psp_account | psp_account_created_at_not_null | NOT NULL created_at
+psp_account | psp_account_created_by_not_null | NOT NULL created_by
+psp_account | psp_account_disputes_fkey | FOREIGN KEY (organisation_id, disputes_account_id) REFERENCES account(organisation_id, id)
+psp_account | psp_account_fee_account_id_not_null | NOT NULL fee_account_id
+psp_account | psp_account_fee_fkey | FOREIGN KEY (organisation_id, fee_account_id) REFERENCES account(organisation_id, id)
+psp_account | psp_account_id_key | UNIQUE (organisation_id, id)
+psp_account | psp_account_id_not_null | NOT NULL id
+psp_account | psp_account_lengths | CHECK (((length(sweep_error) >= 1) AND (length(sweep_error) <= 500)))
+psp_account | psp_account_loss_fkey | FOREIGN KEY (organisation_id, dispute_loss_account_id) REFERENCES account(organisation_id, id)
+psp_account | psp_account_money_account_id_not_null | NOT NULL money_account_id
+psp_account | psp_account_money_fkey | FOREIGN KEY (organisation_id, money_account_id) REFERENCES money_account(organisation_id, id)
+psp_account | psp_account_organisation_id_not_null | NOT NULL organisation_id
+psp_account | psp_account_payout_fkey | FOREIGN KEY (organisation_id, payout_account_id) REFERENCES money_account(organisation_id, id)
+psp_account | psp_account_payout_other | CHECK (((payout_account_id IS NULL) OR (payout_account_id <> money_account_id)))
+psp_account | psp_account_pkey | PRIMARY KEY (organisation_id, money_account_id)
+psp_account | psp_account_sweep_pair | CHECK (((swept_through IS NULL) = (swept_at IS NULL)))
+psp_account | psp_account_version_not_null | NOT NULL version
+psp_account | psp_account_version_positive | CHECK ((version >= 1))
+psp_account | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_balance | psp_balance_amount | CHECK ((amount <> 'NaN'::numeric))
+psp_balance | psp_balance_amount_not_null | NOT NULL amount
+psp_balance | psp_balance_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_balance | psp_balance_connector_id_not_null | NOT NULL connector_id
+psp_balance | psp_balance_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+psp_balance | psp_balance_currency_not_null | NOT NULL currency
+psp_balance | psp_balance_id_not_null | NOT NULL id
+psp_balance | psp_balance_organisation_id_not_null | NOT NULL organisation_id
+psp_balance | psp_balance_pkey | PRIMARY KEY (organisation_id, id)
+psp_balance | psp_balance_taken_at_not_null | NOT NULL taken_at
+psp_balance | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_dispute_loss | psp_dispute_loss_accepted_overstated_revenue_not_null | NOT NULL accepted_overstated_revenue
+psp_dispute_loss | psp_dispute_loss_amount | CHECK (((amount <> 'NaN'::numeric) AND (amount > (0)::numeric)))
+psp_dispute_loss | psp_dispute_loss_amount_not_null | NOT NULL amount
+psp_dispute_loss | psp_dispute_loss_by_form | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
+psp_dispute_loss | psp_dispute_loss_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_dispute_loss | psp_dispute_loss_connector_id_not_null | NOT NULL connector_id
+psp_dispute_loss | psp_dispute_loss_created_at_not_null | NOT NULL created_at
+psp_dispute_loss | psp_dispute_loss_created_by_not_null | NOT NULL created_by
+psp_dispute_loss | psp_dispute_loss_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+psp_dispute_loss | psp_dispute_loss_currency_not_null | NOT NULL currency
+psp_dispute_loss | psp_dispute_loss_dispute_id_not_null | NOT NULL dispute_id
+psp_dispute_loss | psp_dispute_loss_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
+psp_dispute_loss | psp_dispute_loss_document_id_not_null | NOT NULL document_id
+psp_dispute_loss | psp_dispute_loss_id_not_null | NOT NULL id
+psp_dispute_loss | psp_dispute_loss_lengths | CHECK ((((length(dispute_id) >= 1) AND (length(dispute_id) <= 255)) AND ((length(reason) >= 1) AND (length(reason) <= 500))))
+psp_dispute_loss | psp_dispute_loss_once | UNIQUE (organisation_id, connector_id, dispute_id)
+psp_dispute_loss | psp_dispute_loss_organisation_id_not_null | NOT NULL organisation_id
+psp_dispute_loss | psp_dispute_loss_pkey | PRIMARY KEY (organisation_id, id)
+psp_dispute_loss | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_event | psp_event_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_event | psp_event_connector_id_not_null | NOT NULL connector_id
+psp_event | psp_event_event_id_not_null | NOT NULL event_id
+psp_event | psp_event_event_type_not_null | NOT NULL event_type
+psp_event | psp_event_id_not_null | NOT NULL id
+psp_event | psp_event_kind_known | CHECK ((object_kind = ANY (ARRAY['charge'::text, 'refund'::text, 'dispute'::text, 'payout'::text, 'invoice'::text, 'credit_note'::text, 'subscription'::text, 'customer'::text])))
+psp_event | psp_event_lengths | CHECK ((((length(event_id) >= 1) AND (length(event_id) <= 255)) AND ((length(event_type) >= 1) AND (length(event_type) <= 120)) AND ((length(api_version) >= 1) AND (length(api_version) <= 120)) AND ((length(parser_version) >= 3) AND (length(parser_version) <= 40)) AND ((length(object_id) >= 1) AND (length(object_id) <= 255)) AND (payload_sha256 ~ '^[0-9a-f]{64}$'::text) AND ((length(payload) >= 1) AND (length(payload) <= 2097152)) AND ((length(parked_reason) >= 1) AND (length(parked_reason) <= 500)) AND ((length(last_error) >= 1) AND (length(last_error) <= 500))))
+psp_event | psp_event_object_pair | CHECK (((object_kind IS NULL) OR (object_id IS NOT NULL)))
+psp_event | psp_event_once | UNIQUE (organisation_id, connector_id, event_id)
+psp_event | psp_event_organisation_id_not_null | NOT NULL organisation_id
+psp_event | psp_event_parked_reason | CHECK (((status = 'parked'::text) = (parked_reason IS NOT NULL)))
+psp_event | psp_event_parser_version_not_null | NOT NULL parser_version
+psp_event | psp_event_payload_not_null | NOT NULL payload
+psp_event | psp_event_payload_sha256_not_null | NOT NULL payload_sha256
+psp_event | psp_event_pkey | PRIMARY KEY (organisation_id, id)
+psp_event | psp_event_processed_at | CHECK (((status = 'processed'::text) = (processed_at IS NOT NULL)))
+psp_event | psp_event_provider_form | CHECK ((provider ~ '^[a-z][a-z0-9-]{1,39}$'::text))
+psp_event | psp_event_provider_not_null | NOT NULL provider
+psp_event | psp_event_received_at_not_null | NOT NULL received_at
+psp_event | psp_event_status_known | CHECK ((status = ANY (ARRAY['received'::text, 'processed'::text, 'parked'::text, 'failed'::text])))
+psp_event | psp_event_status_not_null | NOT NULL status
+psp_event | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_payout | psp_payout_amount | CHECK ((amount <> 'NaN'::numeric))
+psp_payout | psp_payout_amount_not_null | NOT NULL amount
+psp_payout | psp_payout_automatic_not_null | NOT NULL automatic
+psp_payout | psp_payout_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_payout | psp_payout_connector_id_not_null | NOT NULL connector_id
+psp_payout | psp_payout_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+psp_payout | psp_payout_currency_not_null | NOT NULL currency
+psp_payout | psp_payout_id_not_null | NOT NULL id
+psp_payout | psp_payout_lengths | CHECK ((((length(payout_id) >= 1) AND (length(payout_id) <= 255)) AND ((length(status) >= 1) AND (length(status) <= 40))))
+psp_payout | psp_payout_once | UNIQUE (organisation_id, connector_id, payout_id)
+psp_payout | psp_payout_organisation_id_not_null | NOT NULL organisation_id
+psp_payout | psp_payout_payout_id_not_null | NOT NULL payout_id
+psp_payout | psp_payout_pkey | PRIMARY KEY (organisation_id, id)
+psp_payout | psp_payout_provider_at_not_null | NOT NULL provider_at
+psp_payout | psp_payout_seen_at_not_null | NOT NULL seen_at
+psp_payout | psp_payout_status_not_null | NOT NULL status
+psp_payout | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+psp_txn | psp_txn_amounts | CHECK (((gross <> 'NaN'::numeric) AND (fee <> 'NaN'::numeric) AND (net <> 'NaN'::numeric) AND (net = (gross - fee))))
+psp_txn | psp_txn_category_known | CHECK ((category = ANY (ARRAY['charge'::text, 'refund'::text, 'dispute'::text, 'dispute_reversal'::text, 'fee'::text, 'payout'::text, 'other'::text])))
+psp_txn | psp_txn_category_not_null | NOT NULL category
+psp_txn | psp_txn_connector_fkey | FOREIGN KEY (organisation_id, connector_id) REFERENCES organisation_connector(organisation_id, id)
+psp_txn | psp_txn_connector_id_not_null | NOT NULL connector_id
+psp_txn | psp_txn_currency_form | CHECK ((currency ~ '^[A-Z]{3}$'::text))
+psp_txn | psp_txn_currency_not_null | NOT NULL currency
+psp_txn | psp_txn_fee_not_null | NOT NULL fee
+psp_txn | psp_txn_gross_not_null | NOT NULL gross
+psp_txn | psp_txn_id_not_null | NOT NULL id
+psp_txn | psp_txn_lengths | CHECK ((((length(txn_id) >= 1) AND (length(txn_id) <= 255)) AND ((length(type) >= 1) AND (length(type) <= 80)) AND ((length(source_id) >= 1) AND (length(source_id) <= 255)) AND ((length(payout_id) >= 1) AND (length(payout_id) <= 255))))
+psp_txn | psp_txn_net_not_null | NOT NULL net
+psp_txn | psp_txn_once | UNIQUE (organisation_id, connector_id, txn_id)
+psp_txn | psp_txn_organisation_id_not_null | NOT NULL organisation_id
+psp_txn | psp_txn_pkey | PRIMARY KEY (organisation_id, id)
+psp_txn | psp_txn_provider_at_not_null | NOT NULL provider_at
+psp_txn | psp_txn_seen_at_not_null | NOT NULL seen_at
+psp_txn | psp_txn_source_pair | CHECK (((source_kind IS NULL) = (source_id IS NULL)))
+psp_txn | psp_txn_txn_id_not_null | NOT NULL txn_id
+psp_txn | psp_txn_type_not_null | NOT NULL type
+psp_txn | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 quote_outcome | quote_outcome_document_fkey | FOREIGN KEY (organisation_id, document_id) REFERENCES document(organisation_id, id)
 quote_outcome | quote_outcome_document_id_not_null | NOT NULL document_id
 quote_outcome | quote_outcome_id_not_null | NOT NULL id
@@ -6801,6 +7164,8 @@ CREATE INDEX journal_line_account_amount ON fyniq.journal_line USING btree (orga
 CREATE INDEX journal_line_account_idx ON fyniq.journal_line USING btree (organisation_id, account_id, posting_date)
 CREATE INDEX journal_line_instrument_idx ON fyniq.journal_line USING btree (organisation_id, instrument_id, posting_date) WHERE (instrument_id IS NOT NULL)
 CREATE INDEX journal_line_party_idx ON fyniq.journal_line USING btree (organisation_id, party_id, posting_date) WHERE (party_id IS NOT NULL)
+CREATE INDEX kb_lint_finding_open ON fyniq.kb_lint_finding USING btree (organisation_id, status, created_at)
+CREATE INDEX kb_page_version_search ON fyniq.kb_page_version USING gin (organisation_id, search)
 CREATE INDEX kb_platform_page_search ON fyniq.kb_platform_page USING gin (search)
 CREATE INDEX kb_platform_page_title_trgm ON fyniq.kb_platform_page USING gin (lower(title) fyniq_ext.gin_trgm_ops)
 CREATE INDEX kb_platform_source_search ON fyniq.kb_platform_source USING gin (search)
@@ -6845,6 +7210,12 @@ CREATE INDEX project_billed_item_project_idx ON fyniq.project_billed_item USING 
 CREATE INDEX project_customer_idx ON fyniq.project USING btree (organisation_id, customer_id) WHERE (customer_id IS NOT NULL)
 CREATE INDEX project_member_user_idx ON fyniq.project_member USING btree (organisation_id, user_id) WHERE is_active
 CREATE INDEX project_milestone_project_idx ON fyniq.project_milestone USING btree (organisation_id, project_id, created_at)
+CREATE INDEX psp_account_connector ON fyniq.psp_account USING btree (organisation_id, connector_id)
+CREATE INDEX psp_balance_latest ON fyniq.psp_balance USING btree (organisation_id, connector_id, currency, taken_at DESC)
+CREATE INDEX psp_event_object ON fyniq.psp_event USING btree (organisation_id, connector_id, object_kind, object_id)
+CREATE INDEX psp_event_status ON fyniq.psp_event USING btree (organisation_id, status, received_at)
+CREATE INDEX psp_txn_payout ON fyniq.psp_txn USING btree (organisation_id, connector_id, payout_id) WHERE (payout_id IS NOT NULL)
+CREATE INDEX psp_txn_source ON fyniq.psp_txn USING btree (organisation_id, connector_id, source_kind, source_id)
 CREATE INDEX rate_limit_window_start_idx ON fyniq.rate_limit_window USING btree (organisation_id, window_start)
 CREATE INDEX report_export_expiring ON fyniq.report_export USING btree (organisation_id, status, expires_at)
 CREATE INDEX report_export_requested ON fyniq.report_export USING btree (organisation_id, requested_by, requested_at DESC)
@@ -7095,10 +7466,19 @@ CREATE UNIQUE INDEX journal_entry_reverses_key ON fyniq.journal_entry USING btre
 CREATE UNIQUE INDEX journal_entry_revision_key ON fyniq.journal_entry USING btree (organisation_id, ledger_revision)
 CREATE UNIQUE INDEX journal_line_entry_line_key ON fyniq.journal_line USING btree (organisation_id, entry_id, line_no)
 CREATE UNIQUE INDEX journal_line_pkey ON fyniq.journal_line USING btree (organisation_id, id)
+CREATE UNIQUE INDEX kb_lint_finding_pkey ON fyniq.kb_lint_finding USING btree (organisation_id, id)
+CREATE UNIQUE INDEX kb_note_key ON fyniq.kb_note USING btree (organisation_id, key)
+CREATE UNIQUE INDEX kb_note_pkey ON fyniq.kb_note USING btree (organisation_id, id)
+CREATE UNIQUE INDEX kb_page_version_number ON fyniq.kb_page_version USING btree (organisation_id, key, number)
+CREATE UNIQUE INDEX kb_page_version_pkey ON fyniq.kb_page_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX kb_platform_page_pkey ON fyniq.kb_platform_page USING btree (key)
 CREATE UNIQUE INDEX kb_platform_page_source_pkey ON fyniq.kb_platform_page_source USING btree (page_key, file)
 CREATE UNIQUE INDEX kb_platform_release_pkey ON fyniq.kb_platform_release USING btree (singleton)
 CREATE UNIQUE INDEX kb_platform_source_pkey ON fyniq.kb_platform_source USING btree (file)
+CREATE UNIQUE INDEX kb_snapshot_id ON fyniq.kb_snapshot USING btree (organisation_id, id)
+CREATE UNIQUE INDEX kb_snapshot_page_id ON fyniq.kb_snapshot_page USING btree (organisation_id, id)
+CREATE UNIQUE INDEX kb_snapshot_page_pkey ON fyniq.kb_snapshot_page USING btree (organisation_id, snapshot_number, key)
+CREATE UNIQUE INDEX kb_snapshot_pkey ON fyniq.kb_snapshot USING btree (organisation_id, number)
 CREATE UNIQUE INDEX kpi_input_id_key ON fyniq.kpi_input USING btree (organisation_id, id)
 CREATE UNIQUE INDEX kpi_input_pkey ON fyniq.kpi_input USING btree (organisation_id, month)
 CREATE UNIQUE INDEX ledger_boundary_boundary_key ON fyniq.ledger_boundary USING btree (organisation_id, boundary)
@@ -7198,6 +7578,17 @@ CREATE UNIQUE INDEX project_pkey ON fyniq.project USING btree (organisation_id, 
 CREATE UNIQUE INDEX project_task_live_name ON fyniq.project_task USING btree (organisation_id, project_id, lower(btrim(name))) WHERE is_active
 CREATE UNIQUE INDEX project_task_pkey ON fyniq.project_task USING btree (organisation_id, id)
 CREATE UNIQUE INDEX project_task_project_key ON fyniq.project_task USING btree (organisation_id, project_id, id)
+CREATE UNIQUE INDEX psp_account_id_key ON fyniq.psp_account USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_account_pkey ON fyniq.psp_account USING btree (organisation_id, money_account_id)
+CREATE UNIQUE INDEX psp_balance_pkey ON fyniq.psp_balance USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_dispute_loss_once ON fyniq.psp_dispute_loss USING btree (organisation_id, connector_id, dispute_id)
+CREATE UNIQUE INDEX psp_dispute_loss_pkey ON fyniq.psp_dispute_loss USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_event_once ON fyniq.psp_event USING btree (organisation_id, connector_id, event_id)
+CREATE UNIQUE INDEX psp_event_pkey ON fyniq.psp_event USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_payout_once ON fyniq.psp_payout USING btree (organisation_id, connector_id, payout_id)
+CREATE UNIQUE INDEX psp_payout_pkey ON fyniq.psp_payout USING btree (organisation_id, id)
+CREATE UNIQUE INDEX psp_txn_once ON fyniq.psp_txn USING btree (organisation_id, connector_id, txn_id)
+CREATE UNIQUE INDEX psp_txn_pkey ON fyniq.psp_txn USING btree (organisation_id, id)
 CREATE UNIQUE INDEX quote_outcome_once ON fyniq.quote_outcome USING btree (organisation_id, document_id)
 CREATE UNIQUE INDEX quote_outcome_pkey ON fyniq.quote_outcome USING btree (organisation_id, id)
 CREATE UNIQUE INDEX rate_limit_window_client_key ON fyniq.rate_limit_window USING btree (organisation_id, client_id, kind, window_start)
@@ -7331,6 +7722,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.email_sender DEFER
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.equity_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'transaction_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.holding_movement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('holding_movement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.journal_entry DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('journal_entry', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.kb_page_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_page_version', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.kb_snapshot DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_snapshot', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ledger_boundary DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ledger_boundary', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.mcp_user_optin DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('mcp_user_optin', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.migration_archive DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
@@ -7361,6 +7754,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.person_cost_rate D
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_acknowledgement DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_acknowledgement', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_draft DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_draft', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.policy_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('policy_version', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_balance DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_balance', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.psp_dispute_loss DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_dispute_loss', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.quote_outcome DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('quote_outcome', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_bill_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'recurring_bill_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.recurring_invoice_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'recurring_invoice_id')
@@ -7386,6 +7781,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF prefix, digits
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF revoked_at ON fyniq.webauthn_credential DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_passkey_audit()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.email_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.inbound_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.psp_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_event', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('account', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accountant_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accountant_review', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.accountant_review_query DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('accountant_review', 'review_id')
@@ -7429,6 +7825,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.inbound_
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.item_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('item', 'item_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.join_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('join_request', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.kb_lint_finding DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_lint_finding', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.kb_note DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kb_note', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.kpi_input DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('kpi_input', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.member_invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('member_invitation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.migration_commit DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('migration_run', 'run_id')
@@ -7446,6 +7844,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project 
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_milestone DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_account', 'money_account_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_payout DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_payout', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.psp_txn DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_txn', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_bill DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_bill', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_invoice DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_invoice', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.recurring_journal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('recurring_journal', 'id')
@@ -7696,6 +8097,16 @@ CREATE TRIGGER journal_line_balances AFTER INSERT ON fyniq.journal_line REFERENC
 CREATE TRIGGER journal_line_check BEFORE INSERT ON fyniq.journal_line FOR EACH ROW EXECUTE FUNCTION journal_line_check()
 CREATE TRIGGER journal_line_immutable BEFORE DELETE OR UPDATE ON fyniq.journal_line FOR EACH ROW EXECUTE FUNCTION journal_immutable()
 CREATE TRIGGER journal_line_no_truncate BEFORE TRUNCATE ON fyniq.journal_line FOR EACH STATEMENT EXECUTE FUNCTION journal_immutable()
+CREATE TRIGGER kb_lint_finding_guard BEFORE DELETE OR UPDATE ON fyniq.kb_lint_finding FOR EACH ROW EXECUTE FUNCTION kb_guard()
+CREATE TRIGGER kb_lint_finding_no_truncate BEFORE TRUNCATE ON fyniq.kb_lint_finding FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER kb_note_guard BEFORE DELETE OR UPDATE ON fyniq.kb_note FOR EACH ROW EXECUTE FUNCTION kb_guard()
+CREATE TRIGGER kb_note_no_truncate BEFORE TRUNCATE ON fyniq.kb_note FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER kb_page_version_guard BEFORE DELETE OR UPDATE ON fyniq.kb_page_version FOR EACH ROW EXECUTE FUNCTION kb_guard()
+CREATE TRIGGER kb_page_version_no_truncate BEFORE TRUNCATE ON fyniq.kb_page_version FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER kb_snapshot_guard BEFORE DELETE OR UPDATE ON fyniq.kb_snapshot FOR EACH ROW EXECUTE FUNCTION kb_guard()
+CREATE TRIGGER kb_snapshot_no_truncate BEFORE TRUNCATE ON fyniq.kb_snapshot FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER kb_snapshot_page_guard BEFORE DELETE OR UPDATE ON fyniq.kb_snapshot_page FOR EACH ROW EXECUTE FUNCTION kb_guard()
+CREATE TRIGGER kb_snapshot_page_no_truncate BEFORE TRUNCATE ON fyniq.kb_snapshot_page FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER kpi_input_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.kpi_input FOR EACH ROW EXECUTE FUNCTION kpi_input_guard()
 CREATE TRIGGER kpi_input_no_truncate BEFORE TRUNCATE ON fyniq.kpi_input FOR EACH STATEMENT EXECUTE FUNCTION kpi_input_guard()
 CREATE TRIGGER last_owner_guard BEFORE UPDATE OF revoked_at ON fyniq.role_assignment FOR EACH ROW EXECUTE FUNCTION last_owner_guard()
@@ -7817,6 +8228,16 @@ CREATE TRIGGER project_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project 
 CREATE TRIGGER project_member_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_member FOR EACH ROW EXECUTE FUNCTION project_part_guard()
 CREATE TRIGGER project_milestone_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_milestone FOR EACH ROW EXECUTE FUNCTION project_milestone_guard()
 CREATE TRIGGER project_task_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.project_task FOR EACH ROW EXECUTE FUNCTION project_part_guard()
+CREATE TRIGGER psp_balance_guard BEFORE DELETE OR UPDATE ON fyniq.psp_balance FOR EACH ROW EXECUTE FUNCTION psp_balance_guard()
+CREATE TRIGGER psp_balance_no_truncate BEFORE TRUNCATE ON fyniq.psp_balance FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_dispute_loss_guard BEFORE DELETE OR UPDATE ON fyniq.psp_dispute_loss FOR EACH ROW EXECUTE FUNCTION psp_dispute_loss_guard()
+CREATE TRIGGER psp_dispute_loss_no_truncate BEFORE TRUNCATE ON fyniq.psp_dispute_loss FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_event_guard BEFORE DELETE OR UPDATE ON fyniq.psp_event FOR EACH ROW EXECUTE FUNCTION psp_event_guard()
+CREATE TRIGGER psp_event_no_truncate BEFORE TRUNCATE ON fyniq.psp_event FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_payout_guard BEFORE DELETE OR UPDATE ON fyniq.psp_payout FOR EACH ROW EXECUTE FUNCTION psp_payout_guard()
+CREATE TRIGGER psp_payout_no_truncate BEFORE TRUNCATE ON fyniq.psp_payout FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER psp_txn_guard BEFORE DELETE OR UPDATE ON fyniq.psp_txn FOR EACH ROW EXECUTE FUNCTION psp_txn_guard()
+CREATE TRIGGER psp_txn_no_truncate BEFORE TRUNCATE ON fyniq.psp_txn FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER quote_outcome_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.quote_outcome FOR EACH ROW EXECUTE FUNCTION quote_outcome_guard()
 CREATE TRIGGER recurring_bill_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_bill_version FOR EACH ROW EXECUTE FUNCTION recurring_bill_version_immutable()
 CREATE TRIGGER recurring_invoice_version_immutable BEFORE DELETE OR UPDATE ON fyniq.recurring_invoice_version FOR EACH ROW EXECUTE FUNCTION recurring_invoice_version_immutable()
@@ -7988,6 +8409,11 @@ item_price | tenant_isolation | * | (organisation_id = current_org()) | (organis
 join_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+kb_lint_finding | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+kb_note | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+kb_page_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+kb_snapshot | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+kb_snapshot_page | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 kpi_input | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_boundary | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ledger_purged_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8045,6 +8471,12 @@ project_billed_item | tenant_isolation | * | (organisation_id = current_org()) |
 project_member | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_milestone | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 project_task | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_account | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_dispute_loss | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_event | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_payout | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+psp_txn | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 quote_outcome | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 rate_limit_window | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 recurring_bill | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8207,10 +8639,15 @@ join_domain | disabled | not forced
 join_request | enabled | forced
 journal_entry | enabled | forced
 journal_line | enabled | forced
+kb_lint_finding | enabled | forced
+kb_note | enabled | forced
+kb_page_version | enabled | forced
 kb_platform_page | disabled | not forced
 kb_platform_page_source | disabled | not forced
 kb_platform_release | disabled | not forced
 kb_platform_source | disabled | not forced
+kb_snapshot | enabled | forced
+kb_snapshot_page | enabled | forced
 kpi_input | enabled | forced
 ledger_boundary | enabled | forced
 ledger_purged_entry | enabled | forced
@@ -8270,6 +8707,12 @@ project_billed_item | enabled | forced
 project_member | enabled | forced
 project_milestone | enabled | forced
 project_task | enabled | forced
+psp_account | enabled | forced
+psp_balance | enabled | forced
+psp_dispute_loss | enabled | forced
+psp_event | enabled | forced
+psp_payout | enabled | forced
+psp_txn | enabled | forced
 quote_outcome | enabled | forced
 rate_limit_window | enabled | forced
 recovery_confirmation | disabled | not forced
@@ -8527,6 +8970,8 @@ journal_immutable() → trigger | security invoker | v | search_path=pg_catalog,
 journal_line_balances() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 0f5bd691e4430aa3432cee16293c5fe1
 journal_line_base_only() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 55a3d18429a41eae4bbb8231d3bf02d4
 journal_line_check() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | b9269db42a6b251fcf5f6ec4576b4fb8
+kb_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 02422d85fbd6befcedcfdf5c3323050f
+kb_org_search(p_terms text[], p_classes text[], p_limit integer) → TABLE(key text, title text, summary text, snippet text, rank real) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 15760a3c14a0882488f678a84615fbad
 kb_platform_index(p_roles text[], p_classes text[]) → TABLE(key text, type text, title text, summary text, status text, data_class text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 7b424e41cfdc6ce4aae26d2373cd74dd
 kb_platform_info() → TABLE(version text, schema text, digest text, loaded_at timestamp with time zone) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 02dda96e1273c149a12b7ce0e8a0f6a3
 kb_platform_load(p_release jsonb) → void | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ba55718a26c440e56e79a88cac713b2c
@@ -8613,6 +9058,11 @@ project_billing_follows_invoice() → trigger | security definer | v | search_pa
 project_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 263feebbc9e8c9cfa868c0c58b30e881
 project_milestone_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b8dc234f6537bead909f4c0fcb746635
 project_part_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | abaebce4c4cd3919837dd8db7382ce2a
+psp_balance_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 718c45d122dfe60b1f6507609c283752
+psp_dispute_loss_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0624664dfa2f00777a7eee9eb2377308
+psp_event_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 795487512cdc896caeba25ce58b8402a
+psp_payout_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c1040a9a3046d2137cdb49737f962685
+psp_txn_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | d6b484102bd0270d4a6b98d0ea3be9f7
 publish_installation_announcement(p_by uuid, p_message text, p_link text, p_severity text, p_roles text[], p_starts timestamp with time zone, p_ends timestamp with time zone, p_dismissible boolean, p_at timestamp with time zone) → uuid | security definer | v | search_path=pg_catalog, fyniq, pg_temp | d22080141cfa70faad16cd109b427a37
 purge_ip_rate_windows(p_before timestamp with time zone) → bigint | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 81de58d9129c046ca2aa53b08d3607c8
 purge_switched_on(p_org uuid) → boolean | security invoker | s | search_path=pg_catalog, fyniq, pg_temp | 90114d368d5bac0773307d5f4b014509

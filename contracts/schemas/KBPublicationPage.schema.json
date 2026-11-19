@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "key": {
+      "examples": [
+        "org.expense-policy"
+      ],
+      "pattern": "^[a-z0-9][a-z0-9.-]{0,99}$",
+      "type": "string"
+    },
+    "version": {
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "key",
+    "version"
+  ],
+  "title": "KBPublicationPage",
+  "type": "object"
+}

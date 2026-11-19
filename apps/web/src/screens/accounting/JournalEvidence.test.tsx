@@ -113,6 +113,39 @@ describe("a journal's evidence", () => {
     await noViolations(document.body);
   });
 
+  // req: FR-DOC-05
+  // req: FR-DOC-07
+  it("sends the date a file relates to and how it arrived, and shows each file's date, hashes, source and uploader", async () => {
+    let files: Evidence[] = [];
+    const shot = file({ id: "ev9", file_name: "Screenshot.png", media_type: "image/png", evidence_type: "screenshot", relates_on: "2026-10-08", source: "paste", sha256: "4be1".padEnd(60, "0") + "09fa", original_sha256: "ffff".padEnd(60, "0") + "0001", uploaded_by: `user:${ownerSession.user_id}` });
+    answer({
+      "GET /v1/accounts": accounts,
+      "GET /v1/journals/j1": { status: 200, body: draft, headers: { ETag: `"2-draft"` } },
+      "GET /v1/journals/j1/evidence": () => ({ status: 200, body: { items: files } }),
+      "POST /v1/journals/j1/evidence": () => {
+        files = [shot];
+        return { status: 201, body: shot };
+      },
+    });
+    renderPage(page(accountant), at);
+    const zone = await screen.findByLabelText("Drop or paste a file to attach to the journal");
+    const pasted = new File(["png"], "Screenshot.png", { type: "image/png" });
+    fireEvent.paste(zone, { clipboardData: { files: [pasted] } });
+    fireEvent.change(screen.getByLabelText("What it is"), { target: { value: "screenshot" } });
+    fireEvent.change(screen.getByLabelText("Date it relates to (optional)"), { target: { value: "2026-10-08" } });
+    fireEvent.click(screen.getByRole("button", { name: "Attach" }));
+    expect(await screen.findByText(/^Attached Screenshot.png/)).toBeTruthy();
+    const sent = seen.find((x) => x.method === "POST")!;
+    expect(sent.body).toMatchObject({ evidence_type: "screenshot", relates_on: "2026-10-08", source: "paste" });
+    const list = await screen.findByRole("list", { name: "Files attached" });
+    expect(within(list).getByText(/screenshot · .* · relates to 8 Oct 2026 · added/)).toBeTruthy();
+    expect(within(list).getByText("Pasted from the clipboard")).toBeTruthy();
+    expect(within(list).getByText("you")).toBeTruthy();
+    expect(within(list).getByText(shot.sha256)).toBeTruthy();
+    expect(within(list).getByText(shot.original_sha256)).toBeTruthy(); // stripped of metadata: both are shown
+    await noViolations(document.body);
+  });
+
   // req: FR-DOC-06
   // req: FR-DOC-05
   it("shows the rules for the activity: a required item missing is a cross, a recommended one a warning, each file meets its own", async () => {

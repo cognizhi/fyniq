@@ -78,7 +78,11 @@
     },
     "object_type": {
       "description": "What it changes.",
-      "enum": [
+      "examples": [
+        "organisation_setting"
+      ],
+      "type": "string",
+      "x-extensible-enum": [
         "organisation_setting",
         "membership",
         "member_invitation",
@@ -140,16 +144,17 @@
         "nominee_entry",
         "statements_approval",
         "corporate_document",
-        "api_client"
-      ],
-      "examples": [
-        "organisation_setting"
-      ],
-      "type": "string"
+        "api_client",
+        "kb_publication"
+      ]
     },
     "operation": {
       "description": "What executes on its approval.",
-      "enum": [
+      "examples": [
+        "organisation_setting.change"
+      ],
+      "type": "string",
+      "x-extensible-enum": [
         "organisation_setting.change",
         "role.assign",
         "role.revoke",
@@ -227,12 +232,9 @@
         "statements_approval.record",
         "corporate_document.record",
         "api_client.create",
-        "api_client.reclass"
-      ],
-      "examples": [
-        "organisation_setting.change"
-      ],
-      "type": "string"
+        "api_client.reclass",
+        "kb_publication.publish"
+      ]
     },
     "policy": {
       "description": "The approval policy's version it keeps (G4-057).",

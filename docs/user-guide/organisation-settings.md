@@ -339,6 +339,17 @@ standard chart.
   what is left after the fee goes to **FX and rounding** (7030).
 - A change needs a second approver, as the other accounting settings do.
 
+## Lost disputes
+
+When a customer's card payment is disputed and lost, the money Stripe took back waits in your **disputes** account. Fyniq
+prepares a draft journal that writes it off to your **dispute losses** account, and you post it like any other journal.
+
+- **Lost disputes written off as an expense, up to**: S$100. Up to this amount the draft needs nothing more. Above it, you
+  confirm that you are writing off more than this and say why, because the invoice's revenue stays as invoiced until you
+  credit it. A dispute fee alone is about S$15, so under S$100 it costs more to find the invoice than to write it off.
+- Ask your accountant about the GST on a lost dispute and about amounts above the limit.
+- A change needs a second approver, as the other accounting settings do.
+
 ## Incoming-funds alerts
 
 A bank can email an alert as soon as money arrives, a day before the statement line. Sent to your

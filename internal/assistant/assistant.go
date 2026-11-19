@@ -74,6 +74,14 @@ type ToolResult struct {
 	Omitted  []aitool.Omission `json:"omitted"`
 	Revision int64             `json:"ledger_revision"`
 	Withheld string            `json:"withheld,omitempty"`
+	// KBPages are the knowledge-base page versions a kb tool read (AI-12, AI-51).
+	KBPages []KBPage `json:"kb_pages,omitempty"`
+}
+
+// KBPage is a knowledge-base page and the version of it a read used.
+type KBPage struct {
+	Key     string `json:"key"`
+	Version string `json:"version"`
 }
 
 // Problem is the API's refusal, in its words: its status, code, what went wrong and how to fix it.
@@ -187,6 +195,8 @@ type ToolCall struct {
 	Duration time.Duration   `json:"duration_ns"`
 	// OutputSHA256 is the hash of what the model read of it.
 	OutputSHA256 string `json:"output_sha256,omitempty"`
+	// KBPages are the knowledge-base page versions it read, which the activity log shows (AI-12, AI-51).
+	KBPages []KBPage `json:"kb_pages,omitempty"`
 }
 
 // How a turn or a run ends.
@@ -217,10 +227,12 @@ type Answer struct {
 	Runs         []string      `json:"runs"`
 	ToolCalls    []ToolCall    `json:"tool_calls"`
 	// Proposals are the proposals the turn made, each waiting for a person or invalid.
-	Proposals []Proposed       `json:"proposals,omitempty"`
-	Usage     ports.ModelUsage `json:"usage"`
-	Stop      string           `json:"stop"`
-	Model     string           `json:"model,omitempty"` // the model the last call ran on, as its provider reported it
+	Proposals []Proposed `json:"proposals,omitempty"`
+	// Sources are the guide pages the answer's know-how sentences come from (AI-51), which the person can open.
+	Sources []Source         `json:"sources,omitempty"`
+	Usage   ports.ModelUsage `json:"usage"`
+	Stop    string           `json:"stop"`
+	Model   string           `json:"model,omitempty"` // the model the last call ran on, as its provider reported it
 }
 
 // Assistant answers turns.
@@ -280,6 +292,7 @@ func (a *Assistant) converse(ctx context.Context, c conversation, emit func(Even
 	out := Answer{Prompt: c.prompt, PromptSHA256: c.promptSHA256, Facts: []aitool.Fact{}, Runs: []string{}, ToolCalls: []ToolCall{},
 		Segments: []Segment{}, Cited: []string{}}
 	facts, earlier := map[string]aitool.Fact{}, map[string]aitool.Fact{}
+	kbPages := pages{} // the knowledge-base pages this turn read, which its know-how sentences may cite (AI-51)
 	for _, f := range c.earlier {
 		earlier[f.ID] = f
 	}
@@ -324,7 +337,7 @@ func (a *Assistant) converse(ctx context.Context, c conversation, emit func(Even
 			}
 		}
 		if len(asked) == 0 {
-			s, fails := parse(textOf(res.Response), known)
+			s, fails := parse(textOf(res.Response), known, kbPages)
 			if len(fails) > 0 && !out.Grounding.Regenerated {
 				// Asked for once more, with what failed (AI-08).
 				out.Grounding.Regenerated, out.Grounding.Failures = true, fails
@@ -334,8 +347,15 @@ func (a *Assistant) converse(ctx context.Context, c conversation, emit func(Even
 				continue
 			}
 			if len(fails) > 0 {
-				s, out.Grounding.Withheld = withhold(s, known)
+				s, out.Grounding.Withheld = withhold(s, known, kbPages)
 			}
+			for i := range s.Segments { // the guide pages each know-how sentence comes from, by what the page's section cites
+				s.Segments[i].Sources = nil // never the model's own: it has no say in what a chip opens (AI-51)
+				if s.Segments[i].Page != "" {
+					s.Segments[i].Sources = kbPages.sources(s.Segments[i : i+1])
+				}
+			}
+			out.Sources = kbPages.sources(s.Segments)
 			text, cited := Render(s, known)
 			out.Segments, out.Cited, out.Text, out.Stop = s.Segments, cited, aiexclusion.Filter(text), StopAnswered
 			for _, id := range cited { // an earlier turn's fact cited again is kept with this turn too
@@ -367,7 +387,7 @@ func (a *Assistant) converse(ctx context.Context, c conversation, emit func(Even
 				}
 				continue
 			}
-			part, record, read := a.runTool(ctx, c.token, tools, c.offered, call, known)
+			part, record, read := a.runTool(ctx, c.token, tools, c.offered, call, known, kbPages)
 			keep(read)
 			out.ToolCalls = append(out.ToolCalls, record)
 			results = append(results, part)
@@ -386,7 +406,7 @@ func (a *Assistant) converse(ctx context.Context, c conversation, emit func(Even
 // runTool runs one tool call the model made: calc here, every other tool through the API. A refusal goes back to the
 // model as an error in the API's words, for it to say why or to try another way.
 func (a *Assistant) runTool(ctx context.Context, token string, tools *aitool.Registry, offered []string, call ports.ModelPart,
-	known func(string) (aitool.Fact, bool)) (ports.ModelPart, ToolCall, []aitool.Fact) {
+	known func(string) (aitool.Fact, bool), kbPages pages) (ports.ModelPart, ToolCall, []aitool.Fact) {
 	start := a.now()
 	record := ToolCall{Tool: call.Tool, Input: call.Input, Outcome: OutcomeRead}
 	failed := func(code, words string) (ports.ModelPart, ToolCall, []aitool.Fact) {
@@ -426,6 +446,10 @@ func (a *Assistant) runTool(ctx context.Context, token string, tools *aitool.Reg
 		}
 	}
 	record.Facts, record.Omitted, record.Withheld, record.Duration = len(result.Facts), len(result.Omitted), result.Withheld != "", a.now().Sub(start)
+	record.KBPages = result.KBPages
+	if tool.Name == "kb.read" {
+		kbPages.note(result.Content) // what the model read, as its know-how sentences may cite it (AI-51)
+	}
 	text, err := resultText(result)
 	if err != nil {
 		return failed("AI-TOOL", "The read's result could not be read.")
@@ -541,13 +565,13 @@ func resultText(r ToolResult) (string, error) {
 }
 
 // parse reads the model's structured answer and checks it (AI-08): an answer not in its shape fails as a whole.
-func parse(text string, known func(string) (aitool.Fact, bool)) (Structured, []string) {
+func parse(text string, known func(string) (aitool.Fact, bool), pg pages) (Structured, []string) {
 	var s Structured
 	if err := json.Unmarshal([]byte(strings.TrimSpace(text)), &s); err != nil {
 		return Structured{Segments: []Segment{{Missing: "an answer to the question"}}},
 			[]string{"the answer is not in its shape (an object with segments): " + err.Error()}
 	}
-	return s, failures(s, known)
+	return s, failures(s, known, pg)
 }
 
 // textOf is an answer's words.

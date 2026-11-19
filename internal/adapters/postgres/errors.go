@@ -68,6 +68,11 @@ var fyCodes = map[string]string{
 	"FY183": storage.CodeCaptureName,
 	"FY184": storage.CodeVersion,
 	"FY185": storage.CodeVersion,
+	"FY620": storage.CodeInvalid,
+	"FY621": storage.CodeVersion,
+	"FY622": storage.CodeInvalid,
+	"FY623": storage.CodeInvalid,
+	"FY624": storage.CodeInvalid,
 	"FY186": storage.CodeVersion,
 	"FY187": storage.CodeVersion,
 	"FY188": storage.CodeVersion,
@@ -231,6 +236,7 @@ var fyCodes = map[string]string{
 	"FY338": storage.CodeAIBudgetSpent,      // the organisation's, agent's or person's AI budget spent, or not applicable (000359)
 	"FY339": storage.CodeAIQualification,    // a qualification changed or removed, or put out of date twice (000361)
 	"FY340": storage.CodeAIGrant,            // a delegated read grant changed, removed or ended twice (000366)
+	"FY561": storage.CodeKnowledge, // a knowledge-base version, snapshot or page changed or removed, or a note changed but by its next version (000563)
 	"FY341": storage.CodeAIConversation,     // a conversation, turn, tool call or feedback changed against its course, or removed (000369)
 	"FY343": storage.CodeMCPClient,          // a registered AI app's name, redirects or origin changed, a step out of its course, or a delete (000585)
 	"FY342": storage.CodeAIProposal,         // an AI proposal's step out of its lifecycle or by another role, a change to what it proposed, or a delete (000375)

@@ -12,6 +12,9 @@ human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@1
 compiled_at: 2026-11-03
+aliases:
+  - get paid back by the company
+  - repay a founder
 ---
 
 # Settle what the company owes a founder

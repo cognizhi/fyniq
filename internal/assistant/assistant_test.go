@@ -153,7 +153,7 @@ func TestTheToolLoopReadsThroughTheAPI(t *testing.T) {
 	if len(out.Facts) != 3 || calc == nil || calc.Value != "25000.00" || !slices.Equal(calc.Inputs, []string{revenue.ID, costs.ID}) {
 		t.Errorf("the facts: %+v", out.Facts)
 	}
-	if out.Prompt != "chat@3" || out.PromptSHA256 != p.SHA256 || len(out.ToolCalls) != 3 || out.ToolCalls[2].Tool != "calc" || out.ToolCalls[0].Facts != 2 {
+	if out.Prompt != "chat@4" || out.PromptSHA256 != p.SHA256 || len(out.ToolCalls) != 3 || out.ToolCalls[2].Tool != "calc" || out.ToolCalls[0].Facts != 2 {
 		t.Errorf("the record: %+v", out)
 	}
 
@@ -334,12 +334,12 @@ func TestRejectionsAreReadAsData(t *testing.T) {
 // told, named and hashed as its file is; a file not named <agent>@<version>.md is refused.
 // req: AI-24
 func TestThePromptIsTheLatestVersionHashed(t *testing.T) {
-	b, err := os.ReadFile("../../contracts/ai/prompts/chat@3.md")
+	b, err := os.ReadFile("../../contracts/ai/prompts/chat@4.md")
 	if err != nil {
 		t.Fatal(err)
 	}
 	sum := sha256.Sum256(b)
-	if p := prompt(t); p.Version != 3 || p.Text != string(b) || p.SHA256 != hex.EncodeToString(sum[:]) || p.Name() != "chat@3" {
+	if p := prompt(t); p.Version != 4 || p.Text != string(b) || p.SHA256 != hex.EncodeToString(sum[:]) || p.Name() != "chat@4" {
 		t.Errorf("chat's prompt: %s %d", p.Name(), len(p.Text))
 	}
 	fsys := fstest.MapFS{"prompts/chat@1.md": {Data: []byte("one")}, "prompts/chat@12.md": {Data: []byte("twelve")}, "prompts/other@3.md": {Data: []byte("x")}}
@@ -493,5 +493,29 @@ func TestTheAnswerIsRenderedInFyniqsWords(t *testing.T) {
 		if got := assistant.Markdown(in); got != want {
 			t.Errorf("Markdown(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// A read of the knowledge base is recorded with the page versions it read, so the activity log can say which pages an answer
+// used (AI-12, AI-51): the turn's tool call keeps what the API reported, and a read of the books lists none.
+// req: AI-12
+func TestAKnowledgeBaseReadIsRecordedWithThePageVersionsItRead(t *testing.T) {
+	b := &api{
+		answers: []ports.ModelResponse{
+			{Parts: []ports.ModelPart{toolCall("c1", "kb_read", `{"key":"claims.approve-team-claims"}`)}},
+			answer(words("A team member's claim goes to the approver named in its approval policy.")),
+		},
+		results: map[string]assistant.ToolResult{"kb.read": {Tool: "kb.read", Version: 1, Facts: []aitool.Fact{}, Omitted: []aitool.Omission{},
+			Content: json.RawMessage(`{"key":"claims.approve-team-claims"}`),
+			KBPages: []assistant.KBPage{{Key: "claims.approve-team-claims", Version: "v0.1.0#7c1ea9b4f2d3"}}}},
+	}
+	a := &assistant.Assistant{Backend: b, Prompt: prompt(t)}
+	out, err := a.Answer(context.Background(), assistant.Question{Token: "fyai_turn", Text: "How do I approve a team claim?"}, func(assistant.Event) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out.ToolCalls) != 1 || out.ToolCalls[0].Tool != "kb.read" || len(out.ToolCalls[0].KBPages) != 1 ||
+		out.ToolCalls[0].KBPages[0] != (assistant.KBPage{Key: "claims.approve-team-claims", Version: "v0.1.0#7c1ea9b4f2d3"}) {
+		t.Errorf("the tool calls: %+v", out.ToolCalls)
 	}
 }

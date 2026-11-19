@@ -212,6 +212,7 @@ export const routes = [
   { kind: "route", id: "oauth-consent", path: "/auth/consent", mode: "basic", signedIn: true, help: "oauth.consent", guide: "settings.connected-apps#when-an-app-asks-to-connect" },
   // Settings › Connected apps (AI-44, AI-35, AI-90): the AI apps that work for a person, and the registrations waiting for an Owner.
   { kind: "route", id: "settings-connected-apps", path: "/settings/connected-apps", mode: "basic", signedIn: true, help: "settings.connected-apps", guide: "settings.connected-apps" },
+  { kind: "route", id: "settings-ai-knowledge-base", path: "/settings/ai/knowledge-base", mode: "expert", signedIn: true, help: "settings.ai-knowledge-base", guide: "settings.ai-knowledge-base" },
   { kind: "route", id: "settings-ai-plan", path: "/settings/profile/ai-plan", mode: "basic", signedIn: true, help: "settings.ai-plan", guide: "settings.ai-activity#your-own-ai-plan" },
   // Settings › Import (FR-MIG-01…03; p1-workbook-migration task 9.1): the move from the workbook, M1 to M6, and the generic import.
   { kind: "route", id: "settings-import", path: "/settings/import", mode: "expert", signedIn: true, help: "settings.import", guide: "settings.import" },

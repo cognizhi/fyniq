@@ -152,6 +152,15 @@ classes:
     protection: "A run reads as the Owner it acts for, within its agent's profile, without NRIC and FIN numbers, bank account numbers, secrets and home addresses, and payroll only when the organisation allows it (AI-02, AI-63); its findings name records, never their values"
     transfers: "Model calls only, when its model step runs: the flow ai-models"
     columns: [agent_run.findings, agent_run.summary, agent_run.model_text]
+  - key: knowledge-base
+    what: "The organisation's own knowledge base: the notes, policies and decisions its administrators write, and the pages, with every version and snapshot, the assistant reads to explain how the company decides things"
+    why: "So the assistant answers how-to and policy questions from what the company decided, in words a person approved (AI-50, AI-56)"
+    where: "The database, in Singapore (Cloud SQL, asia-southeast1; locally the developer's database)"
+    who: "The Owner and the Administrator write and publish; the Auditor reads; the assistant reads published pages only, within what the person asking may read (AI-54)"
+    retention: "Kept with the organisation's records: a version and a snapshot are never changed or removed (AI-56) [counsel to confirm]"
+    protection: "A note refuses what looks like an identity number, a bank account number or a secret; a page inherits the strictest data class of its sources and is read only by those who may read that class; nothing is published without a person's approval"
+    transfers: "Model calls only, when the compiler runs: the flow ai-models"
+    columns: [kb_note.body, kb_page_version.body]
   - key: compliance-tasks
     what: "The tasks the scheduled agents' findings and their approved proposals raise: what to do, by when, who owns it, who closed it and why"
     why: "So each finding has one task a named person sees through (AI-65)"

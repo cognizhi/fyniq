@@ -45,16 +45,16 @@ ORDER BY asked_at DESC, id DESC
 LIMIT sqlc.arg(max_rows);
 
 -- name: AIToolCallsOfTurns :many
-SELECT id, turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms
+SELECT id, turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms, kb_pages
 FROM fyniq.ai_tool_call WHERE turn_id = ANY(sqlc.arg(turns)::uuid[]) ORDER BY turn_id, n;
 
 -- name: InsertAIToolCall :exec
-INSERT INTO fyniq.ai_tool_call (turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms)
+INSERT INTO fyniq.ai_tool_call (turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms, kb_pages)
 VALUES (sqlc.arg(turn_id), sqlc.arg(n), sqlc.arg(tool), sqlc.arg(version), sqlc.arg(input), sqlc.arg(output_sha256), sqlc.arg(outcome),
-  sqlc.arg(code), sqlc.arg(facts), sqlc.arg(omitted), sqlc.arg(withheld), sqlc.arg(duration_ms));
+  sqlc.arg(code), sqlc.arg(facts), sqlc.arg(omitted), sqlc.arg(withheld), sqlc.arg(duration_ms), sqlc.arg(kb_pages)::jsonb);
 
 -- name: AIToolCallsOfTurn :many
-SELECT id, turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms
+SELECT id, turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms, kb_pages
 FROM fyniq.ai_tool_call WHERE turn_id = sqlc.arg(turn_id) ORDER BY n;
 
 -- name: AITurnsAskedSince :one

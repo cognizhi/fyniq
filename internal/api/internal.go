@@ -53,6 +53,7 @@ func (a *API) registerInternal(mux humago.Mux) {
 	registerProposals(a)
 	registerAgentRunModel(a)
 	registerMCPTools(a)
+	registerKBCompiler(a)
 }
 
 // internalAuthenticate accepts a call only from the AI service, for a live turn or run: its service token, then the
@@ -77,6 +78,17 @@ func (a *API) internalAuthenticate(ctx huma.Context, next func(huma.Context)) {
 	}
 	if ctx.Operation().OperationID == "callMCPTool" { // the MCP service's one way in, with its own service token and a delegated token
 		a.mcpAuthenticate(ctx, next, refuse)
+		return
+	}
+	if kbCompilerOps(ctx.Operation().OperationID) { // the knowledge-base compiler's four calls, with its own service token alone (AI-57)
+		if a.deps.Services == nil || a.deps.Services.Verify(ctx.Header(ServiceTokenHeader), ServiceKBCompiler) != nil {
+			refuse(http.StatusUnauthorized, problem(CodeUnauthenticated, "The call is not from the knowledge-base compiler.",
+				"Only the compiler job asks for these, with its own service token."))
+			return
+		}
+		audit := storage.AuditFrom(ctx.Context())
+		audit.Actor = &storage.Actor{Type: "service", ID: "kb-compiler"}
+		next(huma.WithContext(ctx, storage.WithAudit(ctx.Context(), audit)))
 		return
 	}
 	if a.deps.Services == nil || a.deps.Services.Verify(ctx.Header(ServiceTokenHeader), ServiceAI) != nil {
