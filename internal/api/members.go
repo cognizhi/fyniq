@@ -32,6 +32,14 @@ import (
 type MemberRole struct {
 	Role      RoleName   `json:"role" doc:"The role (PRD-001 §6.2)."`
 	ExpiresAt *time.Time `json:"expires_at,omitempty" doc:"When it ends, for an external user; absent while it lasts." example:"2027-03-31T00:00:00Z"`
+	// rev 0.327
+	DepartmentValueIDs []string `json:"department_value_ids,omitempty" doc:"For the Approver role: the department values it is narrowed to (FR-ADM-01). Appendix D's department-qualified cells reach only the records, lines and budgets of these values; an Approver role with none reaches none of them."`
+}
+
+// TransformSchema implements huma.SchemaTransformer: an example for each department value (NFR-API-01).
+func (MemberRole) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	itemExamples(s, map[string]any{"department_value_ids": "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"})
+	return s
 }
 
 // Member is a member of the organisation with their live roles.
@@ -85,6 +93,7 @@ type MemberInvitationCode struct {
 type RoleGrant struct {
 	Role              RoleName   `json:"role" doc:"The role (PRD-001 §6.2)."`
 	ExpiresAt         *time.Time `json:"expires_at,omitempty" doc:"For an external user: when it ends. Never on the Owner role." example:"2027-03-31T00:00:00Z"`
+	DepartmentValueIDs []string  `json:"department_value_ids,omitempty" maxItems:"20" doc:"For the Approver role only: the department values to narrow it to (FR-ADM-01, rev 0.253). Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another role is refused."`
 	SoDOverrideReason string     `json:"sod_override_reason,omitempty" maxLength:"500" doc:"In a team mode that blocks conflicts (Standard): why the member keeps the conflict of §6.3 this role makes. The role change's approver accepts the override, which is reported with the team mode (TEAM-02, rev 0.42)." example:"Founder who also keeps the books until we hire"`
 }
 
@@ -202,6 +211,9 @@ func memberOf(m storage.Member) Member {
 // roleOut is a role assignment as the API shows it, its end date in UTC.
 func roleOut(r storage.RoleAssignment) MemberRole {
 	out := MemberRole{Role: RoleName(r.Role)}
+	for _, v := range r.DepartmentValues {
+		out.DepartmentValueIDs = append(out.DepartmentValueIDs, v.String())
+	}
 	if r.ExpiresAt != nil {
 		at := r.ExpiresAt.UTC()
 		out.ExpiresAt = &at
@@ -265,7 +277,7 @@ func (a *API) logBootstrap(ctx context.Context, u storage.UnitOfWork, objectType
 }
 
 // assignRoleNow gives member id role until expires (nil: no expiry), and revokes their OAuth tokens.
-func (a *API) assignRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, role string, expires *time.Time) (Member, error) {
+func (a *API) assignRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, role string, expires *time.Time, departments ...uuid.UUID) (Member, error) {
 	now := a.deps.Clock.Now()
 	m, err := findMember(ctx, u, id, now)
 	if err != nil {
@@ -281,8 +293,14 @@ func (a *API) assignRoleNow(ctx context.Context, u storage.UnitOfWork, id uuid.U
 			return Member{}, err
 		}
 	}
-	if _, err := u.Members().Assign(ctx, id, role, expires); err != nil {
+	given, err := u.Members().Assign(ctx, id, role, expires)
+	if err != nil {
 		return Member{}, err
+	}
+	if len(departments) > 0 {
+		if err := u.Members().Narrow(ctx, given.ID, departments); err != nil {
+			return Member{}, err
+		}
 	}
 	if err := a.endTokens(ctx, u, m, "role "+role+" assigned"); err != nil {
 		return Member{}, err
@@ -571,6 +589,24 @@ func registerMembers(a *API) {
 					}
 					return nil, invalid(bad)
 				}
+				departments, err := roleDepartments(role, in.Body.DepartmentValueIDs)
+				if err != nil {
+					return nil, err
+				}
+				for _, d := range departments {
+					v, err := u.Dimensions().GetValue(ctx, d)
+					var dim storage.Dimension
+					if err == nil {
+						dim, err = u.Dimensions().Get(ctx, v.DimensionID)
+					}
+					if errors.Is(err, ports.ErrNotFound) || (err == nil && dim.Kind != storage.DimensionDepartment) {
+						return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.department_value_ids", Message: d.String() + " is not a value of the department dimension",
+							Fix: "Send the IDs of the department's values"}})
+					}
+					if err != nil {
+						return nil, err
+					}
+				}
 				wait, err := needsApproval(ctx, u)
 				if err != nil {
 					return nil, err
@@ -592,7 +628,7 @@ func registerMembers(a *API) {
 						return nil, problem(team.CodeConflict, "An override needs a second approver, and the organisation has one active member.",
 							"Choose a role that does not conflict, or invite another member first")
 					}
-					mm, err := a.assignRoleNow(ctx, u, id, role, in.Body.ExpiresAt)
+					mm, err := a.assignRoleNow(ctx, u, id, role, in.Body.ExpiresAt, departments...)
 					if err != nil {
 						return nil, err
 					}
@@ -607,6 +643,13 @@ func registerMembers(a *API) {
 				}
 				after := strings.Trim(liveRoles(m)+", "+role, ", ")
 				execute := map[string]any{"member_id": id.String(), "role": role, "expires_at": expires}
+				if len(departments) > 0 {
+					ids := make([]string, len(departments))
+					for i, d := range departments {
+						ids[i] = d.String()
+					}
+					execute["department_value_ids"] = ids
+				}
 				diff := []ApprovalDiff{{Field: "roles", Before: liveRoles(m), After: after}}
 				summary := "Give " + m.DisplayName + " the role " + role
 				if override != nil {
@@ -762,4 +805,26 @@ func registerMembers(a *API) {
 			}
 			return &joinOutput{Body: out}, nil
 		})
+}
+
+// roleDepartments reads the department values a role is narrowed to (FR-ADM-01, rev 0.253): only the Approver role is, each is
+// an ID, and none repeats; the database checks that each is a value of the department dimension.
+func roleDepartments(role string, ids []string) ([]uuid.UUID, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	if role != string(authz.Approver) {
+		return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.department_value_ids", Message: "only the Approver role is narrowed to departments",
+			Fix: "Leave department_value_ids out, or give the Approver role"}})
+	}
+	out := make([]uuid.UUID, 0, len(ids))
+	for _, s := range ids {
+		v, err := uuid.Parse(s)
+		if err != nil || slices.Contains(out, v) {
+			return nil, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.department_value_ids", Message: "each department value is an ID, and none repeats",
+				Fix: "Send the IDs of the department's values from the organisation's dimensions"}})
+		}
+		out = append(out, v)
+	}
+	return out, nil
 }

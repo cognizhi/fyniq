@@ -41013,6 +41013,8 @@ export interface components {
             next_cursor?: string;
         };
         MemberRole: {
+            /** @description For the Approver role: the department values it is narrowed to (FR-ADM-01). Appendix D's department-qualified cells reach only the records, lines and budgets of these values; an Approver role with none reaches none of them. */
+            department_value_ids?: string[] | null;
             /**
              * Format: date-time
              * @description When it ends, for an external user; absent while it lasts.
@@ -50283,6 +50285,8 @@ export interface components {
             items: components["schemas"]["RiskView"][];
         };
         RoleGrant: {
+            /** @description For the Approver role only: the department values to narrow it to (FR-ADM-01, rev 0.253). Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another role is refused. */
+            department_value_ids?: string[] | null;
             /**
              * Format: date-time
              * @description For an external user: when it ends. Never on the Owner role.

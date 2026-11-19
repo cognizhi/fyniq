@@ -35118,6 +35118,15 @@ components:
     MemberRole:
       additionalProperties: false
       properties:
+        department_value_ids:
+          description: "For the Approver role: the department values it is narrowed to (FR-ADM-01). Appendix D's department-qualified cells reach only the records, lines and budgets of these values; an Approver role with none reaches none of them."
+          items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+            type: string
+          type:
+            - array
+            - "null"
         expires_at:
           description: When it ends, for an external user; absent while it lasts.
           examples:
@@ -48294,6 +48303,14 @@ components:
     RoleGrant:
       additionalProperties: false
       properties:
+        department_value_ids:
+          description: "For the Approver role only: the department values to narrow it to (FR-ADM-01, rev 0.253). Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another role is refused."
+          items:
+            type: string
+          maxItems: 20
+          type:
+            - array
+            - "null"
         expires_at:
           description: "For an external user: when it ends. Never on the Owner role."
           examples:
