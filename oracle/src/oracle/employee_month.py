@@ -12,7 +12,8 @@ The rules this module applies, with the source of each:
 
 * **Wage classes by facts** (FR-PAY-17). An item that is CPF wages is *ordinary* when it is for the month's employment (``for_month``,
   the wage month when it names none) and payable by the 14th of the following month (``payable_on``, the month's pay day when it names
-  none), and *additional* otherwise (so pay for another month's employment is additional wages [verify]); an item that is not CPF wages is
+  none), and *additional* otherwise (so pay for another month's employment is additional wages: the CPF Board's two conditions, checked 20 Nov 2026
+  [accountant to confirm: an item for the month before that is payable by the 14th is that month's ordinary wages]); an item that is not CPF wages is
   neither. The name (``suggested``) changes no figure.
 * **Gross** is every item added (B.3). **Ordinary wages for CPF** are ``min(max(0, ordinary items), OW ceiling)``; the **additional
   wages** of the month are the additional items (not below nothing), limited by the annual ceiling (below).
@@ -30,15 +31,15 @@ The rules this module applies, with the source of each:
   60th, 65th and 70th birthday. Wages up to S$50 carry nothing; above S$50 to S$500 the flat rate of the wages, all of it the employer's;
   above S$500 to S$750 the flat rate of the wages plus the slope of the wages above S$500, the slope being the employee's share
   (``RND-CPF-GRAD``); above S$750 the rates of the rates table on the subject wages (``RND-CPF``). The month's total wages, which pick the band,
-  are the wages subject to CPF, as the pack's own text defines them: the capped ordinary wages and the additional wages after their
-  ceiling and any true-up [verify: the CPF Board's "Total Wages payable in a calendar month" may count the wages above a ceiling]. In both the **total** is rounded to
+  are the wages subject to CPF: the capped ordinary wages and the additional wages after their ceiling and any true-up (the CPF Board's table notes define "TW: Total
+  Wages = OW + AW" with OW capped at the ceiling; whether the AW is the one after the annual ceiling is [accountant to confirm]). In both the **total** is rounded to
   the nearest dollar with 50 cents up, the **employee's share** is rounded down to the dollar, the employer's is the difference, once
   per employee-month.
 * **SDL** (FR-PAY-03, ``RND-SDL``): an employee's levy is the rate on the month's remuneration (the gross) rounded to the cent half up,
   held between the pack's minimum and maximum, and nothing when the remuneration is not above nothing; a contractor pays none. The
   employer-month **SDL payable** is the employees' amounts added and rounded **down** to the dollar.
 * **SHG** (FR-PAY-04): the fund's amount for the band the month's wages (the gross, before the ceilings) fall in, unless the employee
-  opted out; nothing when there are none [verify: whether items that are not CPF wages count as "monthly total wages"].
+  opted out; nothing when there are none [accountant to confirm: whether items that are not CPF wages count as "monthly total wages"; the CPF pages do not define it].
 * **Deductions** (FR-PAY-16): only the kinds MOM allows; ``other`` needs written consent; the deductions, not counting absence, the
   recovery of advances, loans, overpaid salary or unearned benefits and co-operative society payments, are at most 50% of the salary
   payable (the gross) except on termination (``final``); an advance is recovered in at most 12 instalments of at most 25% of the
@@ -172,7 +173,7 @@ def _pack_ids(doc: dict[str, Any]) -> dict[str, str]:
 
 def _passed(birth: date, month: date, years: int) -> bool:
     """Whether the person is above ``years`` of age for the wage month: from the first day of the month after the birthday. A 29 February
-    birthday falls on 1 March in a year with no 29 February [verify: the CPF Board's reading]."""
+    birthday falls on 1 March in a year with no 29 February [accountant to confirm: the CPF Board says nothing; 1 March never under-pays, as the younger band's rates are never lower]."""
     year = birth.year + years
     try:
         birthday = date(year, birth.month, birth.day)

@@ -1669,20 +1669,47 @@ The first differential run found three disagreements, the engine being wrong in 
 contributed nothing; additional wages above the ceiling moved a low-wage month); an advance recovered was not kept apart for 1250; and a
 refund task was worked out only above S$750.
 
-Rules the sources leave open, decided in the oracle and marked for confirmation (`[verify]`, `[accountant to confirm]`):
+Rules the sources leave open, decided in the oracle and marked for confirmation (`[verify]`, `[accountant to confirm]`). The second reviewer
+(20 Nov 2026) re-decided the four points the first run had aligned to the engine; each source below was fetched that day:
 
 - **The year's estimated ordinary wages** before the last pay month: what is counted so far plus this month's ordinary wages subject to CPF for
   each month left, this one included (FR-PAY-14 says only "estimated OW for the year"). `[verify]`
-- **Joint election** is the full employer rate with graduated employee rates (F/G); the person record has no switch for F/F. `[verify]`
+- **Joint election** is F/G, the full employer rate with graduated employee rates, in `joint_election`; **F/F**, full rates for both, is
+  `joint_election` with `employee_full_rate` and reads the pack's `sc_spr3` group, as the CPF Board's table note says ("These rates are also applicable to
+  1st and 2nd year Singapore Permanent Resident (SPR) employees ... after CPF Board approves their joint application to contribute to CPF at full employer -
+  full employee rates", Table 1, https://www.cpf.gov.sg/content/dam/web/employer/employer-obligations/documents/CPFcontributionratesfrom1Jan2026.pdf).
+  The engine and the oracle work both out; how an organisation records F/F (`nemura.pr_election` has no kind) is not built. `[verify]`
 - **No start date** for a permanent resident is read as past the second year; a month in the start month is in the first year. `[verify]`
-- **SDL** and **SHG** are on the gross, before the ceilings, items that are not CPF wages included; SHG is nothing when there are no wages. `[verify]`
-- **Graduated band** (an engine behaviour change on an open rule, tagged in `calc.go`; the CPF Board page checked 20 Nov 2026 says only "Total Wages payable in a calendar month") is chosen on the wages subject to CPF (after the ceilings and a true-up), as the sg-cpf pack defines total wages. `[verify]`
-- **Wage class** is judged against the wage month: pay for another month's employment is additional wages. `[verify]`
-- **A 29 February birthday** is 1 March in a year with none, so the age band changes the month after that. `[verify]`
+- **SDL** and **SHG** are on the gross, before the ceilings, items that are not CPF wages included; SHG is nothing when there are no wages.
+  `[accountant to confirm]` Both CPF pages say only "monthly total wages" (https://www.cpf.gov.sg/employer/employer-obligations/skills-development-levy: "The levy
+  payable for each employee is at 0.25% of the monthly total wages"; .../contributions-to-self-help-groups: the column "Monthly Total Wages", never defined) and the
+  Skills Development Levy Act (sso.agc.gov.sg) answered 403, so whether a cash payment that is not CPF wages (a retrenchment benefit, a reimbursement) is in the base
+  is open. The PRD says "total remuneration" (FR-PAY-03), so it stays on the gross; a search snippet said SkillsFuture aligned the Act's "remuneration" with the CPF
+  Act's "wages", which would take such payments out, but the page itself was unreadable. The figures differ only for an item that is not CPF wages.
+- **Graduated band** is chosen on the wages subject to CPF. The CPF Board's rate table notes define it: "OW: Ordinary Wages (capped at OW ceiling of $8,000)", "AW:
+  Additional Wages", "TW: Total Wages = OW + AW" (Table 1, same PDF). The note does not say whether the AW in TW is the AW after the annual ceiling, so additional
+  wages the ceiling leaves no room for (which can move a month only when the ordinary wages are under S$750) are left out. `[accountant to confirm]`
+- **Wage class** is by the item's facts (the PRD's FR-PAY-17, confirmed): "For wages to be classified as Ordinary Wages (OW) for the month, they must meet both of
+  the following conditions: They are given to an employee for their employment in that month, and They are payable by the 14th of the following month. ... Wages which
+  are not classified as OW will be Additional Wages (AW) for the month" (https://www.cpf.gov.sg/service/article/what-are-ordinary-wages-ow-and-additional-wages-aw);
+  overtime worked in April and paid 10 May is "OW for Apr", paid 30 May "AW for May"; a back-dated increment decided in April is AW for April (the overtime and
+  retrospective-increment articles of cpf.gov.sg). So an item for an earlier month that is payable by the 14th after *that* month is the earlier month's ordinary wages
+  and belongs to that month's employee-month (a correction, NM-PAY-09); in this month's it is read as additional wages. `[accountant to confirm]`
+- **A 29 February birthday** is 1 March in a year with none, so the age band changes the month after that. The CPF Board says only "New contribution rates apply from the
+  first day of the month after the employee's 55th, 60th, 65th or 70th birthday" with an example of 13 January (https://www.cpf.gov.sg/service/article/when-will-my-cpf-contribution-rates-change-when-I-turn-55-60-65-or-70);
+  nothing on a 1 March or 29 February birthday. If the Board reads 28 February instead, the person's band changes a month earlier than here and these rates (the younger band's, which
+  are never lower) are paid a month too long: an over-payment, never an under-payment. `[accountant to confirm]`
 - **Final pay**: an advance is recovered only with consent; the 12-instalment and 25% limits are not applied on it. `[accountant to confirm]`
 - **Run cost and 6030** carry the SDL payable (rounded down once), not the employees' sum (PRD-001 question 27, recommended default).
-- **Refund** (decided 20 Nov 2026 from the CPF Board's own example, which the sources section below quotes): the employee's share is `refund / total rate x employee rate` with the cents dropped, so whole dollars ("$1,182.15" is "$1,182"); the refund's total is the refunded wages at the full table's total rate, to the nearest dollar with 50 cents up (`RND-CPF`'s total). Both are compared. `[accountant to confirm]` the total's rounding: the CPF Board's calculator rounds monthly and its automatic refund over the year, so its figure can differ by a few dollars.
-- **Not covered here:** overrides (FR-PAY-06), the foreign worker levy (O2), the part-month salary of joiners and leavers.
+- **Refund** (decided 20 Nov 2026 from the CPF Board's own example): the employee's share is `refund / total rate x employee rate` with the cents dropped, so whole
+  dollars ("Employee's share = ($2,260 / 32.5%) x 17% = $1,182 (cents should be dropped)"; https://www.cpf.gov.sg/service/article/why-does-the-excess-cpf-from-the-additional-wage-ceiling-calculator-differ-from-the-automatic-refund-and-how-do-I-calculate-my-employee-s-share);
+  the refund's total is the refunded wages at the full table's total rate, to the nearest dollar with 50 cents up (`RND-CPF`'s total). Both are compared.
+  `[accountant to confirm]` the total's rounding: the same page says the calculator rounds monthly and the automatic refund works over the year, so its figure can differ by a few dollars.
+- **Part-month pay** (NM-PAY-12, `RND-PAY-RATIO`): the PRD counts **calendar days** of each pay record over the days of the month. MOM's page counts **working days**:
+  "Monthly gross rate of pay / Total number of working days in that month x Total number of days the employee actually worked in that month", working days
+  "excludes rest days and non-working days, but includes public holidays" (https://www.mom.gov.sg/employment-practices/salary/monthly-and-daily-salary). The two differ for
+  a joiner or a leaver. This is the owner's decision (O5 of `p1-nemura-payroll`); it is reported, not changed. `[accountant to confirm]`
+- **Not covered here:** the foreign worker levy (O2).
 
 ## Commands
 
