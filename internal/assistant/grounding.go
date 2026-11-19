@@ -31,6 +31,11 @@ type Segment struct {
 	To       string `json:"to,omitempty"`
 	Currency string `json:"currency,omitempty"`
 	Missing  string `json:"missing,omitempty"`
+	// A know-how sentence (AI-51, AI-53): Text is its words, Page the key of a knowledge-base page read this turn and Section
+	// the section's anchor. Sources are the guide pages the section cites, set by Fyniq and never by the model.
+	Page    string   `json:"page,omitempty"`
+	Section string   `json:"section,omitempty"`
+	Sources []Source `json:"sources,omitempty"`
 }
 
 // Structured is the answer as the model gives it.
@@ -49,13 +54,15 @@ var answerSchema = json.RawMessage(`{"type":"object","additionalProperties":fals
 	`"from":{"type":"string","description":"With fact: the period's first day the sentence gives it, YYYY-MM-DD."},` +
 	`"to":{"type":"string","description":"With fact: the period's last day, YYYY-MM-DD."},` +
 	`"currency":{"type":"string","description":"With fact: the currency the sentence gives an amount."},` +
-	`"missing":{"type":"string","description":"What could not be established, because no tool gave it or a tool failed."}}}}}}`)
+	`"missing":{"type":"string","description":"What could not be established, because no tool gave it or a tool failed."},` +
+	`"page":{"type":"string","description":"A know-how sentence, in a text segment: the key of the knowledge-base page you read with kb_read in this conversation. Its numbers must be the section's own."},` +
+	`"section":{"type":"string","description":"With page: the anchor of the section of that page the sentence comes from, as kb_read returned it."}}}}}}`)
 
 // answerOutput is the strict output the model calls ask for (AI-27).
 var answerOutput = &ports.ModelSchema{Name: "answer", Schema: answerSchema}
 
 // failures are the reasons a structured answer is not grounded, each in words the model can act on.
-func failures(s Structured, known func(string) (aitool.Fact, bool)) []string {
+func failures(s Structured, known func(string) (aitool.Fact, bool), pg pages) []string {
 	var out []string
 	if len(s.Segments) == 0 {
 		return []string{"the answer has no segments"}
@@ -64,6 +71,8 @@ func failures(s Structured, known func(string) (aitool.Fact, bool)) []string {
 		switch {
 		case g.Fact != "":
 			out = append(out, attribution(g, known)...)
+		case g.Page != "":
+			out = append(out, pg.knowHow(g)...)
 		case g.Text != "":
 			if n := stray(g.Text); n != "" {
 				out = append(out, fmt.Sprintf("the words %q hold the figure %s: give every figure as a fact segment", clip(g.Text), n))
@@ -122,14 +131,16 @@ func clip(s string) string {
 
 // withhold replaces what still fails with what could not be established: an unknown or misattributed figure, and words
 // holding a figure.
-func withhold(s Structured, known func(string) (aitool.Fact, bool)) (Structured, int) {
+func withhold(s Structured, known func(string) (aitool.Fact, bool), pg pages) (Structured, int) {
 	out := Structured{Segments: make([]Segment, 0, len(s.Segments))}
 	n := 0
 	for _, g := range s.Segments {
 		switch {
 		case g.Fact != "" && len(attribution(g, known)) > 0:
 			out.Segments, n = append(out.Segments, Segment{Missing: "this figure"}), n+1
-		case g.Text != "" && stray(g.Text) != "":
+		case g.Page != "" && len(pg.knowHow(g)) > 0:
+			out.Segments, n = append(out.Segments, Segment{Missing: "this part of the guide"}), n+1
+		case g.Text != "" && g.Page == "" && stray(g.Text) != "":
 			out.Segments, n = append(out.Segments, Segment{Text: restoreAllowed(g.Text)}), n+1
 		default:
 			out.Segments = append(out.Segments, g)

@@ -32,6 +32,9 @@ aliases:
   - linked sign-in accounts
   - second sign-in provider
   - remove a sign-in
+  - two factor authentication
+  - 2FA
+  - authenticator app
 ---
 
 # Your profile and security: Basic or Expert mode, your bank account, passkeys, sign-ins and devices

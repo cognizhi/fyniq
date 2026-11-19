@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "body": {
+      "description": "What it says, in words the assistant may explain to colleagues. No secrets, bank account numbers or identity numbers.",
+      "examples": [
+        "Claims are made within 30 days of the receipt date."
+      ],
+      "maxLength": 20000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "data_class": {
+      "description": "The strictest class of data it holds: a page made from it is shown only to those who may read that class (AI-54); left out, general.",
+      "enum": [
+        "general",
+        "personal",
+        "payroll",
+        "equity"
+      ],
+      "examples": [
+        "general"
+      ],
+      "type": "string"
+    },
+    "key": {
+      "description": "Its key, once and for good: lower-case words, dots and hyphens.",
+      "examples": [
+        "expense-policy"
+      ],
+      "pattern": "^[a-z0-9][a-z0-9.-]{0,99}$",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What it is.",
+      "enum": [
+        "note",
+        "policy",
+        "decision"
+      ],
+      "examples": [
+        "policy"
+      ],
+      "type": "string"
+    },
+    "title": {
+      "description": "Its title.",
+      "examples": [
+        "Expense policy"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "title",
+    "body"
+  ],
+  "title": "KBNoteInput",
+  "type": "object"
+}

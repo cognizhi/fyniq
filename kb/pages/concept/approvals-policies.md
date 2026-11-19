@@ -22,6 +22,8 @@ aliases:
   - approval conditions
   - approve by amount
   - self-approval threshold and rules
+  - who must approve a payment
+  - approval thresholds
 ---
 
 # Approval policies: who approves each kind of change

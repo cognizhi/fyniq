@@ -51,7 +51,9 @@ func TestAttackAIConversationsOnlyGoForward(t *testing.T) {
 				"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", &answered
 			t.Cited, t.Runs = []string{"F00000000000000aa"}, []uuid.UUID{uuid.New()}
 			return u.AIConversations().Finish(ctx, t, []storage.AIToolCall{{Tool: "metrics.query", Version: 1, Input: json.RawMessage(`{"measure":"revenue"}`),
-				Outcome: "read", Facts: 1}, {Tool: "records.get", Version: 1, Input: json.RawMessage(`{}`), Outcome: "refused", Code: "AI-TOOL-03"}})
+				Outcome: "read", Facts: 1}, {Tool: "records.get", Version: 1, Input: json.RawMessage(`{}`), Outcome: "refused", Code: "AI-TOOL-03"},
+				{Tool: "kb.read", Version: 1, Input: json.RawMessage(`{"key":"claims.approve-team-claims"}`), Outcome: "read",
+					KBPages: []storage.KBPageVersion{{Key: "claims.approve-team-claims", Version: "v0.1.0#7c1ea9b4f2d3"}}}})
 		})
 	}
 	if err := finish(storage.TurnAnswered, ""); err != nil {
@@ -69,8 +71,8 @@ func TestAttackAIConversationsOnlyGoForward(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if len(turns) != 1 || turns[0].Status != storage.TurnAnswered || turns[0].Prompt != "chat@2" || len(calls) != 2 || calls[1].N != 2 ||
-			calls[1].Code != "AI-TOOL-03" {
+		if len(turns) != 1 || turns[0].Status != storage.TurnAnswered || turns[0].Prompt != "chat@2" || len(calls) != 3 || calls[1].N != 2 ||
+			calls[1].Code != "AI-TOOL-03" || len(calls[0].KBPages) != 0 || len(calls[2].KBPages) != 1 || calls[2].KBPages[0].Version != "v0.1.0#7c1ea9b4f2d3" {
 			t.Errorf("the turn: %+v %+v", turns, calls)
 		}
 		asked, err := u.AIConversations().Asked(ctx, person, now.Add(-time.Minute))

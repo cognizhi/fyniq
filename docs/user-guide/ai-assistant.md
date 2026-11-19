@@ -41,6 +41,19 @@ requirements: [FR-UX-17, AI-08, AI-22, AI-68, AI-69, AI-P8, QA-AI-05, FR-PLN-08]
   against the books, it leaves the figure out and says how many it left out.
 - In Expert mode, each answer also lists what each figure was read from and the ledger revision it was read at.
 
+## Ask how something works
+
+- Ask how Fyniq works, what a status means, or what your organisation decided, such as "How soon must a claim be
+  submitted?". The assistant answers from Fyniq's guide, in its own words, and never from memory.
+- Beneath the answer, a chip names the guide page each explanation comes from. Select it to open that page. The page is
+  one you can open in the user guide; the assistant's own working notes are never shown or linked.
+- A chip marked **awaiting review** points to a guide page that has not been reviewed yet; the assistant says so when it
+  relies on it.
+- The guide explains how things work. It holds no figures of your books: those always come from the books, as above. For
+  a tax rate, threshold or deadline the assistant checks Fyniq's statutory values and says so when the guide may be out
+  of date.
+- It only draws on guide pages you may open, so it never explains something your role cannot see.
+
 ## What it never sees
 
 - Identity numbers (NRIC and FIN), bank account numbers, secrets and home addresses never reach the assistant, even if

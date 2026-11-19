@@ -36,7 +36,7 @@ func TestTheRegistryIsTheLaunchTools(t *testing.T) {
 			t.Errorf("%s as the model is offered it: %+v", tool.Name, m)
 		}
 	}
-	want := []string{"calc", "checks.explain", "checks.list", "lineage.explain", "metrics.query", "packs.get", "records.get", "records.search"}
+	want := []string{"calc", "checks.explain", "checks.list", "kb.index", "kb.read", "kb.search", "lineage.explain", "metrics.query", "packs.get", "records.get", "records.search"}
 	if !slices.Equal(names, want) {
 		t.Fatalf("the registry's tools: %v, want %v", names, want)
 	}

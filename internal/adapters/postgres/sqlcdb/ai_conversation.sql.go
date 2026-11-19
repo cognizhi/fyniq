@@ -218,7 +218,7 @@ func (q *Queries) AIToolCallMonitor(ctx context.Context, arg AIToolCallMonitorPa
 }
 
 const aIToolCallsOfTurn = `-- name: AIToolCallsOfTurn :many
-SELECT id, turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms
+SELECT id, turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms, kb_pages
 FROM fyniq.ai_tool_call WHERE turn_id = $1 ORDER BY n
 `
 
@@ -236,6 +236,7 @@ type AIToolCallsOfTurnRow struct {
 	Omitted      int32
 	Withheld     bool
 	DurationMs   int32
+	KbPages      []byte
 }
 
 func (q *Queries) AIToolCallsOfTurn(ctx context.Context, turnID uuid.UUID) ([]AIToolCallsOfTurnRow, error) {
@@ -261,6 +262,7 @@ func (q *Queries) AIToolCallsOfTurn(ctx context.Context, turnID uuid.UUID) ([]AI
 			&i.Omitted,
 			&i.Withheld,
 			&i.DurationMs,
+			&i.KbPages,
 		); err != nil {
 			return nil, err
 		}
@@ -273,7 +275,7 @@ func (q *Queries) AIToolCallsOfTurn(ctx context.Context, turnID uuid.UUID) ([]AI
 }
 
 const aIToolCallsOfTurns = `-- name: AIToolCallsOfTurns :many
-SELECT id, turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms
+SELECT id, turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms, kb_pages
 FROM fyniq.ai_tool_call WHERE turn_id = ANY($1::uuid[]) ORDER BY turn_id, n
 `
 
@@ -291,6 +293,7 @@ type AIToolCallsOfTurnsRow struct {
 	Omitted      int32
 	Withheld     bool
 	DurationMs   int32
+	KbPages      []byte
 }
 
 func (q *Queries) AIToolCallsOfTurns(ctx context.Context, turns []uuid.UUID) ([]AIToolCallsOfTurnsRow, error) {
@@ -316,6 +319,7 @@ func (q *Queries) AIToolCallsOfTurns(ctx context.Context, turns []uuid.UUID) ([]
 			&i.Omitted,
 			&i.Withheld,
 			&i.DurationMs,
+			&i.KbPages,
 		); err != nil {
 			return nil, err
 		}
@@ -740,9 +744,9 @@ func (q *Queries) InsertAIFeedback(ctx context.Context, arg InsertAIFeedbackPara
 }
 
 const insertAIToolCall = `-- name: InsertAIToolCall :exec
-INSERT INTO fyniq.ai_tool_call (turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms)
+INSERT INTO fyniq.ai_tool_call (turn_id, n, tool, version, input, output_sha256, outcome, code, facts, omitted, withheld, duration_ms, kb_pages)
 VALUES ($1, $2, $3, $4, $5, $6, $7,
-  $8, $9, $10, $11, $12)
+  $8, $9, $10, $11, $12, $13::jsonb)
 `
 
 type InsertAIToolCallParams struct {
@@ -758,6 +762,7 @@ type InsertAIToolCallParams struct {
 	Omitted      int32
 	Withheld     bool
 	DurationMs   int32
+	KbPages      []byte
 }
 
 func (q *Queries) InsertAIToolCall(ctx context.Context, arg InsertAIToolCallParams) error {
@@ -774,6 +779,7 @@ func (q *Queries) InsertAIToolCall(ctx context.Context, arg InsertAIToolCallPara
 		arg.Omitted,
 		arg.Withheld,
 		arg.DurationMs,
+		arg.KbPages,
 	)
 	return err
 }
