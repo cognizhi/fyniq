@@ -20,13 +20,14 @@ const (
 
 // Person is what the calculation needs to know about the employee for the month.
 type Person struct {
-	Employee      bool       // a contract of service: SDL applies to every employee, CPF to citizens and permanent residents; a contractor has neither
-	Residency     string     // citizen, permanent_resident or foreigner
-	PRStart       *time.Time // the day permanent resident status was obtained (the first-year and second-year rates run from it)
-	BirthDate     time.Time  // for the age band
-	JointElection bool       // a permanent resident in the first two years with the CPF Board's approval of a joint application: full employer and graduated employee rates
-	SHGFund       string     // CDAC, ECF, MBMF or SINDA; empty when none
-	SHGOptOut     bool       // the employee opted out (recorded)
+	Employee         bool       // a contract of service: SDL applies to every employee, CPF to citizens and permanent residents; a contractor has neither
+	Residency        string     // citizen, permanent_resident or foreigner
+	PRStart          *time.Time // the day permanent resident status was obtained (the first-year and second-year rates run from it)
+	BirthDate        time.Time  // for the age band
+	JointElection    bool       // a permanent resident in the first two years with the CPF Board's approval of a joint application: full employer and graduated employee rates (F/G)
+	FullEmployeeRate bool       // with JointElection: the application is for the employee's full rates too (F/F), which are the full table's (sc_spr3)
+	SHGFund          string     // CDAC, ECF, MBMF or SINDA; empty when none
+	SHGOptOut        bool       // the employee opted out (recorded)
 }
 
 // YearToDate is what this employer has already counted for the person in the calendar year, before the month (FR-PAY-14). Known is false when it was never imported or built up,
@@ -145,11 +146,17 @@ func cpfGroup(p Person, month time.Time) string {
 		}
 		switch PRYear(*p.PRStart, month) {
 		case 1:
+			if p.JointElection && p.FullEmployeeRate {
+				return pack.GroupSCSPR3
+			}
 			if p.JointElection {
 				return pack.GroupSPR1FG
 			}
 			return pack.GroupSPR1GG
 		case 2:
+			if p.JointElection && p.FullEmployeeRate {
+				return pack.GroupSCSPR3
+			}
 			if p.JointElection {
 				return pack.GroupSPR2FG
 			}

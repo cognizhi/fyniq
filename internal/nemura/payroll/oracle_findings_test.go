@@ -171,3 +171,24 @@ func TestTheBandIsChosenOnTheWagesSubjectToCPFNotThoseAboveTheCeiling(t *testing
 	fEq(t, "CPF total", r.CPF.Total, "18")
 	fEq(t, "CPF employee", r.CPF.Employee, "0")
 }
+
+// FR-PAY-14: a first- or second-year permanent resident whose employer and who jointly apply may contribute at full employer and full employee rates (F/F, Form JAP/94),
+// which are Table 1's: the CPF Board's table note says "These rates are also applicable to 1st and 2nd year Singapore Permanent Resident (SPR) employees ... after CPF Board
+// approves their joint application to contribute to CPF at full employer - full employee rates" (cpf.gov.sg, checked 20 Nov 2026). At 5,000 a month and age 36, 37%: 1,850 in
+// all, 1,000 the employee's; at 600 the graduated range of the full table, 17% of 600 + 0.6 x (600 - 500) = 162, 60 the employee's. F/G stays at full employer and
+// graduated employee rates (the pack's spr1_fg rows), unchanged.
+// req: FR-PAY-14
+func TestAFullEmployerAndFullEmployeeElectionIsTheFullTable(t *testing.T) {
+	start := fDay(2026, 2, 10)
+	for _, c := range []struct{ pay, total, employee string }{{"5000.00", "1850", "1000"}, {"600.00", "162", "60"}} {
+		p := fCitizen()
+		p.Residency, p.PRStart, p.JointElection, p.FullEmployeeRate = payroll.PermanentResident, &start, true, true
+		m := payroll.Month{Month: fDay(2027, 2, 1), Person: p, Items: []payroll.Item{fBasic(c.pay)}}
+		r, err := payroll.Calculate(m, oraclePacks(t))
+		if err != nil {
+			t.Fatal(err)
+		}
+		fEq(t, "CPF total at "+c.pay, r.CPF.Total, c.total)
+		fEq(t, "CPF employee at "+c.pay, r.CPF.Employee, c.employee)
+	}
+}
