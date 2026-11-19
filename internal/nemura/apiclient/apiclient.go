@@ -24,6 +24,10 @@ var Scopes = []string{"directory.read"}
 // with this scope alone (p1-nemura-fyniq-link design D1).
 const LinkScope = "link.events.write"
 
+// AskScope is the one scope Fyniq's second link client holds: it reaches the read of a hold's status and nothing that writes. Fyniq asks with it at the release of a payment (PRD-001 FR-PPL-13); the client that
+// sends events cannot ask, and the one that asks cannot send. Like LinkScope it is outside Scopes.
+const AskScope = "link.holds.read"
+
 // TokenLifespan is how long each access token lives (AI-38: at most 60 minutes).
 const TokenLifespan = time.Hour
 

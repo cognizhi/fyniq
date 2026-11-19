@@ -293,6 +293,7 @@ fyniq_link | changed_at | timestamp with time zone | true |
 fyniq_link | peer_client_id | text | false | 
 fyniq_link | fyniq_client_id | text | false | 
 fyniq_link | proposed_by | uuid | false | 
+fyniq_link | peer_ask_client_id | text | false | 
 fyniq_link_secret | organisation_id | uuid | true | nemura.current_org()
 fyniq_link_secret | link_id | uuid | true | 
 fyniq_link_secret | link_private | bytea | true | 
@@ -518,6 +519,7 @@ letter_type | updated_at | timestamp with time zone | true |
 link_client_route | peer_client_id | text | true | 
 link_client_route | organisation_id | uuid | true | 
 link_client_route | link_id | uuid | true | 
+link_client_route | purpose | text | true | 'events'::text
 link_inbox | organisation_id | uuid | true | nemura.current_org()
 link_inbox | id | uuid | true | uuidv7()
 link_inbox | event_id | uuid | true | 
@@ -1301,6 +1303,7 @@ flex_request | flex_request_state_known | CHECK ((state = ANY (ARRAY['received':
 flex_request | flex_request_state_not_null | NOT NULL state
 flex_request | flex_request_withdrawn_whole | CHECK (((state = 'withdrawn'::text) = (withdrawn_at IS NOT NULL)))
 flex_request | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+fyniq_link | fyniq_link_ask_differs | CHECK (((peer_ask_client_id IS NULL) OR (peer_ask_client_id <> peer_client_id)))
 fyniq_link | fyniq_link_changed_at_not_null | NOT NULL changed_at
 fyniq_link | fyniq_link_clients_shape | CHECK ((((state = 'proposed'::text) AND (fyniq_client_id IS NULL)) OR ((state <> 'proposed'::text) AND ((fyniq_client_id IS NULL) = (peer_client_id IS NULL)))))
 fyniq_link | fyniq_link_created_at_not_null | NOT NULL created_at
@@ -1674,6 +1677,8 @@ link_client_route | link_client_route_link_id_not_null | NOT NULL link_id
 link_client_route | link_client_route_organisation_id_not_null | NOT NULL organisation_id
 link_client_route | link_client_route_peer_client_id_not_null | NOT NULL peer_client_id
 link_client_route | link_client_route_pkey | PRIMARY KEY (peer_client_id)
+link_client_route | link_client_route_purpose | CHECK ((purpose = ANY (ARRAY['events'::text, 'ask'::text])))
+link_client_route | link_client_route_purpose_not_null | NOT NULL purpose
 link_inbox | link_inbox_code_with_refusal | CHECK (((outcome = 'refused'::text) = (code IS NOT NULL)))
 link_inbox | link_inbox_digest | CHECK ((payload_sha256 ~ '^[0-9a-f]{64}$'::text))
 link_inbox | link_inbox_epoch_not_null | NOT NULL epoch
@@ -2440,6 +2445,7 @@ CREATE UNIQUE INDEX flex_request_pkey ON nemura.flex_request USING btree (organi
 CREATE INDEX flex_request_state_idx ON nemura.flex_request USING btree (organisation_id, state, reply_due)
 CREATE UNIQUE INDEX fyniq_link_epoch ON nemura.fyniq_link USING btree (organisation_id, epoch)
 CREATE UNIQUE INDEX fyniq_link_one_live ON nemura.fyniq_link USING btree (organisation_id) WHERE (state <> 'unlinked'::text)
+CREATE UNIQUE INDEX fyniq_link_peer_ask_client ON nemura.fyniq_link USING btree (peer_ask_client_id) WHERE (peer_ask_client_id IS NOT NULL)
 CREATE UNIQUE INDEX fyniq_link_peer_client ON nemura.fyniq_link USING btree (peer_client_id) WHERE (peer_client_id IS NOT NULL)
 CREATE UNIQUE INDEX fyniq_link_pkey ON nemura.fyniq_link USING btree (organisation_id, id)
 CREATE UNIQUE INDEX fyniq_link_secret_pkey ON nemura.fyniq_link_secret USING btree (organisation_id, link_id)
@@ -2620,7 +2626,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.feature
 CREATE TRIGGER flex_request_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.flex_request FOR EACH ROW EXECUTE FUNCTION nemura.flex_request_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.flex_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('flex_request', 'id')
 CREATE TRIGGER fyniq_link_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.fyniq_link FOR EACH ROW EXECUTE FUNCTION nemura.fyniq_link_guard()
-CREATE TRIGGER link_client_registered AFTER INSERT ON nemura.fyniq_link FOR EACH ROW WHEN ((new.peer_client_id IS NOT NULL)) EXECUTE FUNCTION nemura.link_client_registered()
+CREATE TRIGGER link_client_registered AFTER INSERT ON nemura.fyniq_link FOR EACH ROW EXECUTE FUNCTION nemura.link_client_registered()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.fyniq_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('fyniq_link', 'id')
 CREATE TRIGGER gov_claim_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.gov_claim FOR EACH ROW EXECUTE FUNCTION nemura.gov_leave_guard('A claim')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.gov_claim DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('gov_claim', 'id')
@@ -3134,9 +3140,8 @@ BEGIN
     END IF;
     RETURN NEW;
   END IF;
-  -- A proposed link is completed once: Fyniq's key and its client are written by the move to active, and nothing else of it changes then or after.
-  IF (NEW.id, NEW.epoch, NEW.fyniq_organisation_id, NEW.link_public, NEW.created_at, NEW.peer_client_id, NEW.proposed_by) IS DISTINCT FROM
-     (OLD.id, OLD.epoch, OLD.fyniq_organisation_id, OLD.link_public, OLD.created_at, OLD.peer_client_id, OLD.proposed_by)
+  IF (NEW.id, NEW.epoch, NEW.fyniq_organisation_id, NEW.link_public, NEW.created_at, NEW.peer_client_id, NEW.peer_ask_client_id, NEW.proposed_by) IS DISTINCT FROM
+     (OLD.id, OLD.epoch, OLD.fyniq_organisation_id, OLD.link_public, OLD.created_at, OLD.peer_client_id, OLD.peer_ask_client_id, OLD.proposed_by)
      OR ((NEW.fyniq_key, NEW.fyniq_client_id) IS DISTINCT FROM (OLD.fyniq_key, OLD.fyniq_client_id) AND NOT (OLD.state = 'proposed' AND NEW.state = 'active'))
      OR NEW.sequence < OLD.sequence
      OR NEW.version <> OLD.version + 1
@@ -3424,18 +3429,23 @@ CREATE OR REPLACE FUNCTION nemura.link_client_registered()
  SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
 AS $function$
 BEGIN
-  INSERT INTO nemura.link_client_route (peer_client_id, organisation_id, link_id) VALUES (NEW.peer_client_id, NEW.organisation_id, NEW.id);
+  IF NEW.peer_client_id IS NOT NULL THEN
+    INSERT INTO nemura.link_client_route (peer_client_id, organisation_id, link_id, purpose) VALUES (NEW.peer_client_id, NEW.organisation_id, NEW.id, 'events');
+  END IF;
+  IF NEW.peer_ask_client_id IS NOT NULL THEN
+    INSERT INTO nemura.link_client_route (peer_client_id, organisation_id, link_id, purpose) VALUES (NEW.peer_ask_client_id, NEW.organisation_id, NEW.id, 'ask');
+  END IF;
   RETURN NULL;
 END
 $function$
 
-CREATE OR REPLACE FUNCTION nemura.link_client_route(p_client text, OUT organisation_id uuid, OUT link_id uuid)
+CREATE OR REPLACE FUNCTION nemura.link_client_route(p_client text, OUT organisation_id uuid, OUT link_id uuid, OUT purpose text)
  RETURNS record
  LANGUAGE sql
  STABLE SECURITY DEFINER
  SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
 AS $function$
-  SELECT r.organisation_id, r.link_id FROM nemura.link_client_route r WHERE r.peer_client_id = p_client
+  SELECT r.organisation_id, r.link_id, r.purpose FROM nemura.link_client_route r WHERE r.peer_client_id = p_client
 $function$
 
 CREATE OR REPLACE FUNCTION nemura.link_identity(p_issuer text, p_subject text, p_tenant text, p_member uuid)

@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -20,11 +21,13 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/apiclient"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
 	"github.com/cognizhi/fyniq/internal/domain/payee"
 	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
+	"github.com/cognizhi/fyniq/internal/linksend"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -64,7 +67,7 @@ func TestThePeopleLinkCarriesSignedEventsThroughItsOwnClient(t *testing.T) {
 	clientKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	expires := e.clock.Now().AddDate(0, 6, 0).UTC().Format(time.RFC3339)
 	body := func() map[string]any {
-		return map[string]any{"nemura_organisation_id": nemura, "nemura_origin": nemuraOrigin, "nemura_client_id": "fyniq-link-" + nemura, "link_key": base64.RawURLEncoding.EncodeToString(linkPub), "client_name": "Nemura link",
+		return map[string]any{"nemura_organisation_id": nemura, "nemura_origin": nemuraOrigin, "nemura_client_id": "fyniq-link-" + nemura, "nemura_ask_client_id": "fyniq-ask-" + nemura, "link_key": base64.RawURLEncoding.EncodeToString(linkPub), "client_name": "Nemura link",
 			"client_public_key": publicJWK(t, clientKey), "expires_at": expires, "features": []string{"records", "leave"}}
 	}
 	if l := e.call(http.MethodGet, "/v1/people-link", admin, nil); l.Status != http.StatusOK || l.str("state") != "none" {
@@ -103,8 +106,11 @@ func TestThePeopleLinkCarriesSignedEventsThroughItsOwnClient(t *testing.T) {
 		}
 	}
 	// Fyniq's half of the link is shown for Nemura to complete its own: the public keys, never a private one, and the clients' IDs (design D9, D10).
-	if k, _ := l.Body["fyniq_client_public_key"].(map[string]any); len(l.str("fyniq_link_key")) != 43 || k["kty"] != "EC" || k["d"] != nil || l.str("nemura_client_id") != "fyniq-link-"+nemura || l.str("oauth_client_id") == "" ||
-		strings.Contains(l.Raw, "link_private") || strings.Contains(l.Raw, "client_private") {
+	if k, _ := l.Body["fyniq_client_public_key"].(map[string]any); len(l.str("fyniq_link_key")) != 43 || k["kty"] != "EC" || k["d"] != nil || l.str("nemura_client_id") != "fyniq-link-"+nemura || l.str("nemura_ask_client_id") != "fyniq-ask-"+nemura || func() bool {
+		k, _ := l.Body["fyniq_ask_client_public_key"].(map[string]any)
+		return k["kty"] != "EC" || k["d"] != nil
+	}() || l.str("oauth_client_id") == "" ||
+		strings.Contains(l.Raw, "link_private") || strings.Contains(l.Raw, "client_private") || strings.Contains(l.Raw, "ask_private") {
 		t.Errorf("Fyniq's half of the link: %s", l.Raw)
 	}
 	e.problemIs(e.call(http.MethodPost, "/v1/people-link", admin, body()), "requestPeopleLink", 409, CodeLinkExists)
@@ -322,7 +328,7 @@ var matrixPeopleLink = map[string]func(e *env, tok string) (response, func() boo
 		e.api.deps.OAuthClients, e.api.deps.APIAudience = fakeOAuthClients{}, apiAudience
 		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		linkPub, _, _ := ed25519.GenerateKey(rand.Reader)
-		return e.call(http.MethodPost, "/v1/people-link", steppedUp(e, tok), map[string]any{"nemura_organisation_id": uuid.NewString(), "nemura_origin": nemuraOrigin, "nemura_client_id": "fyniq-link-matrix",
+		return e.call(http.MethodPost, "/v1/people-link", steppedUp(e, tok), map[string]any{"nemura_organisation_id": uuid.NewString(), "nemura_origin": nemuraOrigin, "nemura_client_id": "fyniq-link-matrix", "nemura_ask_client_id": "fyniq-ask-matrix",
 			"link_key": base64.RawURLEncoding.EncodeToString(linkPub), "client_name": "Matrix link", "client_public_key": publicJWK(e.t, key),
 			"expires_at": e.clock.Now().AddDate(0, 6, 0).Format(time.RFC3339), "features": []string{"records"}}, "Prefer", "return=preview"), nil
 	},
@@ -348,7 +354,7 @@ func TestAReleaseNeverPaysAPersonHeldForTaxClearance(t *testing.T) {
 	person := uuid.New()
 	batch := paymentbatch.Batch{Payments: []paymentbatch.Payment{{Payee: payee.Person(user)}, {Payee: payee.Vendor(uuid.New())}, {Payee: payee.Person(other)}}}
 	check := func() error {
-		return e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error { return heldPayees(ctx, u, batch) })
+		return e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error { return heldPayees(ctx, u, batch, nil) })
 	}
 	save := func(p peoplelink.Person) {
 		t.Helper()
@@ -375,5 +381,120 @@ func TestAReleaseNeverPaysAPersonHeldForTaxClearance(t *testing.T) {
 	save(p)
 	if err := check(); err != nil {
 		t.Errorf("after Nemura lifts the hold: %v", err)
+	}
+}
+
+// fakeHolds is Nemura as the release asks it: an answer per person, or an error (no answer within five seconds).
+type fakeHolds struct {
+	answer map[uuid.UUID]linksend.HoldAnswer
+	err    error
+	asked  []uuid.UUID
+}
+
+func (f *fakeHolds) Ask(_ context.Context, _ storage.PeopleLinkAskKey, person uuid.UUID) (linksend.HoldAnswer, error) {
+	f.asked = append(f.asked, person)
+	return f.answer[person], f.err
+}
+
+// At the release Nemura, the hold's authority, is asked too, and nothing is paid on a guess (FR-PPL-13, design D10): a person Nemura says is held is held though the projection is behind; no answer within five
+// seconds, or an answer with an older version than the projection already saw, leaves the person's lines waiting with PPL-22; vendors and people who are not mapped are not asked; a lifted hold pays; and with
+// no authority, or no link with an ask key, the projection alone decides as before.
+// part of FR-PPL-13 (the ask and failing closed; releasing the rest of the batch waits for the salary batch)
+// asvs: V8.2.1, V11.2.1, V16.5.2
+func TestAReleaseAsksNemuraWhetherAPersonIsHeldAndFailsClosed(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	user, vendor := uuid.New(), uuid.New()
+	person := uuid.New()
+	now := e.clock.Now()
+	batch := paymentbatch.Batch{Payments: []paymentbatch.Payment{{Payee: payee.Person(user)}, {Payee: payee.Vendor(vendor)}, {Payee: payee.Person(uuid.New())}}}
+	save := func(fn func(u storage.UnitOfWork) error) {
+		t.Helper()
+		if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error { return fn(u) }); err != nil {
+			t.Fatal(err)
+		}
+	}
+	check := func(h HoldAuthority) error {
+		return e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error { return heldPayees(ctx, u, batch, h) })
+	}
+	code := func(err error) string {
+		var pr *Problem
+		if errors.As(err, &pr) {
+			return pr.Code
+		}
+		return ""
+	}
+	p := peoplelink.Person{ID: person, Version: 1, DisplayName: "Chen Yu", UserID: user, UpdatedAt: now, HoldVersion: 2, HoldID: uuid.New()}
+	save(func(u storage.UnitOfWork) error { return u.PeopleLinks().SavePerson(ctx, p) })
+	// No link yet: the authority is never asked, and the projection (not held) lets the person be paid.
+	f := &fakeHolds{answer: map[uuid.UUID]linksend.HoldAnswer{person: {Status: "held", Version: 3}}}
+	if err := check(f); err != nil || len(f.asked) != 0 {
+		t.Fatalf("with no link: %v, asked %v", err, f.asked)
+	}
+	save(func(u storage.UnitOfWork) error {
+		approval := uuid.New()
+		l, err := u.PeopleLinks().Link(ctx, storage.PeopleLinkRow{NemuraOrganisationID: uuid.New(), LinkKey: make([]byte, 32), ApprovalID: approval, CreatedBy: "user:" + user.String(), CreatedAt: now})
+		if err != nil {
+			return err
+		}
+		k, err := newAskKey(l.ID, "fyniq-ask-test")
+		if err != nil {
+			return err
+		}
+		return u.PeopleLinks().SaveAskKey(ctx, k)
+	})
+	if err := check(nil); err != nil {
+		t.Errorf("with no authority the projection decides: %v", err)
+	}
+	// Nemura says held, newer than the projection: refused as held, naming the person and no figure.
+	if err := check(f); code(err) != peoplelink.CodeHold || !strings.Contains(err.Error(), "Chen Yu") || len(f.asked) != 1 || f.asked[0] != person {
+		t.Errorf("Nemura says held: %v, asked %v", err, f.asked)
+	}
+	// Nemura says released at a version the projection already saw or newer: paid. The vendor and the unmapped person are never asked.
+	f = &fakeHolds{answer: map[uuid.UUID]linksend.HoldAnswer{person: {Status: "released", Version: 2}}}
+	if err := check(f); err != nil || len(f.asked) != 1 {
+		t.Errorf("Nemura says released: %v, asked %v", err, f.asked)
+	}
+	// An older answer than the projection's newest hold event is not an answer; no answer at all fails closed; both leave the lines waiting.
+	f = &fakeHolds{answer: map[uuid.UUID]linksend.HoldAnswer{person: {Status: "released", Version: 1}}}
+	if err := check(f); code(err) != peoplelink.CodeHoldUnknown {
+		t.Errorf("an older answer: %v", err)
+	}
+	if err := check(&fakeHolds{err: errors.New("Nemura did not answer")}); code(err) != peoplelink.CodeHoldUnknown || !strings.Contains(err.Error(), "Chen Yu") {
+		t.Errorf("no answer: %v", err)
+	}
+	// A person the projection already holds is refused without asking.
+	p.Held, p.HoldVersion = true, 3
+	save(func(u storage.UnitOfWork) error { return u.PeopleLinks().SavePerson(ctx, p) })
+	f = &fakeHolds{answer: map[uuid.UUID]linksend.HoldAnswer{person: {Status: "released", Version: 4}}}
+	if err := check(f); code(err) != peoplelink.CodeHold || len(f.asked) != 0 {
+		t.Errorf("the projection holds: %v, asked %v", err, f.asked)
+	}
+}
+
+// The ask has its five seconds and no more: a Nemura that never answers fails the ask in about that time, never hangs the release (FR-PPL-13).
+// part of FR-PPL-13 (the five-second bound)
+func TestTheAskAtReleaseGivesUpAfterFiveSeconds(t *testing.T) {
+	var srv *httptest.Server
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /oauth2/token", func(w http.ResponseWriter, r *http.Request) {
+		select { // never answers, until the caller leaves or the test is over
+		case <-r.Context().Done():
+		case <-time.After(6 * time.Second):
+		}
+	})
+	srv = httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	k, err := newAskKey(uuid.New(), "fyniq-ask-slow")
+	if err != nil {
+		t.Fatal(err)
+	}
+	asker := &linksend.HoldAsker{HTTP: srv.Client(), APIURL: srv.URL, TokenURL: srv.URL + "/oauth2/token", Audience: "nemura-api", Clock: clock.System{}}
+	start := time.Now()
+	if _, err := asker.Ask(context.Background(), k, uuid.New()); err == nil {
+		t.Fatal("a Nemura that never answers gave an answer")
+	}
+	if took := time.Since(start); took < 4*time.Second || took > 8*time.Second {
+		t.Errorf("the ask gave up after %s, want about 5s", took)
 	}
 }

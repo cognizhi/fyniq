@@ -1068,6 +1068,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/link/people/{person_id}/hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask whether a person is held for tax clearance
+         * @description Nemura is the hold's authority (PRD-002 NM-INT-08). Fyniq asks here at the release of a payment to a person (PRD-001 FR-PPL-13), because the projection's copy may be older than Nemura's own answer. Only Fyniq's read-only link client may call it, with a bearer token for the audience nemura-api and the scope link.holds.read, for the live link at its epoch: the client that sends events cannot ask, no session, no person and no ordinary API client can. It answers the hold's status and version and nothing else of the person, and changes nothing. It is on the never-list for the AI and MCP surfaces.
+         */
+        get: operations["getLinkHold"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/link/proposal": {
         parameters: {
             query?: never;
@@ -5241,6 +5261,10 @@ export interface components {
             types: components["schemas"]["LetterType"][] | null;
         };
         LinkApproveInputBody: {
+            /** @description The public half of the key Fyniq's read-only client signs its token request with, as a JWK: Nemura registers it for the client that asks whether a person is held. Never the private key. */
+            fyniq_ask_client_public_key: {
+                [key: string]: unknown;
+            };
             /** @description The public half of the key Fyniq's own client signs its token request to Nemura's OAuth server with, as a JWK: Nemura registers it for Fyniq's client. Never the private key. */
             fyniq_client_public_key: {
                 [key: string]: unknown;
@@ -5362,6 +5386,32 @@ export interface components {
              */
             type: string;
         };
+        LinkHoldAnswer: {
+            /**
+             * Format: uuid
+             * @description The hold's ID, stable across its versions.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e62
+             */
+            hold_id?: string;
+            /**
+             * Format: uuid
+             * @description The person asked about.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description held: the person is held for tax clearance and nothing is released to them; released: the hold was lifted; none: they never had one.
+             * @example held
+             * @enum {string}
+             */
+            status: "held" | "released" | "none";
+            /**
+             * Format: int64
+             * @description The hold's latest version, 0 when there is none: an answer older than the version Fyniq already saw is not an answer.
+             * @example 2
+             */
+            version: number;
+        };
         LinkProposeInputBody: {
             /**
              * Format: uuid
@@ -5411,6 +5461,11 @@ export interface components {
              * @example EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE
              */
             link_key?: string;
+            /**
+             * @description The ID Fyniq's read-only client, which asks whether a person is held at the release of a payment, will have at Nemura's OAuth server: give it to Fyniq when it links.
+             * @example fyniq-ask-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
+             */
+            nemura_ask_client_id?: string;
             /**
              * @description The ID Fyniq's client will have at Nemura's OAuth server: give it to Fyniq when it links.
              * @example fyniq-link-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
@@ -12219,6 +12274,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LinkReceipt"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getLinkHold: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer, then the access token Fyniq's read-only link client got from Nemura's OAuth server for the audience nemura-api with the scope link.holds.read. */
+                Authorization?: string;
+            };
+            path: {
+                /** @description The person. */
+                person_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkHoldAnswer"];
                 };
             };
             /** @description Unauthorized */

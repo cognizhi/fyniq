@@ -37,6 +37,7 @@ type LinkRow struct {
 	Sequence              int64
 	// PeerClientID is the ID Fyniq's client has at Nemura's own OAuth server (chosen at the proposal); FyniqClientID is the ID Nemura's client has at Fyniq's.
 	PeerClientID, FyniqClientID string
+	PeerAskClientID             string // the ID Fyniq's read-only client for the ask at release has at Nemura's OAuth server
 	ProposedBy                  uuid.UUID
 }
 
@@ -77,10 +78,10 @@ func linkError(err error) error {
 func LiveLink(ctx context.Context, tx pgx.Tx) (LinkRow, error) {
 	var l LinkRow
 	var fk, pub []byte
-	var peer, fyniqClient *string
+	var peer, fyniqClient, askPeer *string
 	var proposer *uuid.UUID
-	err := tx.QueryRow(ctx, `SELECT id, state, epoch, version, fyniq_organisation_id, fyniq_key, link_public, sequence, peer_client_id, fyniq_client_id, proposed_by FROM nemura.fyniq_link WHERE state <> 'unlinked'`).
-		Scan(&l.ID, &l.State, &l.Epoch, &l.Version, &l.FyniqOrganisation, &fk, &pub, &l.Sequence, &peer, &fyniqClient, &proposer)
+	err := tx.QueryRow(ctx, `SELECT id, state, epoch, version, fyniq_organisation_id, fyniq_key, link_public, sequence, peer_client_id, fyniq_client_id, proposed_by, peer_ask_client_id FROM nemura.fyniq_link WHERE state <> 'unlinked'`).
+		Scan(&l.ID, &l.State, &l.Epoch, &l.Version, &l.FyniqOrganisation, &fk, &pub, &l.Sequence, &peer, &fyniqClient, &proposer, &askPeer)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return LinkRow{}, &payroll.Refusal{Code: CodeLinkNone, Message: "Nemura is not linked to Fyniq."}
 	}
@@ -90,6 +91,9 @@ func LiveLink(ctx context.Context, tx pgx.Tx) (LinkRow, error) {
 	}
 	if fyniqClient != nil {
 		l.FyniqClientID = *fyniqClient
+	}
+	if askPeer != nil {
+		l.PeerAskClientID = *askPeer
 	}
 	if proposer != nil {
 		l.ProposedBy = *proposer

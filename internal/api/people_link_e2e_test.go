@@ -22,6 +22,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
+	"github.com/cognizhi/fyniq/internal/adapters/postgres"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura/nemuratest"
 	"github.com/cognizhi/fyniq/internal/authn"
@@ -147,7 +148,7 @@ func TestTheTwoAppsLinkAndCarryEventsBothWaysThroughOneOAuthServer(t *testing.T)
 	nsrv := httptest.NewServer(nmux)
 	t.Cleanup(nsrv.Close)
 	napi.New(nmux, napi.Deps{LinkAuth: &linkauth.Introspector{OAuth: s.admin, Routes: nst, Audience: apiclient.Audience, Clock: nemuraNow}, Sessions: noNemuraSessions{}, Clock: nemuraNow,
-		Link: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, CookieNames: []string{"nemura_session"}})
+		Link: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, LinkHolds: nemura.LinkService{Store: nst, OAuth: s.admin, Clock: nemuraNow}, CookieNames: []string{"nemura_session"}})
 
 	// The handshake. Leg 1: an Owner proposes, and Nemura makes its keys and the ID Fyniq's client will have at its OAuth server.
 	svc := nemura.LinkService{Store: nst, OAuth: s.admin, Clock: clock.System{}}
@@ -160,7 +161,7 @@ func TestTheTwoAppsLinkAndCarryEventsBothWaysThroughOneOAuthServer(t *testing.T)
 	// Leg 2: Fyniq links with Nemura's half, dual controlled; it makes its keys and registers Nemura's client.
 	var clientJWK map[string]any
 	_ = json.Unmarshal(offer.ClientKey, &clientJWK)
-	asked := e.call(http.MethodPost, "/v1/people-link", admin, map[string]any{"nemura_organisation_id": norg.String(), "nemura_origin": nemuraOrigin, "nemura_client_id": offer.PeerClientID,
+	asked := e.call(http.MethodPost, "/v1/people-link", admin, map[string]any{"nemura_organisation_id": norg.String(), "nemura_origin": nemuraOrigin, "nemura_client_id": offer.PeerClientID, "nemura_ask_client_id": offer.PeerAskClientID,
 		"link_key": base64.RawURLEncoding.EncodeToString(offer.LinkKey), "client_name": "Nemura link", "client_public_key": clientJWK,
 		"expires_at": e.clock.Now().AddDate(0, 6, 0).UTC().Format(time.RFC3339), "features": []string{"records", "payroll"}})
 	if asked.Status != http.StatusAccepted {
@@ -176,8 +177,9 @@ func TestTheTwoAppsLinkAndCarryEventsBothWaysThroughOneOAuthServer(t *testing.T)
 	// Leg 3: another Owner or Administrator approves Nemura's side with Fyniq's half; Fyniq's client is registered at Nemura's OAuth server under the ID chosen in leg 1.
 	fyniqKey, _ := base64.RawURLEncoding.DecodeString(bundle.str("fyniq_link_key"))
 	fyniqClientKey, _ := json.Marshal(bundle.Body["fyniq_client_public_key"])
+	fyniqAskKey, _ := json.Marshal(bundle.Body["fyniq_ask_client_public_key"])
 	nowT = clock.System{}.Now()
-	if err := svc.Activate(ctx, napi.Session{Organisation: norg, Member: nsecond, StepUpAt: &nowT}, ed25519.PublicKey(fyniqKey), bundle.str("oauth_client_id"), fyniqClientKey); err != nil {
+	if err := svc.Activate(ctx, napi.Session{Organisation: norg, Member: nsecond, StepUpAt: &nowT}, ed25519.PublicKey(fyniqKey), bundle.str("oauth_client_id"), fyniqClientKey, fyniqAskKey); err != nil {
 		t.Fatalf("approving Nemura's side: %v", err)
 	}
 
@@ -329,6 +331,41 @@ func TestTheTwoAppsLinkAndCarryEventsBothWaysThroughOneOAuthServer(t *testing.T)
 	}
 	fyniqNow.Set(clock.System{}.Now())
 
+	// The ask at release: Fyniq's API (not the worker) asks Nemura, with the read-only client and its own key, whether the person is held; Nemura answers with the hold's latest version.
+	asker := &linksend.HoldAsker{HTTP: &http.Client{Transport: s.browser().Transport}, APIURL: nsrv.URL, TokenURL: tokenURL, Audience: apiclient.Audience, Clock: clock.System{}}
+	var askKey storage.PeopleLinkAskKey
+	if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		l, err := u.PeopleLinks().Live(ctx)
+		if err != nil {
+			return err
+		}
+		askKey, err = u.PeopleLinks().AskKey(ctx, l.ID)
+		return err
+	}); err != nil || askKey.ClientID != offer.PeerAskClientID {
+		t.Fatalf("the API's ask key: %+v %v", askKey, err)
+	}
+	if ans, err := asker.Ask(ctx, askKey, nperson); err != nil || ans.Status != "held" || ans.Version != 1 || ans.HoldID == "" {
+		t.Errorf("the ask for a held person: %+v %v", ans, err)
+	}
+	if ans, err := asker.Ask(ctx, askKey, uuid.New()); err != nil || ans.Status != "none" || ans.Version != 0 {
+		t.Errorf("the ask for a person with no hold: %+v %v", ans, err)
+	}
+	if err := workerStore(t).Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		l, err := u.PeopleLinks().Live(ctx)
+		if err != nil {
+			return err
+		}
+		_, err = u.PeopleLinks().AskKey(ctx, l.ID)
+		return err
+	}); err == nil {
+		t.Error("the worker read the ask key")
+	}
+	// The ask's client cannot send an event, and the events' client cannot ask.
+	badAsk := &linksend.HoldAsker{HTTP: &http.Client{Transport: s.browser().Transport}, APIURL: nsrv.URL, TokenURL: tokenURL, Audience: apiclient.Audience, Clock: clock.System{}}
+	if _, err := badAsk.Ask(ctx, storage.PeopleLinkAskKey{LinkID: askKey.LinkID, ClientID: fyniqKeys0(t, e, workerStore(t)), PrivateDER: askKey.PrivateDER}, nperson); err == nil {
+		t.Error("a client that is not the asking client asked")
+	}
+
 	// No passthrough: a token made for one app's API reaches neither inbox. Each app's own client gets a token for the other's audience (which its record allows only for the other's API).
 	var nsec nemura.LinkSecrets
 	var nlink nemura.LinkRow
@@ -395,3 +432,21 @@ func TestTheTwoAppsLinkAndCarryEventsBothWaysThroughOneOAuthServer(t *testing.T)
 
 // outboxRow is a row of Nemura's outbox as the worker's handler receives it.
 func outboxRow(id uuid.UUID, payload []byte) nout.Row { return nout.Row{ID: id, Payload: payload} }
+
+// fyniqKeys0 is the ID of the events' client at Nemura, read with the worker's role: what a client that is not the asking one would sign in as.
+func fyniqKeys0(t *testing.T, e *env, worker *postgres.Store) string {
+	t.Helper()
+	var id string
+	if err := worker.Do(context.Background(), e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		l, err := u.PeopleLinks().Live(ctx)
+		if err != nil {
+			return err
+		}
+		k, err := u.PeopleLinks().Keys(ctx, l.ID)
+		id = k.NemuraClientID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return id
+}

@@ -26,6 +26,7 @@ const (
 	CodeRunStale     = "PPL-18" // a version no newer than one already posted
 	CodeRunApprover  = "PPL-19" // the approver has no sign-in identity here, or no passkey to sign with
 	CodeHold         = "PPL-21" // a payment to a person held for tax clearance is not released (FR-PPL-13)
+	CodeHoldUnknown  = "PPL-22" // Nemura, the hold's authority, did not answer in time, or answered with an older version than Fyniq already saw: the person's lines wait (FR-PPL-13)
 	CodeRunPosting   = "PPL-20" // the posting is refused; Fyniq's ledger code and reason go back to Nemura
 )
 

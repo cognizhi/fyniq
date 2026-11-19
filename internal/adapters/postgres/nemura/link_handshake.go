@@ -44,6 +44,7 @@ type LinkOffer struct {
 	LinkKey            ed25519.PublicKey
 	ClientKey          json.RawMessage // the JWK Fyniq registers for Nemura's client at Fyniq's OAuth server
 	PeerClientID       string
+	PeerAskClientID    string // the ID of Fyniq's read-only client for the ask at release
 }
 
 // ProposeLink starts a link to a Fyniq organisation: it makes Nemura's two keys (the envelope key, which signs what Nemura sends, and the ES256 client key, which signs the assertion that gets
@@ -70,16 +71,16 @@ func ProposeLink(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, ac
 	if err := tx.QueryRow(ctx, "SELECT coalesce(max(epoch), 0) + 1 FROM nemura.fyniq_link").Scan(&epoch); err != nil {
 		return LinkOffer{}, err
 	}
-	id, peer := uuid.Must(uuid.NewV7()), "fyniq-link-"+uuid.NewString()
-	if _, err := tx.Exec(ctx, `INSERT INTO nemura.fyniq_link (id, state, epoch, fyniq_organisation_id, fyniq_key, link_public, peer_client_id, proposed_by, created_at, changed_at) VALUES ($1, 'proposed', $2, $3, NULL, $4, $5, $6, $7, $7)`,
-		id, epoch, fyniqOrg, []byte(pub), peer, proposer, at); err != nil {
+	id, peer, ask := uuid.Must(uuid.NewV7()), "fyniq-link-"+uuid.NewString(), "fyniq-ask-"+uuid.NewString()
+	if _, err := tx.Exec(ctx, `INSERT INTO nemura.fyniq_link (id, state, epoch, fyniq_organisation_id, fyniq_key, link_public, peer_client_id, peer_ask_client_id, proposed_by, created_at, changed_at) VALUES ($1, 'proposed', $2, $3, NULL, $4, $5, $6, $7, $8, $8)`,
+		id, epoch, fyniqOrg, []byte(pub), peer, ask, proposer, at); err != nil {
 		return LinkOffer{}, linkError(err)
 	}
 	if _, err := tx.Exec(ctx, `INSERT INTO nemura.fyniq_link_secret (link_id, link_private, client_private, client_public) VALUES ($1, $2, $3, $4)`, id, []byte(priv), der, jwk); err != nil {
 		return LinkOffer{}, linkError(err)
 	}
 	// The audit trail names the link, its epoch and that keys exist, never a key.
-	return LinkOffer{Link: id, Epoch: epoch, NemuraOrganisation: org, LinkKey: pub, ClientKey: jwk, PeerClientID: peer}, Audit(ctx, tx, org, at, actor, "nemura.fyniq_link.proposed",
+	return LinkOffer{Link: id, Epoch: epoch, NemuraOrganisation: org, LinkKey: pub, ClientKey: jwk, PeerClientID: peer, PeerAskClientID: ask}, Audit(ctx, tx, org, at, actor, "nemura.fyniq_link.proposed",
 		audit.Object{Type: "fyniq_link", ID: id}, map[string]audit.Change{"fyniq_organisation": {nil, fyniqOrg.String()}, "epoch": {nil, epoch}, "state": {nil, "proposed"}}, "")
 }
 
@@ -134,15 +135,16 @@ func SecretsOf(ctx context.Context, tx pgx.Tx, linkID uuid.UUID) (LinkSecrets, e
 // organisation); the link's state, epoch and Fyniq organisation are then read inside that organisation, with row-level security on, and only for the link the client was made for.
 func (s *Store) LinkClientRoute(ctx context.Context, client string) (linkauth.Route, error) {
 	var org, id *uuid.UUID
-	if err := s.pool.QueryRow(ctx, `SELECT organisation_id, link_id FROM nemura.link_client_route($1)`, client).Scan(&org, &id); err != nil {
+	var purpose *string
+	if err := s.pool.QueryRow(ctx, `SELECT organisation_id, link_id, purpose FROM nemura.link_client_route($1)`, client).Scan(&org, &id, &purpose); err != nil {
 		return linkauth.Route{}, err
 	}
-	if org == nil || id == nil {
+	if org == nil || id == nil || purpose == nil {
 		return linkauth.Route{}, ports.ErrNotFound
 	}
-	out := linkauth.Route{Organisation: *org, Link: *id}
+	out := linkauth.Route{Organisation: *org, Link: *id, Purpose: *purpose}
 	err := s.InOrg(ctx, *org, func(ctx context.Context, tx pgx.Tx) error {
-		return tx.QueryRow(ctx, `SELECT state, epoch, fyniq_organisation_id FROM nemura.fyniq_link WHERE id = $1 AND peer_client_id = $2`, *id, client).Scan(&out.State, &out.Epoch, &out.FyniqOrganisation)
+		return tx.QueryRow(ctx, `SELECT state, epoch, fyniq_organisation_id FROM nemura.fyniq_link WHERE id = $1 AND (peer_client_id = $2 OR peer_ask_client_id = $2)`, *id, client).Scan(&out.State, &out.Epoch, &out.FyniqOrganisation)
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return linkauth.Route{}, ports.ErrNotFound
@@ -157,7 +159,10 @@ type LinkService struct {
 	Clock ports.Clock
 }
 
-var _ api.LinkInbox = LinkService{}
+var (
+	_ api.LinkInbox = LinkService{}
+	_ api.LinkHolds = LinkService{}
+)
 
 func (c LinkService) holds(ctx context.Context, s api.Session, now time.Time, roles ...authz.Role) (bool, error) {
 	var ok bool
@@ -192,7 +197,7 @@ func (c LinkService) Propose(ctx context.Context, s api.Session, fyniqOrg uuid.U
 
 // Activate approves the proposed link with Fyniq's half, as an Owner or Administrator other than the one who proposed, with a fresh passkey. It registers Fyniq's client at Nemura's own
 // OAuth server, with the link scope alone, under the ID the proposal chose, and then the link is active.
-func (c LinkService) Activate(ctx context.Context, s api.Session, fyniqKey ed25519.PublicKey, fyniqClientID string, clientKey json.RawMessage) error {
+func (c LinkService) Activate(ctx context.Context, s api.Session, fyniqKey ed25519.PublicKey, fyniqClientID string, clientKey, askKey json.RawMessage) error {
 	if c.OAuth == nil {
 		return api.ErrUnavailable
 	}
@@ -203,7 +208,10 @@ func (c LinkService) Activate(ctx context.Context, s api.Session, fyniqKey ed255
 	if err := apiclient.CheckKey(clientKey); err != nil {
 		return err
 	}
-	var peer string
+	if err := apiclient.CheckKey(askKey); err != nil {
+		return err
+	}
+	var peer, askPeer string
 	if err := c.Store.InOrg(ctx, s.Organisation, func(ctx context.Context, tx pgx.Tx) error {
 		l, err := LiveLink(ctx, tx)
 		if err != nil {
@@ -219,7 +227,7 @@ func (c LinkService) Activate(ctx context.Context, s api.Session, fyniqKey ed255
 		if s.Member == l.ProposedBy || !(slices.Contains(held, authz.Owner) || slices.Contains(held, authz.Administrator)) {
 			return &payroll.Refusal{Code: CodeLinkApprover, Message: "A second approver decides: an Owner or Administrator other than the one who proposed the link."}
 		}
-		peer = l.PeerClientID
+		peer, askPeer = l.PeerClientID, l.PeerAskClientID
 		return nil
 	}); err != nil {
 		return err
@@ -229,11 +237,19 @@ func (c LinkService) Activate(ctx context.Context, s api.Session, fyniqKey ed255
 	if err != nil {
 		return err
 	}
+	// The second client, for the ask at release: one scope that only reads a hold's status, its own key, its own ID.
+	askID, err := c.OAuth.RegisterIntegration(ctx, ports.IntegrationRegistration{ClientID: askPeer, Name: "Fyniq link (ask)", Class: "integration", Audience: apiclient.Audience,
+		Scopes: []string{apiclient.AskScope}, Key: askKey, Alg: "ES256", TokenLifespan: 15 * time.Minute, Organisation: s.Organisation.String()})
+	if err != nil {
+		_ = c.OAuth.RemoveClient(context.WithoutCancel(ctx), hydraID)
+		return err
+	}
 	if err := c.Store.InOrg(ctx, s.Organisation, func(ctx context.Context, tx pgx.Tx) error {
 		_, err := ActivateLink(ctx, tx, s.Organisation, now, user(s.Member), fyniqKey, fyniqClientID)
 		return err
 	}); err != nil {
 		_ = c.OAuth.RemoveClient(context.WithoutCancel(ctx), hydraID) // no client the OAuth server holds without a link that uses it
+		_ = c.OAuth.RemoveClient(context.WithoutCancel(ctx), askID)
 		return err
 	}
 	return nil
@@ -284,7 +300,7 @@ func (c LinkAdminService) view(ctx context.Context, org uuid.UUID) (api.LinkView
 		if err != nil {
 			return err
 		}
-		out = api.LinkView{State: l.State, Epoch: l.Epoch, FyniqOrganisation: l.FyniqOrganisation, NemuraOrganisation: org, LinkKey: l.Public, PeerClientID: l.PeerClientID,
+		out = api.LinkView{State: l.State, Epoch: l.Epoch, FyniqOrganisation: l.FyniqOrganisation, NemuraOrganisation: org, LinkKey: l.Public, PeerClientID: l.PeerClientID, PeerAskClientID: l.PeerAskClientID,
 			FyniqClientID: l.FyniqClientID, ProposedBy: l.ProposedBy}
 		return nil
 	})
@@ -309,9 +325,37 @@ func (c LinkAdminService) Propose(ctx context.Context, s api.Session, fyniqOrg u
 }
 
 // Approve completes the link with Fyniq's half and shows it.
-func (c LinkAdminService) Approve(ctx context.Context, s api.Session, fyniqKey []byte, fyniqClientID string, clientKey json.RawMessage) (api.LinkView, error) {
-	if err := c.Activate(ctx, s, ed25519.PublicKey(fyniqKey), fyniqClientID, clientKey); err != nil {
+func (c LinkAdminService) Approve(ctx context.Context, s api.Session, fyniqKey []byte, fyniqClientID string, clientKey, askKey json.RawMessage) (api.LinkView, error) {
+	if err := c.Activate(ctx, s, ed25519.PublicKey(fyniqKey), fyniqClientID, clientKey, askKey); err != nil {
 		return api.LinkView{}, err
 	}
 	return c.view(ctx, s.Organisation)
+}
+
+// Hold is the answer to Fyniq's ask at release: the hold's latest version for the person, for the asking client of the live link at its epoch (the client that sends events is refused by the token's check and
+// here). It reads and changes nothing.
+func (c LinkService) Hold(ctx context.Context, caller linkauth.Caller, person uuid.UUID) (api.LinkHold, error) {
+	var out api.LinkHold
+	err := c.Store.InOrg(ctx, caller.Organisation, func(ctx context.Context, tx pgx.Tx) error {
+		l, err := LiveLink(ctx, tx)
+		if err != nil {
+			return err
+		}
+		if l.ID != caller.Link || l.Epoch != caller.Epoch || l.State != "active" || l.PeerAskClientID != caller.ClientID || caller.Scope != apiclient.AskScope {
+			return &payroll.Refusal{Code: CodeLinkNone, Message: "The call is not from the link's asking client at the link's epoch."}
+		}
+		h, ok, err := TaxHoldOf(ctx, tx, person)
+		if err != nil {
+			return err
+		}
+		out = api.LinkHold{Status: "none"}
+		if ok {
+			out = api.LinkHold{Status: "released", HoldID: h.HoldID, Version: h.Version}
+			if h.Held {
+				out.Status = "held"
+			}
+		}
+		return nil
+	})
+	return out, err
 }

@@ -36,6 +36,7 @@ type Route struct {
 	Organisation, Link, FyniqOrganisation uuid.UUID
 	State                                 string
 	Epoch                                 int
+	Purpose                               string // events: the client that sends the link's events; ask: the one that reads a hold's status
 }
 
 // Routes finds the link a client belongs to; ports.ErrNotFound when it belongs to none.
@@ -48,6 +49,7 @@ type Caller struct {
 	Organisation, Link, FyniqOrganisation uuid.UUID
 	Epoch                                 int
 	ClientID                              string
+	Scope                                 string // the scope this call was authenticated for
 }
 
 // Introspector authenticates bearer tokens as the link's client.
@@ -68,13 +70,23 @@ type cached struct {
 	until time.Time
 }
 
-// Authenticate reads an Authorization header value.
-func (i *Introspector) Authenticate(ctx context.Context, authorization string) (Caller, error) {
+// Events authenticates the client that sends the link's events (the scope apiclient.LinkScope); Ask the one that reads a hold's status (apiclient.AskScope). A token of one is no token of the other.
+func (i *Introspector) Events(ctx context.Context, authorization string) (Caller, error) {
+	return i.Authenticate(ctx, authorization, apiclient.LinkScope)
+}
+
+// Ask is Events for the read-only client.
+func (i *Introspector) Ask(ctx context.Context, authorization string) (Caller, error) {
+	return i.Authenticate(ctx, authorization, apiclient.AskScope)
+}
+
+// Authenticate reads an Authorization header value for one scope.
+func (i *Introspector) Authenticate(ctx context.Context, authorization, scope string) (Caller, error) {
 	token, ok := strings.CutPrefix(authorization, "Bearer ")
 	if !ok || token == "" {
 		return Caller{}, ErrUnauthenticated
 	}
-	key, now := sha256.Sum256([]byte(token)), i.Clock.Now()
+	key, now := sha256.Sum256([]byte(scope+"\n"+token)), i.Clock.Now()
 	i.mu.Lock()
 	if c, ok := i.cache[key]; ok && now.Before(c.until) {
 		i.mu.Unlock()
@@ -85,7 +97,7 @@ func (i *Introspector) Authenticate(ctx context.Context, authorization string) (
 	if err != nil {
 		return Caller{}, fmt.Errorf("introspection: %w", err) // not cached: the server may be back
 	}
-	caller, perr := i.caller(ctx, in, now)
+	caller, perr := i.caller(ctx, in, now, scope)
 	if perr != nil && !errors.Is(perr, ErrUnauthenticated) && !errors.Is(perr, ErrNotLink) {
 		return Caller{}, perr // not cached: the database may be back
 	}
@@ -107,7 +119,7 @@ func (i *Introspector) Authenticate(ctx context.Context, authorization string) (
 	return caller, perr
 }
 
-func (i *Introspector) caller(ctx context.Context, in ports.Introspection, now time.Time) (Caller, error) {
+func (i *Introspector) caller(ctx context.Context, in ports.Introspection, now time.Time, scope string) (Caller, error) {
 	switch {
 	case !in.Active || !now.Before(in.ExpiresAt):
 		return Caller{}, ErrUnauthenticated
@@ -115,7 +127,7 @@ func (i *Introspector) caller(ctx context.Context, in ports.Introspection, now t
 		return Caller{}, ErrWrongAudience
 	case in.Subject != in.ClientID: // a client-credentials token's subject is the client itself
 		return Caller{}, ErrUnauthenticated
-	case !slices.Contains(in.Scopes, apiclient.LinkScope):
+	case !slices.Contains(in.Scopes, scope):
 		return Caller{}, ErrNotLink
 	}
 	r, err := i.Routes.LinkClientRoute(ctx, in.ClientID)
@@ -125,8 +137,11 @@ func (i *Introspector) caller(ctx context.Context, in ports.Introspection, now t
 	if err != nil {
 		return Caller{}, err
 	}
+	if (scope == apiclient.LinkScope) != (r.Purpose == "events") || (scope == apiclient.AskScope) != (r.Purpose == "ask") {
+		return Caller{}, ErrNotLink // the events' client may not ask, and the asking client may not send
+	}
 	if r.State != "active" {
 		return Caller{}, ErrNotLink // a proposed, suspended or ended link has no client to call with
 	}
-	return Caller{Organisation: r.Organisation, Link: r.Link, FyniqOrganisation: r.FyniqOrganisation, Epoch: r.Epoch, ClientID: in.ClientID}, nil
+	return Caller{Organisation: r.Organisation, Link: r.Link, FyniqOrganisation: r.FyniqOrganisation, Epoch: r.Epoch, ClientID: in.ClientID, Scope: scope}, nil
 }

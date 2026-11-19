@@ -53,6 +53,11 @@ the people assistant (`p1-nemura-assistant-external`).
 - **D13. A retry is the same event.** The sender fixes the event ID and sequence when the event is queued and signs the time at each attempt; Fyniq's dedupe by event ID then
   absorbs a retry after a lost answer.
 
+- **D14. The ask at release has a client of its own (decided 21 Nov 2026 while the owner was away; owner to confirm).** Fyniq asks Nemura, the hold's authority, whether a person is held (`GET /v1/link/people/{person_id}/hold`) with a
+  second client whose only scope is `link.holds.read` and whose key the API holds, so the API never holds the key that signs events (the worker's alone). Nemura registers it at the approval, under an ID it chose at the proposal;
+  a token of one client is no token of the other (the route says which each is). *Alternatives:* a SELECT for the API on the events' key (rejected: widens a grant, breaks custody); the ask through the worker (rejected: slow
+  and a second hop in a release).
+
 ## Risks / Trade-offs
 
 - Cross-app tests need two databases and two services: the stack tests use each app's own Testcontainers database and a loopback pair, never the cloud.

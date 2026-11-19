@@ -21,7 +21,9 @@ import (
 	"github.com/cognizhi/fyniq/internal/connector"
 	"github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/domain/security"
+	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/httpserver"
+	"github.com/cognizhi/fyniq/internal/linksend"
 	"github.com/cognizhi/fyniq/internal/logging"
 	"github.com/cognizhi/fyniq/internal/maildns"
 	"github.com/cognizhi/fyniq/internal/mailhooks"
@@ -132,6 +134,12 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	}
 	// The connectors (FR-INT-20, rev 0.139): the release's catalogue, the store their keys go to, and the runtime the
 	// connection test goes through.
+	// FR-PPL-13: at the release of a payment to a person, Nemura (the hold's authority) is asked whether they are held, with the link's read-only client; its API, token endpoint and audience are the
+	// deployment's settings, and with none the projection alone decides.
+	if nemuraAPI, nemuraToken := os.Getenv("FYNIQ_NEMURA_API_URL"), os.Getenv("FYNIQ_NEMURA_TOKEN_URL"); nemuraAPI != "" && nemuraToken != "" {
+		d.Holds = &linksend.HoldAsker{HTTP: wiring.People(egress.HostOf(nemuraAPI), egress.HostOf(nemuraToken)), APIURL: strings.TrimSuffix(nemuraAPI, "/"), TokenURL: nemuraToken,
+			Audience: os.Getenv("FYNIQ_NEMURA_API_AUDIENCE"), Clock: deps.Clock}
+	}
 	d.Connectors = api.ConnectorDeps{Catalogue: kit.Connectors, Secrets: kit.ConnectorSecrets, Names: kit.ConnectorNames, Runtime: kit.Runtime(deps.Clock)}
 	// The email providers' webhooks (FR-INT-21), each only with its secret: delivery events and the suppression list.
 	// Each request reads its connector's keys: the current one and one still in its rotation overlap; a disabled

@@ -155,6 +155,30 @@ func (r peopleLinks) Secrets(ctx context.Context, link uuid.UUID) (storage.Peopl
 	return storage.PeopleLinkSecrets{LinkID: x.LinkID, LinkPrivate: slices.Clone(x.LinkPrivate), ClientPrivate: slices.Clone(x.ClientPrivate)}, nil
 }
 
+func (r peopleLinks) SaveAskKey(ctx context.Context, k storage.PeopleLinkAskKey) error {
+	if err := r.u.check(); err != nil {
+		return err
+	}
+	if err := r.u.q.InsertPeopleLinkAskKey(ctx, sqlcdb.InsertPeopleLinkAskKeyParams{LinkID: k.LinkID, NemuraAskClientID: k.ClientID, AskPublic: k.Public, AskPrivate: k.PrivateDER}); err != nil {
+		return mapError(err)
+	}
+	return r.u.event(ctx, "people_link.ask_key_made", "people_link_ask_key", k.LinkID, nil, map[string][2]any{"nemura_ask_client_id": {nil, k.ClientID}})
+}
+
+func (r peopleLinks) AskKey(ctx context.Context, link uuid.UUID) (storage.PeopleLinkAskKey, error) {
+	if err := r.u.check(); err != nil {
+		return storage.PeopleLinkAskKey{}, err
+	}
+	x, err := r.u.q.PeopleLinkAskKey(ctx, link)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return storage.PeopleLinkAskKey{}, ports.ErrNotFound
+	}
+	if err != nil {
+		return storage.PeopleLinkAskKey{}, mapError(err)
+	}
+	return storage.PeopleLinkAskKey{LinkID: x.LinkID, ClientID: x.NemuraAskClientID, Public: slices.Clone(x.AskPublic), PrivateDER: slices.Clone(x.AskPrivate)}, nil
+}
+
 func (r peopleLinks) SetSource(ctx context.Context, s storage.PeopleSource) error {
 	if err := r.u.check(); err != nil {
 		return err

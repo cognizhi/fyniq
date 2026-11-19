@@ -2758,6 +2758,15 @@ type FyniqPeopleLink struct {
 	NemuraOrigin         string
 }
 
+type FyniqPeopleLinkAskKey struct {
+	OrganisationID    uuid.UUID
+	ID                uuid.UUID
+	LinkID            uuid.UUID
+	NemuraAskClientID string
+	AskPublic         []byte
+	AskPrivate        []byte
+}
+
 type FyniqPeopleLinkInbox struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2777,6 +2786,7 @@ type FyniqPeopleLinkInbox struct {
 
 type FyniqPeopleLinkKey struct {
 	OrganisationID uuid.UUID
+	ID             uuid.UUID
 	LinkID         uuid.UUID
 	NemuraClientID string
 	LinkPublic     []byte
@@ -2786,6 +2796,7 @@ type FyniqPeopleLinkKey struct {
 
 type FyniqPeopleLinkSecret struct {
 	OrganisationID uuid.UUID
+	ID             uuid.UUID
 	LinkID         uuid.UUID
 	LinkPrivate    []byte
 	ClientPrivate  []byte

@@ -42526,6 +42526,10 @@ components:
             - 1
           format: int64
           type: integer
+        fyniq_ask_client_public_key:
+          additionalProperties: {}
+          description: "The public half of the key Fyniq's read-only client signs its token request with, as a JWK: Nemura registers it for the client that asks whether a person is held at the release of a payment. Never the private key."
+          type: object
         fyniq_client_public_key:
           additionalProperties: {}
           description: "The public half of the key Fyniq's own client signs its token request to Nemura's OAuth server with, as a JWK: Nemura registers it for Fyniq's client. Never the private key."
@@ -42545,6 +42549,11 @@ components:
           examples:
             - "2026-11-20T09:00:00Z"
           format: date-time
+          type: string
+        nemura_ask_client_id:
+          description: The ID Fyniq's read-only client has at Nemura's OAuth server, as Nemura chose it when it proposed the link.
+          examples:
+            - fyniq-ask-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
           type: string
         nemura_client_id:
           description: The ID Fyniq's client has at Nemura's OAuth server, as Nemura chose it when it proposed the link.
@@ -42828,6 +42837,14 @@ components:
           maxLength: 43
           minLength: 43
           type: string
+        nemura_ask_client_id:
+          description: "The ID Fyniq's read-only client, which asks whether a person is held at the release of a payment, will have at Nemura's OAuth server, as Nemura chose it when it proposed the link: shown on Nemura's link page."
+          examples:
+            - fyniq-ask-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
+          maxLength: 200
+          minLength: 1
+          pattern: ^[A-Za-z0-9._:-]+$
+          type: string
         nemura_client_id:
           description: "The ID Fyniq's own client will have at Nemura's OAuth server, as Nemura chose it when it proposed the link: shown on Nemura's link page. Fyniq signs in to Nemura as this client to send its events."
           examples:
@@ -42854,6 +42871,7 @@ components:
         - link_key
         - client_name
         - nemura_client_id
+        - nemura_ask_client_id
         - client_public_key
         - expires_at
         - features
@@ -199547,7 +199565,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-20` The batch is not in that state; `PPL-21` A person held for tax clearance is not paid; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-20` The batch is not in that state; `PPL-21` A person held for tax clearance is not paid; `PPL-22` Nemura did not say whether a person is held, so nothing is released to them; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress."
         "412":
           content:
             application/problem+json:
@@ -199645,6 +199663,7 @@ paths:
         - PB-20
         - PB-25
         - PPL-21
+        - PPL-22
         - STORAGE-APPROVAL-01
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
@@ -199750,7 +199769,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BREAKGLASS-03` You have no active break-glass; `BREAKGLASS-04` The batch is not waiting for approval; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PPL-21` A person held for tax clearance is not paid; `STORAGE-BATCH-01` A payment batch does not change that way; `STORAGE-BATCH-02` The item is paid by an approved payment batch; `STORAGE-BREAKGLASS-01` Break-glass does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `BREAKGLASS-03` You have no active break-glass; `BREAKGLASS-04` The batch is not waiting for approval; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PPL-21` A person held for tax clearance is not paid; `PPL-22` Nemura did not say whether a person is held, so nothing is released to them; `STORAGE-BATCH-01` A payment batch does not change that way; `STORAGE-BATCH-02` The item is paid by an approved payment batch; `STORAGE-BREAKGLASS-01` Break-glass does not allow that; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date."
         "412":
           content:
             application/problem+json:
@@ -199878,6 +199897,7 @@ paths:
         - PB-16
         - PB-25
         - PPL-21
+        - PPL-22
         - STORAGE-BATCH-01
         - STORAGE-BATCH-02
         - STORAGE-BREAKGLASS-01
@@ -200556,7 +200576,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-20` The batch is not in that state; `PPL-21` A person held for tax clearance is not paid; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-20` The batch is not in that state; `PPL-21` A person held for tax clearance is not paid; `PPL-22` Nemura did not say whether a person is held, so nothing is released to them; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-LOCK-01` Another change is in progress."
         "412":
           content:
             application/problem+json:
@@ -200654,6 +200674,7 @@ paths:
         - PB-20
         - PB-25
         - PPL-21
+        - PPL-22
         - STORAGE-APPROVAL-01
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
@@ -200759,7 +200780,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
-          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-17` The batch needs approving again; `PB-18` The batch is released already; `PB-20` The batch is not in that state; `PPL-21` A person held for tax clearance is not paid; `STORAGE-BATCH-01` A payment batch does not change that way; `STORAGE-BATCH-02` The item is paid by an approved payment batch; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date."
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PAYEE-12` Payments to the payee are frozen; `PB-11` The item is in another approved batch; `PB-13` The bill waits for withholding; `PB-14` The batch is approved already; `PB-17` The batch needs approving again; `PB-18` The batch is released already; `PB-20` The batch is not in that state; `PPL-21` A person held for tax clearance is not paid; `PPL-22` Nemura did not say whether a person is held, so nothing is released to them; `STORAGE-BATCH-01` A payment batch does not change that way; `STORAGE-BATCH-02` The item is paid by an approved payment batch; `STORAGE-DOC-02` The document cannot move to that status; `STORAGE-DUPLICATE-01` Already done; `STORAGE-INV-02` Posted history cannot change; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PERIOD-01` No period covers the date."
         "412":
           content:
             application/problem+json:
@@ -200887,6 +200908,7 @@ paths:
         - PB-20
         - PB-25
         - PPL-21
+        - PPL-22
         - STORAGE-BATCH-01
         - STORAGE-BATCH-02
         - STORAGE-DOC-02

@@ -21,9 +21,23 @@ import (
 // The link's event inbox (PRD-002 NM-INT-10, NM-INT-03, NM-PAY-10; p1-nemura-fyniq-link 2.3): Fyniq calls it with the link client's bearer token and a signed envelope. It is the one operation
 // of this API that takes a bearer token and no cookie, and the one that takes no person: who may call it is Fyniq's client of the live link, at the link's epoch, holding the link scope.
 
-// LinkAuthenticator reads the bearer token of an inbox call: the link's client, or a refusal (linkauth.ErrUnauthenticated, linkauth.ErrNotLink).
+// LinkAuthenticator reads the bearer token of a call from Fyniq: the client that sends the link's events (Events) or the one that asks a hold's status (Ask), or a refusal (linkauth.ErrUnauthenticated,
+// linkauth.ErrNotLink). A token of one is no token of the other.
 type LinkAuthenticator interface {
-	Authenticate(ctx context.Context, authorization string) (linkauth.Caller, error)
+	Events(ctx context.Context, authorization string) (linkauth.Caller, error)
+	Ask(ctx context.Context, authorization string) (linkauth.Caller, error)
+}
+
+// LinkHold is a person's tax-clearance hold as Nemura, the hold's authority, answers it (PRD-002 NM-INT-08).
+type LinkHold struct {
+	Status  string // held, released, or none when the person has never had one
+	HoldID  uuid.UUID
+	Version int
+}
+
+// LinkHolds answers the ask at release for the asking client: it checks the call against the live link (the same link, epoch and client) and reads the hold's latest version.
+type LinkHolds interface {
+	Hold(ctx context.Context, caller linkauth.Caller, person uuid.UUID) (LinkHold, error)
 }
 
 // LinkInbox receives one event Fyniq sent, for the link's client: it verifies the envelope against the link and applies the payload once. The outcome is applied, ignored_older or duplicate; a
@@ -111,7 +125,7 @@ func (a *API) registerLink() {
 		if a.d.LinkAuth == nil || a.d.Link == nil {
 			return nil, Err(CodeUnavailable, "The link to Fyniq is not set up in this deployment.")
 		}
-		caller, err := a.d.LinkAuth.Authenticate(ctx, in.Authorization)
+		caller, err := a.d.LinkAuth.Events(ctx, in.Authorization)
 		if err != nil {
 			if errors.Is(err, linkauth.ErrUnauthenticated) || errors.Is(err, linkauth.ErrNotLink) {
 				return nil, linkProblem(err)
@@ -137,6 +151,7 @@ type LinkView struct {
 	LinkKey            []byte          // Nemura's Ed25519 public key for what it sends
 	ClientKey          json.RawMessage // the JWK of Nemura's client key, which Fyniq registers
 	PeerClientID       string          // the ID Fyniq's client has at Nemura's OAuth server
+	PeerAskClientID    string          // the ID Fyniq's read-only client for the ask at release has there
 	FyniqClientID      string          // the ID Nemura's client has at Fyniq's OAuth server, once linked
 	ProposedBy         uuid.UUID
 }
@@ -145,7 +160,7 @@ type LinkView struct {
 type LinkAdmin interface {
 	Current(ctx context.Context, s Session) (LinkView, error)
 	Propose(ctx context.Context, s Session, fyniqOrganisation uuid.UUID) (LinkView, error)
-	Approve(ctx context.Context, s Session, fyniqKey []byte, fyniqClientID string, clientKey json.RawMessage) (LinkView, error)
+	Approve(ctx context.Context, s Session, fyniqKey []byte, fyniqClientID string, clientKey, askKey json.RawMessage) (LinkView, error)
 }
 
 func init() {
@@ -161,12 +176,13 @@ type LinkState struct {
 	FyniqOrganisation  string         `json:"fyniq_organisation_id,omitempty" format:"uuid" doc:"The Fyniq organisation the link is to." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
 	LinkKey            string         `json:"link_key,omitempty" doc:"Nemura's Ed25519 public key for the link's envelopes, 32 bytes as base64url without padding: give it to Fyniq when it links." example:"EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE"`
 	ClientKey          map[string]any `json:"client_public_key,omitempty" doc:"The public half of the key Nemura's client signs its token request to Fyniq's OAuth server with, as a JWK: give it to Fyniq when it links. Never the private key."`
+	PeerAskClientID    string         `json:"nemura_ask_client_id,omitempty" doc:"The ID Fyniq's read-only client, which asks whether a person is held at the release of a payment, will have at Nemura's OAuth server: give it to Fyniq when it links." example:"fyniq-ask-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
 	PeerClientID       string         `json:"nemura_client_id,omitempty" doc:"The ID Fyniq's client will have at Nemura's OAuth server: give it to Fyniq when it links." example:"fyniq-link-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"`
 	FyniqClientID      string         `json:"fyniq_oauth_client_id,omitempty" doc:"The ID Nemura's client has at Fyniq's OAuth server, once the link is approved." example:"4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11"`
 }
 
 func linkStateOf(v LinkView) LinkState {
-	out := LinkState{State: v.State, Epoch: v.Epoch, PeerClientID: v.PeerClientID, FyniqClientID: v.FyniqClientID}
+	out := LinkState{State: v.State, Epoch: v.Epoch, PeerClientID: v.PeerClientID, PeerAskClientID: v.PeerAskClientID, FyniqClientID: v.FyniqClientID}
 	if v.State == "" {
 		out.State = "none"
 	}
@@ -200,6 +216,7 @@ type linkApproveInput struct {
 		FyniqKey      string         `json:"fyniq_link_key" minLength:"43" maxLength:"43" doc:"Fyniq's Ed25519 public key for what it sends, 32 bytes as base64url without padding: shown on Fyniq's People and HR page." example:"EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE"`
 		FyniqClientID string         `json:"fyniq_oauth_client_id" minLength:"1" maxLength:"200" doc:"The ID Nemura's client has at Fyniq's OAuth server: shown on Fyniq's People and HR page." example:"4f6c1b52-8d2a-4c93-9a43-0c2d7e9b1a11"`
 		ClientKey     map[string]any `json:"fyniq_client_public_key" doc:"The public half of the key Fyniq's own client signs its token request to Nemura's OAuth server with, as a JWK: Nemura registers it for Fyniq's client. Never the private key."`
+		AskKey        map[string]any `json:"fyniq_ask_client_public_key" doc:"The public half of the key Fyniq's read-only client signs its token request with, as a JWK: Nemura registers it for the client that asks whether a person is held. Never the private key."`
 	}
 }
 
@@ -304,10 +321,64 @@ func (a *API) registerLinkAdmin() {
 		if merr != nil {
 			return nil, Err(CodeInvalid, "fyniq_client_public_key is not a JWK.")
 		}
-		v, err := a.d.LinkAdmin.Approve(ctx, s, key, in.Body.FyniqClientID, jwk)
+		askJWK, aerr := json.Marshal(in.Body.AskKey)
+		if aerr != nil {
+			return nil, Err(CodeInvalid, "fyniq_ask_client_public_key is not a JWK.")
+		}
+		v, err := a.d.LinkAdmin.Approve(ctx, s, key, in.Body.FyniqClientID, jwk, askJWK)
 		if err != nil {
 			return nil, linkAdminError(err)
 		}
 		return &linkStateOutput{Body: linkStateOf(v)}, nil
+	})
+}
+
+// LinkHoldAnswer is what Nemura says of a person's hold.
+type LinkHoldAnswer struct {
+	PersonID string `json:"person_id" format:"uuid" doc:"The person asked about." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Status   string `json:"status" enum:"held,released,none" doc:"held: the person is held for tax clearance and nothing is released to them; released: the hold was lifted; none: they never had one." example:"held"`
+	HoldID   string `json:"hold_id,omitempty" format:"uuid" doc:"The hold's ID, stable across its versions." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e62"`
+	Version  int    `json:"version" doc:"The hold's latest version, 0 when there is none: an answer older than the version Fyniq already saw is not an answer." example:"2"`
+}
+
+type linkHoldInput struct {
+	Authorization string `header:"Authorization" doc:"Bearer, then the access token Fyniq's read-only link client got from Nemura's OAuth server for the audience nemura-api with the scope link.holds.read." example:"Bearer ory_at_…"`
+	PersonID      string `path:"person_id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+}
+
+type linkHoldOutput struct{ Body LinkHoldAnswer }
+
+func (a *API) registerLinkHold() {
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getLinkHold", Method: http.MethodGet, Path: "/v1/link/people/{person_id}/hold", Tags: []string{"Link"}, Summary: "Ask whether a person is held for tax clearance",
+		Description: "Nemura is the hold's authority (PRD-002 NM-INT-08). Fyniq asks here at the release of a payment to a person (PRD-001 FR-PPL-13), because the projection's copy may be older than Nemura's own answer. " +
+			"Only Fyniq's read-only link client may call it, with a bearer token for the audience nemura-api and the scope link.holds.read, for the live link at its epoch: the client that sends events cannot ask, no session, no " +
+			"person and no ordinary API client can. It answers the hold's status and version and nothing else of the person, and changes nothing. It is on the never-list for the AI and MCP surfaces.",
+		Errors: []int{401, 403, 409, 503},
+	}, func(ctx context.Context, in *linkHoldInput) (*linkHoldOutput, error) {
+		if a.d.LinkAuth == nil || a.d.LinkHolds == nil {
+			return nil, Err(CodeUnavailable, "The link to Fyniq is not set up in this deployment.")
+		}
+		caller, err := a.d.LinkAuth.Ask(ctx, in.Authorization)
+		if err != nil {
+			if errors.Is(err, linkauth.ErrUnauthenticated) || errors.Is(err, linkauth.ErrNotLink) {
+				return nil, linkProblem(err)
+			}
+			return nil, Err(CodeUnavailable, "The OAuth server could not be asked to check the token: try again.")
+		}
+		person, perr := uuid.Parse(in.PersonID)
+		if perr != nil {
+			return nil, Err(CodeInvalid, "path.person_id is not an ID.")
+		}
+		h, err := a.d.LinkHolds.Hold(ctx, caller, person)
+		if err != nil {
+			return nil, linkProblem(err)
+		}
+		out := &linkHoldOutput{}
+		out.Body.PersonID, out.Body.Status, out.Body.Version = person.String(), h.Status, h.Version
+		if h.HoldID != uuid.Nil {
+			out.Body.HoldID = h.HoldID.String()
+		}
+		return out, nil
 	})
 }

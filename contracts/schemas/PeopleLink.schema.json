@@ -18,6 +18,11 @@
       "format": "int64",
       "type": "integer"
     },
+    "fyniq_ask_client_public_key": {
+      "additionalProperties": {},
+      "description": "The public half of the key Fyniq's read-only client signs its token request with, as a JWK: Nemura registers it for the client that asks whether a person is held at the release of a payment. Never the private key.",
+      "type": "object"
+    },
     "fyniq_client_public_key": {
       "additionalProperties": {},
       "description": "The public half of the key Fyniq's own client signs its token request to Nemura's OAuth server with, as a JWK: Nemura registers it for Fyniq's client. Never the private key.",
@@ -43,6 +48,13 @@
         "2026-11-20T09:00:00Z"
       ],
       "format": "date-time",
+      "type": "string"
+    },
+    "nemura_ask_client_id": {
+      "description": "The ID Fyniq's read-only client has at Nemura's OAuth server, as Nemura chose it when it proposed the link.",
+      "examples": [
+        "fyniq-ask-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"
+      ],
       "type": "string"
     },
     "nemura_client_id": {

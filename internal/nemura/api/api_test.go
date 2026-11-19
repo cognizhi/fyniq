@@ -544,8 +544,17 @@ func (f fakeClients) Revoke(context.Context, Session, uuid.UUID) error { return 
 // fakeLinkAuth accepts the bearer token it is given as the link's client, or refuses with its error; fakeLink receives an event with its answer.
 type fakeLinkAuth struct{ err error }
 
-func (f fakeLinkAuth) Authenticate(context.Context, string) (linkauth.Caller, error) {
+func (f fakeLinkAuth) Events(context.Context, string) (linkauth.Caller, error) {
 	return linkauth.Caller{}, f.err
+}
+func (f fakeLinkAuth) Ask(context.Context, string) (linkauth.Caller, error) {
+	return linkauth.Caller{}, f.err
+}
+
+type fakeLinkHolds struct{ err error }
+
+func (f fakeLinkHolds) Hold(context.Context, linkauth.Caller, uuid.UUID) (LinkHold, error) {
+	return LinkHold{Status: "held", HoldID: uuid.New(), Version: 2}, f.err
 }
 
 // fakeLinkAdmin shows a proposed link, or answers with its error.
@@ -557,7 +566,7 @@ func (f fakeLinkAdmin) Current(context.Context, Session) (LinkView, error) {
 func (f fakeLinkAdmin) Propose(_ context.Context, _ Session, org uuid.UUID) (LinkView, error) {
 	return LinkView{State: "proposed", Epoch: 1, FyniqOrganisation: org, LinkKey: make([]byte, 32), ClientKey: json.RawMessage(`{"kty":"EC"}`), PeerClientID: "fyniq-link-x"}, f.err
 }
-func (f fakeLinkAdmin) Approve(context.Context, Session, []byte, string, json.RawMessage) (LinkView, error) {
+func (f fakeLinkAdmin) Approve(context.Context, Session, []byte, string, json.RawMessage, json.RawMessage) (LinkView, error) {
 	return LinkView{State: "active", Epoch: 1}, f.err
 }
 
@@ -570,7 +579,7 @@ func (f fakeLink) Receive(context.Context, linkauth.Caller, []byte) (string, err
 	return "applied", nil
 }
 
-var linkApprovalBody = `{"fyniq_link_key":"` + strings.Repeat("A", 43) + `","fyniq_oauth_client_id":"client-1","fyniq_client_public_key":{"kty":"EC","crv":"P-256","x":"a","y":"b"}}`
+var linkApprovalBody = `{"fyniq_link_key":"` + strings.Repeat("A", 43) + `","fyniq_oauth_client_id":"client-1","fyniq_client_public_key":{"kty":"EC","crv":"P-256","x":"a","y":"b"},"fyniq_ask_client_public_key":{"kty":"EC","crv":"P-256","x":"c","y":"d"}}`
 
 // linkEventBody is a well-formed envelope: the fakes decide what becomes of it.
 const linkEventBody = `{"header":{"event_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e70","type":"payroll.run.posted","schema_version":1,"source_system":"fyniq","source_organisation":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71","target_organisation":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e72","epoch":1,"sequence":1,"object_type":"payroll_run","object_id":"run-1","object_version":1,"effective_at":"2099-01-01T09:00:00Z","recorded_at":"2099-01-01T09:00:00Z","signed_at":"2099-01-01T09:00:00Z","correlation_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73","payload_sha256":"54a65415ad370228851a1da4b31b6fd42dc58b19a50d35cae759325f7388ce64"},"signature":"x","payload":{}}`
@@ -592,7 +601,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, LinkHolds: fakeLinkHolds{err: linkErr}, LinkAdmin: fakeLinkAdmin{err: clientsErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }

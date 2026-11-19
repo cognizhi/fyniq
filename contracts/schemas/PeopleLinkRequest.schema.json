@@ -56,6 +56,16 @@
       "minLength": 43,
       "type": "string"
     },
+    "nemura_ask_client_id": {
+      "description": "The ID Fyniq's read-only client, which asks whether a person is held at the release of a payment, will have at Nemura's OAuth server, as Nemura chose it when it proposed the link: shown on Nemura's link page.",
+      "examples": [
+        "fyniq-ask-0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"
+      ],
+      "maxLength": 200,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "type": "string"
+    },
     "nemura_client_id": {
       "description": "The ID Fyniq's own client will have at Nemura's OAuth server, as Nemura chose it when it proposed the link: shown on Nemura's link page. Fyniq signs in to Nemura as this client to send its events.",
       "examples": [
@@ -89,6 +99,7 @@
     "link_key",
     "client_name",
     "nemura_client_id",
+    "nemura_ask_client_id",
     "client_public_key",
     "expires_at",
     "features"

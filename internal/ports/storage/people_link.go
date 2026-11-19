@@ -91,8 +91,17 @@ type PeopleLinkKeys struct {
 
 // PeopleLinkSecrets are the private halves: the Ed25519 key that signs the link's events and the ES256 key (PKCS #8, DER) that signs the token assertion. Only the worker's role reads them.
 type PeopleLinkSecrets struct {
-	LinkID                       uuid.UUID
+	LinkID                     uuid.UUID
 	LinkPrivate, ClientPrivate []byte
+}
+
+// PeopleLinkAskKey is the credential of the ask at release: the ID Nemura gave Fyniq's read-only client (it chose it at its proposal), and its ES256 key, whose public half Nemura registers. Unlike the
+// events' secrets this private half is the API's to read (the API makes the ask) and the worker's not.
+type PeopleLinkAskKey struct {
+	LinkID     uuid.UUID
+	ClientID   string
+	Public     json.RawMessage
+	PrivateDER []byte
 }
 
 // PeopleLinks are the link, where each feature lives, the inbox and the employee projection. Every change is audited.
@@ -126,6 +135,10 @@ type PeopleLinks interface {
 	NextSequence(ctx context.Context, link uuid.UUID) (int64, error)
 	// Secrets are the link's private keys: the worker's role alone can read them (the API's refused by the database).
 	Secrets(ctx context.Context, link uuid.UUID) (PeopleLinkSecrets, error)
+	// SaveAskKey keeps the ask's credential made when the link was approved, audited as people_link.ask_key_made (that it exists and which client it is for, never a key).
+	SaveAskKey(ctx context.Context, k PeopleLinkAskKey) error
+	// AskKey is the live link's ask credential, or ports.ErrNotFound for a link made without one. The API's role reads it; the worker's does not.
+	AskKey(ctx context.Context, link uuid.UUID) (PeopleLinkAskKey, error)
 	// SavePerson writes a person's new state, audited as person_projection.changed with the names of the fields that changed, never
 	// their values. CodePeopleLink when it goes back to an older version.
 	SavePerson(ctx context.Context, p peoplelink.Person) error

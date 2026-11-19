@@ -42,6 +42,7 @@ var Exported = []string{
 var Excluded = map[string]string{
 	"people_link":                   "the link to the people platform: a link is made again with its approval and a new epoch, never restored (FR-PPL-16); its key and client are not the organisation's records",
 	"people_link_key":               "the link's public keys and the running number of what Fyniq sent: credentials of the connection, not the organisation's records (FR-PPL-15)",
+	"people_link_ask_key":           "the private key of the link's read-only client for the ask at release: a secret of the connection, never exported (FR-PPL-13, SEC-15)",
 	"people_link_secret":            "the link's private keys: a secret of the connection, never exported (FR-PPL-15, SEC-15)",
 	"people_link_inbox":             "the events the link received: identities and digests of another system's messages, kept to dedupe them, not the organisation's records (FR-PPL-15)",
 	"idempotency_key":               "saved answers to repeated API requests, kept a day: not the organisation's records",

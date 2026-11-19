@@ -69,7 +69,7 @@ func linked(t *testing.T, lt *leaveTeam, now time.Time, oauth *fakeOAuth) (offer
 		_, err := nemura.GrantRole(ctx, tx, lt.c.org, now, lt.c.owner, lt.c.hr, authz.Administrator, today, nil)
 		return err
 	})
-	if err := svc.Activate(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr, StepUpAt: &now}, fyniqPub, "fyniq-client-1", json.RawMessage(jwk)); err != nil {
+	if err := svc.Activate(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr, StepUpAt: &now}, fyniqPub, "fyniq-client-1", json.RawMessage(jwk), json.RawMessage(jwk)); err != nil {
 		t.Fatal(err)
 	}
 	return offer, fyniqPriv, fyniqOrg
@@ -114,33 +114,36 @@ func TestTheLinkIsProposedByAnOwnerAndApprovedByAnotherWithFyniqsHalf(t *testing
 	}
 
 	hr := api.Session{Organisation: lt.c.org, Member: lt.c.hr, StepUpAt: &now}
-	if err := svc.Activate(ctx, owner, fyniqPub, "fyniq-client-1", json.RawMessage(jwk)); !errors.As(err, &r) || r.Code != nemura.CodeLinkApprover {
+	if err := svc.Activate(ctx, owner, fyniqPub, "fyniq-client-1", json.RawMessage(jwk), json.RawMessage(jwk)); !errors.As(err, &r) || r.Code != nemura.CodeLinkApprover {
 		t.Errorf("the asker approved their own link: %v", err)
 	}
-	if err := svc.Activate(ctx, hr, fyniqPub, "fyniq-client-1", json.RawMessage(jwk)); !errors.As(err, &r) || r.Code != nemura.CodeLinkApprover {
+	if err := svc.Activate(ctx, hr, fyniqPub, "fyniq-client-1", json.RawMessage(jwk), json.RawMessage(jwk)); !errors.As(err, &r) || r.Code != nemura.CodeLinkApprover {
 		t.Errorf("someone who is neither Owner nor Administrator approved: %v", err)
 	}
 	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
 		_, err := nemura.GrantRole(ctx, tx, lt.c.org, now, lt.c.owner, lt.c.hr, authz.Administrator, today, nil)
 		return err
 	})
-	if err := svc.Activate(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr, StepUpAt: &stale}, fyniqPub, "fyniq-client-1", json.RawMessage(jwk)); !errors.As(err, &r) || r.Code != nemura.CodeLinkStepUp {
+	if err := svc.Activate(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr, StepUpAt: &stale}, fyniqPub, "fyniq-client-1", json.RawMessage(jwk), json.RawMessage(jwk)); !errors.As(err, &r) || r.Code != nemura.CodeLinkStepUp {
 		t.Errorf("an approval without a fresh passkey: %v", err)
 	}
-	if err := svc.Activate(ctx, hr, fyniqPub, "fyniq-client-1", json.RawMessage(`{"kty":"EC","crv":"P-256","x":"a","y":"b","d":"secret"}`)); err == nil || len(oauth.registered) != 0 {
+	if err := svc.Activate(ctx, hr, fyniqPub, "fyniq-client-1", json.RawMessage(`{"kty":"EC","crv":"P-256","x":"a","y":"b","d":"secret"}`), json.RawMessage(jwk)); err == nil || len(oauth.registered) != 0 {
 		t.Errorf("a client key with a private part: %v", err)
 	}
-	if err := svc.Activate(ctx, hr, fyniqPub, "fyniq-client-1", json.RawMessage(jwk)); err != nil {
+	if err := svc.Activate(ctx, hr, fyniqPub, "fyniq-client-1", json.RawMessage(jwk), json.RawMessage(jwk)); err != nil {
 		t.Fatalf("the second approver completes the link: %v", err)
 	}
-	if len(oauth.registered) != 1 {
+	if len(oauth.registered) != 2 {
 		t.Fatalf("clients registered: %d", len(oauth.registered))
+	}
+	if a := oauth.registered[1]; a.ClientID != offer.PeerAskClientID || strings.Join(a.Scopes, " ") != apiclient.AskScope || a.ClientID == offer.PeerClientID || a.Audience != apiclient.Audience {
+		t.Errorf("the client registered for the ask at release: %+v", a)
 	}
 	g := oauth.registered[0]
 	if g.ClientID != offer.PeerClientID || strings.Join(g.Scopes, " ") != apiclient.LinkScope || g.Audience != apiclient.Audience || g.Alg != "ES256" || g.TokenLifespan > time.Hour {
 		t.Errorf("the client registered for Fyniq: %+v", g)
 	}
-	if err := svc.Activate(ctx, hr, fyniqPub, "fyniq-client-1", json.RawMessage(jwk)); !errors.As(err, &r) || r.Code != nemura.CodeLinkState {
+	if err := svc.Activate(ctx, hr, fyniqPub, "fyniq-client-1", json.RawMessage(jwk), json.RawMessage(jwk)); !errors.As(err, &r) || r.Code != nemura.CodeLinkState {
 		t.Errorf("a link completed twice: %v", err)
 	}
 	var l nemura.LinkRow
@@ -213,12 +216,15 @@ func TestOnlyFyniqsLinkClientReachesTheInboxAndItsEventsAreCheckedAgainstTheLink
 	grant("fyniq-audience", offer.PeerClientID, "fyniq-api", apiclient.LinkScope)
 	grant("ordinary", "ordinary-client", apiclient.Audience, "directory.read")
 	grant("no-scope", offer.PeerClientID, apiclient.Audience, "directory.read")
+	grant("ask-token", offer.PeerAskClientID, apiclient.Audience, apiclient.AskScope)
+	grant("ask-client-sends", offer.PeerAskClientID, apiclient.Audience, apiclient.LinkScope)
+	grant("events-client-asks", offer.PeerClientID, apiclient.Audience, apiclient.AskScope)
 	grant("not-the-links-client", "some-other-client", apiclient.Audience, apiclient.LinkScope)
 	srv.tokens["delegated"] = ports.Introspection{Active: true, Subject: "a-person", ClientID: offer.PeerClientID, Audiences: []string{apiclient.Audience}, Scopes: []string{apiclient.LinkScope}, ExpiresAt: now.Add(time.Hour)}
 	srv.tokens["expired"] = ports.Introspection{Active: true, Subject: offer.PeerClientID, ClientID: offer.PeerClientID, Audiences: []string{apiclient.Audience}, Scopes: []string{apiclient.LinkScope}, ExpiresAt: now.Add(-time.Minute)}
 
 	mux := http.NewServeMux()
-	api.New(mux, api.Deps{LinkAuth: &linkauth.Introspector{OAuth: srv, Routes: st, Audience: apiclient.Audience, Clock: clk, TTL: 0}, Link: nemura.LinkService{Store: st, OAuth: oauth, Clock: clk}, Clock: clk, Sessions: noSessions{},
+	api.New(mux, api.Deps{LinkAuth: &linkauth.Introspector{OAuth: srv, Routes: st, Audience: apiclient.Audience, Clock: clk, TTL: 0}, Link: nemura.LinkService{Store: st, OAuth: oauth, Clock: clk}, LinkHolds: nemura.LinkService{Store: st, OAuth: oauth, Clock: clk}, Clock: clk, Sessions: noSessions{},
 		CookieNames: []string{"nemura_session"}})
 	post := func(token, cookie string, body []byte) (int, map[string]any) {
 		req := httptest.NewRequest(http.MethodPost, "/v1/link/events", bytes.NewReader(body))
@@ -341,6 +347,55 @@ func TestOnlyFyniqsLinkClientReachesTheInboxAndItsEventsAreCheckedAgainstTheLink
 	// kept: the applied answer's inbox row and its posting, the ignored one's inbox row, and the two refusals that came after the signature held; every forgery left nothing
 	if got := count(); got != 5 {
 		t.Errorf("what was kept: %d", got)
+	}
+
+	// The ask at release (FR-PPL-13): the read-only client reads a hold's status and nothing else; the client that sends events cannot ask, the asking client cannot send, and no one else can.
+	ben := uuid.New()
+	askPath := "/v1/link/people/" + ben.String() + "/hold"
+	get := func(token, path string) (int, map[string]any) {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		var out map[string]any
+		_ = json.Unmarshal(rec.Body.Bytes(), &out)
+		return rec.Code, out
+	}
+	if status, out := get("ask-token", askPath); status != 200 || out["status"] != "none" || out["version"] != float64(0) {
+		t.Errorf("a person with no hold: %d %v", status, out)
+	}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		_, err := nemura.PutTaxHold(ctx, tx, lt.c.org, now, lt.c.hr, lt.ben, d("2099-06-30"), "resigned")
+		return err
+	})
+	if status, out := get("ask-token", "/v1/link/people/"+lt.ben.String()+"/hold"); status != 200 || out["status"] != "held" || out["version"] != float64(1) || out["hold_id"] == nil || strings.Contains(fmt.Sprint(out), "resigned") {
+		t.Errorf("a held person: %d %v", status, out)
+	}
+	for name, c := range map[string]struct {
+		token string
+		want  int
+	}{
+		"nothing":                        {"", 401},
+		"a token nobody issued":          {"nonsense", 401},
+		"the events client asking":       {"events-client-asks", 403},
+		"an ordinary client":             {"ordinary", 403},
+		"the events token without scope": {"link-token", 403},
+		"Fyniq's own audience":           {"fyniq-audience", 401},
+	} {
+		if status, out := get(c.token, askPath); status != c.want {
+			t.Errorf("asking with %s: %d %v", name, status, out)
+		}
+	}
+	if status, _ := post("ask-client-sends", "", good); status != 403 {
+		t.Errorf("the asking client sending an event: %d", status)
+	}
+	if status, _ := post("ask-token", "", good); status != 403 {
+		t.Errorf("the asking client's token on the events inbox: %d", status)
+	}
+	if count() != 5 {
+		t.Errorf("the ask or a refused call changed what Nemura kept: %d", count())
 	}
 
 	// A token of the link whose epoch has ended: unlinking, then a new link, is a new client; the old one's token is refused.
@@ -567,7 +622,7 @@ func TestTheLinkPageShowsTheProposalAndTheActiveLinkWithoutAnyPrivateKey(t *test
 		return err
 	})
 	fyniqPub, _, _ := ed25519.GenerateKey(rand.Reader)
-	got, err := svc.Approve(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr, StepUpAt: &now}, fyniqPub, "fyniq-client-9", json.RawMessage(jwk))
+	got, err := svc.Approve(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr, StepUpAt: &now}, fyniqPub, "fyniq-client-9", json.RawMessage(jwk), json.RawMessage(jwk))
 	if err != nil || got.State != "active" || got.FyniqClientID != "fyniq-client-9" || got.Epoch != 1 {
 		t.Errorf("the approval: %+v %v", got, err)
 	}

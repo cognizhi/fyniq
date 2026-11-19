@@ -277,6 +277,7 @@ var codeFacts = map[string]struct {
 	peoplelink.CodeRunStale:       {409, "The version is no newer than one already posted"},
 	peoplelink.CodeRunApprover:    {403, "The approver has no sign-in identity or passkey in Fyniq"},
 	peoplelink.CodeHold:           {409, "A person held for tax clearance is not paid"},
+	peoplelink.CodeHoldUnknown:    {409, "Nemura did not say whether a person is held, so nothing is released to them"},
 	peoplelink.CodeRunPosting:     {422, "The ledger refused the posting"},
 	ledger.CodePayroll:            {422, "The pay run does not fit the posting rule"},
 	storage.CodePayrollRun:        {409, "A pay run's receipt is kept once, and a payroll entry needs one"},
