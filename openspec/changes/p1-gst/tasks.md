@@ -179,6 +179,9 @@ and the pinned or hand-worked tests behind every figure and date it shows. Load 
 
 ## 7. At GST registration (question 2), not before
 
+  (20 Nov 2026: tasks 2 to 6 are ticked. **Left:** the full `make test` with the authorisation matrix (about 30 minutes alone, over
+  the 90-minute Go timeout on the shared host, where it timed out in `internal/api` with no assertion failing) and `make up`;
+  they run once on the final head, so this stays open until then. `make check` passes at this commit.)
 - [ ] 7.1 FR-TAX-01: the reverse-charge codes and the setting (question 29, the tax agent's decision).
 - [ ] 7.2 FR-TAX-02 and FR-TAX-03: the F5 return with every box, the roll-forward to the GST control (INV-07) and the
   filing record and lock. These complete the calendar's F5 items, and `recordStatutoryFiling` then refuses an F5 key.
