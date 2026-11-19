@@ -15,7 +15,7 @@ Source: PRD-002 §11 · Priority M · Phase P1
 - **THEN** the letter shows the salary; otherwise it does not
 
 ### Requirement: NM-LTR-02 Templates
-Letter templates SHALL use Fyniq's template engine and editor with people merge fields, and a template change SHALL be versioned and approved by the HR administrator.
+Letter templates SHALL be text blocks with typed people merge fields and no free code (Nemura's own in P1; Fyniq's editor with the Fyniq link), and a template change SHALL be versioned, a published version immutable, and approved by the HR administrator.
 
 Source: PRD-002 §11 · Priority M · Phase P1
 

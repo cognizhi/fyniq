@@ -293,3 +293,67 @@ func TestTheAccrualAndAvailabilityAreScopedByRole(t *testing.T) {
 		t.Errorf("a bad day: %d", got)
 	}
 }
+
+// Letters are asked for by the person, checked by the people team (never their own), signed only by the signatory after a fresh passkey confirmation, and read by the person
+// and the people team; the people team writes templates, the HR administrator and the Owner approve them and set the letterhead and the types; a delivery link needs no
+// sign-in (NM-LTR-01, NM-LTR-02, NM-LTR-03).
+// req: NM-LTR-01, NM-LTR-02, NM-LTR-03
+// asvs: V8.2.1, V8.3.1
+func TestLettersAreScopedByRoleAndSigningNeedsAFreshPasskey(t *testing.T) {
+	do := func(roles []authz.Role, stepUp bool, method, path, body string, signedIn bool) int {
+		testRoles, testStepUp = roles, stepUp
+		defer func() { testRoles, testStepUp = []authz.Role{authz.HRAdmin}, false }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		if signedIn {
+			req.Header.Set("Cookie", "nemura_session=good-token")
+		}
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0"
+	for _, tc := range []struct {
+		roles                                        []authz.Role
+		settingsRead, settingsWrite, template, check int
+		sign, signFresh                              int
+	}{
+		{[]authz.Role{authz.Employee}, 403, 403, 403, 403, 403, 403}, {[]authz.Role{authz.LineManager}, 403, 403, 403, 403, 403, 403},
+		{[]authz.Role{authz.PayrollAdmin}, 403, 403, 403, 403, 403, 403},
+		{[]authz.Role{authz.HROfficer}, 200, 403, 200, 200, 403, 403}, {[]authz.Role{authz.HRAdmin}, 200, 204, 200, 200, 403, 403},
+		{[]authz.Role{authz.Owner}, 200, 204, 200, 200, 403, 200},
+	} {
+		if got := do(tc.roles, false, "GET", "/v1/letters/settings", "", true); got != tc.settingsRead {
+			t.Errorf("%v reading the letterhead: %d, want %d", tc.roles, got, tc.settingsRead)
+		}
+		if got := do(tc.roles, false, "PUT", "/v1/letters/settings", `{"company_name":"Acme","uen":"1","address":"x"}`, true); got != tc.settingsWrite {
+			t.Errorf("%v setting it: %d, want %d", tc.roles, got, tc.settingsWrite)
+		}
+		if got := do(tc.roles, false, "PUT", "/v1/letters/types/employment_confirmation/template", `{"blocks":[{"kind":"paragraph","text":"x"}]}`, true); got != tc.template {
+			t.Errorf("%v writing a template: %d, want %d", tc.roles, got, tc.template)
+		}
+		if got := do(tc.roles, false, "POST", "/v1/letters/"+id+"/check", "", true); got != tc.check {
+			t.Errorf("%v checking: %d, want %d", tc.roles, got, tc.check)
+		}
+		if got := do(tc.roles, false, "POST", "/v1/letters/"+id+"/signature", `{"sha256":"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"}`, true); got != tc.sign {
+			t.Errorf("%v signing without a fresh passkey: %d, want %d", tc.roles, got, tc.sign)
+		}
+		if got := do(tc.roles, true, "POST", "/v1/letters/"+id+"/signature", `{"sha256":"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"}`, true); got != tc.signFresh {
+			t.Errorf("%v signing with a fresh passkey: %d, want %d", tc.roles, got, tc.signFresh)
+		}
+		// Every signed-in person asks for a letter, reads the types, lists their own and withdraws their own.
+		for _, call := range []struct{ method, path, body string }{{"POST", "/v1/me/letters", `{"type":"employment_confirmation","purpose":"A bank loan."}`}, {"GET", "/v1/letters/types", ""}, {"GET", "/v1/letters", ""}, {"POST", "/v1/letters/" + id + "/withdrawal", `{"reason":"x"}`}} {
+			if got := do(tc.roles, false, call.method, call.path, call.body, true); got >= 300 {
+				t.Errorf("%v could not %s %s: %d", tc.roles, call.method, call.path, got)
+			}
+		}
+	}
+	// The delivery link needs no sign-in; a letter file needs one.
+	if got := do(nil, false, "GET", "/v1/letter-links/download?token=org.token", "", false); got != 200 {
+		t.Errorf("the delivery link: %d", got)
+	}
+	if got := do(nil, false, "GET", "/v1/letters/"+id+"/file", "", false); got != 401 {
+		t.Errorf("a letter file with no session: %d", got)
+	}
+}
