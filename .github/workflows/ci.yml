@@ -192,6 +192,9 @@ jobs:
       - run: scripts/local-smoke-people.sh   # NM-ARC-06: Nemura on its own, every Fyniq service stopped, first-run sign-in and sign-out
         env:
           FYNIQ_PG_PORT: "25432"
+      - run: scripts/test-journeys-people.sh   # NM-ARC-01: Nemura's sign-in journey in Chrome, on a stack of its own with no Fyniq running
+        env:
+          FYNIQ_PG_PORT: "25432"
       - name: A changed visual baseline is approved by its label (p1-launch-readiness design D5)
         if: github.event_name == 'pull_request'
         env:
