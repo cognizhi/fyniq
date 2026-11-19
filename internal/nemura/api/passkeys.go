@@ -69,6 +69,8 @@ func ceremonyError(err error) error {
 		return Err(CodePasskeyRefused, "The passkey's answer did not pass its checks: the site, the challenge, the signature or the person's verification.")
 	case errors.Is(err, ErrNoCeremony):
 		return Err(CodeNoCeremony, "There is no open passkey ceremony for this session: it was not started, was answered already, or has expired.")
+	case errors.Is(err, ErrUnavailable):
+		return Err(CodeUnavailable, "Passkeys are not available at this address: a passkey belongs to a domain name, not an IP address. Open Nemura at its domain name.")
 	case errors.Is(err, ErrNoPasskey):
 		return Err(CodeNoPasskey, "This person has registered no passkey to confirm with.")
 	}

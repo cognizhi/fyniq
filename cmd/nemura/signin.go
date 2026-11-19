@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -104,7 +105,7 @@ type passkeys struct {
 	clock ports.Clock
 }
 
-func newPasskeys(store *nemura.Store, origin, rpID string, clock ports.Clock) (*passkeys, error) {
+func newPasskeys(store *nemura.Store, origin, rpID string, clock ports.Clock) (api.Passkeys, error) {
 	if rpID == "" {
 		u, err := url.Parse(origin)
 		if err != nil {
@@ -112,11 +113,31 @@ func newPasskeys(store *nemura.Store, origin, rpID string, clock ports.Clock) (*
 		}
 		rpID = u.Hostname()
 	}
+	if net.ParseIP(rpID) != nil {
+		// A passkey belongs to a domain name; opened at an IP address (a test, a bare container) the service runs without them.
+		return noPasskeys{}, nil
+	}
 	rp, err := passkey.NewFor(origin, rpID, "Nemura")
 	if err != nil {
 		return nil, err
 	}
 	return &passkeys{store: store, rp: rp, clock: clock}, nil
+}
+
+// noPasskeys answers every ceremony with NM_UNAVAILABLE: the origin is an IP address, which WebAuthn does not accept as a relying party.
+type noPasskeys struct{}
+
+func (noPasskeys) BeginRegistration(context.Context, api.Session) ([]byte, error) {
+	return nil, api.ErrUnavailable
+}
+func (noPasskeys) CompleteRegistration(context.Context, api.Session, string, []byte) (uuid.UUID, error) {
+	return uuid.Nil, api.ErrUnavailable
+}
+func (noPasskeys) BeginStepUp(context.Context, api.Session) ([]byte, error) {
+	return nil, api.ErrUnavailable
+}
+func (noPasskeys) CompleteStepUp(context.Context, api.Session, []byte) error {
+	return api.ErrUnavailable
 }
 
 func refusal(err error) error {
