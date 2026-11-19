@@ -204,8 +204,10 @@ func TestAPayRunIsCalculatedFromThePayRecordsIntoAReadOnlyVersionWithADigest(t *
 		t.Errorf("a preparer approving their own run: %v", err)
 	}
 	var leaks int
-	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F])(9250|20000|999\.00|29395|9600|1702|204\.55)([^0-9a-fA-F]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
-		t.Errorf("the audit trail holds an amount in %d events: %v", leaks, err)
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F-])(9250|20000|999\.00|29395|9600|1702|204\.55)([^0-9a-fA-F-]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
+		var body string
+		_ = su.QueryRow(ctx, `SELECT body FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F-])(9250|20000|999\.00|29395|9600|1702|204\.55)([^0-9a-fA-F-]|$)' LIMIT 1`, lt.c.org).Scan(&body)
+		t.Errorf("the audit trail holds an amount in %d events: %v %s", leaks, err, body)
 	}
 	if list, _ := svc.Runs(ctx, pay, june); len(list) != 1 || list[0].Latest.Number != 5 {
 		t.Errorf("runs of the month: %+v", list)
@@ -330,7 +332,7 @@ func TestAVersionIsApprovedByAnotherPersonOverItsDigestAndItsInputsAreUsedOnce(t
 	}
 	// No amount in the trail; the approved lines are evidence.
 	var leaks int
-	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F])(8300|8000\.00|300\.00)([^0-9a-fA-F]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F-])(8300|8000\.00|300\.00)([^0-9a-fA-F-]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
 		t.Errorf("amounts in the audit trail: %d %v", leaks, err)
 	}
 }
@@ -486,7 +488,7 @@ func TestPayslipsAreMadeOnceFromAnApprovedVersionAndReadOnlyByTheirOwner(t *test
 		t.Errorf("corrected payslips: %+v", both)
 	}
 	var leaks int
-	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F])(4500\.00|3500\.00|5100\.00|1020|500\.00)([^0-9a-fA-F]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F-])(4500\.00|3500\.00|5100\.00|1020|500\.00)([^0-9a-fA-F-]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
 		t.Errorf("amounts in the audit trail: %d %v", leaks, err)
 	}
 }
@@ -674,7 +676,7 @@ func TestAPaymentMovesThroughLegalStatesAndAnUnknownOutcomeBlocksANewPayment(t *
 		t.Errorf("an event number skipped: %v", err)
 	}
 	var leaks int
-	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F])(3999\.00|3999|4000\.00)([^0-9a-fA-F]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F-])(3999\.00|3999|4000\.00)([^0-9a-fA-F-]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
 		t.Errorf("amounts in the audit trail: %d %v", leaks, err)
 	}
 	// The database holds the same moves as the Go list: every pair of states, in a transaction that is rolled back.

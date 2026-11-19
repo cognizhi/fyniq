@@ -45,10 +45,7 @@ func addWorkingDays(v pack.Version, from time.Time, n int) time.Time {
 	d := from
 	for n > 0 {
 		d = d.AddDate(0, 0, 1)
-		if d.Weekday() == time.Saturday || d.Weekday() == time.Sunday {
-			continue
-		}
-		if _, holiday := pack.PublicHoliday(v, d); holiday {
+		if pack.NonWorkingDay(v, d) {
 			continue
 		}
 		n--

@@ -78,7 +78,7 @@ func TestPaymentsAndPayslipsAreChecked(t *testing.T) {
 		got[3].Status != Warn || got[3].Subject != "d" || !strings.Contains(got[3].Message, "June 2026") {
 		t.Fatalf("payments: %+v", got)
 	}
-	v, err := pack.Load(packs.Files(), "sg-people/2026.7")
+	v, err := pack.Load(packs.Files(), "sg-people/2026.8")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,5 +101,11 @@ func TestPaymentsAndPayslipsAreChecked(t *testing.T) {
 	}
 	if got := Payslips(v, hf, 3, d("2026-04-08")); len(got) != 1 || got[0].Status != Fail {
 		t.Errorf("after the holiday window: %+v", got)
+	}
+	// The Monday in lieu of National Day on Sunday 9 Aug 2026 is not a working day either: paid Fri 7 Aug, the third working day is Thu 13 Aug, not Wed 12 Aug.
+	fri := d("2026-08-07")
+	lf := []PaymentFact{{Person: "a", Month: d("2026-07-01"), State: "paid", PaidOn: &fri}}
+	if got := Payslips(v, lf, 3, d("2026-08-12")); len(got) != 1 || got[0].Status != Due || !strings.Contains(got[0].Message, "due by 2026-08-13") {
+		t.Errorf("a day in lieu in the window: %+v", got)
 	}
 }
