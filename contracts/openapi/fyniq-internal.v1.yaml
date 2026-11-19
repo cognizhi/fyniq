@@ -1185,7 +1185,7 @@ info:
     identifier: MIT
     name: MIT
   title: Fyniq internal API
-  version: 0.1.0 # x-release-please-version
+  version: 0.2.0 # x-release-please-version
 openapi: 3.1.0
 paths:
   /internal/v1/agent-runs/{run_id}/model:
