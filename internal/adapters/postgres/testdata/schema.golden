@@ -8098,6 +8098,7 @@ mcp_client_register(p_id text, p_name text, p_uris text[], p_network text, p_now
 mcp_client_status(p_id text) → text | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 3a40b7172b86f1e46d079c4c69042bdb
 mcp_client_touch(p_id text, p_now timestamp with time zone) → void | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 92fedf837b7f15c35a80c5c53f8fe80a
 mcp_clients_expire(p_now timestamp with time zone, p_pending interval, p_unused interval) → SETOF text | security definer | v | search_path=pg_catalog, fyniq, pg_temp | a832de9100b181f8e9fed224a1b95c3b
+mcp_clients_named(p_ids text[]) → SETOF mcp_client | security definer | s | search_path=pg_catalog, fyniq, pg_temp | b5b3eca3e61d3118d0dea22776dd853b
 mcp_clients_pending() → SETOF mcp_client | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 4c562e36eec5a6f3140f98101328a5f3
 mcp_registration_open(p_now timestamp with time zone) → boolean | security definer | s | search_path=pg_catalog, fyniq, pg_temp | 354766d8448266a6f1bde09a79437dc8
 member_emails() → TABLE(user_id uuid, email text) | security definer | s | search_path=pg_catalog, fyniq, pg_temp | de5d5500c1abd3c22db2454f742d293e

@@ -71,9 +71,11 @@ type Deps struct {
 	APIAudience  string
 	// MCPClients holds the AI apps that registered themselves (AI-90), MCPAudience is the audience their tokens name, and MCPServerOn is
 	// the deployment's switch (FYNIQ_MCP_SERVER): registration is closed while it is off, whatever an Owner has set.
-	MCPClients  storage.MCPClients
-	MCPAudience string
-	MCPServerOn bool
+	MCPClients storage.MCPClients
+	// OAuthConsents lists and revokes what a person granted AI apps; nil: none is listed.
+	OAuthConsents ports.OAuthConsents
+	MCPAudience   string
+	MCPServerOn   bool
 	// Staging keeps uploads until their record is final, and Scanner checks them for malware (FR-DOC-13,
 	// FR-DOC-01); without either, no file can be attached.
 	Staging ports.BlobStore
@@ -383,6 +385,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerNotifications(a)
 	registerHelpState(a)
 	registerMCPOptIn(a)
+	registerConnectedApps(a)
 	registerOAuthRegistration(a)
 	registerBanners(a)
 	registerDelivery(a)

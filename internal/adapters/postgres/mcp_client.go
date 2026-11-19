@@ -64,3 +64,19 @@ func (s *Store) ExpireClients(ctx context.Context, now time.Time, pending, unuse
 func interval(d time.Duration) pgtype.Interval {
 	return pgtype.Interval{Microseconds: d.Microseconds(), Valid: true}
 }
+
+// NamedClients implements storage.MCPClients.
+func (s *Store) NamedClients(ctx context.Context, ids []string) ([]storage.MCPNamedClient, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	rows, err := s.q().NamedMCPClients(ctx, ids)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.MCPNamedClient, len(rows))
+	for i, r := range rows {
+		out[i] = storage.MCPNamedClient{ID: r.ClientID, Name: r.Name, Status: r.Status, RedirectURIs: r.RedirectUris, RegisteredAt: r.RegisteredAt}
+	}
+	return out, nil
+}

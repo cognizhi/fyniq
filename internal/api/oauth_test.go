@@ -51,6 +51,7 @@ type oauthStack struct {
 	userID uuid.UUID
 	gate   *testGate           // what the MCP gate says: admits unless a test sets why
 	in     *authn.Introspector // the API's own, to which a test may add the delegation
+	api    *API                // the API on srv
 }
 
 // testGate stands in for internal/mcpgate, whose settings and opt-in tests live with it: here it says yes, or the refusal a test sets.
@@ -88,7 +89,7 @@ func startOAuth(t *testing.T, ttl time.Duration) *oauthStack {
 	dev := e.tokens // the first-party session, until the SignIn port: dev tokens
 	s.in = &authn.Introspector{OAuth: s.admin, Audience: apiAudience, Clock: s.clock, TTL: ttl}
 	auth := authn.Local{Dev: dev, OAuth: s.in}
-	New(mux, Deps{Store: e.store, Clock: s.clock, Auth: auth, Log: slog.New(slog.DiscardHandler), Version: "0.0.0-test", Services: e.services, Screening: local.Screen{}, MCPClients: e.store, OAuthClients: s.admin, MCPAudience: mcpAudience, MCPServerOn: true})
+	s.api = New(mux, Deps{Store: e.store, Clock: s.clock, Auth: auth, Log: slog.New(slog.DiscardHandler), Version: "0.0.0-test", Services: e.services, Screening: local.Screen{}, MCPClients: e.store, OAuthClients: s.admin, MCPAudience: mcpAudience, MCPServerOn: true})
 	s.gate = &testGate{}
 	oauthflow.Flow{OAuth: s.admin, SignedIn: dev, Clock: clock.System{}, APIAudience: apiAudience, MCPAudience: mcpAudience, MCP: s.gate}.Register(mux)
 	s.user, s.userID = authn.DevPrefix+uuid.NewString(), uuid.New()

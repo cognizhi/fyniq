@@ -44,10 +44,18 @@ func TestAnAIAppRegistersOnlyThroughTheClosedPolicyCheckedEndpoint(t *testing.T)
 	}
 	good := `{"client_name":"Acme Books Assistant","redirect_uris":["https://acme.example/oauth/callback"],"token_endpoint_auth_method":"none"}`
 
-	// Closed by default: nothing is created.
-	if status, out, _ := post(good); status != 403 || out["code"] != CodeRegClosed || out["error"] != "access_denied" {
-		t.Fatalf("closed: %d %v", status, out)
+	// Closed by default: nothing is created. The door is the installation's (any organisation's Owner may open it), and the tests of this
+	// package share one database, so another test's organisation may have opened it: then only the deployment's own door is checked.
+	if open, _ := e.store.RegistrationOpen(context.Background(), s.clock.Now()); !open {
+		if status, out, _ := post(good); status != 403 || out["code"] != CodeRegClosed || out["error"] != "access_denied" {
+			t.Fatalf("closed: %d %v", status, out)
+		}
 	}
+	s.api.deps.MCPServerOn = false
+	if status, out, _ := post(good); status != 403 || out["code"] != CodeRegClosed {
+		t.Fatalf("the deployment's switch off: %d %v", status, out)
+	}
+	s.api.deps.MCPServerOn = true
 	pending := func() int {
 		n, err := e.store.PendingClients(context.Background())
 		if err != nil {
@@ -55,9 +63,7 @@ func TestAnAIAppRegistersOnlyThroughTheClosedPolicyCheckedEndpoint(t *testing.T)
 		}
 		return len(n)
 	}
-	if pending() != 0 {
-		t.Fatal("a closed endpoint registered a client")
-	}
+	base := pending()
 	// An Owner opens it (the setting, in force today).
 	y, m, d := e.clock.Now().In(appclock.Singapore).Date()
 	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
@@ -70,8 +76,8 @@ func TestAnAIAppRegistersOnlyThroughTheClosedPolicyCheckedEndpoint(t *testing.T)
 	if status != 201 || !strings.HasPrefix(id, "mcp-") || out["token_endpoint_auth_method"] != "none" || out["scope"] != "openid offline_access fyniq.read.reports" || out["client_secret"] != nil {
 		t.Fatalf("a good registration: %d %v", status, out)
 	}
-	if pending() != 1 {
-		t.Errorf("pending: %d", pending())
+	if pending() != base+1 {
+		t.Errorf("pending: %d, was %d", pending(), base)
 	}
 	// At the OAuth server it is an agent-class public client for the MCP audience, with the default scope and the exact redirect.
 	resp, err := http.Get(s.admin.BaseURL + "/admin/clients/" + id)

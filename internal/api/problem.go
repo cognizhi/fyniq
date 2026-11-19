@@ -308,6 +308,8 @@ var codeFacts = map[string]struct {
 	CodeToolGrant:                 {403, "Not one of the agent's tools"},
 	CodeMCPScope:                  {403, "The app was not granted what this call needs"},
 	CodeMCPNotAgent:               {403, "Not the delegated token of an agent for a person"},
+	CodeConnectedNoUser:           {422, "Not a person who is a member"},
+	CodeConnectedNoRegist:         {404, "No registration is waiting under that ID"},
 	CodeRegClosed:                 {403, "AI apps cannot register here"},
 	CodeRegPolicy:                 {400, "The registration breaks the policy"},
 	CodeRegLimit:                  {429, "Too many registrations"},

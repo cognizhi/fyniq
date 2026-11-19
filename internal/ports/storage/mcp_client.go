@@ -35,6 +35,13 @@ type MCPPendingClient struct {
 	RegisteredAt time.Time
 }
 
+// MCPNamedClient is a registered app an organisation named, with its status.
+type MCPNamedClient struct {
+	ID, Name, Status string
+	RedirectURIs     []string
+	RegisteredAt     time.Time
+}
+
 // MCPClients is the installation's record of the AI apps that registered themselves (AI-90). It is global, no organisation's:
 // the store reaches it through the database's functions, which hold the policy's database half.
 type MCPClients interface {
@@ -48,6 +55,8 @@ type MCPClients interface {
 	DecideClient(ctx context.Context, id, status string, now time.Time) (bool, error)
 	// TouchClient notes that an approved client was used.
 	TouchClient(ctx context.Context, id string, now time.Time) error
+	// NamedClients are the registrations among ids, with their names and status: only those asked for.
+	NamedClients(ctx context.Context, ids []string) ([]MCPNamedClient, error)
 	// PendingClients are the registrations waiting for an Owner, newest first.
 	PendingClients(ctx context.Context) ([]MCPPendingClient, error)
 	// ExpireClients marks as expired the registrations never approved within pending, and the approved ones never used within

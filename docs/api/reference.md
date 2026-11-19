@@ -22634,6 +22634,103 @@ Marks one of the caller's notifications unread again (FR-NTF-01). Side effects: 
 
 AI apps working for a person over MCP: the person's own opt-in, which is off until they choose, and the organisation's switch and allowlist (AI-35). Never reachable by an AI app or an integration: a person chooses (§9.6).
 
+### `GET /v1/connected-apps`
+
+**See the AI apps that work for you** (`getConnectedApps`)
+
+The Connected apps page (AI-44): your opt-in, the organisation's switch and its allowlist, the apps it can allow (those the release pre-registers and any that registered themselves and were listed), and what you have allowed each. Read-only; no side effects.
+
+- **Permission:** View on Own MCP connection (opt in, consent, revoke) (rev 0.2)
+- **Responses:**
+  - `200` OK [`ConnectedAppsView`](../../contracts/schemas/ConnectedAppsView.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `MCP-APPS-01` Not a person who is a member.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `MCP-APPS-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/connected-apps/activity`
+
+**See what AI apps did** (`listMCPActivity`)
+
+The trail of AI apps' calls (AI-44): which app, which tool, what became of it, and from which network, newest first, the last 100. Yours; with all=true, everyone's in the organisation, for the people who may see Connected apps. It holds no token, argument or result. Read-only; no side effects.
+
+- **Permission:** View on Own MCP connection (opt in, consent, revoke) (rev 0.2)
+- **Parameters:**
+  - `all` (query): Every person's calls in the organisation, for an Owner; otherwise your own.
+- **Responses:**
+  - `200` OK [`MCPActivity`](../../contracts/schemas/MCPActivity.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `DELETE /v1/connected-apps/connections/{client_id}`
+
+**Disconnect an AI app** (`revokeMyConnection`)
+
+Revokes what you allowed one AI app: its access and refresh tokens end at once (AI-44). Only your own; idempotent. Side effects: the app's tokens at the OAuth server. Never on the AI's or MCP's tool list.
+
+- **Permission:** Create on Own MCP connection (opt in, consent, revoke) (rev 0.2)
+- **Parameters:**
+  - `client_id` (path, required): The app's client ID.
+- **Responses:**
+  - `204` No Content
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `MCP-APPS-01` Not a person who is a member.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `MCP-APPS-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/connected-apps/registrations`
+
+**See the AI apps waiting for an Owner** (`listMCPRegistrations`)
+
+The self-registered apps nobody has approved yet (AI-90), only while registration is on for the organisation: each one's name, which Fyniq has not verified, and where it sends people to sign in. An Owner approves one by adding its ID to the apps that may connect, or denies it. Read-only; no side effects.
+
+- **Permission:** View on Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)
+- **Responses:**
+  - `200` OK [`MCPRegistrations`](../../contracts/schemas/MCPRegistrations.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/connected-apps/registrations/{client_id}/deny`
+
+**Deny a registered AI app** (`denyMCPRegistration`)
+
+Denies a pending registration, once: the app is removed from the OAuth server and can never connect (AI-90). Never held back for a second person: it narrows. Side effects: the registration's status and the client at the OAuth server. Never on the AI's or MCP's tool list.
+
+- **Permission:** Approve on Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)
+- **Parameters:**
+  - `client_id` (path, required): The app's client ID.
+- **Responses:**
+  - `204` No Content
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `MCP-APPS-02` No registration is waiting under that ID.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `MCP-APPS-02`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
 ### `GET /v1/me/mcp`
 
 **Get whether AI apps may work for you over MCP** (`getMyMCP`)

@@ -189,3 +189,17 @@ func registerMCPOptIn(a *API) {
 		return &mcpAccessOutput{ETag: w.Body.ETag, Replayed: replayedHeader(w.Replayed), Applied: applied(w), Body: w.Body}, nil
 	})
 }
+
+// settingOnBool is whether a switch setting is on today in the unit of work's organisation.
+func settingOnBool(ctx context.Context, a *API, u storage.UnitOfWork, key string) (bool, error) {
+	today, err := orgToday(ctx, a, u)
+	if err != nil {
+		return false, err
+	}
+	changes, err := u.Settings().Changes(ctx, "")
+	if err != nil {
+		return false, err
+	}
+	d, _ := settings.Lookup(key)
+	return settings.On(d, changes, today).Value == "true", nil
+}

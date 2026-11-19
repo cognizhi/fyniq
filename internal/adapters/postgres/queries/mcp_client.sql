@@ -19,3 +19,6 @@ SELECT * FROM fyniq.mcp_clients_pending();
 
 -- name: ExpireMCPClients :many
 SELECT fyniq.mcp_clients_expire(sqlc.arg(now)::timestamptz, sqlc.arg(pending)::interval, sqlc.arg(unused)::interval)::text AS client_id;
+
+-- name: NamedMCPClients :many
+SELECT * FROM fyniq.mcp_clients_named(sqlc.arg(ids)::text[]);

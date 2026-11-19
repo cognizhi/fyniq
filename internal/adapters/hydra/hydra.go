@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -409,4 +410,53 @@ func (a *Admin) RevokeAgentConsents(ctx context.Context, subject string) error {
 		}
 	}
 	return nil
+}
+
+// AgentConsents implements ports.OAuthConsents: the subject's consent sessions with agent-class clients, newest grant of each.
+func (a *Admin) AgentConsents(ctx context.Context, subject string) ([]ports.AgentConsent, error) {
+	if subject == "" {
+		return nil, errors.New("hydra: a consent list needs a subject")
+	}
+	var sessions []struct {
+		ConsentRequest struct {
+			Client client `json:"client"`
+		} `json:"consent_request"`
+		GrantScope []string  `json:"grant_scope"`
+		HandledAt  time.Time `json:"handled_at"`
+	}
+	err := a.do(ctx, http.MethodGet, "/admin/oauth2/auth/sessions/consent", url.Values{"subject": {subject}}, nil, nil, &sessions)
+	if errors.Is(err, ports.ErrNoChallenge) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	latest := map[string]ports.AgentConsent{}
+	for _, s := range sessions {
+		c := s.ConsentRequest.Client
+		if c.Metadata["class"] != "agent" || c.ClientID == "" {
+			continue
+		}
+		if old, ok := latest[c.ClientID]; !ok || s.HandledAt.After(old.GrantedAt) {
+			latest[c.ClientID] = ports.AgentConsent{ClientID: c.ClientID, ClientName: c.ClientName, Scopes: s.GrantScope, GrantedAt: s.HandledAt}
+		}
+	}
+	out := make([]ports.AgentConsent, 0, len(latest))
+	for _, c := range latest {
+		out = append(out, c)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].GrantedAt.After(out[j].GrantedAt) })
+	return out, nil
+}
+
+// RevokeClientConsent implements ports.OAuthConsents.
+func (a *Admin) RevokeClientConsent(ctx context.Context, subject, clientID string) error {
+	if subject == "" || clientID == "" {
+		return errors.New("hydra: revoke needs a subject and a client")
+	}
+	err := a.do(ctx, http.MethodDelete, "/admin/oauth2/auth/sessions/consent", url.Values{"subject": {subject}, "client": {clientID}}, nil, nil, nil)
+	if errors.Is(err, ports.ErrNoChallenge) {
+		return nil
+	}
+	return err
 }

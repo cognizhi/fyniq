@@ -81,6 +81,39 @@ func (q *Queries) MCPRegistrationOpen(ctx context.Context, now time.Time) (bool,
 	return open, err
 }
 
+const namedMCPClients = `-- name: NamedMCPClients :many
+SELECT client_id, name, redirect_uris, status, network, registered_at, decided_at, last_used_at FROM fyniq.mcp_clients_named($1::text[])
+`
+
+func (q *Queries) NamedMCPClients(ctx context.Context, ids []string) ([]FyniqMcpClient, error) {
+	rows, err := q.db.Query(ctx, namedMCPClients, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FyniqMcpClient
+	for rows.Next() {
+		var i FyniqMcpClient
+		if err := rows.Scan(
+			&i.ClientID,
+			&i.Name,
+			&i.RedirectUris,
+			&i.Status,
+			&i.Network,
+			&i.RegisteredAt,
+			&i.DecidedAt,
+			&i.LastUsedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const pendingMCPClients = `-- name: PendingMCPClients :many
 SELECT client_id, name, redirect_uris, status, network, registered_at, decided_at, last_used_at FROM fyniq.mcp_clients_pending()
 `

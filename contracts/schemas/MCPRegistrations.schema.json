@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "registrations": {
+      "description": "Newest first; an Owner adds one to the apps that may connect to approve it, or denies it.",
+      "items": {
+        "$ref": "MCPRegistration.schema.json"
+      },
+      "maxItems": 100,
+      "type": "array"
+    }
+  },
+  "required": [
+    "registrations"
+  ],
+  "title": "MCPRegistrations",
+  "type": "object"
+}

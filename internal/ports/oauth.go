@@ -146,4 +146,15 @@ type PublicRegistration struct {
 type OAuthConsents interface {
 	// RevokeAgentConsents revokes every access and refresh token issued to subject by an agent-class client.
 	RevokeAgentConsents(ctx context.Context, subject string) error
+	// AgentConsents are what subject has granted agent-class clients now: each client, the scopes, and when.
+	AgentConsents(ctx context.Context, subject string) ([]AgentConsent, error)
+	// RevokeClientConsent revokes what subject granted one client: its access and refresh tokens.
+	RevokeClientConsent(ctx context.Context, subject, clientID string) error
+}
+
+// AgentConsent is what a person granted an AI app, as the OAuth server holds it.
+type AgentConsent struct {
+	ClientID, ClientName string
+	Scopes               []string
+	GrantedAt            time.Time
 }

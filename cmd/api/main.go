@@ -117,6 +117,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" { // FR-INT-02: integration clients, registered with the OAuth server
 		d.OAuthClients, d.APIAudience = wiring.Hydra(admin), oauthAudience()
 		// AI apps may register themselves (AI-90), only where the MCP server is on and an Owner has turned it on.
+		d.OAuthConsents = wiring.Hydra(admin)
 		d.MCPClients, d.MCPAudience, d.MCPServerOn = kit.Store, os.Getenv("FYNIQ_MCP_AUDIENCE"), os.Getenv("FYNIQ_MCP_SERVER") == "on"
 	}
 	// The connectors (FR-INT-20, rev 0.139): the release's catalogue, the store their keys go to, and the runtime the
