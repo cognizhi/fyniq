@@ -10,8 +10,8 @@ taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
-schema: kb-schema@1
-compiled_at: 2026-11-18
+schema: kb-schema@2
+compiled_at: 2026-11-19
 aliases:
   - company secretary assistant
   - scheduled agent

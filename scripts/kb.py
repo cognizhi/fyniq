@@ -7,7 +7,7 @@ from page front matter, and it lints pages against kb/schema.md. Standard librar
 
     python3 scripts/kb.py index            # regenerate kb/index.md
     python3 scripts/kb.py lint             # exit 1 on any error (make kb-lint, part of make check)
-    python3 scripts/kb.py stale            # pages whose sources changed, and sources no page covers
+    python3 scripts/kb.py stale            # pages whose sources or statutory packs changed, and sources no page covers
     python3 scripts/kb.py hash <path>      # the "sources" line for a source file
     python3 scripts/kb.py log <op> <text>  # append an entry to kb/log.md
 """
@@ -24,11 +24,13 @@ KB = ROOT / "kb"
 PAGES = KB / "pages"
 INDEX = KB / "index.md"
 LOG = KB / "log.md"
-SCHEMA = "kb-schema@1"
+SCHEMA = "kb-schema@2"
 
 WATCHED_DIRS = ["docs/user-guide"]           # raw sources (kb/schema.md "Layers")
 WATCHED_EXCLUDE = {"docs/user-guide/README.md"}
 FORBIDDEN_SOURCES = ("docs/prd/",)            # internal spec: never a source
+PACKS_DIR = "packs"                           # the statutory packs: packs/<name>/<year>.<n>/ (kb-schema@2 `packs`)
+PACK_RE = re.compile(r"^([a-z][a-z0-9-]*)@(\d{4})\.(\d+)$")
 
 TYPES = ["concept", "task", "reference", "policy", "decision"]
 REQUIRED = ["key", "type", "title", "summary", "sources", "data_class", "taint", "status",
@@ -141,6 +143,41 @@ def source_status(relpath):
     return (fm or {}).get("status", "published")
 
 
+def pack_versions():
+    """Every statutory pack version in the repository: {name: [(year, n), ...]} (packs/<name>/<year>.<n>/)."""
+    out = {}
+    base = ROOT / PACKS_DIR
+    for d in sorted(base.iterdir()) if base.is_dir() else []:
+        if d.is_dir():
+            vs = [tuple(int(x) for x in v.name.split(".")) for v in d.iterdir() if v.is_dir() and re.match(r"^\d{4}\.\d+$", v.name)]
+            out[d.name] = sorted(vs)
+    return out
+
+
+def pack_findings(fm, versions):
+    """What is wrong with the statutory packs a page says its values were read from, as (rule, message) pairs.
+
+    A page that states a statutory value declares the pack version it read it from. It is flagged when that version
+    does not exist, and when a newer version of the pack exists: the page is out of date until it is recompiled (AI-53).
+    """
+    out = []
+    declared = fm.get("packs", [])
+    if "packs" in fm and (not isinstance(declared, list) or not declared):
+        return [("line", "packs must be a non-empty list of '<pack>@<year>.<n>' lines")]
+    for item in declared:
+        m = PACK_RE.match(item)
+        if not m:
+            out.append(("line", f"packs line must be '<pack>@<year>.<n>': {item}"))
+            continue
+        name, version = m.group(1), (int(m.group(2)), int(m.group(3)))
+        known = versions.get(name, [])
+        if version not in known:
+            out.append(("gone", f"pack not found: {item}"))
+        elif known[-1] > version:
+            out.append(("stale", f"pack {name} is out of date: the page read {item}, the newest is {name}@{known[-1][0]}.{known[-1][1]}; recompile it"))
+    return out
+
+
 def numbers_outside_ids(body):
     text = re.sub(r"`[^`]*`", " ", body)                 # inline code
     text = CITE_RE.sub(" ", text)                         # citations
@@ -177,6 +214,7 @@ def render_index(pages):
 
 def lint(pages):
     errors, warnings = [], []
+    packs_known = pack_versions()
     keys, inbound = {}, {}
     for p in pages:
         if p["fm"].get("key"):
@@ -216,6 +254,9 @@ def lint(pages):
             errors.append(f"{where}: aliases must be a non-empty list of phrases of at most 60 characters")
         if fm.get("status") == "published" and fm.get("taint") == "untrusted":
             errors.append(f"{where}: an untrusted page stays draft until approved (AI-54)")
+
+        for kind, message in pack_findings(fm, packs_known):
+            errors.append(f"{where}: {message}")
 
         sources, source_text = parse_sources(fm), {}
         for src, digest in sources:
@@ -309,6 +350,11 @@ def main(argv):
                 covered.add(src)
                 if digest and (ROOT / src).is_file() and sha256(src) != digest:
                     print(f"stale     {p['rel']}  ({src})")
+        known = pack_versions()
+        for p in pages:
+            for kind, message in pack_findings(p["fm"], known):
+                if kind == "stale":
+                    print(f"stale-pack {p['rel']}  ({message})")
         for src in watched_sources():
             if src not in covered:
                 print(f"uncovered {src}")

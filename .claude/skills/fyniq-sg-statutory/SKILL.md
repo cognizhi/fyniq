@@ -116,6 +116,10 @@ in `docs/prd/research/`.
    **fyniq-accounting-domain**, with a new rule version.
 5. **Update the statutory calendar rules** if any deadline moved, and the Checks C.2 #13–16
    thresholds.
+   **Recompile the knowledge-base pages that read the old version:** a page lists the pack versions it
+   read in its `packs` front matter, so a new version fails `make kb-lint` (`KB-PACK-STALE`) and
+   shows in `make kb-stale` until the page is recompiled and its `packs` line updated
+   (**fyniq-knowledge-base**, AI-53).
 6. **Run** `make test` (pinned tests and the differential tests on golden data; arrives in P0).
    CI fails when the current year's pack is missing, unsourced or fails its pinned tests
    (CTL-FIN-06), and in January when the CPF tables for the new year are missing.
@@ -167,4 +171,5 @@ rules. Do not add country branches in engine code.
 - [ ] Pinned tests derived by hand from the official tables, green for the effective date.
 - [ ] Code changes (new code, box or rule) went through **fyniq-accounting-domain** with a new rule version.
 - [ ] Calendar and Checks thresholds updated; PRD §14.2 snapshot refreshed.
+- [ ] `make kb-stale` lists no page of the knowledge base that read the superseded version.
 - [ ] Dual approval recorded for activation; a Conventional Commit with upgrade notes.
