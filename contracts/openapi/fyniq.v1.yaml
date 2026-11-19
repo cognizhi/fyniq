@@ -152917,6 +152917,8 @@ paths:
         - API-UNAVAILABLE-01
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "an installation has at most two Super admins (the last is only replaced, FR-ADM-07): a bounded set, never paged"
       x-fyniq-permission:
         capability: (Super admins)
         note: Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1).

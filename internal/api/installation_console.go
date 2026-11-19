@@ -90,12 +90,12 @@ func registerInstallationConsole(a *API) {
 		return &platformHealthOutput{Body: platformHealthOf(h, a.deps.Clock.Now())}, nil
 	})
 
-	register(a, authz.ListSuperAdmins, huma.Operation{
+	register(a, authz.ListSuperAdmins, exempt(huma.Operation{
 		OperationID: "listSuperAdmins", Method: http.MethodGet, Path: "/v1/installation/super-admins", Tags: []string{"Installation"},
 		Summary: "List the Super admins",
 		Description: "The installation's active Super admins, longest-serving first (FR-ADM-07), with a warning while there is only one. " +
 			authz.ListSuperAdmins.Note + " Read-only; no side effects.",
-	}, admin, func(ctx context.Context, _ *struct{}) (*superAdminListOutput, error) {
+	}, "cursor", "an installation has at most two Super admins (the last is only replaced, FR-ADM-07): a bounded set, never paged"), admin, func(ctx context.Context, _ *struct{}) (*superAdminListOutput, error) {
 		by, err := a.superAdmin(ctx, "Listing the Super admins")
 		if err != nil {
 			return nil, err
