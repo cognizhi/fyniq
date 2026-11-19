@@ -262,7 +262,7 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   refresh) tokens, client impersonation, consent phishing, oversized results, session fixation, a bad `Origin`, payroll
   unreachable, limits and kill switches. Tests `// req: QA-MCP-01`, `// req: AI-36`.
   Built: `compliance/qa-mcp-01.json`, one row per red-team case with the tests that prove it, kept true by `TestEveryQAMCP01RowNamesTestsThatExist`;
-  the suite is those tests, which run in `make test`. **Left:** the per-call cost measured against the P0 spike, and an own CI job.
+  the suite is those tests, which run in `make test`. The suite has its own CI job and command (`make qa-mcp`, `scripts/qa-mcp.sh`, the `qa-mcp` job of `ci.yml`, 20 Nov 2026), which runs every row's tests against the pinned Hydra; the per-call cost of delegation is measured by `TestMCPDelegationLimitsAreMeasured` (about 20 ms, the P0 spike's figure).
 - [x] 10.2 `CTL-MCP-01` to `CTL-MCP-04` and `CTL-API-02` running in `compliance/controls/` with their evidence (the nightly
   sample of agent-class writes is zero; the manifest and never-list check; the dual-control check on enabling and allowlisting;
   the revocation timing test), and the control map's counts. Tests `// req: CTL-MCP-01` to `CTL-MCP-04`, `// req: CTL-API-02`.

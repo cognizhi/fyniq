@@ -47,7 +47,7 @@ func TestTheRecurringReviews(t *testing.T) {
 		controls     []string
 	}{
 		"review-log":             {"owner", "/review-log", []string{"CTL-FIN-07"}},
-		"access-review":          {"owner", "/settings/access-review", []string{"CTL-IAM-02"}},
+		"access-review":          {"owner", "/settings/access-review", []string{"CTL-API-02", "CTL-IAM-02"}},
 		"accountant-review":      {"accountant", "/accounting/reviews", []string{"CTL-FIN-10"}},
 		"close-signoff":          {"controller", "/accounting/close", []string{"CTL-FIN-09"}},
 		"break-glass-review":     {"owner", "/break-glass", []string{"CTL-FIN-07"}},
