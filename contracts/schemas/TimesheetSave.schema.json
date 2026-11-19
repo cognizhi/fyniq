@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entries": {
+      "description": "Every draft or returned entry of the week as it should be: one with an ID changes that entry, one without is new, and a draft or returned entry left out is removed. Submitted and approved entries, and reversing entries, are not part of it.",
+      "items": {
+        "$ref": "TimesheetEntryDraft.schema.json"
+      },
+      "maxItems": 400,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "entries"
+  ],
+  "title": "TimesheetSave",
+  "type": "object"
+}

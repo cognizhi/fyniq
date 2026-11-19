@@ -30,7 +30,7 @@ const (
 var All = []Role{API, Migrate, Worker, Executor, Assistant}
 
 // Built are the roles this build can run. A role joins it with the change that builds it.
-var Built = []Role{API}
+var Built = []Role{API, Migrate, Worker}
 
 // Code is the stable code of every refusal.
 const Code = "NEMURA-ROLE-01"
@@ -77,3 +77,12 @@ func containsRole(roles []Role, r Role) bool {
 
 // Service is the name /version reports for a role: nemura-api, nemura-worker, ….
 func (r Role) Service() string { return "nemura-" + string(r) }
+
+// DatabaseRole is the PostgreSQL role the service connects as (PRD-001 SEC-03; db/nemura/migrations): one per service, so
+// no service holds another's grants. The migrate job connects as the one role that owns the schema.
+func (r Role) DatabaseRole() string {
+	if r == Migrate {
+		return "nemura_migrator"
+	}
+	return "nemura_" + string(r)
+}

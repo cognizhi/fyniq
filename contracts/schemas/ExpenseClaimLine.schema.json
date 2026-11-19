@@ -25,6 +25,13 @@
       "maxLength": 500,
       "type": "string"
     },
+    "billable": {
+      "description": "The line is a cost of a project that is billed on to its customer (FR-PRJ-08); it carries a project in dimension_value_ids, and the project's unbilled view lists it once the claim is posted, at its cost plus markup_percent.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
     "category_id": {
       "description": "The expense policy's category it is for: the account it costs (FR-AP-15).",
       "examples": [
@@ -136,6 +143,14 @@
       "examples": [
         "receipt"
       ],
+      "type": "string"
+    },
+    "markup_percent": {
+      "description": "The markup on the cost when it is billed on, a percentage from 0 to 999.99 with at most two decimals (RND-MARKUP). Only on a billable line.",
+      "examples": [
+        "10"
+      ],
+      "pattern": "^[0-9]{1,3}(\\.[0-9]{1,2})?$",
       "type": "string"
     },
     "merchant": {
