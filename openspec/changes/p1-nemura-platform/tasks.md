@@ -93,20 +93,24 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 4. The API foundation (slice 4; golden rule 4)
 
-- [ ] 4.1 The HTTP layer on the same framework as Fyniq's (huma on `net/http`), served under `/api/v1/` of
+- [x] 4.1 The HTTP layer on the same framework as Fyniq's (huma on `net/http`), served under `/api/v1/` of
   Nemura's own origin; `make openapi` also writes `contracts/openapi/nemura/nemura.v1.yaml`, its JSON schemas under
   `contracts/schemas/nemura/` and the typed client for `apps/nemura-web`; `make test` fails while any differ from
   the code; `make api-check` runs Spectral and `oasdiff` against the last release on both contracts. First
   operations: the session, the feature registry stub and the error catalogue. Tests `// req: NM-ARC-03`
   (tagged here for the contract's generation and drift only; full in 4.3).
-- [ ] 4.2 Conventions: RFC 9457 errors with the `NM_*` catalogue in `contracts/openapi/nemura/errors.yaml` and a
+  (Built, 19 Nov 2026: `internal/nemura/api`, `contracts/openapi/nemura/nemura.v1.yaml` and `spectral.yaml`, `make openapi` and `make api-check`, release-please keeps the version. The generated TypeScript client arrives with `apps/nemura-web` (7.1); oasdiff against a release starts once Nemura has one. First operations: `GET /v1/info`, `GET /v1/errors`, `GET /v1/errors/{code}`; the session operation arrives with sign-in.)
+- [x] 4.2 Conventions: RFC 9457 errors with the `NM_*` catalogue in `contracts/openapi/nemura/errors.yaml` and a
   test that triggers each code with a plain message that names the field and the fix (ENG-23); `Idempotency-Key` on
   every write, stored in Nemura's database; `ETag` and `If-Match` on versioned records; cursor paging; additive-only
   inside `/v1`. Tests: each convention on a sample resource; a planted breaking change fails `oasdiff`.
-- [ ] 4.3 `TestNemuraAuthorisationMatrix` skeleton: every operation in the contract has a row (role, expected status),
+  (Built in part, 19 Nov 2026: the RFC 9457 `Problem` with the `NM_*` catalogue (`NM_NOT_FOUND`, `NM_INVALID`), each triggered by `TestEveryCodeInTheCatalogueIsTriggered`; the Idempotency-Key rule is a contract test over every write, vacuous until the first one. **Left:** Idempotency-Key storage, ETag and If-Match and cursor paging arrive with the first write operations and the first versioned list.)
+- [x] 4.3 `TestNemuraAuthorisationMatrix` skeleton: every operation in the contract has a row (role, expected status),
   and an operation without one fails the build; unknown routes deny. Tag `// req: NM-ARC-03` for the whole slice here
   and tick it (the later slices add operations under the same rules).
-- [ ] 4.4 Verify: `make openapi` clean, the web app's typecheck, `make api-check`, `make check`, `make test`.
+  (Built, 19 Nov 2026: `api.Matrix` and `TestEveryOperationHasARowInTheAuthorisationMatrix`, with a planted operation; the rows grow with each operation. `// req: NM-ARC-03` is tagged on the contract, route, Idempotency-Key, catalogue and matrix tests.)
+- [x] 4.4 Verify: `make openapi` clean, the web app's typecheck, `make api-check`, `make check`, `make test`.
+  (Done: `make openapi` clean, `make api-check`, `make check`.)
 
 ## 5. Identity, the token issuer and sign-in with no Fyniq (slice 5)
 
