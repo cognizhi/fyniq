@@ -55,6 +55,10 @@ var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbe
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain", "opening_balance"}
 
+// keyedByContent are tenant tables that are sets, keyed by what they hold, so they need no separate id: mcp_seen holds the apps and
+// networks a person has used (000584), once each.
+var keyedByContent = []string{"mcp_seen"}
+
 var serviceRoles = []string{"fyniq_api", "fyniq_worker", "fyniq_executor", "fyniq_ai", "fyniq_readonly"}
 
 func rows(t *testing.T, c *pgx.Conn, sql string, args ...any) [][]string {
@@ -185,7 +189,7 @@ SELECT c.relname
 		withKey[r[0]] = true
 	}
 	for name := range tenant {
-		if !withKey[name] && !slices.Contains(onePerOrganisation, name) {
+		if !withKey[name] && !slices.Contains(onePerOrganisation, name) && !slices.Contains(keyedByContent, name) {
 			t.Errorf("tenant table %s has no UNIQUE (organisation_id, id) (§11.4)", name)
 		}
 	}
