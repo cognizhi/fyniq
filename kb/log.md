@@ -644,6 +644,10 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-18] compile | docs/user-guide/approvals.md → approvals.decide (FM-6: unusual items in the weekly review, rev 0.287)
 
+## [2026-11-18] compile | docs/user-guide/banking.md and payment-batches.md → banking.accounts, banking.add-account, purchases.payment-batches (the money account's Payment file and the download label naming it, FR-BNK-12; the other banking pages re-hashed, unchanged)
+
+## [2026-11-19] compile | docs/user-guide/projects-projects.md → projects.projects (the projects screens, p1-projects slice 1)
+
 ## [2026-11-18] compile | docs/user-guide/ai-activity.md -> settings.ai-activity (an answer's know-how page versions in the activity log, AI-12, AI-51)
 
 ## [2026-11-18] compile | docs/user-guide/ai-assistant.md -> ai.assistant (ask how something works: know-how answers with chips to guide pages, AI-51, AI-53)

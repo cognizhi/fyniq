@@ -142,6 +142,8 @@ var fyCodes = map[string]string{
 	"FY257": storage.CodeDimension,
 	"FY258": storage.CodeDimensionFixed,
 	"FY259": storage.CodeDimensionRequirement,
+	"FY600": storage.CodeProject,
+	"FY601": storage.CodeProject,
 	"FY261": storage.CodeBreakGlass,
 	"FY262": storage.CodeBreakGlass,
 	"FY263": storage.CodeBreakGlass,
