@@ -303,6 +303,10 @@ func (fakeOAuthClients) RegisterIntegration(context.Context, ports.IntegrationRe
 func (fakeOAuthClients) RegisterPublicClient(_ context.Context, c ports.PublicRegistration) (string, error) {
 	return cmp.Or(c.ID, "fake-"+uuid.NewString()), nil
 }
+
+func (fakeOAuthClients) RegisterPersonal(context.Context, ports.PersonalRegistration) (string, string, error) {
+	return "fake-" + uuid.NewString(), "fake-secret", nil
+}
 func (fakeOAuthClients) RemoveClient(context.Context, string) error { return nil }
 
 // matrixIntegrationClient is a live integration client of the matrix's organisation, made once.

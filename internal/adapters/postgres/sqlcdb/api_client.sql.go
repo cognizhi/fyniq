@@ -246,6 +246,46 @@ func (q *Queries) InsertAPIClient(ctx context.Context, arg InsertAPIClientParams
 	return i, err
 }
 
+const reclassAPIClient = `-- name: ReclassAPIClient :one
+UPDATE fyniq.api_client SET class = $1, version = version + 1
+WHERE id = $2 AND version = $3 AND revoked_at IS NULL
+RETURNING organisation_id, id, kind, client_id, name, class, owner_id, scopes, ip_allow, reads_per_minute, writes_per_minute, key_thumbprint, expires_at, approval_id, version, created_by, created_at, revoked_at, revoked_by, revoke_reason
+`
+
+type ReclassAPIClientParams struct {
+	Class   string
+	ID      uuid.UUID
+	Version int32
+}
+
+func (q *Queries) ReclassAPIClient(ctx context.Context, arg ReclassAPIClientParams) (FyniqApiClient, error) {
+	row := q.db.QueryRow(ctx, reclassAPIClient, arg.Class, arg.ID, arg.Version)
+	var i FyniqApiClient
+	err := row.Scan(
+		&i.OrganisationID,
+		&i.ID,
+		&i.Kind,
+		&i.ClientID,
+		&i.Name,
+		&i.Class,
+		&i.OwnerID,
+		&i.Scopes,
+		&i.IpAllow,
+		&i.ReadsPerMinute,
+		&i.WritesPerMinute,
+		&i.KeyThumbprint,
+		&i.ExpiresAt,
+		&i.ApprovalID,
+		&i.Version,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.RevokedAt,
+		&i.RevokedBy,
+		&i.RevokeReason,
+	)
+	return i, err
+}
+
 const revokeAPIClient = `-- name: RevokeAPIClient :one
 UPDATE fyniq.api_client SET revoked_at = $1, revoked_by = $2, revoke_reason = $3,
   version = version + 1

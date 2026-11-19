@@ -33,6 +33,11 @@ func (f *fakeOAuth) RegisterIntegration(_ context.Context, r ports.IntegrationRe
 	f.registered = append(f.registered, r)
 	return "hydra-" + uuid.NewString(), nil
 }
+
+// RegisterPersonal is a Fyniq developer's token; Nemura has none, so the fake refuses it.
+func (f *fakeOAuth) RegisterPersonal(context.Context, ports.PersonalRegistration) (string, string, error) {
+	return "", "", errors.New("Nemura registers no personal access tokens")
+}
 func (f *fakeOAuth) RemoveClient(_ context.Context, id string) error {
 	f.removed = append(f.removed, id)
 	return nil

@@ -109,8 +109,23 @@ type OAuthClients interface {
 	// returns the client's ID. Used for the first-party MCP clients (AI-35); a client that registers itself goes through the
 	// API's registration endpoint (AI-90), which calls this.
 	RegisterPublicClient(ctx context.Context, c PublicRegistration) (string, error)
+	// RegisterPersonal registers a confidential client for a developer's personal access token (FR-INT-02): the
+	// client-credentials grant only, authenticated with a secret the server generates and returns once, and keeps only
+	// as a hash. Fyniq never holds the secret. It returns the server's client ID and that secret.
+	RegisterPersonal(ctx context.Context, c PersonalRegistration) (clientID, secret string, err error)
 	// RemoveClient deletes a client and every token issued to it; a client the server does not know is gone already.
 	RemoveClient(ctx context.Context, clientID string) error
+}
+
+// PersonalRegistration is a personal access token's client as the OAuth server registers it.
+type PersonalRegistration struct {
+	Name     string
+	Class    string // AI-34: agent unless the Owner reclasses it; kept in the client's metadata, never trusted from it
+	Audience string // the API's: the only audience its tokens may name
+	Scopes   []string
+	// TokenLifespan is how long each access token the secret obtains lives (AI-38: at most 60 minutes).
+	TokenLifespan time.Duration
+	Organisation  string // kept in the client's metadata, for the operator
 }
 
 // IntegrationRegistration is an integration client as the OAuth server registers it.

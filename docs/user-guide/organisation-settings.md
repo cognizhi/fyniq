@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [CMP-PD-01, FM-8, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32, AI-35, AI-43, AI-90]
+requirements: [CMP-PD-01, FM-8, FR-INT-02, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32, AI-35, AI-43, AI-90]
 status: draft
 ---
 
@@ -137,7 +137,7 @@ takes, such as INV-0042.
 
 - Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when
   incoming-funds alerts expire, the AI assistant, the AI's access to pay, the fields it never reads, its limits and
-  the changes it may propose, AI apps and the limits on them, details in notification email and the sign-out after inactivity need a second approver before they change: they show
+  the changes it may propose, AI apps and the limits on them, details in notification email, the sign-out after inactivity and personal access tokens need a second approver before they change: they show
   **Needs a second approver**.
 - For one of these, the button says **Ask for approval** instead of **Save**.
 - Saving a change to one asks for approval. The setting keeps its value until another member who
@@ -145,7 +145,7 @@ takes, such as INV-0042.
 - The AI assistant is the exception when you switch it **off**: that takes effect at once, with no second
   approver, and the AI stops: new requests are refused, and a reply being written stops within seconds.
   Switching it back on still needs a second approver. AI payroll access turns off at once the same way, and so does
-  taking a change off the changes the AI may propose.
+  taking a change off the changes the AI may propose, and so do personal access tokens.
 
 ## Features
 
@@ -463,6 +463,18 @@ whatever the invoice's month.
   roles or sign-ins, use break-glass or confirm others' recoveries for 24 hours, by default.
 - It can be set from 24 to 72 hours. Changing it needs a second approver.
 - If they belong to several organisations, the longest hold of theirs applies.
+
+## Personal access tokens
+
+- A **personal access token** is a developer's own credential for Fyniq's API: it acts for the member who made it, never
+  does more than that member may, and expires within 90 days. Because it may be pasted into an AI tool, it only reads
+  until an Owner, with a second approver, makes it an integration.
+- **Personal access tokens**: off unless changed. While it is off, no member can make a token: asking for one is
+  refused with the code `API-CLIENT-09` and says to ask an Owner. Turning it on needs a second approver. Turning it off
+  takes effect at once and stops anyone making another; tokens already made keep working until they expire or are
+  revoked, so revoke them too if you want them gone.
+- A token is made through the API, by a person signed in to Fyniq who has just confirmed it is them. Its secret is shown
+  once.
 
 ## Evidence rules
 

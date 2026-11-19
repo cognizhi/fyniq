@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "expires_at": {
+      "description": "When it stops, within 90 days; 30 days from now when left out.",
+      "examples": [
+        "2026-12-17T00:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name, to tell your tokens apart.",
+      "examples": [
+        "Claude Code on my laptop"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "networks": {
+      "description": "The networks it may call from, as CIDR prefixes; none: anywhere. Give them where you can (SEC-07).",
+      "items": {
+        "description": "A network, as a CIDR prefix.",
+        "examples": [
+          "203.0.113.0/24"
+        ],
+        "maxLength": 49,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "reads_per_minute": {
+      "description": "Its own limit of reads a minute, at most the platform's 600; none: the platform's.",
+      "examples": [
+        60
+      ],
+      "format": "int64",
+      "maximum": 600,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "scopes": {
+      "description": "Its narrow scopes, only what it needs: fyniq.read.\u003carea\u003e (reports, sales, purchases, banking, accounting, planning, compliance) or fyniq.write.\u003carea\u003e (sales, purchases, banking, accounting). It never does more than you may.",
+      "items": {
+        "description": "A narrow scope: fyniq.read.\u003carea\u003e or fyniq.write.\u003carea\u003e.",
+        "examples": [
+          "fyniq.read.accounting"
+        ],
+        "pattern": "^fyniq\\.(read|write)\\.[a-z]+$",
+        "type": "string"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "writes_per_minute": {
+      "description": "Its own limit of writes a minute, at most the platform's 120; none: the platform's.",
+      "examples": [
+        30
+      ],
+      "format": "int64",
+      "maximum": 120,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "name",
+    "scopes"
+  ],
+  "title": "PersonalAccessTokenCreate",
+  "type": "object"
+}

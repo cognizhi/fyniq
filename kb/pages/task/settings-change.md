@@ -4,7 +4,7 @@ type: task
 title: Change or reset an organisation setting, or edit the profile
 summary: Change a company-wide setting from a date, reset it to recommended, why some need a second approver, and edit the profile
 sources:
-  - docs/user-guide/organisation-settings.md sha256:2782a5c3a851ab509ef1577619ed0280b7c1bf13c3d154f8ff984a64c6700aed
+  - docs/user-guide/organisation-settings.md sha256:5469b249614736f88236bee4b8d1e14ca473f3978a3a6e8c094a0aa9e66b4c30
 data_class: general
 taint: trusted
 status: draft
@@ -34,9 +34,9 @@ aliases:
 
 ## Settings that need a second approver
 
-- Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when incoming-funds alerts expire, the AI assistant, the AI's access to pay, the fields it never reads, its limits and the changes it may propose, AI apps and the limits on them, details in notification email and the sign-out after inactivity need a second approver.
+- Thresholds, retention, the accounting sign-off, auto-reconcile's limits, the bank charges account, when incoming-funds alerts expire, the AI assistant, the AI's access to pay, the fields it never reads, its limits and the changes it may propose, details in notification email, the sign-out after inactivity and personal access tokens need a second approver.
 - They show **Needs a second approver**, and the button says **Ask for approval** instead of **Save**. Saving a change to one asks for approval: the setting keeps its value until another member who approves settings, such as an Owner, approves it ([[approvals.decide]]).
-- The AI assistant is the exception when it is switched **off**: that takes effect at once, with no second approver, and the AI stops: new requests are refused, and a reply being written stops within seconds. Switching it back on still needs a second approver. AI payroll access turns off at once the same way, and so does taking a change off the changes the AI may propose ([[settings.organisation]]).
+- The AI assistant is the exception when it is switched **off**: that takes effect at once, with no second approver, and the AI stops: new requests are refused, and a reply being written stops within seconds. Switching it back on still needs a second approver. AI payroll access turns off at once the same way, and so does taking a change off the changes the AI may propose, and so do personal access tokens ([[settings.organisation]]).
 
 (src: docs/user-guide/organisation-settings.md#settings-that-need-a-second-approver)
 

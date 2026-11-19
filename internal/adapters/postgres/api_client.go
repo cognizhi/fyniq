@@ -135,6 +135,26 @@ func (r apiClients) Revoke(ctx context.Context, id uuid.UUID, version int, by, r
 	return out, r.u.event(ctx, "api_client.revoked", "api_client", out.ID, &out.Version, map[string][2]any{"client": {apiClientView(&was), apiClientView(&out)}})
 }
 
+func (r apiClients) Reclass(ctx context.Context, id uuid.UUID, version int, class string) (storage.APIClient, error) {
+	if err := r.u.check(); err != nil {
+		return storage.APIClient{}, err
+	}
+	before, err := r.u.q.GetAPIClientForUpdate(ctx, id)
+	if err != nil {
+		return storage.APIClient{}, mapError(err)
+	}
+	if int(before.Version) != version {
+		return storage.APIClient{}, &storage.Error{Code: storage.CodeVersion, Message: "the API client changed since it was read",
+			Hint: "Read it again and reclass it again"}
+	}
+	row, err := r.u.q.ReclassAPIClient(ctx, sqlcdb.ReclassAPIClientParams{ID: id, Version: int32(version), Class: class}) // #nosec G115 -- a version counts up from 1
+	if err != nil {
+		return storage.APIClient{}, mapError(err)
+	}
+	was, out := toAPIClient(before), toAPIClient(row)
+	return out, r.u.event(ctx, "api_client.reclassed", "api_client", out.ID, &out.Version, map[string][2]any{"client": {apiClientView(&was), apiClientView(&out)}})
+}
+
 // APIClientAccess implements storage.APIClientRoutes, through api_client_access, which reads the global route before any
 // tenant is set and the client and its member's roles in the client's organisation.
 func (s *Store) APIClientAccess(ctx context.Context, clientID string, now time.Time) (storage.APIClientAccess, error) {

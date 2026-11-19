@@ -56,6 +56,10 @@ type APIClients interface {
 	// Revoke ends the client at version, once, audited as api_client.revoked with the reason. CodeVersion when it moved
 	// on; CodeAPIClient when it is revoked already.
 	Revoke(ctx context.Context, id uuid.UUID, version int, by, reason string, at time.Time) (APIClient, error)
+	// Reclass changes a live client's class (a personal access token's, from agent to integration, once the Owner has
+	// approved it: FR-INT-02), audited as api_client.reclassed. CodeVersion when it moved on; CodeAPIClient when it is
+	// revoked or already of that class.
+	Reclass(ctx context.Context, id uuid.UUID, version int, class string) (APIClient, error)
 }
 
 // APIClientAccess is what the API needs to accept an access token of an API client: the client as Fyniq holds it, and
