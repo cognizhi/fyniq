@@ -48329,6 +48329,8 @@ components:
         department_value_ids:
           description: "For the Approver role only: the department values to narrow it to (FR-ADM-01, rev 0.253). Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another role is refused."
           items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
             type: string
           maxItems: 20
           type:

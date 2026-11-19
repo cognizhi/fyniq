@@ -89,6 +89,12 @@ type MemberInvitationCode struct {
 	Code string `json:"code" doc:"The one-time code. It is shown once and cannot be shown again; give it to the person in person or on a call. Case, spaces and dashes do not matter." example:"ABCDE-FGHIJ-KLMNO-PQRST-UVWXY-Z"`
 }
 
+// TransformSchema implements huma.SchemaTransformer: an example for each department value (NFR-API-01).
+func (RoleGrant) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
+	itemExamples(s, map[string]any{"department_value_ids": "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"})
+	return s
+}
+
 // RoleGrant gives a member a role.
 type RoleGrant struct {
 	Role              RoleName   `json:"role" doc:"The role (PRD-001 §6.2)."`

@@ -194,7 +194,11 @@ func (s *Store) Do(ctx context.Context, org uuid.UUID, fn func(ctx context.Conte
 			return err
 		}
 		if who := storage.PersonFrom(ctx); who != uuid.Nil {
-			if err := q.SetPerson(ctx, who.String()); err != nil {
+			reads := "off"
+			if storage.ScopedReads(ctx) {
+				reads = "on"
+			}
+			if err := q.SetPerson(ctx, sqlcdb.SetPersonParams{UserID: who.String(), DeptReads: reads}); err != nil {
 				return err
 			}
 		}

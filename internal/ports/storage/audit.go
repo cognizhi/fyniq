@@ -229,6 +229,21 @@ func WithPerson(ctx context.Context, user uuid.UUID) context.Context {
 	return context.WithValue(ctx, personKey{}, user)
 }
 
+type scopedReadsKey struct{}
+
+// WithScopedReads marks the request a read, so the person's department scope binds what it reads (FR-ADM-01): the API marks an
+// operation that needs the View right, and every call of the AI, which never writes. A write, an approval or a posting is no
+// scoped read: the engine runs on the whole books.
+func WithScopedReads(ctx context.Context) context.Context {
+	return context.WithValue(ctx, scopedReadsKey{}, true)
+}
+
+// ScopedReads says whether ctx is a scoped read.
+func ScopedReads(ctx context.Context) bool {
+	on, _ := ctx.Value(scopedReadsKey{}).(bool)
+	return on
+}
+
 // PersonFrom is the person ctx acts for; uuid.Nil when none.
 func PersonFrom(ctx context.Context) uuid.UUID {
 	u, _ := ctx.Value(personKey{}).(uuid.UUID)

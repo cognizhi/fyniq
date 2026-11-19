@@ -85,7 +85,7 @@ func TestAttackADepartmentScopeBindsWhatTheAPIReads(t *testing.T) {
 		t.Helper()
 		err := asOrg(ctx, conn(t, role), b.Org, func(tx pgx.Tx) error {
 			if person != nil {
-				if _, err := tx.Exec(ctx, "SELECT set_config('app.user_id', $1, true)", person.String()); err != nil {
+				if _, err := tx.Exec(ctx, "SELECT set_config('app.user_id', $1, true), set_config('app.dept_reads', 'on', true)", person.String()); err != nil {
 					return err
 				}
 			}
@@ -112,6 +112,23 @@ func TestAttackADepartmentScopeBindsWhatTheAPIReads(t *testing.T) {
 	check("an Approver and Employee with no scope", "fyniq_api", &employee, 0, 0)
 	// Any other role leaves the person unrestricted here.
 	check("an Approver who is also an Accountant", "fyniq_api", &both, 3, 3)
+	// A write, an approval or a posting is no scoped read: the engine runs on the whole books, so a trigger or an approval's
+	// envelope never reads a filtered cache. Only a read binds the scope.
+	if err := asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, "SELECT set_config('app.user_id', $1, true), set_config('app.dept_reads', 'off', true)", approver.String()); err != nil {
+			return err
+		}
+		var n int
+		if err := tx.QueryRow(ctx, "SELECT count(*) FROM fyniq.journal_line WHERE account_id = $1", b.Sales.ID).Scan(&n); err != nil {
+			return err
+		}
+		if n != 3 {
+			t.Errorf("a request that is no read saw %d lines, want all 3", n)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
 	// The worker, the executor and the read-only role stay unfiltered even when a person is named.
 	for _, role := range []string{"fyniq_worker", "fyniq_executor", "fyniq_readonly"} {
 		check(role+" names a person and is not filtered", role, &approver, 3, 3)
