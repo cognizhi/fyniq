@@ -44,16 +44,21 @@ var update = flag.Bool("update", false, "rewrite the golden files in testdata/")
 // routes that need no organisation (000312): counted only through count_ip_request, purged through purge_ip_rate_windows.
 // ai_price_catalogue is the model price catalogue's downloads (000350): read through ai_price_catalogues, written by the
 // worker only through record_ai_price_catalogue. ai_agent is the agents that call a model (000356): written only by the
-// migrations, read through ai_agents.
+// migrations, read through ai_agents. mcp_client is the AI apps that registered themselves (000585, AI-90): the installation's, since
+// a client is registered before anyone is signed in; written and read only through SECURITY DEFINER functions.
 var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbeat", "app_user", "user_identity", "installation", "super_admin",
 	"super_admin_grant", "user_session", "statutory_pack_version", "statutory_pack_row", "webauthn_credential", "webauthn_challenge",
 	"fx_feed_rate", "capture_name", "installation_announcement", "document_link_token", "installation_connector",
 	"installation_connector_secret", "installation_change", "connector_route", "invitation_code", "sign_in_method",
 	"user_recovery_code", "recovery_confirmation", "account_recovery", "join_domain", "private_endpoint", "ip_rate_window", "ai_price_catalogue",
-	"ai_agent", "api_client_route"}
+	"ai_agent", "api_client_route", "mcp_client"}
 
 // onePerOrganisation are tenant tables keyed by the organisation alone, so they need no separate id.
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain", "opening_balance"}
+
+// keyedByContent are tenant tables that are sets, keyed by what they hold, so they need no separate id: mcp_seen holds the apps and
+// networks a person has used (000584), once each.
+var keyedByContent = []string{"mcp_seen"}
 
 var serviceRoles = []string{"fyniq_api", "fyniq_worker", "fyniq_executor", "fyniq_ai", "fyniq_readonly"}
 
@@ -185,7 +190,7 @@ SELECT c.relname
 		withKey[r[0]] = true
 	}
 	for name := range tenant {
-		if !withKey[name] && !slices.Contains(onePerOrganisation, name) {
+		if !withKey[name] && !slices.Contains(onePerOrganisation, name) && !slices.Contains(keyedByContent, name) {
 			t.Errorf("tenant table %s has no UNIQUE (organisation_id, id) (§11.4)", name)
 		}
 	}
