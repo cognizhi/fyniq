@@ -193,6 +193,11 @@ channels:
     messages:
       fyniq.security.sign_in_provider.v1:
         $ref: '#/components/messages/fyniq.security.sign_in_provider.v1'
+  fyniq.time.missing.v1:
+    address: fyniq.time.missing.v1
+    messages:
+      fyniq.time.missing.v1:
+        $ref: '#/components/messages/fyniq.time.missing.v1'
 components:
   messages:
     fyniq.agent.report.v1:
@@ -454,3 +459,10 @@ components:
       contentType: application/json
       payload:
         $ref: 'schemas/fyniq.security.sign_in_provider.v1.schema.json'
+    fyniq.time.missing.v1:
+      name: fyniq.time.missing.v1
+      title: fyniq.time.missing.v1
+      summary: "Fires when: Time is missing from your week"
+      contentType: application/json
+      payload:
+        $ref: 'schemas/fyniq.time.missing.v1.schema.json'

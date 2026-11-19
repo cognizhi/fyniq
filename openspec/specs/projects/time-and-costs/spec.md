@@ -53,6 +53,11 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** reminders run
 - **THEN** the person is reminded of the missing day
 
+#### Scenario: The Friday reminder (rev 0.302)
+- **GIVEN** a person on an active project and a Friday in the organisation's time zone
+- **WHEN** the daily job runs at 16:00 Singapore time
+- **THEN** the person is told once of the weekdays of the week with no time, public holidays excluded, in a notice that is theirs alone, and nobody is told on another day or while Projects and time are off
+
 #### Scenario: Approved or invoiced entries lock
 - **WHEN** a time entry is approved or invoiced
 - **THEN** it is locked
