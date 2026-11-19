@@ -2641,6 +2641,48 @@ type FyniqPdTransfer struct {
 	SavedAt        time.Time
 }
 
+type FyniqPeopleLink struct {
+	OrganisationID       uuid.UUID
+	ID                   uuid.UUID
+	State                string
+	Epoch                int32
+	NemuraOrganisationID uuid.UUID
+	LinkKey              []byte
+	ClientID             *uuid.UUID
+	ApprovalID           uuid.UUID
+	Version              int32
+	CreatedBy            string
+	CreatedAt            time.Time
+	ChangedAt            time.Time
+}
+
+type FyniqPeopleLinkInbox struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	EventID        uuid.UUID
+	LinkID         uuid.UUID
+	Epoch          int32
+	Sequence       int64
+	Type           string
+	ObjectType     string
+	ObjectID       string
+	ObjectVersion  int32
+	PayloadSha256  string
+	Outcome        string
+	Code           *string
+	ReceivedAt     time.Time
+}
+
+type FyniqPeopleSource struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Feature        string
+	Source         string
+	EffectiveFrom  time.Time
+	ApprovalID     uuid.UUID
+	SetAt          time.Time
+}
+
 type FyniqPeriod struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2725,6 +2767,30 @@ type FyniqPersonKey struct {
 	Cohort         time.Time
 	Wrapped        []byte
 	CreatedAt      time.Time
+}
+
+type FyniqPersonProjection struct {
+	OrganisationID      uuid.UUID
+	ID                  uuid.UUID
+	PersonID            uuid.UUID
+	Version             int32
+	DisplayName         *string
+	WorkEmail           *string
+	DepartmentValueID   *uuid.UUID
+	CostCentreValueID   *uuid.UUID
+	StartedOn           pgtype.Date
+	LeftOn              pgtype.Date
+	Status              *string
+	LineManagerPersonID *uuid.UUID
+	Removed             bool
+	HoldVersion         int32
+	HoldID              *uuid.UUID
+	Held                bool
+	HoldFrom            pgtype.Date
+	BankVersion         int32
+	BankRecordID        *uuid.UUID
+	UserID              *uuid.UUID
+	UpdatedAt           time.Time
 }
 
 type FyniqPolicyAcknowledgement struct {

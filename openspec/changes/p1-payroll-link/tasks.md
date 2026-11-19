@@ -18,6 +18,7 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
 ## 2. The link in Fyniq (FR-PPL-01, 16, 08, 03, 18)
 
 - [ ] 2.1 Migration: `people_link` (state, epoch, Nemura organisation, link public key, client, source per feature), tenancy and RLS, audited.
+  (Built, 20 Nov 2026: migration 000900 `people_link` (states active, suspended, unlinking, unlinked; epochs one above the last, never reused; one live link; no delete; key and approval kept) and `people_source` (the latest row of each feature is in force), `storage.PeopleLinks` with `Link`, `SetState`, `SetSource`, `Sources`; `TestAttackTheLinkKeepsItsEpochsAndItsTenant` carries `// req: FR-PPL-16`... not tagged complete. **Left:** the Owner-and-second-approver request and its executor, the link client's registration, the Settings page (2.2, 2.3).)
 - [ ] 2.2 Settings → People and HR: sources per feature; link, change source and unlink need the Owner and a second approver; unlinking settles work in
   flight first (runs approved not posted, unknown outcomes, open holds, events waiting) and revokes the client and key after.
 - [ ] 2.3 The link client (design D1, D4): registered only by the dual-approved link, Appendix E scopes only, principal class `link`; attack tests that no
@@ -29,8 +30,10 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
 
 - [ ] 3.1 `people_link_inbox` (design D5): dedupe by event ID, per-object versions, older ignored and recorded, tombstones, gap repair by reading the
   object; a replay outside 5 minutes or a bad signature refused; no pay or bank payload ever stored or logged.
+  (Built, 20 Nov 2026: `people_link_inbox` (append-only, the event ID once, outcome applied, ignored as older or refused with a code, identities and digests only) and `PeopleLinks.Receive`; the projection's per-part version rules (`peoplelink.ApplyPerson`, `ApplyBankDetails`, `ApplyTaxHold`). **Left:** the receiving operation that verifies the envelope and calls them, gap repair, the redaction test on logs (3.1 stays open).)
 - [ ] 3.2 The projection: person, name, email, department, cost centre, dates, status, line manager, hold state and version, bank-detail version (never the
   account number); `people.person.upserted` and `people.bank_details.changed` applied through the inbox.
+  (Built, 20 Nov 2026: `person_projection` (person, name, email, department and cost-centre values, dates, status, line manager as a person ID, tombstone, hold and bank-detail versions; never an account number; an older version of a part refused by the database), `PeopleLinks.Person`, `People`, `PersonOfUser`, `SavePerson` audited by field name, never by value (`TestAttackTheProjectionOnlyMovesForwardAndTheInboxReceivesOnce`). **Left:** applying events through the API (3.1) and the explicit person-to-user mapping flow (2.5).)
 - [ ] 3.3 Leave for the books (FR-PPL-07): `leave.taken.changed` (dates and hours, never the type; a tombstone restores the hours) lowers available hours
   once against holidays (FR-PRJ-12); the month-end accrual arrives as a draft journal (P2 part).
 - [ ] 3.4 What reads the projection: claim routing to the line manager (FR-AP-17), the approvers' department figures, the personal approvals page of

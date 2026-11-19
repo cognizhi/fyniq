@@ -2066,6 +2066,39 @@ pd_transfer | next_review_on | date | not null |
 pd_transfer | state | text | not null | 
 pd_transfer | saved_by | text | not null | 
 pd_transfer | saved_at | timestamp with time zone | not null | 
+people_link | organisation_id | uuid | not null | current_org()
+people_link | id | uuid | not null | uuidv7()
+people_link | state | text | not null | 
+people_link | epoch | integer | not null | 
+people_link | nemura_organisation_id | uuid | not null | 
+people_link | link_key | bytea | not null | 
+people_link | client_id | uuid | null | 
+people_link | approval_id | uuid | not null | 
+people_link | version | integer | not null | 1
+people_link | created_by | text | not null | 
+people_link | created_at | timestamp with time zone | not null | 
+people_link | changed_at | timestamp with time zone | not null | 
+people_link_inbox | organisation_id | uuid | not null | current_org()
+people_link_inbox | id | uuid | not null | uuidv7()
+people_link_inbox | event_id | uuid | not null | 
+people_link_inbox | link_id | uuid | not null | 
+people_link_inbox | epoch | integer | not null | 
+people_link_inbox | sequence | bigint | not null | 
+people_link_inbox | type | text | not null | 
+people_link_inbox | object_type | text | not null | 
+people_link_inbox | object_id | text | not null | 
+people_link_inbox | object_version | integer | not null | 
+people_link_inbox | payload_sha256 | text | not null | 
+people_link_inbox | outcome | text | not null | 
+people_link_inbox | code | text | null | 
+people_link_inbox | received_at | timestamp with time zone | not null | 
+people_source | organisation_id | uuid | not null | current_org()
+people_source | id | uuid | not null | uuidv7()
+people_source | feature | text | not null | 
+people_source | source | text | not null | 
+people_source | effective_from | date | not null | 
+people_source | approval_id | uuid | not null | 
+people_source | set_at | timestamp with time zone | not null | 
 period | organisation_id | uuid | not null | current_org()
 period | id | uuid | not null | uuidv7()
 period | starts_on | date | not null | 
@@ -2131,6 +2164,27 @@ person_key | person | text | not null |
 person_key | cohort | date | not null | 
 person_key | wrapped | bytea | not null | 
 person_key | created_at | timestamp with time zone | not null | now()
+person_projection | organisation_id | uuid | not null | current_org()
+person_projection | id | uuid | not null | uuidv7()
+person_projection | person_id | uuid | not null | 
+person_projection | version | integer | not null | 0
+person_projection | display_name | text | null | 
+person_projection | work_email | text | null | 
+person_projection | department_value_id | uuid | null | 
+person_projection | cost_centre_value_id | uuid | null | 
+person_projection | started_on | date | null | 
+person_projection | left_on | date | null | 
+person_projection | status | text | null | 
+person_projection | line_manager_person_id | uuid | null | 
+person_projection | removed | boolean | not null | false
+person_projection | hold_version | integer | not null | 0
+person_projection | hold_id | uuid | null | 
+person_projection | held | boolean | not null | false
+person_projection | hold_from | date | null | 
+person_projection | bank_version | integer | not null | 0
+person_projection | bank_record_id | uuid | null | 
+person_projection | user_id | uuid | null | 
+person_projection | updated_at | timestamp with time zone | not null | 
 policy_acknowledgement | organisation_id | uuid | not null | current_org()
 policy_acknowledgement | id | uuid | not null | uuidv7()
 policy_acknowledgement | key | text | not null | 
@@ -6022,6 +6076,57 @@ pd_transfer | pd_transfer_version_not_null | NOT NULL version
 pd_transfer | pd_transfer_version_once | UNIQUE (organisation_id, transfer_id, version)
 pd_transfer | pd_transfer_version_positive | CHECK ((version > 0))
 pd_transfer | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+people_link | people_link_approval_id_not_null | NOT NULL approval_id
+people_link | people_link_changed_at_not_null | NOT NULL changed_at
+people_link | people_link_created_at_not_null | NOT NULL created_at
+people_link | people_link_created_by_not_null | NOT NULL created_by
+people_link | people_link_epoch_not_null | NOT NULL epoch
+people_link | people_link_epoch_positive | CHECK ((epoch >= 1))
+people_link | people_link_id_not_null | NOT NULL id
+people_link | people_link_key_size | CHECK ((octet_length(link_key) = 32))
+people_link | people_link_link_key_not_null | NOT NULL link_key
+people_link | people_link_nemura_organisation_id_not_null | NOT NULL nemura_organisation_id
+people_link | people_link_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+people_link | people_link_organisation_id_not_null | NOT NULL organisation_id
+people_link | people_link_pkey | PRIMARY KEY (organisation_id, id)
+people_link | people_link_state_known | CHECK ((state = ANY (ARRAY['active'::text, 'suspended'::text, 'unlinking'::text, 'unlinked'::text])))
+people_link | people_link_state_not_null | NOT NULL state
+people_link | people_link_unlinked_no_client | CHECK (((state <> 'unlinked'::text) OR (client_id IS NULL)))
+people_link | people_link_version_not_null | NOT NULL version
+people_link | people_link_version_positive | CHECK ((version >= 1))
+people_link | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+people_link_inbox | people_link_inbox_code_with_refusal | CHECK (((outcome = 'refused'::text) = (code IS NOT NULL)))
+people_link_inbox | people_link_inbox_digest | CHECK ((payload_sha256 ~ '^[0-9a-f]{64}$'::text))
+people_link_inbox | people_link_inbox_epoch_not_null | NOT NULL epoch
+people_link_inbox | people_link_inbox_event_id_not_null | NOT NULL event_id
+people_link_inbox | people_link_inbox_id_key | UNIQUE (organisation_id, id)
+people_link_inbox | people_link_inbox_id_not_null | NOT NULL id
+people_link_inbox | people_link_inbox_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES people_link(organisation_id, id)
+people_link_inbox | people_link_inbox_link_id_not_null | NOT NULL link_id
+people_link_inbox | people_link_inbox_object_id_not_null | NOT NULL object_id
+people_link_inbox | people_link_inbox_object_type_not_null | NOT NULL object_type
+people_link_inbox | people_link_inbox_object_version_not_null | NOT NULL object_version
+people_link_inbox | people_link_inbox_organisation_id_not_null | NOT NULL organisation_id
+people_link_inbox | people_link_inbox_outcome_known | CHECK ((outcome = ANY (ARRAY['applied'::text, 'ignored_older'::text, 'refused'::text])))
+people_link_inbox | people_link_inbox_outcome_not_null | NOT NULL outcome
+people_link_inbox | people_link_inbox_payload_sha256_not_null | NOT NULL payload_sha256
+people_link_inbox | people_link_inbox_pkey | PRIMARY KEY (organisation_id, event_id)
+people_link_inbox | people_link_inbox_received_at_not_null | NOT NULL received_at
+people_link_inbox | people_link_inbox_sequence_not_null | NOT NULL sequence
+people_link_inbox | people_link_inbox_type_not_null | NOT NULL type
+people_link_inbox | people_link_inbox_type_shape | CHECK (((type ~ '^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$'::text) AND ((char_length(object_id) >= 1) AND (char_length(object_id) <= 100))))
+people_source | people_source_approval_id_not_null | NOT NULL approval_id
+people_source | people_source_effective_from_not_null | NOT NULL effective_from
+people_source | people_source_feature_known | CHECK ((feature = ANY (ARRAY['records'::text, 'payroll'::text, 'leave'::text, 'letters'::text])))
+people_source | people_source_feature_not_null | NOT NULL feature
+people_source | people_source_id_not_null | NOT NULL id
+people_source | people_source_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+people_source | people_source_organisation_id_not_null | NOT NULL organisation_id
+people_source | people_source_pkey | PRIMARY KEY (organisation_id, id)
+people_source | people_source_set_at_not_null | NOT NULL set_at
+people_source | people_source_source_known | CHECK ((source = ANY (ARRAY['nemura'::text, 'external'::text, 'none'::text])))
+people_source | people_source_source_not_null | NOT NULL source
+people_source | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 period | period_closed_revision | CHECK (((status = 'closed'::text) = (closed_revision IS NOT NULL)))
 period | period_closed_revision_not_negative | CHECK ((closed_revision >= 0))
 period | period_created_at_not_null | NOT NULL created_at
@@ -6140,6 +6245,26 @@ person_key | person_key_person_not_null | NOT NULL person
 person_key | person_key_pkey | PRIMARY KEY (organisation_id, id)
 person_key | person_key_wrapped_length | CHECK (((octet_length(wrapped) >= 16) AND (octet_length(wrapped) <= 2048)))
 person_key | person_key_wrapped_not_null | NOT NULL wrapped
+person_projection | person_projection_bank_version_not_null | NOT NULL bank_version
+person_projection | person_projection_dates | CHECK (((left_on IS NULL) OR (started_on IS NULL) OR (left_on >= started_on)))
+person_projection | person_projection_email_shape | CHECK (((work_email IS NULL) OR (work_email ~ '^[^@\s]{1,100}@[^@\s]{1,200}$'::text)))
+person_projection | person_projection_held_not_null | NOT NULL held
+person_projection | person_projection_hold_version_not_null | NOT NULL hold_version
+person_projection | person_projection_hold_with_id | CHECK (((NOT held) OR (hold_id IS NOT NULL)))
+person_projection | person_projection_id_key | UNIQUE (organisation_id, id)
+person_projection | person_projection_id_not_null | NOT NULL id
+person_projection | person_projection_name_length | CHECK (((display_name IS NULL) OR ((char_length(display_name) >= 1) AND (char_length(display_name) <= 200))))
+person_projection | person_projection_no_self_manager | CHECK ((line_manager_person_id IS DISTINCT FROM person_id))
+person_projection | person_projection_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id)
+person_projection | person_projection_organisation_id_not_null | NOT NULL organisation_id
+person_projection | person_projection_person_id_not_null | NOT NULL person_id
+person_projection | person_projection_pkey | PRIMARY KEY (organisation_id, person_id)
+person_projection | person_projection_removed_not_null | NOT NULL removed
+person_projection | person_projection_status_known | CHECK (((status IS NULL) OR (status = ANY (ARRAY['candidate'::text, 'active'::text, 'on_leave'::text, 'resigned'::text, 'terminated'::text, 'retired'::text, 'ended'::text]))))
+person_projection | person_projection_updated_at_not_null | NOT NULL updated_at
+person_projection | person_projection_version_not_null | NOT NULL version
+person_projection | person_projection_versions | CHECK (((version >= 0) AND (hold_version >= 0) AND (bank_version >= 0)))
+person_projection | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 policy_acknowledgement | policy_acknowledgement_acknowledged_at_not_null | NOT NULL acknowledged_at
 policy_acknowledgement | policy_acknowledgement_acknowledged_by_not_null | NOT NULL acknowledged_by
 policy_acknowledgement | policy_acknowledgement_by_format | CHECK ((acknowledged_by ~ '^user:[!-~]{1,200}$'::text))
@@ -7291,11 +7416,14 @@ CREATE INDEX payment_batch_payment_release ON fyniq.payment_batch_payment USING 
 CREATE INDEX pd_anonymisation_contact ON fyniq.pd_anonymisation USING btree (organisation_id, contact_id)
 CREATE INDEX pd_breach_step_breach ON fyniq.pd_breach_step USING btree (organisation_id, breach_id, at)
 CREATE INDEX pd_request_step_request ON fyniq.pd_request_step USING btree (organisation_id, request_id, at)
+CREATE INDEX people_link_inbox_object ON fyniq.people_link_inbox USING btree (organisation_id, object_type, object_id, object_version)
+CREATE INDEX people_source_latest ON fyniq.people_source USING btree (organisation_id, feature, set_at)
 CREATE INDEX period_close_check_period ON fyniq.period_close_check USING btree (organisation_id, period_id, checked_at)
 CREATE INDEX period_close_period ON fyniq.period_close USING btree (organisation_id, period_id, attested_at)
 CREATE INDEX period_no_overlap ON fyniq.period USING gist (organisation_id, daterange(starts_on, ends_on, '[]'::text))
 CREATE INDEX period_reopen_period ON fyniq.period_reopen USING btree (organisation_id, period_id, reopened_at)
 CREATE INDEX period_variance_explanation_period ON fyniq.period_variance_explanation USING btree (organisation_id, period_id, account_id, written_at)
+CREATE INDEX person_projection_manager ON fyniq.person_projection USING btree (organisation_id, line_manager_person_id)
 CREATE INDEX private_endpoint_serves ON fyniq.private_endpoint USING btree (serves, credential)
 CREATE INDEX project_billed_item_invoice_idx ON fyniq.project_billed_item USING btree (organisation_id, invoice_id)
 CREATE INDEX project_billed_item_project_idx ON fyniq.project_billed_item USING btree (organisation_id, project_id, kind)
@@ -7646,6 +7774,12 @@ CREATE UNIQUE INDEX pd_shredding_run_cohort_once ON fyniq.pd_shredding_run USING
 CREATE UNIQUE INDEX pd_shredding_run_pkey ON fyniq.pd_shredding_run USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_transfer_pkey ON fyniq.pd_transfer USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pd_transfer_version_once ON fyniq.pd_transfer USING btree (organisation_id, transfer_id, version)
+CREATE UNIQUE INDEX people_link_epoch ON fyniq.people_link USING btree (organisation_id, epoch)
+CREATE UNIQUE INDEX people_link_inbox_id_key ON fyniq.people_link_inbox USING btree (organisation_id, id)
+CREATE UNIQUE INDEX people_link_inbox_pkey ON fyniq.people_link_inbox USING btree (organisation_id, event_id)
+CREATE UNIQUE INDEX people_link_one_live ON fyniq.people_link USING btree (organisation_id) WHERE (state <> 'unlinked'::text)
+CREATE UNIQUE INDEX people_link_pkey ON fyniq.people_link USING btree (organisation_id, id)
+CREATE UNIQUE INDEX people_source_pkey ON fyniq.people_source USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_close_check_pkey ON fyniq.period_close_check USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_close_pkey ON fyniq.period_close USING btree (organisation_id, id)
 CREATE UNIQUE INDEX period_pkey ON fyniq.period USING btree (organisation_id, id)
@@ -7656,6 +7790,9 @@ CREATE UNIQUE INDEX person_cost_rate_day_key ON fyniq.person_cost_rate USING btr
 CREATE UNIQUE INDEX person_cost_rate_pkey ON fyniq.person_cost_rate USING btree (organisation_id, id)
 CREATE UNIQUE INDEX person_key_once ON fyniq.person_key USING btree (organisation_id, person, cohort)
 CREATE UNIQUE INDEX person_key_pkey ON fyniq.person_key USING btree (organisation_id, id)
+CREATE UNIQUE INDEX person_projection_id_key ON fyniq.person_projection USING btree (organisation_id, id)
+CREATE UNIQUE INDEX person_projection_pkey ON fyniq.person_projection USING btree (organisation_id, person_id)
+CREATE UNIQUE INDEX person_projection_user ON fyniq.person_projection USING btree (organisation_id, user_id) WHERE (user_id IS NOT NULL)
 CREATE UNIQUE INDEX policy_acknowledgement_once ON fyniq.policy_acknowledgement USING btree (organisation_id, key, version, acknowledged_by)
 CREATE UNIQUE INDEX policy_acknowledgement_pkey ON fyniq.policy_acknowledgement USING btree (organisation_id, id)
 CREATE UNIQUE INDEX policy_draft_once ON fyniq.policy_draft USING btree (organisation_id, key, revision)
@@ -7844,6 +7981,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_breach_step DEF
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_request', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_request_step DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_request', 'request_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.pd_transfer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_transfer', 'transfer_id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.people_source DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_source', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_close_check DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_close_check', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.period_reopen DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period_reopen', 'id')
@@ -7940,7 +8078,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.organisa
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.owner_succession DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('owner_succession', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.payee_bank_account DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document', 'change_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.pd_shredding_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('pd_shredding_run', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.people_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('people_link', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.period DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('period', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.person_projection DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('person_projection', 'person_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON fyniq.project_milestone DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('project', 'project_id')
@@ -8304,6 +8444,12 @@ CREATE TRIGGER pd_shredding_run_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq
 CREATE TRIGGER pd_shredding_run_no_truncate BEFORE TRUNCATE ON fyniq.pd_shredding_run FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER pd_transfer_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.pd_transfer FOR EACH ROW EXECUTE FUNCTION pd_transfer_guard()
 CREATE TRIGGER pd_transfer_no_truncate BEFORE TRUNCATE ON fyniq.pd_transfer FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER people_link_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.people_link FOR EACH ROW EXECUTE FUNCTION people_link_guard()
+CREATE TRIGGER people_link_inbox_guard BEFORE DELETE OR UPDATE ON fyniq.people_link_inbox FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER people_link_inbox_no_truncate BEFORE TRUNCATE ON fyniq.people_link_inbox FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER people_link_no_truncate BEFORE TRUNCATE ON fyniq.people_link FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER people_source_guard BEFORE DELETE OR UPDATE ON fyniq.people_source FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER people_source_no_truncate BEFORE TRUNCATE ON fyniq.people_source FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_close_check_no_truncate BEFORE TRUNCATE ON fyniq.period_close_check FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER period_close_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_close FOR EACH ROW EXECUTE FUNCTION period_close_guard()
 CREATE TRIGGER period_close_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.period_close_check FOR EACH ROW EXECUTE FUNCTION period_close_guard()
@@ -8317,6 +8463,8 @@ CREATE TRIGGER person_cost_rate_immutable BEFORE DELETE OR UPDATE ON fyniq.perso
 CREATE TRIGGER person_cost_rate_no_truncate BEFORE TRUNCATE ON fyniq.person_cost_rate FOR EACH STATEMENT EXECUTE FUNCTION rate_immutable()
 CREATE TRIGGER person_key_guard BEFORE DELETE OR UPDATE ON fyniq.person_key FOR EACH ROW EXECUTE FUNCTION person_key_guard()
 CREATE TRIGGER person_key_no_truncate BEFORE TRUNCATE ON fyniq.person_key FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER person_projection_guard BEFORE DELETE OR UPDATE ON fyniq.person_projection FOR EACH ROW EXECUTE FUNCTION person_projection_guard()
+CREATE TRIGGER person_projection_no_truncate BEFORE TRUNCATE ON fyniq.person_projection FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER policy_acknowledgement_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_acknowledgement FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
 CREATE TRIGGER policy_acknowledgement_no_truncate BEFORE TRUNCATE ON fyniq.policy_acknowledgement FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER policy_draft_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.policy_draft FOR EACH ROW EXECUTE FUNCTION policy_library_guard()
@@ -8563,6 +8711,9 @@ pd_request | tenant_isolation | * | (organisation_id = current_org()) | (organis
 pd_request_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_shredding_run | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 pd_transfer | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+people_link | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+people_link_inbox | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+people_source | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 period_close_check | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8570,6 +8721,7 @@ period_reopen | tenant_isolation | * | (organisation_id = current_org()) | (orga
 period_variance_explanation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 person_cost_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 person_key | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+person_projection | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_draft | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 policy_version | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8801,6 +8953,9 @@ pd_request | enabled | forced
 pd_request_step | enabled | forced
 pd_shredding_run | enabled | forced
 pd_transfer | enabled | forced
+people_link | enabled | forced
+people_link_inbox | enabled | forced
+people_source | enabled | forced
 period | enabled | forced
 period_close | enabled | forced
 period_close_check | enabled | forced
@@ -8808,6 +8963,7 @@ period_reopen | enabled | forced
 period_variance_explanation | enabled | forced
 person_cost_rate | enabled | forced
 person_key | enabled | forced
+person_projection | enabled | forced
 policy_acknowledgement | enabled | forced
 policy_draft | enabled | forced
 policy_version | enabled | forced
@@ -9157,11 +9313,13 @@ pd_breach_guard() → trigger | security invoker | v | search_path=pg_catalog, f
 pd_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84bdfa5651f52981df006a9b1b3fa887
 pd_shredding_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78959af9821f7e3f1ccf60b99d41b64
 pd_transfer_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1805c27109679636b897845585e6cb59
+people_link_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 7ec37301f4fcf16ab03af14e16925399
 period_close_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bcfb4edabdd3de9da67fce621f5077d
 period_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 039e48faca10e675bb61f22577f1b8b9
 period_reopen_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0628b4e0f034b62699d5016a5f7d0470
 period_variance_explanation_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | c592d6c8acf8b8d25a68ede0bf7aa459
 person_key_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1fbad8774b781c2cf93169089adca3e3
+person_projection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 659e69d17b20bb103bda3f66ab7144fe
 policy_library_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0442aa22bfdc40bc5031d622db019681
 private_endpoint_address_ok(p_address cidr) → boolean | security invoker | i | search_path=pg_catalog, fyniq, pg_temp | 87d398986e40ebaa5d612f9346df33d1
 private_endpoint_append_only() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 495b7d8c5db1f4005355e12e03026057
