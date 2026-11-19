@@ -57,8 +57,8 @@ var globalTables = []string{"currency", "tenant_directory", "job_slot", "heartbe
 var onePerOrganisation = []string{"organisation", "ledger_revision", "audit_chain", "opening_balance"}
 
 // keyedByContent are tenant tables that are sets, keyed by what they hold, so they need no separate id: mcp_seen holds the apps and
-// networks a person has used (000584), once each.
-var keyedByContent = []string{"mcp_seen"}
+// networks a person has used (000584), once each; role_assignment_scope holds the department values an Approver assignment is narrowed to (000702), each once.
+var keyedByContent = []string{"mcp_seen", "role_assignment_scope"}
 
 var serviceRoles = []string{"fyniq_api", "fyniq_worker", "fyniq_executor", "fyniq_ai", "fyniq_readonly"}
 
@@ -114,7 +114,7 @@ const tablesSQL = `
 SELECT c.relname,
        c.relrowsecurity, c.relforcerowsecurity,
        EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.oid AND a.attname = 'organisation_id' AND NOT a.attisdropped),
-       (SELECT count(*) FROM pg_policy p WHERE p.polrelid = c.oid),
+       (SELECT count(*) FROM pg_policy p WHERE p.polrelid = c.oid AND p.polpermissive),
        (SELECT count(*) FROM pg_policy p WHERE p.polrelid = c.oid AND p.polcmd = '*' AND p.polpermissive
           AND pg_get_expr(p.polqual, p.polrelid) = '(organisation_id = fyniq.current_org())'
           AND pg_get_expr(p.polwithcheck, p.polrelid) = '(organisation_id = fyniq.current_org())')
@@ -137,6 +137,17 @@ func TestEveryTenantTableForcesRowLevelSecurity(t *testing.T) {
 	tables := rows(t, c, tablesSQL)
 	if len(tables) < 8 {
 		t.Fatalf("found %d tables in schema fyniq; the migrations did not run?", len(tables))
+	}
+	// A restrictive policy only narrows what the one permissive tenant policy lets through: it is ANDed with it, never in place of
+	// it, so it cannot widen a tenant's reach. Only these exist, each for the API's role alone (the department scopes, 000702).
+	restrictive := rows(t, c, `SELECT c.relname || '.' || p.polname FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid JOIN pg_namespace n ON n.oid = c.relnamespace
+ WHERE n.nspname = 'fyniq' AND NOT p.polpermissive ORDER BY 1`)
+	var gotRestrictive []string
+	for _, r := range restrictive {
+		gotRestrictive = append(gotRestrictive, r[0])
+	}
+	if want := []string{"balance.department_scope", "journal_line.department_scope"}; !slices.Equal(gotRestrictive, want) {
+		t.Errorf("restrictive policies: %v, want only %v", gotRestrictive, want)
 	}
 	for _, r := range tables {
 		name, rls, force, hasOrg, policies, tenantPolicies := r[0], r[1], r[2], r[3], r[4], r[5]
