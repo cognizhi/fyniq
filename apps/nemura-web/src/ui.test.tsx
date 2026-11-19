@@ -25,6 +25,8 @@ import { TermsPanel } from "./components/TermsPanel";
 import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
 import { PayRunApproval } from "./pages/PayRunApproval";
+import { MyPay, Payslip } from "./pages/MyPay";
+import { FinalPay } from "./components/FinalPay";
 import { PayRuns } from "./components/PayRuns";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
@@ -1304,8 +1306,117 @@ describe("approving a pay run", () => {
     expect(screen.queryByRole("button", { name: /Confirm with my passkey/ })).toBeNull();
   });
 
+  it("publishes the payslips of an approved version and says how many were made", async () => {
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: { ...run(0), latest: { ...version(2, 0), state: "approved" } } });
+    answer(`GET /v1/payroll/runs/${rid}/changes`, { status: 200, body: { ...changes, has_previous: false } });
+    answer(`POST /v1/payroll/runs/${rid}/payslips`, { status: 201, body: { published: 2 } });
+    render(<PayRunApproval id={rid} roles={["owner"]} member={other} />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(await screen.findByRole("button", { name: "Publish the payslips of version 2" }));
+    expect(await screen.findByText("Published: 2 payslips are in each person's My pay.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/payroll/runs/${rid}/payslips`)).toMatchObject({ version: 2 });
+  });
+
+  it("shows each person's payment and records an outcome only with a document of the person as evidence", async () => {
+    const person = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45";
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: { ...run(0), latest: { ...version(2, 0), state: "approved" }, versions: [{ ...version(2, 0), state: "approved" }] } });
+    answer(`GET /v1/payroll/runs/${rid}/changes`, { status: 200, body: { ...changes, has_previous: false } });
+    answer(`GET /v1/payroll/runs/${rid}/payments`, { status: 200, body: { version: 2, state: "approved", lines: [{ person_id: person, person: "Ben Lim", owed: "3963.21", state: "unknown", attention: true, amount_mismatch: false, events: [] }] } });
+    answer(`GET /v1/people/${person}/documents`, { status: 200, body: { documents: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60", title: "Bank statement 25 Jun" }] } });
+    answer(`POST /v1/payroll/runs/${rid}/payments`, { status: 201, body: undefined });
+    const { container } = render(<PayRunApproval id={rid} roles={["owner"]} member={other} />);
+    expect(await screen.findByText("Ben Lim: owed 3963.21, outcome unknown")).toBeTruthy();
+    expect(screen.getByText(/Look at this: rejected, returned or unknown/)).toBeTruthy();
+    expect(await screen.findByRole("option", { name: "Bank statement 25 Jun" })).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Record the outcome" }));
+    expect(await screen.findByText("Recorded.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/payroll/runs/${rid}/payments`)).toMatchObject({ person_id: person, state: "paid", amount: "3963.21", evidence_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60" });
+  });
+
   it("is refused in words to anyone but the Payroll administrator and the Owner", () => {
     render(<PayRunApproval id={rid} roles={["hr_admin"]} member={other} />);
     expect(screen.getByRole("alert").textContent).toContain("Only the Payroll administrator and the Owner");
+  });
+});
+
+// req: NM-PAY-04, NM-ESS-02
+describe("my pay", () => {
+  const sid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f50";
+  const summary = { id: sid, month: "2026-06-01", payment_date: "2026-06-25", reference: "PS-202606-0001", net_salary: "3878.00", version: 2, corrected: false };
+  const view = { ...summary, sha256: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", employer: "Acme Pte. Ltd.", employee: "Ben Lim", basic_salary: "4500.00", period_start: "2026-06-01", period_end: "2026-06-30",
+    allowances: [{ name: "Transport allowance", amount: "100.00" }], additional_payments: [{ name: "Monthly bonus", amount: "500.00" }], deductions: [{ name: "accommodation", amount: "200.00" }, { name: "Employee's CPF contribution", amount: "1020.00" }],
+    overtime_hours: "3", overtime_pay: "106.21" };
+
+  it("lists the person's payslips with the net salary, marks a corrected one and has no axe violation", async () => {
+    answer("GET /v1/me/payslips", { status: 200, body: { payslips: [summary, { ...summary, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f51", version: 1, corrected: true }] } });
+    const { container } = render(<MyPay roles={["employee"]} />);
+    expect((await screen.findAllByText("2026-06: net salary 3878.00, paid 2026-06-25")).length).toBe(2);
+    expect(screen.getByText("Corrected")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("says so when no payslip has been published", async () => {
+    answer("GET /v1/me/payslips", { status: 200, body: { payslips: [] } });
+    render(<MyPay roles={["employee"]} />);
+    expect(await screen.findByText("No payslip has been published for you yet.")).toBeTruthy();
+  });
+
+  it("shows MOM's items in order: the employer, the employee, the date of payment, the salary period, allowances, additional payments, overtime, deductions and the net salary", async () => {
+    answer(`GET /v1/me/payslips/${sid}`, { status: 200, body: view });
+    const { container } = render(<Payslip id={sid} roles={["employee"]} />);
+    expect(await screen.findByText("Acme Pte. Ltd.")).toBeTruthy();
+    for (const label of ["Employee", "Date of payment", "Salary period", "Basic salary", "Allowance: Transport allowance", "Additional payment: Monthly bonus", "Overtime hours worked", "Overtime pay", "Deduction: Employee's CPF contribution", "Net salary paid"]) {
+      expect(screen.getByText(label)).toBeTruthy();
+    }
+    expect(screen.queryByText("Overtime payment period")).toBeNull();
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("says there is no such payslip when it is not the person's", async () => {
+    answer(`GET /v1/me/payslips/${sid}`, { status: 404, body: { code: "NM_NOT_FOUND" } });
+    render(<Payslip id={sid} roles={["employee"]} />);
+    expect(await screen.findByText("There is no such payslip of yours.")).toBeTruthy();
+  });
+});
+
+// req: NM-PAY-06, NM-PAY-08, NM-INT-08
+describe("final pay", () => {
+  const person = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61";
+  const doc = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60";
+  const final = (held: boolean) => ({ person_id: person, person: "Ben Lim", kind: "termination", last_day: "2026-11-04", notice_served: false, due: "2026-11-04", latest: "2026-11-10", rule: "On the last day, or within 3 working days of it if that is not possible: the employer ended the contract. (sg-people@2026.9)",
+    month: "2026-11-01", untaken_days: "3.00", proposed_leave_pay: "613.64", hold: held ? { held: true, version: 1, effective_from: "2026-10-15" } : { held: false }, items: [{ id: "i", name: "Leave pay on leaving", nature: "leave_encashment", amount: "613.64", used: false }] });
+
+  it("shows the deadline by the case, the leave left and its worth as a proposal, and puts a hold on", async () => {
+    answer(`GET /v1/people/${person}/final-pay`, { status: 200, body: final(false) });
+    answer(`POST /v1/people/${person}/tax-hold`, { status: 201, body: undefined });
+    const { container } = render(<FinalPay person={person} docs={[{ id: doc, title: "IRAS clearance" }]} onChange={() => undefined} />);
+    expect(await screen.findByText("The final salary is due on 2026-11-04, and by 2026-11-10 at the latest. It is paid in the run of 2026-11.")).toBeTruthy();
+    expect(screen.getByText(/Annual leave left to the last day: 3.00 days. At the day rate of an unpaid-leave deduction it is worth 613.64/)).toBeTruthy();
+    expect(screen.getByText("Leave pay on leaving: 613.64, waiting for a run")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Put a tax-clearance hold on" }));
+    expect(await screen.findByText("The hold is on. Calculate the next version of the run to hold the pay.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/people/${person}/tax-hold`)).toMatchObject({ action: "hold" });
+  });
+
+  it("releases a hold only with a document of the person as evidence", async () => {
+    answer(`GET /v1/people/${person}/final-pay`, { status: 200, body: final(true) });
+    answer(`POST /v1/people/${person}/tax-hold`, { status: 201, body: undefined });
+    render(<FinalPay person={person} docs={[{ id: doc, title: "IRAS clearance" }]} onChange={() => undefined} />);
+    expect(await screen.findByText(/A tax-clearance hold has been in force since 2026-10-15/)).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Release the hold" }));
+    expect(await screen.findByText("The hold is released. Calculate the next version of the run to pay it.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/people/${person}/tax-hold`)).toMatchObject({ action: "release", evidence_id: doc });
+  });
+
+  it("draws nothing for a person nobody has recorded leaving", async () => {
+    answer(`GET /v1/people/${person}/final-pay`, { status: 404, body: { code: "NM_NOT_FOUND" } });
+    const { container } = render(<FinalPay person={person} docs={[]} onChange={() => undefined} />);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(container.textContent).toBe("");
   });
 });

@@ -10,5 +10,6 @@ evidence: "Signed review"
 owner: Owner
 checks:
   - frequency: M
-    status: planned
-    arrives: "p1-ai-proposals"
+    status: running
+    how: "test TestAnExecutedProposalIsUndoneByAPersonAndItsQualityIsReviewed"
+    evidence: "getAIApprovalQuality computes the month's metrics from the proposals' own records for the Owner and the DPO, and signAIApprovalReview keeps the signed review (ai_quality_review, append-only, with the metrics as signed) after step-up; CI artefact test-report (90 days)"

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { confirmWithPasskey } from "../api/stepup";
 import type { components } from "../api/schema";
+import { PayPayments } from "../components/PayPayments";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
 import { Shell, admin, team } from "./Shell";
@@ -24,6 +25,7 @@ export function PayRunApproval({ id, roles, member }: { id: string; roles: reado
   useEffect(load, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   const allowed = roles.some((r) => r === "payroll_admin" || r === "owner");
   const v = run?.latest;
+  const hasApproved = (run?.versions ?? []).some((x) => x.state === "approved");
   const mine = !!v && v.prepared_by === member;
   const flagged = (run?.lines ?? []).flatMap((l) => (l.flags ?? []).map((f) => ({ key: l.person_id + f.code + f.message, fail: f.fail, message: `${l.person}: ${f.message}` })));
   const approve = async () => {
@@ -33,6 +35,11 @@ export function PayRunApproval({ id, roles, member }: { id: string; roles: reado
     const { error } = await api.POST("/v1/payroll/runs/{id}/approval", { params: { path: { id } }, body: { version: v.version, digest: v.digest } });
     setNote(error ? { ok: false, text: problem(error) } : { ok: true, text: t("approval.done") });
     if (!error) load();
+  };
+  const publish = async () => {
+    if (!v) return;
+    const { data, error } = await api.POST("/v1/payroll/runs/{id}/payslips", { params: { path: { id } }, body: { version: v.version } });
+    setNote(data ? { ok: true, text: t("approval.published", { n: String(data.published) }) } : { ok: false, text: problem(error) });
   };
   return (
     <Shell roles={roles} directory={team(roles)} features={admin(roles)}>
@@ -91,6 +98,8 @@ export function PayRunApproval({ id, roles, member }: { id: string; roles: reado
             {v.state === "calculated" && !mine && v.flags_failing > 0 && <p role="alert" className="fy-secondary">{t("approval.failing", { n: String(v.flags_failing) })}</p>}
             {v.state === "calculated" && !mine && v.flags_failing === 0 && <button className="fy-btn fy-btn--primary" type="button" onClick={approve}>{t("approval.approve", { version: String(v.version) })}</button>}
             {v.state === "approved" && <p role="status" className="fy-secondary">{t("approval.approved")}</p>}
+            {hasApproved && <PayPayments run={id} />}
+            {v.state === "approved" && <button className="fy-btn fy-btn--secondary" type="button" onClick={publish}>{t("approval.publish", { version: String(v.version) })}</button>}
           </>
         )}
       </main>

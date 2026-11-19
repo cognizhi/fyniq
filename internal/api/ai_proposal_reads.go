@@ -195,7 +195,7 @@ func registerAIProposalReads(a *API) {
 		Summary: "Read an AI proposal",
 		Description: "A proposal as its approver reviews it (AI-07): the platform's summary from the payload and the dry run, the " +
 			"items, each selectable by its number, the impact and the evidence, and the AI's rationale apart, labelled as AI text; what it " +
-			"was made from, its approval request and what became of it. Not found unless you may see it (design D5). No side effects. On " +
+			"was made from, its approval request and what became of it. Not found unless you may see it (design D5). Side effects: the first time you open it, the time is kept, so the month's approval quality can tell a decision made after a look from one made without (AI-92). On " +
 			"the never-list for the AI and MCP (§9.6).",
 	}, append([]string{CodeNotFound, CodeAIPersonOnly}, locks...), func(ctx context.Context, in *aiProposalGetInput) (*aiProposalGetOutput, error) {
 		p, _ := authn.From(ctx)
@@ -219,6 +219,9 @@ func registerAIProposalReads(a *API) {
 				return err
 			} else if !ok {
 				return notFoundProposal()
+			}
+			if err := a.markViewed(ctx, u, p, pr.ID); err != nil { // the first look at its review, for the month's approval quality (AI-92)
+				return err
 			}
 			out, err = a.proposalDetail(ctx, u, p, pr)
 			return err

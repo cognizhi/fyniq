@@ -1,20 +1,29 @@
 import { useEffect, useState } from "react";
 import { api, type Session } from "../api/client";
 import type { components } from "../api/schema";
+import { openPdf } from "./MyPay";
 import { LetterList } from "../components/LetterList";
 import { RequestSteps } from "../components/RequestSteps";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
 
 type Doc = components["schemas"]["Document"];
+type Slip = components["schemas"]["PayslipSummary"];
 
 // LeaverHome is nm-leaver-home: after a person's last day their account keeps their own documents and letters, and a way to ask the people team for a copy of one that is lost,
 // until the record-keeping period ends (NM-ESS-06). Nothing else is here, and the API refuses everything else.
 export function LeaverHome({ session }: { session: Session }) {
   const [docs, setDocs] = useState<Doc[]>([]);
+  const [slips, setSlips] = useState<Slip[]>([]);
   const [q, setQ] = useState("");
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const person = session.person_id ?? "";
+  useEffect(() => {
+    api.GET("/v1/me/payslips").then(
+      ({ data }) => setSlips(data?.payslips ?? []),
+      () => setSlips([]),
+    );
+  }, []);
   useEffect(() => {
     if (!person) return;
     api.GET("/v1/people/{id}/documents", { params: { path: { id: person } } }).then(
@@ -45,6 +54,12 @@ export function LeaverHome({ session }: { session: Session }) {
             {docs.map((d) => (
               <li key={d.id}><a href={`/api/v1/people/${person}/documents/${d.id}`}>{d.title}</a></li>
             ))}
+          </ul>
+        </section>
+        <section className="fy-stack fy-stack--2" aria-labelledby="slips-h">
+          <h2 className="fy-h2" id="slips-h">{t("leaver.payslips")}</h2>
+          <ul className="fy-stack fy-stack--1">
+            {slips.map((p) => <li key={p.id}><button className="fy-btn fy-btn--secondary" type="button" onClick={() => void openPdf(p.id)}>{t("mypay.pdf", { month: p.month.slice(0, 7) })}</button></li>)}
           </ul>
         </section>
         <LetterList mine roles={[]} />

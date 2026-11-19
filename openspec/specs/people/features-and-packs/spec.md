@@ -152,9 +152,14 @@ Source: PRD-002 §6 · Priority M · Phase P1
 - **THEN** it is checked against each statutory rule (NM-PACK-08)
 
 ### Requirement: NM-PACK-05 Next year's calendar
-The Singapore pack SHALL get next year's gazetted public holidays when MOM publishes them, and Checks SHALL warn from 1 Dec if they are missing.
+The Singapore pack SHALL get next year's gazetted public holidays when MOM publishes them, and Checks SHALL warn from 1 Dec if they are missing. It SHALL also list the Monday in lieu of a holiday on a Sunday, which working-day counts skip.
 
 Source: PRD-002 §6 · Priority M · Phase P1
+
+#### Scenario: A holiday on a Sunday
+- **GIVEN** National Day 2026 is on Sunday 9 Aug
+- **WHEN** a payslip's three working days are counted from Fri 7 Aug
+- **THEN** Monday 10 Aug is not a working day
 
 #### Scenario: Missing calendar
 - **GIVEN** next year's holidays are not loaded

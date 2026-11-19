@@ -60,9 +60,15 @@ fyniq_api       SELECT    ai_price_rate
 fyniq_api       INSERT    ai_proposal (agent, evidence, expires_at, item_count, mcp_app, model, payload, payload_sha256, prompt, proposed_at, rationale, requested_by, required_approvals, risk_tier, run_id, task_sha256, task_type, task_version, tools_sha256, turn_id)
 fyniq_api       SELECT    ai_proposal
 fyniq_api       UPDATE    ai_proposal (approval_request_id, approved_items, approved_payload, approved_sha256, base_versions, decided_at, decided_by, impact, reason, status, superseded_by, version)
+fyniq_api       INSERT    ai_proposal_undo (proposal_id, reason, reversed, undone_at, undone_by)
+fyniq_api       SELECT    ai_proposal_undo
+fyniq_api       INSERT    ai_proposal_view (first_viewed_at, proposal_id, user_id)
+fyniq_api       SELECT    ai_proposal_view
 fyniq_api       INSERT    ai_qualification (agent, cases, connection_id, model, passed, ran_at, ran_by, result, run_id, suite, suite_version, threshold, version)
 fyniq_api       SELECT    ai_qualification
 fyniq_api       UPDATE    ai_qualification (out_of_date_at, out_of_date_why)
+fyniq_api       INSERT    ai_quality_review (month, note, report, signed_at, signed_by)
+fyniq_api       SELECT    ai_quality_review
 fyniq_api       SELECT    ai_reservation
 fyniq_api       EXECUTE   ai_reserve()
 fyniq_api       INSERT    ai_route (agent, approval_id, classes, made_at, made_by, preset, version)
@@ -223,6 +229,9 @@ fyniq_api       UPDATE    dimension_value (is_active, name, version)
 fyniq_api       INSERT    document (type)
 fyniq_api       SELECT    document
 fyniq_api       UPDATE    document (current_version, posted_at, posted_by, status)
+fyniq_api       INSERT    document_capture (blob_key, captured_by, created_at, duplicate_of, file_name, inbound_file_id, media_type, message_id, nric_flagged, owner_user_id, sha256, size_bytes, source, status)
+fyniq_api       SELECT    document_capture
+fyniq_api       UPDATE    document_capture (checks, dismiss_reason, dismissed_at, dismissed_by, draft_id, draft_kind, drafted_at, drafted_by, duplicate_of, kind, last_error, read_at, reading, reading_model, reading_prompt, readings, status, version)
 fyniq_api       INSERT    document_link (created_by, document_id, document_version, expires_at, message_id, token_hash)
 fyniq_api       SELECT    document_link
 fyniq_api       UPDATE    document_link (first_viewed_at, revoked_at, revoked_by)
@@ -708,6 +717,7 @@ fyniq_executor  SELECT    journal_line
 fyniq_executor  SELECT    ledger_boundary
 fyniq_executor  SELECT    ledger_purged_entry
 fyniq_executor  SELECT    ledger_revision
+fyniq_executor  EXECUTE   member_activity()
 fyniq_executor  EXECUTE   member_emails()
 fyniq_executor  EXECUTE   member_names()
 fyniq_executor  SELECT    opening_balance
@@ -740,6 +750,7 @@ fyniq_executor  SELECT    recurring_journal_version
 fyniq_executor  SELECT    review_log_entry
 fyniq_executor  SELECT    review_log_review
 fyniq_executor  SELECT    role_assignment
+fyniq_executor  SELECT    role_assignment_scope
 fyniq_executor  SELECT    sales_reminder
 fyniq_executor  USAGE     schema fyniq
 fyniq_executor  SELECT    sod_override
@@ -776,7 +787,10 @@ fyniq_readonly  SELECT    ai_price
 fyniq_readonly  SELECT    ai_price_catalogues
 fyniq_readonly  SELECT    ai_price_rate
 fyniq_readonly  SELECT    ai_proposal
+fyniq_readonly  SELECT    ai_proposal_undo
+fyniq_readonly  SELECT    ai_proposal_view
 fyniq_readonly  SELECT    ai_qualification
+fyniq_readonly  SELECT    ai_quality_review
 fyniq_readonly  SELECT    ai_reservation
 fyniq_readonly  SELECT    ai_route
 fyniq_readonly  SELECT    ai_route_step
@@ -843,6 +857,7 @@ fyniq_readonly  SELECT    dimension
 fyniq_readonly  SELECT    dimension_set
 fyniq_readonly  SELECT    dimension_value
 fyniq_readonly  SELECT    document
+fyniq_readonly  SELECT    document_capture
 fyniq_readonly  SELECT    document_link
 fyniq_readonly  SELECT    document_number
 fyniq_readonly  SELECT    document_send
@@ -1021,10 +1036,13 @@ fyniq_worker    INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_worker    SELECT    ai_price_rate
 fyniq_worker    SELECT    ai_proposal
 fyniq_worker    UPDATE    ai_proposal (decided_at, status, version)
+fyniq_worker    SELECT    ai_proposal_undo
+fyniq_worker    SELECT    ai_proposal_view
 fyniq_worker    EXECUTE   ai_purge_conversations()
 fyniq_worker    INSERT    ai_qualification (agent, cases, connection_id, model, passed, ran_at, ran_by, result, run_id, suite, suite_version, threshold, version)
 fyniq_worker    SELECT    ai_qualification
 fyniq_worker    UPDATE    ai_qualification (out_of_date_at, out_of_date_why)
+fyniq_worker    SELECT    ai_quality_review
 fyniq_worker    SELECT    ai_reservation
 fyniq_worker    EXECUTE   ai_reserve()
 fyniq_worker    SELECT    ai_route
@@ -1131,6 +1149,7 @@ fyniq_worker    SELECT    dimension_set
 fyniq_worker    SELECT    dimension_value
 fyniq_worker    SELECT    document
 fyniq_worker    UPDATE    document (posted_at, posted_by, status)
+fyniq_worker    SELECT    document_capture
 fyniq_worker    INSERT    document_link (created_by, document_id, document_version, expires_at, message_id, token_hash)
 fyniq_worker    SELECT    document_link
 fyniq_worker    INSERT    document_number (document_type, id, number)
@@ -1205,6 +1224,7 @@ fyniq_worker    EXECUTE   mcp_clients_expire()
 fyniq_worker    EXECUTE   mcp_purge_calls()
 fyniq_worker    SELECT    mcp_seen
 fyniq_worker    SELECT    mcp_user_optin
+fyniq_worker    EXECUTE   member_activity()
 fyniq_worker    EXECUTE   member_emails()
 fyniq_worker    SELECT    member_invitation
 fyniq_worker    EXECUTE   member_names()

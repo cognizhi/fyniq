@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "capture": {
+      "$ref": "DocumentCapture.schema.json",
+      "description": "The capture, now drafted."
+    },
+    "draft": {
+      "$ref": "CaptureDraft.schema.json",
+      "description": "The draft bill or claim, with the file attached to it as its evidence."
+    }
+  },
+  "required": [
+    "capture",
+    "draft"
+  ],
+  "title": "CaptureDrafted",
+  "type": "object"
+}

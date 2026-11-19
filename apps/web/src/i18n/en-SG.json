@@ -107,6 +107,10 @@
       "label": "The AI's reasons",
       "tooltip": "Why the AI proposes it, in its own words. Check them against Fyniq's summary, which says what really happens."
     },
+    "documents.inbox": {
+      "label": "Document inbox",
+      "tooltip": "Bills and receipts uploaded, pasted or emailed in. The model reads each into a reading you check; you make the draft. Nothing posts until you do."
+    },
     "ai-tasks.page": {
       "label": "AI tasks",
       "tooltip": "What the AI may propose for the organisation, with each task type's limits and approvers, and every proposal it has made."

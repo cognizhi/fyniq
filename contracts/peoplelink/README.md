@@ -38,3 +38,41 @@ of its canonical bytes. **The approver's passkey signs that digest as the WebAut
 relying-party ID; Fyniq verifies it against a passkey the approver enrolled in Fyniq (matched by issuer and subject), so every payroll approver signs in to
 Fyniq once and enrols one. Fyniq posts the figures of this envelope and nothing else. The refusals are `PPL-11` to `PPL-19` (`contracts/openapi/fyniq.v1.yaml`,
 `submitPayrollRun`); a ledger refusal (a locked period, an unmapped department) comes back with its own code.
+
+## The inbox for `payroll.payments.status` (Nemura's side; the table and the function exist, the inbox is `p1-nemura-fyniq-link` 2.3)
+
+PRD-002 NM-PAY-10 is the vocabulary. **Do not add a second table or a second list of states.** Nemura keeps a person's payment in a pay run as append-only events in
+`nemura.pay_payment_event` (migration `000031_pay_payments.sql`), keyed on the **run and the person, not on a version**, so that an unknown outcome still blocks after a corrected
+version. The inbox writes through one function, which the manual recording path (`POST /v1/payroll/runs/{id}/payments`) uses too:
+
+```go
+nemura.RecordPaymentState(ctx, tx, org, at, actor, nemura.PaymentInput{
+    Run: runID, Person: personID, State: "paid", // the event's `state`
+    Instruction: instructionID, Amount: "3963.21", PaidOn: date, // the event's instruction ID, amount (a decimal string) and date
+    Source: "fyniq", // never "manual" from the inbox: a manual record needs By and a document of the person as Evidence
+})
+```
+
+- **Actor**: the link's service identity (`audit.Actor{Type: "service", ID: "link"}`); the audit event holds the run, person, state, source and instruction ID, never the amount.
+- **Role**: the table's `INSERT` is granted to `nemura_api`, so the inbox's HTTP handler runs as the API; widen nothing without the owners (`go test ./internal/adapters/postgres/nemura -update` shows the grant diff).
+- **States**: `scheduled`, `released`, `sent`, `accepted`, `paid`, `rejected`, `returned`, `unknown` (`internal/nemura/payroll/payment.go`; the same list is in the database trigger, and a test checks all 64 pairs agree).
+- **Legal moves** (the first event of a payment may be any state): scheduled to released, sent, accepted, paid, rejected or unknown; released to sent, accepted, paid, rejected or unknown; sent to accepted,
+  paid, rejected, returned or unknown; accepted to paid, rejected, returned or unknown; paid to returned; rejected or returned to scheduled (a new payment); **unknown to paid, rejected or returned only**:
+  an unknown outcome blocks a new payment (`scheduled`) of that person in that run until it is resolved. An illegal move or a repeat of the same state is refused with `NM_PAYROLL_CONFLICT`
+  (the database says `NM175`); the inbox should answer a repeat of the same Fyniq `event_id` as `duplicate` before it gets here.
+- **Refusals before the insert** (`NM_PAYROLL_INVALID`): an unknown state; no instruction ID; an amount that is not dollars and cents; a date in the future for paid, rejected or returned; a run whose
+  latest version nobody approved (`NM_PAYROLL_CONFLICT`); a person owed nothing in the run's payable version.
+- **"Paid" comes only from the bank feed matching the debit (Fyniq's event) or a person recording the outcome with evidence**: a manual record has `recorded_by` and `evidence_id` (a document of the
+  person paid) or the database refuses it (`pay_payment_event_source`). Nothing in Nemura marks a payment paid for a file or a journal.
+- **What reads it**: the run's payment state (`approved`, `paid in part`, `paid`), N.1 #14 (rejected, returned or unknown, ✖) and #9 (the payslip is due within 3 working days of the confirmed paid date), and the payslip's date of payment.
+- `PaymentBlocked(ctx, tx, run, person)` says whether an unknown outcome blocks a person; the payment file (`p1-nemura-payroll` 6.1) and the `payroll.payments.ready` sender must call it and leave that person out.
+
+## The tax-clearance hold (Nemura's side; the sender is `p1-nemura-fyniq-link` 2.2, 3.3)
+
+Nemura is the hold authority (PRD-002 NM-INT-08). The table and the functions exist (`nemura.tax_hold`, migration `000032_final_pay_tax_hold.sql`); **the sender must read this table, not add another**. A hold is a series of
+versions written once and never changed, one row each: `hold_id` (the id of its first version, stable for the hold), `version` (1, 2), `status` (`held` or `released`), `effective_from`, `evidence_id` (a
+document of the person; the database requires it for a release), `reason`, `recorded_by`, `recorded_at`. `nemura.TaxHoldOf(ctx, tx, person)` reads the latest version; `PutTaxHold` and `ReleaseTaxHold`
+write (also behind `GET`/`POST /v1/people/{id}/tax-hold`). The `people.tax_hold.changed` payload (`person_id`, `hold_id`, `effective_from`, `status`, `evidence_ref`; `object_version` is `version`) is built
+from a row. A new hold starts as `held` at version 1; only the next version releases it. While the latest version is `held`, Nemura's own run holds every dollar due to the person (`pay_run_line.held`, a
+disbursement of zero), so the person has no payment to send; Fyniq's side checks the hold again when it releases a payment (FR-PPL-13). Not modelled yet: "released after paying IRAS's directive" as a status of
+its own (NM-INT-08 lists it): today both releases are `released` with the evidence of what happened.

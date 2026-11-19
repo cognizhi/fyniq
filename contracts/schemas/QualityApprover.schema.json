@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approved": {
+      "description": "How many proposals they approved in the month.",
+      "examples": [
+        14
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "quick": {
+      "description": "How many of them within ten seconds of first opening the review, with no item changed, or with no look at all.",
+      "examples": [
+        3
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "user": {
+      "description": "The person.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "user",
+    "approved",
+    "quick"
+  ],
+  "title": "QualityApprover",
+  "type": "object"
+}

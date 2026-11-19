@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "captured_by": {
+      "description": "Who captured it: an actor of the audit trail.",
+      "examples": [
+        "user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "type": "string"
+    },
+    "checks": {
+      "description": "What the platform found in the reading: arithmetic, dates, the GST number's form, the IRAS tax-invoice particulars it lacks.",
+      "items": {
+        "$ref": "Check.schema.json"
+      },
+      "type": "array"
+    },
+    "confidence": {
+      "additionalProperties": {
+        "format": "double",
+        "type": "number"
+      },
+      "description": "Each field's confidence after the platform's checks, which only ever lower it.",
+      "type": "object"
+    },
+    "created_at": {
+      "description": "When it was captured.",
+      "examples": [
+        "2026-11-20T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "dismiss_reason": {
+      "description": "Why it was dismissed.",
+      "examples": [
+        "Not ours"
+      ],
+      "type": "string"
+    },
+    "draft": {
+      "$ref": "CaptureDraft.schema.json",
+      "description": "The draft a person made of it."
+    },
+    "duplicate_of": {
+      "description": "The capture of the same file, for a duplicate.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f2f"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "file_name": {
+      "description": "As sent: data, never a path.",
+      "examples": [
+        "AU-1182.pdf"
+      ],
+      "type": "string"
+    },
+    "id": {
+      "description": "The capture's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "kind": {
+      "description": "What the reading says it is.",
+      "enum": [
+        "bill",
+        "receipt",
+        "sales_invoice",
+        "statement",
+        "contract",
+        "other"
+      ],
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    },
+    "low_confidence": {
+      "description": "The fields shown that the model or a check doubts, to highlight for the person who reviews the draft.",
+      "examples": [
+        [
+          "total"
+        ]
+      ],
+      "items": {
+        "examples": [
+          "total"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "media_type": {
+      "description": "Its type, decided from its content.",
+      "examples": [
+        "application/pdf"
+      ],
+      "type": "string"
+    },
+    "message_id": {
+      "description": "The accepted mail it came from.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f33"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "model": {
+      "description": "The model that read it.",
+      "examples": [
+        "claude-opus-5-5"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "Why it failed, in plain words.",
+      "examples": [
+        "Only a PDF or a photo can be read: type the bill in"
+      ],
+      "type": "string"
+    },
+    "nric_flagged": {
+      "description": "true when its text shows an NRIC or FIN in full (FR-DOC-09): it is never sent to a model, so it is not read; mask it and capture it again, or type the bill in.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "own": {
+      "description": "true when it arrived at the caller's own email-in address: only they see it.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "read_at": {
+      "description": "When it was last read.",
+      "examples": [
+        "2026-11-20T09:00:05Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "reading": {
+      "$ref": "Reading.schema.json",
+      "description": "What the model read, each field with its confidence; absent until it is read."
+    },
+    "reading_is": {
+      "description": "Always the model's reading: untrusted data to check against the document, never a figure Fyniq decided.",
+      "examples": [
+        "the model's reading"
+      ],
+      "type": "string"
+    },
+    "readings": {
+      "description": "How many times it was read.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "sha256": {
+      "description": "The SHA-256 of the file as stored, in hexadecimal.",
+      "examples": [
+        "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+      ],
+      "type": "string"
+    },
+    "size_bytes": {
+      "description": "Its size as stored.",
+      "examples": [
+        48211
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "source": {
+      "description": "How it came in.",
+      "enum": [
+        "upload",
+        "paste",
+        "email"
+      ],
+      "examples": [
+        "upload"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "received: kept, not read yet; reading: the model is reading it; read: its reading is ready to check; duplicate: the same file is in the inbox already; drafted: a person made a draft of it; dismissed: no draft will be made; failed: it could not be read, as note says.",
+      "enum": [
+        "received",
+        "reading",
+        "read",
+        "duplicate",
+        "drafted",
+        "dismissed",
+        "failed"
+      ],
+      "examples": [
+        "read"
+      ],
+      "type": "string"
+    },
+    "supplier": {
+      "$ref": "CaptureSupplier.schema.json",
+      "description": "The supplier contact the reading's supplier matches, when one does."
+    },
+    "version": {
+      "description": "Its version; it makes the ETag.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "source",
+    "file_name",
+    "media_type",
+    "size_bytes",
+    "sha256",
+    "status",
+    "captured_by",
+    "created_at",
+    "own",
+    "nric_flagged",
+    "readings",
+    "version"
+  ],
+  "title": "DocumentCapture",
+  "type": "object"
+}

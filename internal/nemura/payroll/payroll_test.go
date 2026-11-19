@@ -587,7 +587,7 @@ func TestTheRunIsComparedWithLastMonthWithEveryDifferenceExplained(t *testing.T)
 	now := []LineFacts{
 		line("ana", "Ana Tan", "10000.00", "3700", item("basic", "person_pay", "5000.00"), ItemFacts{Key: "bonus", SourceType: "pay_one_off", Class: "additional", Amount: D("5000.00")}),
 		line("ben", "Ben Lim", "4500.00", "1665", item("basic", "person_pay", "4500.00")),
-		line("cy", "Cy Wong", "2795.45", "1034", item("basic", "person_pay", "3000.00"), item("unpaid-1a2b3c4d", "pay_input", "-204.55")),
+		line("cy", "Cy Wong", "2795.45", "1034", item("basic", "person_pay", "3000.00"), item("unpaid-1", "pay_input", "-204.55")),
 		line("dee", "Dee Foo", "2000.00", "740", item("basic", "person_pay", "2000.00")),
 		line("eve", "Eve Ong", "3500.00", "1190", item("basic", "person_pay", "3500.00")),
 	}
@@ -599,7 +599,7 @@ func TestTheRunIsComparedWithLastMonthWithEveryDifferenceExplained(t *testing.T)
 	for _, c := range got.Changes {
 		causes[c.Name+"/"+c.Cause+"/"+c.Key] = text(c.Amount)
 	}
-	for k, want := range map[string]string{"Ana Tan/one_off/bonus": "5000.00", "Ben Lim/pay_change/basic": "500.00", "Cy Wong/unpaid_leave/unpaid-1a2b3c4d": "-204.55", "Dee Foo/joiner/": "2000.00", "Eve Ong/cpf/": "-105"} {
+	for k, want := range map[string]string{"Ana Tan/one_off/bonus": "5000.00", "Ben Lim/pay_change/basic": "500.00", "Cy Wong/unpaid_leave/unpaid-1": "-204.55", "Dee Foo/joiner/": "2000.00", "Eve Ong/cpf/": "-105"} {
 		if causes[k] != want {
 			t.Errorf("%s: %q, want %s (all: %v)", k, causes[k], want, causes)
 		}
@@ -615,5 +615,117 @@ func TestTheRunIsComparedWithLastMonthWithEveryDifferenceExplained(t *testing.T)
 	}
 	if !found {
 		t.Errorf("a leaver: %+v", left.Changes)
+	}
+}
+
+// A payslip puts the month's items under MOM's twelve and adds up to the net salary: Ben on S$4,500 with a S$100 transport allowance, a S$500 bonus, a day of no-pay leave, three hours of overtime
+// and an S$200 dormitory deduction: the employee's CPF and the fund are deductions too; an item that does not apply is left out; items that do not add up are refused (NM-PAY-04).
+// req: NM-PAY-04
+func TestAPayslipHoldsMOMsTwelveItemsAndAddsUpToTheNetSalary(t *testing.T) {
+	in := PayslipInput{Employer: "Acme Pte. Ltd.", Employee: "Ben Lim", Month: day("2026-06-01"), PayDate: day("2026-06-25"), EmployeeCPF: D("1000"), SHG: D("1.00"), OvertimeHours: D("3"), Reimbursements: D("45.00"),
+		Items: []SlipLine{{Key: "basic", Name: "Basic salary", Class: "ordinary", Amount: "4500.00"}, {Key: "transport", Name: "Transport allowance", Class: "ordinary", Amount: "100.00", SourceType: "person_pay_item"},
+			{Key: "bonus-2026", Name: "Annual bonus", Class: "additional", Amount: "500.00", SourceType: "pay_one_off", Nature: "bonus"}, {Key: "uniform", Name: "Uniform allowance", Class: "ordinary", Amount: "30.00", SourceType: "pay_one_off", Nature: "allowance"},
+			{Key: "unpaid-1", Name: "Unpaid leave", Class: "ordinary", Amount: "-204.55", SourceType: "pay_input"}, {Key: "ot-1", Name: "Overtime", Class: "ordinary", Amount: "106.21", SourceType: "overtime_entry"},
+			{Key: "dorm", Name: "Deduction: accommodation", Class: "deduction", Amount: "200.00", SourceType: "person_pay_item"}}}
+	// gross = 4500 + 100 + 500 + 30 − 204.55 + 106.21 = 5031.66; net = 5031.66 − 1000 − 1.00 − 200 = 3830.66
+	in.Net = D("3830.66")
+	p, err := BuildPayslip(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Basic != "4500.00" || len(p.Allowances) != 2 || len(p.Additional) != 1 || p.Additional[0].Name != "Annual bonus" || p.OvertimePay != "106.21" || p.OvertimeHours != "3" || p.Net != "3830.66" || p.PeriodEnd != "2026-06-30" || p.OvertimePeriod != "" {
+		t.Errorf("payslip: %+v", p)
+	}
+	names := []string{}
+	for _, d := range p.Deductions {
+		names = append(names, d.Name+"="+d.Amount)
+	}
+	if strings.Join(names, "|") != "Unpaid leave=204.55|accommodation=200.00|Employee's CPF contribution=1000.00|Self-help group fund=1.00" {
+		t.Errorf("deductions: %v", names)
+	}
+	lines := p.Lines()
+	if lines[0].Label != "Employer" || lines[3].Value != "2026-06-01 to 2026-06-30" || lines[len(lines)-2].Label != "Net salary paid" || lines[len(lines)-1].Value != "45.00" {
+		t.Errorf("lines: %+v", lines)
+	}
+	in.Net = D("3830.67")
+	if _, err := BuildPayslip(in); err == nil || !strings.Contains(err.Error(), "does not add up") {
+		t.Errorf("items that do not add up: %v", err)
+	}
+	// A month with nothing but the basic salary leaves the optional items out.
+	plain, err := BuildPayslip(PayslipInput{Employer: "Acme", Employee: "Cy", Month: day("2026-06-01"), PayDate: day("2026-06-25"), Items: []SlipLine{{Key: "basic", Name: "Basic salary", Class: "ordinary", Amount: "3000.00"}}, EmployeeCPF: D("600"), Net: D("2400.00")})
+	if err != nil || plain.OvertimePay != "" || len(plain.Allowances) != 0 || len(plain.Deductions) != 1 {
+		t.Errorf("plain: %+v %v", plain, err)
+	}
+}
+
+func peoplePack(t *testing.T) pack.Version {
+	t.Helper()
+	v, err := pack.Load(packs.Files(), "sg-people/2026.9")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return v
+}
+
+// A leaver's final salary is due by the case (MOM, sg-people@2026.9): a resignation with the notice served on the last day; without it within 7 days; a termination or a retrenchment on the last
+// day or within 3 working days, which skip the weekend, a public holiday and the Monday in lieu. Last day Wed 4 Nov 2026: Thu 5, Fri 6, then Mon 9 Nov is the day in lieu of Deepavali (Sunday 8), so
+// the third working day is Tue 10 Nov.
+// req: NM-PAY-08
+func TestAFinalSalaryIsDueByTheCaseOfTheLeaving(t *testing.T) {
+	v := peoplePack(t)
+	last := day("2026-11-04")
+	for _, tc := range []struct {
+		kind         string
+		served       bool
+		due, latest  string
+		ruleContains string
+	}{
+		{"resignation", true, "2026-11-04", "2026-11-04", "served the notice"},
+		{"resignation", false, "2026-11-04", "2026-11-11", "Within 7 days"},
+		{"termination", false, "2026-11-04", "2026-11-10", "3 working days"},
+		{"retrenchment", false, "2026-11-04", "2026-11-10", "3 working days"},
+		{"end_of_contract", false, "2026-11-04", "2026-11-04", "names no other case"},
+	} {
+		due, latest, rule := FinalPayDeadline(v, tc.kind, tc.served, last)
+		if due.Format(time.DateOnly) != tc.due || latest.Format(time.DateOnly) != tc.latest || !strings.Contains(rule, tc.ruleContains) {
+			t.Errorf("%s served %v: due %s latest %s (%s)", tc.kind, tc.served, due.Format(time.DateOnly), latest.Format(time.DateOnly), rule)
+		}
+	}
+}
+
+// Final pay: leave pay and pay in lieu of notice raise a look-at flag until their CPF treatment is confirmed, and a retrenchment benefit is never CPF wages; under a clearance hold every dollar due is
+// held and nothing is disbursed: S$4,000 net and S$30.00 of reimbursements are held in full (FR-PAY-10, NM-PAY-06).
+// req: NM-PAY-06, FR-PAY-10
+func TestFinalPayFlagsLeavePayHoldsEverythingUnderAClearanceHoldAndKeepsARetrenchmentBenefitOutOfCPF(t *testing.T) {
+	leave := Item{Key: "leave", Name: "Leave pay on leaving", Nature: NatureLeavePay, Amount: D("1000.00"), CPFWages: false}
+	r, err := Calculate(Month{Month: day("2026-06-01"), Person: citizen(), Items: []Item{basic("5000.00"), leave}, Final: true, HoldAll: true, Reimbursements: []*apd.Decimal{D("30.00")},
+		YTD: YearToDate{Known: true, OW: D("25000"), AWSubject: D("0"), AWPaid: D("0")}}, statutory(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Gross 6,000 with the leave pay outside CPF wages: CPF on 5,000 only, 1,000 for the employee; net 5,000; held 5,030.
+	if text(r.Net) != "5000.00" || text(r.Held) != "5030.00" || text(r.Disburse) != "0.00" {
+		t.Errorf("net %s held %s disburse %s", text(r.Net), text(r.Held), text(r.Disburse))
+	}
+	codes := []string{}
+	for _, f := range r.Flags {
+		codes = append(codes, f.Code)
+		if f.Code == "FINAL_PAY_CPF" && (f.Fail || !strings.Contains(f.Message, "Leave pay on leaving")) {
+			t.Errorf("flag: %+v", f)
+		}
+	}
+	if strings.Join(codes, ",") != "FINAL_PAY_CPF,CLEARANCE_HOLD" {
+		t.Errorf("flags: %v", codes)
+	}
+	// Without the hold the person is paid, and nothing is flagged for ordinary pay.
+	r2, _ := Calculate(Month{Month: day("2026-06-01"), Person: citizen(), Items: []Item{basic("5000.00")}, YTD: YearToDate{Known: true, OW: D("25000"), AWSubject: D("0"), AWPaid: D("0")}}, statutory(t))
+	if text(r2.Held) != "0" && text(r2.Held) != "0.00" || text(r2.Disburse) != "4000.00" {
+		t.Errorf("no hold: held %s disburse %s", text(r2.Held), text(r2.Disburse))
+	}
+	if err := (OneOff{Key: "retrench", Name: "Retrenchment benefit", Nature: NatureRetrenchment, Amount: "9000.00", CPFWages: true}).Check(); err == nil || !strings.Contains(err.Error(), "not CPF wages") {
+		t.Errorf("a retrenchment benefit as CPF wages: %v", err)
+	}
+	if err := (OneOff{Key: "retrench", Name: "Retrenchment benefit", Nature: NatureRetrenchment, Amount: "9000.00"}).Check(); err != nil {
+		t.Errorf("a retrenchment benefit: %v", err)
 	}
 }

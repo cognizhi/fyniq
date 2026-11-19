@@ -1,0 +1,8 @@
+case,item,want_key,want_when,why,source
+the employer,1,employer_name,always,"MOM: item 1 is the full name of the employer",mom-itemised-payslips
+basic salary,4,basic_salary,always,"MOM: item 4",mom-itemised-payslips
+allowances,6,allowances,if_applicable,"MOM: item 6 unless not applicable",mom-itemised-payslips
+overtime pay,10,overtime_pay,if_applicable,"MOM: items 9 to 11 are not needed where overtime pay does not apply",mom-itemised-payslips
+overtime period,11,overtime_period,if_different,"MOM: item 11 only if different from item 5",mom-itemised-payslips
+net salary,12,net_salary,always,"MOM: item 12",mom-itemised-payslips
+there is no item 13,13,none,none,"MOM lists 12 items",mom-itemised-payslips

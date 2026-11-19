@@ -50,6 +50,7 @@ type Month struct {
 	Final          bool           // final pay on termination: the 50% limit does not apply and an advance is recovered only as far as consented (FR-PAY-16)
 	Reimbursements []*apd.Decimal // non-wage reimbursements paid with the salary (FR-AP-17), never CPF wages
 	Held           *apd.Decimal   // monies held under an IR21 clearance hold (FR-PAY-10)
+	HoldAll        bool           // a clearance hold is in force: every dollar due to the person is held (net pay and reimbursements), and nothing is disbursed until the hold is released
 }
 
 // Packs are the statutory packs the month reads.
@@ -186,6 +187,9 @@ func Calculate(m Month, p Packs) (Result, error) {
 		case Additional:
 			r.AdditionalWages = add(r.AdditionalWages, it.Amount)
 		}
+		if it.Nature == NatureLeavePay || it.Nature == NatureNoticePay {
+			r.Flags = append(r.Flags, Flag{"FINAL_PAY_CPF", false, fmt.Sprintf("%s: whether this is CPF wages is not settled by a source this system has read: confirm 'CPF wages' for it against the CPF Board's table of payments (accountant to confirm).", it.Name)})
+		}
 		if it.Mismatch {
 			r.Flags = append(r.Flags, Flag{"WAGE_CLASS", false, fmt.Sprintf("%s: %s", it.Name, it.Why)})
 		}
@@ -217,6 +221,10 @@ func Calculate(m Month, p Packs) (Result, error) {
 		r.Held = m.Held
 	}
 	r.Net = sub(sub(sub(r.Gross, r.CPF.Employee), r.SHG), r.Deductions)
+	if m.HoldAll {
+		r.Held = add(r.Net, r.Reimbursements)
+		r.Flags = append(r.Flags, Flag{"CLEARANCE_HOLD", false, "A tax-clearance hold is in force: all monies due are held (nothing is disbursed) until IRAS gives clearance and the hold is released."})
+	}
 	r.Disburse = sub(add(r.Net, r.Reimbursements), r.Held)
 	r.EmployerCost = add(add(r.Gross, r.CPF.Employer), r.SDL)
 	step(&r, "B.3 Net pay", "Net pay %s = gross %s − employee CPF %s − self-help group fund %s − deductions %s. To disburse %s = net pay + reimbursements %s − held %s.",

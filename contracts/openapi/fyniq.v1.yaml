@@ -3787,6 +3787,65 @@ components:
         - duration_ms
         - kb_pages
       type: object
+    AIUndoRequest:
+      additionalProperties: false
+      properties:
+        proposal_id:
+          description: The executed proposal to undo.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+          format: uuid
+          type: string
+        reason:
+          description: "Why it is undone: the audit trail and the undo's record keep it."
+          examples:
+            - The supplier credited the bill
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - proposal_id
+        - reason
+      type: object
+    AIUndone:
+      additionalProperties: false
+      properties:
+        proposal_id:
+          description: The proposal, which stays Executed.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+          format: uuid
+          type: string
+        reason:
+          description: Why.
+          examples:
+            - The supplier credited the bill
+          type: string
+        reversed:
+          description: "What was reversed: the records and entries the command reports."
+          examples:
+            - entries: []
+              records:
+                - bill:0193a3c2
+        undone_at:
+          description: When.
+          examples:
+            - "2026-11-20T09:00:00Z"
+          format: date-time
+          type: string
+        undone_by:
+          description: Who undid it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+      required:
+        - proposal_id
+        - undone_by
+        - undone_at
+        - reason
+        - reversed
+      type: object
     AIUsage:
       additionalProperties: false
       properties:
@@ -13011,6 +13070,225 @@ components:
         - mine_etag
         - bank_etag
       type: object
+    CaptureBillDraft:
+      additionalProperties: false
+      properties:
+        currency:
+          description: The bill's currency.
+          examples:
+            - SGD
+          pattern: ^[A-Z]{3}$
+          type: string
+        date:
+          description: "The bill's date: its tax point."
+          examples:
+            - "2026-10-14"
+          format: date
+          type: string
+        due_date:
+          description: When it falls due; left out, the supplier's payment terms, else the organisation's (FR-ORG-04).
+          examples:
+            - "2026-11-13"
+          format: date
+          type: string
+        duplicate_reason:
+          description: "Why the bill is entered though it duplicates one (the same supplier, number and total within 60 days): the audit trail keeps it (FR-AP-12). Without it, a duplicate is refused."
+          examples:
+            - The supplier sent a corrected invoice
+          maxLength: 500
+          type: string
+        fx_rate:
+          description: "For a bill in another currency: base currency per one unit, as typed on the document. Left out, the bill takes the cascade's rate for its date (ENG-40)."
+          examples:
+            - "1.34"
+          type: string
+        input_tax:
+          $ref: "#/components/schemas/BillInputTax"
+          description: "The facts its input tax is decided from (FR-AP-20). Left out, the usual: a tax invoice from a GST-registered supplier, addressed to the company."
+        kind:
+          description: "bill, the default, or vendor_credit: a supplier's credit note, entered as a bill is and posted as its reverse (FR-AP-03). Fixed once saved."
+          enum:
+            - bill
+            - vendor_credit
+          examples:
+            - bill
+          type: string
+        lines:
+          description: The bill's lines.
+          items:
+            $ref: "#/components/schemas/BillLineDraft"
+          maxItems: 200
+          type:
+            - array
+            - "null"
+        nature_of_payment:
+          description: "For a supplier resident outside Singapore (FR-AP-19): what the payment is for. Required to post such a bill (BILL-16); the tax agent's withholding decision is kept per supplier and nature. software_use is software bought for the company's own use, such as a subscription; movable_rent is rent of movable property."
+          enum:
+            - goods
+            - software_use
+            - software_rights
+            - services_in_singapore
+            - services_outside_singapore
+            - interest
+            - movable_rent
+            - other
+          examples:
+            - software_use
+          type: string
+        notes:
+          description: Notes kept with the bill.
+          examples:
+            - Annual renewal, 10 seats
+          maxLength: 2000
+          type: string
+        opening_item:
+          description: "A bill only: received before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts payable against 3900 Opening balance clearing, with no cost or GST, which were in the books before; it spreads nothing and withholds no tax (LEDGER-50). Payments then settle it as any bill."
+          examples:
+            - false
+          type: boolean
+        save_defaults:
+          description: Keep the first line's account and GST code as the supplier's defaults on its contact (FR-AP-12), for the bills made from it from now on; needs the right to change contacts, else it is refused, and a default the contact already has is left.
+          examples:
+            - true
+          type: boolean
+        supplier_id:
+          description: "The supplier: a contact marked as a vendor."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+          format: uuid
+          type: string
+        supplier_ref:
+          description: The supplier's own number for the bill, as on their invoice.
+          examples:
+            - AU-1182
+          maxLength: 60
+          type: string
+      required:
+        - currency
+        - lines
+      type: object
+    CaptureDefaults:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: "The account most of the supplier's bill lines cost: its contact's default when it has one, else the most used."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40
+          format: uuid
+          type: string
+        from_bills:
+          description: How many of the supplier's bills the suggestion rests on; 0 when only the contact's own defaults are shown.
+          examples:
+            - 5
+          format: int64
+          type: integer
+        gst_code:
+          description: "The GST code most of its lines use: its contact's default when it has one, else the most used."
+          examples:
+            - TX
+          type: string
+        saved_on_contact:
+          description: true when the contact already holds these as its defaults.
+          examples:
+            - false
+          type: boolean
+      required:
+        - from_bills
+        - saved_on_contact
+      type: object
+    CaptureDismissal:
+      additionalProperties: false
+      properties:
+        reason:
+          description: Why, in a few words.
+          examples:
+            - Not ours
+          maxLength: 500
+          type: string
+      type: object
+    CaptureDraft:
+      additionalProperties: false
+      properties:
+        id:
+          description: The draft bill or claim.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f31
+          format: uuid
+          type: string
+        kind:
+          description: What was drafted.
+          enum:
+            - bill
+            - claim
+          examples:
+            - bill
+          type: string
+      required:
+        - kind
+        - id
+      type: object
+    CaptureDrafted:
+      additionalProperties: false
+      properties:
+        capture:
+          $ref: "#/components/schemas/DocumentCapture"
+          description: The capture, now drafted.
+        draft:
+          $ref: "#/components/schemas/CaptureDraft"
+          description: The draft bill or claim, with the file attached to it as its evidence.
+      required:
+        - capture
+        - draft
+      type: object
+    CaptureFromMessage:
+      additionalProperties: false
+      properties:
+        file_id:
+          description: Its attachment.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f34
+          format: uuid
+          type: string
+        message_id:
+          description: The accepted message.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f33
+          format: uuid
+          type: string
+      required:
+        - message_id
+        - file_id
+      type: object
+    CaptureSupplier:
+      additionalProperties: false
+      properties:
+        by:
+          description: How it matched.
+          enum:
+            - uen
+            - name
+          examples:
+            - uen
+          type: string
+        defaults:
+          $ref: "#/components/schemas/CaptureDefaults"
+          description: What this supplier's bills have usually used, suggested for the draft (FR-AP-12).
+        id:
+          description: The contact's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f31
+          format: uuid
+          type: string
+        name:
+          description: Its legal name.
+          examples:
+            - Acme Software Pte Ltd
+          type: string
+      required:
+        - id
+        - name
+        - by
+      type: object
     CardEvidence:
       additionalProperties: false
       properties:
@@ -14166,6 +14444,37 @@ components:
       required:
         - accounts
         - claim_categories
+      type: object
+    Check:
+      additionalProperties: false
+      properties:
+        code:
+          description: The check's code.
+          examples:
+            - CAP-TOTALS
+          type: string
+        field:
+          description: The field it is about.
+          examples:
+            - total
+          type: string
+        message:
+          description: In plain words.
+          examples:
+            - The lines come to 109.00, but the document's total is 190.00; check each against the document
+          type: string
+        severity:
+          description: warning wants the person's eye before the draft is made; info says what the document lacks.
+          enum:
+            - warning
+            - info
+          examples:
+            - warning
+          type: string
+      required:
+        - code
+        - severity
+        - message
       type: object
     CheckHealth:
       additionalProperties: false
@@ -22606,6 +22915,201 @@ components:
       required:
         - kind
       type: object
+    DocumentCapture:
+      additionalProperties: false
+      properties:
+        captured_by:
+          description: "Who captured it: an actor of the audit trail."
+          examples:
+            - user:01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          type: string
+        checks:
+          description: "What the platform found in the reading: arithmetic, dates, the GST number's form, the IRAS tax-invoice particulars it lacks."
+          items:
+            $ref: "#/components/schemas/Check"
+          type: array
+        confidence:
+          additionalProperties:
+            format: double
+            type: number
+          description: Each field's confidence after the platform's checks, which only ever lower it.
+          type: object
+        created_at:
+          description: When it was captured.
+          examples:
+            - "2026-11-20T09:00:00Z"
+          format: date-time
+          type: string
+        dismiss_reason:
+          description: Why it was dismissed.
+          examples:
+            - Not ours
+          type: string
+        draft:
+          $ref: "#/components/schemas/CaptureDraft"
+          description: The draft a person made of it.
+        duplicate_of:
+          description: The capture of the same file, for a duplicate.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f2f
+          format: uuid
+          type: string
+        file_name:
+          description: "As sent: data, never a path."
+          examples:
+            - AU-1182.pdf
+          type: string
+        id:
+          description: The capture's ID.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+          format: uuid
+          type: string
+        kind:
+          description: What the reading says it is.
+          enum:
+            - bill
+            - receipt
+            - sales_invoice
+            - statement
+            - contract
+            - other
+          examples:
+            - bill
+          type: string
+        low_confidence:
+          description: The fields shown that the model or a check doubts, to highlight for the person who reviews the draft.
+          examples:
+            - - total
+          items:
+            examples:
+              - total
+            type: string
+          type: array
+        media_type:
+          description: Its type, decided from its content.
+          examples:
+            - application/pdf
+          type: string
+        message_id:
+          description: The accepted mail it came from.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f33
+          format: uuid
+          type: string
+        model:
+          description: The model that read it.
+          examples:
+            - claude-opus-5-5
+          type: string
+        note:
+          description: Why it failed, in plain words.
+          examples:
+            - "Only a PDF or a photo can be read: type the bill in"
+          type: string
+        nric_flagged:
+          description: "true when its text shows an NRIC or FIN in full (FR-DOC-09): it is never sent to a model, so it is not read; mask it and capture it again, or type the bill in."
+          examples:
+            - false
+          type: boolean
+        own:
+          description: "true when it arrived at the caller's own email-in address: only they see it."
+          examples:
+            - false
+          type: boolean
+        read_at:
+          description: When it was last read.
+          examples:
+            - "2026-11-20T09:00:05Z"
+          format: date-time
+          type: string
+        reading:
+          $ref: "#/components/schemas/Reading"
+          description: What the model read, each field with its confidence; absent until it is read.
+        reading_is:
+          description: "Always the model's reading: untrusted data to check against the document, never a figure Fyniq decided."
+          examples:
+            - the model's reading
+          type: string
+        readings:
+          description: How many times it was read.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        sha256:
+          description: The SHA-256 of the file as stored, in hexadecimal.
+          examples:
+            - 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+          type: string
+        size_bytes:
+          description: Its size as stored.
+          examples:
+            - 48211
+          format: int64
+          type: integer
+        source:
+          description: How it came in.
+          enum:
+            - upload
+            - paste
+            - email
+          examples:
+            - upload
+          type: string
+        status:
+          description: "received: kept, not read yet; reading: the model is reading it; read: its reading is ready to check; duplicate: the same file is in the inbox already; drafted: a person made a draft of it; dismissed: no draft will be made; failed: it could not be read, as note says."
+          enum:
+            - received
+            - reading
+            - read
+            - duplicate
+            - drafted
+            - dismissed
+            - failed
+          examples:
+            - read
+          type: string
+        supplier:
+          $ref: "#/components/schemas/CaptureSupplier"
+          description: The supplier contact the reading's supplier matches, when one does.
+        version:
+          description: Its version; it makes the ETag.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - id
+        - source
+        - file_name
+        - media_type
+        - size_bytes
+        - sha256
+        - status
+        - captured_by
+        - created_at
+        - own
+        - nric_flagged
+        - readings
+        - version
+      type: object
+    DocumentCapturePage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The files, newest first.
+          items:
+            $ref: "#/components/schemas/DocumentCapture"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTI4ZjZlIn0
+          type: string
+      required:
+        - items
+      type: object
     DocumentFile:
       additionalProperties: false
       properties:
@@ -27107,6 +27611,26 @@ components:
       required:
         - document_id
         - line
+      type: object
+    Flag:
+      additionalProperties: false
+      properties:
+        confidence:
+          description: How sure the model is, from 0 to 1.
+          examples:
+            - 0.9
+          format: double
+          type: number
+        value:
+          description: The yes or no the document shows; null when it does not show it.
+          examples:
+            - true
+          type:
+            - boolean
+            - "null"
+      required:
+        - value
+        - confidence
       type: object
     ForecastBooks:
       additionalProperties: false
@@ -34607,6 +35131,26 @@ components:
         - signal_id
         - amount
         - received_at
+      type: object
+    Line:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Text"
+        description:
+          $ref: "#/components/schemas/Text"
+        gst:
+          $ref: "#/components/schemas/Text"
+        gst_code:
+          $ref: "#/components/schemas/Text"
+        net:
+          $ref: "#/components/schemas/Text"
+      required:
+        - description
+        - net
+        - gst_code
+        - gst
+        - amount
       type: object
     LinesOutputBody:
       additionalProperties: false
@@ -42279,6 +42823,74 @@ components:
         - effective_from
         - set_at
       type: object
+    PeopleProjectionPage:
+      additionalProperties: false
+      properties:
+        items:
+          description: The people, by name.
+          items:
+            $ref: "#/components/schemas/PeopleProjectionPerson"
+          type: array
+        next_cursor:
+          description: The cursor of the next page; none on the last.
+          examples:
+            - eyJhZnRlciI6IjEwMDAifQ
+          type: string
+      required:
+        - items
+      type: object
+    PeopleProjectionPerson:
+      additionalProperties: false
+      properties:
+        department_id:
+          description: "Their department: a dimension value of Fyniq's."
+          examples:
+            - 0192a000-0000-7000-8000-0000000000d1
+          format: uuid
+          type: string
+        display_name:
+          description: Their name.
+          examples:
+            - Wei Jie Ong
+          type: string
+        held:
+          description: Whether a tax-clearance hold is open on them (FR-PPL-13).
+          examples:
+            - false
+          type: boolean
+        line_manager_person_id:
+          description: Their line manager's person ID, for claim routing (FR-AP-17).
+          examples:
+            - 0192a000-0000-7000-8000-0000000000e2
+          format: uuid
+          type: string
+        person_id:
+          description: The person's ID in Nemura.
+          examples:
+            - 0192a000-0000-7000-8000-0000000000e1
+          format: uuid
+          type: string
+        removed:
+          description: Whether Nemura removed their record.
+          examples:
+            - false
+          type: boolean
+        status:
+          description: Their employment status.
+          examples:
+            - active
+          type: string
+        user_id:
+          description: The Fyniq user they were mapped to, explicitly and never by email (FR-PPL-18).
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+      required:
+        - person_id
+        - held
+        - removed
+      type: object
     PeopleUnlinkRequest:
       additionalProperties: false
       properties:
@@ -42563,6 +43175,18 @@ components:
       required:
         - kind
         - id
+      type: object
+    PersonUserMap:
+      additionalProperties: false
+      properties:
+        user_id:
+          description: "The member of this organisation the person is: no Fyniq role is granted by it."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+      required:
+        - user_id
       type: object
     PersonalAccessToken:
       additionalProperties: false
@@ -46125,6 +46749,186 @@ components:
         - reversal
         - boundary
       type: object
+    Quality:
+      additionalProperties: false
+      properties:
+        approved:
+          description: Decided by a person's approval.
+          examples:
+            - 22
+          format: int64
+          type: integer
+        expired:
+          description: Left undecided until they expired.
+          examples:
+            - 2
+          format: int64
+          type: integer
+        invalid:
+          description: Found invalid when they were made.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        made:
+          description: Proposals made in the month.
+          examples:
+            - 30
+          format: int64
+          type: integer
+        median_decision_seconds:
+          description: The median time from a proposal to its decision, in seconds.
+          examples:
+            - 420
+          format: double
+          type: number
+        per_approver:
+          description: What each person approved, the most first.
+          items:
+            $ref: "#/components/schemas/QualityApprover"
+          type: array
+        quick_share:
+          description: The share of approvals made within ten seconds of the decider first opening the review with no item changed, or with no look recorded, from 0 to 1.
+          examples:
+            - 0.18
+          format: double
+          type: number
+        rejected:
+          description: Rejected by a person.
+          examples:
+            - 4
+          format: int64
+          type: integer
+        rejected_with_reason_share:
+          description: The share of rejections that gave a reason, from 0 to 1.
+          examples:
+            - 0.75
+          format: double
+          type: number
+        stale:
+          description: Approved, then not run because a record had changed.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        task_types:
+          description: Each task type's share of the month's proposals, the most first.
+          items:
+            $ref: "#/components/schemas/QualityTaskType"
+          type: array
+      required:
+        - made
+        - approved
+        - rejected
+        - expired
+        - invalid
+        - stale
+        - quick_share
+        - median_decision_seconds
+        - rejected_with_reason_share
+        - per_approver
+        - task_types
+      type: object
+    QualityApprover:
+      additionalProperties: false
+      properties:
+        approved:
+          description: How many proposals they approved in the month.
+          examples:
+            - 14
+          format: int64
+          type: integer
+        quick:
+          description: How many of them within ten seconds of first opening the review, with no item changed, or with no look at all.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        user:
+          description: The person.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          type: string
+      required:
+        - user
+        - approved
+        - quick
+      type: object
+    QualityMonth:
+      additionalProperties: false
+      properties:
+        metrics:
+          $ref: "#/components/schemas/Quality"
+          description: Computed from the month's proposals' own records (AI-92).
+        month:
+          description: The month, YYYY-MM.
+          examples:
+            - 2026-11
+          type: string
+        note:
+          description: The reviewer's note.
+          examples:
+            - Two stale proposals followed up
+          type: string
+        signed_at:
+          description: When.
+          examples:
+            - "2026-12-01T09:00:00Z"
+          format: date-time
+          type: string
+        signed_by:
+          description: Who signed the month's review.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+      required:
+        - month
+        - metrics
+      type: object
+    QualitySignInputBody:
+      additionalProperties: false
+      properties:
+        month:
+          description: The month reviewed, YYYY-MM.
+          examples:
+            - 2026-11
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        note:
+          description: What the reviewer concluded.
+          examples:
+            - Two stale proposals followed up
+          maxLength: 1000
+          type: string
+      required:
+        - month
+      type: object
+    QualityTaskType:
+      additionalProperties: false
+      properties:
+        count:
+          description: How many of the month's proposals were of it.
+          examples:
+            - 12
+          format: int64
+          type: integer
+        share:
+          description: Of the month's proposals, from 0 to 1.
+          examples:
+            - 0.4
+          format: double
+          type: number
+        task_type:
+          description: The task type.
+          examples:
+            - ap.draft_bill
+          type: string
+      required:
+        - task_type
+        - count
+        - share
+      type: object
     QuietHours:
       additionalProperties: false
       properties:
@@ -46577,6 +47381,70 @@ components:
           type: string
       required:
         - items
+      type: object
+    Reading:
+      additionalProperties: false
+      properties:
+        currency:
+          $ref: "#/components/schemas/Text"
+        customer_named:
+          $ref: "#/components/schemas/Flag"
+        date:
+          $ref: "#/components/schemas/Text"
+        due_date:
+          $ref: "#/components/schemas/Text"
+        gst_in_sgd:
+          $ref: "#/components/schemas/Text"
+        gst_registration_no:
+          $ref: "#/components/schemas/Text"
+        gst_total:
+          $ref: "#/components/schemas/Text"
+        kind:
+          description: What the document is.
+          enum:
+            - bill
+            - receipt
+            - sales_invoice
+            - statement
+            - contract
+            - other
+          examples:
+            - bill
+          type: string
+        lines:
+          items:
+            $ref: "#/components/schemas/Line"
+          type:
+            - array
+            - "null"
+        number:
+          $ref: "#/components/schemas/Text"
+        supplier:
+          $ref: "#/components/schemas/Text"
+        supplier_address:
+          $ref: "#/components/schemas/Text"
+        supplier_uen:
+          $ref: "#/components/schemas/Text"
+        tax_invoice_label:
+          $ref: "#/components/schemas/Flag"
+        total:
+          $ref: "#/components/schemas/Text"
+      required:
+        - kind
+        - supplier
+        - supplier_uen
+        - gst_registration_no
+        - supplier_address
+        - number
+        - date
+        - due_date
+        - currency
+        - lines
+        - gst_total
+        - total
+        - gst_in_sgd
+        - tax_invoice_label
+        - customer_named
       type: object
     ReasonBody:
       additionalProperties: false
@@ -54687,6 +55555,26 @@ components:
         - title
         - email
       type: object
+    Text:
+      additionalProperties: false
+      properties:
+        confidence:
+          description: How sure the model is, from 0 to 1.
+          examples:
+            - 0.95
+          format: double
+          type: number
+        value:
+          description: What the document shows, exactly as printed; null when it does not show it.
+          examples:
+            - Acme Software Pte. Ltd.
+          type:
+            - string
+            - "null"
+      required:
+        - value
+        - confidence
+      type: object
     TimeCost:
       additionalProperties: false
       properties:
@@ -61210,6 +62098,299 @@ paths:
       x-fyniq-permission:
         capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
         right: V
+  /v1/ai/approval-quality:
+    get:
+      description: "How the month's AI proposals were decided (CTL-AI-07, AI-92): those made, approved, rejected, expired, invalid and stale, the share approved within 10 seconds of the decider first opening the review with no item changed (a sign of rubber-stamping), the median time to a decision, the approvals per approver, the share of rejections that gave a reason and each task type's share, with the month's signed review when there is one. For the Owner and the DPO. Computed from the proposals' own records; no side effects. On the never-list for the AI and MCP (§9.6)."
+      operationId: getAIApprovalQuality
+      parameters:
+        - description: The month, YYYY-MM.
+          explode: false
+          in: query
+          name: month
+          required: true
+          schema:
+            description: The month, YYYY-MM.
+            examples:
+              - 2026-11
+            pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QualityMonth"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `AI-QUALITY-01` Only the Owner and the DPO read the approval quality; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `AI-QUALITY-02` Not a month that can be reviewed; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Read a month's approval-quality metrics
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-ASSISTANT-01
+        - AI-QUALITY-01
+        - AI-QUALITY-02
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: It is one month's figures, not a list, so there is nothing to page through or resume.
+      x-fyniq-permission:
+        capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
+        note: The month's approval-quality metrics, for the Owner and the DPO (CTL-AI-07).
+        right: V
+  /v1/ai/approval-reviews:
+    post:
+      description: "The monthly review of how AI proposals were decided (CTL-AI-07): the Owner or the DPO signs it after step-up, and the metrics as they stand are kept with the signature as evidence. A month is signed once, and only after it has ended. Side effects: the review and its audit event. On the never-list for the AI and MCP (§9.6). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: signAIApprovalReview
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QualitySignInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QualityMonth"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QualityMonth"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `AI-QUALITY-01` Only the Owner and the DPO read the approval quality; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `AI-QUALITY-02` Not a month that can be reviewed; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Sign a month's approval-quality review
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-ASSISTANT-01
+        - AI-QUALITY-01
+        - AI-QUALITY-02
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
+        note: Signs the month's review of the approval-quality metrics, as the Owner or the DPO, after step-up (CTL-AI-07).
+        right: V
   /v1/ai/budgets:
     get:
       description: "The organisation's monthly AI budgets (AI-77, AI-86, AI-13), in its base currency and in tokens: the organisation's, each agent's, connection's and person's, with what this calendar month in Singapore used of each, a reservation whose outcome is unknown counting whole until it is reconciled, and whether its 80% alert was raised. Read-only; no side effects."
@@ -64844,6 +66025,180 @@ paths:
       x-fyniq-permission:
         capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
         right: A
+  /v1/ai/proposal-undos:
+    post:
+      description: "Undoes an executed proposal in one action (AI-31, AI-91): as the caller, who holds the right its command needs, through the domain's own reversal in one transaction. An entry it posted is reversed by a reversing entry, never updated or deleted; master data it changed returns to its previous version; each carries its own approval policy as when a person does it, so the undo needs the approval the original did. Refused unless the proposal is Executed (AI-UNDO-01), its task type can be undone (a draft posts nothing and is never deleted, a message sent cannot be unsent: AI-UNDO-02), it was not undone already (AI-UNDO-03) and its records are as the execution left them with their period open (AI-UNDO-04). The undo is kept in an append-only record and audited; the proposal stays Executed. On the never-list for the AI and MCP (§9.6). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: undoAIProposal
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIUndoRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIUndone"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIUndone"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `AI-UNDO-01` The proposal did not execute; `AI-UNDO-02` That change cannot be undone; `AI-UNDO-03` It was undone already; `AI-UNDO-04` A record changed since the proposal ran; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Undo an executed AI proposal
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-ASSISTANT-01
+        - AI-UNDO-01
+        - AI-UNDO-02
+        - AI-UNDO-03
+        - AI-UNDO-04
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
+        note: Undoes an executed proposal as the person who holds the right its command needs, through the domain's own reversal (AI-31, AI-91).
+        right: V
   /v1/ai/proposals:
     get:
       description: "The AI's proposals you may see (design D5), newest first, a page at a time: those made for you, those you may approve now, and, for the Owner and the DPO, every one; filtered by state. The summary is the platform's, never the model's (AI-07). No side effects. On the never-list for the AI and MCP (§9.6)."
@@ -65007,7 +66362,7 @@ paths:
         right: V
   /v1/ai/proposals/{proposal_id}:
     get:
-      description: "A proposal as its approver reviews it (AI-07): the platform's summary from the payload and the dry run, the items, each selectable by its number, the impact and the evidence, and the AI's rationale apart, labelled as AI text; what it was made from, its approval request and what became of it. Not found unless you may see it (design D5). No side effects. On the never-list for the AI and MCP (§9.6)."
+      description: "A proposal as its approver reviews it (AI-07): the platform's summary from the payload and the dry run, the items, each selectable by its number, the impact and the evidence, and the AI's rationale apart, labelled as AI text; what it was made from, its approval request and what became of it. Not found unless you may see it (design D5). Side effects: the first time you open it, the time is kept, so the month's approval quality can tell a decision made after a look from one made without (AI-92). On the never-list for the AI and MCP (§9.6)."
       operationId: getAIProposal
       parameters:
         - description: The proposal's ID.
@@ -85647,6 +87002,1585 @@ paths:
       x-fyniq-permission:
         capability: Cap table, holders, investors, equity transactions (rev 0.3)
         right: V
+  /v1/captures:
+    get:
+      description: "The captured files the caller may see, newest first: the organisation's and the caller's own, never another member's (FR-DOC-14), each with its status and, once read, the model's reading apart from the file. Read-only; no side effects."
+      operationId: listCaptures
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only captures in this status.
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: Only captures in this status.
+            enum:
+              - received
+              - reading
+              - read
+              - duplicate
+              - drafted
+              - dismissed
+              - failed
+            examples:
+              - read
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentCapturePage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the document inbox
+      tags:
+        - Document inbox
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bills, vendor credits
+        right: V
+    post:
+      description: "Adds a file to the document inbox (FR-DOC-12, FR-DOC-14): an upload or a paste, checked as any upload is (its type from its content, a malware scan, image metadata stripped, FR-DOC-08), kept in the staging store with its hash. The same file already in the inbox is a duplicate of it, with a link, and is not read again. Nothing is read or drafted here: readCapture asks the model, and draftBillFromCapture or draftClaimFromCapture makes a draft. Side effects: the capture and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: captureDocument
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            encoding:
+              file:
+                contentType: application/octet-stream
+              source:
+                contentType: text/plain
+            schema:
+              properties:
+                file:
+                  contentEncoding: binary
+                  contentMediaType: application/octet-stream
+                  description: "The file: a PDF or a photo of a bill or receipt (PNG, JPEG, WebP; HEIC is converted), up to 25 MB. Its type is decided from its content."
+                  examples:
+                    - "%PDF-1.7 … (the file's bytes)"
+                  format: binary
+                  type: string
+                source:
+                  description: upload (the default) or paste.
+                  enum:
+                    - upload
+                    - paste
+                  examples:
+                    - upload
+                  type: string
+              required:
+                - file
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentCapture"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentCapture"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The capture's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The capture's URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Capture a bill or a receipt
+      tags:
+        - Document inbox
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bills, vendor credits
+        note: "Adds a file to the document inbox. The AI and MCP clients capture nothing: a person uploads or pastes it, or adopts a file of accepted mail."
+        right: C
+  /v1/captures/from-message:
+    post:
+      description: "Adopts an attachment of accepted mail into the document inbox (FR-DOC-12, FR-INT-22): from the organisation's email-in address, or from the caller's own. A quarantined or rejected message is never captured, and a member's own mail is only theirs to adopt; any other is EML-10. The file is checked again as any upload is, and each attachment is adopted once. Side effects: the capture and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: captureFromMessage
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptureFromMessage"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentCapture"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentCapture"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The capture's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The capture's URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAP-05` That mail's file is in the inbox already; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `EML-10` Not an attachment of accepted mail at your own address."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Capture a file of accepted mail
+      tags:
+        - Document inbox
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - CAP-05
+        - EML-10
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bills, vendor credits
+        note: Adopts a file of accepted mail at the organisation's, or the caller's own, email-in address into the document inbox.
+        right: C
+  /v1/captures/{capture_id}:
+    get:
+      description: "A captured file with the model's reading, its confidences and the platform's checks, apart from the file, and the supplier contact it matches. The reading is data to check against the document: it never decides a figure or a GST eligibility. Read-only; no side effects."
+      operationId: getCapture
+      parameters:
+        - description: The capture's ID.
+          in: path
+          name: capture_id
+          required: true
+          schema:
+            description: The capture's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentCapture"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The capture's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The capture's URL.
+                type: string
+            Preference-Applied:
+              schema:
+                description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Get a captured document
+      tags:
+        - Document inbox
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bills, vendor credits
+        right: V
+  /v1/captures/{capture_id}/bill:
+    post:
+      description: "Saves a draft bill from a read document, from the bill as the caller corrected it (FR-AP-04, FR-AP-12): the same draft, checks and audit as saveBill, made as the caller, with the file attached to it as its evidence and the capture marked drafted. Nothing is posted: the bill follows its approval policy when a person posts it (AI-30), and its input tax stays as the caller's facts decide (FR-AP-20), never from an extracted amount (G4-029). A bill that duplicates one (the same supplier, number and total within 60 days) is refused unless duplicate_reason says why (CAP-02). Side effects: the draft bill, its evidence, the capture's status and their audit events. Needs If-Match with the capture's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing."
+      operationId: draftBillFromCapture
+      parameters:
+        - description: The capture's ID.
+          in: path
+          name: capture_id
+          required: true
+          schema:
+            description: The capture's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptureBillDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureDrafted"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureDrafted"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The capture's new version.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAP-01` The document is not in a state that allows that; `CAP-02` The bill duplicates one already entered."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here."
+      summary: Make a draft bill from a read document
+      tags:
+        - Document inbox
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - CAP-01
+        - CAP-02
+      x-fyniq-permission:
+        capability: Bills, vendor credits
+        note: Makes a draft bill from a read document, as the caller, from the reading as they corrected it. The AI and MCP clients only propose a draft (ap.draft_bill).
+        right: C
+  /v1/captures/{capture_id}/claim:
+    post:
+      description: "Saves the caller's own draft claim from a read receipt, from the claim as they corrected it (FR-DOC-12): the same draft, checks and audit as createExpenseClaim, with the file attached to the claim as its evidence and the capture marked drafted. Nothing is submitted: the claimant submits it and another person approves it (FR-AP-17). The claimant is always the caller. Side effects: the draft claim, its evidence, the capture's status and their audit events. Needs If-Match with the capture's ETag. Idempotent with Idempotency-Key; Prefer: return=preview runs every check and saves nothing."
+      operationId: draftClaimFromCapture
+      parameters:
+        - description: The capture's ID.
+          in: path
+          name: capture_id
+          required: true
+          schema:
+            description: The capture's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpenseClaimDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureDrafted"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureDrafted"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The capture's new version.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `CLAIM-09` Only the claimant changes or submits their claim."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAP-01` The document is not in a state that allows that."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here."
+      summary: Make a draft expense claim from a read receipt
+      tags:
+        - Document inbox
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - CAP-01
+        - CLAIM-09
+      x-fyniq-permission:
+        capability: Expense claims
+        note: Makes the caller's own draft claim from a read receipt.
+        right: C
+  /v1/captures/{capture_id}/dismiss:
+    post:
+      description: "Ends a document nobody will draft, with a reason (FR-DOC-14): a dismissal is a status, and the file is kept as captured files are. A drafted or dismissed document is final. Side effects: the status and its audit event. Needs If-Match with the capture's ETag. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: dismissCapture
+      parameters:
+        - description: The capture's ID.
+          in: path
+          name: capture_id
+          required: true
+          schema:
+            description: The capture's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptureDismissal"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentCapture"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The capture's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The capture's URL.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `CAP-01` The document is not in a state that allows that; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Dismiss a captured document
+      tags:
+        - Document inbox
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - CAP-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bills, vendor credits
+        right: C
+  /v1/captures/{capture_id}/file:
+    get:
+      description: "The file as captured, as an attachment named file_name and of its type, never shown inline and never cached: it is untrusted data (AI-18), shown beside the reading so a person can check it. Read-only; no side effects."
+      operationId: getCaptureFile
+      parameters:
+        - description: The capture's ID.
+          in: path
+          name: capture_id
+          required: true
+          schema:
+            description: The capture's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/octet-stream:
+              schema:
+                contentMediaType: application/octet-stream
+                examples:
+                  - "%PDF-1.7 AU-100"
+                format: binary
+                type: string
+          description: The file itself, of its captured type, as an attachment with its name.
+          headers:
+            Cache-Control:
+              schema:
+                description: no-store.
+                type: string
+            Content-Disposition:
+              schema:
+                description: attachment, with the file's name.
+                type: string
+            Content-Type:
+              schema:
+                description: The file's type.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            X-Content-Type-Options:
+              schema:
+                description: "nosniff: the file is untrusted and is never shown inline."
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here."
+      summary: Download a captured file
+      tags:
+        - Document inbox
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+      x-fyniq-exempt:
+        cursor: It is one file, not a list, so there is nothing to page through and nothing to resume.
+      x-fyniq-permission:
+        capability: Bills, vendor credits
+        note: "Downloads the captured file as an attachment, never shown inline: it is untrusted (AI-18)."
+        right: V
+  /v1/captures/{capture_id}/read:
+    post:
+      description: "Asks the model to read the file (FR-DOC-12, AI-28), as the caller, through the route of the agent document_capture, the AI switch and the budgets applying (AI-74, AI-13): the file goes as a PDF or an image part with no tools and a strict output schema, its text screened first when it has any and the answer screened after (AI-18). The reading comes back with each field's confidence and the platform's checks, as data labelled the model's, and nothing is drafted or changed. Only a PDF or a photo is read; a document read already is read again only on request. A failure is a status with why, never a retry loop. Side effects: the model call's record in the AI activity log and the capture's reading with its audit event. Needs If-Match with the capture's ETag."
+      operationId: readCapture
+      parameters:
+        - description: The capture's ID.
+          in: path
+          name: capture_id
+          required: true
+          schema:
+            description: The capture's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f30
+            format: uuid
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentCapture"
+          description: OK
+          headers:
+            ETag:
+              schema:
+                description: The capture's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: The capture's URL.
+                type: string
+            Preference-Applied:
+              schema:
+                description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `CAP-01` The document is not in a state that allows that; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid; `CAP-03` That kind of file cannot be read; `CAP-04` The document could not be read."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again."
+      summary: Have the model read a captured document
+      tags:
+        - Document inbox
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - API-UNAVAILABLE-01
+        - CAP-01
+        - CAP-03
+        - CAP-04
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        Idempotency-Key: A reading is a new model call whichever way it ends; If-Match makes a repeat of the same request refuse as stale (FR-INT-08).
+        Prefer: A preview would have to call the model, which is the one thing a reading does; there is nothing else to check first (FR-INT-14).
+      x-fyniq-permission:
+        capability: Bills, vendor credits
+        note: "Asks the model to read the document, as the caller, within the AI switch and the budgets: a read, with no write (AI-18, AI-28)."
+        right: C
   /v1/card-lines:
     get:
       description: "The lines of the company cards the caller holds (FR-AP-18), newest first, a page at a time, or only those still waiting to be completed: each with what completing it made. Nobody sees another holder's card lines here; finance sees them in Banking. Read-only; no side effects."
@@ -152917,6 +155851,8 @@ paths:
         - API-UNAVAILABLE-01
         - STORAGE-LOCK-01
         - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "an installation has at most two Super admins (the last is only replaced, FR-ADM-07): a bounded set, never paged"
       x-fyniq-permission:
         capability: (Super admins)
         note: Needs an active Super admin signed in to Fyniq who passed step-up in the last 5 minutes; never an OAuth client or the AI. P0 has at most two Super admins; dual control of Super admin changes arrives with the second-person approvals (FR-ADM-07, P1).
@@ -199957,6 +202893,292 @@ paths:
       x-fyniq-permission:
         capability: "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
         right: C
+  /v1/people-link/people:
+    get:
+      description: "The people Nemura told Fyniq about (FR-PPL-06), by name, a page at a time: their name, status, department, line manager's person ID, whether a hold is open, and the Fyniq user each was mapped to. Never pay, a bank number or an NRIC. Read-only; no side effects."
+      operationId: listPeopleProjection
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeopleProjectionPage"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the people of the employee projection
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
+        right: V
+  /v1/people-link/people/{person_id}/user:
+    post:
+      description: "Maps a person Nemura told Fyniq about to the member of this organisation they are, explicitly: never by email (FR-PPL-18, NM-INT-12). The mapping grants no Fyniq role. It is what a line manager's claim routing and an approver's own department read (FR-AP-17), and what names a payroll approver's identity. One user maps to one person. Side effects: the projection's change and its audit event by field name. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for the AI and MCP (§9.6)."
+      operationId: mapPersonToUser
+      parameters:
+        - description: The person's ID in Nemura.
+          in: path
+          name: person_id
+          required: true
+          schema:
+            description: The person's ID in Nemura.
+            examples:
+              - 0192a000-0000-7000-8000-0000000000e1
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonUserMap"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeopleProjectionPerson"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PEOPLE-LINK-01` The link or a person of the projection moved against its course."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Map a person of the projection to a Fyniq user
+      tags:
+        - People
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-PEOPLE-LINK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals"
+        right: C
   /v1/people-link/projection-events:
     post:
       description: "Nemura's `people.person.upserted` and `people.bank_details.changed` (PRD-002 Appendix E): an envelope (NM-INT-10) whose header the link key signed, with the payload's canonical SHA-256 in it. It needs the link's client and the scope people.projection.write, and the envelope is checked against the link as Fyniq holds it: its organisations, its epoch, a signing time within 5 minutes, its signature and its digest; nothing the message carries decides who may send it. An event received before does nothing (duplicate); a version no newer than the one applied is ignored and recorded (a late version 1 never sets the manager back); a payload with a field Appendix E does not list is refused (NM-INT-05). Side effects: the projection's change and its audit event, by field name and never by value, and the inbox row (identities and a digest, never the payload). Pay and bank details are never logged. Only the link's client may call it; on the never-list for the AI and MCP (§9.6)."
@@ -217516,7 +220738,7 @@ paths:
         - STORAGE-PLAN-01
       x-fyniq-permission:
         capability: Reports, dashboards
-        note: A view of the reports limited to sales, purchases, payroll or a department is refused; the board pack's view of the P&L and balance sheet arrives with the board pack.
+        note: A view of the reports limited to sales, purchases or payroll is refused; one limited to a department reads the P&L only, as the totals of its department values (FR-ADM-01), and its comparatives only with the prior period or year; the board pack's view of the P&L and balance sheet arrives with the board pack.
         right: V
   /v1/reports/statements/{kind}/export:
     get:
@@ -232200,6 +235422,8 @@ tags:
     name: Approvals
   - description: Statutory parameters as versioned packs from official sources, with pinned tests, and the organisation's activation of each version (ENG-30, ENG-32).
     name: Statutory packs
+  - description: Bills and receipts captured by upload, paste or accepted email, read by the model into a reading a person checks, and drafted by a person; the AI reads and writes nothing (FR-DOC-12, FR-DOC-14, FR-AP-04, FR-AP-12).
+    name: Document inbox
   - description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."
     name: Evidence
   - description: "The global search: documents, contacts, accounts and items by reference, name, words or amount, in what the caller may see (FR-UX-02, SEC-34)."

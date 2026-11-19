@@ -39,6 +39,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/acra-extracts/{extract_id}/record` (recordAcraExtract): Record an ACRA register extract
 - `GET /v1/ai/activity` (listAIActivity): List the AI activity log
 - `GET /v1/ai/activity/turns` (listAITurnActivity): List the assistant's turns in the AI activity log
+- `GET /v1/ai/approval-quality` (getAIApprovalQuality): Read a month's approval-quality metrics
+- `POST /v1/ai/approval-reviews` (signAIApprovalReview): Sign a month's approval-quality review
 - `GET /v1/ai/budgets` (getAIBudgets): Get the AI budgets
 - `PUT /v1/ai/budgets/{budget}` (setAIBudget): Set an AI budget
 - `GET /v1/ai/connections` (listAIConnections): List the organisation's AI connections
@@ -63,6 +65,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/ai/price-catalogues` (listAIPriceCatalogues): List the price catalogue's downloads
 - `POST /v1/ai/prices/{price_id}/review` (reviewAIPrice): Review a model's price waiting for the Owner
 - `POST /v1/ai/prices/{price_id}/withdraw` (withdrawAIPrice): Withdraw an Owner's price
+- `POST /v1/ai/proposal-undos` (undoAIProposal): Undo an executed AI proposal
 - `GET /v1/ai/proposals` (listAIProposals): List the AI's proposals
 - `GET /v1/ai/proposals/{proposal_id}` (getAIProposal): Read an AI proposal
 - `GET /v1/ai/routes` (getAIRoutes): Get every agent's route
@@ -180,6 +183,15 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/cap-table/acra-reconciliation` (getAcraReconciliation): Get the register against ACRA's
 - `GET /v1/cap-table/export` (exportCapTable): Export the cap table
 - `GET /v1/cap-table/statutory-tests` (getStatutoryTests): Get the cap table's statutory tests
+- `GET /v1/captures` (listCaptures): List the document inbox
+- `POST /v1/captures` (captureDocument): Capture a bill or a receipt
+- `POST /v1/captures/from-message` (captureFromMessage): Capture a file of accepted mail
+- `GET /v1/captures/{capture_id}` (getCapture): Get a captured document
+- `POST /v1/captures/{capture_id}/bill` (draftBillFromCapture): Make a draft bill from a read document
+- `POST /v1/captures/{capture_id}/claim` (draftClaimFromCapture): Make a draft expense claim from a read receipt
+- `POST /v1/captures/{capture_id}/dismiss` (dismissCapture): Dismiss a captured document
+- `GET /v1/captures/{capture_id}/file` (getCaptureFile): Download a captured file
+- `POST /v1/captures/{capture_id}/read` (readCapture): Have the model read a captured document
 - `GET /v1/card-lines` (listCardLines): List the lines of your company cards
 - `POST /v1/card-lines/{line_id}/complete` (completeCardLine): Complete a line of your company card
 - `GET /v1/card-lines/{line_id}/evidence` (listCardLineEvidence): List the receipts of a line of your company card
@@ -849,6 +861,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/people-link` (requestPeopleLink): Ask to link the organisation to a Nemura organisation
 - `POST /v1/people-link/hold-events` (receivePeopleHoldEvent): Receive a tax-clearance hold event from Nemura
 - `POST /v1/people-link/payroll-runs` (submitPayrollRun): Receive an approved pay run from Nemura and post it
+- `GET /v1/people-link/people` (listPeopleProjection): List the people of the employee projection
+- `POST /v1/people-link/people/{person_id}/user` (mapPersonToUser): Map a person of the projection to a Fyniq user
 - `POST /v1/people-link/projection-events` (receivePeopleProjectionEvent): Receive a person or bank-details event from Nemura
 - `POST /v1/people-link/unlink` (requestPeopleUnlink): Ask to end the link to the people platform
 - `GET /v1/periods` (listPeriods): List the periods

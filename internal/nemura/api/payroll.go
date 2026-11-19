@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"time"
 
@@ -95,7 +96,7 @@ type OneOff struct {
 	Month     string `json:"month" format:"date" doc:"The wage month it is paid in." example:"2026-06-01"`
 	Key       string `json:"key" doc:"Its key, used once for a person and month." example:"bonus-2026"`
 	Name      string `json:"name" doc:"As the payslip shows it." example:"Annual bonus"`
-	Nature    string `json:"nature" enum:"bonus,commission,allowance,other" doc:"What it is." example:"bonus"`
+	Nature    string `json:"nature" enum:"bonus,commission,allowance,other,leave_encashment,notice_pay,retrenchment_benefit" doc:"What it is." example:"bonus"`
 	Amount    string `json:"amount" doc:"Dollars." example:"5000.00"`
 	CPFWages  bool   `json:"cpf_wages" doc:"Whether it is CPF wages." example:"true"`
 	ForMonth  string `json:"for_month,omitempty" format:"date" doc:"The month of employment it is for." example:"2025-12-01"`
@@ -108,7 +109,7 @@ type OneOff struct {
 type OneOffInput struct {
 	Key       string `json:"key" minLength:"1" maxLength:"40" doc:"The item's key, used once for a person and month." example:"bonus-2026"`
 	Name      string `json:"name" minLength:"1" maxLength:"80" doc:"As the payslip shows it." example:"Annual bonus"`
-	Nature    string `json:"nature" enum:"bonus,commission,allowance,other" doc:"What it is." example:"bonus"`
+	Nature    string `json:"nature" enum:"bonus,commission,allowance,other,leave_encashment,notice_pay,retrenchment_benefit" doc:"What it is." example:"bonus"`
 	Amount    string `json:"amount" pattern:"^[0-9]{1,14}(\\.[0-9]{1,2})?$" doc:"Dollars." example:"5000.00"`
 	CPFWages  bool   `json:"cpf_wages" doc:"Whether it is CPF wages." example:"true"`
 	ForMonth  string `json:"for_month,omitempty" format:"date" doc:"The first day of the month of employment it is for; empty is the wage month." example:"2025-12-01"`
@@ -256,8 +257,135 @@ type RunChanges struct {
 	Unexplained   []RunUnexplained `json:"unexplained" doc:"What has no input behind it: for the approver to check."`
 }
 
+// PayslipItem is a named amount of a payslip.
+type PayslipItem struct {
+	Name   string `json:"name" doc:"As the payslip shows it." example:"Transport allowance"`
+	Amount string `json:"amount" doc:"Dollars." example:"100.00"`
+}
+
+// PayslipSummary is a payslip on the person's list.
+type PayslipSummary struct {
+	ID        string `json:"id" format:"uuid" doc:"The payslip." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f50"`
+	Month     string `json:"month" format:"date" doc:"The wage month." example:"2026-06-01"`
+	PayDate   string `json:"payment_date" format:"date" doc:"The date of payment." example:"2026-06-25"`
+	Reference string `json:"reference" doc:"Its reference." example:"PS-202606-0001"`
+	Net       string `json:"net_salary" doc:"The net salary paid." example:"4000.00"`
+	Version   int    `json:"version" doc:"The version of the pay run it was made from." example:"1"`
+	Corrected bool   `json:"corrected" doc:"True when a corrected version of the month has a payslip of its own: this one is superseded." example:"false"`
+}
+
+// PayslipView is a payslip with MOM's twelve items.
+type PayslipView struct {
+	PayslipSummary
+	SHA256         string        `json:"sha256" doc:"The SHA-256 of the exact PDF." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
+	Employer       string        `json:"employer" doc:"Item 1: the full name of the employer." example:"Acme Pte. Ltd."`
+	Employee       string        `json:"employee" doc:"Item 2: the full name of the employee." example:"Ben Lim"`
+	Basic          string        `json:"basic_salary" doc:"Item 4: the basic salary." example:"4500.00"`
+	PeriodStart    string        `json:"period_start" format:"date" doc:"Item 5: the start of the salary period." example:"2026-06-01"`
+	PeriodEnd      string        `json:"period_end" format:"date" doc:"Item 5: the end of the salary period." example:"2026-06-30"`
+	Allowances     []PayslipItem `json:"allowances" doc:"Item 6: fixed and ad-hoc allowances."`
+	Additional     []PayslipItem `json:"additional_payments" doc:"Item 7: bonuses, rest day pay, public holiday pay and other additional payments."`
+	Deductions     []PayslipItem `json:"deductions" doc:"Item 8: fixed deductions (the employee's CPF) and ad-hoc deductions (no-pay leave, absence)."`
+	OvertimeHours  string        `json:"overtime_hours,omitempty" doc:"Item 9: overtime hours worked." example:"3"`
+	OvertimePay    string        `json:"overtime_pay,omitempty" doc:"Item 10: overtime pay." example:"106.21"`
+	OvertimePeriod string        `json:"overtime_period,omitempty" doc:"Item 11: the overtime payment period, only if different from the salary period." example:"2026-06-01 to 2026-06-30"`
+	Reimbursements string        `json:"reimbursements,omitempty" doc:"Reimbursements paid with the salary, which are not part of it." example:"45.00"`
+}
+
+// PaymentEvent is one change of a person's payment.
+type PaymentEvent struct {
+	Seq           int    `json:"seq" doc:"The event's number among the payment's events." example:"1"`
+	State         string `json:"state" enum:"scheduled,released,sent,accepted,paid,rejected,returned,unknown" doc:"The state it moved the payment to." example:"paid"`
+	InstructionID string `json:"instruction_id,omitempty" doc:"The payment instruction, from Fyniq." example:"INSTR-2026-06-0001"`
+	Amount        string `json:"amount" doc:"The amount in dollars." example:"3963.21"`
+	PaidOn        string `json:"date" format:"date" doc:"The date of the payment." example:"2026-06-25"`
+	Source        string `json:"source" enum:"fyniq,manual" doc:"Fyniq's status event, or a person with evidence." example:"fyniq"`
+	EvidenceID    string `json:"evidence_id,omitempty" format:"uuid" doc:"The document of the person paid that evidences a manual record." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60"`
+	Note          string `json:"note,omitempty" doc:"A note of up to 500 characters." example:"Seen on the 25 June statement."`
+	RecordedAt    string `json:"recorded_at" format:"date-time" doc:"When it was recorded." example:"2026-06-25T10:00:00Z"`
+}
+
+// PaymentLine is a person's payment in a run.
+type PaymentLine struct {
+	PersonID       string         `json:"person_id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
+	Person         string         `json:"person" doc:"Their name." example:"Ben Lim"`
+	Owed           string         `json:"owed" doc:"The amount to pay, in dollars." example:"3963.21"`
+	State          string         `json:"state,omitempty" doc:"The latest state; empty while nothing is recorded." example:"paid"`
+	Attention      bool           `json:"attention" doc:"True when the payment was rejected, returned or has an unknown outcome: ✖ on Checks, and an unknown outcome blocks a new payment." example:"false"`
+	AmountMismatch bool           `json:"amount_mismatch" doc:"True when it was confirmed paid for an amount other than the one owed." example:"false"`
+	Events         []PaymentEvent `json:"events" doc:"Every change, oldest first."`
+}
+
+// RunPayments is a run's payments.
+type RunPayments struct {
+	Version int           `json:"version" minimum:"1" doc:"The approved version being paid." example:"2"`
+	State   string        `json:"state" enum:"approved,paid in part,paid" doc:"The run's payment state from its people's." example:"approved"`
+	Lines   []PaymentLine `json:"lines" doc:"Each person owed money in the version."`
+}
+
+// PaymentRecord is what a person records of a payment's outcome.
+type PaymentRecord struct {
+	PersonID   string `json:"person_id" format:"uuid" doc:"The person paid." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
+	State      string `json:"state" enum:"scheduled,released,sent,accepted,paid,rejected,returned,unknown" doc:"The new state; only a legal move after the last one." example:"paid"`
+	Amount     string `json:"amount" pattern:"^[0-9]+(\\.[0-9]{1,2})?$" doc:"The amount in dollars and cents." example:"3963.21"`
+	PaidOn     string `json:"date" format:"date" doc:"The date of the payment; not in the future for paid, rejected or returned." example:"2026-06-25"`
+	EvidenceID string `json:"evidence_id" format:"uuid" doc:"A document of the person paid that shows the outcome, such as a bank statement line. Required: a bare word is never enough." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60"`
+	Note       string `json:"note,omitempty" maxLength:"500" doc:"A note." example:"Seen on the 25 June statement."`
+}
+
+// TaxHoldView is a person's tax-clearance hold.
+type TaxHoldView struct {
+	Held    bool   `json:"held" doc:"True while a hold is in force: every dollar due to the person in a pay run is held and none is disbursed." example:"false"`
+	Version int    `json:"version,omitempty" doc:"The latest version of the hold; Fyniq is told each version." example:"1"`
+	From    string `json:"effective_from,omitempty" format:"date" doc:"The day the latest version took effect." example:"2026-10-15"`
+	Reason  string `json:"reason,omitempty" doc:"The reason recorded." example:"IR21 filed on 15 Oct 2026."`
+}
+
+// TaxHoldInput puts a hold on or releases it.
+type TaxHoldInput struct {
+	Action     string `json:"action" enum:"hold,release" doc:"Put a hold on, or release the one in force." example:"hold"`
+	From       string `json:"effective_from" format:"date" doc:"The day it takes effect." example:"2026-10-15"`
+	EvidenceID string `json:"evidence_id,omitempty" format:"uuid" doc:"A document of the person that shows IRAS's clearance: required to release." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60"`
+	Reason     string `json:"reason,omitempty" maxLength:"300" doc:"A reason." example:"IR21 filed on 15 Oct 2026."`
+}
+
+// FinalPay is a leaver's final pay: when it is due, what leave is left to pay, the hold and the final pay items already added.
+type FinalPay struct {
+	PersonID     string        `json:"person_id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Person       string        `json:"person" doc:"Their legal name." example:"Ben Lim"`
+	Kind         string        `json:"kind" doc:"How they leave." example:"resignation"`
+	LastDay      string        `json:"last_day" format:"date" doc:"The last day of employment." example:"2026-11-04"`
+	NoticeServed bool          `json:"notice_served" doc:"Whether notice was given: a resignation with it is due on the last day, without it within 7 days. The required notice period is not compared with the contract." example:"true"`
+	Due          string        `json:"due" format:"date" doc:"When the final salary is due." example:"2026-11-04"`
+	Latest       string        `json:"latest" format:"date" doc:"The latest day it may be paid under MOM's rule for the case." example:"2026-11-10"`
+	Rule         string        `json:"rule" doc:"The rule, in words, with the pack version it came from." example:"On the last day, or within 3 working days of it."`
+	Month        string        `json:"month" format:"date" doc:"The wage month of the final run: the month of the last day." example:"2026-11-01"`
+	UntakenDays  string        `json:"untaken_days,omitempty" doc:"Annual leave left to the last day, in days, negative when more was taken than earned." example:"3.00"`
+	LeavePay     string        `json:"proposed_leave_pay,omitempty" doc:"What the untaken leave is worth at the day rate of an unpaid-leave deduction (basic monthly pay over the month's working days, RND-PAY-RATIO); empty when none is untaken or the person has no pay record. A proposal to add as an item, never added by itself." example:"692.31"`
+	Hold         TaxHoldView   `json:"hold" doc:"The tax-clearance hold."`
+	Items        []FinalPayRow `json:"items" doc:"The final pay items already added to the month."`
+}
+
+// FinalPayRow is a final pay item.
+type FinalPayRow struct {
+	ID     string `json:"id" format:"uuid" doc:"The item." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f31"`
+	Name   string `json:"name" doc:"As the payslip shows it." example:"Leave pay on leaving"`
+	Nature string `json:"nature" doc:"Leave pay, pay in lieu of notice or a retrenchment benefit." example:"leave_encashment"`
+	Amount string `json:"amount" doc:"Dollars." example:"692.31"`
+	Used   bool   `json:"used" doc:"Whether a run used it." example:"false"`
+}
+
 // Payroll is pay records behind the API.
 type Payroll interface {
+	FinalPayOf(ctx context.Context, s Session, person uuid.UUID) (FinalPay, bool, error)
+	TaxHold(ctx context.Context, s Session, person uuid.UUID) (TaxHoldView, error)
+	SetTaxHold(ctx context.Context, s Session, person uuid.UUID, in TaxHoldInput) error
+	Payments(ctx context.Context, s Session, run uuid.UUID) (RunPayments, error)
+	RecordPayment(ctx context.Context, s Session, run uuid.UUID, in PaymentRecord) error
+	PublishPayslips(ctx context.Context, s Session, run uuid.UUID, version int) (int, error)
+	MyPayslips(ctx context.Context, s Session) ([]PayslipSummary, error)
+	MyPayslip(ctx context.Context, s Session, id uuid.UUID) (PayslipView, error)
+	MyPayslipFile(ctx context.Context, s Session, id uuid.UUID) (reference string, pdf []byte, err error)
 	Approve(ctx context.Context, s Session, id uuid.UUID, version int, digest string) error
 	Changes(ctx context.Context, s Session, id uuid.UUID) (RunChanges, error)
 	StartRun(ctx context.Context, s Session, month time.Time, group uuid.UUID) (Run, error)
@@ -278,6 +406,9 @@ type Payroll interface {
 
 func init() {
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/approval"] = "a version is approved once: a repeat is refused (NM_PAYROLL_CONFLICT)"
+	IdempotencyExempt["POST /v1/payroll/runs/{id}/payslips"] = "a version's payslips are published once: a repeat is refused (NM_PAYROLL_CONFLICT)"
+	IdempotencyExempt["POST /v1/payroll/runs/{id}/payments"] = "a payment's state moves one legal step at a time: a repeat of the same state is refused (NM_PAYROLL_CONFLICT)"
+	IdempotencyExempt["POST /v1/people/{id}/tax-hold"] = "a hold is put on once and released once: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs"] = "a month has one run for a pay group: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/versions"] = "each calculation is its own version of the run, with its own digest"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/overrides"] = "each override is its own record with its own reason: a repeat replaces nothing and the next calculation applies both in order"
@@ -623,6 +754,59 @@ type runApprovalInput struct {
 
 type runChangesOutput struct{ Body RunChanges }
 
+type runPaymentsOutput struct{ Body RunPayments }
+
+type finalPayOutput struct{ Body FinalPay }
+
+type taxHoldOutput struct{ Body TaxHoldView }
+
+type taxHoldInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Body   TaxHoldInput
+}
+
+type paymentRecordInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The run." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"`
+	Body   PaymentRecord
+}
+
+type payslipsPublishInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The run." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"`
+	Body   struct {
+		Version int `json:"version" minimum:"1" doc:"The approved version to publish payslips for." example:"1"`
+	}
+}
+
+type payslipsPublishOutput struct {
+	Body struct {
+		Published int `json:"published" doc:"How many payslips were made: one for each person of the version." example:"12"`
+	}
+}
+
+type myPayslipsOutput struct {
+	Body struct {
+		Payslips []PayslipSummary `json:"payslips" doc:"The person's payslips, newest month first."`
+	}
+}
+
+type payslipIDInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The payslip." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f50"`
+}
+
+type payslipOutput struct{ Body PayslipView }
+
+type payslipFileOutput struct {
+	Body struct {
+		Reference     string `json:"reference" doc:"The payslip's reference." example:"PS-202606-0001"`
+		ContentType   string `json:"content_type" doc:"Always application/pdf." example:"application/pdf"`
+		ContentBase64 string `json:"content_base64" doc:"The PDF, base64-encoded; its SHA-256 is the payslip's."`
+	}
+}
+
 type overrideWithdrawInput struct {
 	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
 	ID     string `path:"id" format:"uuid" doc:"The override." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f42"`
@@ -752,6 +936,174 @@ func (a *API) registerPayRuns() {
 		}
 		out := &createdOutput{}
 		out.Body.ID = oid
+		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getFinalPay", Method: "GET", Path: "/v1/people/{id}/final-pay", Tags: []string{"Payroll"}, Summary: "A leaver's final pay",
+		Description: "When the leaver's final salary is due and the latest day to pay it under MOM's rule for the case (resignation with or without the notice served; termination, dismissal or retrenchment), the annual leave left to the last day and what it is worth as a proposal, the tax-clearance hold, and the final pay items already added to the month of the last day. 404 when nobody has recorded the person leaving. The Payroll administrator and the Owner. It changes nothing.", Errors: []int{401, 403, 404},
+	}, func(ctx context.Context, in *payIDInput) (*finalPayOutput, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such person.")
+		}
+		f, ok, err := a.d.Payroll.FinalPayOf(ctx, s, id)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		if !ok {
+			return nil, Err(CodeNotFound, "Nobody has recorded that person leaving: record how and when they leave first.")
+		}
+		return &finalPayOutput{Body: f}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getTaxHold", Method: "GET", Path: "/v1/people/{id}/tax-hold", Tags: []string{"Payroll"}, Summary: "A person's tax-clearance hold",
+		Description: "Whether a tax-clearance hold (IRAS Form IR21) is in force for the person, with its latest version. The Payroll administrator and the Owner. It changes nothing.", Errors: []int{401, 403, 404},
+	}, func(ctx context.Context, in *payIDInput) (*taxHoldOutput, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such person.")
+		}
+		h, err := a.d.Payroll.TaxHold(ctx, s, id)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		return &taxHoldOutput{Body: h}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "setTaxHold", Method: "POST", Path: "/v1/people/{id}/tax-hold", Tags: []string{"Payroll"}, Summary: "Put a tax-clearance hold on, or release it",
+		Description: "Puts a hold on the person (every dollar due to them in a pay run is held and none is disbursed) or releases the one in force, with a document of the person that shows IRAS's clearance as evidence. Each is a version that is written once; Fyniq is told each. The Payroll administrator and the Owner. It is audited, never with an amount.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 201,
+	}, func(ctx context.Context, in *taxHoldInput) (*struct{}, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such person.")
+		}
+		if err := a.d.Payroll.SetTaxHold(ctx, s, id, in.Body); err != nil {
+			return nil, payrollError(err)
+		}
+		return nil, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getPayRunPayments", Method: "GET", Path: "/v1/payroll/runs/{id}/payments", Tags: []string{"Payroll"}, Summary: "A run's payments",
+		Description: "Each person owed money in the run's approved version with the state of their payment and every change to it (scheduled, released, sent, accepted, paid, rejected, returned or unknown), what is owed and what was confirmed, and the run's own payment state (approved, paid in part, paid). The Payroll administrator and the Owner. It changes nothing.", Errors: []int{401, 403, 404, 409},
+	}, func(ctx context.Context, in *runIDInput) (*runPaymentsOutput, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such pay run.")
+		}
+		p, err := a.d.Payroll.Payments(ctx, s, id)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		return &runPaymentsOutput{Body: p}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "recordPayment", Method: "POST", Path: "/v1/payroll/runs/{id}/payments", Tags: []string{"Payroll"}, Summary: "Record a payment's outcome",
+		Description: "Records a change of a person's payment as a person, with a document of the person paid as evidence: a bank statement line or a transfer receipt. 'Paid' is never a bare word, and an exported file or a posted journal is never 'paid'. Only the legal moves after the last state are accepted, and an unknown outcome is resolved as paid, rejected or returned before a new payment can be scheduled. Fyniq's status events arrive through the link and use the same rules. The Payroll administrator and the Owner. It is audited with the state, never the amount.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 201,
+	}, func(ctx context.Context, in *paymentRecordInput) (*struct{}, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such pay run.")
+		}
+		if err := a.d.Payroll.RecordPayment(ctx, s, id, in.Body); err != nil {
+			return nil, payrollError(err)
+		}
+		return nil, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "publishPayslips", Method: "POST", Path: "/v1/payroll/runs/{id}/payslips", Tags: []string{"Payroll"}, Summary: "Publish a run version's payslips",
+		Description: "Makes the itemised payslip of each person of an approved version: MOM's twelve items as data, the PDF drawn from them and its SHA-256, published to each person's My pay. Once for a version; a corrected version has its own. The employer's name is the letterhead's. The Payroll administrator and the Owner. It is audited without any amount.", Errors: []int{401, 403, 404, 409, 422, 503}, DefaultStatus: 201,
+	}, func(ctx context.Context, in *payslipsPublishInput) (*payslipsPublishOutput, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such pay run.")
+		}
+		n, err := a.d.Payroll.PublishPayslips(ctx, s, id, in.Body.Version)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		out := &payslipsPublishOutput{}
+		out.Body.Published = n
+		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "listMyPayslips", Method: "GET", Path: "/v1/me/payslips", Tags: []string{"Payroll"}, Summary: "My payslips",
+		Description: "The signed-in person's own payslips, newest month first; a payslip a corrected version has replaced says so. A leaver's narrow account keeps this. It changes nothing.", Errors: []int{401, 404},
+	}, func(ctx context.Context, in *lettersInput) (*myPayslipsOutput, error) {
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		list, err := a.d.Payroll.MyPayslips(ctx, s)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		out := &myPayslipsOutput{}
+		out.Body.Payslips = list
+		if list == nil {
+			out.Body.Payslips = []PayslipSummary{}
+		}
+		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getMyPayslip", Method: "GET", Path: "/v1/me/payslips/{id}", Tags: []string{"Payroll"}, Summary: "One of my payslips",
+		Description: "One of the signed-in person's own payslips with MOM's twelve items. Anyone else's is as if it did not exist. A leaver's narrow account keeps this. It changes nothing.", Errors: []int{401, 404},
+	}, func(ctx context.Context, in *payslipIDInput) (*payslipOutput, error) {
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such payslip of yours.")
+		}
+		v, err := a.d.Payroll.MyPayslip(ctx, s, id)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		return &payslipOutput{Body: v}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getMyPayslipFile", Method: "GET", Path: "/v1/me/payslips/{id}/file", Tags: []string{"Payroll"}, Summary: "My payslip as a PDF",
+		Description: "The PDF of one of the signed-in person's own payslips, after the stored bytes are checked against the SHA-256 recorded when it was made: a changed byte is never served. A leaver's narrow account keeps this. It changes nothing.", Errors: []int{401, 404, 409, 503},
+	}, func(ctx context.Context, in *payslipIDInput) (*payslipFileOutput, error) {
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such payslip of yours.")
+		}
+		ref, pdf, err := a.d.Payroll.MyPayslipFile(ctx, s, id)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		out := &payslipFileOutput{}
+		out.Body.Reference, out.Body.ContentType, out.Body.ContentBase64 = ref, "application/pdf", base64.StdEncoding.EncodeToString(pdf)
 		return out, nil
 	})
 	huma.Register(a.API, huma.Operation{

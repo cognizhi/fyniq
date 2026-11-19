@@ -203,7 +203,16 @@ func (y YTDImport) Check() error {
 }
 
 // Natures of a one-off item.
-var OneOffNatures = []string{"bonus", "commission", "allowance", "other"}
+var OneOffNatures = []string{"bonus", "commission", "allowance", "other", NatureLeavePay, NatureNoticePay, NatureRetrenchment}
+
+// The natures of final pay (NM-PAY-06). Leave pay and pay in lieu of notice are paid with the final salary; whether they are CPF wages is for the payroll administrator to confirm against the CPF Board's
+// table of payments, which the run flags every time (FINAL_PAY_CPF). A retrenchment benefit is compensation for the loss of the job and not CPF wages (CPF Board: "Compensation that is not given for
+// services or work done by the employee. For example, retrenchment benefit."), so it is never CPF wages here.
+const (
+	NatureLeavePay     = "leave_encashment"
+	NatureNoticePay    = "notice_pay"
+	NatureRetrenchment = "retrenchment_benefit"
+)
 
 // OneOff is an item paid once, with the facts that class it (FR-PAY-17).
 type OneOff struct {
@@ -226,7 +235,10 @@ func (o OneOff) Check() error {
 		ok = ok || n == o.Nature
 	}
 	if !ok {
-		return invalid("A one-off item is a bonus, a commission, an allowance or other.")
+		return invalid("A one-off item is a bonus, a commission, an allowance, leave pay on leaving, pay in lieu of notice, a retrenchment benefit or other.")
+	}
+	if o.Nature == NatureRetrenchment && o.CPFWages {
+		return invalid("A retrenchment benefit is not CPF wages: the CPF Board lists it with compensation not given for work done. Turn off 'CPF wages' for this item.")
 	}
 	if _, err := Money("The amount", o.Amount, false); err != nil {
 		return err

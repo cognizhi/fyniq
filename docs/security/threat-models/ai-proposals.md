@@ -107,11 +107,22 @@ tests' own type checks the harness: a right proposal passes, and a turn that pro
   EXECUTE on `member_names()` (migration 000800), which returns this organisation's members' display names. Proved by
   `TestTheAIDraftsAProjectInvoiceThatAPersonApproves`. Its eval suite needs a sample company with an approved-time project and is
   left; the AI reading project reports is an owner decision (PRD-001 rev 0.332).
-- **Approval quality.** The approval rate, edits before approval, time to decide and reversals measure approval
-  fatigue. They arrive with `p1-ai-proposals` after go-live. Until then the waiting check, expiry and the limits stand
-  in.
-- **Two approvers for tier 3, and undo.** Tier 3 is reserved: no task type may use it. Undo arrives with
-  `p1-ai-proposals`.
+- **`ap.draft_bill` and `exp.draft_claim` (version 1; 20 Nov 2026).** Drafts only, through the functions a person's draft uses
+  (`journal.CreateBillIn`, `CreateClaimIn`). The payload decides no input tax: `document` is the fact the document states and defaults
+  to none, so an unknown fact claims nothing (G4-029). A claim is the requester's own: the payload has no claimant and the executor
+  refuses an approval by anyone else (`Actor.Requester`). The executor's one new grant is SELECT on `claim_category` (000950). Proved
+  by `TestTheAIDraftsABillThatAPersonApproves` and `TestTheAIDraftsAnExpenseClaimThatTheRequesterApproves`. **Found:** an Employee
+  alone holds no approval right at the approvals gate, so cannot sign their own tier-1 proposal; widening the gate is an owner decision.
+- **Approval quality (CTL-AI-07).** Built: the month's metrics from the proposals' records and the decider's first look, read by the
+  Owner and the DPO, and a signed monthly review kept as evidence (`ai_quality_review`, append-only). The threats are a metric that can
+  be edited (the tables are append-only, FY951, and the report is computed, not stored until signed) and a review signed by someone
+  else (Owner or DPO, step-up, once per month). Proved by `TestAnExecutedProposalIsUndoneByAPersonAndItsQualityIsReviewed`.
+- **Two approvers for tier 3, and undo.** Tier 3 is still reserved: no catalogue loads a type of it. The engine is ready: a tier-3
+  request has two steps, the same person cannot sign twice, and the requester never signs (`TestATierThreeRequestNeedsTwoDifferentPeople`).
+  Undo (AI-31) is a person's act through the command's own `Undoer`, as the person, once, only while the records are as the
+  execution left them, in an append-only record; a draft is not undoable by design. No real task type implements it yet, so the
+  threats (an undo by someone without the right, an undo of what moved) are proved on a test-only undoable type; each real posting
+  type adds its own undo with its attack test.
 - **An injection that stays within the person's rights.** A turned model can propose only a type that is on, within
   its limits, as something the person may do. A person still reads Fyniq's summary and decides.
 - **Model Armor.** In a release, screening of the model's answers and of a proposal's words runs through Model

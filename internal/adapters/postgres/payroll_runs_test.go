@@ -105,6 +105,19 @@ func TestAttackAPayrollEntryNeedsItsReceipt(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	// A slot only points at the accounts it may: a department at an expense account, a deduction at an asset or liability that is not money.
+	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.PayrollRuns().SetMapping(ctx, map[string]uuid.UUID{"department:" + uuid.NewString(): b.Bank.ID}, "user:x", now)
+		return err
+	}); err == nil {
+		t.Error("a department's salary mapped to a bank account")
+	}
+	if err := store(t, "fyniq_api").Do(ctx, b.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.PayrollRuns().SetMapping(ctx, map[string]uuid.UUID{"deduction:advance_recovery": b.Rent.ID}, "user:x", now)
+		return err
+	}); err == nil {
+		t.Error("a deduction recovered through an expense account")
+	}
 	for _, x := range []struct{ role, what, stmt, state string }{
 		{"fyniq_migrator", "change a receipt", "UPDATE fyniq.payroll_run_receipt SET version = 9", "FY189"},
 		{"fyniq_migrator", "delete a receipt", "DELETE FROM fyniq.payroll_run_receipt", "FY189"},

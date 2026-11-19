@@ -567,8 +567,8 @@ var (
 		Note: "A view of the reports limited to sales, purchases, payroll, a department or the board pack is refused."}
 	// The financial statements (FR-RPT-01; p1-reports design D9) read every account, so they need an unqualified view
 	// of the reports, as the general ledger does.
-	GetFinancialStatement = Policy{Operation: "getFinancialStatement", Capability: Reports, Need: View, Unqualified: true,
-		Note: "A view of the reports limited to sales, purchases, payroll or a department is refused; the board pack's view of the P&L and balance sheet arrives with the board pack."}
+	GetFinancialStatement = Policy{Operation: "getFinancialStatement", Capability: Reports, Need: View, Unqualified: true, Qualified: []string{"dept"},
+		Note: "A view of the reports limited to sales, purchases or payroll is refused; one limited to a department reads the P&L only, as the totals of its department values (FR-ADM-01), and its comparatives only with the prior period or year; the board pack's view of the P&L and balance sheet arrives with the board pack."}
 	// Exporting a statement reads what getting it does, and is audited (FR-RPT-09).
 	ExportFinancialStatement = Policy{Operation: "exportFinancialStatement", Capability: Reports, Need: View, Unqualified: true,
 		Note: "A view of the reports limited to sales, purchases, payroll or a department is refused."}
@@ -611,6 +611,8 @@ var (
 	RequestPeopleLink            = Policy{Operation: "requestPeopleLink", Capability: PeopleAndHR, Need: Create}
 	RequestPeopleUnlink          = Policy{Operation: "requestPeopleUnlink", Capability: PeopleAndHR, Need: Create}
 	ReceivePeopleProjectionEvent = Policy{Operation: "receivePeopleProjectionEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.projection.write"}
+	ListPeopleProjection         = Policy{Operation: "listPeopleProjection", Capability: PeopleAndHR, Need: View}
+	MapPersonToUser              = Policy{Operation: "mapPersonToUser", Capability: PeopleAndHR, Need: Create}
 	GetPayrollMapping            = Policy{Operation: "getPayrollMapping", Capability: PayRuns, Need: View}
 	SetPayrollMapping            = Policy{Operation: "setPayrollMapping", Capability: PayRuns, Need: Create}
 	SubmitPayrollRun             = Policy{Operation: "submitPayrollRun", Capability: PeopleAndHR, Need: Create, LinkScope: "payroll.journal.submit"}
@@ -2018,7 +2020,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(UndoAIProposal, GetAIApprovalQuality, SignAIApprovalReview, CaptureDocument, CaptureFromMessage, ListCaptures, GetCapture, GetCaptureFile, ReadCapture, DismissCapture, DraftBillFromCapture, DraftClaimFromCapture, ListPeopleProjection, MapPersonToUser, GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,
@@ -2267,6 +2269,18 @@ func rank(r Right) int {
 		return 0
 	}
 	return 1
+}
+
+// DeptOnly says whether the roles reach a capability's view only through a department-qualified cell, such as the Approver's
+// "V dept" on the reports (FR-ADM-01): the operation then reads what the person's department scope reaches and nothing else.
+func DeptOnly(roles []Role, c Capability) bool {
+	p := Policy{Operation: "deptOnly", Capability: c, Need: View, Unqualified: true}
+	if _, ok := holds(p, roles); ok {
+		return false
+	}
+	p.Qualified = []string{"dept"}
+	_, ok := holds(p, roles)
+	return ok
 }
 
 // holds returns the best right among roles that satisfies p.Need.

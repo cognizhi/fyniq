@@ -40,6 +40,7 @@ type runWorld struct {
 	pass                *passkeytest.Authenticator
 	dept1, dept2        string
 	mappingVersion      int
+	approverUser        uuid.UUID
 	code                map[uuid.UUID]string
 	accountant, payroll string
 }
@@ -87,7 +88,7 @@ func payrollWorld(t *testing.T) *runWorld {
 	}
 	w := &runWorld{e: e, org: org, nemura: uuid.NewString(), code: map[uuid.UUID]string{}, pass: pass}
 	var owner uuid.UUID
-	w.approver, _ = party(phone)
+	w.approver, w.approverUser = party(phone)
 	w.preparer, owner = party(desk)
 	accounts := map[string]storage.AccountType{"1250": storage.Asset, "2100": storage.Liability, "2110": storage.Liability, "2150": storage.Liability, "6011": storage.Expense,
 		"6013": storage.Expense, "6020": storage.Expense, "6030": storage.Expense}
@@ -381,5 +382,69 @@ var matrixPayrollRuns = map[string]func(e *env, tok string) (response, func() bo
 	},
 	"submitPayrollRun": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/people-link/payroll-runs", tok, map[string]any{}), nil
+	},
+}
+
+// A person Nemura told Fyniq about is mapped to a Fyniq user explicitly, one user to one person, only a member, and no role comes with it (FR-PPL-18,
+// NM-INT-12); an assertion that approved one run cannot approve another (its challenge is the run's digest), nor the same run again.
+func TestAPersonIsMappedToAUserExplicitlyAndAnAssertionApprovesOnlyItsRun(t *testing.T) {
+	w := payrollWorld(t)
+	e := w.e
+	person, other := uuid.NewString(), uuid.NewString()
+	upsert := func(id string) {
+		now := e.clock.Now().UTC().Format(time.RFC3339)
+		raw, _ := json.Marshal(map[string]any{"person_id": id, "display_name": "Wei Jie Ong", "work_email": "weijie@example.com", "status": "active", "deleted": false})
+		env, err := peoplelink.Sign(w.linkKey, peoplelink.Header{EventID: uuid.NewString(), Type: peoplelink.TypePersonUpserted, SchemaVersion: 1, SourceSystem: "nemura",
+			SourceOrganisation: w.nemura, TargetOrganisation: w.org.String(), Epoch: 1, Sequence: 1, ObjectType: "person", ObjectID: id, ObjectVersion: 1, EffectiveAt: now,
+			RecordedAt: now, SignedAt: now, CorrelationID: uuid.NewString()}, raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, _ := json.Marshal(env)
+		var body map[string]any
+		_ = json.Unmarshal(b, &body)
+		if r := e.call(http.MethodPost, "/v1/people-link/projection-events", w.tok, body); r.Status != 200 {
+			t.Fatalf("the person: %d %s", r.Status, r.Raw)
+		}
+	}
+	upsert(person)
+	upsert(other)
+	owner := e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{authz.Administrator}})
+	if l := e.call(http.MethodGet, "/v1/people-link/people", owner, nil); l.Status != 200 || len(l.Body["items"].([]any)) != 2 {
+		t.Fatalf("the projection: %d %s", l.Status, l.Raw)
+	}
+	path := func(id string) string { return "/v1/people-link/people/" + id + "/user" }
+	e.problemIs(e.call(http.MethodPost, path(person), owner, map[string]any{"user_id": uuid.NewString()}), "mapPersonToUser", 422, CodeInvalid)
+	e.problemIs(e.call(http.MethodPost, path(uuid.NewString()), owner, map[string]any{"user_id": w.approverUser.String()}), "mapPersonToUser", 404, CodeNotFound)
+	if r := e.call(http.MethodPost, path(person), owner, map[string]any{"user_id": w.approverUser.String()}); r.Status != 200 || r.str("user_id") != w.approverUser.String() {
+		t.Fatalf("mapping: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, path(other), owner, map[string]any{"user_id": w.approverUser.String()}); r.Status == 200 {
+		t.Errorf("one user mapped to two people: %s", r.Raw)
+	}
+	for _, role := range []authz.Role{authz.Bookkeeper, authz.Employee} {
+		tok := e.principal(authn.Principal{Client: "web", Class: authn.ClassUser, Organisation: w.org, Roles: []authz.Role{role}})
+		if r := e.call(http.MethodPost, path(person), tok, map[string]any{"user_id": w.approverUser.String()}); r.Status != http.StatusForbidden {
+			t.Errorf("%s mapped a person: %d", role, r.Status)
+		}
+	}
+	// An assertion made for one run's digest approves that run only.
+	run := uuid.NewString()
+	one := w.approved(run, 1, "20000.00", "5100.00", nil)
+	if r := w.send(one, nil); r.Status != 200 {
+		t.Fatalf("the first run: %d %s", r.Status, r.Raw)
+	}
+	replay := w.approved(run, 2, "20200.00", "5134.00", nil)
+	replay["approval"] = one["approval"] // the first run's assertion on the second run's envelope
+	e.problemIs(w.send(replay, nil), "submitPayrollRun", 403, peoplelink.CodeRunPasskey)
+	e.problemIs(w.send(one, nil), "submitPayrollRun", 409, peoplelink.CodeRunUsed)
+}
+
+var matrixPeopleMapping = map[string]func(e *env, tok string) (response, func() bool){
+	"listPeopleProjection": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/people-link/people", tok, nil), nil
+	},
+	"mapPersonToUser": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/people-link/people/"+uuid.NewString()+"/user", tok, map[string]any{"user_id": matrixApprover(e)}, "Prefer", "return=preview"), nil
 	},
 }

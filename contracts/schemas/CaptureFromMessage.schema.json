@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "file_id": {
+      "description": "Its attachment.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f34"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "message_id": {
+      "description": "The accepted message.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f33"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "message_id",
+    "file_id"
+  ],
+  "title": "CaptureFromMessage",
+  "type": "object"
+}

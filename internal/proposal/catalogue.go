@@ -31,6 +31,8 @@ import (
 const (
 	Tier1 = 1
 	Tier2 = 2
+	// Tier3 is reserved: no catalogue loads a task type of it, but the approval engine is ready for one (AI-09): two steps, two different people.
+	Tier3 = 3
 )
 
 // The most a task type may allow.

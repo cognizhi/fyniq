@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "description": "The bill's currency.",
+      "examples": [
+        "SGD"
+      ],
+      "pattern": "^[A-Z]{3}$",
+      "type": "string"
+    },
+    "date": {
+      "description": "The bill's date: its tax point.",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "due_date": {
+      "description": "When it falls due; left out, the supplier's payment terms, else the organisation's (FR-ORG-04).",
+      "examples": [
+        "2026-11-13"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "duplicate_reason": {
+      "description": "Why the bill is entered though it duplicates one (the same supplier, number and total within 60 days): the audit trail keeps it (FR-AP-12). Without it, a duplicate is refused.",
+      "examples": [
+        "The supplier sent a corrected invoice"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "fx_rate": {
+      "description": "For a bill in another currency: base currency per one unit, as typed on the document. Left out, the bill takes the cascade's rate for its date (ENG-40).",
+      "examples": [
+        "1.34"
+      ],
+      "type": "string"
+    },
+    "input_tax": {
+      "$ref": "BillInputTax.schema.json",
+      "description": "The facts its input tax is decided from (FR-AP-20). Left out, the usual: a tax invoice from a GST-registered supplier, addressed to the company."
+    },
+    "kind": {
+      "description": "bill, the default, or vendor_credit: a supplier's credit note, entered as a bill is and posted as its reverse (FR-AP-03). Fixed once saved.",
+      "enum": [
+        "bill",
+        "vendor_credit"
+      ],
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    },
+    "lines": {
+      "description": "The bill's lines.",
+      "items": {
+        "$ref": "BillLineDraft.schema.json"
+      },
+      "maxItems": 200,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "nature_of_payment": {
+      "description": "For a supplier resident outside Singapore (FR-AP-19): what the payment is for. Required to post such a bill (BILL-16); the tax agent's withholding decision is kept per supplier and nature. software_use is software bought for the company's own use, such as a subscription; movable_rent is rent of movable property.",
+      "enum": [
+        "goods",
+        "software_use",
+        "software_rights",
+        "services_in_singapore",
+        "services_outside_singapore",
+        "interest",
+        "movable_rent",
+        "other"
+      ],
+      "examples": [
+        "software_use"
+      ],
+      "type": "string"
+    },
+    "notes": {
+      "description": "Notes kept with the bill.",
+      "examples": [
+        "Annual renewal, 10 seats"
+      ],
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "opening_item": {
+      "description": "A bill only: received before the books start and unpaid then (FR-GL-06). Dated before the books start, it posts at the books start: its total on accounts payable against 3900 Opening balance clearing, with no cost or GST, which were in the books before; it spreads nothing and withholds no tax (LEDGER-50). Payments then settle it as any bill.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "save_defaults": {
+      "description": "Keep the first line's account and GST code as the supplier's defaults on its contact (FR-AP-12), for the bills made from it from now on; needs the right to change contacts, else it is refused, and a default the contact already has is left.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "supplier_id": {
+      "description": "The supplier: a contact marked as a vendor.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "supplier_ref": {
+      "description": "The supplier's own number for the bill, as on their invoice.",
+      "examples": [
+        "AU-1182"
+      ],
+      "maxLength": 60,
+      "type": "string"
+    }
+  },
+  "required": [
+    "currency",
+    "lines"
+  ],
+  "title": "CaptureBillDraft",
+  "type": "object"
+}

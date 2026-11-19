@@ -7,7 +7,7 @@
 schema: fyniq-data-inventory@1
 classes:
   - key: members
-    what: "Members' names, sign-in email addresses, roles, invitations and requests to join, and the email addresses notifications go to"
+    what: "Members' names, sign-in email addresses, roles, invitations and requests to join, and the email addresses notifications go to; where Nemura is linked, each person's name and work email as the people platform sends them (the people projection, FR-PPL-06)"
     why: "To let people sign in and do their work, to name who did what, and to tell them what waits for them"
     where: "The database, in Singapore (Cloud SQL, asia-southeast1; locally the developer's database)"
     who: "Appendix D's Users, roles, team mode; every member sees colleagues' names; notifications reach their own member"
@@ -15,7 +15,7 @@ classes:
     protection: "The audit trail's personal values are shreddable per person and financial year (§11.8)"
     transfers: "Emails go through the deployment's email provider, and sign-in through its sign-in providers: the flows email and sign-in"
     columns: [app_user.display_name, user_identity.email, user_session.email, member_invitation.display_name, join_request.display_name,
-      join_request.email, notification.email, notification_preference.email]
+      join_request.email, notification.email, notification_preference.email, person_projection.display_name, person_projection.work_email]
   - key: sign-in-security
     what: "Each sign-in's IP address and browser, sessions, passkeys and recovery codes"
     why: "To keep accounts secure and to investigate a security event"
@@ -142,7 +142,16 @@ classes:
     retention: "Kept with the organisation's records: nothing removes a proposal, as a decision's record (§9.5) [counsel to confirm]"
     protection: "Only catalogue task types, from what the AI read without NRIC and FIN numbers, bank account numbers, secrets and home addresses (AI-02, AI-20); the audit trail keeps the payload's hash, not the payload"
     transfers: "None"
-    columns: [ai_proposal.payload, ai_proposal.rationale, ai_proposal.reason]
+    columns: [ai_proposal.payload, ai_proposal.rationale, ai_proposal.reason, ai_proposal_undo.reason, ai_quality_review.note]
+  - key: document-capture
+    what: "The files captured for bills and claims (uploaded, pasted or received at an email-in address), what the model read from each with its confidences, the platform's checks of that reading, and the draft a person made of it"
+    why: "So a supplier's invoice or a receipt becomes a draft in one action, with each field checked (FR-DOC-12, FR-DOC-14, FR-AP-04, FR-AP-12)"
+    where: "The database and the staging file store, in Singapore (Cloud SQL and Cloud Storage, asia-southeast1; locally the developer's database and files)"
+    who: "Those who may enter bills or claims, for the organisation's address, uploads and pastes; only the member for their own email-in address"
+    retention: "The reading and its record are kept with the organisation's records; the file is kept until a draft attaches it as evidence, under the evidence rules' retention (FR-DOC-02), or it is dismissed [counsel to confirm]"
+    protection: "A file is checked and scanned like any upload (FR-DOC-08); what the model returns is untrusted data, screened, and never decides a figure; a file that shows an NRIC or FIN in full is captured, flagged and never read (AI-02, FR-DOC-09). A supplier's invoice is sent as printed, so the payment details it prints (a bank account number) reach the model: an owner decision [owner to confirm]"
+    transfers: "Model calls only, when a document is read: the flow ai-models"
+    columns: [document_capture.reading, document_capture.file_name, document_capture.checks, document_capture.nric_flagged]
   - key: agent-runs
     what: "The scheduled agents' runs: what triggered each, the Owner it acted for, what it read, its findings, Fyniq's summary and the model's words"
     why: "To report on the company's obligations on a schedule and keep each run reproducible (AI-64, AI-65), and to see a run that failed or was late (AI-67)"

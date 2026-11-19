@@ -1064,6 +1064,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/payslips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My payslips
+         * @description The signed-in person's own payslips, newest month first; a payslip a corrected version has replaced says so. A leaver's narrow account keeps this. It changes nothing.
+         */
+        get: operations["listMyPayslips"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/payslips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One of my payslips
+         * @description One of the signed-in person's own payslips with MOM's twelve items. Anyone else's is as if it did not exist. A leaver's narrow account keeps this. It changes nothing.
+         */
+        get: operations["getMyPayslip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/payslips/{id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My payslip as a PDF
+         * @description The PDF of one of the signed-in person's own payslips, after the stored bytes are checked against the SHA-256 recorded when it was made: a changed byte is never served. A leaver's narrow account keeps this. It changes nothing.
+         */
+        get: operations["getMyPayslipFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/questions": {
         parameters: {
             query?: never;
@@ -1556,6 +1616,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll/runs/{id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A run's payments
+         * @description Each person owed money in the run's approved version with the state of their payment and every change to it (scheduled, released, sent, accepted, paid, rejected, returned or unknown), what is owed and what was confirmed, and the run's own payment state (approved, paid in part, paid). The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["getPayRunPayments"];
+        put?: never;
+        /**
+         * Record a payment's outcome
+         * @description Records a change of a person's payment as a person, with a document of the person paid as evidence: a bank statement line or a transfer receipt. 'Paid' is never a bare word, and an exported file or a posted journal is never 'paid'. Only the legal moves after the last state are accepted, and an unknown outcome is resolved as paid, rejected or returned before a new payment can be scheduled. Fyniq's status events arrive through the link and use the same rules. The Payroll administrator and the Owner. It is audited with the state, never the amount.
+         */
+        post: operations["recordPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payroll/runs/{id}/payslips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish a run version's payslips
+         * @description Makes the itemised payslip of each person of an approved version: MOM's twelve items as data, the PDF drawn from them and its SHA-256, published to each person's My pay. Once for a version; a corrected version has its own. The employer's name is the letterhead's. The Payroll administrator and the Owner. It is audited without any amount.
+         */
+        post: operations["publishPayslips"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payroll/runs/{id}/versions": {
         parameters: {
             query?: never;
@@ -1744,6 +1848,26 @@ export interface paths {
          * @description Returns a document's file to a caller who may see it, and audits the read. A document the caller may not see answers as if it did not exist.
          */
         get: operations["getPersonDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/final-pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A leaver's final pay
+         * @description When the leaver's final salary is due and the latest day to pay it under MOM's rule for the case (resignation with or without the notice served; termination, dismissal or retrenchment), the annual leave left to the last day and what it is worth as a proposal, the tax-clearance hold, and the final pay items already added to the month of the last day. 404 when nobody has recorded the person leaving. The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["getFinalPay"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2054,6 +2178,30 @@ export interface paths {
         get: operations["getPersonSecret"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/tax-hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's tax-clearance hold
+         * @description Whether a tax-clearance hold (IRAS Form IR21) is in force for the person, with its latest version. The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["getTaxHold"];
+        put?: never;
+        /**
+         * Put a tax-clearance hold on, or release it
+         * @description Puts a hold on the person (every dollar due to them in a pay run is held and none is disbursed) or releases the one in force, with a document of the person that shows IRAS's clearance as evidence. Each is a version that is written once; Fyniq is told each. The Payroll administrator and the Owner. It is audited, never with an amount.
+         */
+        post: operations["setTaxHold"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3374,6 +3522,100 @@ export interface components {
              */
             message: string;
         };
+        FinalPay: {
+            /**
+             * Format: date
+             * @description When the final salary is due.
+             * @example 2026-11-04
+             */
+            due: string;
+            /** @description The tax-clearance hold. */
+            hold: components["schemas"]["TaxHoldView"];
+            /** @description The final pay items already added to the month. */
+            items: components["schemas"]["FinalPayRow"][] | null;
+            /**
+             * @description How they leave.
+             * @example resignation
+             */
+            kind: string;
+            /**
+             * Format: date
+             * @description The last day of employment.
+             * @example 2026-11-04
+             */
+            last_day: string;
+            /**
+             * Format: date
+             * @description The latest day it may be paid under MOM's rule for the case.
+             * @example 2026-11-10
+             */
+            latest: string;
+            /**
+             * Format: date
+             * @description The wage month of the final run: the month of the last day.
+             * @example 2026-11-01
+             */
+            month: string;
+            /**
+             * @description Whether notice was given: a resignation with it is due on the last day, without it within 7 days. The required notice period is not compared with the contract.
+             * @example true
+             */
+            notice_served: boolean;
+            /**
+             * @description Their legal name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description What the untaken leave is worth at the day rate of an unpaid-leave deduction (basic monthly pay over the month's working days, RND-PAY-RATIO); empty when none is untaken or the person has no pay record. A proposal to add as an item, never added by itself.
+             * @example 692.31
+             */
+            proposed_leave_pay?: string;
+            /**
+             * @description The rule, in words, with the pack version it came from.
+             * @example On the last day, or within 3 working days of it.
+             */
+            rule: string;
+            /**
+             * @description Annual leave left to the last day, in days, negative when more was taken than earned.
+             * @example 3.00
+             */
+            untaken_days?: string;
+        };
+        FinalPayRow: {
+            /**
+             * @description Dollars.
+             * @example 692.31
+             */
+            amount: string;
+            /**
+             * Format: uuid
+             * @description The item.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f31
+             */
+            id: string;
+            /**
+             * @description As the payslip shows it.
+             * @example Leave pay on leaving
+             */
+            name: string;
+            /**
+             * @description Leave pay, pay in lieu of notice or a retrenchment benefit.
+             * @example leave_encashment
+             */
+            nature: string;
+            /**
+             * @description Whether a run used it.
+             * @example false
+             */
+            used: boolean;
+        };
         Finding: {
             /**
              * @description People, Packs or Leave.
@@ -4427,6 +4669,10 @@ export interface components {
              */
             postal_code?: string;
         };
+        MyPayslipsOutputBody: {
+            /** @description The person's payslips, newest month first. */
+            payslips: components["schemas"]["PayslipSummary"][] | null;
+        };
         NricInputBody: {
             /**
              * @description The NRIC or FIN: a letter, seven digits and a letter.
@@ -4624,7 +4870,7 @@ export interface components {
              * @example bonus
              * @enum {string}
              */
-            nature: "bonus" | "commission" | "allowance" | "other";
+            nature: "bonus" | "commission" | "allowance" | "other" | "leave_encashment" | "notice_pay" | "retrenchment_benefit";
             /**
              * @description A note.
              * @example Annual bonus.
@@ -4695,7 +4941,7 @@ export interface components {
              * @example bonus
              * @enum {string}
              */
-            nature: "bonus" | "commission" | "allowance" | "other";
+            nature: "bonus" | "commission" | "allowance" | "other" | "leave_encashment" | "notice_pay" | "retrenchment_benefit";
             /**
              * @description A note.
              * @example Annual bonus.
@@ -5187,6 +5433,312 @@ export interface components {
             shg_opt_out: boolean;
             /** @description The year to date for the year of the day asked, when there is one. */
             year_to_date?: components["schemas"]["YearToDate"];
+        };
+        PaymentEvent: {
+            /**
+             * @description The amount in dollars.
+             * @example 3963.21
+             */
+            amount: string;
+            /**
+             * Format: date
+             * @description The date of the payment.
+             * @example 2026-06-25
+             */
+            date: string;
+            /**
+             * Format: uuid
+             * @description The document of the person paid that evidences a manual record.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60
+             */
+            evidence_id?: string;
+            /**
+             * @description The payment instruction, from Fyniq.
+             * @example INSTR-2026-06-0001
+             */
+            instruction_id?: string;
+            /**
+             * @description A note of up to 500 characters.
+             * @example Seen on the 25 June statement.
+             */
+            note?: string;
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-06-25T10:00:00Z
+             */
+            recorded_at: string;
+            /**
+             * Format: int64
+             * @description The event's number among the payment's events.
+             * @example 1
+             */
+            seq: number;
+            /**
+             * @description Fyniq's status event, or a person with evidence.
+             * @example fyniq
+             * @enum {string}
+             */
+            source: "fyniq" | "manual";
+            /**
+             * @description The state it moved the payment to.
+             * @example paid
+             * @enum {string}
+             */
+            state: "scheduled" | "released" | "sent" | "accepted" | "paid" | "rejected" | "returned" | "unknown";
+        };
+        PaymentLine: {
+            /**
+             * @description True when it was confirmed paid for an amount other than the one owed.
+             * @example false
+             */
+            amount_mismatch: boolean;
+            /**
+             * @description True when the payment was rejected, returned or has an unknown outcome: ✖ on Checks, and an unknown outcome blocks a new payment.
+             * @example false
+             */
+            attention: boolean;
+            /** @description Every change, oldest first. */
+            events: components["schemas"]["PaymentEvent"][] | null;
+            /**
+             * @description The amount to pay, in dollars.
+             * @example 3963.21
+             */
+            owed: string;
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+             */
+            person_id: string;
+            /**
+             * @description The latest state; empty while nothing is recorded.
+             * @example paid
+             */
+            state?: string;
+        };
+        PaymentRecord: {
+            /**
+             * @description The amount in dollars and cents.
+             * @example 3963.21
+             */
+            amount: string;
+            /**
+             * Format: date
+             * @description The date of the payment; not in the future for paid, rejected or returned.
+             * @example 2026-06-25
+             */
+            date: string;
+            /**
+             * Format: uuid
+             * @description A document of the person paid that shows the outcome, such as a bank statement line. Required: a bare word is never enough.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60
+             */
+            evidence_id: string;
+            /**
+             * @description A note.
+             * @example Seen on the 25 June statement.
+             */
+            note?: string;
+            /**
+             * Format: uuid
+             * @description The person paid.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+             */
+            person_id: string;
+            /**
+             * @description The new state; only a legal move after the last one.
+             * @example paid
+             * @enum {string}
+             */
+            state: "scheduled" | "released" | "sent" | "accepted" | "paid" | "rejected" | "returned" | "unknown";
+        };
+        PayslipFileOutputBody: {
+            /** @description The PDF, base64-encoded; its SHA-256 is the payslip's. */
+            content_base64: string;
+            /**
+             * @description Always application/pdf.
+             * @example application/pdf
+             */
+            content_type: string;
+            /**
+             * @description The payslip's reference.
+             * @example PS-202606-0001
+             */
+            reference: string;
+        };
+        PayslipItem: {
+            /**
+             * @description Dollars.
+             * @example 100.00
+             */
+            amount: string;
+            /**
+             * @description As the payslip shows it.
+             * @example Transport allowance
+             */
+            name: string;
+        };
+        PayslipSummary: {
+            /**
+             * @description True when a corrected version of the month has a payslip of its own: this one is superseded.
+             * @example false
+             */
+            corrected: boolean;
+            /**
+             * Format: uuid
+             * @description The payslip.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f50
+             */
+            id: string;
+            /**
+             * Format: date
+             * @description The wage month.
+             * @example 2026-06-01
+             */
+            month: string;
+            /**
+             * @description The net salary paid.
+             * @example 4000.00
+             */
+            net_salary: string;
+            /**
+             * Format: date
+             * @description The date of payment.
+             * @example 2026-06-25
+             */
+            payment_date: string;
+            /**
+             * @description Its reference.
+             * @example PS-202606-0001
+             */
+            reference: string;
+            /**
+             * Format: int64
+             * @description The version of the pay run it was made from.
+             * @example 1
+             */
+            version: number;
+        };
+        PayslipView: {
+            /** @description Item 7: bonuses, rest day pay, public holiday pay and other additional payments. */
+            additional_payments: components["schemas"]["PayslipItem"][] | null;
+            /** @description Item 6: fixed and ad-hoc allowances. */
+            allowances: components["schemas"]["PayslipItem"][] | null;
+            /**
+             * @description Item 4: the basic salary.
+             * @example 4500.00
+             */
+            basic_salary: string;
+            /**
+             * @description True when a corrected version of the month has a payslip of its own: this one is superseded.
+             * @example false
+             */
+            corrected: boolean;
+            /** @description Item 8: fixed deductions (the employee's CPF) and ad-hoc deductions (no-pay leave, absence). */
+            deductions: components["schemas"]["PayslipItem"][] | null;
+            /**
+             * @description Item 2: the full name of the employee.
+             * @example Ben Lim
+             */
+            employee: string;
+            /**
+             * @description Item 1: the full name of the employer.
+             * @example Acme Pte. Ltd.
+             */
+            employer: string;
+            /**
+             * Format: uuid
+             * @description The payslip.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f50
+             */
+            id: string;
+            /**
+             * Format: date
+             * @description The wage month.
+             * @example 2026-06-01
+             */
+            month: string;
+            /**
+             * @description The net salary paid.
+             * @example 4000.00
+             */
+            net_salary: string;
+            /**
+             * @description Item 9: overtime hours worked.
+             * @example 3
+             */
+            overtime_hours?: string;
+            /**
+             * @description Item 10: overtime pay.
+             * @example 106.21
+             */
+            overtime_pay?: string;
+            /**
+             * @description Item 11: the overtime payment period, only if different from the salary period.
+             * @example 2026-06-01 to 2026-06-30
+             */
+            overtime_period?: string;
+            /**
+             * Format: date
+             * @description The date of payment.
+             * @example 2026-06-25
+             */
+            payment_date: string;
+            /**
+             * Format: date
+             * @description Item 5: the end of the salary period.
+             * @example 2026-06-30
+             */
+            period_end: string;
+            /**
+             * Format: date
+             * @description Item 5: the start of the salary period.
+             * @example 2026-06-01
+             */
+            period_start: string;
+            /**
+             * @description Its reference.
+             * @example PS-202606-0001
+             */
+            reference: string;
+            /**
+             * @description Reimbursements paid with the salary, which are not part of it.
+             * @example 45.00
+             */
+            reimbursements?: string;
+            /**
+             * @description The SHA-256 of the exact PDF.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256: string;
+            /**
+             * Format: int64
+             * @description The version of the pay run it was made from.
+             * @example 1
+             */
+            version: number;
+        };
+        PayslipsPublishInputBody: {
+            /**
+             * Format: int64
+             * @description The approved version to publish payslips for.
+             * @example 1
+             */
+            version: number;
+        };
+        PayslipsPublishOutputBody: {
+            /**
+             * Format: int64
+             * @description How many payslips were made: one for each person of the version.
+             * @example 12
+             */
+            published: number;
         };
         PersonInput: {
             /**
@@ -6006,6 +6558,22 @@ export interface components {
              */
             value: string;
         };
+        RunPayments: {
+            /** @description Each person owed money in the version. */
+            lines: components["schemas"]["PaymentLine"][] | null;
+            /**
+             * @description The run's payment state from its people's.
+             * @example approved
+             * @enum {string}
+             */
+            state: "approved" | "paid in part" | "paid";
+            /**
+             * Format: int64
+             * @description The approved version being paid.
+             * @example 2
+             */
+            version: number;
+        };
         RunStartInputBody: {
             /**
              * Format: date
@@ -6482,6 +7050,55 @@ export interface components {
              * @example true
              */
             setup_done: boolean;
+        };
+        TaxHoldInput: {
+            /**
+             * @description Put a hold on, or release the one in force.
+             * @example hold
+             * @enum {string}
+             */
+            action: "hold" | "release";
+            /**
+             * Format: date
+             * @description The day it takes effect.
+             * @example 2026-10-15
+             */
+            effective_from: string;
+            /**
+             * Format: uuid
+             * @description A document of the person that shows IRAS's clearance: required to release.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60
+             */
+            evidence_id?: string;
+            /**
+             * @description A reason.
+             * @example IR21 filed on 15 Oct 2026.
+             */
+            reason?: string;
+        };
+        TaxHoldView: {
+            /**
+             * Format: date
+             * @description The day the latest version took effect.
+             * @example 2026-10-15
+             */
+            effective_from?: string;
+            /**
+             * @description True while a hold is in force: every dollar due to the person in a pay run is held and none is disbursed.
+             * @example false
+             */
+            held: boolean;
+            /**
+             * @description The reason recorded.
+             * @example IR21 filed on 15 Oct 2026.
+             */
+            reason?: string;
+            /**
+             * Format: int64
+             * @description The latest version of the hold; Fyniq is told each version.
+             * @example 1
+             */
+            version?: number;
         };
         Terms: {
             /** @description The base terms. */
@@ -10622,6 +11239,207 @@ export interface operations {
             };
         };
     };
+    listMyPayslips: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPayslipsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyPayslip: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The payslip. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayslipView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyPayslipFile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The payslip. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayslipFileOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     askHRQuestion: {
         parameters: {
             query?: never;
@@ -12433,6 +13251,261 @@ export interface operations {
             };
         };
     };
+    getPayRunPayments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunPayments"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordPayment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentRecord"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    publishPayslips: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayslipsPublishInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayslipsPublishOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     calculatePayRunVersion: {
         parameters: {
             query?: never;
@@ -13367,6 +14440,77 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getFinalPay: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinalPay"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14719,6 +15863,159 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTaxHold: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxHoldView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setTaxHold: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaxHoldInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

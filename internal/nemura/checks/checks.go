@@ -123,10 +123,7 @@ type Waiting struct {
 func workingDaysSince(v pack.Version, from, to time.Time) int {
 	n := 0
 	for d := from.AddDate(0, 0, 1); !d.After(to); d = d.AddDate(0, 0, 1) {
-		if d.Weekday() == time.Saturday || d.Weekday() == time.Sunday {
-			continue
-		}
-		if _, holiday := pack.PublicHoliday(v, d); holiday {
+		if pack.NonWorkingDay(v, d) {
 			continue
 		}
 		n++

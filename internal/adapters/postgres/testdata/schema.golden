@@ -355,6 +355,17 @@ ai_proposal | proposed_at | timestamp with time zone | not null |
 ai_proposal | expires_at | timestamp with time zone | not null | 
 ai_proposal | version | integer | not null | 1
 ai_proposal | mcp_app | text | null | 
+ai_proposal_undo | organisation_id | uuid | not null | current_org()
+ai_proposal_undo | id | uuid | not null | uuidv7()
+ai_proposal_undo | proposal_id | uuid | not null | 
+ai_proposal_undo | undone_by | uuid | not null | 
+ai_proposal_undo | undone_at | timestamp with time zone | not null | 
+ai_proposal_undo | reason | text | not null | 
+ai_proposal_undo | reversed | jsonb | not null | 
+ai_proposal_view | organisation_id | uuid | not null | current_org()
+ai_proposal_view | proposal_id | uuid | not null | 
+ai_proposal_view | user_id | uuid | not null | 
+ai_proposal_view | first_viewed_at | timestamp with time zone | not null | 
 ai_qualification | organisation_id | uuid | not null | current_org()
 ai_qualification | id | uuid | not null | uuidv7()
 ai_qualification | agent | text | not null | 
@@ -372,6 +383,13 @@ ai_qualification | ran_by | text | not null |
 ai_qualification | ran_at | timestamp with time zone | not null | 
 ai_qualification | out_of_date_at | timestamp with time zone | null | 
 ai_qualification | out_of_date_why | text | null | 
+ai_quality_review | organisation_id | uuid | not null | current_org()
+ai_quality_review | id | uuid | not null | uuidv7()
+ai_quality_review | month | date | not null | 
+ai_quality_review | signed_by | uuid | not null | 
+ai_quality_review | signed_at | timestamp with time zone | not null | 
+ai_quality_review | report | jsonb | not null | 
+ai_quality_review | note | text | null | 
 ai_reservation | organisation_id | uuid | not null | current_org()
 ai_reservation | id | uuid | not null | uuidv7()
 ai_reservation | run_id | uuid | not null | 
@@ -1084,6 +1102,38 @@ document | current_version | integer | not null | 1
 document | created_at | timestamp with time zone | not null | now()
 document | posted_by | text | null | 
 document | posted_at | timestamp with time zone | null | 
+document_capture | organisation_id | uuid | not null | current_org()
+document_capture | id | uuid | not null | uuidv7()
+document_capture | source | text | not null | 
+document_capture | file_name | text | not null | 
+document_capture | media_type | text | not null | 
+document_capture | size_bytes | bigint | not null | 
+document_capture | sha256 | text | not null | 
+document_capture | blob_key | text | not null | 
+document_capture | message_id | uuid | null | 
+document_capture | inbound_file_id | uuid | null | 
+document_capture | owner_user_id | uuid | null | 
+document_capture | captured_by | text | not null | 
+document_capture | status | text | not null | 'received'::text
+document_capture | kind | text | null | 
+document_capture | reading | jsonb | null | 
+document_capture | reading_model | text | null | 
+document_capture | reading_prompt | text | null | 
+document_capture | readings | integer | not null | 0
+document_capture | read_at | timestamp with time zone | null | 
+document_capture | checks | jsonb | null | 
+document_capture | duplicate_of | uuid | null | 
+document_capture | draft_kind | text | null | 
+document_capture | draft_id | uuid | null | 
+document_capture | drafted_by | uuid | null | 
+document_capture | drafted_at | timestamp with time zone | null | 
+document_capture | dismissed_by | uuid | null | 
+document_capture | dismissed_at | timestamp with time zone | null | 
+document_capture | dismiss_reason | text | null | 
+document_capture | last_error | text | null | 
+document_capture | created_at | timestamp with time zone | not null | 
+document_capture | version | integer | not null | 1
+document_capture | nric_flagged | boolean | not null | false
 document_link | organisation_id | uuid | not null | current_org()
 document_link | id | uuid | not null | uuidv7()
 document_link | document_id | uuid | not null | 
@@ -3361,6 +3411,24 @@ ai_proposal | ai_proposal_version | CHECK ((version >= 1))
 ai_proposal | ai_proposal_version_not_null | NOT NULL version
 ai_proposal | ai_proposal_words | CHECK (((length(rationale) <= 4000) AND (length(reason) <= 1000) AND (jsonb_typeof(evidence) = 'array'::text) AND (jsonb_array_length(evidence) <= 50) AND (jsonb_typeof(base_versions) = 'object'::text) AND (pg_column_size(impact) <= 262144)))
 ai_proposal | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_proposal_undo | ai_proposal_undo_id_not_null | NOT NULL id
+ai_proposal_undo | ai_proposal_undo_once | UNIQUE (organisation_id, proposal_id)
+ai_proposal_undo | ai_proposal_undo_organisation_id_not_null | NOT NULL organisation_id
+ai_proposal_undo | ai_proposal_undo_pkey | PRIMARY KEY (organisation_id, id)
+ai_proposal_undo | ai_proposal_undo_proposal_fkey | FOREIGN KEY (organisation_id, proposal_id) REFERENCES ai_proposal(organisation_id, id)
+ai_proposal_undo | ai_proposal_undo_proposal_id_not_null | NOT NULL proposal_id
+ai_proposal_undo | ai_proposal_undo_reason | CHECK (((length(reason) >= 1) AND (length(reason) <= 500)))
+ai_proposal_undo | ai_proposal_undo_reason_not_null | NOT NULL reason
+ai_proposal_undo | ai_proposal_undo_reversed_not_null | NOT NULL reversed
+ai_proposal_undo | ai_proposal_undo_undone_at_not_null | NOT NULL undone_at
+ai_proposal_undo | ai_proposal_undo_undone_by_not_null | NOT NULL undone_by
+ai_proposal_undo | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_proposal_view | ai_proposal_view_first_viewed_at_not_null | NOT NULL first_viewed_at
+ai_proposal_view | ai_proposal_view_organisation_id_not_null | NOT NULL organisation_id
+ai_proposal_view | ai_proposal_view_pkey | PRIMARY KEY (organisation_id, proposal_id, user_id)
+ai_proposal_view | ai_proposal_view_proposal_fkey | FOREIGN KEY (organisation_id, proposal_id) REFERENCES ai_proposal(organisation_id, id)
+ai_proposal_view | ai_proposal_view_proposal_id_not_null | NOT NULL proposal_id
+ai_proposal_view | ai_proposal_view_user_id_not_null | NOT NULL user_id
 ai_qualification | ai_qualification_agent_fkey | FOREIGN KEY (agent) REFERENCES ai_agent(id)
 ai_qualification | ai_qualification_agent_not_null | NOT NULL agent
 ai_qualification | ai_qualification_cases_not_null | NOT NULL cases
@@ -3387,6 +3455,16 @@ ai_qualification | ai_qualification_threshold_not_null | NOT NULL threshold
 ai_qualification | ai_qualification_version_length | CHECK ((length(version) <= 200))
 ai_qualification | ai_qualification_version_not_null | NOT NULL version
 ai_qualification | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_quality_review | ai_quality_review_id_not_null | NOT NULL id
+ai_quality_review | ai_quality_review_month | CHECK ((month = (date_trunc('month'::text, (month)::timestamp with time zone))::date))
+ai_quality_review | ai_quality_review_month_not_null | NOT NULL month
+ai_quality_review | ai_quality_review_note | CHECK ((length(note) <= 1000))
+ai_quality_review | ai_quality_review_organisation_id_not_null | NOT NULL organisation_id
+ai_quality_review | ai_quality_review_pkey | PRIMARY KEY (organisation_id, month)
+ai_quality_review | ai_quality_review_report_not_null | NOT NULL report
+ai_quality_review | ai_quality_review_signed_at_not_null | NOT NULL signed_at
+ai_quality_review | ai_quality_review_signed_by_not_null | NOT NULL signed_by
+ai_quality_review | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 ai_reservation | ai_reservation_agent_fkey | FOREIGN KEY (agent) REFERENCES ai_agent(id)
 ai_reservation | ai_reservation_agent_not_null | NOT NULL agent
 ai_reservation | ai_reservation_amounts | CHECK (((amount <> 'NaN'::numeric) AND (amount >= (0)::numeric) AND (actual <> 'NaN'::numeric) AND (actual >= (0)::numeric)))
@@ -4561,6 +4639,31 @@ document | expense_claim_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | payee_bank_change_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | payment_batch_approved | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+document_capture | document_capture_blob_key_not_null | NOT NULL blob_key
+document_capture | document_capture_captured_by_not_null | NOT NULL captured_by
+document_capture | document_capture_created_at_not_null | NOT NULL created_at
+document_capture | document_capture_dismissed_pair | CHECK (((dismissed_by IS NULL) = (dismissed_at IS NULL)))
+document_capture | document_capture_draft_known | CHECK ((((draft_kind IS NULL) AND (draft_id IS NULL) AND (drafted_by IS NULL) AND (drafted_at IS NULL)) OR ((draft_kind = ANY (ARRAY['bill'::text, 'claim'::text])) AND (draft_id IS NOT NULL) AND (drafted_by IS NOT NULL) AND (drafted_at IS NOT NULL))))
+document_capture | document_capture_duplicate_fkey | FOREIGN KEY (organisation_id, duplicate_of) REFERENCES document_capture(organisation_id, id)
+document_capture | document_capture_email_pair | CHECK (((source = 'email'::text) = ((message_id IS NOT NULL) AND (inbound_file_id IS NOT NULL))))
+document_capture | document_capture_file_name_not_null | NOT NULL file_name
+document_capture | document_capture_id_not_null | NOT NULL id
+document_capture | document_capture_kind_known | CHECK ((kind = ANY (ARRAY['bill'::text, 'receipt'::text, 'sales_invoice'::text, 'statement'::text, 'contract'::text, 'other'::text])))
+document_capture | document_capture_lengths | CHECK ((((length(file_name) >= 1) AND (length(file_name) <= 255)) AND ((length(media_type) >= 3) AND (length(media_type) <= 100)) AND ((size_bytes >= 1) AND (size_bytes <= 26214400)) AND (sha256 ~ '^[0-9a-f]{64}$'::text) AND ((length(captured_by) >= 3) AND (length(captured_by) <= 120)) AND (blob_key ~ '^capture/[0-9a-f-]{36}/[0-9a-f-]{36}$'::text) AND (length(dismiss_reason) <= 500) AND (length(last_error) <= 500) AND (length(reading_model) <= 200) AND (length(reading_prompt) <= 60) AND ((readings >= 0) AND (readings <= 20))))
+document_capture | document_capture_media_type_not_null | NOT NULL media_type
+document_capture | document_capture_nric_flagged_not_null | NOT NULL nric_flagged
+document_capture | document_capture_organisation_id_not_null | NOT NULL organisation_id
+document_capture | document_capture_pkey | PRIMARY KEY (organisation_id, id)
+document_capture | document_capture_reading_size | CHECK (((pg_column_size(reading) <= 262144) AND (pg_column_size(checks) <= 65536)))
+document_capture | document_capture_readings_not_null | NOT NULL readings
+document_capture | document_capture_sha256_not_null | NOT NULL sha256
+document_capture | document_capture_size_bytes_not_null | NOT NULL size_bytes
+document_capture | document_capture_source_known | CHECK ((source = ANY (ARRAY['upload'::text, 'paste'::text, 'email'::text])))
+document_capture | document_capture_source_not_null | NOT NULL source
+document_capture | document_capture_status_known | CHECK ((status = ANY (ARRAY['received'::text, 'reading'::text, 'read'::text, 'duplicate'::text, 'drafted'::text, 'dismissed'::text, 'failed'::text])))
+document_capture | document_capture_status_not_null | NOT NULL status
+document_capture | document_capture_version_not_null | NOT NULL version
+document_capture | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 document_link | document_link_created_at_not_null | NOT NULL created_at
 document_link | document_link_created_by_format | CHECK ((created_by ~ '^[a-z][a-z_]{0,19}:[!-~]{1,200}$'::text))
 document_link | document_link_created_by_not_null | NOT NULL created_by
@@ -7436,6 +7539,8 @@ CREATE INDEX contact_legal_name_idx ON fyniq.contact USING btree (organisation_i
 CREATE INDEX control_run_latest_idx ON fyniq.control_run USING btree (organisation_id, check_how, ran_at)
 CREATE INDEX conversion_step_settlement ON fyniq.conversion_step USING btree (organisation_id, settlement_id)
 CREATE INDEX dimension_value_dimension_idx ON fyniq.dimension_value USING btree (organisation_id, dimension_id)
+CREATE INDEX document_capture_hash ON fyniq.document_capture USING btree (organisation_id, sha256)
+CREATE INDEX document_capture_status ON fyniq.document_capture USING btree (organisation_id, status, created_at DESC)
 CREATE INDEX document_link_document ON fyniq.document_link USING btree (organisation_id, document_id, created_at)
 CREATE INDEX document_number_search ON fyniq.document_number USING gin (organisation_id, lower(number) fyniq_ext.gin_trgm_ops)
 CREATE INDEX document_send_document ON fyniq.document_send USING btree (organisation_id, document_id, sent_at)
@@ -7600,7 +7705,11 @@ CREATE UNIQUE INDEX ai_price_rate_one ON fyniq.ai_price_rate USING btree (organi
 CREATE UNIQUE INDEX ai_price_rate_pkey ON fyniq.ai_price_rate USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_price_waiting ON fyniq.ai_price USING btree (organisation_id, connection_id, model) WHERE (status = 'pending'::text)
 CREATE UNIQUE INDEX ai_proposal_pkey ON fyniq.ai_proposal USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_proposal_undo_once ON fyniq.ai_proposal_undo USING btree (organisation_id, proposal_id)
+CREATE UNIQUE INDEX ai_proposal_undo_pkey ON fyniq.ai_proposal_undo USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_proposal_view_pkey ON fyniq.ai_proposal_view USING btree (organisation_id, proposal_id, user_id)
 CREATE UNIQUE INDEX ai_qualification_pkey ON fyniq.ai_qualification USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_quality_review_pkey ON fyniq.ai_quality_review USING btree (organisation_id, month)
 CREATE UNIQUE INDEX ai_reservation_pkey ON fyniq.ai_reservation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_route_pkey ON fyniq.ai_route USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_route_step_once ON fyniq.ai_route_step USING btree (organisation_id, route_id, connection_id, model)
@@ -7711,6 +7820,8 @@ CREATE UNIQUE INDEX dimension_set_values_key ON fyniq.dimension_set USING btree 
 CREATE UNIQUE INDEX dimension_slot_key ON fyniq.dimension USING btree (organisation_id, kind, "position") NULLS NOT DISTINCT
 CREATE UNIQUE INDEX dimension_value_code_key ON fyniq.dimension_value USING btree (organisation_id, dimension_id, code)
 CREATE UNIQUE INDEX dimension_value_pkey ON fyniq.dimension_value USING btree (organisation_id, id)
+CREATE UNIQUE INDEX document_capture_inbound_once ON fyniq.document_capture USING btree (organisation_id, inbound_file_id) WHERE (inbound_file_id IS NOT NULL)
+CREATE UNIQUE INDEX document_capture_pkey ON fyniq.document_capture USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_link_message_once ON fyniq.document_link USING btree (organisation_id, message_id)
 CREATE UNIQUE INDEX document_link_pkey ON fyniq.document_link USING btree (organisation_id, id)
 CREATE UNIQUE INDEX document_link_token_pkey ON fyniq.document_link_token USING btree (token_hash)
@@ -8023,7 +8134,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_budget DEFERRAB
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_data_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_data_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_model_list_read DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_connection', 'connection_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_price', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_proposal_undo DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_proposal', 'proposal_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_qualification DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_qualification', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_quality_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_quality_review', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_route DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_route', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('allocation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
@@ -8122,6 +8235,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.user_saved_item DE
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.withholding_decision DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('withholding_decision', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF prefix, digits, gap_free, version ON fyniq.document_sequence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_sequence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF revoked_at ON fyniq.webauthn_credential DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_passkey_audit()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.document_capture DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_capture', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.email_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('email_message', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.inbound_message DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('inbound_message', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF status ON fyniq.psp_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('psp_event', 'id')
@@ -8254,9 +8368,15 @@ CREATE TRIGGER ai_price_rate_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai
 CREATE TRIGGER ai_price_rate_no_truncate BEFORE TRUNCATE ON fyniq.ai_price_rate FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_proposal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_proposal FOR EACH ROW EXECUTE FUNCTION ai_proposal_guard()
 CREATE TRIGGER ai_proposal_no_truncate BEFORE TRUNCATE ON fyniq.ai_proposal FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_proposal_undo_guard BEFORE DELETE OR UPDATE ON fyniq.ai_proposal_undo FOR EACH ROW EXECUTE FUNCTION ai_append_only_guard()
+CREATE TRIGGER ai_proposal_undo_no_truncate BEFORE TRUNCATE ON fyniq.ai_proposal_undo FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER ai_proposal_view_guard BEFORE DELETE OR UPDATE ON fyniq.ai_proposal_view FOR EACH ROW EXECUTE FUNCTION ai_append_only_guard()
+CREATE TRIGGER ai_proposal_view_no_truncate BEFORE TRUNCATE ON fyniq.ai_proposal_view FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER ai_proposal_voids AFTER UPDATE OF status ON fyniq.ai_proposal FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status = ANY (ARRAY['superseded'::text, 'expired'::text])))) EXECUTE FUNCTION ai_proposal_voids()
 CREATE TRIGGER ai_qualification_guard BEFORE DELETE OR UPDATE ON fyniq.ai_qualification FOR EACH ROW EXECUTE FUNCTION ai_qualification_guard()
 CREATE TRIGGER ai_qualification_no_truncate BEFORE TRUNCATE ON fyniq.ai_qualification FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_quality_review_guard BEFORE DELETE OR UPDATE ON fyniq.ai_quality_review FOR EACH ROW EXECUTE FUNCTION ai_append_only_guard()
+CREATE TRIGGER ai_quality_review_no_truncate BEFORE TRUNCATE ON fyniq.ai_quality_review FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER ai_reservation_guard BEFORE DELETE OR UPDATE ON fyniq.ai_reservation FOR EACH ROW EXECUTE FUNCTION ai_budget_guard()
 CREATE TRIGGER ai_reservation_no_truncate BEFORE TRUNCATE ON fyniq.ai_reservation FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_route_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_route FOR EACH ROW EXECUTE FUNCTION ai_route_guard()
@@ -8362,6 +8482,8 @@ CREATE TRIGGER dimension_set_check BEFORE INSERT ON fyniq.dimension_set FOR EACH
 CREATE TRIGGER dimension_set_immutable BEFORE DELETE OR UPDATE ON fyniq.dimension_set FOR EACH ROW EXECUTE FUNCTION dimension_set_immutable()
 CREATE TRIGGER dimension_set_no_truncate BEFORE TRUNCATE ON fyniq.dimension_set FOR EACH STATEMENT EXECUTE FUNCTION dimension_set_immutable()
 CREATE TRIGGER dimension_value_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.dimension_value FOR EACH ROW EXECUTE FUNCTION dimension_guard()
+CREATE TRIGGER document_capture_guard BEFORE DELETE OR UPDATE ON fyniq.document_capture FOR EACH ROW EXECUTE FUNCTION document_capture_guard()
+CREATE TRIGGER document_capture_no_truncate BEFORE TRUNCATE ON fyniq.document_capture FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER document_guard BEFORE UPDATE ON fyniq.document FOR EACH ROW EXECUTE FUNCTION document_guard()
 CREATE TRIGGER document_link_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.document_link FOR EACH ROW EXECUTE FUNCTION document_link_guard()
 CREATE TRIGGER document_link_no_truncate BEFORE TRUNCATE ON fyniq.document_link FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
@@ -8536,6 +8658,7 @@ CREATE TRIGGER payroll_mapping_entry_guard BEFORE DELETE OR UPDATE ON fyniq.payr
 CREATE TRIGGER payroll_mapping_entry_no_truncate BEFORE TRUNCATE ON fyniq.payroll_mapping_entry FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER payroll_mapping_guard BEFORE DELETE OR UPDATE ON fyniq.payroll_mapping FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER payroll_mapping_no_truncate BEFORE TRUNCATE ON fyniq.payroll_mapping FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER payroll_mapping_slot_account BEFORE INSERT ON fyniq.payroll_mapping_entry FOR EACH ROW EXECUTE FUNCTION payroll_mapping_slot_account()
 CREATE TRIGGER payroll_run_receipt_guard BEFORE DELETE OR UPDATE ON fyniq.payroll_run_receipt FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER payroll_run_receipt_no_truncate BEFORE TRUNCATE ON fyniq.payroll_run_receipt FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER pd_anonymisation_immutable BEFORE DELETE OR UPDATE ON fyniq.pd_anonymisation FOR EACH ROW EXECUTE FUNCTION audit_immutable()
@@ -8688,7 +8811,10 @@ ai_model_list_read | tenant_isolation | * | (organisation_id = current_org()) | 
 ai_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_price_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_proposal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_proposal_undo | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_proposal_view | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_qualification | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_quality_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_reservation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_route | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_route_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8708,9 +8834,7 @@ audit_recovery | tenant_isolation | * | (organisation_id = current_org()) | (org
 audit_recovery_acknowledgement | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 audit_request_detail | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 authz_refusal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
-balance | department_scope | r | ((( SELECT dept_scope() AS dept_scope) IS NULL) OR (dimension_set_id IN ( SELECT ds.id
-   FROM dimension_set ds
-  WHERE (ds.value_ids && ( SELECT dept_scope() AS dept_scope))))) | <nil>
+balance | department_scope | r | ((( SELECT dept_scope() AS dept_scope) IS NULL) OR (dimension_set_id IN ( SELECT ds.id FROM dimension_set ds WHERE (ds.value_ids && ( SELECT dept_scope() AS dept_scope))))) | <nil>
 balance | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_feed | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 bank_gap | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8751,6 +8875,7 @@ dimension | tenant_isolation | * | (organisation_id = current_org()) | (organisa
 dimension_set | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 dimension_value | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+document_capture | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_link | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_number | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 document_send | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8778,9 +8903,7 @@ item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_
 item_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 join_request | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 journal_entry | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
-journal_line | department_scope | r | ((( SELECT dept_scope() AS dept_scope) IS NULL) OR (dimension_set_id IN ( SELECT ds.id
-   FROM dimension_set ds
-  WHERE (ds.value_ids && ( SELECT dept_scope() AS dept_scope))))) | <nil>
+journal_line | department_scope | r | ((( SELECT dept_scope() AS dept_scope) IS NULL) OR (dimension_set_id IN ( SELECT ds.id FROM dimension_set ds WHERE (ds.value_ids && ( SELECT dept_scope() AS dept_scope))))) | <nil>
 journal_line | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 kb_lint_finding | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 kb_note | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8918,7 +9041,10 @@ ai_price | enabled | forced
 ai_price_catalogue | disabled | not forced
 ai_price_rate | enabled | forced
 ai_proposal | enabled | forced
+ai_proposal_undo | enabled | forced
+ai_proposal_view | enabled | forced
 ai_qualification | enabled | forced
+ai_quality_review | enabled | forced
 ai_reservation | enabled | forced
 ai_route | enabled | forced
 ai_route_step | enabled | forced
@@ -8983,6 +9109,7 @@ dimension | enabled | forced
 dimension_set | enabled | forced
 dimension_value | enabled | forced
 document | enabled | forced
+document_capture | enabled | forced
 document_link | enabled | forced
 document_link_token | disabled | not forced
 document_number | enabled | forced
@@ -9168,6 +9295,7 @@ accountant_review_reopened() → trigger | security invoker | v | search_path=pg
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
 acra_extract_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | adc99242292d20e7a934d8f70e75a14c
 agent_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bc211e3823c86ad40c5756aed596097
+ai_append_only_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4ba64e3e8ab9e066ff7f27a93557041e
 ai_budget_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 59adc0b6ced792e22b069f66bc8ccb23
 ai_call_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b4e1754c041a743ac2f43d2baf8bb4b4
 ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 051ffeb8214e6453575d1964f565ecfd
@@ -9287,6 +9415,7 @@ dimension_set_immutable() → trigger | security invoker | v | search_path=pg_ca
 director_fee_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9daec9315e14c374e3cf180c55d2bc30
 director_repayment_released() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 94e8022147006b17a7b6345fba8d6c28
 director_settlement_approved() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4e36a69f4eacb9c20ca242008162b4cc
+document_capture_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e23cfa94988fe93428d69e9086cf4234
 document_edit_posted() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 9021d44439340dedd71761b90b4fe669
 document_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 047cbe8b3eb5adba27f972e530a29a07
 document_link_guard() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | 88e84bdb34f498a2ef91479f46bfcd43
@@ -9438,6 +9567,7 @@ payment_batch_holds() → trigger | security invoker | v | search_path=pg_catalo
 payment_batch_payment_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 763964fa08a7cf056831339660d84231
 payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0c2e26331f52a0ca299b3ab3aaa9b534
 payroll_entry_needs_receipt() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f00c6441f4aa760f66b01d13321806f6
+payroll_mapping_slot_account() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ce65daa4649c21ec3c51f2ef94c27a8f
 pd_breach_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aa943103eb58e8ba42a46bdf6d7b932a
 pd_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84bdfa5651f52981df006a9b1b3fa887
 pd_shredding_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78959af9821f7e3f1ccf60b99d41b64

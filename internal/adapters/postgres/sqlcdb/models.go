@@ -444,6 +444,23 @@ type FyniqAiProposal struct {
 	McpApp            *string
 }
 
+type FyniqAiProposalUndo struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProposalID     uuid.UUID
+	UndoneBy       uuid.UUID
+	UndoneAt       time.Time
+	Reason         string
+	Reversed       []byte
+}
+
+type FyniqAiProposalView struct {
+	OrganisationID uuid.UUID
+	ProposalID     uuid.UUID
+	UserID         uuid.UUID
+	FirstViewedAt  time.Time
+}
+
 type FyniqAiQualification struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -462,6 +479,16 @@ type FyniqAiQualification struct {
 	RanAt          time.Time
 	OutOfDateAt    *time.Time
 	OutOfDateWhy   *string
+}
+
+type FyniqAiQualityReview struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Month          time.Time
+	SignedBy       uuid.UUID
+	SignedAt       time.Time
+	Report         []byte
+	Note           *string
 }
 
 type FyniqAiReservation struct {
@@ -1369,6 +1396,41 @@ type FyniqDocument struct {
 	CreatedAt      time.Time
 	PostedBy       *string
 	PostedAt       *time.Time
+}
+
+type FyniqDocumentCapture struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Source         string
+	FileName       string
+	MediaType      string
+	SizeBytes      int64
+	Sha256         string
+	BlobKey        string
+	MessageID      *uuid.UUID
+	InboundFileID  *uuid.UUID
+	OwnerUserID    *uuid.UUID
+	CapturedBy     string
+	Status         string
+	Kind           *string
+	Reading        []byte
+	ReadingModel   *string
+	ReadingPrompt  *string
+	Readings       int32
+	ReadAt         *time.Time
+	Checks         []byte
+	DuplicateOf    *uuid.UUID
+	DraftKind      *string
+	DraftID        *uuid.UUID
+	DraftedBy      *uuid.UUID
+	DraftedAt      *time.Time
+	DismissedBy    *uuid.UUID
+	DismissedAt    *time.Time
+	DismissReason  *string
+	LastError      *string
+	CreatedAt      time.Time
+	Version        int32
+	NricFlagged    bool
 }
 
 type FyniqDocumentLink struct {

@@ -1,0 +1,5 @@
+case,service_year,date,want_days,why,source
+first year,1,2026-11-19,7,"MOM: 7 days in the 1st year",mom-annual-leave
+third year,3,2026-11-19,9,"MOM: one more day each year",mom-annual-leave
+eighth year,8,2026-11-19,14,"MOM: 14 days in the 8th year",mom-annual-leave
+twelfth year stays at the cap,12,2026-11-19,14,"MOM: 14 days in the 8th year and thereafter",mom-annual-leave

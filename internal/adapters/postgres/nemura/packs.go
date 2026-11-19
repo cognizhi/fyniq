@@ -312,6 +312,28 @@ func (p *PacksService) Checks(ctx context.Context, s api.Session, on time.Time) 
 				out = append(out, checks.OvertimeOverLimit(months, limit)...)
 			}
 		}
+		payments, err := PaymentFacts(ctx, tx)
+		if err != nil {
+			return err
+		}
+		out = append(out, checks.Payments(payments)...)
+		calendar, err := CalendarFacts(ctx, tx, on)
+		if err != nil {
+			return err
+		}
+		finals, err := FinalPayFacts(ctx, tx, func(day time.Time) (pack.Version, bool) { return p.inForce("sg-people", day) })
+		if err != nil {
+			return err
+		}
+		out = append(out, checks.FinalPay(finals, on)...)
+		if v, ok := p.inForce("sg-people", on); ok {
+			if days, ok := pack.TimingDays(v, "salary_days_after_period", on); ok {
+				out = append(out, checks.PayrollCalendar(calendar, days, on)...)
+			}
+			if days, ok := pack.TimingDays(v, "payslip_working_days_after_payment", on); ok {
+				out = append(out, checks.Payslips(v, payments, days, on)...)
+			}
+		}
 		claims, err := GovClaimFacts(ctx, tx)
 		if err != nil {
 			return err

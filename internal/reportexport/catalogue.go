@@ -7,7 +7,7 @@ package reportexport
 // Exported are the tables the export writes, each as tables/<name>.csv.
 var Exported = []string{
 	"access_review_attestation", "account", "accountant_review", "accountant_review_journal", "accountant_review_query",
-	"accounting_framework", "accounting_policy", "ai_budget", "ai_call", "ai_connection", "ai_connection_version", "ai_conversation", "ai_feedback", "ai_data_policy", "ai_model", "ai_model_list_read", "ai_price", "ai_price_rate", "ai_proposal", "ai_qualification", "ai_reservation", "ai_route", "ai_route_step", "ai_tool_call", "ai_turn", "agent_run", "allocation", "announcement", "announcement_dismissal",
+	"accounting_framework", "accounting_policy", "ai_budget", "ai_call", "ai_connection", "ai_connection_version", "ai_conversation", "ai_feedback", "ai_data_policy", "ai_model", "ai_model_list_read", "ai_price", "ai_price_rate", "ai_proposal", "ai_proposal_undo", "ai_proposal_view", "ai_quality_review", "ai_qualification", "ai_reservation", "ai_route", "ai_route_step", "ai_tool_call", "ai_turn", "agent_run", "allocation", "announcement", "announcement_dismissal",
 	"api_client", "approval_policy", "approval_request", "approval_signature", "audit_boundary", "audit_chain", "audit_event",
 	"audit_recovery", "audit_recovery_acknowledgement", "audit_request_detail", "balance", "bank_feed",
 	"bank_gap", "bank_line", "bank_match", "bank_reconciliation", "bank_rule", "bank_signal", "bank_statement", "compliance_task",
@@ -15,7 +15,7 @@ var Exported = []string{
 	"capture_sender", "check_owner", "check_review", "check_run", "check_state", "claim_category", "claim_place",
 	"close_checklist_entry", "close_checklist_template", "consent_purpose", "consent_record", "contact",
 	"contact_document_template", "control_run", "control_state", "conversion_step", "customer_group",
-	"data_inventory_entry", "data_inventory_review", "dimension", "dimension_set", "dimension_value", "document",
+	"data_inventory_entry", "data_inventory_review", "dimension", "dimension_set", "dimension_value", "document", "document_capture",
 	"document_link", "document_number", "document_send", "document_sequence", "document_template",
 	"document_template_default", "document_template_version", "document_version", "dpia_approval", "dpia_version",
 	"email_event", "email_message", "email_sender", "email_suppression", "equity_step", "evidence",

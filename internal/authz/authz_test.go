@@ -307,7 +307,7 @@ func TestAQualifiedViewReadsTheReportsOfItsArea(t *testing.T) {
 		{authz.ARSpecialist, true, false, false, false},
 		{authz.APSpecialist, false, true, false, false},
 		{authz.PayrollAdmin, false, false, false, false},
-		{authz.Approver, false, false, false, false},
+		{authz.Approver, false, false, false, true}, // a department's P&L (FR-ADM-01, rev 0.374): the handler refuses what its filter does not reach
 		{authz.BoardViewer, false, false, false, false},
 		{authz.Employee, false, false, false, false},
 	} {
@@ -320,6 +320,9 @@ func TestAQualifiedViewReadsTheReportsOfItsArea(t *testing.T) {
 				t.Errorf("%s on %s: %v, want %v", c.role, x.p.Operation, got, x.want)
 			}
 		}
+	}
+	if !authz.DeptOnly([]authz.Role{authz.Approver}, authz.Reports) || authz.DeptOnly([]authz.Role{authz.Approver, authz.Accountant}, authz.Reports) || authz.DeptOnly([]authz.Role{authz.Accountant}, authz.Reports) {
+		t.Error("only a view through the department cell alone is a department's view")
 	}
 	for _, p := range authz.Policies {
 		if len(p.Qualified) > 0 && !p.Unqualified {

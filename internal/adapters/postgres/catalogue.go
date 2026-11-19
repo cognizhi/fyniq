@@ -59,7 +59,8 @@ const (
 SELECT pg_get_triggerdef(g.oid) FROM pg_trigger g JOIN pg_class c ON c.oid = g.tgrelid
   JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'fyniq' AND NOT g.tgisinternal ORDER BY 1`
 	PoliciesSQL = `
-SELECT c.relname, p.polname, p.polcmd::text, pg_get_expr(p.polqual, p.polrelid), pg_get_expr(p.polwithcheck, p.polrelid)
+SELECT c.relname, p.polname, p.polcmd::text, regexp_replace(pg_get_expr(p.polqual, p.polrelid), '\s+', ' ', 'g'),
+       regexp_replace(pg_get_expr(p.polwithcheck, p.polrelid), '\s+', ' ', 'g')
   FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid ORDER BY 1, 2`
 	RowSecuritySQL = `
 SELECT c.relname, CASE WHEN c.relrowsecurity THEN 'enabled' ELSE 'disabled' END,

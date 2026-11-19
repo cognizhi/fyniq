@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "department_id": {
+      "description": "Their department: a dimension value of Fyniq's.",
+      "examples": [
+        "0192a000-0000-7000-8000-0000000000d1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "display_name": {
+      "description": "Their name.",
+      "examples": [
+        "Wei Jie Ong"
+      ],
+      "type": "string"
+    },
+    "held": {
+      "description": "Whether a tax-clearance hold is open on them (FR-PPL-13).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "line_manager_person_id": {
+      "description": "Their line manager's person ID, for claim routing (FR-AP-17).",
+      "examples": [
+        "0192a000-0000-7000-8000-0000000000e2"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "person_id": {
+      "description": "The person's ID in Nemura.",
+      "examples": [
+        "0192a000-0000-7000-8000-0000000000e1"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "removed": {
+      "description": "Whether Nemura removed their record.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "status": {
+      "description": "Their employment status.",
+      "examples": [
+        "active"
+      ],
+      "type": "string"
+    },
+    "user_id": {
+      "description": "The Fyniq user they were mapped to, explicitly and never by email (FR-PPL-18).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "person_id",
+    "held",
+    "removed"
+  ],
+  "title": "PeopleProjectionPerson",
+  "type": "object"
+}

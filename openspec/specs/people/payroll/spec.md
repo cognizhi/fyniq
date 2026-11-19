@@ -46,9 +46,13 @@ Source: PRD-002 §9 · Priority M · Phase P1
 - **THEN** their final pay follows NM-PAY-08's deadlines
 
 ### Requirement: NM-PAY-04 Payslips to self-service
-Payslips SHALL be published to each person's My pay within 3 working days of their confirmed payment, with print and download, and leavers SHALL keep access to their payslips (NM-ESS-06).
+Payslips SHALL be published to each person's My pay within 3 working days of their confirmed payment, with print and download, and leavers SHALL keep access to their payslips (NM-ESS-06). A payslip SHALL hold the twelve items MOM requires, be published once for each approved version, and never be served if its bytes no longer match its hash.
 
 Source: PRD-002 §9 · Priority M · Phase P1
+
+#### Scenario: A correction
+- **WHEN** a corrected version is approved and published
+- **THEN** it has a payslip of its own and the first is marked corrected
 
 #### Scenario: Published on pay day
 - **WHEN** salaries are paid on Wed 28 Oct
@@ -85,6 +89,11 @@ Source: PRD-002 §9 · Priority M · Phase P1
 A leaver's last salary, leave settlement, notice pay and IR21 clearance hold SHALL be prepared in one place, linked to offboarding.
 
 Source: PRD-002 §9 · Priority M · Phase P1
+
+#### Scenario: A clearance hold holds everything
+- **GIVEN** a hold is in force for a leaver
+- **WHEN** the final run is calculated
+- **THEN** every dollar due is held and none is disbursed until the hold is released with the person's evidence
 
 #### Scenario: Leaver with tax clearance
 - **GIVEN** an Employment Pass holder leaving on 30 Nov
@@ -188,9 +197,13 @@ Source: PRD-002 §9 · Priority M · Phase P1
 - **THEN** Nemura keeps September as the wage month for CPF and IR8A, and the books post it in October
 
 ### Requirement: NM-PAY-10 Run and payment states
-A run SHALL move from draft to closed and each person's payment from scheduled to paid, rejected, returned or unknown, from Fyniq's status events or recorded evidence; a posted journal or a file SHALL never mean paid, and an unknown outcome SHALL block new payment.
+A run SHALL move from draft to closed and each person's payment from scheduled to paid, rejected, returned or unknown, from Fyniq's status events or recorded evidence; a posted journal or a file SHALL never mean paid, and an unknown outcome SHALL block new payment. A person's record SHALL carry a document of the person paid as evidence.
 
 Source: PRD-002 §9 · Priority M · Phase P1
+
+#### Scenario: Paid needs evidence
+- **WHEN** someone records a payment as paid with no document of the person as evidence
+- **THEN** it is refused
 
 #### Scenario: Mixed batch
 - **GIVEN** 6 payment lines

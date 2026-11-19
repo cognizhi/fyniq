@@ -12,6 +12,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	nemurapacks "github.com/cognizhi/fyniq/internal/nemura/packs"
 	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -22,6 +23,9 @@ type PayrollService struct {
 	Store *Store
 	Clock ports.Clock
 	Packs *PacksService // the people pack, for the overtime multiple; nil falls back to the Employment Act's 1.5
+	// Blobs and Renderer make and keep payslips; without them publishing answers NM_UNAVAILABLE and a payslip is never read.
+	Blobs    ports.BlobStore
+	Renderer letters.Renderer
 }
 
 var _ api.Payroll = PayrollService{}
@@ -366,4 +370,223 @@ func cents2(d *apd.Decimal) string {
 		panic(err)
 	}
 	return out.Text('f')
+}
+
+// PublishPayslips makes the payslips of an approved version (NM-PAY-04).
+func (p PayrollService) PublishPayslips(ctx context.Context, s api.Session, run uuid.UUID, version int) (int, error) {
+	var n int
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		n, err = PublishPayslips(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, run, version, p.Renderer, p.Blobs)
+		return err
+	})
+	return n, err
+}
+
+func summaryOf(r PayslipRow) api.PayslipSummary {
+	return api.PayslipSummary{ID: r.ID.String(), Month: day(r.Month), PayDate: day(r.PayDate), Reference: r.Reference, Net: r.Net, Version: r.Number, Corrected: r.Superseded}
+}
+
+// MyPayslips lists the payslips of the person the session is.
+func (p PayrollService) MyPayslips(ctx context.Context, s api.Session) ([]api.PayslipSummary, error) {
+	out := []api.PayslipSummary{}
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		if _, err := OwnPerson(ctx, tx, s.Member); err != nil {
+			return err
+		}
+		rows, err := OwnPayslips(ctx, tx, s.Member)
+		for _, r := range rows {
+			out = append(out, summaryOf(r))
+		}
+		return err
+	})
+	return out, err
+}
+
+// MyPayslip is one of the person's own payslips with its twelve items.
+func (p PayrollService) MyPayslip(ctx context.Context, s api.Session, id uuid.UUID) (api.PayslipView, error) {
+	var out api.PayslipView
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		rows, err := OwnPayslips(ctx, tx, s.Member)
+		if err != nil {
+			return err
+		}
+		for _, r := range rows {
+			if r.ID != id {
+				continue
+			}
+			items := func(in []payroll.PayItem) []api.PayslipItem {
+				o := []api.PayslipItem{}
+				for _, x := range in {
+					o = append(o, api.PayslipItem{Name: x.Name, Amount: x.Amount})
+				}
+				return o
+			}
+			d := r.Data
+			out = api.PayslipView{PayslipSummary: summaryOf(r), SHA256: r.SHA256, Employer: d.Employer, Employee: d.Employee, Basic: d.Basic, PeriodStart: d.PeriodStart, PeriodEnd: d.PeriodEnd,
+				Allowances: items(d.Allowances), Additional: items(d.Additional), Deductions: items(d.Deductions), OvertimeHours: d.OvertimeHours, OvertimePay: d.OvertimePay, OvertimePeriod: d.OvertimePeriod, Reimbursements: d.Reimbursements}
+			return nil
+		}
+		return &payroll.Refusal{Code: payroll.CodeNotFound, Message: "There is no such payslip of yours."}
+	})
+	return out, err
+}
+
+// MyPayslipFile is the PDF of one of the person's own payslips, after its bytes are checked against its hash.
+func (p PayrollService) MyPayslipFile(ctx context.Context, s api.Session, id uuid.UUID) (string, []byte, error) {
+	if p.Blobs == nil {
+		return "", nil, api.ErrUnavailable
+	}
+	var ref string
+	var pdf []byte
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		ref, pdf, err = ReadPayslip(ctx, tx, p.Blobs, s.Member, id)
+		return err
+	})
+	return ref, pdf, err
+}
+
+// Payments lists each person's payment of the run's approved version with its events.
+func (p PayrollService) Payments(ctx context.Context, s api.Session, run uuid.UUID) (api.RunPayments, error) {
+	out := api.RunPayments{Lines: []api.PaymentLine{}}
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		if _, _, err := RunOf(ctx, tx, run); err != nil {
+			return err
+		}
+		v, err := PaymentsOf(ctx, tx, run)
+		if err != nil {
+			return err
+		}
+		out.Version, out.State = v.Version, v.State
+		for _, l := range v.Lines {
+			pl := api.PaymentLine{PersonID: l.Person.String(), Person: l.PersonName, Owed: l.Disburse, State: l.State, Attention: l.Attention, AmountMismatch: l.AmountMismatch, Events: []api.PaymentEvent{}}
+			for _, e := range l.Events {
+				ev := api.PaymentEvent{Seq: e.Seq, State: e.State, InstructionID: e.Instruction, Amount: e.Amount, PaidOn: day(e.PaidOn), Source: e.Source, Note: e.Note, RecordedAt: e.RecordedAt.UTC().Format(time.RFC3339)}
+				if e.Evidence != nil {
+					ev.EvidenceID = e.Evidence.String()
+				}
+				pl.Events = append(pl.Events, ev)
+			}
+			out.Lines = append(out.Lines, pl)
+		}
+		return nil
+	})
+	return out, err
+}
+
+// RecordPayment records a person's outcome of a payment, with a document of the person paid as evidence.
+func (p PayrollService) RecordPayment(ctx context.Context, s api.Session, run uuid.UUID, in api.PaymentRecord) error {
+	person, err := uuid.Parse(in.PersonID)
+	if err != nil {
+		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "person_id: choose the person paid."}
+	}
+	ev, err := uuid.Parse(in.EvidenceID)
+	if err != nil {
+		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "evidence_id: choose a document of the person paid as evidence."}
+	}
+	paidOn, err := time.Parse(time.DateOnly, in.PaidOn)
+	if err != nil {
+		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "date: write the date of the payment as YYYY-MM-DD."}
+	}
+	member := s.Member
+	return p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		return RecordPaymentState(ctx, tx, s.Organisation, p.Clock.Now(), user(member), PaymentInput{Run: run, Person: person, State: in.State, Amount: in.Amount, PaidOn: paidOn, Source: "manual", Evidence: &ev, Note: in.Note, By: &member})
+	})
+}
+
+func holdView(h TaxHoldRow, found bool) api.TaxHoldView {
+	if !found {
+		return api.TaxHoldView{}
+	}
+	return api.TaxHoldView{Held: h.Held, Version: h.Version, From: day(h.From), Reason: h.Reason}
+}
+
+// TaxHold is whether a tax-clearance hold is in force for the person.
+func (p PayrollService) TaxHold(ctx context.Context, s api.Session, person uuid.UUID) (api.TaxHoldView, error) {
+	var out api.TaxHoldView
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		h, found, err := TaxHoldOf(ctx, tx, person)
+		out = holdView(h, found)
+		return err
+	})
+	return out, err
+}
+
+// SetTaxHold puts a hold on a person or releases it, with a document of the person as the evidence of a release.
+func (p PayrollService) SetTaxHold(ctx context.Context, s api.Session, person uuid.UUID, in api.TaxHoldInput) error {
+	from, err := time.Parse(time.DateOnly, in.From)
+	if err != nil {
+		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "effective_from: write the day as YYYY-MM-DD."}
+	}
+	return p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		if in.Action == "release" {
+			ev, err := uuid.Parse(in.EvidenceID)
+			if err != nil {
+				return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "evidence_id: a release needs a document of the person that shows IRAS's clearance."}
+			}
+			return ReleaseTaxHold(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, person, ev, from, in.Reason)
+		}
+		_, err := PutTaxHold(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, person, from, in.Reason)
+		return err
+	})
+}
+
+// FinalPayOf is a leaver's final pay: the deadline by the case, the leave left and its worth as a proposal, the hold and the items added.
+func (p PayrollService) FinalPayOf(ctx context.Context, s api.Session, person uuid.UUID) (api.FinalPay, bool, error) {
+	var out api.FinalPay
+	var ok bool
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		off, found, err := OffboardingOf(ctx, tx, person)
+		if err != nil || !found {
+			return err
+		}
+		ok = true
+		out = api.FinalPay{PersonID: person.String(), Person: off.PersonName, Kind: off.Kind, LastDay: day(off.LastDay), NoticeServed: off.NoticeGiven != nil, Month: day(time.Date(off.LastDay.Year(), off.LastDay.Month(), 1, 0, 0, 0, 0, time.UTC)), Items: []api.FinalPayRow{}}
+		if v, has := p.peoplePack(off.LastDay); has {
+			due, latest, rule := payroll.FinalPayDeadline(v, off.Kind, off.NoticeGiven != nil, off.LastDay)
+			out.Due, out.Latest, out.Rule = day(due), day(latest), rule+" ("+v.ID+")"
+			if p.Packs != nil {
+				rules, _, _, found, err := PolicyOn(ctx, tx, startOf(off.LastDay.Year()))
+				if err != nil {
+					return err
+				}
+				var days []int
+				if found {
+					days = rules.AnnualLeaveDays
+				}
+				if st, err := LeaveSettlement(ctx, tx, person, off.LastDay, p.Clock.Now(), v, days); err == nil {
+					out.UntakenDays = st.Untaken.String()
+					if st.Untaken > 0 {
+						if pay, has, err := PayOn(ctx, tx, person, off.LastDay); err != nil {
+							return err
+						} else if has {
+							pat, set, err := WorkingPatternOn(ctx, tx, person, monthEnd(off.LastDay))
+							if err != nil {
+								return err
+							}
+							days := apd.New(int64(st.Untaken), -2)
+							out.LeavePay = cents2(payroll.RatioDays(dec(pay.Basic), days, workingDays(pat, set, off.LastDay)))
+						}
+					}
+				}
+			}
+		}
+		hold, hf, err := TaxHoldOf(ctx, tx, person)
+		if err != nil {
+			return err
+		}
+		out.Hold = holdView(hold, hf)
+		rows, err := OneOffs(ctx, tx, time.Date(off.LastDay.Year(), off.LastDay.Month(), 1, 0, 0, 0, 0, time.UTC))
+		if err != nil {
+			return err
+		}
+		for _, r := range rows {
+			if r.Person == person && (r.Nature == payroll.NatureLeavePay || r.Nature == payroll.NatureNoticePay || r.Nature == payroll.NatureRetrenchment) {
+				out.Items = append(out.Items, api.FinalPayRow{ID: r.ID.String(), Name: r.Name, Nature: r.Nature, Amount: r.Amount, Used: r.Used})
+			}
+		}
+		return nil
+	})
+	return out, ok, err
 }

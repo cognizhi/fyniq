@@ -1,10 +1,12 @@
 package packs
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/cognizhi/fyniq/internal/domain/pack"
+	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 )
 
 // The Singapore people pack loads under the shared validator with every source declared, and every hand-worked case passes against its own tables; its
@@ -15,17 +17,17 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 	if err != nil {
 		t.Fatalf("the packs do not load: %v", err)
 	}
-	if len(versions) != 6 || versions[0].ID != "sg-people@2026.1" || versions[1].ID != "sg-people@2026.2" || versions[1].Supersedes != "sg-people@2026.1" || versions[2].ID != "sg-people@2026.3" || versions[2].Supersedes != "sg-people@2026.2" || versions[3].ID != "sg-people@2026.4" || versions[3].Supersedes != "sg-people@2026.3" || versions[4].ID != "sg-people@2026.5" || versions[4].Supersedes != "sg-people@2026.4" || versions[5].ID != "sg-people@2026.6" || versions[5].Supersedes != "sg-people@2026.5" {
+	if len(versions) != 9 || versions[0].ID != "sg-people@2026.1" || versions[1].ID != "sg-people@2026.2" || versions[1].Supersedes != "sg-people@2026.1" || versions[2].ID != "sg-people@2026.3" || versions[2].Supersedes != "sg-people@2026.2" || versions[3].ID != "sg-people@2026.4" || versions[3].Supersedes != "sg-people@2026.3" || versions[4].ID != "sg-people@2026.5" || versions[4].Supersedes != "sg-people@2026.4" || versions[5].ID != "sg-people@2026.6" || versions[5].Supersedes != "sg-people@2026.5" || versions[6].ID != "sg-people@2026.7" || versions[6].Supersedes != "sg-people@2026.6" || versions[7].ID != "sg-people@2026.8" || versions[7].Supersedes != "sg-people@2026.7" || versions[8].ID != "sg-people@2026.9" || versions[8].Supersedes != "sg-people@2026.8" {
 		t.Fatalf("%d versions", len(versions))
 	}
-	for _, old := range versions[:5] { // the first version is kept as it was: it still loads and its cases pass
+	for _, old := range versions[:8] { // the first version is kept as it was: it still loads and its cases pass
 		for _, r := range pack.RunPinned(old) {
 			if !r.Pass {
 				t.Errorf("%s %s: %s", old.ID, r.Case, r.Why)
 			}
 		}
 	}
-	v := versions[5]
+	v := versions[8]
 	cases := 0
 	for _, r := range pack.RunPinned(v) {
 		cases++
@@ -33,7 +35,7 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 			t.Errorf("%s %s: got %q, want %q (%s)", r.Table, r.Case, r.Got, r.Want, r.Why)
 		}
 	}
-	if cases < 58 {
+	if cases < 74 {
 		t.Errorf("only %d pinned cases", cases)
 	}
 	if got := pack.Unverified(v); len(got) < 40 {
@@ -90,7 +92,7 @@ func TestAWrongValueOrStatusIsRefused(t *testing.T) {
 // four weeks from 1 April 2025, and shared parental leave's six weeks then ten from 1 April 2026; a scheme's cap and claim window come with it (NM-LV-14).
 // req: NM-PACK-06
 func TestParentalLeaveSchemesAreKeyedByTheChildsBirthDate(t *testing.T) {
-	v, err := pack.Load(Files(), "sg-people/2026.6")
+	v, err := pack.Load(Files(), "sg-people/2026.9")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,5 +247,85 @@ func TestTheKeyEmploymentTermsAreInTheSixthVersionOnly(t *testing.T) {
 	}
 	if _, ok := pack.TimingDays(v5, "kets_days_after_start", on); ok {
 		t.Error("the fifth version holds the KETs days")
+	}
+}
+
+// The itemised payslip's twelve items are in sg-people@2026.7 and not before, with three working days to give it when it cannot be given with the payment (NM-PAY-04).
+// req: NM-PACK-06, NM-PAY-04
+func TestThePayslipItemsAreInTheSeventhVersionOnly(t *testing.T) {
+	v7, err := pack.Load(Files(), "sg-people/2026.7")
+	if err != nil {
+		t.Fatal(err)
+	}
+	v6, err := pack.Load(Files(), "sg-people/2026.6")
+	if err != nil {
+		t.Fatal(err)
+	}
+	items := pack.PayslipItems(v7)
+	if len(items) != 12 || items[0].Key != "employer_name" || items[11].Key != "net_salary" || items[3].Key != "basic_salary" || items[10].When != "if_different" || items[5].When != "if_applicable" {
+		t.Fatalf("items: %+v", items)
+	}
+	on, _ := pack.ParseDate("2026-11-20")
+	if n, ok := pack.TimingDays(v7, "payslip_working_days_after_payment", on); !ok || n != 3 {
+		t.Errorf("days: %d %v", n, ok)
+	}
+	if len(pack.PayslipItems(v6)) != 0 {
+		t.Error("the sixth version holds the payslip items")
+	}
+}
+
+// Every item of the newest people pack's payslip list has a field on the payslip, so a payslip holds what the pack says MOM requires (NM-PAY-04).
+// req: NM-PAY-04
+func TestEveryPayslipItemOfThePackHasAFieldOnThePayslip(t *testing.T) {
+	versions, err := pack.LoadAll(Files())
+	if err != nil {
+		t.Fatal(err)
+	}
+	newest := versions[len(versions)-1]
+	typ := reflect.TypeOf(payroll.Payslip{})
+	items := pack.PayslipItems(newest)
+	if len(items) == 0 {
+		t.Fatal("the newest people pack has no payslip items")
+	}
+	for _, it := range items {
+		field, ok := payroll.SlipFields[it.Key]
+		if !ok {
+			t.Errorf("payslip item %q (%s) has no field on the payslip", it.Key, it.Label)
+			continue
+		}
+		if _, ok := typ.FieldByName(field); !ok {
+			t.Errorf("payslip item %q names the field %q, which Payslip does not have", it.Key, field)
+		}
+	}
+	if len(payroll.SlipFields) != len(items) {
+		t.Errorf("the payslip maps %d items and the pack lists %d", len(payroll.SlipFields), len(items))
+	}
+}
+
+// The Monday in lieu of a Sunday holiday is in sg-people@2026.8 and not before: four days, each the Monday after a Sunday holiday of the pack; the company calendar's working-day count skips them and
+// the earlier version does not (N.1 #4, #9).
+// req: NM-PACK-05, NM-PAY-04
+func TestTheDaysInLieuAreInTheEighthVersionOnly(t *testing.T) {
+	v8, err := pack.Load(Files(), "sg-people/2026.8")
+	if err != nil {
+		t.Fatal(err)
+	}
+	v7, err := pack.Load(Files(), "sg-people/2026.7")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mon, _ := pack.ParseDate("2026-08-10")
+	if name, ok := pack.InLieu(v8, mon); !ok || name != "National Day (in lieu)" {
+		t.Errorf("10 Aug 2026: %q %v", name, ok)
+	}
+	if _, ok := pack.InLieu(v7, mon); ok || pack.NonWorkingDay(v7, mon) {
+		t.Error("the seventh version knows the day in lieu")
+	}
+	if !pack.NonWorkingDay(v8, mon) {
+		t.Error("the day in lieu is a working day")
+	}
+	tue, _ := pack.ParseDate("2026-08-11")
+	if pack.NonWorkingDay(v8, tue) {
+		t.Error("the day after is not a working day")
 	}
 }

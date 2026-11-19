@@ -71,8 +71,8 @@ with no passkey confirms it's you by signing in again each time, so ask them to 
 
 When you give the **Approver** role, **Departments this Approver acts for** lists the organisation's department values: tick
 the ones their role reaches. Their views and approvals that Fyniq limits by department then reach only those departments'
-records, lines and budgets, and what they read adds up only those: a report's totals count the lines of those departments
-and nothing else. An Approver role given with no department reaches none of them, so tick at least one. The choice is fixed
+records, lines and budgets, and what they read adds up only those: the profit and loss they open counts the lines of those departments
+and nothing else (the balance sheet, the cash flow, the trial balance, budget comparatives and exports are the whole company's, so they are not shown to them). An Approver role given with no department reaches none of them, so tick at least one. The choice is fixed
 when the role is given: to change it, end the role and give it again. The people's list shows it beside the role, such as
 "Approver for Engineering". The same limit applies to the assistant and to connected apps acting for that person. A person who
 holds any other role besides Employee is not narrowed by this: that role's own rights decide.

@@ -29,6 +29,7 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
 - [ ] 2.4 Link health: last sync, events waiting or failed, retry, the 24-hour notice to the Owner and Payroll administrator, the 1-hour alert near pay day.
 - [ ] 2.5 Sessions and identities (FR-PPL-18, counted in `p1-nemura-fyniq-link`; its Fyniq half is built here): people matched by issuer, subject and tenant, mapped explicitly on linking, never by email; no role granted.
 
+  (Built in part, 20 Nov 2026: `listPeopleProjection` and `mapPersonToUser`: a person of the projection is mapped to a member explicitly, one user to one person, no role granted (`TestAPersonIsMappedToAUserExplicitlyAndAnAssertionApprovesOnlyItsRun`). **Left:** the person's own confirmation of the mapping, the mapping a linked-after-standalone organisation does for its existing people, and the one-sign-in/IdP question of the coordinator's D3 point 3: until Fyniq is the IdP, a Nemura-only approver needs a Fyniq identity (enrolled passkey, no role), which `PPL-19` says plainly.)
 ## 3. The inbox and the employee projection (FR-PPL-15, 06)
 
 - [ ] 3.1 `people_link_inbox` (design D5): dedupe by event ID, per-object versions, older ignored and recorded, tombstones, gap repair by reading the
@@ -66,6 +67,7 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
   returns its code.
 
   (Built, 20 Nov 2026: migration 000903/000904: `payroll_mapping` and its entries by version (department value or deduction kind to account; `getPayrollMapping`, `setPayrollMapping`), `payroll_run_receipt` (envelope digest, run, version, wage month, approver and preparer by issuer and subject, mapping version, entry, posted totals; no per-person figure) and a deferred trigger that refuses any `payroll_run` entry without its receipt from the same transaction (`TestAttackAPayrollEntryNeedsItsReceipt`). **Left:** `payroll.run.posted` back to Nemura with the posting reference or the ledger's code (needs Nemura's webhook, `p1-nemura-fyniq-link` 2.3), the mapping's dual control (it is a Payroll administrator's step-up change today: owner to confirm), and FR-EMP-02's departments page, which stays `p1-nemura-payroll`'s.)
+  (Built, 20 Nov 2026, continued: migration 000905 refuses a mapping slot that points at the wrong kind of account (a department at an expense account that is not 6020 or 6030; a deduction at an asset or liability that is not money, share capital, 2100, 2110, 2120, a director's loan or GST control), tested. The receipt stores the mapping version a run was posted under, and a run calculated against another version is refused, so a mapping changed after the approver signed cannot alter what that run posts. The trigger that refuses a payroll entry without a receipt fires only for source type `payroll_run`, which neither the sample company's seed nor the workbook import uses.)
 ## 6. Salary payments (FR-PAY-11, FR-PPL-12, 13, 14, 17; C.2 #44)
 
 - [ ] 6.1 The salary batch on the payment batch (design D9): lines sealed, need to know, bank-detail versions in the approval envelope, a newer version
