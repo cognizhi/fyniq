@@ -19,7 +19,7 @@ A Bookkeeper, an AP specialist or an Accountant captures, reads and drafts.
 
 ## Capture a document
 
-- **Upload a document** takes a PDF or a photo (PNG, JPEG, WebP; an iPhone's HEIC is converted). It is checked as any file is:
+- **Upload a document** takes a PDF, a photo (PNG, JPEG, WebP; an iPhone's HEIC is converted), or a text or email file. It is checked as any file is:
   its type from its content, a malware scan, and its location data removed.
 - **Paste** a screenshot anywhere on the page to capture it.
 - The same file twice is shown once, as a **Duplicate** of the first.
@@ -32,8 +32,9 @@ A Bookkeeper, an AP specialist or an Accountant captures, reads and drafts.
   it never decides a figure, whether GST is claimable, or what is posted.
 - Fyniq adds its own checks: the lines and GST add up to the total, the dates are real, the GST registration number looks like
   one, and what a tax invoice must show but this document does not.
-- A document that shows an NRIC or FIN in full is kept but never read: that number does not go to the model. Mask it and capture it
-  again, or type the bill in.
+- The model is given the document's text with every bank account number, IBAN and NRIC or FIN number hidden first; you key a supplier's
+  bank details yourself. Only a PDF whose text Fyniq can extract, or a text or email file, is read: a photo or a scanned PDF is kept, and
+  you type the bill in.
 - A document that tells the model to do something is stopped, and fails with the reason. A PDF or a photo only is read; type
   anything else in by hand.
 - **Read it again** reads it afresh when the first reading was wrong.

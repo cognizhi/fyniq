@@ -124,7 +124,7 @@ func (q *Queries) DraftDocumentCapture(ctx context.Context, arg DraftDocumentCap
 
 const getDocumentCapture = `-- name: GetDocumentCapture :one
 SELECT id, source, file_name, media_type, size_bytes, sha256, blob_key, message_id, inbound_file_id, owner_user_id, captured_by, status, kind, reading, reading_model,
-  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged
+  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged, status_at
 FROM fyniq.document_capture WHERE id = $1
 `
 
@@ -160,6 +160,7 @@ type GetDocumentCaptureRow struct {
 	CreatedAt     time.Time
 	Version       int32
 	NricFlagged   bool
+	StatusAt      *time.Time
 }
 
 func (q *Queries) GetDocumentCapture(ctx context.Context, id uuid.UUID) (GetDocumentCaptureRow, error) {
@@ -197,6 +198,7 @@ func (q *Queries) GetDocumentCapture(ctx context.Context, id uuid.UUID) (GetDocu
 		&i.CreatedAt,
 		&i.Version,
 		&i.NricFlagged,
+		&i.StatusAt,
 	)
 	return i, err
 }
@@ -249,7 +251,7 @@ func (q *Queries) InsertDocumentCapture(ctx context.Context, arg InsertDocumentC
 
 const listDocumentCaptures = `-- name: ListDocumentCaptures :many
 SELECT id, source, file_name, media_type, size_bytes, sha256, blob_key, message_id, inbound_file_id, owner_user_id, captured_by, status, kind, reading, reading_model,
-  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged
+  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged, status_at
 FROM fyniq.document_capture
 WHERE ($1::text = '' OR status = $1::text)
   AND (owner_user_id IS NULL OR owner_user_id = $2::uuid)
@@ -296,6 +298,7 @@ type ListDocumentCapturesRow struct {
 	CreatedAt     time.Time
 	Version       int32
 	NricFlagged   bool
+	StatusAt      *time.Time
 }
 
 func (q *Queries) ListDocumentCaptures(ctx context.Context, arg ListDocumentCapturesParams) ([]ListDocumentCapturesRow, error) {
@@ -344,6 +347,7 @@ func (q *Queries) ListDocumentCaptures(ctx context.Context, arg ListDocumentCapt
 			&i.CreatedAt,
 			&i.Version,
 			&i.NricFlagged,
+			&i.StatusAt,
 		); err != nil {
 			return nil, err
 		}
@@ -357,7 +361,7 @@ func (q *Queries) ListDocumentCaptures(ctx context.Context, arg ListDocumentCapt
 
 const lockDocumentCapture = `-- name: LockDocumentCapture :one
 SELECT id, source, file_name, media_type, size_bytes, sha256, blob_key, message_id, inbound_file_id, owner_user_id, captured_by, status, kind, reading, reading_model,
-  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged
+  reading_prompt, readings, read_at, checks, duplicate_of, draft_kind, draft_id, drafted_by, drafted_at, dismissed_by, dismissed_at, dismiss_reason, last_error, created_at, version, nric_flagged, status_at
 FROM fyniq.document_capture WHERE id = $1 FOR UPDATE
 `
 
@@ -393,6 +397,7 @@ type LockDocumentCaptureRow struct {
 	CreatedAt     time.Time
 	Version       int32
 	NricFlagged   bool
+	StatusAt      *time.Time
 }
 
 func (q *Queries) LockDocumentCapture(ctx context.Context, id uuid.UUID) (LockDocumentCaptureRow, error) {
@@ -430,6 +435,7 @@ func (q *Queries) LockDocumentCapture(ctx context.Context, id uuid.UUID) (LockDo
 		&i.CreatedAt,
 		&i.Version,
 		&i.NricFlagged,
+		&i.StatusAt,
 	)
 	return i, err
 }
@@ -470,13 +476,14 @@ func (q *Queries) SetDocumentCaptureReading(ctx context.Context, arg SetDocument
 }
 
 const setDocumentCaptureStatus = `-- name: SetDocumentCaptureStatus :one
-UPDATE fyniq.document_capture SET status = $1, last_error = $2, version = version + 1
-WHERE id = $3 AND version = $4 RETURNING id
+UPDATE fyniq.document_capture SET status = $1, last_error = $2, status_at = $3, version = version + 1
+WHERE id = $4 AND version = $5 RETURNING id
 `
 
 type SetDocumentCaptureStatusParams struct {
 	Status    string
 	LastError *string
+	StatusAt  *time.Time
 	ID        uuid.UUID
 	Version   int32
 }
@@ -485,6 +492,7 @@ func (q *Queries) SetDocumentCaptureStatus(ctx context.Context, arg SetDocumentC
 	row := q.db.QueryRow(ctx, setDocumentCaptureStatus,
 		arg.Status,
 		arg.LastError,
+		arg.StatusAt,
 		arg.ID,
 		arg.Version,
 	)

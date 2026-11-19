@@ -54,6 +54,14 @@ Decisions here are on the recommended option while the owner is away, owner to c
   later: the inbox lists what is waiting and the person reads it. Data class: business figures and personal data, so the route's
   Singapore-only rule for sensitive classes (AI-75) applies.
 
+**D3a. Masked text only (the owner's decision of 20 Nov 2026, AI-02).**
+- The model is given the document's text, never its file: a PDF's text (by `pdftext`, which reads Typst-made PDFs and the simple ones; any other PDF
+  is refused as unreadable), or a text, CSV or email file. `capture.MaskText` hides bank account numbers (after a bank word, IBANs, any run of nine digits or
+  more that is not a UEN, an amount or a date) and NRIC/FIN numbers first; the file as captured stays unmasked as evidence. A photo is never read.
+- Cost, owner to confirm: photographed receipts and scanned or unusual PDFs are typed in by the person until a general extractor and a redactor
+  that can mask an image exist. The person keys bank details; a payee's are never the AI's to set.
+- A reading that never ended is ended as Failed on the next ask after ten minutes, and a person may dismiss it at any time.
+
 **D4. A person makes the draft; nothing at arrival with nobody present.**
 - The inbox's action Draft runs as the signed-in person who may enter bills (or their own claim): the API validates the
   reading as they corrected it exactly as a person's own entry (same checks, same audit, the capture as source) and makes

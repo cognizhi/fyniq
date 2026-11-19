@@ -44,8 +44,9 @@
   model's reading in the AI's card with each field's confidence and what Fyniq checked, Have it read / Read it again / Dismiss, and the
   bill form filled from the reading (supplier matched, the account always the person's, amounts as decimal strings); no upload or draft
   for those who may not enter bills. The guide is `docs/user-guide/document-inbox.md`, compiled to `kb/pages/task/documents-inbox.md`.
-- [ ] 4.3 The web form for a draft claim from a receipt (the API's `draftClaimFromCapture` is built and tested), the list of accepted mail
-  waiting to be adopted with one-click adoption (the API's `captureFromMessage` is built and tested), and the nic flag's words on the
-  row.
+- [x] 4.3 The web form for a draft claim from a receipt, the list of accepted mail waiting to be captured (one click each), and the NRIC
+  flag's words on the row. Built with the masker (D3a).
+- [ ] 4.4 **Left:** the background reading of mail as it arrives (a worker job and its service token); bank matching (3.3: only after the bank
+  transaction lines can be queried by amount and date); the capture evals (4.2).
 - [ ] 4.2 The `capture` eval suite and the red team's injected document; the threat model `email-in.md` grows (design D10).
   Tests `// req: QA-AI-02`, `// req: AI-18`.

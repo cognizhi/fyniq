@@ -54,6 +54,9 @@ const capture = (extra: Record<string, unknown> = {}) => ({
 const reads = {
   "GET /v1/captures": { status: 200, body: { items: [capture(), capture({ id: "c2", file_name: "scan.png", status: "failed", kind: undefined, reading: undefined, checks: undefined, note: "Only a PDF or a photo can be read" })] } },
   "GET /v1/organisation/email/capture-addresses": { status: 200, body: { domain: "in.example.com", organisation: { address: "bills@in.example.com", name: "bills", created_at: "2026-11-01T00:00:00Z" }, organisation_etag: '"1"', mine_etag: '"none"', bank_etag: '"none"' } },
+  "GET /v1/organisation/email/inbound-messages": { status: 200, body: { items: [{ id: "m1", address: "bills@in.example.com", for: "organisation", kind: "documents", sender: "ar@supplier.example", received_at: "2026-11-20T08:00:00Z", status: "accepted", files: [{ id: "f1", kind: "attachment", file_name: "INV-77.txt", media_type: "text/plain", size_bytes: 40, removed: false }] }] } },
+  "GET /v1/organisation/email/inbound-messages/mine": { status: 200, body: { items: [] } },
+  "GET /v1/claim-categories": { status: 200, body: { items: [{ id: "travel", name: "Local travel", account_id: "a6100", mileage: false, active: true, version: 1 }] } },
   "GET /v1/accounts": { status: 200, body: { items: [{ id: "a6120", code: "6120", name: "Software", type: "expense", active: true, group: false, version: 1 }] } },
   "GET /v1/contacts": { status: 200, body: { items: [{ id: "s1", legal_name: "Atlassian Pty Ltd", vendor: true, active: true, version: 1 }] } },
 };
@@ -124,8 +127,33 @@ describe("Purchases › Document inbox", () => {
     renderPage(DocumentInbox, { path: "/purchases/documents", session: accountant, organisation, mode: "basic" });
     fireEvent.click(await screen.findByRole("button", { name: "Open ic.pdf" }));
     expect(await screen.findByText("It shows an NRIC or FIN in full")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Have it read" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Have it read" })).toBeTruthy(); // read with the number hidden first
     expect(screen.getByRole("button", { name: "Dismiss" })).toBeTruthy();
+  });
+
+  it("lists accepted mail waiting to be captured and captures one file on a person's action", async () => {
+    answer({ ...reads, "POST /v1/captures/from-message": { status: 201, body: capture({ id: "c9", file_name: "INV-77.txt", source: "email", status: "received", message_id: "m1", kind: undefined, reading: undefined, checks: undefined }) } });
+    renderPage(DocumentInbox, { path: "/purchases/documents", session: accountant, organisation, mode: "basic" });
+    fireEvent.click(await screen.findByRole("button", { name: "Capture INV-77.txt from ar@supplier.example" }));
+    await waitFor(() => expect(seen.some((s) => s.path === "/v1/captures/from-message")).toBe(true));
+    expect(seen.find((s) => s.path === "/v1/captures/from-message")?.body).toEqual({ message_id: "m1", file_id: "f1" });
+  });
+
+  it("makes the caller's own draft claim from a read receipt, the document fact none until they say", async () => {
+    answer({
+      ...reads,
+      "GET /v1/captures": { status: 200, body: { items: [capture({ kind: "receipt" })] } },
+      "POST /v1/captures/c1/claim": { status: 201, body: { capture: capture({ status: "drafted", version: 5 }), draft: { kind: "claim", id: "cl1" } } },
+    });
+    renderPage(DocumentInbox, { path: "/purchases/documents", session: accountant, organisation, mode: "basic" });
+    fireEvent.click(await screen.findByRole("button", { name: "Open AU-2001.pdf" }));
+    await screen.findByRole("option", { name: "Local travel" });
+    fireEvent.change(screen.getByLabelText("Claim category"), { target: { value: "travel" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save draft claim" }));
+    await waitFor(() => expect(seen.some((s) => s.path === "/v1/captures/c1/claim")).toBe(true));
+    const sent = seen.find((s) => s.path === "/v1/captures/c1/claim");
+    expect(sent?.headers.get("If-Match")).toBe('"4-read"');
+    expect(sent?.body).toMatchObject({ lines: [{ kind: "receipt", category_id: "travel", document: "none", amount: { amount: "190.00", currency: "SGD" } }] });
   });
 
   it("offers no upload, read or draft to someone who may not enter bills", async () => {

@@ -777,3 +777,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | payroll-approval.md -> nemura.payroll-approval link to final pay
 
 ## [2026-11-20] compile | payroll-approval.md -> nemura.payroll-approval (hand-off files, p1-nemura-payroll 6.1)
+
+## [2026-11-20] compile | documents.inbox: masked text, photos not read

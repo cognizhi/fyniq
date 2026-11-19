@@ -229,9 +229,9 @@ fyniq_api       UPDATE    dimension_value (is_active, name, version)
 fyniq_api       INSERT    document (type)
 fyniq_api       SELECT    document
 fyniq_api       UPDATE    document (current_version, posted_at, posted_by, status)
-fyniq_api       INSERT    document_capture (blob_key, captured_by, created_at, duplicate_of, file_name, inbound_file_id, media_type, message_id, nric_flagged, owner_user_id, sha256, size_bytes, source, status)
+fyniq_api       INSERT    document_capture (blob_key, captured_by, created_at, duplicate_of, file_name, inbound_file_id, media_type, message_id, nric_flagged, owner_user_id, sha256, size_bytes, source, status, status_at)
 fyniq_api       SELECT    document_capture
-fyniq_api       UPDATE    document_capture (checks, dismiss_reason, dismissed_at, dismissed_by, draft_id, draft_kind, drafted_at, drafted_by, duplicate_of, kind, last_error, read_at, reading, reading_model, reading_prompt, readings, status, version)
+fyniq_api       UPDATE    document_capture (checks, dismiss_reason, dismissed_at, dismissed_by, draft_id, draft_kind, drafted_at, drafted_by, duplicate_of, kind, last_error, read_at, reading, reading_model, reading_prompt, readings, status, status_at, version)
 fyniq_api       INSERT    document_link (created_by, document_id, document_version, expires_at, message_id, token_hash)
 fyniq_api       SELECT    document_link
 fyniq_api       UPDATE    document_link (first_viewed_at, revoked_at, revoked_by)
