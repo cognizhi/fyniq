@@ -4,7 +4,7 @@ type: task
 title: Set up pay groups and record each person's pay in Nemura
 summary: What the Payroll administrator and the Owner record for payroll, how a pay record, the year to date and a one-off item work, and why nobody else sees pay
 sources:
-  - docs/user-guide/nemura/payroll-records.md sha256:5929244f7df47a45d1f8dea7ab75a2303a63a84c58ee1af5278b85c46e3c19fe
+  - docs/user-guide/nemura/payroll-records.md sha256:c11db43e92958c324e3bb47d096528067c8602caa060d4e727536dd5322336a1
 data_class: personal
 taint: trusted
 status: published
@@ -37,6 +37,13 @@ aliases:
 5. Add a month's one-off items: a bonus, a commission or an allowance, with the month it is for and the day it is payable.
 
 (src: docs/user-guide/nemura/payroll-records.md#steps)
+
+## Calculate a pay run
+
+- Choose the wage month and calculate the run for a pay group: every person with pay in the group is worked out exactly from their pay record and the inputs (a part month by the days each pay record covers, the one-off items, unpaid leave by the month's working days, approved overtime), each amount rounded once to the cent, and each person's month shows its items with their sources, its working and what to look at.
+- A missing fact stops the run and names the person; a ✖ blocks approval and a ⚠ is shown to the approver.
+- An override replaces one figure of one person's month (employee or employer CPF, SDL or the fund) with a reason of at least ten characters; it applies from the next calculation and is flagged. A version is read-only with a digest; the next version supersedes it, and after an approved version it is a correction with a reason.
+- Overtime on a rest day or public holiday is added as a one-off item, not guessed. (src: docs/user-guide/nemura/payroll-records.md#calculate-a-pay-run)
 
 ## What happens next
 

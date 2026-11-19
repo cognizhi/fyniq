@@ -14,6 +14,7 @@ const (
 	CodeInvalid  = "NM_PAYROLL_INVALID"
 	CodeConflict = "NM_PAYROLL_CONFLICT"
 	CodeNotFound = "NM_NOT_FOUND"
+	CodeRole     = "NM_ROLE_REQUIRED"
 )
 
 // Refusal is a plain refusal with a stable code.

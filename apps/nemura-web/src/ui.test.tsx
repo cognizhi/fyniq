@@ -24,6 +24,7 @@ import { Person } from "./pages/Person";
 import { TermsPanel } from "./components/TermsPanel";
 import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
+import { PayRuns } from "./components/PayRuns";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
 import { Delegations } from "./components/Delegations";
@@ -1218,5 +1219,41 @@ describe("payroll records", () => {
     fireEvent.submit(screen.getByRole("form", { name: "Add a one-off item" }));
     expect(await screen.findByText("The item is added.")).toBeTruthy();
     expect(bodies.get(`POST /v1/people/${person}/pay/one-offs`)).toMatchObject({ item: { key: "bonus-2026", nature: "bonus", amount: "5000.00", cpf_wages: true } });
+  });
+});
+
+// req: FR-PAY-01, FR-PAY-06, NM-PAY-09
+describe("pay runs", () => {
+  const person = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61";
+  const gid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30";
+  const rid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43";
+  const version = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f41", version: 1, state: "calculated", digest: "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", prepared_by: person, prepared_at: "2026-11-20T10:00:00Z", people: 1, flags_failing: 0, flags_warning: 1,
+    pack_versions: ["sg-cpf@2026.2"], totals: { gross: "5000.00", cpf_employee: "1000.00", cpf_employer: "850.00", sdl_payable: "11.00", shg: "0.00", deductions: "0.00", reimbursements: "0.00", net: "4000.00", disburse: "4000.00", employer_cost: "5861.00" } };
+  const run = { id: rid, month: "2026-06-01", pay_group_id: gid, pay_group: "Monthly", pay_day: "2026-06-25", latest: version };
+
+  it("calculates a run, shows each person's month with what to look at, overrides a figure with a reason and calculates the next version", async () => {
+    answer("GET /v1/payroll/runs", { status: 200, body: { runs: [] } });
+    answer("POST /v1/payroll/runs", { status: 201, body: run });
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: { ...run, versions: [version], overrides: [], lines: [{ person_id: person, person: "Ben Lim", gross: "5000.00", ow_subject: "5000.00", aw_subject: "0.00", cpf_total: "1850.00", cpf_employee: "1000.00", cpf_employer: "850.00", sdl: "11.25", shg: "0.00", deductions: "0.00", reimbursements: "0.00",
+      held: "0.00", net: "4000.00", disburse: "4000.00", employer_cost: "5861.25", items: [], working: [], flags: [{ code: "WAGE_CLASS", fail: false, message: "Commission: the facts decide." }] }] } });
+    answer(`POST /v1/payroll/runs/${rid}/overrides`, { status: 201, body: { id: gid } });
+    answer(`POST /v1/payroll/runs/${rid}/versions`, { status: 201, body: { ...run, latest: { ...version, version: 2 } } });
+    const { container } = render(<PayRuns month="2026-06-01" groups={[{ id: gid, name: "Monthly", pay_day: 25, cutoff_days: 7, approval_days: 3 }]} people={[{ id: person, name: "Ben Lim" }]} />);
+    expect(await screen.findByText("No run for this month yet.")).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.submit(screen.getByRole("form", { name: "Calculate a run" }));
+    expect(await screen.findByText("The run is calculated: version 1.")).toBeTruthy();
+    expect(bodies.get("POST /v1/payroll/runs")).toMatchObject({ month: "2026-06-01", pay_group_id: gid });
+    expect(await screen.findByText(/Version 1, calculated\. Digest 9f86d081884c\. 0 failing and 1 to look at\./)).toBeTruthy();
+    expect(screen.getByText("Look at: Commission: the facts decide.")).toBeTruthy();
+    expect(screen.getByText(/Gross 5000.00; employee CPF 1000.00; employer CPF 850.00; SDL payable 11.00; net 4000.00; employer cost 5861.00/)).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    fireEvent.change(screen.getByLabelText("The figure to put in place (dollars)"), { target: { value: "999.00" } });
+    fireEvent.change(screen.getByLabelText("Why the calculated figure is wrong"), { target: { value: "The CPF Board's own figure." } });
+    fireEvent.submit(screen.getByRole("form", { name: "Override a figure" }));
+    expect(await screen.findByText("The override is added. Calculate the next version to apply it.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/payroll/runs/${rid}/overrides`)).toMatchObject({ person_id: person, field: "cpf_employee", value: "999.00" });
+    fireEvent.click(screen.getByRole("button", { name: "Calculate the next version" }));
+    expect(await screen.findByText("The next version is calculated; the one before is superseded.")).toBeTruthy();
   });
 });

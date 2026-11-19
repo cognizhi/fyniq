@@ -217,3 +217,13 @@ Source: PRD-002 §9 · Priority S · Phase P1
 - **WHEN** Arjun Rao opens the run to approve it
 - **THEN** the change from September shows the bonus as a one-off item linked to its input
 - **AND** any change without an explanation is listed
+
+### Requirement: NM-PAY-12 Amounts worked out by a ratio
+A part month's basic salary and allowances, an unpaid-leave deduction and overtime pay SHALL be computed exactly and rounded once to the cent, half away from zero (`RND-PAY-RATIO`), each with its working shown.
+
+Source: PRD-002 §9 · Priority M · Phase P1
+
+#### Scenario: A joiner's part month
+- **GIVEN** a person on S$4,500.00 a month starts on 11 June 2026
+- **WHEN** the June run is calculated
+- **THEN** their basic salary is 4,500.00 × 20 ÷ 30 = 3,000.00, rounded once, with the ratio shown

@@ -48,6 +48,10 @@ passkey_challenge | nemura_migrator | true | true
 pay_group | nemura_migrator | true | true
 pay_input | nemura_migrator | true | true
 pay_one_off | nemura_migrator | true | true
+pay_run | nemura_migrator | true | true
+pay_run_line | nemura_migrator | true | true
+pay_run_override | nemura_migrator | true | true
+pay_run_version | nemura_migrator | true | true
 person | nemura_migrator | true | true
 person_classification | nemura_migrator | true | true
 person_contact | nemura_migrator | true | true
@@ -566,6 +570,73 @@ pay_one_off | created_by | uuid | true |
 pay_one_off | created_at | timestamp with time zone | true | 
 pay_one_off | used_in_run | uuid | false | 
 pay_one_off | used_at | timestamp with time zone | false | 
+pay_run | organisation_id | uuid | true | nemura.current_org()
+pay_run | id | uuid | true | uuidv7()
+pay_run | month | date | true | 
+pay_run | pay_group_id | uuid | true | 
+pay_run | created_by | uuid | true | 
+pay_run | created_at | timestamp with time zone | true | 
+pay_run_line | organisation_id | uuid | true | nemura.current_org()
+pay_run_line | id | uuid | true | uuidv7()
+pay_run_line | version_id | uuid | true | 
+pay_run_line | person_id | uuid | true | 
+pay_run_line | gross | numeric(20,4) | true | 
+pay_run_line | ow_subject | numeric(20,4) | true | 
+pay_run_line | aw_subject | numeric(20,4) | true | 
+pay_run_line | aw_paid | numeric(20,4) | true | 
+pay_run_line | cpf_total | numeric(20,4) | true | 
+pay_run_line | cpf_employee | numeric(20,4) | true | 
+pay_run_line | cpf_employer | numeric(20,4) | true | 
+pay_run_line | sdl | numeric(20,4) | true | 
+pay_run_line | shg | numeric(20,4) | true | 
+pay_run_line | deductions | numeric(20,4) | true | 
+pay_run_line | reimbursements | numeric(20,4) | true | 
+pay_run_line | held | numeric(20,4) | true | 
+pay_run_line | net | numeric(20,4) | true | 
+pay_run_line | disburse | numeric(20,4) | true | 
+pay_run_line | employer_cost | numeric(20,4) | true | 
+pay_run_line | items | jsonb | true | 
+pay_run_line | working | jsonb | true | 
+pay_run_line | flags | jsonb | true | 
+pay_run_line | computed | jsonb | true | 
+pay_run_override | organisation_id | uuid | true | nemura.current_org()
+pay_run_override | id | uuid | true | uuidv7()
+pay_run_override | run_id | uuid | true | 
+pay_run_override | person_id | uuid | true | 
+pay_run_override | field | text | true | 
+pay_run_override | value | numeric(20,4) | true | 
+pay_run_override | reason | text | true | 
+pay_run_override | created_by | uuid | true | 
+pay_run_override | created_at | timestamp with time zone | true | 
+pay_run_override | withdrawn_at | timestamp with time zone | false | 
+pay_run_version | organisation_id | uuid | true | nemura.current_org()
+pay_run_version | id | uuid | true | uuidv7()
+pay_run_version | run_id | uuid | true | 
+pay_run_version | version | integer | true | 
+pay_run_version | state | text | true | 'calculated'::text
+pay_run_version | prepared_by | uuid | true | 
+pay_run_version | prepared_at | timestamp with time zone | true | 
+pay_run_version | supersedes | uuid | false | 
+pay_run_version | reason | text | false | 
+pay_run_version | digest | bytea | true | 
+pay_run_version | pack_versions | text[] | true | 
+pay_run_version | people | integer | true | 
+pay_run_version | flags_failing | integer | true | 
+pay_run_version | flags_warning | integer | true | 
+pay_run_version | gross | numeric(20,4) | true | 
+pay_run_version | cpf_employee | numeric(20,4) | true | 
+pay_run_version | cpf_employer | numeric(20,4) | true | 
+pay_run_version | sdl_payable | numeric(20,4) | true | 
+pay_run_version | shg | numeric(20,4) | true | 
+pay_run_version | deductions | numeric(20,4) | true | 
+pay_run_version | reimbursements | numeric(20,4) | true | 
+pay_run_version | net | numeric(20,4) | true | 
+pay_run_version | disburse | numeric(20,4) | true | 
+pay_run_version | employer_cost | numeric(20,4) | true | 
+pay_run_version | approved_by | uuid | false | 
+pay_run_version | approved_at | timestamp with time zone | false | 
+pay_run_version | approved_digest | bytea | false | 
+pay_run_version | envelope | jsonb | false | 
 person | organisation_id | uuid | true | nemura.current_org()
 person | id | uuid | true | uuidv7()
 person | member_id | uuid | false | 
@@ -1551,6 +1622,100 @@ pay_one_off | pay_one_off_pkey | PRIMARY KEY (organisation_id, id)
 pay_one_off | pay_one_off_text | CHECK ((((length(btrim(key)) >= 1) AND (length(btrim(key)) <= 40)) AND ((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 80)) AND (COALESCE(length(note), 0) <= 300)))
 pay_one_off | pay_one_off_used_whole | CHECK (((used_in_run IS NULL) = (used_at IS NULL)))
 pay_one_off | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+pay_run | pay_run_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+pay_run | pay_run_created_at_not_null | NOT NULL created_at
+pay_run | pay_run_created_by_not_null | NOT NULL created_by
+pay_run | pay_run_group_fkey | FOREIGN KEY (organisation_id, pay_group_id) REFERENCES nemura.pay_group(organisation_id, id)
+pay_run | pay_run_id_not_null | NOT NULL id
+pay_run | pay_run_month | CHECK ((EXTRACT(day FROM month) = (1)::numeric))
+pay_run | pay_run_month_not_null | NOT NULL month
+pay_run | pay_run_once | UNIQUE (organisation_id, month, pay_group_id)
+pay_run | pay_run_organisation_id_not_null | NOT NULL organisation_id
+pay_run | pay_run_pay_group_id_not_null | NOT NULL pay_group_id
+pay_run | pay_run_pkey | PRIMARY KEY (organisation_id, id)
+pay_run | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+pay_run_line | pay_run_line_aw_paid_not_null | NOT NULL aw_paid
+pay_run_line | pay_run_line_aw_subject_not_null | NOT NULL aw_subject
+pay_run_line | pay_run_line_computed_not_null | NOT NULL computed
+pay_run_line | pay_run_line_cpf_employee_not_null | NOT NULL cpf_employee
+pay_run_line | pay_run_line_cpf_employer_not_null | NOT NULL cpf_employer
+pay_run_line | pay_run_line_cpf_total_not_null | NOT NULL cpf_total
+pay_run_line | pay_run_line_deductions_not_null | NOT NULL deductions
+pay_run_line | pay_run_line_disburse_not_null | NOT NULL disburse
+pay_run_line | pay_run_line_employer_cost_not_null | NOT NULL employer_cost
+pay_run_line | pay_run_line_flags_not_null | NOT NULL flags
+pay_run_line | pay_run_line_gross_not_null | NOT NULL gross
+pay_run_line | pay_run_line_held_not_null | NOT NULL held
+pay_run_line | pay_run_line_id_not_null | NOT NULL id
+pay_run_line | pay_run_line_items_not_null | NOT NULL items
+pay_run_line | pay_run_line_net_not_null | NOT NULL net
+pay_run_line | pay_run_line_once | UNIQUE (organisation_id, version_id, person_id)
+pay_run_line | pay_run_line_organisation_id_not_null | NOT NULL organisation_id
+pay_run_line | pay_run_line_ow_subject_not_null | NOT NULL ow_subject
+pay_run_line | pay_run_line_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+pay_run_line | pay_run_line_person_id_not_null | NOT NULL person_id
+pay_run_line | pay_run_line_pkey | PRIMARY KEY (organisation_id, id)
+pay_run_line | pay_run_line_reimbursements_not_null | NOT NULL reimbursements
+pay_run_line | pay_run_line_sdl_not_null | NOT NULL sdl
+pay_run_line | pay_run_line_shg_not_null | NOT NULL shg
+pay_run_line | pay_run_line_version_fkey | FOREIGN KEY (organisation_id, version_id) REFERENCES nemura.pay_run_version(organisation_id, id)
+pay_run_line | pay_run_line_version_id_not_null | NOT NULL version_id
+pay_run_line | pay_run_line_working_not_null | NOT NULL working
+pay_run_override | pay_run_override_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+pay_run_override | pay_run_override_created_at_not_null | NOT NULL created_at
+pay_run_override | pay_run_override_created_by_not_null | NOT NULL created_by
+pay_run_override | pay_run_override_field | CHECK ((field = ANY (ARRAY['cpf_employee'::text, 'cpf_employer'::text, 'sdl'::text, 'shg'::text])))
+pay_run_override | pay_run_override_field_not_null | NOT NULL field
+pay_run_override | pay_run_override_id_not_null | NOT NULL id
+pay_run_override | pay_run_override_organisation_id_not_null | NOT NULL organisation_id
+pay_run_override | pay_run_override_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+pay_run_override | pay_run_override_person_id_not_null | NOT NULL person_id
+pay_run_override | pay_run_override_pkey | PRIMARY KEY (organisation_id, id)
+pay_run_override | pay_run_override_reason | CHECK (((length(btrim(reason)) >= 10) AND (length(btrim(reason)) <= 500)))
+pay_run_override | pay_run_override_reason_not_null | NOT NULL reason
+pay_run_override | pay_run_override_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES nemura.pay_run(organisation_id, id)
+pay_run_override | pay_run_override_run_id_not_null | NOT NULL run_id
+pay_run_override | pay_run_override_value | CHECK (((value >= (0)::numeric) AND (value = round(value, 2))))
+pay_run_override | pay_run_override_value_not_null | NOT NULL value
+pay_run_override | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+pay_run_version | pay_run_version_approval_whole | CHECK ((((approved_by IS NULL) = (approved_at IS NULL)) AND ((approved_by IS NULL) = (approved_digest IS NULL)) AND ((approved_by IS NULL) = (envelope IS NULL))))
+pay_run_version | pay_run_version_approved_the_digest | CHECK (((approved_digest IS NULL) OR (approved_digest = digest)))
+pay_run_version | pay_run_version_approver_fkey | FOREIGN KEY (organisation_id, approved_by) REFERENCES nemura.member(organisation_id, id)
+pay_run_version | pay_run_version_by_fkey | FOREIGN KEY (organisation_id, prepared_by) REFERENCES nemura.member(organisation_id, id)
+pay_run_version | pay_run_version_correction | CHECK (((version = 1) = (supersedes IS NULL)))
+pay_run_version | pay_run_version_cpf_employee_not_null | NOT NULL cpf_employee
+pay_run_version | pay_run_version_cpf_employer_not_null | NOT NULL cpf_employer
+pay_run_version | pay_run_version_deductions_not_null | NOT NULL deductions
+pay_run_version | pay_run_version_digest | CHECK ((octet_length(digest) = 32))
+pay_run_version | pay_run_version_digest_not_null | NOT NULL digest
+pay_run_version | pay_run_version_disburse_not_null | NOT NULL disburse
+pay_run_version | pay_run_version_employer_cost_not_null | NOT NULL employer_cost
+pay_run_version | pay_run_version_flags_failing_not_null | NOT NULL flags_failing
+pay_run_version | pay_run_version_flags_warning_not_null | NOT NULL flags_warning
+pay_run_version | pay_run_version_gross_not_null | NOT NULL gross
+pay_run_version | pay_run_version_id_not_null | NOT NULL id
+pay_run_version | pay_run_version_net_not_null | NOT NULL net
+pay_run_version | pay_run_version_once | UNIQUE (organisation_id, run_id, version)
+pay_run_version | pay_run_version_organisation_id_not_null | NOT NULL organisation_id
+pay_run_version | pay_run_version_pack_versions_not_null | NOT NULL pack_versions
+pay_run_version | pay_run_version_people_not_null | NOT NULL people
+pay_run_version | pay_run_version_pkey | PRIMARY KEY (organisation_id, id)
+pay_run_version | pay_run_version_positive | CHECK (((version >= 1) AND (people >= 0) AND (flags_failing >= 0) AND (flags_warning >= 0)))
+pay_run_version | pay_run_version_prepared_at_not_null | NOT NULL prepared_at
+pay_run_version | pay_run_version_prepared_by_not_null | NOT NULL prepared_by
+pay_run_version | pay_run_version_reason | CHECK ((COALESCE(length(reason), 0) <= 500))
+pay_run_version | pay_run_version_reimbursements_not_null | NOT NULL reimbursements
+pay_run_version | pay_run_version_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES nemura.pay_run(organisation_id, id)
+pay_run_version | pay_run_version_run_id_not_null | NOT NULL run_id
+pay_run_version | pay_run_version_sdl_payable_not_null | NOT NULL sdl_payable
+pay_run_version | pay_run_version_segregation | CHECK (((approved_by IS NULL) OR (approved_by <> prepared_by)))
+pay_run_version | pay_run_version_shg_not_null | NOT NULL shg
+pay_run_version | pay_run_version_state | CHECK ((state = ANY (ARRAY['calculated'::text, 'approved'::text, 'superseded'::text, 'posted'::text, 'paid_in_part'::text, 'paid'::text, 'closed'::text])))
+pay_run_version | pay_run_version_state_approved | CHECK (((state <> ALL (ARRAY['approved'::text, 'posted'::text, 'paid_in_part'::text, 'paid'::text, 'closed'::text])) OR (approved_by IS NOT NULL)))
+pay_run_version | pay_run_version_state_not_null | NOT NULL state
+pay_run_version | pay_run_version_supersedes_fkey | FOREIGN KEY (organisation_id, supersedes) REFERENCES nemura.pay_run_version(organisation_id, id)
+pay_run_version | pay_run_version_version_not_null | NOT NULL version
+pay_run_version | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 person | person_created_at_not_null | NOT NULL created_at
 person | person_employment_start_not_null | NOT NULL employment_start
 person | person_id_not_null | NOT NULL id
@@ -1954,6 +2119,16 @@ CREATE UNIQUE INDEX pay_input_pkey ON nemura.pay_input USING btree (organisation
 CREATE UNIQUE INDEX pay_one_off_key_once ON nemura.pay_one_off USING btree (organisation_id, person_id, month, key)
 CREATE INDEX pay_one_off_month_idx ON nemura.pay_one_off USING btree (organisation_id, month)
 CREATE UNIQUE INDEX pay_one_off_pkey ON nemura.pay_one_off USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pay_run_line_once ON nemura.pay_run_line USING btree (organisation_id, version_id, person_id)
+CREATE INDEX pay_run_line_person_idx ON nemura.pay_run_line USING btree (organisation_id, person_id)
+CREATE UNIQUE INDEX pay_run_line_pkey ON nemura.pay_run_line USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pay_run_once ON nemura.pay_run USING btree (organisation_id, month, pay_group_id)
+CREATE UNIQUE INDEX pay_run_override_pkey ON nemura.pay_run_override USING btree (organisation_id, id)
+CREATE INDEX pay_run_override_run_idx ON nemura.pay_run_override USING btree (organisation_id, run_id) WHERE (withdrawn_at IS NULL)
+CREATE UNIQUE INDEX pay_run_pkey ON nemura.pay_run USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pay_run_version_once ON nemura.pay_run_version USING btree (organisation_id, run_id, version)
+CREATE UNIQUE INDEX pay_run_version_pkey ON nemura.pay_run_version USING btree (organisation_id, id)
+CREATE INDEX pay_run_version_run_idx ON nemura.pay_run_version USING btree (organisation_id, run_id, version)
 CREATE INDEX person_classification_person_idx ON nemura.person_classification USING btree (organisation_id, person_id, effective_from)
 CREATE UNIQUE INDEX person_classification_pkey ON nemura.person_classification USING btree (organisation_id, id)
 CREATE UNIQUE INDEX person_contact_pkey ON nemura.person_contact USING btree (organisation_id, person_id)
@@ -2077,6 +2252,12 @@ CREATE TRIGGER pay_input_guard BEFORE DELETE OR UPDATE ON nemura.pay_input FOR E
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_input DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_input', 'id')
 CREATE TRIGGER pay_one_off_guard BEFORE DELETE OR UPDATE ON nemura.pay_one_off FOR EACH ROW EXECUTE FUNCTION nemura.pay_one_off_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_one_off DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_one_off', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_run DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_run', 'id')
+CREATE TRIGGER pay_run_line_append_only BEFORE DELETE OR UPDATE ON nemura.pay_run_line FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('A pay run line')
+CREATE TRIGGER pay_run_override_guard BEFORE DELETE OR UPDATE ON nemura.pay_run_override FOR EACH ROW EXECUTE FUNCTION nemura.pay_run_override_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_run_override DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_run_override', 'id')
+CREATE TRIGGER pay_run_version_guard BEFORE DELETE OR UPDATE ON nemura.pay_run_version FOR EACH ROW EXECUTE FUNCTION nemura.pay_run_version_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_run_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_run_version', 'id')
 CREATE TRIGGER person_guard BEFORE DELETE OR UPDATE ON nemura.person FOR EACH ROW EXECUTE FUNCTION nemura.person_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.person DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('person', 'id')
 CREATE TRIGGER person_classification_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.person_classification FOR EACH ROW EXECUTE FUNCTION nemura.person_classification_guard()
@@ -2163,6 +2344,10 @@ passkey_challenge | tenant_isolation | (organisation_id = nemura.current_org()) 
 pay_group | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pay_input | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pay_one_off | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+pay_run | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+pay_run_line | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+pay_run_override | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+pay_run_version | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person_classification | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 person_contact | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -2938,6 +3123,42 @@ BEGIN
      OR NEW.nature IS DISTINCT FROM OLD.nature OR NEW.cpf_wages IS DISTINCT FROM OLD.cpf_wages OR NEW.for_month IS DISTINCT FROM OLD.for_month OR NEW.payable_on IS DISTINCT FROM OLD.payable_on
      OR (OLD.used_in_run IS NOT NULL AND NEW.used_in_run IS DISTINCT FROM OLD.used_in_run) THEN
     RAISE EXCEPTION 'A one-off item keeps its words and its figures, and is used by one run once' USING ERRCODE = 'NM171';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.pay_run_override_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.run_id IS DISTINCT FROM OLD.run_id OR NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.field IS DISTINCT FROM OLD.field OR NEW.value IS DISTINCT FROM OLD.value
+     OR NEW.reason IS DISTINCT FROM OLD.reason OR NEW.created_by IS DISTINCT FROM OLD.created_by OR NEW.created_at IS DISTINCT FROM OLD.created_at OR OLD.withdrawn_at IS NOT NULL THEN
+    RAISE EXCEPTION 'An override keeps its figure and its reason, and is withdrawn once' USING ERRCODE = 'NM174';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.pay_run_version_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.run_id IS DISTINCT FROM OLD.run_id OR NEW.version IS DISTINCT FROM OLD.version OR NEW.prepared_by IS DISTINCT FROM OLD.prepared_by OR NEW.prepared_at IS DISTINCT FROM OLD.prepared_at
+     OR NEW.supersedes IS DISTINCT FROM OLD.supersedes OR NEW.reason IS DISTINCT FROM OLD.reason OR NEW.digest IS DISTINCT FROM OLD.digest OR NEW.pack_versions IS DISTINCT FROM OLD.pack_versions
+     OR NEW.gross IS DISTINCT FROM OLD.gross OR NEW.net IS DISTINCT FROM OLD.net OR NEW.cpf_employee IS DISTINCT FROM OLD.cpf_employee OR NEW.cpf_employer IS DISTINCT FROM OLD.cpf_employer
+     OR NEW.sdl_payable IS DISTINCT FROM OLD.sdl_payable OR NEW.shg IS DISTINCT FROM OLD.shg OR NEW.deductions IS DISTINCT FROM OLD.deductions OR NEW.disburse IS DISTINCT FROM OLD.disburse
+     OR NEW.reimbursements IS DISTINCT FROM OLD.reimbursements OR NEW.employer_cost IS DISTINCT FROM OLD.employer_cost OR NEW.people IS DISTINCT FROM OLD.people
+     OR (OLD.approved_by IS NOT NULL AND (NEW.approved_by IS DISTINCT FROM OLD.approved_by OR NEW.approved_at IS DISTINCT FROM OLD.approved_at OR NEW.approved_digest IS DISTINCT FROM OLD.approved_digest OR NEW.envelope IS DISTINCT FROM OLD.envelope)) THEN
+    RAISE EXCEPTION 'A pay run version keeps its figures and its digest: a change is the next version' USING ERRCODE = 'NM173';
+  END IF;
+  IF NEW.state IS DISTINCT FROM OLD.state AND NOT ((OLD.state = 'calculated' AND NEW.state IN ('approved', 'superseded')) OR (OLD.state = 'approved' AND NEW.state IN ('superseded', 'posted'))
+     OR (OLD.state = 'posted' AND NEW.state IN ('paid_in_part', 'paid', 'superseded')) OR (OLD.state = 'paid_in_part' AND NEW.state IN ('paid')) OR (OLD.state = 'paid' AND NEW.state = 'closed')) THEN
+    RAISE EXCEPTION 'A % pay run version cannot become %', OLD.state, NEW.state USING ERRCODE = 'NM173';
   END IF;
   RETURN NEW;
 END

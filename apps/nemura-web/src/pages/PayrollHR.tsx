@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
+import { PayRuns } from "../components/PayRuns";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
 import { Shell, admin, team } from "./Shell";
@@ -184,6 +185,7 @@ export function PayrollHR({ roles }: { roles: readonly string[] }) {
                 <button className="fy-btn fy-btn--primary" type="submit">{t("payroll.recordElection")}</button>
               </form>
             </section>
+            <PayRuns month={month} groups={groups} people={people.map((p) => ({ id: p.id, name: p.name }))} />
             <section className="fy-stack fy-stack--2" aria-labelledby="oneoff-h">
               <h2 className="fy-h2" id="oneoff-h">{t("payroll.oneOffs")}</h2>
               <label className="fy-field"><span>{t("payroll.month")}</span><input className="fy-input" type="month" value={month.slice(0, 7)} onChange={(ev) => setMonth(`${ev.target.value}-01`)} /></label>
