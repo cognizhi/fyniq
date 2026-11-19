@@ -96,7 +96,7 @@ type OneOff struct {
 	Month     string `json:"month" format:"date" doc:"The wage month it is paid in." example:"2026-06-01"`
 	Key       string `json:"key" doc:"Its key, used once for a person and month." example:"bonus-2026"`
 	Name      string `json:"name" doc:"As the payslip shows it." example:"Annual bonus"`
-	Nature    string `json:"nature" enum:"bonus,commission,allowance,other" doc:"What it is." example:"bonus"`
+	Nature    string `json:"nature" enum:"bonus,commission,allowance,other,leave_encashment,notice_pay,retrenchment_benefit" doc:"What it is." example:"bonus"`
 	Amount    string `json:"amount" doc:"Dollars." example:"5000.00"`
 	CPFWages  bool   `json:"cpf_wages" doc:"Whether it is CPF wages." example:"true"`
 	ForMonth  string `json:"for_month,omitempty" format:"date" doc:"The month of employment it is for." example:"2025-12-01"`
@@ -109,7 +109,7 @@ type OneOff struct {
 type OneOffInput struct {
 	Key       string `json:"key" minLength:"1" maxLength:"40" doc:"The item's key, used once for a person and month." example:"bonus-2026"`
 	Name      string `json:"name" minLength:"1" maxLength:"80" doc:"As the payslip shows it." example:"Annual bonus"`
-	Nature    string `json:"nature" enum:"bonus,commission,allowance,other" doc:"What it is." example:"bonus"`
+	Nature    string `json:"nature" enum:"bonus,commission,allowance,other,leave_encashment,notice_pay,retrenchment_benefit" doc:"What it is." example:"bonus"`
 	Amount    string `json:"amount" pattern:"^[0-9]{1,14}(\\.[0-9]{1,2})?$" doc:"Dollars." example:"5000.00"`
 	CPFWages  bool   `json:"cpf_wages" doc:"Whether it is CPF wages." example:"true"`
 	ForMonth  string `json:"for_month,omitempty" format:"date" doc:"The first day of the month of employment it is for; empty is the wage month." example:"2025-12-01"`
@@ -333,8 +333,53 @@ type PaymentRecord struct {
 	Note       string `json:"note,omitempty" maxLength:"500" doc:"A note." example:"Seen on the 25 June statement."`
 }
 
+// TaxHoldView is a person's tax-clearance hold.
+type TaxHoldView struct {
+	Held    bool   `json:"held" doc:"True while a hold is in force: every dollar due to the person in a pay run is held and none is disbursed." example:"false"`
+	Version int    `json:"version,omitempty" doc:"The latest version of the hold; Fyniq is told each version." example:"1"`
+	From    string `json:"effective_from,omitempty" format:"date" doc:"The day the latest version took effect." example:"2026-10-15"`
+	Reason  string `json:"reason,omitempty" doc:"The reason recorded." example:"IR21 filed on 15 Oct 2026."`
+}
+
+// TaxHoldInput puts a hold on or releases it.
+type TaxHoldInput struct {
+	Action     string `json:"action" enum:"hold,release" doc:"Put a hold on, or release the one in force." example:"hold"`
+	From       string `json:"effective_from" format:"date" doc:"The day it takes effect." example:"2026-10-15"`
+	EvidenceID string `json:"evidence_id,omitempty" format:"uuid" doc:"A document of the person that shows IRAS's clearance: required to release." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60"`
+	Reason     string `json:"reason,omitempty" maxLength:"300" doc:"A reason." example:"IR21 filed on 15 Oct 2026."`
+}
+
+// FinalPay is a leaver's final pay: when it is due, what leave is left to pay, the hold and the final pay items already added.
+type FinalPay struct {
+	PersonID     string        `json:"person_id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Person       string        `json:"person" doc:"Their legal name." example:"Ben Lim"`
+	Kind         string        `json:"kind" doc:"How they leave." example:"resignation"`
+	LastDay      string        `json:"last_day" format:"date" doc:"The last day of employment." example:"2026-11-04"`
+	NoticeServed bool          `json:"notice_served" doc:"Whether notice was given: a resignation with it is due on the last day, without it within 7 days. The required notice period is not compared with the contract." example:"true"`
+	Due          string        `json:"due" format:"date" doc:"When the final salary is due." example:"2026-11-04"`
+	Latest       string        `json:"latest" format:"date" doc:"The latest day it may be paid under MOM's rule for the case." example:"2026-11-10"`
+	Rule         string        `json:"rule" doc:"The rule, in words, with the pack version it came from." example:"On the last day, or within 3 working days of it."`
+	Month        string        `json:"month" format:"date" doc:"The wage month of the final run: the month of the last day." example:"2026-11-01"`
+	UntakenDays  string        `json:"untaken_days,omitempty" doc:"Annual leave left to the last day, in days, negative when more was taken than earned." example:"3.00"`
+	LeavePay     string        `json:"proposed_leave_pay,omitempty" doc:"What the untaken leave is worth at the day rate of an unpaid-leave deduction (basic monthly pay over the month's working days, RND-PAY-RATIO); empty when none is untaken or the person has no pay record. A proposal to add as an item, never added by itself." example:"692.31"`
+	Hold         TaxHoldView   `json:"hold" doc:"The tax-clearance hold."`
+	Items        []FinalPayRow `json:"items" doc:"The final pay items already added to the month."`
+}
+
+// FinalPayRow is a final pay item.
+type FinalPayRow struct {
+	ID     string `json:"id" format:"uuid" doc:"The item." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f31"`
+	Name   string `json:"name" doc:"As the payslip shows it." example:"Leave pay on leaving"`
+	Nature string `json:"nature" doc:"Leave pay, pay in lieu of notice or a retrenchment benefit." example:"leave_encashment"`
+	Amount string `json:"amount" doc:"Dollars." example:"692.31"`
+	Used   bool   `json:"used" doc:"Whether a run used it." example:"false"`
+}
+
 // Payroll is pay records behind the API.
 type Payroll interface {
+	FinalPayOf(ctx context.Context, s Session, person uuid.UUID) (FinalPay, bool, error)
+	TaxHold(ctx context.Context, s Session, person uuid.UUID) (TaxHoldView, error)
+	SetTaxHold(ctx context.Context, s Session, person uuid.UUID, in TaxHoldInput) error
 	Payments(ctx context.Context, s Session, run uuid.UUID) (RunPayments, error)
 	RecordPayment(ctx context.Context, s Session, run uuid.UUID, in PaymentRecord) error
 	PublishPayslips(ctx context.Context, s Session, run uuid.UUID, version int) (int, error)
@@ -363,6 +408,7 @@ func init() {
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/approval"] = "a version is approved once: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/payslips"] = "a version's payslips are published once: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/payments"] = "a payment's state moves one legal step at a time: a repeat of the same state is refused (NM_PAYROLL_CONFLICT)"
+	IdempotencyExempt["POST /v1/people/{id}/tax-hold"] = "a hold is put on once and released once: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs"] = "a month has one run for a pay group: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/versions"] = "each calculation is its own version of the run, with its own digest"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/overrides"] = "each override is its own record with its own reason: a repeat replaces nothing and the next calculation applies both in order"
@@ -710,6 +756,16 @@ type runChangesOutput struct{ Body RunChanges }
 
 type runPaymentsOutput struct{ Body RunPayments }
 
+type finalPayOutput struct{ Body FinalPay }
+
+type taxHoldOutput struct{ Body TaxHoldView }
+
+type taxHoldInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"`
+	Body   TaxHoldInput
+}
+
 type paymentRecordInput struct {
 	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
 	ID     string `path:"id" format:"uuid" doc:"The run." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"`
@@ -881,6 +937,62 @@ func (a *API) registerPayRuns() {
 		out := &createdOutput{}
 		out.Body.ID = oid
 		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getFinalPay", Method: "GET", Path: "/v1/people/{id}/final-pay", Tags: []string{"Payroll"}, Summary: "A leaver's final pay",
+		Description: "When the leaver's final salary is due and the latest day to pay it under MOM's rule for the case (resignation with or without the notice served; termination, dismissal or retrenchment), the annual leave left to the last day and what it is worth as a proposal, the tax-clearance hold, and the final pay items already added to the month of the last day. 404 when nobody has recorded the person leaving. The Payroll administrator and the Owner. It changes nothing.", Errors: []int{401, 403, 404},
+	}, func(ctx context.Context, in *payIDInput) (*finalPayOutput, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such person.")
+		}
+		f, ok, err := a.d.Payroll.FinalPayOf(ctx, s, id)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		if !ok {
+			return nil, Err(CodeNotFound, "Nobody has recorded that person leaving: record how and when they leave first.")
+		}
+		return &finalPayOutput{Body: f}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getTaxHold", Method: "GET", Path: "/v1/people/{id}/tax-hold", Tags: []string{"Payroll"}, Summary: "A person's tax-clearance hold",
+		Description: "Whether a tax-clearance hold (IRAS Form IR21) is in force for the person, with its latest version. The Payroll administrator and the Owner. It changes nothing.", Errors: []int{401, 403, 404},
+	}, func(ctx context.Context, in *payIDInput) (*taxHoldOutput, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such person.")
+		}
+		h, err := a.d.Payroll.TaxHold(ctx, s, id)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		return &taxHoldOutput{Body: h}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "setTaxHold", Method: "POST", Path: "/v1/people/{id}/tax-hold", Tags: []string{"Payroll"}, Summary: "Put a tax-clearance hold on, or release it",
+		Description: "Puts a hold on the person (every dollar due to them in a pay run is held and none is disbursed) or releases the one in force, with a document of the person that shows IRAS's clearance as evidence. Each is a version that is written once; Fyniq is told each. The Payroll administrator and the Owner. It is audited, never with an amount.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 201,
+	}, func(ctx context.Context, in *taxHoldInput) (*struct{}, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such person.")
+		}
+		if err := a.d.Payroll.SetTaxHold(ctx, s, id, in.Body); err != nil {
+			return nil, payrollError(err)
+		}
+		return nil, nil
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "getPayRunPayments", Method: "GET", Path: "/v1/payroll/runs/{id}/payments", Tags: []string{"Payroll"}, Summary: "A run's payments",

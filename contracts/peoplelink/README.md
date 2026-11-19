@@ -66,3 +66,13 @@ nemura.RecordPaymentState(ctx, tx, org, at, actor, nemura.PaymentInput{
   person paid) or the database refuses it (`pay_payment_event_source`). Nothing in Nemura marks a payment paid for a file or a journal.
 - **What reads it**: the run's payment state (`approved`, `paid in part`, `paid`), N.1 #14 (rejected, returned or unknown, ✖) and #9 (the payslip is due within 3 working days of the confirmed paid date), and the payslip's date of payment.
 - `PaymentBlocked(ctx, tx, run, person)` says whether an unknown outcome blocks a person; the payment file (`p1-nemura-payroll` 6.1) and the `payroll.payments.ready` sender must call it and leave that person out.
+
+## The tax-clearance hold (Nemura's side; the sender is `p1-nemura-fyniq-link` 2.2, 3.3)
+
+Nemura is the hold authority (PRD-002 NM-INT-08). The table and the functions exist (`nemura.tax_hold`, migration `000032_final_pay_tax_hold.sql`); **the sender must read this table, not add another**. A hold is a series of
+versions written once and never changed, one row each: `hold_id` (the id of its first version, stable for the hold), `version` (1, 2), `status` (`held` or `released`), `effective_from`, `evidence_id` (a
+document of the person; the database requires it for a release), `reason`, `recorded_by`, `recorded_at`. `nemura.TaxHoldOf(ctx, tx, person)` reads the latest version; `PutTaxHold` and `ReleaseTaxHold`
+write (also behind `GET`/`POST /v1/people/{id}/tax-hold`). The `people.tax_hold.changed` payload (`person_id`, `hold_id`, `effective_from`, `status`, `evidence_ref`; `object_version` is `version`) is built
+from a row. A new hold starts as `held` at version 1; only the next version releases it. While the latest version is `held`, Nemura's own run holds every dollar due to the person (`pay_run_line.held`, a
+disbursement of zero), so the person has no payment to send; Fyniq's side checks the hold again when it releases a payment (FR-PPL-13). Not modelled yet: "released after paying IRAS's directive" as a status of
+its own (NM-INT-08 lists it): today both releases are `released` with the evidence of what happened.

@@ -90,6 +90,11 @@ A leaver's last salary, leave settlement, notice pay and IR21 clearance hold SHA
 
 Source: PRD-002 §9 · Priority M · Phase P1
 
+#### Scenario: A clearance hold holds everything
+- **GIVEN** a hold is in force for a leaver
+- **WHEN** the final run is calculated
+- **THEN** every dollar due is held and none is disbursed until the hold is released with the person's evidence
+
 #### Scenario: Leaver with tax clearance
 - **GIVEN** an Employment Pass holder leaving on 30 Nov
 - **WHEN** final pay is prepared

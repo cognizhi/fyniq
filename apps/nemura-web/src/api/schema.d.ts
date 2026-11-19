@@ -1856,6 +1856,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people/{id}/final-pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A leaver's final pay
+         * @description When the leaver's final salary is due and the latest day to pay it under MOM's rule for the case (resignation with or without the notice served; termination, dismissal or retrenchment), the annual leave left to the last day and what it is worth as a proposal, the tax-clearance hold, and the final pay items already added to the month of the last day. 404 when nobody has recorded the person leaving. The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["getFinalPay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people/{id}/government-paid-leave": {
         parameters: {
             query?: never;
@@ -2158,6 +2178,30 @@ export interface paths {
         get: operations["getPersonSecret"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/tax-hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's tax-clearance hold
+         * @description Whether a tax-clearance hold (IRAS Form IR21) is in force for the person, with its latest version. The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["getTaxHold"];
+        put?: never;
+        /**
+         * Put a tax-clearance hold on, or release it
+         * @description Puts a hold on the person (every dollar due to them in a pay run is held and none is disbursed) or releases the one in force, with a document of the person that shows IRAS's clearance as evidence. Each is a version that is written once; Fyniq is told each. The Payroll administrator and the Owner. It is audited, never with an amount.
+         */
+        post: operations["setTaxHold"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3478,6 +3522,100 @@ export interface components {
              */
             message: string;
         };
+        FinalPay: {
+            /**
+             * Format: date
+             * @description When the final salary is due.
+             * @example 2026-11-04
+             */
+            due: string;
+            /** @description The tax-clearance hold. */
+            hold: components["schemas"]["TaxHoldView"];
+            /** @description The final pay items already added to the month. */
+            items: components["schemas"]["FinalPayRow"][] | null;
+            /**
+             * @description How they leave.
+             * @example resignation
+             */
+            kind: string;
+            /**
+             * Format: date
+             * @description The last day of employment.
+             * @example 2026-11-04
+             */
+            last_day: string;
+            /**
+             * Format: date
+             * @description The latest day it may be paid under MOM's rule for the case.
+             * @example 2026-11-10
+             */
+            latest: string;
+            /**
+             * Format: date
+             * @description The wage month of the final run: the month of the last day.
+             * @example 2026-11-01
+             */
+            month: string;
+            /**
+             * @description Whether notice was given: a resignation with it is due on the last day, without it within 7 days. The required notice period is not compared with the contract.
+             * @example true
+             */
+            notice_served: boolean;
+            /**
+             * @description Their legal name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description What the untaken leave is worth at the day rate of an unpaid-leave deduction (basic monthly pay over the month's working days, RND-PAY-RATIO); empty when none is untaken or the person has no pay record. A proposal to add as an item, never added by itself.
+             * @example 692.31
+             */
+            proposed_leave_pay?: string;
+            /**
+             * @description The rule, in words, with the pack version it came from.
+             * @example On the last day, or within 3 working days of it.
+             */
+            rule: string;
+            /**
+             * @description Annual leave left to the last day, in days, negative when more was taken than earned.
+             * @example 3.00
+             */
+            untaken_days?: string;
+        };
+        FinalPayRow: {
+            /**
+             * @description Dollars.
+             * @example 692.31
+             */
+            amount: string;
+            /**
+             * Format: uuid
+             * @description The item.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f31
+             */
+            id: string;
+            /**
+             * @description As the payslip shows it.
+             * @example Leave pay on leaving
+             */
+            name: string;
+            /**
+             * @description Leave pay, pay in lieu of notice or a retrenchment benefit.
+             * @example leave_encashment
+             */
+            nature: string;
+            /**
+             * @description Whether a run used it.
+             * @example false
+             */
+            used: boolean;
+        };
         Finding: {
             /**
              * @description People, Packs or Leave.
@@ -4732,7 +4870,7 @@ export interface components {
              * @example bonus
              * @enum {string}
              */
-            nature: "bonus" | "commission" | "allowance" | "other";
+            nature: "bonus" | "commission" | "allowance" | "other" | "leave_encashment" | "notice_pay" | "retrenchment_benefit";
             /**
              * @description A note.
              * @example Annual bonus.
@@ -4803,7 +4941,7 @@ export interface components {
              * @example bonus
              * @enum {string}
              */
-            nature: "bonus" | "commission" | "allowance" | "other";
+            nature: "bonus" | "commission" | "allowance" | "other" | "leave_encashment" | "notice_pay" | "retrenchment_benefit";
             /**
              * @description A note.
              * @example Annual bonus.
@@ -6912,6 +7050,55 @@ export interface components {
              * @example true
              */
             setup_done: boolean;
+        };
+        TaxHoldInput: {
+            /**
+             * @description Put a hold on, or release the one in force.
+             * @example hold
+             * @enum {string}
+             */
+            action: "hold" | "release";
+            /**
+             * Format: date
+             * @description The day it takes effect.
+             * @example 2026-10-15
+             */
+            effective_from: string;
+            /**
+             * Format: uuid
+             * @description A document of the person that shows IRAS's clearance: required to release.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60
+             */
+            evidence_id?: string;
+            /**
+             * @description A reason.
+             * @example IR21 filed on 15 Oct 2026.
+             */
+            reason?: string;
+        };
+        TaxHoldView: {
+            /**
+             * Format: date
+             * @description The day the latest version took effect.
+             * @example 2026-10-15
+             */
+            effective_from?: string;
+            /**
+             * @description True while a hold is in force: every dollar due to the person in a pay run is held and none is disbursed.
+             * @example false
+             */
+            held: boolean;
+            /**
+             * @description The reason recorded.
+             * @example IR21 filed on 15 Oct 2026.
+             */
+            reason?: string;
+            /**
+             * Format: int64
+             * @description The latest version of the hold; Fyniq is told each version.
+             * @example 1
+             */
+            version?: number;
         };
         Terms: {
             /** @description The base terms. */
@@ -14262,6 +14449,77 @@ export interface operations {
             };
         };
     };
+    getFinalPay: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinalPay"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     recordGovernmentPaidLeave: {
         parameters: {
             query?: never;
@@ -15605,6 +15863,159 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTaxHold: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxHoldView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setTaxHold: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaxHoldInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

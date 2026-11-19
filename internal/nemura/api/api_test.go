@@ -330,6 +330,15 @@ func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.
 // fakeLetters answers letters with whatever the test says.
 type fakePayroll struct{ err error }
 
+func (f fakePayroll) FinalPayOf(context.Context, Session, uuid.UUID) (FinalPay, bool, error) {
+	return FinalPay{}, true, f.err
+}
+func (f fakePayroll) TaxHold(context.Context, Session, uuid.UUID) (TaxHoldView, error) {
+	return TaxHoldView{}, f.err
+}
+func (f fakePayroll) SetTaxHold(context.Context, Session, uuid.UUID, TaxHoldInput) error {
+	return f.err
+}
 func (f fakePayroll) Payments(context.Context, Session, uuid.UUID) (RunPayments, error) {
 	return RunPayments{}, f.err
 }

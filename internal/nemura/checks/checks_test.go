@@ -109,3 +109,41 @@ func TestPaymentsAndPayslipsAreChecked(t *testing.T) {
 		t.Errorf("a day in lieu in the window: %+v", got)
 	}
 }
+
+// A run not approved by the latest approval day is ⏰ and, after the pay day, ✖, and says so when the Employment Act's 7 days are gone too (N.1 #2); a leaver's final pay is ⏰ from a week before it is due,
+// ✖ after the latest day if unpaid, ⚠ if paid late and ⚠ with the hold named when held (N.1 #15).
+// req: NM-PAY-03, NM-PAY-08
+func TestThePayrollCalendarAndFinalPayAreChecked(t *testing.T) {
+	jun := d("2026-06-01")
+	fact := func(group string, approved, members bool) CalendarFact {
+		return CalendarFact{Group: group, Month: jun, PayDate: d("2026-06-25"), ApproveBy: d("2026-06-22"), HasRun: true, Approved: approved, HasMembers: members}
+	}
+	facts := []CalendarFact{fact("Monthly", false, true), fact("Approved", true, true), fact("Empty", false, false)}
+	if got := PayrollCalendar(facts, 7, d("2026-06-21")); len(got) != 0 {
+		t.Errorf("before the approval day: %+v", got)
+	}
+	if got := PayrollCalendar(facts, 7, d("2026-06-23")); len(got) != 1 || got[0].Check != 2 || got[0].Status != Due || !strings.Contains(got[0].Message, "due for approval by 2026-06-22") {
+		t.Errorf("on the approval day: %+v", got)
+	}
+	if got := PayrollCalendar(facts, 7, d("2026-06-26")); len(got) != 1 || got[0].Status != Fail || !strings.Contains(got[0].Message, "pay day, 2026-06-25, has passed") {
+		t.Errorf("after the pay day: %+v", got)
+	}
+	if got := PayrollCalendar(facts, 7, d("2026-07-08")); len(got) != 1 || !strings.Contains(got[0].Message, "Employment Act's deadline, 7 days after the end of the salary period (2026-07-07)") {
+		t.Errorf("after the statutory day: %+v", got)
+	}
+	paid := d("2026-11-04")
+	late := d("2026-11-12")
+	ff := []FinalPayFact{{Person: "a", Due: d("2026-11-04"), Latest: d("2026-11-10")}, {Person: "b", Due: d("2026-11-04"), Latest: d("2026-11-10"), PaidOn: &paid}, {Person: "c", Due: d("2026-11-04"), Latest: d("2026-11-10"), PaidOn: &late},
+		{Person: "d", Due: d("2026-11-04"), Latest: d("2026-11-10"), Held: true}, {Person: "e", Due: d("2026-12-30"), Latest: d("2026-12-30")}}
+	got := FinalPay(ff, d("2026-11-11"))
+	if len(got) != 3 || got[0].Subject != "a" || got[0].Status != Fail || !strings.Contains(got[0].Message, "due by 2026-11-10 and is not paid") || got[1].Subject != "c" || got[1].Status != Warn || !strings.Contains(got[1].Message, "paid on 2026-11-12") ||
+		got[2].Subject != "d" || got[2].Status != Warn || !strings.Contains(got[2].Message, "tax-clearance hold") {
+		t.Errorf("final pay: %+v", got)
+	}
+	if got := FinalPay(ff[:1], d("2026-10-28")); len(got) != 1 || got[0].Status != Due || got[0].Check != 15 {
+		t.Errorf("a week before: %+v", got)
+	}
+	if got := FinalPay(ff[:1], d("2026-10-20")); len(got) != 0 {
+		t.Errorf("a fortnight before: %+v", got)
+	}
+}

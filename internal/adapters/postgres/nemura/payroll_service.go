@@ -494,3 +494,99 @@ func (p PayrollService) RecordPayment(ctx context.Context, s api.Session, run uu
 		return RecordPaymentState(ctx, tx, s.Organisation, p.Clock.Now(), user(member), PaymentInput{Run: run, Person: person, State: in.State, Amount: in.Amount, PaidOn: paidOn, Source: "manual", Evidence: &ev, Note: in.Note, By: &member})
 	})
 }
+
+func holdView(h TaxHoldRow, found bool) api.TaxHoldView {
+	if !found {
+		return api.TaxHoldView{}
+	}
+	return api.TaxHoldView{Held: h.Held, Version: h.Version, From: day(h.From), Reason: h.Reason}
+}
+
+// TaxHold is whether a tax-clearance hold is in force for the person.
+func (p PayrollService) TaxHold(ctx context.Context, s api.Session, person uuid.UUID) (api.TaxHoldView, error) {
+	var out api.TaxHoldView
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		h, found, err := TaxHoldOf(ctx, tx, person)
+		out = holdView(h, found)
+		return err
+	})
+	return out, err
+}
+
+// SetTaxHold puts a hold on a person or releases it, with a document of the person as the evidence of a release.
+func (p PayrollService) SetTaxHold(ctx context.Context, s api.Session, person uuid.UUID, in api.TaxHoldInput) error {
+	from, err := time.Parse(time.DateOnly, in.From)
+	if err != nil {
+		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "effective_from: write the day as YYYY-MM-DD."}
+	}
+	return p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		if in.Action == "release" {
+			ev, err := uuid.Parse(in.EvidenceID)
+			if err != nil {
+				return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "evidence_id: a release needs a document of the person that shows IRAS's clearance."}
+			}
+			return ReleaseTaxHold(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, person, ev, from, in.Reason)
+		}
+		_, err := PutTaxHold(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, person, from, in.Reason)
+		return err
+	})
+}
+
+// FinalPayOf is a leaver's final pay: the deadline by the case, the leave left and its worth as a proposal, the hold and the items added.
+func (p PayrollService) FinalPayOf(ctx context.Context, s api.Session, person uuid.UUID) (api.FinalPay, bool, error) {
+	var out api.FinalPay
+	var ok bool
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		off, found, err := OffboardingOf(ctx, tx, person)
+		if err != nil || !found {
+			return err
+		}
+		ok = true
+		out = api.FinalPay{PersonID: person.String(), Person: off.PersonName, Kind: off.Kind, LastDay: day(off.LastDay), NoticeServed: off.NoticeGiven != nil, Month: day(time.Date(off.LastDay.Year(), off.LastDay.Month(), 1, 0, 0, 0, 0, time.UTC)), Items: []api.FinalPayRow{}}
+		if v, has := p.peoplePack(off.LastDay); has {
+			due, latest, rule := payroll.FinalPayDeadline(v, off.Kind, off.NoticeGiven != nil, off.LastDay)
+			out.Due, out.Latest, out.Rule = day(due), day(latest), rule+" ("+v.ID+")"
+			if p.Packs != nil {
+				rules, _, _, found, err := PolicyOn(ctx, tx, startOf(off.LastDay.Year()))
+				if err != nil {
+					return err
+				}
+				var days []int
+				if found {
+					days = rules.AnnualLeaveDays
+				}
+				if st, err := LeaveSettlement(ctx, tx, person, off.LastDay, p.Clock.Now(), v, days); err == nil {
+					out.UntakenDays = st.Untaken.String()
+					if st.Untaken > 0 {
+						if pay, has, err := PayOn(ctx, tx, person, off.LastDay); err != nil {
+							return err
+						} else if has {
+							pat, set, err := WorkingPatternOn(ctx, tx, person, monthEnd(off.LastDay))
+							if err != nil {
+								return err
+							}
+							days := apd.New(int64(st.Untaken), -2)
+							out.LeavePay = cents2(payroll.RatioDays(dec(pay.Basic), days, workingDays(pat, set, off.LastDay)))
+						}
+					}
+				}
+			}
+		}
+		hold, hf, err := TaxHoldOf(ctx, tx, person)
+		if err != nil {
+			return err
+		}
+		out.Hold = holdView(hold, hf)
+		rows, err := OneOffs(ctx, tx, time.Date(off.LastDay.Year(), off.LastDay.Month(), 1, 0, 0, 0, 0, time.UTC))
+		if err != nil {
+			return err
+		}
+		for _, r := range rows {
+			if r.Person == person && (r.Nature == payroll.NatureLeavePay || r.Nature == payroll.NatureNoticePay || r.Nature == payroll.NatureRetrenchment) {
+				out.Items = append(out.Items, api.FinalPayRow{ID: r.ID.String(), Name: r.Name, Nature: r.Nature, Amount: r.Amount, Used: r.Used})
+			}
+		}
+		return nil
+	})
+	return out, ok, err
+}

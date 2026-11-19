@@ -219988,7 +219988,7 @@ paths:
         - STORAGE-PLAN-01
       x-fyniq-permission:
         capability: Reports, dashboards
-        note: A view of the reports limited to sales, purchases, payroll or a department is refused; the board pack's view of the P&L and balance sheet arrives with the board pack.
+        note: A view of the reports limited to sales, purchases or payroll is refused; one limited to a department reads the P&L only, as the totals of its department values (FR-ADM-01), and its comparatives only with the prior period or year; the board pack's view of the P&L and balance sheet arrives with the board pack.
         right: V
   /v1/reports/statements/{kind}/export:
     get:

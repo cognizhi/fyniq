@@ -24,6 +24,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
+	"github.com/cognizhi/fyniq/internal/nemura/onboarding"
 	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
 )
@@ -699,5 +700,180 @@ func TestAPaymentMovesThroughLegalStatesAndAnUnknownOutcomeBlocksANewPayment(t *
 			}
 			_ = tx.Rollback(ctx)
 		}
+	}
+}
+
+// A leaver's final pay: its deadline by the case from the pack, the leave left and its worth as a proposal, leave pay and a retrenchment benefit as items (a retrenchment benefit is never CPF wages, in the
+// API and in the database), and a tax-clearance hold that holds every dollar due, is released only with a document of the person as evidence, and is history; Checks shows the final pay as late until it is
+// paid (NM-PAY-06, NM-PAY-08, FR-PAY-10, N.1 #15).
+// req: NM-PAY-06, NM-PAY-08, NM-INT-08
+// asvs: V8.2.1, V8.3.1
+func TestAFinalPayHasItsDeadlineItsItemsAndATaxClearanceHoldThatHoldsEverything(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := d("2026-11-20").Add(10 * time.Hour)
+	st := store(t, "nemura_api")
+	packsSvc, err := nemura.NewPacksService(st, clock.NewFrozen(now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	blobs, _ := local.NewDir(t.TempDir())
+	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs}
+	rs := nemura.RestrictedService{Store: st, Blobs: blobs, Clock: clock.NewFrozen(now)}
+	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
+	approver := api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now}
+	birth := d("1990-05-20")
+	gid, _ := svc.CreateGroup(ctx, prep, api.PayGroupInput{Name: "Monthly", PayDay: 25, CutoffDays: 7, ApprovalDays: 3})
+	if err := svc.SetPay(ctx, prep, lt.ben, d("2026-01-05"), api.PersonPayInput{GroupID: gid, BasicMonthly: "4500.00", SHGFund: "CDAC"}); err != nil {
+		t.Fatal(err)
+	}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.SetClassification(ctx, tx, lt.c.org, now, lt.c.owner, lt.ben, d("2026-01-06"), people.Classification{ContractType: "service", EACovered: true, PartIVClass: "none", Residency: "citizen", BirthDate: &birth})
+	})
+	if _, ok, _ := svc.FinalPayOf(ctx, prep, lt.ben); ok {
+		t.Error("final pay of a person nobody has recorded leaving")
+	}
+	last := d("2026-06-30")
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		_, err := nemura.SetOffboarding(ctx, tx, lt.c.org, now, lt.c.hr, lt.ben, onboarding.Leaving{Kind: "termination", LastDay: last})
+		return err
+	})
+	fp, ok, err := svc.FinalPayOf(ctx, prep, lt.ben)
+	if err != nil || !ok || fp.Due != "2026-06-30" || fp.Latest != "2026-07-03" || fp.NoticeServed || !strings.Contains(fp.Rule, "3 working days") || !strings.Contains(fp.Rule, "sg-people@2026.9") || fp.Month != "2026-06-01" || fp.Hold.Held {
+		t.Fatalf("final pay: %+v %v", fp, err)
+	}
+	// 3 days untaken at the unpaid-leave day rate: 4,500 × 3 ÷ 22 working days of June 2026 = 613.636, rounded once to 613.64 (RND-PAY-RATIO).
+	if fp.UntakenDays != "3.00" || fp.LeavePay != "613.64" {
+		t.Errorf("the leave left and its worth: %q %q", fp.UntakenDays, fp.LeavePay)
+	}
+	// Checks: the final pay was due by 3 July and is not paid.
+	payChecks := func() string {
+		all, err := packsSvc.Checks(ctx, prep, now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []string
+		for _, f := range all {
+			if f.Check == 15 || f.Check == 2 {
+				out = append(out, fmt.Sprintf("#%d %s", f.Check, f.Status))
+			}
+		}
+		return strings.Join(out, ", ")
+	}
+	if got := payChecks(); got != "#15 fail" {
+		t.Errorf("Checks, final pay not paid: %q", got)
+	}
+	// Items: leave pay and a pay in lieu of notice; a retrenchment benefit is never CPF wages.
+	add := func(key, name, nature string, cpf bool) error {
+		_, err := svc.AddOneOff(ctx, prep, lt.ben, d("2026-06-01"), api.OneOffInput{Key: key, Name: name, Nature: nature, Amount: "1000.00", CPFWages: cpf, ForMonth: "2026-06-01", PayableOn: "2026-06-30"})
+		return err
+	}
+	if err := add("retrench", "Retrenchment benefit", "retrenchment_benefit", true); payCode(err) != payroll.CodeInvalid || !strings.Contains(err.Error(), "not CPF wages") {
+		t.Errorf("a retrenchment benefit as CPF wages: %v", err)
+	}
+	su := connect(t, db.SuperURL())
+	if _, err := su.Exec(ctx, "INSERT INTO nemura.pay_one_off (organisation_id, person_id, month, key, name, nature, amount, cpf_wages, created_by, created_at) VALUES ($1, $2, '2026-06-01', 'x', 'x', 'retrenchment_benefit', 1, true, $3, now())", lt.c.org, lt.ben, lt.c.pay); err == nil || !strings.Contains(err.Error(), "retrenchment_not_wages") {
+		t.Errorf("the database lets a retrenchment benefit be CPF wages: %v", err)
+	}
+	if err := add("retrench", "Retrenchment benefit", "retrenchment_benefit", false); err != nil {
+		t.Fatal(err)
+	}
+	if err := add("leave", "Leave pay on leaving", "leave_encashment", true); err != nil {
+		t.Fatal(err)
+	}
+	// The hold: put on, once; every dollar due is held; a run flags it.
+	doc, err := rs.AddDocument(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr}, lt.ben, "other", "IRAS clearance letter", "employment_record", "application/pdf", []byte("%PDF clearance"), []string{"payroll_admin"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := rs.AddDocument(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr}, lt.cy, "other", "Somebody else's", "employment_record", "application/pdf", []byte("%PDF other"), []string{"payroll_admin"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.SetTaxHold(ctx, prep, lt.ben, api.TaxHoldInput{Action: "release", From: "2026-07-10", EvidenceID: doc.String()}); payCode(err) != payroll.CodeConflict {
+		t.Errorf("releasing a hold that is not there: %v", err)
+	}
+	if err := svc.SetTaxHold(ctx, prep, lt.ben, api.TaxHoldInput{Action: "hold", From: "2026-06-01", Reason: "IR21 filed."}); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.SetTaxHold(ctx, prep, lt.ben, api.TaxHoldInput{Action: "hold", From: "2026-06-01"}); payCode(err) != payroll.CodeConflict {
+		t.Errorf("a second hold while one is in force: %v", err)
+	}
+	if h, _ := svc.TaxHold(ctx, prep, lt.ben); !h.Held || h.Version != 1 || h.Reason != "IR21 filed." {
+		t.Errorf("hold: %+v", h)
+	}
+	run, err := svc.StartRun(ctx, prep, d("2026-06-01"), mustUUID(gid))
+	if err != nil {
+		t.Fatal(err)
+	}
+	detail, err := svc.RunDetail(ctx, prep, mustUUID(run.ID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	line := detail.Lines[0]
+	if line.Disburse != "0.00" || line.Held == "0.00" || line.Held != line.Net {
+		t.Errorf("a hold holds everything: net %s held %s disburse %s", line.Net, line.Held, line.Disburse)
+	}
+	codes := []string{}
+	for _, f := range line.Flags {
+		codes = append(codes, f.Code)
+	}
+	if !strings.Contains(strings.Join(codes, ","), "CLEARANCE_HOLD") || !strings.Contains(strings.Join(codes, ","), "FINAL_PAY_CPF") {
+		t.Errorf("flags: %v", codes)
+	}
+	if err := svc.Approve(ctx, approver, mustUUID(run.ID), 1, run.Latest.Digest); err != nil {
+		t.Fatal(err)
+	}
+	if got := payChecks(); got != "#15 warn" {
+		t.Errorf("Checks, final pay held: %q", got)
+	}
+	// Release: with a document of the person only; then the next version pays.
+	if err := svc.SetTaxHold(ctx, prep, lt.ben, api.TaxHoldInput{Action: "release", From: "2026-07-10"}); payCode(err) != payroll.CodeInvalid {
+		t.Errorf("a release with no evidence: %v", err)
+	}
+	if err := svc.SetTaxHold(ctx, prep, lt.ben, api.TaxHoldInput{Action: "release", From: "2026-07-10", EvidenceID: other.String()}); payCode(err) != payroll.CodeInvalid || !strings.Contains(err.Error(), "document of the person") {
+		t.Errorf("a release with somebody else's document: %v", err)
+	}
+	if err := svc.SetTaxHold(ctx, prep, lt.ben, api.TaxHoldInput{Action: "release", From: "2026-07-10", EvidenceID: doc.String()}); err != nil {
+		t.Fatal(err)
+	}
+	if h, _ := svc.TaxHold(ctx, prep, lt.ben); h.Held || h.Version != 2 {
+		t.Errorf("after the release: %+v", h)
+	}
+	for _, q := range []string{"UPDATE nemura.tax_hold SET status = 'held'", "DELETE FROM nemura.tax_hold"} {
+		if _, err := su.Exec(ctx, q); err == nil || !strings.Contains(err.Error(), "NM127") {
+			t.Errorf("%s: %v", q, err)
+		}
+	}
+	if _, err := su.Exec(ctx, "INSERT INTO nemura.tax_hold (organisation_id, id, hold_id, person_id, version, status, effective_from, recorded_by, recorded_at) VALUES ($1, uuidv7(), uuidv7(), $2, 1, 'released', '2026-07-11', $3, now())", lt.c.org, lt.ben, lt.c.pay); err == nil {
+		t.Error("a release with no evidence got in")
+	}
+	c2, err := svc.Recalculate(ctx, prep, mustUUID(run.ID), "The hold is released.")
+	if err != nil {
+		t.Fatal(err)
+	}
+	d2, err := svc.RunDetail(ctx, prep, mustUUID(run.ID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l := d2.Lines[0]; l.Held != "0.00" || l.Disburse != l.Net {
+		t.Errorf("after the release: net %s held %s disburse %s", l.Net, l.Held, l.Disburse)
+	}
+	if err := svc.Approve(ctx, approver, mustUUID(run.ID), 2, c2.Latest.Digest); err != nil {
+		t.Fatal(err)
+	}
+	if got := payChecks(); got != "#15 fail" {
+		t.Errorf("Checks, hold released and not paid: %q", got)
+	}
+	// Paid on 2 July, within the 3 working days: nothing to say. Paid on 6 July would be ⚠.
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.RecordPaymentState(ctx, tx, lt.c.org, now, audit.Actor{Type: "service", ID: "link"}, nemura.PaymentInput{Run: mustUUID(run.ID), Person: lt.ben, State: "paid", Instruction: "I-9", Amount: d2.Lines[0].Disburse, PaidOn: d("2026-07-02"), Source: "fyniq"})
+	})
+	if got := payChecks(); got != "" {
+		t.Errorf("Checks, final pay paid in time: %q", got)
+	}
+	var leaks int
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F-])(4500\.00|1000\.00|IR21 clearance)([^0-9a-fA-F-]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
+		t.Errorf("amounts in the audit trail: %d %v", leaks, err)
 	}
 }

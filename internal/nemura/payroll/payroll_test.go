@@ -657,3 +657,75 @@ func TestAPayslipHoldsMOMsTwelveItemsAndAddsUpToTheNetSalary(t *testing.T) {
 		t.Errorf("plain: %+v %v", plain, err)
 	}
 }
+
+func peoplePack(t *testing.T) pack.Version {
+	t.Helper()
+	v, err := pack.Load(packs.Files(), "sg-people/2026.9")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return v
+}
+
+// A leaver's final salary is due by the case (MOM, sg-people@2026.9): a resignation with the notice served on the last day; without it within 7 days; a termination or a retrenchment on the last
+// day or within 3 working days, which skip the weekend, a public holiday and the Monday in lieu. Last day Wed 4 Nov 2026: Thu 5, Fri 6, then Mon 9 Nov is the day in lieu of Deepavali (Sunday 8), so
+// the third working day is Tue 10 Nov.
+// req: NM-PAY-08
+func TestAFinalSalaryIsDueByTheCaseOfTheLeaving(t *testing.T) {
+	v := peoplePack(t)
+	last := day("2026-11-04")
+	for _, tc := range []struct {
+		kind         string
+		served       bool
+		due, latest  string
+		ruleContains string
+	}{
+		{"resignation", true, "2026-11-04", "2026-11-04", "served the notice"},
+		{"resignation", false, "2026-11-04", "2026-11-11", "Within 7 days"},
+		{"termination", false, "2026-11-04", "2026-11-10", "3 working days"},
+		{"retrenchment", false, "2026-11-04", "2026-11-10", "3 working days"},
+		{"end_of_contract", false, "2026-11-04", "2026-11-04", "names no other case"},
+	} {
+		due, latest, rule := FinalPayDeadline(v, tc.kind, tc.served, last)
+		if due.Format(time.DateOnly) != tc.due || latest.Format(time.DateOnly) != tc.latest || !strings.Contains(rule, tc.ruleContains) {
+			t.Errorf("%s served %v: due %s latest %s (%s)", tc.kind, tc.served, due.Format(time.DateOnly), latest.Format(time.DateOnly), rule)
+		}
+	}
+}
+
+// Final pay: leave pay and pay in lieu of notice raise a look-at flag until their CPF treatment is confirmed, and a retrenchment benefit is never CPF wages; under a clearance hold every dollar due is
+// held and nothing is disbursed: S$4,000 net and S$30.00 of reimbursements are held in full (FR-PAY-10, NM-PAY-06).
+// req: NM-PAY-06, FR-PAY-10
+func TestFinalPayFlagsLeavePayHoldsEverythingUnderAClearanceHoldAndKeepsARetrenchmentBenefitOutOfCPF(t *testing.T) {
+	leave := Item{Key: "leave", Name: "Leave pay on leaving", Nature: NatureLeavePay, Amount: D("1000.00"), CPFWages: false}
+	r, err := Calculate(Month{Month: day("2026-06-01"), Person: citizen(), Items: []Item{basic("5000.00"), leave}, Final: true, HoldAll: true, Reimbursements: []*apd.Decimal{D("30.00")},
+		YTD: YearToDate{Known: true, OW: D("25000"), AWSubject: D("0"), AWPaid: D("0")}}, statutory(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Gross 6,000 with the leave pay outside CPF wages: CPF on 5,000 only, 1,000 for the employee; net 5,000; held 5,030.
+	if text(r.Net) != "5000.00" || text(r.Held) != "5030.00" || text(r.Disburse) != "0.00" {
+		t.Errorf("net %s held %s disburse %s", text(r.Net), text(r.Held), text(r.Disburse))
+	}
+	codes := []string{}
+	for _, f := range r.Flags {
+		codes = append(codes, f.Code)
+		if f.Code == "FINAL_PAY_CPF" && (f.Fail || !strings.Contains(f.Message, "Leave pay on leaving")) {
+			t.Errorf("flag: %+v", f)
+		}
+	}
+	if strings.Join(codes, ",") != "FINAL_PAY_CPF,CLEARANCE_HOLD" {
+		t.Errorf("flags: %v", codes)
+	}
+	// Without the hold the person is paid, and nothing is flagged for ordinary pay.
+	r2, _ := Calculate(Month{Month: day("2026-06-01"), Person: citizen(), Items: []Item{basic("5000.00")}, YTD: YearToDate{Known: true, OW: D("25000"), AWSubject: D("0"), AWPaid: D("0")}}, statutory(t))
+	if text(r2.Held) != "0" && text(r2.Held) != "0.00" || text(r2.Disburse) != "4000.00" {
+		t.Errorf("no hold: held %s disburse %s", text(r2.Held), text(r2.Disburse))
+	}
+	if err := (OneOff{Key: "retrench", Name: "Retrenchment benefit", Nature: NatureRetrenchment, Amount: "9000.00", CPFWages: true}).Check(); err == nil || !strings.Contains(err.Error(), "not CPF wages") {
+		t.Errorf("a retrenchment benefit as CPF wages: %v", err)
+	}
+	if err := (OneOff{Key: "retrench", Name: "Retrenchment benefit", Nature: NatureRetrenchment, Amount: "9000.00"}).Check(); err != nil {
+		t.Errorf("a retrenchment benefit: %v", err)
+	}
+}
