@@ -783,6 +783,21 @@
     "status": "draft"
   },
   {
+    "file": "projects-projects.md",
+    "key": "projects.projects",
+    "roles": [
+      "accountant",
+      "controller",
+      "owner",
+      "approver",
+      "ar_specialist",
+      "auditor",
+      "tax_agent",
+      "employee"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "purchase-orders.md",
     "key": "purchases.orders",
     "roles": [
