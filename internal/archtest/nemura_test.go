@@ -103,3 +103,21 @@ func TestTheTestDatabasesRunTheLocalStacksPostgres(t *testing.T) {
 		t.Errorf("the PostgreSQL pins differ: compose %s, pgtest %s, nemuratest %s", found[0], found[1], found[2])
 	}
 }
+
+// The pack validator Nemura shares with Fyniq stays pure: it imports nothing of the module and no I/O package, so a change that gives it a database,
+// a clock or a network fails here (owner decision O1, p1-nemura-records-packs). NM-ARC-05: shared rules, not shared code paths.
+func TestTheSharedPackLibraryStaysPure(t *testing.T) {
+	for _, tags := range []string{"", "local"} {
+		if v := PackViolations(goList(t, tags)); len(v) > 0 {
+			t.Errorf("tags %q:\n%s", tags, strings.Join(v, "\n"))
+		}
+	}
+	got := PackViolations([]Pkg{
+		{ImportPath: Module + "/internal/domain/pack", Imports: []string{"fmt", "encoding/csv", "time"}}, // fine
+		{ImportPath: Module + "/internal/domain/pack", Imports: []string{"net/http", "os", Module + "/internal/ports"}},
+		{ImportPath: Module + "/internal/domain/other", Imports: []string{"os"}}, // not the pack library
+	})
+	if len(got) != 3 {
+		t.Errorf("want the 3 planted impurities, got %d: %v", len(got), got)
+	}
+}
