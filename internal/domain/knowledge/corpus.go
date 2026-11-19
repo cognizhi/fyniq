@@ -3,10 +3,13 @@ package knowledge
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/fs"
 	"path"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -31,6 +34,50 @@ type Corpus struct {
 	Pages []Page
 	Guide []Guide
 	Index string // kb/index.md as shipped
+	// PackVersions are the statutory pack versions that exist, by pack, in order (LoadPacks); nil until loaded, when the lint
+	// leaves the packs a page declares unchecked.
+	PackVersions map[string][]PackVersion
+}
+
+// PackVersion is a statutory pack's version, "<year>.<n>".
+type PackVersion struct{ Year, N int }
+
+func (v PackVersion) String() string { return fmt.Sprintf("%d.%d", v.Year, v.N) }
+func (v PackVersion) less(w PackVersion) bool {
+	return v.Year < w.Year || v.Year == w.Year && v.N < w.N
+}
+
+var packVersionDir = regexp.MustCompile(`^(\d{4})\.(\d+)$`)
+
+// LoadPacks reads which versions of each statutory pack exist, from the packs directory (packs/<pack>/<year>.<n>/). A
+// directory that is not there means no pack exists.
+func (c *Corpus) LoadPacks(packs fs.FS) error {
+	c.PackVersions = map[string][]PackVersion{}
+	entries, err := fs.ReadDir(packs, ".")
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("read the packs: %w", err)
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		versions, err := fs.ReadDir(packs, e.Name())
+		if err != nil {
+			return fmt.Errorf("read the pack %s: %w", e.Name(), err)
+		}
+		for _, v := range versions {
+			if m := packVersionDir.FindStringSubmatch(v.Name()); m != nil && v.IsDir() {
+				y, _ := strconv.Atoi(m[1])
+				n, _ := strconv.Atoi(m[2])
+				c.PackVersions[e.Name()] = append(c.PackVersions[e.Name()], PackVersion{y, n})
+			}
+		}
+		sort.Slice(c.PackVersions[e.Name()], func(i, j int) bool { return c.PackVersions[e.Name()][i].less(c.PackVersions[e.Name()][j]) })
+	}
+	return nil
 }
 
 // roleNames are the roles as the guide pages name them, where a page's name differs from the role's key

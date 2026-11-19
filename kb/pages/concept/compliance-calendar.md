@@ -10,8 +10,10 @@ taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
-schema: kb-schema@1
+schema: kb-schema@2
 compiled_at: 2026-11-17
+packs:
+  - sg-deadlines@2026.1
 aliases:
   - deadlines
   - filing deadlines

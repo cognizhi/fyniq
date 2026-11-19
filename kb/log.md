@@ -645,3 +645,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | docs/user-guide/projects-time.md → projects.time (time entry, timer and approval, p1-projects slice 2)
 
 ## [2026-11-19] compile | docs/user-guide/projects-rates.md → projects.rates (rates and time at cost, p1-projects slice 3)
+
+## [2026-11-19] compile | every page → kb-schema@2 (the optional packs field; content unchanged); compliance.gst declares sg-gst@2026.3 and compliance.calendar sg-deadlines@2026.1 (AI-53)
