@@ -31,13 +31,16 @@ Load before each slice: `fyniq-accounting-domain` (money, rounding, postings), `
 
 ## 2. Pay records, inputs and the calendar (slice 2)
 
-- [ ] 2.1 Migration: pay groups and the payroll calendar (pay day, cut-off, latest approval), the pay items of a person (basic, allowances, fixed deductions, with the facts of FR-PAY-17),
+- [x] 2.1 Migration 000028: pay groups and the payroll calendar (pay day, cut-off, latest approval), the pay items of a person (basic, allowances, fixed deductions, with the facts of FR-PAY-17),
   the pay history (effective-dated, only ended), the self-help group fund and opt-out, the permanent-resident election with evidence, and the year to date (imported at cut-over, a missing
   figure ✖). Forced RLS, role grants for pay only, audit without amounts. `// req: FR-EMP-01, NM-PAY-03`
 - [ ] 2.2 Inputs for a run (NM-PAY-02): joiners and leavers prorated, pay changes in the month, unpaid leave and encashment from the ledger, approved overtime and rest-day pay, one-off
-  allowances and bonuses, claims paid through payroll; each links to its source and is used once. `// req: NM-PAY-02`
-- [ ] 2.3 API, screens `nm-payroll-hr` (pay terms and inputs), guide and kb pages; the data inventory and DPIA rows for pay. `// req: FR-PAY-13`
-- [ ] 2.4 Verify.
+  allowances and bonuses, claims paid through payroll; each links to its source and is used once. The one-off items are built (2.1); the collection of the rest into a run's items is built
+  with the run, in 3.1, where it is used and tested end to end. `// req: NM-PAY-02`
+- [x] 2.3 API (pay groups, a person's pay, the joint election, the year to date, one-off items; the Payroll administrator and the Owner alone), screen `nm-payroll-hr`, guide and kb pages; the
+  data inventory row for pay. `// req: FR-PAY-13`
+  Left in 2.3: the DPIA row for pay (with the run's, in 3.5); hourly and daily paid workers (monthly pay only in P1); KETs reading the pay from this record instead of the terms.
+- [x] 2.4 Verify: the local gates.
 
 ## 3. The pay run (slice 3)
 

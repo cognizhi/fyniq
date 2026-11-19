@@ -437,3 +437,75 @@ func sub2(a, b *apd.Decimal) *apd.Decimal {
 
 func sub(a, b *apd.Decimal) *apd.Decimal { return sub2(a, b) }
 func add(a, b *apd.Decimal) *apd.Decimal { return add2(a, b) }
+
+// A pay group's calendar: the pay day, the last day inputs are accepted and the latest approval are worked from the day of the month (0 is the last day); a group must be whole (NM-PAY-03).
+// req: NM-PAY-03
+func TestAPayGroupsCalendarIsWorkedFromItsPayDay(t *testing.T) {
+	g := PayGroup{Name: "Monthly", PayDay: 25, CutoffDays: 7, ApprovalDays: 3}
+	if err := g.Check(); err != nil {
+		t.Fatal(err)
+	}
+	month := day("2026-06-01")
+	if got := g.PayDate(month); !got.Equal(day("2026-06-25")) || !g.CutoffDate(month).Equal(day("2026-06-18")) || !g.ApprovalDate(month).Equal(day("2026-06-22")) {
+		t.Errorf("%v %v %v", got, g.CutoffDate(month), g.ApprovalDate(month))
+	}
+	last := PayGroup{Name: "Month end", PayDay: 0, CutoffDays: 5, ApprovalDays: 2}
+	if got := last.PayDate(day("2026-02-01")); !got.Equal(day("2026-02-28")) {
+		t.Errorf("the last day of February: %v", got)
+	}
+	for _, bad := range []PayGroup{{Name: " ", PayDay: 25}, {Name: "x", PayDay: 29}, {Name: "x", PayDay: 25, CutoffDays: 21}, {Name: "x", PayDay: 25, CutoffDays: 2, ApprovalDays: 3}} {
+		if err := bad.Check(); err == nil {
+			t.Errorf("%+v passed", bad)
+		}
+	}
+}
+
+// A pay record, its items, a year to date and a one-off are whole or refused with the field named: an amount is dollars with two decimals; a deduction is never CPF wages; a key is used once;
+// additional wages subject to CPF are no more than were paid; a month is the first day (FR-EMP-01, FR-PAY-14, FR-PAY-17).
+// req: FR-EMP-01, FR-PAY-14
+func TestPayRecordsAreWholeOrRefusedWithTheFieldNamed(t *testing.T) {
+	ok := PayRecord{Group: "g", Basic: "4500.00", SHGFund: "CDAC", Items: []RecurringItem{{Key: "transport", Name: "Transport allowance", Kind: KindAllowance, Nature: "allowance", Amount: "100.00", CPFWages: true},
+		{Key: "dorm", Name: "Dormitory", Kind: KindFixedDeduction, Nature: "accommodation", Amount: "200.00"}}}
+	if err := ok.Check(); err != nil {
+		t.Fatal(err)
+	}
+	mutate := func(f func(p *PayRecord)) error {
+		p := ok
+		p.Items = append([]RecurringItem(nil), ok.Items...)
+		f(&p)
+		return p.Check()
+	}
+	for name, f := range map[string]func(p *PayRecord){
+		"no group":                   func(p *PayRecord) { p.Group = "" },
+		"basic with cents":           func(p *PayRecord) { p.Basic = "4500.005" },
+		"basic negative":             func(p *PayRecord) { p.Basic = "-1" },
+		"a fund":                     func(p *PayRecord) { p.SHGFund = "UNICEF" },
+		"a deduction as wages":       func(p *PayRecord) { p.Items[1].CPFWages = true },
+		"a nature of the other kind": func(p *PayRecord) { p.Items[0].Nature = "accommodation" },
+		"a zero amount":              func(p *PayRecord) { p.Items[0].Amount = "0" },
+		"a repeated key":             func(p *PayRecord) { p.Items[1].Key = "transport" },
+	} {
+		if err := mutate(f); err == nil {
+			t.Errorf("%s passed", name)
+		} else if r, isR := err.(*Refusal); !isR || r.Code != CodeInvalid {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	y := YTDImport{Year: 2026, OW: "25000.00", AWSubject: "0", AWPaid: "0", Through: day("2026-05-01")}
+	if err := y.Check(); err != nil {
+		t.Fatal(err)
+	}
+	for name, bad := range map[string]YTDImport{"subject over paid": {Year: 2026, OW: "1", AWSubject: "5", AWPaid: "4", Through: day("2026-05-01")}, "a month of another year": {Year: 2026, OW: "1", AWSubject: "0", AWPaid: "0", Through: day("2025-05-01")},
+		"not the first": {Year: 2026, OW: "1", AWSubject: "0", AWPaid: "0", Through: day("2026-05-02")}, "a negative": {Year: 2026, OW: "-1", AWSubject: "0", AWPaid: "0", Through: day("2026-05-01")}} {
+		if bad.Check() == nil {
+			t.Errorf("%s passed", name)
+		}
+	}
+	if (OneOff{Key: "b", Name: "Bonus", Nature: "bonus", Amount: "5000.00"}).Check() != nil || (OneOff{Key: "b", Name: "Bonus", Nature: "gift", Amount: "5000.00"}).Check() == nil {
+		t.Error("a one-off's nature")
+	}
+	fm := day("2026-06-02")
+	if (OneOff{Key: "b", Name: "Bonus", Nature: "bonus", Amount: "5000.00", ForMonth: &fm}).Check() == nil {
+		t.Error("a one-off for a month that is not the first")
+	}
+}

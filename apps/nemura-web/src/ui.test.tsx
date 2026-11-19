@@ -24,6 +24,7 @@ import { Person } from "./pages/Person";
 import { TermsPanel } from "./components/TermsPanel";
 import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
+import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
 import { Delegations } from "./components/Delegations";
 import { AskQuestion } from "./pages/AskQuestion";
@@ -1162,5 +1163,60 @@ describe("joiners and leavers", () => {
     render(<PeopleOnboarding roles={["hr_officer"]} />);
     expect(await screen.findByText("No one is leaving.")).toBeTruthy();
     expect(screen.queryByText("Invite new people to Fyniq")).toBeNull();
+  });
+});
+
+// req: FR-EMP-01, NM-PAY-02, NM-PAY-03, FR-PAY-13
+describe("payroll records", () => {
+  const person = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61";
+  const gid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f30";
+
+  it("is refused in words to anyone but the Payroll administrator and the Owner, and draws no pay form", () => {
+    render(<PayrollHR roles={["hr_admin"]} />);
+    expect(screen.getByRole("alert").textContent).toContain("Only the Payroll administrator and the Owner");
+    expect(screen.queryByRole("form", { name: "Start a pay record" })).toBeNull();
+    expect(screen.queryByRole("form", { name: "Make a pay group" })).toBeNull();
+    expect(calls.filter((c) => c.includes("/pay"))).toEqual([]);
+  });
+
+  it("makes a pay group, starts a pay record with an allowance and a fixed deduction, imports the year to date and adds a one-off item", async () => {
+    answer("GET /v1/payroll/groups", { status: 200, body: { groups: [{ id: gid, name: "Monthly", pay_day: 25, cutoff_days: 7, approval_days: 3 }] } });
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: person, name: "Ben Lim" }] } });
+    answer(`GET /v1/people/${person}/pay`, { status: 200, body: { recorded: true, pay: { effective_from: "2026-01-05", pay_group_id: gid, pay_group: "Monthly", basic_monthly: "4500.00", shg_opt_out: false, joint_election: false, items: [] } } });
+    answer(`GET /v1/people/${person}/documents`, { status: 200, body: { documents: [] } });
+    answer("GET /v1/payroll/one-offs", { status: 200, body: { items: [] } });
+    answer("POST /v1/payroll/groups", { status: 201, body: { id: gid } });
+    answer(`POST /v1/people/${person}/pay`, { status: 201, body: undefined });
+    answer(`POST /v1/people/${person}/pay/year-to-date`, { status: 201, body: undefined });
+    answer(`POST /v1/people/${person}/pay/one-offs`, { status: 201, body: { id: gid } });
+    const { container } = render(<PayrollHR roles={["payroll_admin"]} />);
+    expect(await screen.findByText(/Monthly: paid on 25; inputs close 7 days before; approval 3 days before/)).toBeTruthy();
+    expect(await screen.findByText("4500.00")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Weekly" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Make a pay group" }));
+    expect(await screen.findByText("The pay group is made.")).toBeTruthy();
+    expect(bodies.get("POST /v1/payroll/groups")).toMatchObject({ name: "Weekly", pay_day: 25, cutoff_days: 7, approval_days: 3 });
+    fireEvent.click(screen.getByRole("button", { name: "Add an allowance or a fixed deduction" }));
+    fireEvent.change(screen.getByLabelText("Key of item 1"), { target: { value: "transport" } });
+    fireEvent.change(screen.getByLabelText("Name of item 1"), { target: { value: "Transport allowance" } });
+    fireEvent.change(screen.getByLabelText("Amount of item 1"), { target: { value: "100.00" } });
+    fireEvent.change(screen.getByLabelText("Basic monthly salary (dollars)"), { target: { value: "5000.00" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Start a pay record" }));
+    expect(await screen.findByText("The pay record is saved. The one before ends the day before.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/people/${person}/pay`)).toMatchObject({ pay: { pay_group_id: gid, basic_monthly: "5000.00", items: [{ key: "transport", kind: "allowance", amount: "100.00", cpf_wages: true }] } });
+    fireEvent.change(screen.getByLabelText("Ordinary wages subject to CPF"), { target: { value: "25000.00" } });
+    fireEvent.change(screen.getByLabelText("Additional wages subject to CPF"), { target: { value: "0.00" } });
+    fireEvent.change(screen.getByLabelText("Additional wages paid"), { target: { value: "0.00" } });
+    fireEvent.change(screen.getByLabelText("First day of the last month counted"), { target: { value: "2026-05-01" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Import the year to date" }));
+    expect(await screen.findByText("The year to date is imported.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Key"), { target: { value: "bonus-2026" } });
+    fireEvent.change(screen.getByLabelText("Name on the payslip"), { target: { value: "Annual bonus" } });
+    fireEvent.change(screen.getByLabelText("Amount (dollars)"), { target: { value: "5000.00" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Add a one-off item" }));
+    expect(await screen.findByText("The item is added.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/people/${person}/pay/one-offs`)).toMatchObject({ item: { key: "bonus-2026", nature: "bonus", amount: "5000.00", cpf_wages: true } });
   });
 });

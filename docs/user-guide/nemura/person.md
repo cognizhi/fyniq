@@ -35,3 +35,4 @@ starts, so you can see who held which job, under whom, on any day.
 
 - [Find a colleague in the people directory](people.md)
 - [Record a person's key employment terms and issue their KETs](letters-kets.md)
+- [Set up pay groups and record each person's pay](payroll-records.md)
