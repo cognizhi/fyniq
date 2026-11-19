@@ -49,7 +49,9 @@ func main() {
 		kinds := map[string]outbox.Work{}
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
 			kinds[tokens.Kind] = tokens.Work(wiring.Hydra(admin))                         // AI-38: revoke a user's tokens after a change
+			kinds[tokens.AgentKind] = tokens.AgentWork(wiring.Hydra(admin))               // AI-35: an opt-out stops the person's AI apps' tokens
 			kinds[tokens.RemoveClientKind] = tokens.RemoveClientWork(wiring.Hydra(admin)) // FR-INT-02: a revoked API client deleted
+			kit.OAuthClients = wiring.Hydra(admin)                                        // AI-90: the job that removes lapsed AI app registrations
 		}
 		kinds[security.SignInKind] = security.SignInWork(kit.Store, kit.Alerts(deps.Clock)) // SEC-31: an admin's sign-in, checked
 		if c, ok := kit.Committer(deps.Clock); ok {                                         // FR-DOC-13: commit a final record's files to the locked store

@@ -69,6 +69,15 @@ type Deps struct {
 	// none can be registered. APIAudience is the audience their tokens name: the API's.
 	OAuthClients ports.OAuthClients
 	APIAudience  string
+	// MCPClients holds the AI apps that registered themselves (AI-90), MCPAudience is the audience their tokens name, and MCPServerOn is
+	// the deployment's switch (FYNIQ_MCP_SERVER): registration is closed while it is off, whatever an Owner has set.
+	MCPClients storage.MCPClients
+	// OAuthConsents lists and revokes what a person granted AI apps; nil: none is listed.
+	OAuthConsents ports.OAuthConsents
+	// Consent is the consent app's two steps for the web app's consent screen (AI-37); nil: consent is not available here.
+	Consent     ConsentFlow
+	MCPAudience string
+	MCPServerOn bool
 	// Staging keeps uploads until their record is final, and Scanner checks them for malware (FR-DOC-13,
 	// FR-DOC-01); without either, no file can be attached.
 	Staging ports.BlobStore
@@ -259,6 +268,7 @@ func Config(version string) huma.Config {
 		{Name: "Evidence", Description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."},
 		{Name: "Search", Description: "The global search: documents, contacts, accounts and items by reference, name, words or amount, in what the caller may see (FR-UX-02, SEC-34)."},
 		{Name: "Notifications", Description: "Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05)."},
+		{Name: "Connected apps", Description: "AI apps working for a person over MCP: the person's own opt-in, which is off until they choose, and the organisation's switch and allowlist (AI-35). Never reachable by an AI app or an integration: a person chooses (§9.6)."},
 		{Name: "Help", Description: "Each person's first-run tour state: the tour's only write (FR-UX-34, G4-104)."},
 		{Name: "Announcements", Description: "Banners under the header: those each person sees now, and the announcements the Owner and Administrator publish to their organisation (FR-NTF-03)."},
 		{Name: "Templates", Description: "Document and email templates as data: drafts, and numbered versions published under approval that never change (FR-TPL-01…05)."},
@@ -383,6 +393,10 @@ func New(mux humago.Mux, d Deps) *API {
 	registerHelpState(a)
 	registerPreferences(a)
 	registerSavedItems(a)
+	registerMCPOptIn(a)
+	registerConnectedApps(a)
+	registerOAuthConsent(a)
+	registerOAuthRegistration(a)
 	registerBanners(a)
 	registerDelivery(a)
 	registerMembers(a)

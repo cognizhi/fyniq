@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "note": "What a client that registers itself may ask for (AI-90; p1-mcp-first-party design D14), reviewed like code. A name that folds to Fyniq's own, or to a word of authority, is refused. A name that folds to a brand (Claude, Anthropic) is accepted only when every https redirect is on that brand's own hosts, so a real Claude connector can register and a look-alike cannot. A denied name or redirect host is refused. The registration is always agent class, public, PKCE, with the default scope alone; nothing here widens it.",
+  "default_scopes": [
+    "openid",
+    "offline_access",
+    "fyniq.read.reports"
+  ],
+  "max_redirect_uris": 5,
+  "max_name_length": 100,
+  "denied_names": [],
+  "denied_redirect_host_suffixes": [
+    "ngrok.io",
+    "ngrok-free.app",
+    "trycloudflare.com",
+    "loca.lt",
+    "serveo.net",
+    "localtunnel.me",
+    "workers.dev",
+    "pages.dev",
+    "github.io",
+    "herokuapp.com",
+    "vercel.app",
+    "netlify.app",
+    "glitch.me",
+    "repl.co",
+    "bit.ly",
+    "tinyurl.com"
+  ],
+  "reserved_names": [
+    "fyniq",
+    "official",
+    "administrator",
+    "verified"
+  ],
+  "brands": {
+    "claude": [
+      "claude.ai",
+      "claude.com"
+    ],
+    "anthropic": [
+      "claude.ai",
+      "claude.com",
+      "anthropic.com"
+    ]
+  }
+}

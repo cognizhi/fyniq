@@ -285,6 +285,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/compliance/transfers` (getTransfers): Get the overseas transfers of personal data
 - `POST /v1/compliance/transfers` (createTransfer): Record an overseas transfer's assessment
 - `PUT /v1/compliance/transfers/{transfer_id}` (reviseTransfer): Change an overseas transfer
+- `GET /v1/connected-apps` (getConnectedApps): See the AI apps that work for you
+- `GET /v1/connected-apps/activity` (listMCPActivity): See what AI apps did
+- `DELETE /v1/connected-apps/connections/{client_id}` (revokeMyConnection): Disconnect an AI app
+- `GET /v1/connected-apps/registrations` (listMCPRegistrations): See the AI apps waiting for an Owner
+- `POST /v1/connected-apps/registrations/{client_id}/deny` (denyMCPRegistration): Deny a registered AI app
 - `GET /v1/connector-catalogue` (listConnectorCatalogue): List the connectors of this release
 - `GET /v1/contacts` (listContacts): List the contacts
 - `POST /v1/contacts` (createContact): Add a contact
@@ -659,6 +664,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/me/director-account` (getMyDirectorAccount): Get your own director account
 - `POST /v1/me/director-account/confirmations` (confirmMyDirectorAccount): Confirm your balances at a year's end
 - `GET /v1/me/holding` (getMyHolding): Get my holding
+- `GET /v1/me/mcp` (getMyMCP): Get whether AI apps may work for you over MCP
+- `PUT /v1/me/mcp` (setMyMCP): Allow or stop AI apps working for you over MCP
 - `GET /v1/me/option-grants` (getMyOptionGrants): Get my grants of options
 - `GET /v1/me/personal-data-requests` (listMyPersonalDataRequests): List my requests about my personal data
 - `POST /v1/me/personal-data-requests` (askAboutMyPersonalData): Ask to see or correct my personal data
@@ -719,6 +726,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/notifications/{notification_id}/archive` (archiveNotification): Archive a notification
 - `POST /v1/notifications/{notification_id}/read` (readNotification): Mark a notification read
 - `POST /v1/notifications/{notification_id}/unread` (unreadNotification): Mark a notification unread
+- `GET /v1/oauth/consent` (getOAuthConsent): See what an app asks to do for you
+- `POST /v1/oauth/consent` (answerOAuthConsent): Allow or refuse an app
+- `POST /v1/oauth/register` (registerOAuthClient): Register an AI app (RFC 7591)
 - `GET /v1/opening-balances` (getOpeningBalances): Get the opening balances
 - `PUT /v1/opening-balances` (replaceOpeningBalances): Save the opening balances as a draft
 - `POST /v1/opening-balances/edit-approval` (requestOpeningBalancesEdit): Ask for approval to change the posted opening balances
@@ -823,6 +833,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/payment-providers/accounts` (listPaymentProviderAccounts): List the payment providers' accounts
 - `PUT /v1/payment-providers/accounts/{money_account_id}` (setPaymentProviderAccount): Set up a payment provider's money account
 - `GET /v1/payment-providers/disputes` (listPaymentProviderDisputes): List the payment providers' disputes
+- `POST /v1/payment-providers/disputes/{dispute_id}/credit-settlement` (settleDisputeCredit): Settle a customer's credit against a lost dispute
 - `POST /v1/payment-providers/disputes/{dispute_id}/loss` (prepareDisputeLoss): Prepare the journal that writes a lost dispute off
 - `GET /v1/payment-providers/events` (listPaymentProviderEvents): List the payment providers' webhook events
 - `POST /v1/payment-providers/events/{event_id}/resolution` (resolvePaymentProviderEvent): Mark a parked provider event as dealt with

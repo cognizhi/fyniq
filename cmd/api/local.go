@@ -40,7 +40,7 @@ func init() {
 		}
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
 			// Hydra's access tokens for the API's audience, introspected and cached for at most 30 s (ADR-T3).
-			in := &authn.Introspector{OAuth: wiring.Hydra(admin), Audience: apiAudience(), Clock: clock, TTL: authn.MaxCache}
+			in := &authn.Introspector{OAuth: wiring.Hydra(admin), Audience: apiAudience(), Clock: clock, TTL: authn.MaxCache, Delegation: delegation(sessions, clock)}
 			if routes, ok := sessions.(storage.APIClientRoutes); ok { // FR-INT-02: the API clients Fyniq registered
 				in.Clients = routes
 			}
@@ -67,14 +67,18 @@ func init() {
 		return dev
 	}
 	// Hydra's login and consent pages: who is signed in comes from the session cookie, or a dev token.
-	registerOAuth = func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions) {
+	registerOAuth = func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, store storage.Store) {
 		admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL")
 		if admin == "" {
 			return
 		}
-		oauthflow.Flow{OAuth: wiring.Hydra(admin), SignedIn: firstParty(clock, sessions), Clock: clock, APIAudience: apiAudience(),
-			MCPAudience: cmp.Or(os.Getenv("FYNIQ_MCP_AUDIENCE"), "http://localhost:8080/mcp"),
-			Log:         logging.New(os.Stderr, slog.LevelInfo), SignInPage: "/", Base: base}.Register(s)
+		log, mcpAudience, oauth := logging.New(os.Stderr, slog.LevelInfo), cmp.Or(os.Getenv("FYNIQ_MCP_AUDIENCE"), "http://localhost:8080/mcp"), wiring.Hydra(admin)
+		gate, publishers := mcpConsent(oauth, mcpAudience, store, clock, log)
+		registerMetadata(s, store, clock)
+		flow := oauthflow.Flow{OAuth: oauth, SignedIn: firstParty(clock, sessions), Clock: clock, APIAudience: apiAudience(), MCPAudience: mcpAudience,
+			MCP: gate, Publishers: publishers, Log: log, SignInPage: "/", Base: base}
+		consentFlow = &flow
+		flow.Register(s)
 	}
 	webOrigin = origin
 	oauthAudience = apiAudience

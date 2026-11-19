@@ -50,6 +50,8 @@ func IPKindOf(r *http.Request) string {
 		return storage.IPSignIn
 	case strings.HasPrefix(p, "/v1/public/"), strings.HasPrefix(p, "/v1/evidence-downloads/"):
 		return storage.IPPublic
+	case p == "/v1/oauth/register":
+		return storage.IPJoin // an AI app's registration: public, so counted per address like joining (AI-90)
 	case p == "/v1/setup":
 		return storage.IPSetup
 	case p == "/v1/session/join-offer", r.Method == http.MethodPost && (p == "/v1/members" || p == "/v1/super-admins" ||

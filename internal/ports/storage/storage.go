@@ -107,6 +107,10 @@ type UnitOfWork interface {
 	Preferences() Preferences
 	// SavedItems are each person's own favourites and saved views (FR-UX-12).
 	SavedItems() SavedItems
+	// MCPOptIns are each person's opt-in to AI apps over MCP (AI-35).
+	MCPOptIns() MCPOptIns
+	// MCPCalls are the AI apps' calls over MCP, for the activity log, the limits and the detection (AI-43 to AI-45).
+	MCPCalls() MCPCalls
 	// Announcements are the banners and their dismissals (FR-NTF-03).
 	Announcements() Announcements
 	Outbox() Outbox

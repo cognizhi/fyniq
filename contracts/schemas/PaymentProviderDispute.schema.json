@@ -9,12 +9,20 @@
       ],
       "type": "boolean"
     },
+    "credited": {
+      "$ref": "Money.schema.json",
+      "description": "What a customer credit was settled against it."
+    },
     "dispute_id": {
       "description": "The provider's ID.",
       "examples": [
         "dp_1Q3"
       ],
       "type": "string"
+    },
+    "disputed": {
+      "$ref": "Money.schema.json",
+      "description": "The disputed amount alone, without the dispute fee."
     },
     "held": {
       "$ref": "Money.schema.json",
@@ -43,12 +51,21 @@
       ],
       "type": "boolean"
     },
+    "settlement_id": {
+      "description": "The refund document that settled the customer credit against it (dispute_settlement@1).",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b81"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "status": {
-      "description": "open: its money waits; won: the provider gave it all back; written_off: a draft journal was prepared to write it off.",
+      "description": "open: its money waits; won: the provider gave it all back; written_off: a draft journal was prepared to write it off; credited: a customer credit was settled against all of it.",
       "enum": [
         "open",
         "won",
-        "written_off"
+        "written_off",
+        "credited"
       ],
       "examples": [
         "open"
@@ -62,7 +79,9 @@
     "held",
     "status",
     "all_posted",
-    "over_limit"
+    "over_limit",
+    "disputed",
+    "credited"
   ],
   "title": "PaymentProviderDispute",
   "type": "object"

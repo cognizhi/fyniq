@@ -35,6 +35,7 @@ API and worker ↔ database (RLS on every table); API ↔ secrets project (keys)
 | T11 | Unknown events | Tampering: an event type the parser does not know is acted on | Unreviewed postings | Low |
 | T12 | API ↔ database | Information disclosure: one organisation reads another's events | Cross-tenant disclosure | Low |
 | T13 | Webhook endpoint | Spoofing: one organisation's connector ID used to post an event into another's | Cross-tenant tampering | Low |
+| T14 | Credit settlement → books | Tampering and elevation: a credit settled against a dispute twice, one larger than the dispute, a credit note that is not issued, or a person without the right to post on Invoices moving accounts receivable | Customer balances and disputes clearing wrong, or accounts receivable changed without the approval an invoice change has | Low: it is a person's request, never an event's |
 
 SOD and money movement: nothing in this feature moves money. The worker only mirrors what the provider reports and posts
 nothing (it holds no right to make a document). Postings are made by auto-reconcile in the API, the same system principal and
@@ -60,6 +61,7 @@ route to any operation here (the never-list is unchanged: no tool is added).
 | T11 | An event type the parser does not know is stored and parked for a person; it posts nothing | `TestProviderWebhooksAreStoredOnceAndWorkedFromTheFetchedObject` (UC-PSP-01) |
 | T12 | `organisation_id` and FORCE RLS on every table; the grants of `psp_event` | `TestEveryTenantTableForcesRowLevelSecurity`, `TestEachRoleHoldsExactlyItsGrants` |
 | T13 | The connector ID in the path is looked up before any tenant is set and must belong to the named connector; the event is stored under that connector's organisation only | `TestProviderWebhooksAreStoredOnceAndWorkedFromTheFetchedObject` (another connector's name, an unknown ID) |
+| T14 | `settleDisputeCredit` needs the right to post on Invoices (the policy of a customer refund) and reads the dispute and the credit from the books, never from the request; the posting is the refund document's own under `dispute_settlement@1` (Dr 1100 · Cr disputes clearing, base currency only), so every refusal of that rule holds; the credit may not exceed the disputed amount and must be an issued credit note; `psp_dispute_credit` is unique per dispute, guarded against change or delete (FY625), and written in the same transaction as the refund; the API role cannot update it | `TestALostDisputeIsSettledAgainstACustomerCredit`, `TestPostDisputeSettlement`, the authorisation matrix row `settleDisputeCredit`, the differential golden `payment-providers.json` (the oracle's half) |
 
 ## 4. What remains
 

@@ -198,7 +198,10 @@ func TestOnlySetupIsPublicOrOutsideAnOrganisation(t *testing.T) {
 			// A full tenant export's download link, the same: its signed, 5-minute token, given only to the person who asked
 			// for the export, is the credential to that one file (SEC-24, FR-MIG-04; rev 0.273).
 			op == "getTenantExportDownload"
-		public := op == "getSetupStatus" || op == "listSignInProviders" || op == "getPlatformVersion" || link
+		// An AI app's registration (RFC 7591) is public by design: the client has no credential yet. It is closed until an Owner
+		// opens it, policy-checked and limited, and creates a client that cannot connect until an Owner approves it (AI-90).
+		registration := op == "registerOAuthClient"
+		public := op == "getSetupStatus" || op == "listSignInProviders" || op == "getPlatformVersion" || link || registration
 		noOrg := installation && !public
 		if p.Public != public || p.NoOrganisation != noOrg {
 			t.Errorf("%s: Public %v, NoOrganisation %v; want %v, %v", op, p.Public, p.NoOrganisation, public, noOrg)
