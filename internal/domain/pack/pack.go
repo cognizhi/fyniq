@@ -168,11 +168,16 @@ var Schemas = map[string]Schema{
 		Tables: map[string][]string{
 			"rates":    {"group", "age_above", "age_to", "wage_above", "effective_from", "effective_to", "employer", "employee", "source"},
 			"ceilings": {"ceiling", "effective_from", "effective_to", "amount", "source"},
+			// The graduated range of S$50 to S$750 (sg-cpf@2026.2; p1-statutory-packs 4.1).
+			"low_wages": {"group", "age_above", "age_to", "effective_from", "effective_to", "nil_to", "flat_to", "graduated_to", "flat_rate", "slope", "source"},
 		},
 		Pinned: map[string][]string{
-			"rates":    {"case", "month", "group", "age", "wage", "want_employer", "want_employee", "why", "source"},
-			"ceilings": {"case", "ceiling", "month", "want", "why", "source"},
+			"rates":     {"case", "month", "group", "age", "wage", "want_employer", "want_employee", "why", "source"},
+			"ceilings":  {"case", "ceiling", "month", "want", "why", "source"},
+			"low_wages": {"case", "month", "group", "age", "wage", "want_total", "want_employee", "why", "source"},
+			"maxima":    {"case", "month", "group", "age", "want_total", "want_employee", "why", "source"},
 		},
+		Since: map[string][2]int{"low_wages": {2026, 2}, "maxima": {2026, 2}},
 	},
 	// The self-help group funds' monthly contributions by wage band (FR-PLN-02; p1-statutory-packs 4.1).
 	"sg-shg": {
