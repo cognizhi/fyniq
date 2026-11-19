@@ -174,6 +174,7 @@ describe("keyboard-first entry", () => {
   });
 
   // req: experience/navigation FR-UX-06 Keyboard-first entry: Single-character shortcuts can be turned off and remapped
+  // req: experience/modes Basic and Expert keyboard
   it("turns single-character shortcuts off and changes their keys for that person only", async () => {
     setShortcutSettings("u-1", { on: false, keys: {} });
     const router = renderFrame();
@@ -223,6 +224,7 @@ describe("keyboard-first entry", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  // req: experience/modes Basic and Expert keyboard
   // req: experience/modes Basic and Expert keyboard
   it("keeps ? only in Basic mode, with the way to Expert's keys", async () => {
     const router = renderFrame("basic");

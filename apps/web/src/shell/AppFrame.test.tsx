@@ -165,6 +165,7 @@ describe("the app frame", () => {
   });
 
   // req: FR-UX-23
+  // req: experience/modes Basic and Expert keyboard
   it("switches the mode from the command palette and with Alt+Shift+M, offering the other mode each time", async () => {
     forgetMode();
     const first = renderFrame(owner, "basic");

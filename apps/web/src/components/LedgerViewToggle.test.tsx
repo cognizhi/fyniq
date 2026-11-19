@@ -13,6 +13,7 @@ function Columns({ mode }: { mode: Mode }) {
 // req: FR-UX-08
 // req: experience/navigation FR-UX-08 Plain view and Accountant view
 describe("Plain view and Accountant view", () => {
+  // req: experience/modes Plain view and Accountant view within the modes
   it("switches the columns between Money in / Money out / Category and Debit / Credit / Account in Expert; axe finds nothing", async () => {
     setLedgerView("plain");
     const { container } = render(
@@ -31,6 +32,7 @@ describe("Plain view and Accountant view", () => {
   });
 
   // req: experience/navigation FR-UX-08 Plain view and Accountant view: Only in Expert mode
+  // req: experience/modes Plain view and Accountant view within the modes
   it("uses Plain view in Basic mode and offers no toggle, whatever was chosen in Expert", () => {
     setLedgerView("accountant");
     render(

@@ -43,6 +43,7 @@ describe("who owns the company", () => {
     expect(shares("1500000.5")).toBe("1,500,000.5");
   });
 
+  // req: experience/modes Basic and Expert equity
   it("shows the ownership, my holding, the latest round and the shareholders in Basic; axe finds nothing", async () => {
     setMode("basic");
     answer({
@@ -66,6 +67,7 @@ describe("who owns the company", () => {
     expect(within(screen.getByRole("table", { name: "Ownership" })).getByText("1,000,000")).toBeTruthy();
   });
 
+  // req: experience/modes Basic and Expert equity
   it("compares two days and opens a figure's movements in Expert; axe finds nothing", async () => {
     setMode("expert");
     const seen = answer({
