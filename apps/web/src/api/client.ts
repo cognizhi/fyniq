@@ -1,6 +1,6 @@
 // The only way the web app reaches the API (FR-INT-01, QA-API-03): a client typed from the
-// contract, contracts/openapi/fyniq.v1.yaml. schema.d.ts is generated: after `make openapi`, run
-// `pnpm --filter @fyniq/web gen:api`; `make test` fails while it is out of date. A test
+// contract, contracts/openapi/fyniq.v1.yaml. Its types come from the SDK (sdk/typescript/src/schema.d.ts, generated:
+// after `make openapi`, run `pnpm --filter @fyniq/sdk gen`; `make test` fails while it is out of date). A test
 // (internal/archtest) refuses hand-written fetch calls anywhere else in the app.
 import createClient from "openapi-fetch";
 import type { components, paths } from "./schema";

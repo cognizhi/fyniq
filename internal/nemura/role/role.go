@@ -30,7 +30,7 @@ const (
 var All = []Role{API, Migrate, Worker, Executor, Assistant}
 
 // Built are the roles this build can run. A role joins it with the change that builds it.
-var Built = []Role{API, Migrate}
+var Built = []Role{API, Migrate, Worker}
 
 // Code is the stable code of every refusal.
 const Code = "NEMURA-ROLE-01"
