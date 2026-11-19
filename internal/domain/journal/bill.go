@@ -172,6 +172,17 @@ func (s Bills) CreateCredit(ctx context.Context, org uuid.UUID, d bill.Draft) (s
 	return s.create(ctx, org, storage.DocumentVendorCredit, d)
 }
 
+// CreateBillIn saves a draft bill in u, the caller's own unit of work: how an approved AI proposal's draft is made by the executor
+// (PRD-001 Appendix E, ap.draft_bill) and how a captured document's draft is made (FR-AP-04), through the same encoding and numbering as a
+// person's draft.
+func CreateBillIn(ctx context.Context, u storage.UnitOfWork, d bill.Draft) (storage.Document, error) {
+	b, err := bill.Encode(d)
+	if err != nil {
+		return storage.Document{}, err
+	}
+	return createNumbered(ctx, u, storage.DocumentBill, b)
+}
+
 func (s Bills) create(ctx context.Context, org uuid.UUID, t storage.DocumentType, d bill.Draft) (storage.Document, error) {
 	b, err := bill.Encode(d)
 	if err != nil {
