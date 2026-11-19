@@ -96,7 +96,15 @@ func (a *API) runKBTool(ctx context.Context, tool aitool.Tool, in map[string]any
 			if mine, ok, err := org.LivePage(ctx, str("key"), reader.Classes); err != nil {
 				return err
 			} else if ok { // the organisation's own page, or its overlay of a platform page, wins
-				res.Content = kbPageContent(orgView(mine, mayReadNotes), str("section"), tool.Limits.ResultTokens)
+				outdated := false
+				if mine.BaseKey != "" { // an overlay made before Fyniq changed the page it replaces says so (AI-56; task 7.2)
+					base, found, err := kb.PlatformPage(ctx, mine.BaseKey, reader)
+					if err != nil {
+						return err
+					}
+					outdated = found && base.Digest != mine.BaseDigest
+				}
+				res.Content = kbPageContent(orgView(mine, mayReadNotes, outdated), str("section"), tool.Limits.ResultTokens)
 				res.KBPages = []AIKBPage{{Key: mine.Key, Version: fmt.Sprintf("organisation snapshot %d, version %d", mine.Snapshot, mine.Number)}}
 				return nil
 			}
@@ -336,12 +344,15 @@ type orgSource struct {
 // orgView is an organisation page as kbPageContent reads it: a section cites "note:<key>#anchor", "setting:<key>#anchor" or
 // "platform:<key>#anchor", resolved to what the reader can open. A note is the organisation's own and is shown to those who
 // may read the knowledge base's notes; anyone else is told it is the organisation's policy, with no link.
-func orgView(p storage.KBLivePage, mayReadNotes bool) kbPageView {
+func orgView(p storage.KBLivePage, mayReadNotes, outdated bool) kbPageView {
 	var srcs []orgSource
 	_ = json.Unmarshal(p.Sources, &srcs)
+	note := "This is the organisation's own page, written or approved by its people: its policies and decisions, not Fyniq's guide."
+	if outdated {
+		note += " It replaces one of Fyniq's pages that has changed since it was made: say it may be out of date, and that an Owner or Administrator should review it."
+	}
 	return kbPageView{Key: p.Key, Type: p.Type, Title: p.Title, Summary: p.Summary, Body: p.Body, Aliases: p.Aliases,
-		Version: fmt.Sprintf("organisation snapshot %d, version %d", p.Snapshot, p.Number), Release: "organisation",
-		Note: "This is the organisation's own page, written or approved by its people: its policies and decisions, not Fyniq's guide.",
+		Version: fmt.Sprintf("organisation snapshot %d, version %d", p.Snapshot, p.Number), Release: "organisation", Note: note,
 		Resolve: func(path, anchor string) (kbCite, bool) {
 			kind, ref, _ := strings.Cut(path, ":")
 			title := ref

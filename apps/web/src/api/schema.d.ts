@@ -38403,6 +38403,11 @@ export interface components {
             type: "concept" | "task" | "reference" | "policy" | "decision";
         };
         KBPageSummary: {
+            /**
+             * @description An overlay made before Fyniq changed the platform page it replaces: the assistant says it may be out of date until a person reviews it.
+             * @example false
+             */
+            base_changed?: boolean;
             /** @example general */
             data_class: string;
             /** @example org.expense-policy */

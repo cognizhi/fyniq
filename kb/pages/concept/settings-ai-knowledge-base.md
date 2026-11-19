@@ -4,7 +4,7 @@ type: concept
 title: The knowledge base the assistant reads: pages, notes, publishing
 summary: The pages the assistant reads, the notes they come from, versions, findings and publishing; nothing changes until a person publishes
 sources:
-  - docs/user-guide/knowledge-base.md sha256:0ed38fc44a717cdfb7aa60575d8091b17e59f868df80be2a6bacd284cda9a475
+  - docs/user-guide/knowledge-base.md sha256:4d4aa1d7644f0cc6d417142e6cc4785d84da76e6b4fdcf1efc785b6a24848263
 data_class: general
 taint: trusted
 status: published
@@ -65,6 +65,7 @@ aliases:
 
 - Versions lists every version, newest first, with who made it and which is published. Roll back makes a new version with an earlier version's text; nothing is deleted.
 - Compare versions shows line by line what changed. Edit saves the text as the next version, a draft; a recompile never overwrites a version a person wrote.
+- A page that replaces one of Fyniq's pages is flagged "Fyniq changed this page" when Fyniq's page changes later, and the assistant says it may be out of date until a person reviews it.
 - Sources lists the notes and settings a page cites; every number in a section must be in the source it cites.
 
 (src: docs/user-guide/knowledge-base.md#open-a-page)

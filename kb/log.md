@@ -634,3 +634,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-19] compile | docs/user-guide/knowledge-base.md, docs/user-guide/ai-settings.md → settings.ai-knowledge-base, settings.ai (the knowledge-base administration page and its link)
 ## [2026-11-19] compile | docs/user-guide/projects-projects.md → projects.projects (the projects screens, p1-projects slice 1)
+
+## [2026-11-19] compile | docs/user-guide/knowledge-base.md → settings.ai-knowledge-base (an overlay is flagged when Fyniq changes the page it replaces)

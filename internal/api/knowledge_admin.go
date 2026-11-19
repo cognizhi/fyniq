@@ -35,6 +35,7 @@ type KBPageSummary struct {
 	Origin    string `json:"origin" doc:"How its newest version was made: rendered, compiled, human_edited, overlay or rollback; empty for a platform page." example:"compiled"`
 	Findings  int    `json:"open_findings" doc:"Lint findings open on it." example:"0"`
 	Overlaid  bool   `json:"overlaid,omitempty" doc:"A platform page this organisation has an overlay of." example:"false"`
+	BaseMoved bool   `json:"base_changed,omitempty" doc:"An overlay made before Fyniq changed the platform page it replaces: the assistant says it may be out of date until a person reviews it." example:"false"`
 }
 
 // KBPages is the index.
@@ -154,11 +155,17 @@ func registerKnowledgeAdmin(a *API) {
 				case published[v.Key] > 0:
 					state = "draft"
 				}
+				moved := false
 				if v.BaseKey != "" {
 					overlaid[v.BaseKey] = true
+					base, ok, err := u.KnowledgeBase().PlatformPage(ctx, v.BaseKey, adminReader(p))
+					if err != nil {
+						return err
+					}
+					moved = ok && base.Digest != v.BaseDigest
 				}
 				out.Body.Items = append(out.Body.Items, KBPageSummary{Key: v.Key, Source: "organisation", Type: v.Type, Title: v.Title, Summary: v.Summary, DataClass: v.DataClass,
-					State: state, Published: published[v.Key], Newest: v.Number, Origin: v.Origin, Findings: open[v.Key]})
+					State: state, Published: published[v.Key], Newest: v.Number, Origin: v.Origin, Findings: open[v.Key], BaseMoved: moved})
 			}
 			idx, err := u.KnowledgeBase().PlatformIndex(ctx, adminReader(p))
 			if err != nil {

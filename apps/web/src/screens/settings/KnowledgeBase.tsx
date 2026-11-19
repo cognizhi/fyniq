@@ -240,6 +240,12 @@ export function KnowledgeBase() {
                 <td data-card="status">
                   <State state={e.state} />
                   {e.source === "organisation" && <span className="fy-small fy-muted"> v{e.newest_version}</span>}
+                  {e.base_changed && (
+                    <span className="fy-chip fy-chip--warning">
+                      <Icon of={TriangleAlert} />
+                      Fyniq changed this page
+                    </span>
+                  )}
                   {e.open_findings > 0 && (
                     <span className="fy-chip fy-chip--warning">
                       <Icon of={TriangleAlert} />

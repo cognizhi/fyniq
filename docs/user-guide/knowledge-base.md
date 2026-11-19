@@ -51,6 +51,9 @@ The assistant reads a page only once it is **published**. A draft, whoever wrote
 - **Compare versions** shows what changed between the newest version and an earlier one, line by line.
 - **Edit** saves your text as the next version, a draft. A recompile never overwrites a version a person wrote: the
   difference becomes a finding for a person.
+- An organisation page can replace one of Fyniq's pages for your organisation alone. When Fyniq later changes the page it
+  replaces, the index says **Fyniq changed this page**, and the assistant says your page may be out of date until a person
+  reviews it.
 - **Sources** lists the notes and settings the page cites. Every section ends with the source it states, and every
   number in it must be in that source.
 

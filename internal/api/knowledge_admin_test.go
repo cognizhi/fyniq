@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -132,5 +133,61 @@ func TestTheKnowledgeBaseScreenReadsPagesVersionsSnapshotsAndFindings(t *testing
 	}
 	if r := e.call(http.MethodPost, "/v1/knowledge-base/findings/"+finding.String()+"/resolve", auditor, map[string]any{"resolution": "No."}); r.Status != http.StatusForbidden {
 		t.Errorf("an Auditor resolving: %d %s", r.Status, r.Raw)
+	}
+}
+
+// An overlay made before Fyniq changed the platform page it replaces is flagged (AI-56; p1-knowledge-base task 7.2): the index
+// says so for an administrator, and the assistant is told to say the page may be out of date. One made against the page as it
+// is now carries no flag.
+// asvs: V8.2.1
+func TestAnOverlayOfAPlatformPageThatChangedIsFlagged(t *testing.T) {
+	e := newEnv(t)
+	corpus := shippedKB(t)
+	f := foundersIn(e)
+	owner := f.as(f.ahkow, authz.Owner)
+	person := uuid.MustParse(f.ahkow)
+	fresh, stale := corpus.Pages[0], corpus.Pages[1]
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		k := u.OrganisationKnowledge()
+		for _, o := range []struct {
+			p      string
+			digest string
+			page   storage.KBPlatformPage
+		}{{fresh.Key, fresh.Digest, storage.KBPlatformPage{}}, {stale.Key, strings.Repeat("0", 64), storage.KBPlatformPage{}}} {
+			if _, err := k.AddVersion(ctx, storage.KBVersion{Key: o.p, Type: "concept", Title: "Ours", Summary: "The organisation's wording.", Origin: storage.KBOriginOverlay, BaseKey: o.p, BaseDigest: o.digest,
+				Body: "# Ours\n\n## Rule\n\nOur way. (src: platform:" + o.p + "#rule)\n", CreatedAt: e.clock.Now(), AuthorKind: "person", AuthorUser: person, HumanEdited: true}); err != nil {
+				return err
+			}
+		}
+		_, err := k.Publish(ctx, map[string]int{fresh.Key: 1, stale.Key: 1}, nil, &person, "overlays", e.clock.Now())
+		return err
+	})
+	moved := map[string]bool{}
+	for _, it := range e.call(http.MethodGet, "/v1/knowledge-base/pages", owner, nil).Body["items"].([]any) {
+		m := it.(map[string]any)
+		if m["source"] == "organisation" {
+			moved[m["key"].(string)] = m["base_changed"] == true
+		}
+	}
+	if len(moved) != 2 || moved[fresh.Key] || !moved[stale.Key] {
+		t.Errorf("the overlays in the index: %v", moved)
+	}
+	service, _ := e.services.Token(ServiceAI)
+	var token string
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		token, err = e.api.issueAIGrant(ctx, u, e.books.Org, person, uuid.New())
+		return err
+	})
+	note := func(key string) string {
+		r := e.call(http.MethodPost, "/internal/v1/tool-calls", token, map[string]any{"tool": "kb.read", "input": map[string]any{"key": key}}, ServiceTokenHeader, service)
+		c, _ := r.Body["content"].(map[string]any)
+		n, _ := c["note"].(string)
+		return n
+	}
+	if n := note(stale.Key); !strings.Contains(n, "may be out of date") {
+		t.Errorf("the note of a stale overlay: %q", n)
+	}
+	if n := note(fresh.Key); strings.Contains(n, "out of date") {
+		t.Errorf("the note of a current overlay: %q", n)
 	}
 }

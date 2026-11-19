@@ -2,6 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "base_changed": {
+      "description": "An overlay made before Fyniq changed the platform page it replaces: the assistant says it may be out of date until a person reviews it.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
     "data_class": {
       "examples": [
         "general"
