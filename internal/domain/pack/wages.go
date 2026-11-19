@@ -173,8 +173,8 @@ func checkCPF(dir string, v Version) Problems {
 	rates := v.Tables["rates"].Rows
 	for i, row := range rates {
 		at := fmt.Sprintf("rates.csv row %d", i+2)
-		if row[0] != GroupSCSPR3 {
-			add(CodeValue, at, fmt.Sprintf("group %q is not one Fyniq reads", row[0]), "Enter sc_spr3")
+		if since, ok := cpfGroups[row[0]]; !ok || !sinceVersion(v, since) {
+			add(CodeValue, at, fmt.Sprintf("group %q is not one Fyniq reads", row[0]), "Enter sc_spr3, or from sg-cpf@2026.2 spr1_gg, spr2_gg, spr1_fg or spr2_fg")
 		}
 		lo, hi := -1, 1<<30
 		var err1, err2 error
@@ -211,6 +211,9 @@ func checkCPF(dir string, v Version) Problems {
 		}
 	}
 	periods(add, "ceilings.csv", v.Tables["ceilings"].Rows, func(r []string) string { return r[0] }, 1, 2)
+	if sinceVersion(v, [2]int{2026, 2}) {
+		out = append(out, checkCPFLowWages(dir, v)...)
+	}
 	return out
 }
 

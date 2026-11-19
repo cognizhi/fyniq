@@ -130,6 +130,8 @@ type UnitOfWork interface {
 	ClaimCategories() ClaimCategories
 	// Dimensions are the organisation's dimensions and their values (FR-DIM-01).
 	Dimensions() Dimensions
+	// Projects are the Project dimension's values with their attributes, members and tasks (FR-PRJ-01).
+	Projects() Projects
 	// ClaimPlaces are the members' saved places for mileage claims (FR-AP-16).
 	ClaimPlaces() ClaimPlaces
 	// AssetSources are the bill lines and bank lines registered assets came from (FR-FA-01).
