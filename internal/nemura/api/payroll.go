@@ -66,6 +66,7 @@ type PayView struct {
 	SHGFund       string      `json:"shg_fund,omitempty" doc:"The self-help group fund, when there is one." example:"CDAC"`
 	SHGOptOut     bool        `json:"shg_opt_out" doc:"Whether the employee opted out of the fund." example:"false"`
 	JointElection bool        `json:"joint_election" doc:"Whether a joint election to contribute at full employer rates is in force." example:"false"`
+	ElectionKind  string      `json:"election_kind,omitempty" enum:"fg,ff" doc:"The kind of the election in force: fg (full employer, graduated employee rates) or ff (full rates for both)." example:"ff"`
 	Items         []PayItem   `json:"items" doc:"The allowances and fixed deductions."`
 	YearToDate    *YearToDate `json:"year_to_date,omitempty" doc:"The year to date for the year of the day asked, when there is one."`
 }
@@ -428,7 +429,7 @@ type Payroll interface {
 	CreateGroup(ctx context.Context, s Session, in PayGroupInput) (string, error)
 	Pay(ctx context.Context, s Session, person uuid.UUID, on time.Time) (PayView, bool, error)
 	SetPay(ctx context.Context, s Session, person uuid.UUID, from time.Time, in PersonPayInput) error
-	SetElection(ctx context.Context, s Session, person uuid.UUID, from time.Time, evidence uuid.UUID) error
+	SetElection(ctx context.Context, s Session, person uuid.UUID, from time.Time, evidence uuid.UUID, kind string) error
 	ImportYTD(ctx context.Context, s Session, person uuid.UUID, in YTDInput) error
 	OneOffs(ctx context.Context, s Session, month time.Time) ([]OneOff, error)
 	AddOneOff(ctx context.Context, s Session, person uuid.UUID, month time.Time, in OneOffInput) (string, error)
@@ -482,6 +483,7 @@ type electionInput struct {
 	Body   struct {
 		From     string `json:"effective_from" format:"date" doc:"The day the election starts." example:"2026-02-10"`
 		Evidence string `json:"evidence_document_id" format:"uuid" doc:"A document on the person's file: the CPF Board's approval of the joint application." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9"`
+		Kind     string `json:"kind,omitempty" enum:"fg,ff" doc:"What the approval is for: fg (full employer rates, graduated employee rates; the default) or ff (full rates for both: the full table's)." example:"ff"`
 	}
 }
 
@@ -635,7 +637,7 @@ func (a *API) registerPayroll() {
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "setPersonElection", Method: "POST", Path: "/v1/people/{id}/pr-election", Tags: []string{"Payroll"}, Summary: "Record a permanent resident's joint election",
-		Description: "Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file. The Payroll administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 201,
+		Description: "Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file and its kind: fg (graduated employee rates, the default) or ff (full rates for both, so the full table applies). A different kind is a new election from a later day. The Payroll administrator and the Owner. It is audited.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 201,
 	}, func(ctx context.Context, in *electionInput) (*struct{}, error) {
 		s, err := payroller(ctx, in.Cookie)
 		if err != nil {
@@ -653,7 +655,7 @@ func (a *API) registerPayroll() {
 		if err != nil {
 			return nil, Err(CodePayrollInvalid, "evidence_document_id is not a document ID.")
 		}
-		return nil, payrollErrorOrNil(a.d.Payroll.SetElection(ctx, s, pid, *from, ev))
+		return nil, payrollErrorOrNil(a.d.Payroll.SetElection(ctx, s, pid, *from, ev, in.Body.Kind))
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "importYearToDate", Method: "POST", Path: "/v1/people/{id}/pay/year-to-date", Tags: []string{"Payroll"}, Summary: "Import a person's year to date of CPF wages",

@@ -900,6 +900,7 @@ pr_election | effective_to | date | false |
 pr_election | evidence_id | uuid | true | 
 pr_election | created_by | uuid | true | 
 pr_election | created_at | timestamp with time zone | true | 
+pr_election | kind | text | true | 'fg'::text
 reporting_line | organisation_id | uuid | true | nemura.current_org()
 reporting_line | id | uuid | true | uuidv7()
 reporting_line | report_id | uuid | true | 
@@ -2233,6 +2234,8 @@ pr_election | pr_election_effective_from_not_null | NOT NULL effective_from
 pr_election | pr_election_evidence_fkey | FOREIGN KEY (organisation_id, evidence_id) REFERENCES nemura.person_document(organisation_id, id)
 pr_election | pr_election_evidence_id_not_null | NOT NULL evidence_id
 pr_election | pr_election_id_not_null | NOT NULL id
+pr_election | pr_election_kind_known | CHECK ((kind = ANY (ARRAY['fg'::text, 'ff'::text])))
+pr_election | pr_election_kind_not_null | NOT NULL kind
 pr_election | pr_election_organisation_id_not_null | NOT NULL organisation_id
 pr_election | pr_election_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
 pr_election | pr_election_person_id_not_null | NOT NULL person_id
@@ -3849,7 +3852,7 @@ CREATE OR REPLACE FUNCTION nemura.pr_election_guard()
 AS $function$
 BEGIN
   IF TG_OP = 'DELETE' OR NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.effective_from IS DISTINCT FROM OLD.effective_from OR NEW.evidence_id IS DISTINCT FROM OLD.evidence_id
-     OR (OLD.effective_to IS NOT NULL AND NEW.effective_to IS DISTINCT FROM OLD.effective_to) THEN
+     OR NEW.kind IS DISTINCT FROM OLD.kind OR (OLD.effective_to IS NOT NULL AND NEW.effective_to IS DISTINCT FROM OLD.effective_to) THEN
     RAISE EXCEPTION 'An election is history: it can only be ended, once' USING ERRCODE = 'NM171';
   END IF;
   RETURN NEW;

@@ -96,7 +96,7 @@ func send(mux *http.ServeMux, method, path, body, key string) *httptest.Response
 // A write sent twice with one key runs once: the repeat returns the first answer with Idempotent-Replayed; the same key with another body is 422; a request with no key runs every time; two keys are two
 // requests; and a key expires after 24 hours (golden rule 4, NM-ARC-03).
 // req: NM-ARC-03
-// asvs: V11.1.4, V8.2.1
+// asvs: V2.3.2, V2.3.3, V8.2.1
 func TestAWriteWithAKeyRunsOnceAndAReplayReturnsTheFirstAnswer(t *testing.T) {
 	var runs atomic.Int32
 	testPeopleCreates = &runs
@@ -148,7 +148,7 @@ func TestAWriteWithAKeyRunsOnceAndAReplayReturnsTheFirstAnswer(t *testing.T) {
 
 // Two identical requests in flight at once run once: the second waits for the first and replays its answer (golden rule 4).
 // req: NM-ARC-03
-// asvs: V11.1.4
+// asvs: V2.3.2, V2.3.3
 func TestTwoIdenticalRequestsInFlightRunOnce(t *testing.T) {
 	var runs atomic.Int32
 	testPeopleCreates = &runs
@@ -184,7 +184,7 @@ func TestTwoIdenticalRequestsInFlightRunOnce(t *testing.T) {
 // What may carry pay, a bank account, an NRIC or a question is never stored: a replay of such a write that returned a body is refused with 409 and runs nothing again; one that returned no body replays by
 // its status (NM-AI-06, NM-SEC-02).
 // req: NM-ARC-03, NM-SEC-02
-// asvs: V8.3.4, V11.1.4
+// asvs: V2.3.2, V8.3.1
 func TestTheAnswerOfASensitiveWriteIsNeverStored(t *testing.T) {
 	for _, tc := range []struct {
 		pattern string

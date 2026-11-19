@@ -1758,6 +1758,14 @@ components:
             - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9
           format: uuid
           type: string
+        kind:
+          description: "What the approval is for: fg (full employer rates, graduated employee rates; the default) or ff (full rates for both: the full table's)."
+          enum:
+            - fg
+            - ff
+          examples:
+            - ff
+          type: string
       required:
         - effective_from
         - evidence_document_id
@@ -4801,6 +4809,14 @@ components:
           examples:
             - "2026-07-01"
           format: date
+          type: string
+        election_kind:
+          description: "The kind of the election in force: fg (full employer, graduated employee rates) or ff (full rates for both)."
+          enum:
+            - fg
+            - ff
+          examples:
+            - ff
           type: string
         items:
           description: The allowances and fixed deductions.
@@ -16174,7 +16190,7 @@ paths:
         - Payroll
   /v1/people/{id}/pr-election:
     post:
-      description: Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file. The Payroll administrator and the Owner. It is audited.
+      description: "Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file and its kind: fg (graduated employee rates, the default) or ff (full rates for both, so the full table applies). A different kind is a new election from a later day. The Payroll administrator and the Owner. It is audited."
       operationId: setPersonElection
       parameters:
         - description: The browser's cookies; the session cookie is read from them.

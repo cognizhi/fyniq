@@ -71,7 +71,7 @@ func (p PayrollService) Pay(ctx context.Context, s api.Session, person uuid.UUID
 			return err
 		}
 		ok = true
-		out = api.PayView{From: day(r.From), To: dayStr(r.To), GroupID: r.Group.String(), Group: r.GroupName, BasicMonthly: r.Basic, SHGFund: r.SHGFund, SHGOptOut: r.SHGOptOut, JointElection: r.Election, Items: []api.PayItem{}}
+		out = api.PayView{From: day(r.From), To: dayStr(r.To), GroupID: r.Group.String(), Group: r.GroupName, BasicMonthly: r.Basic, SHGFund: r.SHGFund, SHGOptOut: r.SHGOptOut, JointElection: r.Election, ElectionKind: r.ElectionKind, Items: []api.PayItem{}}
 		for _, it := range r.Items {
 			out.Items = append(out.Items, api.PayItem{Key: it.Key, Name: it.Name, Kind: it.Kind, Nature: it.Nature, Amount: it.Amount, CPFWages: it.CPFWages})
 		}
@@ -98,9 +98,9 @@ func (p PayrollService) SetPay(ctx context.Context, s api.Session, person uuid.U
 	})
 }
 
-func (p PayrollService) SetElection(ctx context.Context, s api.Session, person uuid.UUID, from time.Time, evidence uuid.UUID) error {
+func (p PayrollService) SetElection(ctx context.Context, s api.Session, person uuid.UUID, from time.Time, evidence uuid.UUID, kind string) error {
 	return p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
-		_, err := SetElection(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, person, from, evidence)
+		_, err := SetElection(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, person, from, evidence, kind)
 		return err
 	})
 }

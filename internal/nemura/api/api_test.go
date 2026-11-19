@@ -421,7 +421,7 @@ func (f fakePayroll) Pay(context.Context, Session, uuid.UUID, time.Time) (PayVie
 func (f fakePayroll) SetPay(context.Context, Session, uuid.UUID, time.Time, PersonPayInput) error {
 	return f.err
 }
-func (f fakePayroll) SetElection(context.Context, Session, uuid.UUID, time.Time, uuid.UUID) error {
+func (f fakePayroll) SetElection(context.Context, Session, uuid.UUID, time.Time, uuid.UUID, string) error {
 	return f.err
 }
 func (f fakePayroll) ImportYTD(context.Context, Session, uuid.UUID, YTDInput) error { return f.err }

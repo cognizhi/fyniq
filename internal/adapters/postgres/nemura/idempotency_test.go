@@ -18,7 +18,7 @@ import (
 // The table of idempotency keys: of many identical claims at once exactly one wins; a repeat after the answer returns it; the same key with another request hash is a mismatch; a key is a person's own and an
 // organisation's own; a key expires after 24 hours and a stale in-flight claim is cleared; a released key may be tried again; and the table holds no body when the answer is not kept (golden rule 4, NM-ARC-03).
 // req: NM-ARC-03
-// asvs: V11.1.4, V8.2.1, V8.3.4
+// asvs: V2.3.2, V2.3.3, V8.2.1
 func TestTheIdempotencyKeysOfWritesAreClaimedOnceAndKeptForADay(t *testing.T) {
 	ctx := context.Background()
 	lt := newLeaveTeam(t)

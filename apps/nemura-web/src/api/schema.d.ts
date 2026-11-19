@@ -2303,7 +2303,7 @@ export interface paths {
         put?: never;
         /**
          * Record a permanent resident's joint election
-         * @description Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file. The Payroll administrator and the Owner. It is audited.
+         * @description Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file and its kind: fg (graduated employee rates, the default) or ff (full rates for both, so the full table applies). A different kind is a new election from a later day. The Payroll administrator and the Owner. It is audited.
          */
         post: operations["setPersonElection"];
         delete?: never;
@@ -3842,6 +3842,12 @@ export interface components {
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9
              */
             evidence_document_id: string;
+            /**
+             * @description What the approval is for: fg (full employer rates, graduated employee rates; the default) or ff (full rates for both: the full table's).
+             * @example ff
+             * @enum {string}
+             */
+            kind?: "fg" | "ff";
         };
         EmergencyContact: {
             /**
@@ -5918,6 +5924,12 @@ export interface components {
              * @example 2026-07-01
              */
             effective_to?: string;
+            /**
+             * @description The kind of the election in force: fg (full employer, graduated employee rates) or ff (full rates for both).
+             * @example ff
+             * @enum {string}
+             */
+            election_kind?: "fg" | "ff";
             /** @description The allowances and fixed deductions. */
             items: components["schemas"]["PayItem"][] | null;
             /**

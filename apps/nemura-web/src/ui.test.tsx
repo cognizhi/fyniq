@@ -1529,3 +1529,24 @@ describe("a draft reply from the assistant", () => {
     expect((screen.getByLabelText("Written reply to Ben Lim") as HTMLTextAreaElement).value).toBe("Thank you for your request.");
   });
 });
+
+// req: FR-PAY-14
+describe("a permanent resident's joint election", () => {
+  it("records the kind the CPF Board approved, F/G by default and F/F when chosen, with a document of the person as evidence", async () => {
+    const person = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61";
+    const doc = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60";
+    answer("GET /v1/payroll/groups", { status: 200, body: { groups: [] } });
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: person, name: "Ben Lim" }] } });
+    answer(`GET /v1/people/${person}/pay`, { status: 200, body: { recorded: true, pay: { effective_from: "2026-01-05", pay_group_id: "g", pay_group: "Monthly", basic_monthly: "4500.00", shg_opt_out: false, items: [], joint_election: true, election_kind: "ff" } } });
+    answer(`GET /v1/people/${person}/documents`, { status: 200, body: { documents: [{ id: doc, title: "CPF Board approval" }] } });
+    answer("GET /v1/payroll/one-offs", { status: 200, body: { items: [] } });
+    answer(`POST /v1/people/${person}/pr-election`, { status: 201, body: undefined });
+    render(<PayrollHR roles={["payroll_admin"]} />);
+    expect(await screen.findByText("Full rates for both (F/F): the full table applies", { selector: "dd" })).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("What the approval is for"), { target: { value: "ff" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Record a joint election" }));
+    expect(await screen.findByText("The election is recorded.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/people/${person}/pr-election`)).toMatchObject({ evidence_document_id: doc, kind: "ff" });
+  });
+});

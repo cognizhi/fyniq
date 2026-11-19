@@ -55,6 +55,8 @@ type payRec struct {
 	Items     []payroll.RecurringItem
 }
 
+// segmentDays is the calendar days a pay record covers in a month once the person's start and leaving days are taken into account (payroll.PartMonthMethod): from the later of the month's first day, the
+// record's start and the person's start, to the earlier of the month's last day, the day before the record's end (an end is the first day of the next record) and the leaving day, both included.
 func segmentDays(rec payRec, start time.Time, leaving *time.Time, month time.Time) int {
 	from, to := month, monthEnd(month)
 	if rec.From.After(from) {
@@ -130,11 +132,12 @@ func BuildMonth(ctx context.Context, tx pgx.Tx, person, runID uuid.UUID, group u
 	if cls.BirthDate != nil {
 		m.Person.BirthDate = *cls.BirthDate
 	}
-	var elect bool
-	if err := tx.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM nemura.pr_election WHERE person_id = $1 AND effective_from <= $2 AND (effective_to IS NULL OR effective_to > $2))", person, day(monthEnd(month))).Scan(&elect); err != nil {
+	var electKind string
+	if err := tx.QueryRow(ctx, "SELECT kind FROM nemura.pr_election WHERE person_id = $1 AND effective_from <= $2 AND (effective_to IS NULL OR effective_to > $2)", person, day(monthEnd(month))).Scan(&electKind); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return mb, err
 	}
-	m.Person.JointElection = elect
+	m.Person.JointElection = electKind != ""
+	m.Person.FullEmployeeRate = electKind == "ff" // F/F: full rates for both, the full table's (sc_spr3)
 	// The pay records of the month in this group, in order.
 	rows, err := tx.Query(ctx, `SELECT id, pay_group_id, effective_from, effective_to, basic_monthly::text, coalesce(shg_fund, ''), shg_opt_out FROM nemura.person_pay
 WHERE person_id = $1 AND pay_group_id = $2 AND effective_from <= $3 AND (effective_to IS NULL OR effective_to > $4) ORDER BY effective_from`, person, group, day(monthEnd(month)), day(month))

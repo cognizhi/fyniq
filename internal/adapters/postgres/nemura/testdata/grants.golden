@@ -727,6 +727,7 @@ nemura_api | column nemura.pr_election.effective_from | INSERT
 nemura_api | column nemura.pr_election.effective_to | UPDATE
 nemura_api | column nemura.pr_election.evidence_id | INSERT
 nemura_api | column nemura.pr_election.id | INSERT
+nemura_api | column nemura.pr_election.kind | INSERT
 nemura_api | column nemura.pr_election.person_id | INSERT
 nemura_api | column nemura.reporting_line.effective_from | INSERT
 nemura_api | column nemura.reporting_line.effective_to | UPDATE

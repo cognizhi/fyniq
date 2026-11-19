@@ -790,3 +790,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | assistant.md -> nemura.assistant (drafts, 3.1)
 
 ## [2026-11-20] compile | my-pay.md -> nemura.my-pay (next pay day)
+
+## [2026-11-20] compile | payroll-records.md -> nemura.payroll-records (election kind)

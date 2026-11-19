@@ -1071,3 +1071,94 @@ func TestAPayRunOfAHundredPeopleCalculatesInUnderTenSeconds(t *testing.T) {
 		t.Fatalf("people in the run: %d", run.Latest.People)
 	}
 }
+
+// A permanent resident's joint election has a kind: fg (full employer rates, graduated employee rates) or ff (full rates for both, the full table's), written with its evidence and never changed; a run reads
+// the kind in force that month, so the full-table path (sc_spr3) is reachable for a first-year resident: S$5,000 of wages is S$250 of employee CPF at F/G and S$1,000 at F/F. Only the Payroll administrator
+// and the Owner record it (the API's matrix), the evidence is a document of that person, and the audit event names the kind and no amount (FR-PAY-14, NM-PAY-02).
+// req: FR-PAY-14, NM-PAY-02
+// asvs: V8.2.1, V8.3.1
+func TestAFirstYearResidentsElectionKindDecidesWhichRatesTheRunUses(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := d("2026-11-20").Add(10 * time.Hour)
+	st := store(t, "nemura_api")
+	packsSvc, err := nemura.NewPacksService(st, clock.NewFrozen(now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	blobs, _ := local.NewDir(t.TempDir())
+	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs}
+	rs := nemura.RestrictedService{Store: st, Blobs: blobs, Clock: clock.NewFrozen(now)}
+	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
+	birth, prStart := d("1990-05-20"), d("2026-01-01")
+	gid, _ := svc.CreateGroup(ctx, prep, api.PayGroupInput{Name: "Monthly", PayDay: 25, CutoffDays: 7, ApprovalDays: 3})
+	if err := svc.SetPay(ctx, prep, lt.ben, d("2026-01-05"), api.PersonPayInput{GroupID: gid, BasicMonthly: "5000.00"}); err != nil {
+		t.Fatal(err)
+	}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.SetClassification(ctx, tx, lt.c.org, now, lt.c.owner, lt.ben, d("2026-01-06"), people.Classification{ContractType: "service", EACovered: true, PartIVClass: "none", Residency: "permanent_resident", PRStart: &prStart, BirthDate: &birth})
+	})
+	doc, err := rs.AddDocument(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr}, lt.ben, "certificate", "CPF Board approval", "employment_record", "application/pdf", []byte("%PDF approval"), []string{"payroll_admin"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := rs.AddDocument(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr}, lt.cy, "certificate", "Somebody else's", "employment_record", "application/pdf", []byte("%PDF other"), []string{"payroll_admin"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.SetElection(ctx, prep, lt.ben, d("2026-01-10"), other, "fg"); payCode(err) != payroll.CodeInvalid {
+		t.Errorf("the evidence of somebody else: %v", err)
+	}
+	if err := svc.SetElection(ctx, prep, lt.ben, d("2026-01-10"), doc, "gg"); payCode(err) != payroll.CodeInvalid || !strings.Contains(err.Error(), "fg (full employer rates") {
+		t.Errorf("a kind that is not one: %v", err)
+	}
+	if err := svc.SetElection(ctx, prep, lt.ben, d("2026-01-10"), doc, ""); err != nil { // the default is F/G
+		t.Fatal(err)
+	}
+	if got, _, _ := svc.Pay(ctx, prep, lt.ben, d("2026-06-01")); !got.JointElection || got.ElectionKind != "fg" {
+		t.Errorf("the election in force: %+v", got)
+	}
+	cpf := func(month string) string {
+		run, err := svc.StartRun(ctx, prep, d(month), mustUUID(gid))
+		if err != nil {
+			t.Fatal(err)
+		}
+		detail, err := svc.RunDetail(ctx, prep, mustUUID(run.ID))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return detail.Lines[0].CPFEmployee
+	}
+	if got := cpf("2026-06-01"); got != "250.00" {
+		t.Errorf("F/G on S$5,000 in the first year: employee CPF %s", got)
+	}
+	// A different kind is a new election from a later day: F/F from July, with the full table's rates.
+	if err := svc.SetElection(ctx, prep, lt.ben, d("2026-07-01"), doc, "ff"); err != nil {
+		t.Fatal(err)
+	}
+	if got, _, _ := svc.Pay(ctx, prep, lt.ben, d("2026-07-15")); got.ElectionKind != "ff" {
+		t.Errorf("the kind in July: %+v", got)
+	}
+	if got := cpf("2026-07-01"); got != "1000.00" {
+		t.Errorf("F/F on S$5,000: employee CPF %s", got)
+	}
+	// History: the kind never changes and an election is never deleted; the audit event names the kind and no amount.
+	su := connect(t, db.SuperURL())
+	for _, q := range []string{"UPDATE nemura.pr_election SET kind = 'fg' WHERE kind = 'ff'", "UPDATE nemura.pr_election SET kind = 'ff'", "DELETE FROM nemura.pr_election"} {
+		if _, err := su.Exec(ctx, q); err == nil || !strings.Contains(err.Error(), "NM171") {
+			t.Errorf("%s: %v", q, err)
+		}
+	}
+	if _, err := su.Exec(ctx, "UPDATE nemura.pr_election SET kind = 'xx' WHERE false"); err != nil {
+		t.Errorf("a no-op: %v", err)
+	}
+	if _, err := su.Exec(ctx, "INSERT INTO nemura.pr_election (organisation_id, id, person_id, effective_from, evidence_id, kind, created_by, created_at) VALUES ($1, uuidv7(), $2, '2030-01-01', $3, 'xx', $4, now())", lt.c.org, lt.ben, doc, lt.c.pay); err == nil || !strings.Contains(err.Error(), "pr_election_kind_known") {
+		t.Errorf("a kind the database does not know: %v", err)
+	}
+	var kinds, amounts int
+	_ = su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body LIKE '%nemura.pr_election.set%' AND body LIKE '%"kind"%'`, lt.c.org).Scan(&kinds)
+	_ = su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body LIKE '%nemura.pr_election%' AND body ~ '(^|[^0-9a-fA-F-])(250\.00|1000\.00|5000\.00|1000|250)([^0-9a-fA-F-]|$)'`, lt.c.org).Scan(&amounts)
+	if kinds != 2 || amounts != 0 {
+		t.Errorf("audit: %d election events with a kind, %d with an amount", kinds, amounts)
+	}
+}
