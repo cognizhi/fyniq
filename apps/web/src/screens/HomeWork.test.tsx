@@ -6,7 +6,7 @@ import { answer, ownerSession, problem } from "../test/api";
 import { noViolations } from "../test/axe";
 import { renderPage } from "../test/render";
 import { Compliance } from "./compliance/Compliance";
-import { AuditorAccess, Deadlines, landingRoles, rowsFor, YourWork } from "./HomeWork";
+import { ApproverWork, AuditorAccess, Deadlines, landingRoles, rowsFor, YourWork } from "./HomeWork";
 
 const organisation: Organisation = { id: ownerSession.organisation_id, name: "Cognizhi Pte Ltd", base_currency: "SGD", base_minor_units: 2, team_mode: "founder", version: 1 };
 
@@ -151,5 +151,24 @@ describe("Home's work by role", () => {
     renderPage(() => <As roles={["bookkeeper"]}><Deadlines /></As>, { path: "/" });
     await screen.findByRole("list", { name: "Upcoming deadlines" });
     expect(screen.queryByRole("link", { name: "The statutory calendar" })).toBeNull();
+  });
+
+  // req: QA-UI-08
+  it("lists the Approver's requests that wait for them, the oldest first, each with its step and who it needs", async () => {
+    const a = (id: string, at: string, mine: boolean) => ({
+      id, status: "pending", you_may_approve: mine, summary: `Pay ${id}`, operation: "bill.post", requested_by_name: "Bea", requested_at: at,
+      current_step: 1, steps: [{ quorum: 1, roles: ["approver"], users: [], approvals: [] }],
+    });
+    answer({ "GET /v1/approvals": { status: 200, body: { items: [a("b2", "2026-11-02T00:00:00Z", true), a("b1", "2026-11-01T00:00:00Z", true), a("b3", "2026-11-03T00:00:00Z", false)] } } });
+    const { unmount } = renderPage(() => <As roles={["approver"]}><ApproverWork /></As>, { path: "/" });
+    const card = await screen.findByRole("region", { name: /Waiting for your approval \(2\)/ });
+    const rows = within(card).getAllByRole("listitem");
+    expect(rows.map((r) => r.textContent)).toEqual([expect.stringContaining("Pay b1"), expect.stringContaining("Pay b2")]);
+    expect(rows[0]!.textContent).toContain("step 1 of 1: 1 approval from Approver");
+    expect(within(card).getByRole("link", { name: /Pay b1/ }).getAttribute("href")).toBe("/approvals/b1");
+    await noViolations(document.body);
+    unmount();
+    renderPage(() => <As roles={["bookkeeper"]}><ApproverWork /></As>, { path: "/" });
+    expect(screen.queryByRole("region", { name: /Waiting for your approval/ })).toBeNull();
   });
 });
