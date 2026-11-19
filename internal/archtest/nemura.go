@@ -22,7 +22,7 @@ var NemuraPackages = []string{"cmd/nemura", "db/nemura", "internal/nemura", "int
 var NemuraShared = []string{
 	"internal/app", "internal/httpserver", "internal/runtime", "internal/clock", "internal/telemetry", "internal/logging",
 	"internal/egress", "internal/version", "internal/ports", "internal/domain/money", "internal/domain/rounding",
-	"internal/domain/audit", "internal/adapters/postgres/gooserun", "internal/adapters/local",
+	"internal/domain/audit", "internal/adapters/postgres/gooserun", "internal/adapters/local", "internal/passkey", "internal/adapters/hydra",
 }
 
 func inNemura(importPath string) bool {
