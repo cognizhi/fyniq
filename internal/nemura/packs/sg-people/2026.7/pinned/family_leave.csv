@@ -1,0 +1,6 @@
+case,scheme,date,want_days,why,source
+citizen child under 7,childcare_citizen_under_7,2026-11-19,6,"MOM: 6 days of paid childcare leave per year",mom-childcare-leave
+extended childcare,extended_childcare_citizen_7_to_12,2026-11-19,2,"MOM: 2 days of extended childcare leave",mom-childcare-leave
+non-citizen child,childcare_non_citizen_under_7,2026-11-19,2,"MOM: 2 days of childcare leave",mom-childcare-leave
+no such scheme,nothing,2026-11-19,none,"Not a scheme of the pack",mom-childcare-leave
+unpaid infant care,unpaid_infant_care_citizen_under_2,2026-11-20,12,"MOM: 12 days of unpaid infant care leave a year per parent",mom-infant-care-leave

@@ -60,9 +60,9 @@ Load before each slice: `fyniq-accounting-domain` (money, rounding, postings), `
 
 ## 4. Payslips and My pay (slice 4)
 
-- [ ] 4.1 The itemised payslip, the twelve MOM items from the employee-month's working, drawn by the renderer port and hashed, once per run version. `// req: NM-PAY-04`
-- [ ] 4.2 My pay (`nm-my-pay`, `nm-payslip`): by month, view, print, PDF; published when the salary is paid or within 3 working days; the leaver's narrow account reads theirs. `// req: NM-PAY-04, NM-ESS-02`
-- [ ] 4.3 Guide and kb pages; verify.
+- [x] 4.1 The itemised payslip, the twelve MOM items from the employee-month's working, drawn by the renderer port and hashed, once per run version. `// req: NM-PAY-04`
+- [x] 4.2 My pay (`nm-my-pay`, `nm-payslip`): by month, view, print, PDF; published when the salary is paid or within 3 working days; the leaver's narrow account reads theirs. `// req: NM-PAY-04, NM-ESS-02`
+- [x] 4.3 Guide and kb pages; verify.
 
 ## 5. Final pay, payment states and the checks (slice 5)
 

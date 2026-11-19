@@ -3,7 +3,12 @@
 package nemura_test
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -11,10 +16,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
 )
@@ -322,6 +329,147 @@ func TestAVersionIsApprovedByAnotherPersonOverItsDigestAndItsInputsAreUsedOnce(t
 	// No amount in the trail; the approved lines are evidence.
 	var leaks int
 	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F])(8300|8000\.00|300\.00)([^0-9a-fA-F]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
+		t.Errorf("amounts in the audit trail: %d %v", leaks, err)
+	}
+}
+
+// A payslip is made once for each person of an approved version, with MOM's twelve items as data, the PDF drawn from them and its SHA-256; an unapproved or superseded version has none; a person reads
+// their own and no one else's; a corrected version has payslips of its own and the one before says it is corrected; a changed byte is never served (NM-PAY-04).
+// req: NM-PAY-04
+// asvs: V8.2.1, V8.3.1, V13.2.1
+func TestPayslipsAreMadeOnceFromAnApprovedVersionAndReadOnlyByTheirOwner(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := d("2026-11-20").Add(10 * time.Hour)
+	st := store(t, "nemura_api")
+	packsSvc, err := nemura.NewPacksService(st, clock.NewFrozen(now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	blobs, err := local.NewDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc, Blobs: blobs, Renderer: letters.Local{}}
+	bare := nemura.PayrollService{Store: st, Clock: clock.NewFrozen(now), Packs: packsSvc}
+	prep := api.Session{Organisation: lt.c.org, Member: lt.c.pay}
+	approver := api.Session{Organisation: lt.c.org, Member: lt.c.owner, StepUpAt: &now}
+	ben := api.Session{Organisation: lt.c.org, Member: lt.benLogin}
+	stranger := api.Session{Organisation: lt.c.org, Member: lt.c.owner}
+	birth := d("1990-05-20")
+	gid, _ := svc.CreateGroup(ctx, prep, api.PayGroupInput{Name: "Monthly", PayDay: 25, CutoffDays: 7, ApprovalDays: 3})
+	if err := svc.SetPay(ctx, prep, lt.ben, d("2026-01-05"), api.PersonPayInput{GroupID: gid, BasicMonthly: "4500.00", SHGFund: "CDAC", Items: []api.PayItem{
+		{Key: "transport", Name: "Transport allowance", Kind: "allowance", Nature: "allowance", Amount: "100.00", CPFWages: true}, {Key: "dorm", Name: "Dormitory", Kind: "fixed_deduction", Nature: "accommodation", Amount: "200.00"}}}); err != nil {
+		t.Fatal(err)
+	}
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.SetClassification(ctx, tx, lt.c.org, now, lt.c.owner, lt.ben, d("2026-01-06"), people.Classification{ContractType: "service", EACovered: true, PartIVClass: "none", Residency: "citizen", BirthDate: &birth})
+	})
+	if _, err := svc.AddOneOff(ctx, prep, lt.ben, d("2026-06-01"), api.OneOffInput{Key: "bonus", Name: "Monthly bonus", Nature: "bonus", Amount: "500.00", CPFWages: true, ForMonth: "2026-06-01", PayableOn: "2026-06-25"}); err != nil {
+		t.Fatal(err)
+	}
+	run, err := svc.StartRun(ctx, prep, d("2026-06-01"), mustUUID(gid))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.PublishPayslips(ctx, prep, mustUUID(run.ID), 1); payCode(err) != payroll.CodeConflict {
+		t.Errorf("payslips of a version nobody approved: %v", err)
+	}
+	if err := svc.Approve(ctx, approver, mustUUID(run.ID), 1, run.Latest.Digest); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.PublishPayslips(ctx, prep, mustUUID(run.ID), 1); payCode(err) != payroll.CodeInvalid || !strings.Contains(err.Error(), "letterhead") {
+		t.Errorf("no employer name yet: %v", err)
+	}
+	if err := (nemura.LettersService{Store: st, Clock: clock.NewFrozen(now)}).SetSettings(ctx, api.Session{Organisation: lt.c.org, Member: lt.c.hr}, api.LetterSettings{Name: "Acme Pte. Ltd.", UEN: "201912345A", Address: "1 Raffles Place"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := bare.PublishPayslips(ctx, prep, mustUUID(run.ID), 1); err == nil || !strings.Contains(err.Error(), "NM_UNAVAILABLE") {
+		t.Errorf("no renderer or file store: %v", err)
+	}
+	n, err := svc.PublishPayslips(ctx, prep, mustUUID(run.ID), 1)
+	if err != nil || n != 1 {
+		t.Fatalf("publish: %d %v", n, err)
+	}
+	if _, err := svc.PublishPayslips(ctx, prep, mustUUID(run.ID), 1); payCode(err) != payroll.CodeConflict {
+		t.Errorf("publishing twice: %v", err)
+	}
+	// Gross 4,500 + 100 + 500 = 5,100; the employee's CPF is 20% of it, 1,020; the CDAC fund on 5,100 is 2.00; the dormitory 200: net 5,100 − 1,020 − 2.00 − 200 = 3,878.00.
+	list, err := svc.MyPayslips(ctx, ben)
+	if err == nil && (len(list) != 1 || list[0].Reference != "PS-202606-0001" || list[0].Net != "3878.00" || list[0].Corrected || list[0].PayDate != "2026-06-25") {
+		t.Errorf("list: %+v", list)
+	}
+	if err != nil || len(list) != 1 {
+		t.Fatalf("my payslips: %+v %v", list, err)
+	}
+	view, err := svc.MyPayslip(ctx, ben, mustUUID(list[0].ID))
+	if err != nil || view.Employer != "Acme Pte. Ltd." || view.Employee != "Ben Lim" || view.Basic != "4500.00" || view.PeriodStart != "2026-06-01" || view.PeriodEnd != "2026-06-30" || len(view.Allowances) != 1 || len(view.Additional) != 1 ||
+		view.Additional[0].Name != "Monthly bonus" || len(view.SHA256) != 64 {
+		t.Fatalf("the payslip: %+v %v", view, err)
+	}
+	names := []string{}
+	for _, d := range view.Deductions {
+		names = append(names, d.Name)
+	}
+	if strings.Join(names, "|") != "accommodation|Employee's CPF contribution|Self-help group fund" {
+		t.Errorf("deductions: %v", names)
+	}
+	ref, pdf, err := svc.MyPayslipFile(ctx, ben, mustUUID(list[0].ID))
+	if err != nil || ref != "PS-202606-0001" || !bytes.HasPrefix(pdf, []byte("%PDF")) {
+		t.Fatalf("file: %s %v", ref, err)
+	}
+	if sum := sha256.Sum256(pdf); hex.EncodeToString(sum[:]) != view.SHA256 {
+		t.Error("the PDF does not hash to the payslip's hash")
+	}
+	// Nobody else reads it: another login finds none and no such payslip.
+	if other, _ := svc.MyPayslips(ctx, stranger); len(other) != 0 {
+		t.Errorf("someone else's list: %+v", other)
+	}
+	if _, err := svc.MyPayslip(ctx, stranger, mustUUID(list[0].ID)); payCode(err) != payroll.CodeNotFound {
+		t.Errorf("someone else's payslip: %v", err)
+	}
+	if _, _, err := svc.MyPayslipFile(ctx, stranger, mustUUID(list[0].ID)); payCode(err) != payroll.CodeNotFound {
+		t.Errorf("someone else's file: %v", err)
+	}
+	// Evidence: the row never changes, and a changed byte is never served.
+	su := connect(t, db.SuperURL())
+	if _, err := su.Exec(ctx, "UPDATE nemura.payslip SET data = '{}'::jsonb"); err == nil || !strings.Contains(err.Error(), "NM127") {
+		t.Errorf("a payslip changed: %v", err)
+	}
+	var key string
+	_ = su.QueryRow(ctx, "SELECT blob_key FROM nemura.payslip").Scan(&key)
+	if err := filepath.WalkDir(dir, func(p string, e os.DirEntry, err error) error {
+		if err == nil && !e.IsDir() && strings.HasSuffix(p, ".pdf") {
+			return os.WriteFile(p, []byte("%PDF tampered"), 0o600)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := svc.MyPayslipFile(ctx, ben, mustUUID(list[0].ID)); payCode(err) != payroll.CodeConflict {
+		t.Errorf("a changed byte was served: %v", err)
+	}
+	// A correction has its own payslip and the first says it is corrected.
+	c2, err := svc.Recalculate(ctx, prep, mustUUID(run.ID), "A bonus was missed.")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Approve(ctx, approver, mustUUID(run.ID), 2, c2.Latest.Digest); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.PublishPayslips(ctx, prep, mustUUID(run.ID), 1); payCode(err) != payroll.CodeConflict {
+		t.Errorf("payslips of a superseded version: %v", err)
+	}
+	if n, err := svc.PublishPayslips(ctx, prep, mustUUID(run.ID), 2); err != nil || n != 1 {
+		t.Fatalf("the corrected version's payslips: %d %v", n, err)
+	}
+	both, _ := svc.MyPayslips(ctx, ben)
+	if len(both) != 2 || both[0].Version != 2 || both[0].Corrected || both[1].Version != 1 || !both[1].Corrected {
+		t.Errorf("corrected payslips: %+v", both)
+	}
+	var leaks int
+	if err := su.QueryRow(ctx, `SELECT count(*) FROM nemura.audit_event WHERE organisation_id = $1 AND body ~ '(^|[^0-9a-fA-F])(4500\.00|3500\.00|5100\.00|1020|500\.00)([^0-9a-fA-F]|$)'`, lt.c.org).Scan(&leaks); err != nil || leaks != 0 {
 		t.Errorf("amounts in the audit trail: %d %v", leaks, err)
 	}
 }

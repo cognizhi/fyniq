@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "confidence": {
+      "description": "How sure the model is, from 0 to 1.",
+      "examples": [
+        0.95
+      ],
+      "format": "double",
+      "type": "number"
+    },
+    "value": {
+      "description": "What the document shows, exactly as printed; null when it does not show it.",
+      "examples": [
+        "Acme Software Pte. Ltd."
+      ],
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "value",
+    "confidence"
+  ],
+  "title": "Text",
+  "type": "object"
+}

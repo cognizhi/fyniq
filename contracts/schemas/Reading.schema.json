@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "$ref": "Text.schema.json"
+    },
+    "customer_named": {
+      "$ref": "Flag.schema.json"
+    },
+    "date": {
+      "$ref": "Text.schema.json"
+    },
+    "due_date": {
+      "$ref": "Text.schema.json"
+    },
+    "gst_in_sgd": {
+      "$ref": "Text.schema.json"
+    },
+    "gst_registration_no": {
+      "$ref": "Text.schema.json"
+    },
+    "gst_total": {
+      "$ref": "Text.schema.json"
+    },
+    "kind": {
+      "description": "What the document is.",
+      "enum": [
+        "bill",
+        "receipt",
+        "sales_invoice",
+        "statement",
+        "contract",
+        "other"
+      ],
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    },
+    "lines": {
+      "items": {
+        "$ref": "Line.schema.json"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "number": {
+      "$ref": "Text.schema.json"
+    },
+    "supplier": {
+      "$ref": "Text.schema.json"
+    },
+    "supplier_address": {
+      "$ref": "Text.schema.json"
+    },
+    "supplier_uen": {
+      "$ref": "Text.schema.json"
+    },
+    "tax_invoice_label": {
+      "$ref": "Flag.schema.json"
+    },
+    "total": {
+      "$ref": "Text.schema.json"
+    }
+  },
+  "required": [
+    "kind",
+    "supplier",
+    "supplier_uen",
+    "gst_registration_no",
+    "supplier_address",
+    "number",
+    "date",
+    "due_date",
+    "currency",
+    "lines",
+    "gst_total",
+    "total",
+    "gst_in_sgd",
+    "tax_invoice_label",
+    "customer_named"
+  ],
+  "title": "Reading",
+  "type": "object"
+}

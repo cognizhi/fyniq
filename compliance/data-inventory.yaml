@@ -143,6 +143,15 @@ classes:
     protection: "Only catalogue task types, from what the AI read without NRIC and FIN numbers, bank account numbers, secrets and home addresses (AI-02, AI-20); the audit trail keeps the payload's hash, not the payload"
     transfers: "None"
     columns: [ai_proposal.payload, ai_proposal.rationale, ai_proposal.reason]
+  - key: document-capture
+    what: "The files captured for bills and claims (uploaded, pasted or received at an email-in address), what the model read from each with its confidences, the platform's checks of that reading, and the draft a person made of it"
+    why: "So a supplier's invoice or a receipt becomes a draft in one action, with each field checked (FR-DOC-12, FR-DOC-14, FR-AP-04, FR-AP-12)"
+    where: "The database and the staging file store, in Singapore (Cloud SQL and Cloud Storage, asia-southeast1; locally the developer's database and files)"
+    who: "Those who may enter bills or claims, for the organisation's address, uploads and pastes; only the member for their own email-in address"
+    retention: "The reading and its record are kept with the organisation's records; the file is kept until a draft attaches it as evidence, under the evidence rules' retention (FR-DOC-02), or it is dismissed [counsel to confirm]"
+    protection: "A file is checked and scanned like any upload (FR-DOC-08); what the model returns is untrusted data, screened, and never decides a figure; NRIC and FIN numbers, bank account numbers and home addresses never reach a model (AI-02, AI-20)"
+    transfers: "Model calls only, when a document is read: the flow ai-models"
+    columns: [document_capture.reading, document_capture.file_name, document_capture.checks]
   - key: agent-runs
     what: "The scheduled agents' runs: what triggered each, the Owner it acted for, what it read, its findings, Fyniq's summary and the model's words"
     why: "To report on the company's obligations on a schedule and keep each run reproducible (AI-64, AI-65), and to see a run that failed or was late (AI-67)"

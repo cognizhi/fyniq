@@ -3752,7 +3752,7 @@
    "title": "Document inbox (capture)",
    "canvas": "compliance",
    "module": "Purchases",
-   "route": "/documents/inbox",
+   "route": "/purchases/documents",
    "kind": "list",
    "phase": "P1",
    "roles": [
@@ -3763,6 +3763,9 @@
    "mode": "both",
    "requirements": [
     "FR-DOC-12",
+    "FR-DOC-14",
+    "FR-AP-04",
+    "FR-AP-12",
     "FR-INT-22",
     "FR-AP-05"
    ],

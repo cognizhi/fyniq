@@ -98,6 +98,7 @@ func TestConventionExemptions(t *testing.T) {
 	want = append(want, "answerOAuthConsent Idempotency-Key", "answerOAuthConsent Prefer")                                                                                                                                                                                                 // AI-37: a consent request is answered once and is then gone
 	want = append(want, "revokeMyConnection Prefer", "listMCPRegistrations cursor", "listMCPActivity cursor", "denyMCPRegistration Idempotency-Key", "denyMCPRegistration Prefer", "listMCPConnections cursor", "revokeMemberConnection Idempotency-Key", "revokeMemberConnection Prefer") // Connected apps (AI-44, AI-90)
 	want = append(want, "createPersonalAccessToken Idempotency-Key", "createPersonalAccessToken Prefer")                                                                                                                                                                                   // FR-INT-02: its secret is shown once
+	want = append(want, "getCaptureFile cursor", "readCapture Idempotency-Key", "readCapture Prefer")                                                                                                                                                                                      // FR-DOC-12: one file, not a list; a reading is a model call, which a preview would make
 	slices.Sort(want)
 	var got []string
 	for _, op := range operations(testAPI(t)) {

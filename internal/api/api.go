@@ -267,6 +267,7 @@ func Config(version string) huma.Config {
 		{Name: "Items", Description: "Products and services the organisation sells, with a price per currency (FR-ITM-01)."},
 		{Name: "Approvals", Description: "Changes that wait for a second approver (FM-1): the envelope each approver signs, their decisions, and the policies that say who approves (FR-APR-01…05, FR-APR-09, FR-APR-10)."},
 		{Name: "Statutory packs", Description: "Statutory parameters as versioned packs from official sources, with pinned tests, and the organisation's activation of each version (ENG-30, ENG-32)."},
+		{Name: "Document inbox", Description: "Bills and receipts captured by upload, paste or accepted email, read by the model into a reading a person checks, and drafted by a person; the AI reads and writes nothing (FR-DOC-12, FR-DOC-14, FR-AP-04, FR-AP-12)."},
 		{Name: "Evidence", Description: "Files that prove what happened, attached to records: scanned, hashed, and append-only once the record is final (FR-DOC-05, FR-DOC-07)."},
 		{Name: "Search", Description: "The global search: documents, contacts, accounts and items by reference, name, words or amount, in what the caller may see (FR-UX-02, SEC-34)."},
 		{Name: "Notifications", Description: "Each person's notification centre and preferences, produced from one event stream (FR-NTF-01, FR-NTF-02, FR-NTF-05)."},
@@ -391,6 +392,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerEmail(a)
 	registerCapture(a)
 	registerInbound(a)
+	registerDocumentCaptures(a)
 	registerNotifications(a)
 	registerHelpState(a)
 	registerPreferences(a)

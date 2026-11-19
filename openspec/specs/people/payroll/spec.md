@@ -46,9 +46,13 @@ Source: PRD-002 §9 · Priority M · Phase P1
 - **THEN** their final pay follows NM-PAY-08's deadlines
 
 ### Requirement: NM-PAY-04 Payslips to self-service
-Payslips SHALL be published to each person's My pay within 3 working days of their confirmed payment, with print and download, and leavers SHALL keep access to their payslips (NM-ESS-06).
+Payslips SHALL be published to each person's My pay within 3 working days of their confirmed payment, with print and download, and leavers SHALL keep access to their payslips (NM-ESS-06). A payslip SHALL hold the twelve items MOM requires, be published once for each approved version, and never be served if its bytes no longer match its hash.
 
 Source: PRD-002 §9 · Priority M · Phase P1
+
+#### Scenario: A correction
+- **WHEN** a corrected version is approved and published
+- **THEN** it has a payslip of its own and the first is marked corrected
 
 #### Scenario: Published on pay day
 - **WHEN** salaries are paid on Wed 28 Oct

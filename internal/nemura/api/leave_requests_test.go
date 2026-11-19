@@ -408,7 +408,7 @@ func TestALeaversAccountKeepsOnlyTheirOwnDocumentsAndAQuestion(t *testing.T) {
 	}
 	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0"
 	person := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"
-	for _, c := range []struct{ method, path, body string }{{"GET", "/v1/letters?mine=true", ""}, {"GET", "/v1/letters/" + id + "/file", ""}, {"POST", "/v1/letters/" + id + "/link", ""},
+	for _, c := range []struct{ method, path, body string }{{"GET", "/v1/letters?mine=true", ""}, {"GET", "/v1/letters/" + id + "/file", ""}, {"GET", "/v1/me/payslips", ""}, {"GET", "/v1/me/payslips/" + id, ""}, {"GET", "/v1/me/payslips/" + id + "/file", ""}, {"POST", "/v1/letters/" + id + "/link", ""},
 		{"GET", "/v1/people/" + person + "/documents", ""}, {"POST", "/v1/me/questions", `{"question":"Please send me my letter again."}`}, {"GET", "/v1/me/requests", ""}} {
 		if code, _ := do(c.method, c.path, c.body); code >= 300 {
 			t.Errorf("a leaver could not %s %s: %d", c.method, c.path, code)

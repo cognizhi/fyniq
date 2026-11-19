@@ -15,7 +15,7 @@ var Exported = []string{
 	"capture_sender", "check_owner", "check_review", "check_run", "check_state", "claim_category", "claim_place",
 	"close_checklist_entry", "close_checklist_template", "consent_purpose", "consent_record", "contact",
 	"contact_document_template", "control_run", "control_state", "conversion_step", "customer_group",
-	"data_inventory_entry", "data_inventory_review", "dimension", "dimension_set", "dimension_value", "document",
+	"data_inventory_entry", "data_inventory_review", "dimension", "dimension_set", "dimension_value", "document", "document_capture",
 	"document_link", "document_number", "document_send", "document_sequence", "document_template",
 	"document_template_default", "document_template_version", "document_version", "dpia_approval", "dpia_version",
 	"email_event", "email_message", "email_sender", "email_suppression", "equity_step", "evidence",

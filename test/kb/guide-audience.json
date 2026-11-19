@@ -436,6 +436,16 @@
     "status": "published"
   },
   {
+    "file": "document-inbox.md",
+    "key": "documents.inbox",
+    "roles": [
+      "bookkeeper",
+      "ap_specialist",
+      "accountant"
+    ],
+    "status": "draft"
+  },
+  {
     "file": "document-templates.md",
     "key": "settings.templates",
     "roles": [
