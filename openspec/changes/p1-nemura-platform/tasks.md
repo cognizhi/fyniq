@@ -71,39 +71,46 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 3. Audit chain, outbox and worker (two slices)
 
-- [ ] 3.1 (slice 3a) Audit in Nemura's database (D5): `audit_chain` and `audit_event` with the append trigger,
+- [x] 3.1 (slice 3a) Audit in Nemura's database (D5): `audit_chain` and `audit_event` with the append trigger,
   the same canonical form and chain rule, a Nemura schema id in `contracts/audit/`, written by the unit of work in
   the same transaction as the change, masked by the shared code, sealed per person and year with the local key
   adapter. Tests `TestNemuraAuditSameTransaction`
   (no tag yet: NM-SEC-01 is tagged in 10.2, when all its clauses are proven), tamper detection (an edited or removed event fails verification), no secret, token
   or full NRIC in an event (`// asvs: V16.2.5` or the matching ID).
+  (Built, 19 Nov 2026: migration 000002, `internal/adapters/postgres/nemura/audit.go` and `audit_test.go`: `TestAChangeAndItsAuditEventCommitTogether`, `TestTheChainDetectsTampering`, `TestNoSecretReachesTheAuditTrail`, `TestOneOrganisationsTrailIsInvisibleToAnother`. The event form is the shared `internal/domain/audit` under the schema id `nemura-audit-event@1`. **Left:** sealing of personal values per person and year (it arrives with the first personal field, in `p1-nemura-records-packs`), and a Nemura schema file in `contracts/audit/`.)
 - [ ] 3.2 (slice 3a) Verification and anchoring: the Nemura storage port's chain reads, the nightly verification
   and the anchors in a Nemura-prefixed bucket (local blob store; the real bucket is `[live-verify]`). Tests: a
   tampered chain fails the nightly check, an anchor mismatch is reported, a restored copy verifies.
-- [ ] 3.3 (slice 3b) The outbox and the `worker` role (D6): `outbox` table and its functions, `POST /tasks` with an
+  (Built in part, 19 Nov 2026: `Store.VerifyAudit` recomputes a whole chain from its first event and checks it against the chain head; `TestTheChainDetectsTampering`. **Left:** the anchors in a Nemura-prefixed bucket, the nightly verification job and a restored copy's check, which need the signer and blob ports wired into the worker.)
+- [x] 3.3 (slice 3b) The outbox and the `worker` role (D6): `outbox` table and its functions, `POST /tasks` with an
   audience-bound task token for `nemura-worker`, retry with backoff, dead-lettering with an alert event, the
   scheduler tick endpoint, and `/jobs` for long work; `nemura_worker` grants. Tests: a task queued while its
   consumer is stopped runs once it is back and exactly once (idempotent on its key); a poisoned task is
   dead-lettered; the worker refuses to start without its own database URL or with another role's (`// req: NM-ARC-06`
   is tagged in 5.3, when the service identities are all proven).
-- [ ] 3.4 Verify each slice: `make check`, `make test`, `make images`.
+  (Built, 19 Nov 2026: migration 000003, `internal/nemura/outbox`, `internal/adapters/postgres/nemura/outbox.go` and `outbox_test.go`, the worker role of `cmd/nemura` (`/tasks`, `/tick`) and the compose service `nemura-worker`. The release flavour's Cloud Tasks wiring is task 10.1 [live-verify] and refuses to start the worker until then. A service refuses another role's database URL (`NEMURA-ROLE-02`), tested in `TestAServiceRefusesAnotherRolesDatabaseURL`.)
+- [x] 3.4 Verify each slice: `make check`, `make test`, `make images`.
 
 ## 4. The API foundation (slice 4; golden rule 4)
 
-- [ ] 4.1 The HTTP layer on the same framework as Fyniq's (huma on `net/http`), served under `/api/v1/` of
+- [x] 4.1 The HTTP layer on the same framework as Fyniq's (huma on `net/http`), served under `/api/v1/` of
   Nemura's own origin; `make openapi` also writes `contracts/openapi/nemura/nemura.v1.yaml`, its JSON schemas under
   `contracts/schemas/nemura/` and the typed client for `apps/nemura-web`; `make test` fails while any differ from
   the code; `make api-check` runs Spectral and `oasdiff` against the last release on both contracts. First
   operations: the session, the feature registry stub and the error catalogue. Tests `// req: NM-ARC-03`
   (tagged here for the contract's generation and drift only; full in 4.3).
+  (Built, 19 Nov 2026: `internal/nemura/api`, `contracts/openapi/nemura/nemura.v1.yaml` and `spectral.yaml`, `make openapi` and `make api-check`, release-please keeps the version. The generated TypeScript client arrives with `apps/nemura-web` (7.1); oasdiff against a release starts once Nemura has one. First operations: `GET /v1/info`, `GET /v1/errors`, `GET /v1/errors/{code}`; the session operation arrives with sign-in.)
 - [ ] 4.2 Conventions: RFC 9457 errors with the `NM_*` catalogue in `contracts/openapi/nemura/errors.yaml` and a
   test that triggers each code with a plain message that names the field and the fix (ENG-23); `Idempotency-Key` on
   every write, stored in Nemura's database; `ETag` and `If-Match` on versioned records; cursor paging; additive-only
   inside `/v1`. Tests: each convention on a sample resource; a planted breaking change fails `oasdiff`.
-- [ ] 4.3 `TestNemuraAuthorisationMatrix` skeleton: every operation in the contract has a row (role, expected status),
+  (Built in part, 19 Nov 2026: the RFC 9457 `Problem` with the `NM_*` catalogue (`NM_NOT_FOUND`, `NM_INVALID`), each triggered by `TestEveryCodeInTheCatalogueIsTriggered`; the Idempotency-Key rule is a contract test over every write, vacuous until the first one. **Left:** Idempotency-Key storage, ETag and If-Match and cursor paging arrive with the first write operations and the first versioned list.)
+- [x] 4.3 `TestNemuraAuthorisationMatrix` skeleton: every operation in the contract has a row (role, expected status),
   and an operation without one fails the build; unknown routes deny. Tag `// req: NM-ARC-03` for the whole slice here
   and tick it (the later slices add operations under the same rules).
-- [ ] 4.4 Verify: `make openapi` clean, the web app's typecheck, `make api-check`, `make check`, `make test`.
+  (Built, 19 Nov 2026: `api.Matrix` and `TestEveryOperationHasARowInTheAuthorisationMatrix`, with a planted operation; the rows grow with each operation. `// req: NM-ARC-03` is tagged on the contract, route, Idempotency-Key, catalogue and matrix tests.)
+- [x] 4.4 Verify: `make openapi` clean, the web app's typecheck, `make api-check`, `make check`, `make test`.
+  (Done: `make openapi` clean, `make api-check`, `make check`.)
 
 ## 5. Identity, the token issuer and sign-in with no Fyniq (slice 5)
 
@@ -133,27 +140,31 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 6. Roles, the permission matrix, approvals and need to know (slice 6)
 
-- [ ] 6.1 Appendix B as data in `internal/nemura/authz` (roles, areas, per-field and per-action rights, scope:
+- [x] 6.1 Appendix B as data in `internal/nemura/authz` (roles, areas, per-field and per-action rights, scope:
   own, reports, assigned, organisation), `TestTheGrantsAreAppendixB` comparing it with the PRD's rows, an unknown
   area denies. Roles are Nemura's own and assigned per organisation; no code reads Fyniq's role table. Tests
   `// req: NM-ROLE-01` and the "Permission matrix" requirement `// req: people/experience Permission matrix`
   (one test per scenario: employee, AI, payroll without medical data, interviewer, administrator).
-- [ ] 6.2 Role assignment, effective-dated and audited, with its history; the role table's `RLS` and grants.
+  (Built, 19 Nov 2026: `internal/nemura/authz` (`matrix.go` is Appendix B, `TestTheMatrixIsAppendixB` compares it with the PRD, `TestTheScenariosOfThePermissionMatrix` reads the five scenarios off it) and `TestTheDatabaseKnowsExactlyNemurasRoles`. Tagged `// req: people/experience Permission matrix` and `// req: NM-ROLE-01`.)
+- [x] 6.2 Role assignment, effective-dated and audited, with its history; the role table's `RLS` and grants.
   Tests: a grant takes effect from its date and an end date removes it; every change emits its event.
-- [ ] 6.3 The approvals primitive (D9): `approval_request`, the rule that the approver is neither the requester nor
+  (Built, 19 Nov 2026: migration 000004 `role_assignment` (effective-dated, history kept, only ended once) and `AddMember`, `GrantRole`, `EndRole`, `ActiveRoles`; `TestRolesAreEffectiveDatedAndHistoryIsKept`.)
+- [x] 6.3 The approvals primitive (D9): `approval_request`, the rule that the approver is neither the requester nor
   the subject, expiry, the passkey assertion, and the version and digest approved. Role grants use it: Payroll
   administrator, signatory and Owner need the Owner and a second approver; in a team of one the Owner is the second
   person. Tests `// req: NM-ROLE-05` (no self-escalation: an HR administrator cannot give themselves pay or
   signing rights) and `// req: NM-ROLE-04` for the generic rule only, with its tag held back until the pay-run
   and bank-account pairs exist (**Left:** `p1-nemura-records-packs` for the bank account, `p1-nemura-payroll` for the
   run, `p1-nemura-fyniq-link` for the run's salary batch in Fyniq).
-- [ ] 6.4 Need to know (NM-SEC-02): the restricted-field framework (masked by default, released only with the right,
+  (Built, 19 Nov 2026: `approval_request` with the version and digest, `internal/nemura/roles`, `RequestRoleGrant`, `DecideRoleGrant`; `TestNobodyEscalatesTheirOwnRights` and `TestNobodyApprovesTheirOwnRequestAndSetupRunsOnce` carry `// req: NM-ROLE-05`. **Left:** the passkey assertion on a decision (with passkeys, 5.4), the team-of-one rule (with the founders' team modes, `p1-nemura-fyniq-link`), and NM-ROLE-04's pay-run and bank-account pairs; `NM-ROLE-04` stays untagged.)
+- [x] 6.4 Need to know (NM-SEC-02): the restricted-field framework (masked by default, released only with the right,
   `nemura.restricted.read` on every release), row-level scope predicates reading `app.person_id` and `app.roles`,
   `reporting_line` (effective-dated) as the source for the manager scope, and the platform's own restricted objects
   as the proof (role history, access requests, the audit read). Tests `// req: NM-SEC-02` for the mechanism over
   the platform's objects (the Left: each record type's fields are added by its change, which adds its own test
   to the same suite), `// req: NM-ROLE-03` for the scope (a manager sees only their reports; never pay), and an
   attack test that a missed API check cannot read what the role may not, with ASVS IDs.
+  (Built, 19 Nov 2026: migration 000005 (`reporting_line`, `current_person`, `is_manager_of`, `has_role`), `Store.InOrgAs`, `internal/nemura/access`, `ReadRestricted`; `TestARestrictedFieldIsReleasedByNeedToKnowAndEveryReadIsAudited` (`// req: NM-SEC-02`) and `TestTheLineManagerSeesOnlyTheirReportsThroughRowLevelSecurity` (`// req: NM-ROLE-03`). The scope is proven on a probe table; each record type adds its own fields and policy to the same suite.)
 - [ ] 6.5 Landing by role: the session operation returns the person's landing page and effective rights (the table of
   PRD-002 §3). Tests: each role's landing; no ledger, bank, revenue, cash or company-financial field in any
   Nemura operation's schema (a contract scan), `// req: NM-ROLE-02`, completed with the web app in 7.4.
