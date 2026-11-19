@@ -74,6 +74,7 @@ nemura_api | column nemura.outbox.payload | INSERT
 nemura_api | column nemura.outbox.state | UPDATE
 nemura_api | column nemura.outbox.task_name | UPDATE
 nemura_api | column nemura.outbox.worker_class | INSERT
+nemura_api | column nemura.owner_recovery.used_at | UPDATE
 nemura_api | column nemura.passkey.aaguid | INSERT
 nemura_api | column nemura.passkey.backup_eligible | INSERT
 nemura_api | column nemura.passkey.backup_state | INSERT
@@ -128,6 +129,7 @@ nemura_api | function nemura.has_role | EXECUTE
 nemura_api | function nemura.is_manager_of | EXECUTE
 nemura_api | function nemura.link_identity | EXECUTE
 nemura_api | function nemura.members_for_identity | EXECUTE
+nemura_api | function nemura.replace_member_identities | EXECUTE
 nemura_api | function nemura.setup_done | EXECUTE
 nemura_api | schema nemura | USAGE
 nemura_api | table nemura.access_request | SELECT
@@ -141,6 +143,7 @@ nemura_api | table nemura.legal_hold | SELECT
 nemura_api | table nemura.member | SELECT
 nemura_api | table nemura.organisation | SELECT
 nemura_api | table nemura.outbox | SELECT
+nemura_api | table nemura.owner_recovery | SELECT
 nemura_api | table nemura.passkey | SELECT
 nemura_api | table nemura.passkey_challenge | SELECT
 nemura_api | table nemura.reporting_line | SELECT
@@ -199,6 +202,7 @@ nemura_readonly | table nemura.legal_hold | SELECT
 nemura_readonly | table nemura.member | SELECT
 nemura_readonly | table nemura.organisation | SELECT
 nemura_readonly | table nemura.outbox | SELECT
+nemura_readonly | table nemura.owner_recovery | SELECT
 nemura_readonly | table nemura.passkey | SELECT
 nemura_readonly | table nemura.passkey_challenge | SELECT
 nemura_readonly | table nemura.reporting_line | SELECT
@@ -260,6 +264,7 @@ nemura_worker | table nemura.legal_hold | SELECT
 nemura_worker | table nemura.member | SELECT
 nemura_worker | table nemura.organisation | SELECT
 nemura_worker | table nemura.outbox | SELECT
+nemura_worker | table nemura.owner_recovery | SELECT
 nemura_worker | table nemura.reporting_line | SELECT
 nemura_worker | table nemura.role_assignment | SELECT
 nemura_worker | table nemura.session | SELECT

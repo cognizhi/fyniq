@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura/nemuratest"
 	"github.com/cognizhi/fyniq/internal/clock"
@@ -157,5 +158,43 @@ func TestFirstRunAndAnInvitationTakeAPlaceThroughTheBrowser(t *testing.T) {
 	}
 	if landing, _ := join(inv(code), "mallory"); landing != "/sign-in?signin_error=NM_SIGNIN_08" {
 		t.Errorf("a used invitation: %s", landing)
+	}
+
+	// The deployment's two-person recovery: the migrate role issues a code for the Owner, once, to two named operators; the Owner then signs in
+	// with a new account and the old one signs in nowhere (NM-ARC-01).
+	recover := func(args ...string) (string, error) {
+		cmd := exec.Command(bin, append([]string{"owner-recovery"}, args...)...)
+		cmd.Env = env("NEMURA_ROLE=migrate", "NEMURA_DATABASE_URL="+d.URL(nemura.Migrator))
+		var out, errs bytes.Buffer
+		cmd.Stdout, cmd.Stderr = &out, &errs
+		err := cmd.Run()
+		return strings.TrimSpace(out.String()) + "|" + errs.String(), err
+	}
+	if out, err := recover(org.String(), owner.String(), "Ann Lee"); err == nil || !strings.Contains(out, "exactly two different operators") {
+		t.Errorf("one operator: %v %s", err, out)
+	}
+	out, err := recover(org.String(), owner.String(), "Ann Lee, Bob Tan")
+	if err != nil {
+		t.Fatalf("issuing: %v %s", err, out)
+	}
+	recovery, _, _ := strings.Cut(out, "|")
+	if !strings.Contains(out, "shown once") || !strings.HasPrefix(recovery, org.String()+".") {
+		t.Fatalf("the command printed %q", out)
+	}
+	rec := func(c string) url.Values {
+		return url.Values{"provider": {"local"}, "kind": {"recovery"}, "code": {c}, "return_to": {"/people"}}
+	}
+	if landing, _ := join(rec(recovery+"x"), "fay-new"); landing != "/sign-in?signin_error=NM_SIGNIN_08" {
+		t.Errorf("a wrong recovery code: %s", landing)
+	}
+	landing, session = join(rec(recovery), "fay-new")
+	if landing != "/people" || !strings.Contains(session, `"owner"`) || !strings.Contains(session, owner.String()) {
+		t.Fatalf("the recovered Owner: %s %s", landing, session)
+	}
+	if landing, _ := join(rec(recovery), "mallory"); landing != "/sign-in?signin_error=NM_SIGNIN_08" {
+		t.Errorf("a used recovery code: %s", landing)
+	}
+	if m, _ := store.MembershipsOf(ctx, identity.Identity{Issuer: local.DevIssuer, Subject: "fay", Tenant: "default"}); len(m) != 0 {
+		t.Errorf("the Owner's old account still signs in: %v", m)
 	}
 }

@@ -34,6 +34,9 @@ so it works even when your company does not use Fyniq. It never asks for your NR
 - **Set up Nemura**: only the person who installs Nemura does this, once. It needs the one-time setup code
   the installation prints. You give the organisation's name and your own, sign in with the provider, and you
   become the first organisation's Owner.
+- **I have a recovery code**: for an Owner who can no longer sign in. Two operators of the installation
+  issue the code (valid 24 hours, works once). Sign in with the account you will keep, type the code, and
+  every other sign-in, session and passkey of yours ends. Register a passkey again afterwards.
 - The code is never in the address bar. If it is wrong, used already or expired, you land back on sign-in
   with a message; ask for a new one.
 

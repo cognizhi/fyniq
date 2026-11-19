@@ -8,6 +8,12 @@ import { navigate } from "./route";
 import { routes } from "./registry";
 import { useSession } from "./session";
 
+// joinKind is the kind of code the join page asks for, from its address: setup, recovery, or (anything else) an invitation.
+function joinKind(): "setup" | "invitation" | "recovery" {
+  const k = new URLSearchParams(window.location.search).get("kind");
+  return k === "setup" || k === "recovery" ? k : "invitation";
+}
+
 // pathname follows the address bar, so the browser's back and forward buttons and `navigate` both move the app.
 function usePathname(): string {
   const [path, set] = useState(window.location.pathname);
@@ -35,7 +41,7 @@ export function App() {
 
   const body = (() => {
     if (state.status === "loading") return <p role="status" className="fy-secondary">{t("session.loading")}</p>;
-    if (path === "/join") return <Join kind={new URLSearchParams(window.location.search).get("kind") === "setup" ? "setup" : "invitation"} />;
+    if (path === "/join") return <Join kind={joinKind()} />;
     if (path === "/sign-in") return <SignIn returnTo={landing === "/sign-in" ? "/" : landing} />;
     if (!route) return <NotFound home={landing} />;
     if (state.status === "in") return <Home session={state.session} screen={route.id === "people-home" ? "people" : "me"} />;

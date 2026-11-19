@@ -41,7 +41,7 @@ const (
 const joinLifetime = 15 * time.Minute
 
 // Join is what a person brings to the sign-in to take a place in an organisation: the one-time setup code that makes the first
-// organisation with them as its Owner, or an invitation's code. It travels in an HttpOnly cookie, never in a URL, and the callback uses
+// organisation with them as its Owner, an invitation's code, or an Owner's deployment-recovery code. It travels in an HttpOnly cookie, never in a URL, and the callback uses
 // it once, whatever happens, with the identity the provider proved.
 type Join struct {
 	Kind         string `json:"k"` // "setup" or "invitation"
@@ -53,6 +53,7 @@ type Join struct {
 const (
 	JoinSetup      = "setup"
 	JoinInvitation = "invitation"
+	JoinRecovery   = "recovery" // an Owner's deployment-recovery code: the account signed in with becomes their only sign-in
 )
 
 // startLifetime is how long a sign-in may take at the provider.
@@ -75,6 +76,8 @@ type Store interface {
 	// member. Either refuses with one answer for every wrong, used or expired code.
 	FirstRun(ctx context.Context, code []byte, at time.Time, organisation, displayName string, who identity.Identity) (org, owner uuid.UUID, err error)
 	AcceptInvitation(ctx context.Context, code string, at time.Time, who identity.Identity) (org, member uuid.UUID, err error)
+	// RecoverOwner uses an Owner's recovery code with the identity just proved: it replaces the member's other sign-ins and ends their sessions.
+	RecoverOwner(ctx context.Context, code string, at time.Time, who identity.Identity) (org, member uuid.UUID, err error)
 }
 
 // Flow is the browser's way in and out.
@@ -162,7 +165,7 @@ func (f Flow) join(w http.ResponseWriter, r *http.Request) {
 	switch j.Kind {
 	case JoinSetup:
 		bad = bad || j.Organisation == "" || j.Name == ""
-	case JoinInvitation:
+	case JoinInvitation, JoinRecovery:
 	default:
 		bad = true
 	}
@@ -184,7 +187,7 @@ func (f Flow) joinOf(r *http.Request) *Join {
 	}
 	raw, err := base64.RawURLEncoding.DecodeString(c.Value)
 	var j Join
-	if err != nil || json.Unmarshal(raw, &j) != nil || j.Code == "" || (j.Kind != JoinSetup && j.Kind != JoinInvitation) {
+	if err != nil || json.Unmarshal(raw, &j) != nil || j.Code == "" || (j.Kind != JoinSetup && j.Kind != JoinInvitation && j.Kind != JoinRecovery) {
 		return nil
 	}
 	return &j
@@ -238,6 +241,8 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case joining.Kind == JoinInvitation:
 			org, member, err = f.Store.AcceptInvitation(r.Context(), joining.Code, f.Clock.Now(), who)
+		case joining.Kind == JoinRecovery:
+			org, member, err = f.Store.RecoverOwner(r.Context(), joining.Code, f.Clock.Now(), who)
 		case len(memberships) == 0:
 			org, member, err = f.Store.FirstRun(r.Context(), identity.Hash(joining.Code), f.Clock.Now(), joining.Organisation, joining.Name, who)
 		default:

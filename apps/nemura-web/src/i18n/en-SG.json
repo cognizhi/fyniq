@@ -60,7 +60,11 @@
     "join.submit": "Continue to sign-in",
     "join.help": "You sign in with the provider next, and the code is used once, with the account you sign in with.",
     "join.noProvider": "No way to sign in is set up yet. Ask whoever runs Nemura.",
-    "join.back": "Back to sign-in"
+    "join.back": "Back to sign-in",
+    "signin.haveRecovery": "I have a recovery code",
+    "join.title.recovery": "Recover an Owner's access",
+    "join.lead.recovery": "Two operators of this installation issued you a one-time recovery code. Sign in with the account you will keep from now on: every other sign-in, session and passkey of yours ends.",
+    "join.code.recovery": "Recovery code"
   },
   "help": {
     "signin.page": {

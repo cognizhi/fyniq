@@ -42,11 +42,44 @@ name or a figure.
 4. Tell the Payroll administrator and the Owner what happened and when the payment file will be ready, in
    time for the bank's deadline (NM-PAY-03).
 
+## An Owner who cannot sign in: the deployment recovery (two people)
+
+**When:** an Owner's sign-in account (Google, the company's provider) is lost, locked or compromised, and no
+other Owner can be asked to approve a replacement. It is Nemura's own, as Fyniq's
+(`docs/runbooks/super-admin-recovery.md`, way B); nothing here needs Fyniq. **Requirements:** NM-ARC-01,
+NM-ROLE-05; PRD-001 FR-ADM-09, SEC-35.
+
+Both operators are present for every step and the command records **both names** in the organisation's
+audit trail. Locally the operators are whoever runs the stack; in the cloud, the two founders.
+
+1. **Confirm who is asking**, live, by video or in person, not by email or chat alone. A request to
+   recover someone else's access is the classic takeover; if in doubt, stop. Open a record in the change
+   log (CTL-CHG): who asked, both operators, the time.
+2. **Find the IDs.** The organisation's ID and the Owner's member ID are in the `nemura.org.created` event
+   of the organisation's trail, and in `GET /v1/session` for any signed-in member.
+3. **Issue the code**, with the migrator credential, while the other operator watches:
+
+   ```bash
+   # locally
+   make people-owner-recovery ORG=<organisation id> MEMBER=<member id> OPERATORS="<first operator>, <second operator>"
+   # in the cloud: the migrate job's command, as a one-off job with the migrator credential [live-verify]
+   nemura owner-recovery <organisation id> <member id> "<first operator>, <second operator>"
+   ```
+
+   It refuses anything but two different names, and a member who is not an active Owner. The code is shown
+   once, valid **24 hours**, never logged; the trail records `nemura.owner.recovery_issued` with both names. A new
+   code replaces an unused one: only the newest works.
+4. **Hand the code to the Owner by a channel they trust** (in person, a call), never a shared channel or a ticket.
+5. The Owner opens Nemura, signs in with the account they will keep, chooses **I have a recovery code**,
+   picks the provider and types the code. Every other sign-in of theirs is replaced, their sessions end and
+   their passkeys are revoked (register a passkey again), each in the trail: `nemura.owner.recovered`, with
+   how many of each. An account that already belongs to another member is refused and the code stays good.
+6. **Record the outcome**, and tell every other Owner yourselves (Nemura sends no notice yet). There is no
+   24-hour cooling-off yet (SEC-35, with notifications): review the recovered account's activity in the trail
+   for the next 24 hours.
+
 ## Not covered yet
 
-- **An Owner who cannot sign in** (their provider account is lost): Nemura has no recovery procedure of
-  its own yet. Until it has, the second Owner (a company should hold two) approves a new Owner's role
-  request. This is a gap in `p1-nemura-platform`, listed in its tasks (10.2).
 - **Restoring Nemura on its own** from a backup of its database: the drill is `[live-verify]` against
   the dev cloud, and the audit chain's verification after a restore is shared with Fyniq's
   (`docs/runbooks/audit-restore.md`).

@@ -5,7 +5,7 @@ import { t } from "../i18n";
 // Join is how a person takes a place: with the deployment's one-time setup code (the first organisation, whose Owner they become) or an
 // invitation's code. The form posts to the API, which keeps the code in an HttpOnly cookie, never a URL, and uses it once with the account
 // the person signs in with. The code field is a password input so the screen does not show it.
-export function Join({ kind }: { kind: "setup" | "invitation" }) {
+export function Join({ kind }: { kind: "setup" | "invitation" | "recovery" }) {
   const [info, set] = useState<SignInInfo | null>(null);
   useEffect(() => {
     let live = true;

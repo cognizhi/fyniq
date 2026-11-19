@@ -1,0 +1,23 @@
+# CTL-NM-01: PRD-001 Appendix F (F.9). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-NM-01
+section: "F.9"
+control: "Nemura's data is kept apart per organisation and per service: forced row-level security on every tenant table, one database role per service holding exactly its grants, and only Nemura's roles connecting to its database"
+mapping: "ISO 5.15, 8.3; SOC2 CC6.1; ASVS V8.2"
+automated_check: "Schema and grant golden files, tenancy attack tests (NM-SEC-01)"
+frequency: "CI"
+evidence: "Test report; golden files"
+owner: Owner
+checks:
+  - frequency: CI
+    status: running
+    how: "test TestEachRoleHoldsExactlyItsGrants"
+    evidence: "each Nemura service role holds exactly the grants of the golden file, and no table or function more; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestRowLevelSecurityKeepsOrganisationsApart"
+    evidence: "an organisation reads and writes only its own rows on every tenant table, through every role; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestOnlyNemurasRolesConnectToNemurasDatabase"
+    evidence: "no role but Nemura's connects to its database; CI artefact test-report (90 days)"

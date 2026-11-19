@@ -83,6 +83,7 @@ export function SignIn({ returnTo = "/" }: { returnTo?: string }) {
           <p className="fy-small fy-muted">{t("signin.invite")}</p>
           <p className="fy-row fy-small" style={{ gap: "var(--space-4)" }}>
             <a href="/join?kind=invitation">{t("signin.haveInvitation")}</a>
+            <a href="/join?kind=recovery">{t("signin.haveRecovery")}</a>
             {state.status === "ready" && !state.info.setup_done && <a href="/join?kind=setup">{t("signin.setup")}</a>}
           </p>
         </div>

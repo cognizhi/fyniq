@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
 import { App } from "./App";
@@ -82,6 +82,19 @@ describe("joining with a code", () => {
     expect(container.querySelector("input[name=kind]")?.getAttribute("value")).toBe("invitation");
     expect(container.querySelector("input[name=organisation]")).toBeNull();
     expect(await violations(container)).toEqual([]);
+  });
+
+  it("asks a recovered Owner for the recovery code alone, and sign-in links to it", async () => {
+    answer("GET /v1/sign-in", { status: 200, body: providers });
+    const { container } = render(<Join kind="recovery" />);
+    await screen.findByRole("option", { name: "Google" });
+    expect(container.querySelector("input[name=kind]")?.getAttribute("value")).toBe("recovery");
+    expect(container.querySelector("input[name=organisation]")).toBeNull();
+    expect(screen.getByRole("heading", { name: /Recover an Owner/ })).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    cleanup();
+    render(<SignIn />);
+    expect((await screen.findByRole("link", { name: "I have a recovery code" })).getAttribute("href")).toBe("/join?kind=recovery");
   });
 
   it("says no way to sign in is set up when no provider is", async () => {

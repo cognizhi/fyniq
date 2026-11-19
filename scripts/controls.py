@@ -27,7 +27,7 @@ PRD_FIELDS = ["section", "control", "mapping", "automated_check", "frequency", "
 
 # Who answers for each area's controls (founder decision, 15 Oct 2026): roles of PRD-001 §7.1.
 OWNERS = {"FIN": "Controller", "AUD": "Owner", "IAM": "Administrator", "CHG": "Owner", "DP": "DPO", "RES": "Owner",
-          "AI": "Owner", "API": "Owner", "MCP": "Owner", "STAT": "Owner"}
+          "AI": "Owner", "API": "Owner", "MCP": "Owner", "STAT": "Owner", "NM": "Owner"}
 
 # How P0 checks a control today, by frequency: "make <target>", "job <platform job>",
 # "test <Go test>" or "ci <CI job name>", with its evidence. Used only to generate a missing file;

@@ -52,7 +52,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code people-setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys test-visual
+.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code people-setup-code people-owner-recovery super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys test-visual
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -74,6 +74,10 @@ people-setup-code: ## Create Nemura's one-time first-run setup code for the loca
 super-admin-recovery: ## The deployment's two-person recovery for a Super admin: USER_ID=<user id> OPERATORS="<name>, <name>" (FR-ADM-09)
 	@test -n "$(USER_ID)" -a -n "$(OPERATORS)" || { echo 'usage: make super-admin-recovery USER_ID=<user id> OPERATORS="<name>, <name>"'; exit 2; }
 	@$(MISE) go run -tags local ./cmd/migrate super-admin-recovery "$(USER_ID)" "$(OPERATORS)"
+
+people-owner-recovery: ## The deployment's two-person recovery of a Nemura Owner on the local database: ORG=<organisation id> MEMBER=<member id> OPERATORS="<name>, <name>" prints a one-time code, valid 24 hours (NM-ARC-01; docs/runbooks/nemura-first-run.md)
+	@test -n "$(ORG)" -a -n "$(MEMBER)" -a -n "$(OPERATORS)" || { echo 'usage: make people-owner-recovery ORG=<organisation id> MEMBER=<member id> OPERATORS="<name>, <name>"'; exit 2; }
+	@NEMURA_ROLE=migrate $(MISE) go run -tags local ./cmd/nemura owner-recovery "$(ORG)" "$(MEMBER)" "$(OPERATORS)"
 
 audit-recover: ## After a database restore, before the copy opens: the audit trail's recovery step (AUD-09; docs/runbooks/audit-restore.md)
 	@$(MISE) go run -tags local ./cmd/jobs audit-recover

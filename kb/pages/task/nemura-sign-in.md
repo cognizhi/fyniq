@@ -4,7 +4,7 @@ type: task
 title: Sign in to Nemura and sign out
 summary: How a person signs in to Nemura, joins with an invitation or the one-time setup code, what the page says when it is not ready, and how to sign out
 sources:
-  - docs/user-guide/nemura/sign-in.md sha256:af78e71e9466f971ed2b48ff1ee5ae57835ab70956ff296b1222bb92393a675c
+  - docs/user-guide/nemura/sign-in.md sha256:2db930f0f414f02faf421eb4fe2cfdba01cb33a18455f20d4c39f3cf4a1533c2
 data_class: general
 taint: trusted
 status: published
@@ -19,6 +19,8 @@ aliases:
   - Nemura is not set up yet
   - invitation code
   - setup code
+  - recovery code
+  - Owner cannot sign in
 ---
 
 # Sign in to Nemura and sign out
@@ -45,6 +47,7 @@ aliases:
 
 - **I have an invitation**: choose it on the sign-in page, pick the provider and type the invitation code. The code links the account to the place the company made; it works once and expires.
 - **Set up Nemura** is for the person who installs it, once, with the one-time setup code the installation prints; that person becomes the first organisation's Owner.
+- **I have a recovery code** is for an Owner who can no longer sign in: two operators of the installation issue the code (valid 24 hours, works once); signing in with the account to keep ends every other sign-in, session and passkey, so a passkey is registered again afterwards.
 - The code is never in the address bar. A wrong, used or expired code returns to sign-in with a message; ask for a new one.
 
 (src: docs/user-guide/nemura/sign-in.md#joining-with-a-code)

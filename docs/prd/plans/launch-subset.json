@@ -921,7 +921,13 @@
     "CTL-DP-02",
     "CTL-DP-04",
     "CTL-DP-07",
-    "CTL-RES-01"
+    "CTL-RES-01",
+    "CTL-NM-01",
+    "CTL-NM-02",
+    "CTL-NM-03",
+    "CTL-NM-04",
+    "CTL-NM-05",
+    "CTL-NM-06"
    ],
    "scenarios": []
   },

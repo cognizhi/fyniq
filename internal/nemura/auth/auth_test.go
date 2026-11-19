@@ -75,6 +75,11 @@ func (s *fakeStore) AcceptInvitation(_ context.Context, code string, _ time.Time
 	return uuid.New(), uuid.New(), s.joinErr
 }
 
+func (s *fakeStore) RecoverOwner(_ context.Context, code string, _ time.Time, who identity.Identity) (uuid.UUID, uuid.UUID, error) {
+	s.joined = append(s.joined, "recovery:"+code+":"+who.Subject)
+	return uuid.New(), uuid.New(), s.joinErr
+}
+
 func newFlow(origin string) (Flow, *fakeSignIn, *fakeStore, *http.ServeMux) {
 	si := &fakeSignIn{who: ports.SignedIn{Provider: "local", Issuer: "https://idp.example", Subject: "sam", Email: "sam@example.com", EmailVerified: true}}
 	st := &fakeStore{done: true, memberships: []Membership{{uuid.New(), uuid.New()}}}
@@ -284,6 +289,16 @@ func TestACodeTakesAPlaceWithTheIdentityTheProviderProved(t *testing.T) {
 	mux.ServeHTTP(httptest.NewRecorder(), cb)
 	if len(st.joined) != 1 || st.joined[0] != "invitation:inv-1:sam" {
 		t.Errorf("accepting an invitation was given %v", st.joined)
+	}
+
+	// A recovery code takes the member's place with the account signed in, even for an account that belongs elsewhere already.
+	st.joined = nil
+	rec = join(t, mux, url.Values{"provider": {"local"}, "kind": {"recovery"}, "code": {"rec-1"}})
+	cb = begin(t, mux, si, f, "/")
+	cb.AddCookie(cookieOf(rec, f.joinCookie()))
+	mux.ServeHTTP(httptest.NewRecorder(), cb)
+	if len(st.joined) != 1 || st.joined[0] != "recovery:rec-1:sam" {
+		t.Errorf("a recovery was given %v", st.joined)
 	}
 
 	// Setup for an account that belongs to an organisation is refused before the database is asked.

@@ -335,7 +335,7 @@
       "capability": "compliance/financial-controls"
     },
     {
-      "match": "CTL-(IAM|CHG|DP|RES)-.*",
+      "match": "CTL-(IAM|CHG|DP|RES|NM)-.*",
       "capability": "compliance/technology-controls"
     },
     {
