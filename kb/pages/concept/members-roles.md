@@ -17,6 +17,8 @@ aliases:
   - give someone access
   - founder roles
   - second approver
+  - who can do what in the company
+  - permissions
 ---
 
 # Members, roles and the first founder's setup

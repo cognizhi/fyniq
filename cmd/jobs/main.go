@@ -13,6 +13,8 @@
 //	jobs restore-drill           the restore drill now: a copy of the database, the ledger and the audit chain verified
 //	                             on it, the copy removed, the drill recorded (DR-06; make restore-drill locally)
 //	jobs controls                list every check of the control registry and how it runs (the dry run)
+//	jobs kb-compile <org>        the knowledge-base compiler for an organisation (AI-52, AI-57): drafts and findings through the
+//	                             API's four compiler operations, with its own service token and no database
 //
 // FYNIQ_DATABASE_URL is the worker's role; the local build defaults it.
 package main
@@ -35,7 +37,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/wiring"
 )
 
-const usage = "usage: jobs audit-anchor | audit-verify | audit-recover | run-slot <job> <slot> | heartbeat-check | outbox-after-restore | restore-drill | controls"
+const usage = "usage: jobs audit-anchor | audit-verify | audit-recover | run-slot <job> <slot> | heartbeat-check | outbox-after-restore | restore-drill | controls | kb-compile <organisation id>"
 
 func main() {
 	os.Exit(app.Run("jobs", func(ctx context.Context, deps app.Deps, args []string) error {
@@ -51,6 +53,9 @@ func main() {
 			fmt.Println("CONTROL      FRQ STATUS   OWNER          HOW, OR WHEN IT ARRIVES")
 			fmt.Println(strings.Join(plan, "\n"))
 			return nil
+		}
+		if args[0] == "kb-compile" { // the knowledge-base compiler: its own identity, no database (AI-57)
+			return runKBCompile(ctx, deps.Clock, args[1:])
 		}
 		kit, err := wiring.Build(ctx, "jobs", deps.Clock)
 		if err != nil {

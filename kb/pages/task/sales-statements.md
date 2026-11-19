@@ -26,6 +26,9 @@ aliases:
   - balance brought forward
   - ageing
   - what a customer owes
+  - chasing customers who have not paid
+  - chasing late payers
+  - overdue customers
 ---
 
 # Statements and reminders

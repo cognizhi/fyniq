@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -100,6 +101,30 @@ type AISegment struct {
 	Fact    string `json:"fact,omitempty" doc:"A figure's fact, among the turn's cited facts." example:"F3a9c0d1e2b4f5a6"`
 	Figure  string `json:"figure,omitempty" doc:"The figure as Fyniq renders it from its fact." example:"18.0 months"`
 	Missing string `json:"missing,omitempty" doc:"What could not be established." example:"this figure"`
+	// A know-how sentence (AI-51): its words are Text, and Sources are the guide pages it comes from.
+	Sources []AISource `json:"sources,omitempty" doc:"With words that explain how Fyniq works: the guide pages they come from, which you can open (AI-51)."`
+}
+
+// AISource is a guide page a know-how answer comes from (AI-51): what the person can open, never one of the assistant's own
+// compiled pages. Fyniq resolves it from the section the assistant read; the assistant never names it.
+type AISource struct {
+	Guide  string `json:"guide,omitempty" doc:"The guide page's key; none for what an organisation's own page comes from." example:"claims.approve-team"`
+	Title  string `json:"title" doc:"Its title." example:"Approving your team's claims"`
+	Anchor string `json:"anchor" doc:"The heading it comes from." example:"who-approves"`
+	Draft  bool   `json:"draft,omitempty" doc:"true when the guide page is still awaiting review (the guide shows it with its banner, FR-UX-41)." example:"false"`
+	Href   string `json:"href,omitempty" doc:"Where it opens in the web app; none when the reader may not open it (an organisation's note they may not read)." example:"/help/claims.approve-team#who-approves"`
+}
+
+func sourcesOut(in []assistant.Source) []AISource {
+	out := make([]AISource, 0, len(in))
+	for _, s := range in {
+		src := AISource{Guide: s.Guide, Title: s.Title, Anchor: s.Anchor, Draft: s.Draft, Href: s.Href}
+		if s.Guide != "" && s.Href == "" {
+			src.Href = "/help/" + s.Guide + "#" + s.Anchor
+		}
+		out = append(out, src)
+	}
+	return out
 }
 
 // AITurn is a turn as its person reads it: the question and what it was about, how it ended, the answer in its words
@@ -113,6 +138,7 @@ type AITurn struct {
 	Answer      string         `json:"answer,omitempty" doc:"The answer as the person reads it, in Fyniq's Markdown subset." example:"Cash lasts 18.0 months."`
 	Segments    []AISegment    `json:"segments" nullable:"false"`
 	Cited       []AIFact       `json:"cited" nullable:"false" doc:"The facts the answer cites, each with its source and lineage (AI-68)."`
+	Sources     []AISource     `json:"sources" nullable:"false" doc:"The guide pages the answer's explanations come from (AI-51), which you can open."`
 	Regenerated bool           `json:"regenerated" doc:"true when the answer failed the figures' check once and was asked for again (AI-08)." example:"false"`
 	Withheld    int            `json:"withheld" doc:"Figures or words withheld because they still failed the check." example:"0"`
 	AskedAt     string         `json:"asked_at" format:"date-time" example:"2026-11-15T08:00:00Z"`
@@ -206,7 +232,7 @@ func conversationOf(c storage.AIConversation) AIConversation {
 
 // turnOf is a turn as its person reads it: its figures rendered from its facts.
 func turnOf(t storage.AITurn) AITurn {
-	out := AITurn{ID: t.ID.String(), Question: t.Question, Status: t.Status, Code: t.Code, Answer: t.Answer, Segments: []AISegment{},
+	out := AITurn{ID: t.ID.String(), Question: t.Question, Status: t.Status, Code: t.Code, Answer: t.Answer, Segments: []AISegment{}, Sources: []AISource{},
 		Cited: []AIFact{}, Regenerated: t.Regenerated, Withheld: t.Withheld, AskedAt: t.AskedAt.UTC().Format(time.RFC3339)}
 	if t.AnsweredAt != nil {
 		out.AnsweredAt = t.AnsweredAt.UTC().Format(time.RFC3339)
@@ -234,6 +260,14 @@ func turnOf(t storage.AITurn) AITurn {
 		g := AISegment{Text: assistant.Markdown(s.Text), Fact: s.Fact, Missing: s.Missing}
 		if f, ok := byID[s.Fact]; ok {
 			g.Figure = assistant.Figure(f)
+		}
+		if len(s.Sources) > 0 {
+			g.Sources = sourcesOut(s.Sources)
+			for _, src := range g.Sources {
+				if !slices.Contains(out.Sources, src) {
+					out.Sources = append(out.Sources, src)
+				}
+			}
 		}
 		out.Segments = append(out.Segments, g)
 	}
@@ -515,7 +549,8 @@ func (a *API) askTurn(ctx context.Context, in *aiTurnInput, send sse.Sender) {
 		}
 		for _, c := range answer.ToolCalls {
 			calls = append(calls, storage.AIToolCall{Tool: c.Tool, Version: c.Version, Input: c.Input, OutputSHA256: c.OutputSHA256, Outcome: c.Outcome,
-				Code: c.Code, Facts: c.Facts, Omitted: c.Omitted, Withheld: c.Withheld, DurationMS: int(c.Duration / time.Millisecond)})
+				Code: c.Code, Facts: c.Facts, Omitted: c.Omitted, Withheld: c.Withheld, DurationMS: int(c.Duration / time.Millisecond),
+				KBPages: kbPagesOf(c.KBPages)})
 		}
 	case errors.As(err, &pr):
 		turn.Status, turn.Code = storage.TurnRefused, pr.Code

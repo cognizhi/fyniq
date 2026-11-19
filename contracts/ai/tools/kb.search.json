@@ -1,0 +1,34 @@
+{
+  "name": "kb.search",
+  "title": "Search the knowledge base",
+  "version": 1,
+  "description": "Searches the know-how pages and, as the fallback when a page is missing or out of date, the user guide's own text, by the words of a question. It returns the best hits, each with its key, title, one-line summary and a snippet, a page or a guide page, ranked; read a page with kb.read. Use the words a person would use. It never returns a page you may not read.",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["query"],
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "The words to search for.",
+        "minLength": 2,
+        "maxLength": 200
+      },
+      "scope": {
+        "type": "string",
+        "description": "pages: the compiled pages; sources: the guide's own text; both, the default.",
+        "enum": ["pages", "sources", "both"]
+      },
+      "limit": {
+        "type": "integer",
+        "description": "How many hits, at most 10; the default is 5.",
+        "minimum": 1,
+        "maximum": 10
+      }
+    }
+  },
+  "annotations": {"readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false},
+  "runs": "api",
+  "scope": "ai.read",
+  "limits": {"rows": 10, "timeout_ms": 5000, "result_tokens": 4000}
+}

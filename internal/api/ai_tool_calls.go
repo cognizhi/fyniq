@@ -46,6 +46,7 @@ type AIToolResult struct {
 	Content  any               `json:"content,omitempty" doc:"What the operation answered, cut to the tool's limits, its figures replaced by their facts; absent when the facts are all."`
 	Omitted  []aitool.Omission `json:"omitted" nullable:"false" doc:"What the limits left out: of each list, how many it shows of how many there are."`
 	Revision int64             `json:"ledger_revision" doc:"The ledger revision it was read at (ENG-46)." example:"1204"`
+	KBPages  []AIKBPage        `json:"kb_pages,omitempty" doc:"The knowledge-base pages a kb tool read, with the version of each, which the turn records (AI-12, AI-51)."`
 	Withheld string            `json:"withheld,omitempty" doc:"What screening found in the result's free text, which is withheld, every quoted text with it (AI-18)." example:"an instruction to ignore earlier instructions"`
 }
 
@@ -131,8 +132,13 @@ func registerToolCalls(a *API) {
 		if err != nil {
 			return nil, err
 		}
-		if err := a.screenResult(ctx, &out); err != nil {
-			return nil, err
+		// A knowledge-base tool's content is the release's own page text, which is trusted (AI-54): it is not quoted as
+		// untrusted_text, which would turn a page's words and the tool's own hints into data the model is told to ignore. An
+		// organisation's untrusted page, when there is one (P2), is quoted by its taint.
+		if !strings.HasPrefix(tool.Name, "kb.") {
+			if err := a.screenResult(ctx, &out); err != nil {
+				return nil, err
+			}
 		}
 		if err := a.widenTurn(ctx, toolClasses(tool.Name, in.Body.Input)); err != nil {
 			return nil, err
@@ -147,7 +153,7 @@ func registerToolCalls(a *API) {
 func toolClasses(tool string, in map[string]any) []string {
 	by, _ := in["by"].(string)
 	switch {
-	case tool == "packs.get":
+	case tool == "packs.get", strings.HasPrefix(tool, "kb."):
 		return []string{aipolicy.KnowHow}
 	case strings.HasPrefix(tool, "records."), tool == "lineage.explain", tool == "checks.explain", by == "customer" || by == "vendor":
 		return []string{aipolicy.Business, aipolicy.Personal}
@@ -203,6 +209,9 @@ func checkToolInput(tool aitool.Tool, input map[string]any) error {
 
 // runTool runs a tool through its operation.
 func (a *API) runTool(ctx context.Context, tool aitool.Tool, in map[string]any) (AIToolResult, error) {
+	if strings.HasPrefix(tool.Name, "kb.") { // know-how, read through the reader filter: no ledger, no figures (AI-54)
+		return a.runKBTool(ctx, tool, in)
+	}
 	str := func(k string) string { s, _ := in[k].(string); return s }
 	var revision int64
 	if err := a.deps.Store.Do(ctx, authnOrg(ctx), func(ctx context.Context, u storage.UnitOfWork) (err error) {

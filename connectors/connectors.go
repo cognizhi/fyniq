@@ -7,10 +7,12 @@ import (
 	"github.com/cognizhi/fyniq/connectors/airwallex"
 	"github.com/cognizhi/fyniq/connectors/anthropic"
 	"github.com/cognizhi/fyniq/connectors/gemini"
+	"github.com/cognizhi/fyniq/connectors/hitpay"
 	"github.com/cognizhi/fyniq/connectors/openai"
 	compatible "github.com/cognizhi/fyniq/connectors/openai-compatible"
 	"github.com/cognizhi/fyniq/connectors/resend"
 	"github.com/cognizhi/fyniq/connectors/smtp"
+	"github.com/cognizhi/fyniq/connectors/stripe"
 	"github.com/cognizhi/fyniq/connectors/wise"
 	"github.com/cognizhi/fyniq/connectors/zeptomail"
 	"github.com/cognizhi/fyniq/internal/connector"
@@ -18,7 +20,7 @@ import (
 
 // bindings are the connectors compiled in.
 var bindings = []func() (connector.Binding, error){smtp.Binding, zeptomail.Binding, resend.Binding, wise.Binding, airwallex.Binding,
-	anthropic.Binding, openai.Binding, gemini.Binding, compatible.Binding}
+	stripe.Binding, hitpay.Binding, anthropic.Binding, openai.Binding, gemini.Binding, compatible.Binding}
 
 // Catalogue is the release's catalogue, with local mode's substitutes when the local build passes them (never a
 // release's); an error means a manifest or binding is malformed, and the service must not start.

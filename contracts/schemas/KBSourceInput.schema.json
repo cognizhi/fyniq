@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "description": "note: one of the organisation's notes; setting: an organisation setting; platform: the platform page an overlay replaces.",
+      "enum": [
+        "note",
+        "setting",
+        "platform"
+      ],
+      "examples": [
+        "note"
+      ],
+      "type": "string"
+    },
+    "ref": {
+      "description": "The note's key, the setting's key or the platform page's key.",
+      "examples": [
+        "expense-policy"
+      ],
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,99}$",
+      "type": "string"
+    },
+    "title": {
+      "description": "What it is called, for the chip a reader sees; left out, its key.",
+      "examples": [
+        "Expense policy"
+      ],
+      "maxLength": 200,
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "ref"
+  ],
+  "title": "KBSourceInput",
+  "type": "object"
+}

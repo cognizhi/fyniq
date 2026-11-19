@@ -1684,6 +1684,22 @@ components:
         - name
         - version
       type: object
+    AIKBPage:
+      additionalProperties: false
+      properties:
+        key:
+          examples:
+            - claims.approve-team-claims
+          type: string
+        version:
+          description: The platform release and the page file's SHA-256 (first 12 characters).
+          examples:
+            - v0.1.0#7c1ea9b4f2d3
+          type: string
+      required:
+        - key
+        - version
+      type: object
     AIModel:
       additionalProperties: false
       properties:
@@ -3174,6 +3190,13 @@ components:
           examples:
             - this figure
           type: string
+        sources:
+          description: "With words that explain how Fyniq works: the guide pages they come from, which you can open (AI-51)."
+          items:
+            $ref: "#/components/schemas/AISource"
+          type:
+            - array
+            - "null"
         text:
           description: Words, in Fyniq's Markdown subset.
           examples:
@@ -3192,6 +3215,38 @@ components:
       required:
         - switch
         - budgets
+      type: object
+    AISource:
+      additionalProperties: false
+      properties:
+        anchor:
+          description: The heading it comes from.
+          examples:
+            - who-approves
+          type: string
+        draft:
+          description: true when the guide page is still awaiting review (the guide shows it with its banner, FR-UX-41).
+          examples:
+            - false
+          type: boolean
+        guide:
+          description: The guide page's key; none for what an organisation's own page comes from.
+          examples:
+            - claims.approve-team
+          type: string
+        href:
+          description: Where it opens in the web app; none when the reader may not open it (an organisation's note they may not read).
+          examples:
+            - /help/claims.approve-team#who-approves
+          type: string
+        title:
+          description: Its title.
+          examples:
+            - Approving your team's claims
+          type: string
+      required:
+        - title
+        - anchor
       type: object
     AITaskTypeList:
       additionalProperties: false
@@ -3356,6 +3411,11 @@ components:
           items:
             $ref: "#/components/schemas/AISegment"
           type: array
+        sources:
+          description: The guide pages the answer's explanations come from (AI-51), which you can open.
+          items:
+            $ref: "#/components/schemas/AISource"
+          type: array
         status:
           description: answering until it ends; refused with the code of what stopped it; failed when the AI service did not finish.
           enum:
@@ -3378,6 +3438,7 @@ components:
         - status
         - segments
         - cited
+        - sources
         - regenerated
         - withheld
         - asked_at
@@ -3679,6 +3740,11 @@ components:
             - 3
           format: int64
           type: integer
+        kb_pages:
+          description: "The knowledge-base page versions it read (AI-12, AI-51): each page and the release or version it came from."
+          items:
+            $ref: "#/components/schemas/AIKBPage"
+          type: array
         omitted:
           description: How many lists its limits cut.
           examples:
@@ -3719,6 +3785,7 @@ components:
         - omitted
         - withheld
         - duration_ms
+        - kb_pages
       type: object
     AIUsage:
       additionalProperties: false
@@ -6654,7 +6721,10 @@ components:
           type: string
         object_type:
           description: What it changes.
-          enum:
+          examples:
+            - organisation_setting
+          type: string
+          x-extensible-enum:
             - organisation_setting
             - membership
             - member_invitation
@@ -6717,12 +6787,13 @@ components:
             - statements_approval
             - corporate_document
             - api_client
-          examples:
-            - organisation_setting
-          type: string
+            - kb_publication
         operation:
           description: What executes on its approval.
-          enum:
+          examples:
+            - organisation_setting.change
+          type: string
+          x-extensible-enum:
             - organisation_setting.change
             - role.assign
             - role.revoke
@@ -6801,9 +6872,7 @@ components:
             - corporate_document.record
             - api_client.create
             - api_client.reclass
-          examples:
-            - organisation_setting.change
-          type: string
+            - kb_publication.publish
         policy:
           description: The approval policy's version it keeps (G4-057).
           examples:
@@ -7039,7 +7108,10 @@ components:
           type: integer
         object_type:
           description: The kind of change it covers.
-          enum:
+          examples:
+            - organisation_setting
+          type: string
+          x-extensible-enum:
             - organisation_setting
             - membership
             - member_invitation
@@ -7102,9 +7174,7 @@ components:
             - statements_approval
             - corporate_document
             - api_client
-          examples:
-            - organisation_setting
-          type: string
+            - kb_publication
         row:
           description: The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
           examples:
@@ -7190,7 +7260,10 @@ components:
           type: integer
         object_type:
           description: The kind of change it covers.
-          enum:
+          examples:
+            - organisation_setting
+          type: string
+          x-extensible-enum:
             - organisation_setting
             - membership
             - member_invitation
@@ -7253,9 +7326,7 @@ components:
             - statements_approval
             - corporate_document
             - api_client
-          examples:
-            - organisation_setting
-          type: string
+            - kb_publication
         row:
           description: The Appendix D row whose approval right (A) every signer holds; a policy narrows who signs among them and never adds anyone.
           examples:
@@ -22019,6 +22090,63 @@ components:
         - by_origin
         - closing
       type: object
+    DisputeLossDraft:
+      additionalProperties: false
+      properties:
+        accept_overstated_revenue:
+          description: Above the limit, confirms the loss is written off as an expense although the invoice's revenue stays as invoiced until it is credited.
+          examples:
+            - false
+          type: boolean
+        date:
+          description: The journal's date; today when left out.
+          examples:
+            - "2026-11-19"
+          format: date
+          type: string
+        money_account_id:
+          description: The provider's clearing money account the dispute is on.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+          format: uuid
+          type: string
+        reason:
+          description: Above the limit, why it is written off without crediting the invoice.
+          examples:
+            - "The customer cannot be found: the charge was a one-off"
+          maxLength: 500
+          type: string
+      required:
+        - money_account_id
+      type: object
+    DisputeLossPrepared:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: What it writes off.
+        dispute_id:
+          description: The provider's ID.
+          examples:
+            - dp_1Q3
+          type: string
+        document_id:
+          description: "The draft journal: Dr the dispute loss account, Cr disputes clearing. Post it under Journals, with its approval."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b80
+          format: uuid
+          type: string
+        over_limit:
+          description: Whether it was above the expense limit.
+          examples:
+            - false
+          type: boolean
+      required:
+        - dispute_id
+        - document_id
+        - amount
+        - over_limit
+      type: object
     DividendRight:
       additionalProperties: false
       properties:
@@ -32839,6 +32967,583 @@ components:
         - debits
         - checks
       type: object
+    KBFindingView:
+      additionalProperties: false
+      properties:
+        created_at:
+          examples:
+            - "2026-11-19T08:00:00Z"
+          format: date-time
+          type: string
+        detail:
+          examples:
+            - "The note changed after a person edited the page: the recompile waits beside it."
+          type: string
+        id:
+          examples:
+            - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a30
+          format: uuid
+          type: string
+        kind:
+          examples:
+            - human_edit_conflict
+          type: string
+        page:
+          examples:
+            - org.expense-policy
+          type: string
+        resolution:
+          examples:
+            - Kept the person's version.
+          type: string
+        resolved_at:
+          examples:
+            - "2026-11-19T09:00:00Z"
+          format: date-time
+          type: string
+        resolved_by:
+          examples:
+            - user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
+          type: string
+        status:
+          enum:
+            - open
+            - resolved
+          examples:
+            - open
+          type: string
+        version:
+          description: The version it is about.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - id
+        - kind
+        - page
+        - version
+        - detail
+        - status
+        - created_at
+      type: object
+    KBFindings:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/KBFindingView"
+          type: array
+      required:
+        - items
+      type: object
+    KBNote:
+      additionalProperties: false
+      properties:
+        body:
+          examples:
+            - Claims are made within 30 days of the receipt date.
+          type: string
+        data_class:
+          enum:
+            - general
+            - personal
+            - payroll
+            - equity
+          examples:
+            - general
+          type: string
+        key:
+          examples:
+            - expense-policy
+          type: string
+        kind:
+          enum:
+            - note
+            - policy
+            - decision
+          examples:
+            - policy
+          type: string
+        saved_at:
+          examples:
+            - "2026-11-19T08:00:00Z"
+          format: date-time
+          type: string
+        saved_by:
+          description: "Who last saved it: user:<id>."
+          examples:
+            - user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
+          type: string
+        title:
+          examples:
+            - Expense policy
+          type: string
+        version:
+          description: Its version; the ETag carries it for If-Match.
+          examples:
+            - 2
+          format: int64
+          type: integer
+      required:
+        - key
+        - kind
+        - title
+        - body
+        - data_class
+        - version
+        - saved_by
+        - saved_at
+      type: object
+    KBNoteInput:
+      additionalProperties: false
+      properties:
+        body:
+          description: What it says, in words the assistant may explain to colleagues. No secrets, bank account numbers or identity numbers.
+          examples:
+            - Claims are made within 30 days of the receipt date.
+          maxLength: 20000
+          minLength: 1
+          type: string
+        data_class:
+          description: "The strictest class of data it holds: a page made from it is shown only to those who may read that class (AI-54); left out, general."
+          enum:
+            - general
+            - personal
+            - payroll
+            - equity
+          examples:
+            - general
+          type: string
+        key:
+          description: "Its key, once and for good: lower-case words, dots and hyphens."
+          examples:
+            - expense-policy
+          pattern: ^[a-z0-9][a-z0-9.-]{0,99}$
+          type: string
+        kind:
+          description: What it is.
+          enum:
+            - note
+            - policy
+            - decision
+          examples:
+            - policy
+          type: string
+        title:
+          description: Its title.
+          examples:
+            - Expense policy
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - kind
+        - title
+        - body
+      type: object
+    KBNotes:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/KBNote"
+          type: array
+      required:
+        - items
+      type: object
+    KBPageInput:
+      additionalProperties: false
+      properties:
+        aliases:
+          description: Other words people use for it, at most 30 of at most 60 characters, which search matches.
+          examples:
+            - - claims rule
+              - expense rule
+          items:
+            examples:
+              - claims rule
+            type: string
+          type: array
+        body:
+          description: "Markdown: a title, then sections, each citing its source as (src: note:<key>#<anchor>), (src: setting:<key>#<anchor>) or (src: platform:<key>#<anchor>). Every number in it must be in a source it cites."
+          examples:
+            - "# Expense policy"
+          maxLength: 60000
+          minLength: 1
+          type: string
+        sources:
+          description: What the page is made from; each section cites one of these.
+          items:
+            $ref: "#/components/schemas/KBSourceInput"
+          maxItems: 50
+          type:
+            - array
+            - "null"
+        summary:
+          description: One line the index shows.
+          examples:
+            - How claims are made here.
+          maxLength: 160
+          minLength: 1
+          type: string
+        title:
+          examples:
+            - Expense policy
+          maxLength: 200
+          minLength: 1
+          type: string
+        type:
+          description: What the page is.
+          enum:
+            - concept
+            - task
+            - reference
+            - policy
+            - decision
+          examples:
+            - policy
+          type: string
+      required:
+        - type
+        - title
+        - summary
+        - body
+        - sources
+      type: object
+    KBPageSummary:
+      additionalProperties: false
+      properties:
+        base_changed:
+          description: "An overlay made before Fyniq changed the platform page it replaces: the assistant says it may be out of date until a person reviews it."
+          examples:
+            - false
+          type: boolean
+        data_class:
+          examples:
+            - general
+          type: string
+        key:
+          examples:
+            - org.expense-policy
+          type: string
+        newest_version:
+          description: Its newest version; 0 for a platform page.
+          examples:
+            - 2
+          format: int64
+          type: integer
+        open_findings:
+          description: Lint findings open on it.
+          examples:
+            - 0
+          format: int64
+          type: integer
+        origin:
+          description: "How its newest version was made: rendered, compiled, human_edited, overlay or rollback; empty for a platform page."
+          examples:
+            - compiled
+          type: string
+        overlaid:
+          description: A platform page this organisation has an overlay of.
+          examples:
+            - false
+          type: boolean
+        published_version:
+          description: The live snapshot's version; 0 when none.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        source:
+          description: organisation for the organisation's own page, platform for Fyniq's.
+          enum:
+            - organisation
+            - platform
+          examples:
+            - organisation
+          type: string
+        state:
+          description: published when the live snapshot lists it; draft when a newer version waits for a person; unpublished when it has no published version yet; platform for Fyniq's own pages.
+          enum:
+            - published
+            - draft
+            - unpublished
+            - platform
+          examples:
+            - published
+          type: string
+        summary:
+          examples:
+            - How claims are made here.
+          type: string
+        title:
+          examples:
+            - Expense policy
+          type: string
+        type:
+          examples:
+            - policy
+          type: string
+      required:
+        - key
+        - source
+        - type
+        - title
+        - summary
+        - data_class
+        - state
+        - published_version
+        - newest_version
+        - origin
+        - open_findings
+      type: object
+    KBPageVersion:
+      additionalProperties: false
+      properties:
+        aliases:
+          examples:
+            - - claims rule
+              - expense rule
+          items:
+            examples:
+              - claims rule
+            type: string
+          type: array
+        author:
+          description: user:<id>, kb-compiler or system.
+          examples:
+            - user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
+          type: string
+        base_key:
+          description: "An overlay: the platform page it replaces."
+          examples:
+            - claims.approve-team-claims
+          type: string
+        body:
+          examples:
+            - "# Expense policy"
+          type: string
+        compiler:
+          description: The model that compiled it.
+          examples:
+            - claude-opus-5-5
+          type: string
+        created_at:
+          examples:
+            - "2026-11-19T08:00:00Z"
+          format: date-time
+          type: string
+        data_class:
+          examples:
+            - general
+          type: string
+        human_edited:
+          description: "true when a person wrote it: a recompile never overwrites it."
+          examples:
+            - true
+          type: boolean
+        key:
+          examples:
+            - org.expense-policy
+          type: string
+        number:
+          description: Its version; the page's ETag carries the newest for If-Match.
+          examples:
+            - 2
+          format: int64
+          type: integer
+        origin:
+          enum:
+            - rendered
+            - compiled
+            - human_edited
+            - overlay
+            - rollback
+          examples:
+            - human_edited
+          type: string
+        restores:
+          description: "A rollback: the version whose content it restores."
+          examples:
+            - 1
+          format: int64
+          type: integer
+        sources:
+          items:
+            $ref: "#/components/schemas/KBSourceInput"
+          type: array
+        state:
+          description: published when the live snapshot lists it, draft when it is newer than the published one, superseded when an earlier one.
+          enum:
+            - published
+            - draft
+            - superseded
+          examples:
+            - draft
+          type: string
+        summary:
+          examples:
+            - How claims are made here.
+          type: string
+        title:
+          examples:
+            - Expense policy
+          type: string
+        type:
+          examples:
+            - policy
+          type: string
+      required:
+        - key
+        - number
+        - state
+        - origin
+        - type
+        - title
+        - summary
+        - aliases
+        - body
+        - sources
+        - data_class
+        - author
+        - created_at
+        - human_edited
+      type: object
+    KBPageVersions:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/KBPageVersion"
+          type: array
+        key:
+          examples:
+            - org.expense-policy
+          type: string
+      required:
+        - key
+        - items
+      type: object
+    KBPages:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/KBPageSummary"
+          type: array
+      required:
+        - items
+      type: object
+    KBPublicationInput:
+      additionalProperties: false
+      properties:
+        pages:
+          description: Each page and the version to publish.
+          items:
+            $ref: "#/components/schemas/KBPublicationPage"
+          maxItems: 50
+          minItems: 1
+          type:
+            - array
+            - "null"
+        reason:
+          description: Why, for the snapshot and the weekly review.
+          examples:
+            - The expense policy changed.
+          maxLength: 1000
+          type: string
+      required:
+        - pages
+      type: object
+    KBPublicationPage:
+      additionalProperties: false
+      properties:
+        key:
+          examples:
+            - org.expense-policy
+          pattern: ^[a-z0-9][a-z0-9.-]{0,99}$
+          type: string
+        version:
+          examples:
+            - 2
+          format: int64
+          minimum: 1
+          type: integer
+      required:
+        - key
+        - version
+      type: object
+    KBSnapshot:
+      additionalProperties: false
+      properties:
+        approval_id:
+          description: The approval request that signed it; none when the Owner published alone in Founder mode, which waits in the weekly review.
+          examples:
+            - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2e
+          format: uuid
+          type: string
+        created_at:
+          examples:
+            - "2026-11-19T08:00:00Z"
+          format: date-time
+          type: string
+        created_by:
+          examples:
+            - user:0193a3f2-7c1e-7a2b-9c4d-5e6f70819a2d
+          type: string
+        number:
+          examples:
+            - 3
+          format: int64
+          type: integer
+        reason:
+          examples:
+            - The expense policy changed.
+          type: string
+      required:
+        - number
+        - reason
+        - created_at
+      type: object
+    KBSnapshots:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/KBSnapshot"
+          type: array
+      required:
+        - items
+      type: object
+    KBSourceInput:
+      additionalProperties: false
+      properties:
+        kind:
+          description: "note: one of the organisation's notes; setting: an organisation setting; platform: the platform page an overlay replaces."
+          enum:
+            - note
+            - setting
+            - platform
+          examples:
+            - note
+          type: string
+        ref:
+          description: The note's key, the setting's key or the platform page's key.
+          examples:
+            - expense-policy
+          pattern: ^[a-z0-9][a-z0-9._-]{0,99}$
+          type: string
+        title:
+          description: What it is called, for the chip a reader sees; left out, its key.
+          examples:
+            - Expense policy
+          maxLength: 200
+          type: string
+      required:
+        - kind
+        - ref
+      type: object
     KPICountsIn:
       additionalProperties: false
       properties:
@@ -33082,6 +33787,32 @@ components:
         - ledger_revision
         - platform_version
         - kpis
+      type: object
+    KbResolveInBody:
+      additionalProperties: false
+      properties:
+        resolution:
+          description: What was done, in a sentence.
+          examples:
+            - Kept the person's version.
+          maxLength: 1000
+          minLength: 1
+          type: string
+      required:
+        - resolution
+      type: object
+    KbRollbackInBody:
+      additionalProperties: false
+      properties:
+        version:
+          description: The version whose content to restore, as a new version.
+          examples:
+            - 1
+          format: int64
+          minimum: 1
+          type: integer
+      required:
+        - version
       type: object
     LedgerEntryLine:
       additionalProperties: false
@@ -39668,6 +40399,395 @@ components:
         - format
         - offered
       type: object
+    PaymentProviderAccount:
+      additionalProperties: false
+      properties:
+        book_balance:
+          $ref: "#/components/schemas/Money"
+          description: What the books hold in the clearing account.
+        connector_id:
+          description: The organisation connector that feeds it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40
+          format: uuid
+          type: string
+        currency:
+          description: Its currency, the provider balance's.
+          examples:
+            - SGD
+          pattern: ^[A-Z]{3}$
+          type: string
+        dispute_loss_account_id:
+          description: The expense account a lost dispute is written off to.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b14
+          format: uuid
+          type: string
+        dispute_loss_account_name:
+          description: Its code and name.
+          examples:
+            - 5045 Dispute losses
+          type: string
+        disputes_account_id:
+          description: "The chart account a disputed amount waits in; none: a dispute waits for a person."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b13
+          format: uuid
+          type: string
+        disputes_account_name:
+          description: Its code and name.
+          examples:
+            - 1055 Payment disputes clearing
+          type: string
+        fee_account_id:
+          description: The chart account fees expense to.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b12
+          format: uuid
+          type: string
+        fee_account_name:
+          description: Its code and name.
+          examples:
+            - 5040 Payment processing fees
+          type: string
+        money_account_id:
+          description: The provider's clearing money account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+          format: uuid
+          type: string
+        money_account_name:
+          description: Its name.
+          examples:
+            - Stripe SGD
+          type: string
+        payout_account_id:
+          description: "The money account payouts land in; none: a payout waits for a person."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11
+          format: uuid
+          type: string
+        payout_account_name:
+          description: Its name.
+          examples:
+            - DBS Operating
+          type: string
+        provider:
+          description: The connector's manifest ID.
+          examples:
+            - stripe
+          type: string
+        provider_balance:
+          $ref: "#/components/schemas/Money"
+          description: What the provider said it holds for the organisation and has not paid out, at the last sweep.
+        sweep_error:
+          description: "Why the last sweep could not close a gap (C.2 #43)."
+          examples:
+            - the provider answered 503
+          type: string
+        swept_through:
+          description: The day the daily sweep has made the account complete to (FR-PSP-01).
+          examples:
+            - "2026-11-18"
+          format: date
+          type: string
+        version:
+          description: Its version, for If-Match.
+          examples:
+            - 1
+          format: int64
+          type: integer
+      required:
+        - money_account_id
+        - money_account_name
+        - currency
+        - connector_id
+        - provider
+        - fee_account_id
+        - fee_account_name
+        - version
+      type: object
+    PaymentProviderAccountDraft:
+      additionalProperties: false
+      properties:
+        dispute_loss_account_id:
+          description: The expense account a lost dispute's draft journal writes its money off to, such as 5045 Dispute losses; left out, no draft can be prepared.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b14
+          format: uuid
+          type: string
+        disputes_account_id:
+          description: A chart account, not a money account, a disputed amount waits in, such as 1055; left out, a dispute waits for a person.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b13
+          format: uuid
+          type: string
+        fee_account_id:
+          description: The expense chart account fees post to, such as 5040.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b12
+          format: uuid
+          type: string
+        payout_account_id:
+          description: The money account payouts land in, in the same currency; left out, a payout waits for a person.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11
+          format: uuid
+          type: string
+      required:
+        - fee_account_id
+      type: object
+    PaymentProviderDispute:
+      additionalProperties: false
+      properties:
+        all_posted:
+          description: Whether every statement line of the dispute has posted; a draft is prepared only when they all have.
+          examples:
+            - true
+          type: boolean
+        dispute_id:
+          description: The provider's ID.
+          examples:
+            - dp_1Q3
+          type: string
+        held:
+          $ref: "#/components/schemas/Money"
+          description: What its posted lines have moved into disputes clearing and the provider has not given back.
+        loss_document_id:
+          description: The draft journal prepared to write it off.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b80
+          format: uuid
+          type: string
+        money_account_id:
+          description: The provider's clearing money account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+          format: uuid
+          type: string
+        over_limit:
+          description: Whether it is above the limit up to which a lost dispute is written off as an expense without a reason (psp.dispute_expense_limit).
+          examples:
+            - false
+          type: boolean
+        status:
+          description: "open: its money waits; won: the provider gave it all back; written_off: a draft journal was prepared to write it off."
+          enum:
+            - open
+            - won
+            - written_off
+          examples:
+            - open
+          type: string
+      required:
+        - dispute_id
+        - money_account_id
+        - held
+        - status
+        - all_posted
+        - over_limit
+      type: object
+    PaymentProviderEvent:
+      additionalProperties: false
+      properties:
+        api_version:
+          description: The provider's API version.
+          examples:
+            - 2025-09-30.clover
+          type: string
+        connector_id:
+          description: The connector it came through.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40
+          format: uuid
+          type: string
+        event_id:
+          description: The provider's event ID.
+          examples:
+            - evt_1Q3
+          type: string
+        event_type:
+          description: Its type.
+          examples:
+            - payout.paid
+          type: string
+        id:
+          description: The event's ID in Fyniq.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70
+          format: uuid
+          type: string
+        last_error:
+          description: Why its last attempt failed.
+          examples:
+            - "stripe: /v1/payouts/po_1Q3 answered 503"
+          type: string
+        object_id:
+          description: The object's provider ID.
+          examples:
+            - po_1Q3
+          type: string
+        object_kind:
+          description: What the event names.
+          examples:
+            - payout
+          type: string
+        parked_reason:
+          description: Why it is parked.
+          examples:
+            - "Fyniq does not know this event type (radar.early_fraud_warning.created): a person reviews it, and it posts nothing"
+          type: string
+        parser_version:
+          description: The parser's version.
+          examples:
+            - stripe@1
+          type: string
+        provider:
+          description: The connector's manifest ID.
+          examples:
+            - stripe
+          type: string
+        received_at:
+          description: When it was received.
+          examples:
+            - "2026-11-12T10:00:00Z"
+          format: date-time
+          type: string
+        status:
+          description: "Where it stands: parked waits for a person (an event type Fyniq does not know, or an object it cannot post)."
+          enum:
+            - received
+            - processed
+            - parked
+            - failed
+          examples:
+            - parked
+          type: string
+      required:
+        - id
+        - connector_id
+        - provider
+        - event_id
+        - event_type
+        - parser_version
+        - status
+        - received_at
+      type: object
+    PaymentProviderPayout:
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: Paid out, as the provider reports it.
+        arrival_date:
+          description: When it was due in the bank.
+          examples:
+            - "2026-11-12"
+          format: date
+          type: string
+        automatic:
+          description: Whether it is an automatic payout, which Stripe itemises (FR-PSP-06).
+          examples:
+            - true
+          type: boolean
+        difference:
+          $ref: "#/components/schemas/Money"
+          description: What they come to, when not nothing.
+        id:
+          description: The payout's ID in Fyniq.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60
+          format: uuid
+          type: string
+        missing:
+          description: References of lines that are not imported or not posted, separated by commas.
+          examples:
+            - txn_1Q3, txn_1Q3:fee
+          type: string
+        money_account_id:
+          description: The provider's clearing money account.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+          format: uuid
+          type: string
+        nets_to_zero:
+          description: Whether the payout and what it settles come to nothing in clearing; absent until the payout's own line has posted.
+          examples:
+            - true
+          type: boolean
+        payout_id:
+          description: The provider's ID.
+          examples:
+            - po_1Q3
+          type: string
+        payout_line_posted:
+          description: Whether the payout's own statement line has posted, as a transfer to the bank.
+          examples:
+            - true
+          type: boolean
+        status:
+          description: The provider's status.
+          examples:
+            - paid
+          type: string
+        transactions:
+          description: What it settles.
+          items:
+            $ref: "#/components/schemas/PaymentProviderTxn"
+          type: array
+      required:
+        - id
+        - payout_id
+        - money_account_id
+        - amount
+        - status
+        - automatic
+        - transactions
+        - payout_line_posted
+      type: object
+    PaymentProviderTxn:
+      additionalProperties: false
+      properties:
+        category:
+          description: How Fyniq reads it.
+          enum:
+            - charge
+            - refund
+            - dispute
+            - dispute_reversal
+            - fee
+            - payout
+            - other
+          examples:
+            - charge
+          type: string
+        fee:
+          $ref: "#/components/schemas/Money"
+          description: What the provider keeps.
+        gross:
+          $ref: "#/components/schemas/Money"
+          description: "Signed: money in positive."
+        net:
+          $ref: "#/components/schemas/Money"
+          description: Gross less fee.
+        posted:
+          description: Whether its line, and its fee's line when it has one, have posted.
+          examples:
+            - true
+          type: boolean
+        txn_id:
+          description: The provider's ID, the reference of its statement line.
+          examples:
+            - txn_1Q3
+          type: string
+      required:
+        - txn_id
+        - category
+        - gross
+        - fee
+        - net
+        - posted
+      type: object
     PdRequestsOutputBody:
       additionalProperties: false
       properties:
@@ -42605,6 +43725,70 @@ components:
         - expense_value
         - total
       type: object
+    PspAccountsOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The provider accounts, by money account name.
+          items:
+            $ref: "#/components/schemas/PaymentProviderAccount"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTIifQ
+          type: string
+      required:
+        - items
+      type: object
+    PspDisputesOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The disputes, oldest first.
+          items:
+            $ref: "#/components/schemas/PaymentProviderDispute"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTIifQ
+          type: string
+      required:
+        - items
+      type: object
+    PspEventsOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The events, newest first, without their payloads.
+          items:
+            $ref: "#/components/schemas/PaymentProviderEvent"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTIifQ
+          type: string
+      required:
+        - items
+      type: object
+    PspPayoutsOutputBody:
+      additionalProperties: false
+      properties:
+        items:
+          description: The payouts, newest first.
+          items:
+            $ref: "#/components/schemas/PaymentProviderPayout"
+          type: array
+        next_cursor:
+          description: Send it as cursor for the next page; absent on the last page.
+          examples:
+            - eyJhZnRlciI6IjAxOTIifQ
+          type: string
+      required:
+        - items
+      type: object
     PublicAnswer:
       additionalProperties: false
       properties:
@@ -44946,6 +46130,19 @@ components:
         - class
         - field
         - value
+      type: object
+    ResolveEventInputBody:
+      additionalProperties: false
+      properties:
+        reason:
+          description: What the person did about it, or why nothing is needed.
+          examples:
+            - "A fraud warning for a charge we refunded: nothing to post"
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - reason
       type: object
     ResolveGapInputBody:
       additionalProperties: false
@@ -160767,6 +161964,1971 @@ paths:
       x-fyniq-permission:
         capability: Journals
         right: C
+  /v1/knowledge-base/findings:
+    get:
+      description: "What the lint and the compiler found on the organisation's pages (AI-52, AI-56): a stale or missing source, a number in no cited source, a contradiction with a setting, or a recompile waiting beside a person's edit. An open finding on a page stops its publication until a person resolves it. Newest first, up to 200. Read-only; no side effects. On the never-list for MCP and agent clients (§9.6)."
+      operationId: listKBFindings
+      parameters:
+        - description: Only the open or only the resolved findings; left out, all.
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: Only the open or only the resolved findings; left out, all.
+            enum:
+              - open
+              - resolved
+            examples:
+              - open
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBFindings"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the knowledge base's lint findings
+      tags:
+        - Knowledge base
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "The findings are a few dozen, read whole: the page sorts and filters them itself."
+      x-fyniq-permission:
+        capability: "Knowledge base: compiled pages and index (rev 0.4)"
+        right: V
+  /v1/knowledge-base/findings/{finding_id}/resolve:
+    post:
+      description: "Closes an open finding with what was done about it (AI-56): a person fixed the page or its source, kept their own version, or accepted the finding. A finding closes once. Side effects: the audit event kb_finding.resolved. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing. On the never-list for MCP and agent clients (§9.6)."
+      operationId: resolveKBFinding
+      parameters:
+        - description: The finding's ID.
+          in: path
+          name: finding_id
+          required: true
+          schema:
+            description: The finding's ID.
+            examples:
+              - 0193a3f2-7c1e-7a2b-9c4d-5e6f70819a30
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KbResolveInBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBFindingView"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-KNOWLEDGE-01` A knowledge-base version and snapshot are kept as they were; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Resolve a knowledge-base finding
+      tags:
+        - Knowledge base
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-KNOWLEDGE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Knowledge base: compiled pages and index (rev 0.4)"
+        note: Closes a lint finding with what was done about it; an open finding stops its page's publication (AI-56).
+        right: C
+  /v1/knowledge-base/notes:
+    get:
+      description: Every note, policy and decision the organisation's pages are compiled from (AI-50), by key, with their text and version. Read-only; no side effects. On the never-list for MCP and agent clients (§9.6).
+      operationId: listKBNotes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBNotes"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the organisation's knowledge-base notes
+      tags:
+        - Knowledge base
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "An organisation's notes are a few dozen, read whole: the page sorts and filters them itself."
+      x-fyniq-permission:
+        capability: "Knowledge base: compiled pages and index (rev 0.4)"
+        right: V
+    post:
+      description: "Writes a note, policy or decision at version 1 (AI-50). It is a source: nothing the assistant says changes until a page compiled from it is published, which a person approves (AI-56). A note holding what looks like an identity number, a bank account number or a secret is refused (AI-02). Side effects: the note, the audit event kb_note.created. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing. On the never-list for MCP and agent clients (§9.6)."
+      operationId: createKBNote
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KBNoteInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBNote"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBNote"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: Its version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-KNOWLEDGE-01` A knowledge-base version and snapshot are kept as they were; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Write a knowledge-base note
+      tags:
+        - Knowledge base
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - STORAGE-KNOWLEDGE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: "Knowledge base: compiled pages and index (rev 0.4)"
+        right: C
+  /v1/knowledge-base/notes/{key}:
+    put:
+      description: "Saves the note's next version (AI-50): its title, text, kind or data class; its key never changes. The pages made from it are recompiled and published only with a person's approval (AI-56). Side effects: the new version, the audit event kb_note.changed. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing. On the never-list for MCP and agent clients (§9.6)."
+      operationId: reviseKBNote
+      parameters:
+        - description: The note's key.
+          in: path
+          name: key
+          required: true
+          schema:
+            description: The note's key.
+            examples:
+              - expense-policy
+            pattern: ^[a-z0-9][a-z0-9.-]{0,99}$
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KBNoteInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBNote"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: Its version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-KNOWLEDGE-01` A knowledge-base version and snapshot are kept as they were; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Change a knowledge-base note
+      tags:
+        - Knowledge base
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-KNOWLEDGE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: "Knowledge base: compiled pages and index (rev 0.4)"
+        right: C
+  /v1/knowledge-base/pages:
+    get:
+      description: "The index the assistant reads, as an administrator sees it (AI-55): Fyniq's own pages and the organisation's, each with its key, title, summary, data class, state, published and newest version, how its newest version was made and its open findings. A platform page the organisation has overlaid says so. Read-only; no side effects. On the never-list for MCP and agent clients (§9.6)."
+      operationId: listKBPages
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBPages"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the knowledge base's pages
+      tags:
+        - Knowledge base
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "The pages are a few dozen, read whole: the page sorts and filters them itself."
+      x-fyniq-permission:
+        capability: "Knowledge base: compiled pages and index (rev 0.4)"
+        right: V
+  /v1/knowledge-base/pages/{key}:
+    put:
+      description: "Saves the page's next version as written by the caller (AI-55, AI-56): a human-edited version of an organisation page (key org.<name>), or an overlay of a platform page for this organisation alone. It is a draft: nothing the assistant reads changes until it is published. A recompile never overwrites it; it is flagged for a person instead. Needs If-Match with the page's newest version's ETag (v0 for a page with none). Side effects: the version, the audit event kb_page.version_added. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing. On the never-list for MCP and agent clients (§9.6)."
+      operationId: editKBPage
+      parameters:
+        - description: "The page's key: org.<name> for the organisation's own, or a platform page's key for an overlay."
+          in: path
+          name: key
+          required: true
+          schema:
+            description: "The page's key: org.<name> for the organisation's own, or a platform page's key for an overlay."
+            examples:
+              - org.expense-policy
+            pattern: ^[a-z0-9][a-z0-9.-]{0,99}$
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KBPageInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBPageVersion"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBPageVersion"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The page's newest version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-KNOWLEDGE-01` A knowledge-base version and snapshot are kept as they were; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `KB-PAGE-01` Not a page or version a publication takes."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Edit a knowledge-base page
+      tags:
+        - Knowledge base
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - KB-PAGE-01
+        - STORAGE-KNOWLEDGE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Knowledge base: compiled pages and index (rev 0.4)"
+        note: "A human-edited version of an organisation page, or an overlay of a platform page for this organisation: a draft until published (AI-55, AI-56)."
+        right: C
+  /v1/knowledge-base/pages/{key}/rollback:
+    post:
+      description: "Saves a new version that restores an earlier one's content, as a human-edited draft (AI-56): earlier versions are never changed. It is published like any change, by a publication a person approves. Side effects: the version, the audit event kb_page.version_added. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing. On the never-list for MCP and agent clients (§9.6)."
+      operationId: rollbackKBPage
+      parameters:
+        - description: "The page's key: org.<name> for the organisation's own, or a platform page's key for an overlay."
+          in: path
+          name: key
+          required: true
+          schema:
+            description: "The page's key: org.<name> for the organisation's own, or a platform page's key for an overlay."
+            examples:
+              - org.expense-policy
+            pattern: ^[a-z0-9][a-z0-9.-]{0,99}$
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KbRollbackInBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBPageVersion"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBPageVersion"
+          description: Created
+          headers:
+            ETag:
+              schema:
+                description: The page's newest version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Location:
+              schema:
+                description: Its URL.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-KNOWLEDGE-01` A knowledge-base version and snapshot are kept as they were; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `KB-PAGE-01` Not a page or version a publication takes."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Roll a knowledge-base page back to an earlier version
+      tags:
+        - Knowledge base
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - KB-PAGE-01
+        - STORAGE-KNOWLEDGE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Knowledge base: compiled pages and index (rev 0.4)"
+        note: A new version restoring an earlier one's content (AI-56).
+        right: C
+  /v1/knowledge-base/pages/{key}/versions:
+    get:
+      description: Every version of an organisation page, or of the organisation's overlay of a platform page, newest first, with its text, sources, origin, author and whether it is published, a draft or superseded (AI-55, AI-56), so any two can be compared. Read-only; no side effects. On the never-list for MCP and agent clients (§9.6).
+      operationId: listKBPageVersions
+      parameters:
+        - description: "The page's key: org.<name> for the organisation's own, or a platform page's key for an overlay."
+          in: path
+          name: key
+          required: true
+          schema:
+            description: "The page's key: org.<name> for the organisation's own, or a platform page's key for an overlay."
+            examples:
+              - org.expense-policy
+            pattern: ^[a-z0-9][a-z0-9.-]{0,99}$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBPageVersions"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List a knowledge-base page's versions
+      tags:
+        - Knowledge base
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "A page's versions are a few dozen, read whole: the page sorts and filters them itself."
+      x-fyniq-permission:
+        capability: "Knowledge base: compiled pages and index (rev 0.4)"
+        right: V
+  /v1/knowledge-base/publications:
+    post:
+      description: "Makes the next snapshot: the live pages with these versions in their place, which the assistant reads from then on (AI-56). In Founder mode an Owner publishes alone and the publication is listed for the weekly review (FM-3); in Team mode it is refused, and requestKBPublication asks another Owner to sign it. Every version is linted first (its summary, that each section cites a source it lists, that each number is in a source it cites, that links match a page) and a page with an open finding is refused. Side effects: the snapshot, the audit event kb_snapshot.published, and the weekly review's entry. Idempotent with Idempotency-Key; Prefer: return=preview checks it and publishes nothing. On the never-list for MCP and agent clients (§9.6)."
+      operationId: publishKBPages
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KBPublicationInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBSnapshot"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBSnapshot"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `KB-TEAM-01` In Team mode another Owner signs a publication; `STORAGE-KNOWLEDGE-01` A knowledge-base version and snapshot are kept as they were; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `KB-LINT-01` A knowledge-base page fails its checks; `KB-PAGE-01` Not a page or version a publication takes."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Publish knowledge-base pages
+      tags:
+        - Knowledge base
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - KB-LINT-01
+        - KB-PAGE-01
+        - KB-TEAM-01
+        - STORAGE-KNOWLEDGE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Knowledge base: compiled pages and index (rev 0.4)"
+        note: In Founder mode an Owner publishes alone, listed for the weekly review (FM-3); in Team mode another Owner signs a request (AI-56, open question 18).
+        right: A
+  /v1/knowledge-base/publications/approval:
+    post:
+      description: "Asks another Owner to sign a publication of these page versions (AI-56, FR-APR-01): the request holds each version and a hash of its content and the snapshot it replaces, so a change to any voids it. The versions are linted first, as publishKBPages does. On approval the snapshot is made, naming the request. Asking needs a person signed in who passed step-up. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. On the never-list for MCP and agent clients (§9.6)."
+      operationId: requestKBPublication
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KBPublicationInput"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Approval"
+          description: Accepted
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved, and no request waits (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `STORAGE-APPROVAL-01` The approval cannot be made that way; `STORAGE-KNOWLEDGE-01` A knowledge-base version and snapshot are kept as they were; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `KB-LINT-01` A knowledge-base page fails its checks; `KB-PAGE-01` Not a page or version a publication takes."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Ask for approval to publish knowledge-base pages
+      tags:
+        - Knowledge base
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-04
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-RATE-01
+        - APR-06
+        - KB-LINT-01
+        - KB-PAGE-01
+        - STORAGE-APPROVAL-01
+        - STORAGE-KNOWLEDGE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "Knowledge base: compiled pages and index (rev 0.4)"
+        right: C
+  /v1/knowledge-base/snapshots:
+    get:
+      description: The numbered snapshots of what the organisation has published (AI-56), newest first, each with who made it, when, why and the approval request that signed it (none when an Owner published alone in Founder mode, which waits in the weekly review). Read-only; no side effects. On the never-list for MCP and agent clients (§9.6).
+      operationId: listKBSnapshots
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KBSnapshots"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: List the knowledge base's snapshots
+      tags:
+        - Knowledge base
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: "The snapshots are a few dozen, read whole: the page sorts and filters them itself."
+      x-fyniq-permission:
+        capability: "Knowledge base: compiled pages and index (rev 0.4)"
+        right: V
   /v1/kpi-inputs:
     get:
       description: The months' customer counts and headcount a person entered for the KPIs (FR-KPI-02, rev 0.161), earliest first, with who entered them and their version, a page at a time (FR-INT-10). Read-only; no side effects.
@@ -190707,6 +193869,1084 @@ paths:
         capability: Payment batches
         note: A person stepped up in the last 5 minutes; in Standard mode never who prepared, asked for or approved the batch or a payee's account change (SOD-1, SOD-2).
         right: R
+  /v1/payment-providers/accounts:
+    get:
+      description: "Each payment provider's money account that has been set up (FR-PSP-04..06): its connector, where its payouts land, the accounts its fees and disputes post to, how far the daily sweep has made it complete to, and what the books and the provider each say it holds (check C.2 #50). Read-only."
+      operationId: listPaymentProviderAccounts
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PspAccountsOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the payment providers' accounts
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: V
+  /v1/payment-providers/accounts/{money_account_id}:
+    put:
+      description: "Sets up, or changes, a payment gateway money account fed by a Stripe or HitPay connector (FR-PSP-04..06): the money account its payouts land in, the expense account its fees post to and the account a disputed amount waits in. Once it is set up, Reconcile now posts the provider's own lines from it, within the caps of auto-reconcile: a fee, a dispute's money and a payout as a transfer; the worker posts nothing. Needs a right on \"Bank data… connections\", as setting a connector as a source does. A first setup needs no If-Match; a change needs the ETag. Side effects: the setup and its audit event with the old and new accounts. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: setPaymentProviderAccount
+      parameters:
+        - description: The money account's ID.
+          in: path
+          name: money_account_id
+          required: true
+          schema:
+            description: The money account's ID.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+          in: header
+          name: If-Match
+          schema:
+            description: The record's ETag from your last read, sent back as it came, even if a compressing proxy made it weak (W/) or named its encoding in it (-gzip); the command runs only if the record has not changed since (412 otherwise; 428 without it).
+            examples:
+              - "\"1-draft\""
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentProviderAccountDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentProviderAccount"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            ETag:
+              schema:
+                description: The provider account's version, for If-Match.
+                type: string
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `API-IF-MATCH-01` The record changed; `STORAGE-VERSION-01` The record changed since you read it."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PSP-01` The money account is not a payment provider's; `PSP-02` The account payouts land in cannot take them; `PSP-03` The account fees post to cannot take them; `PSP-04` The account a dispute waits in cannot hold it."
+        "428":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Required: `API-IF-MATCH-02` If-Match required."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Set up a payment provider's money account
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-IF-MATCH-01
+        - API-IF-MATCH-02
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PSP-01
+        - PSP-02
+        - PSP-03
+        - PSP-04
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: Bank data, payment-provider and ticketing connections (rev 0.7)
+        right: C
+  /v1/payment-providers/disputes:
+    get:
+      description: "Each dispute whose lines are on a provider's clearing account (FR-PSP-04): what its posted lines hold in disputes clearing, whether it is open, won or written off, and whether it is above the limit up to which a lost dispute is written off as an expense. Read-only."
+      operationId: listPaymentProviderDisputes
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PspDisputesOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the payment providers' disputes
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: V
+  /v1/payment-providers/disputes/{dispute_id}/loss:
+    post:
+      description: "Prepares a draft journal for a dispute the provider has lost for the organisation (FR-PSP-04): Dr the provider account's dispute loss account, Cr disputes clearing, for what the dispute holds. It posts nothing: the draft is posted under Journals with that row's own approval. Up to the limit psp.dispute_expense_limit (S$100 by default) nothing more is needed; above it the request must confirm that the invoice's revenue stays as invoiced and give a reason. Once per dispute; every line of the dispute must have posted first. Needs a right on Journals. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: prepareDisputeLoss
+      parameters:
+        - description: The provider's ID of the dispute.
+          in: path
+          name: dispute_id
+          required: true
+          schema:
+            description: The provider's ID of the dispute.
+            examples:
+              - dp_1Q3
+            maxLength: 255
+            minLength: 1
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisputeLossDraft"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisputeLossPrepared"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisputeLossPrepared"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PSP-05` The dispute cannot be written off now; `STORAGE-DUPLICATE-01` Already done; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid; `PSP-06` The dispute is above the expense limit."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Prepare the journal that writes a lost dispute off
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PSP-05
+        - PSP-06
+        - STORAGE-DUPLICATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Journals
+        right: C
+  /v1/payment-providers/events:
+    get:
+      description: "The events the providers' signed webhooks brought, newest first, without their payloads (which are sealed): their type, the object they name, and where each stands. A parked event is one Fyniq does not know or could not post, for a person to review (UC-PSP-01); it posts nothing. Read-only."
+      operationId: listPaymentProviderEvents
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only events in this state; parked is what a person reviews.
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: Only events in this state; parked is what a person reviews.
+            enum:
+              - received
+              - processed
+              - parked
+              - failed
+            examples:
+              - parked
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PspEventsOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the payment providers' webhook events
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: V
+  /v1/payment-providers/events/{event_id}/resolution:
+    post:
+      description: "Records that a person reviewed an event that was parked or failed (UC-PSP-01) and dealt with it, with what they did or why nothing is needed. It posts nothing and fetches nothing: the books follow the provider's statement lines and its sweep. The event keeps its payload, type and object; only its standing becomes processed. Side effects: the audit event with the reason. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
+      operationId: resolvePaymentProviderEvent
+      parameters:
+        - description: The event's ID in Fyniq.
+          in: path
+          name: event_id
+          required: true
+          schema:
+            description: The event's ID in Fyniq.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b70
+            format: uuid
+            type: string
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveEventInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentProviderEvent"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "400":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Bad Request: `API-INPUT-01` The request cannot be read."
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `PSP-07` The event is not waiting for a person; `STORAGE-LOCK-01` Another change is in progress."
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Request Entity Too Large: `API-INPUT-03` The request is too large."
+        "415":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unsupported Media Type: `API-INPUT-04` The request is not JSON."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Mark a parked provider event as dealt with
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-01
+        - API-INPUT-02
+        - API-INPUT-03
+        - API-INPUT-04
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - PSP-07
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: C
+  /v1/payment-providers/payouts:
+    get:
+      description: "Each payout a provider's connector has reported, newest first, with the balance transactions it settles and whether their lines have posted (FR-PSP-06). A payout whose own line has posted says whether it and what it settles come to nothing in the provider's clearing account, the same check as C.2 #42. Read-only."
+      operationId: listPaymentProviderPayouts
+      parameters:
+        - description: How many items per page, up to 500.
+          explode: false
+          in: query
+          name: page_size
+          schema:
+            default: 100
+            description: How many items per page, up to 500.
+            examples:
+              - 100
+            format: int64
+            maximum: 500
+            minimum: 1
+            type: integer
+        - description: The next_cursor of the previous page; leave it out for the first page.
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: The next_cursor of the previous page; leave it out for the first page.
+            examples:
+              - eyJhZnRlciI6IjEwMDAifQ
+            maxLength: 1000
+            type: string
+        - description: Only this provider account's payouts.
+          explode: false
+          in: query
+          name: money_account_id
+          schema:
+            description: Only this provider account's payouts.
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PspPayoutsOutputBody"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-CURSOR-01` The cursor is not valid; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+      summary: List the payment providers' payouts
+      tags:
+        - Banking
+      x-fyniq-error-codes:
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-CURSOR-01
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+      x-fyniq-permission:
+        capability: Bank transactions, categorise
+        right: V
   /v1/periods:
     get:
       description: The organisation's accounting periods, earliest first, a page at a time, each with its status and financial year (FR-ORG-02, FR-GL-08), and the financial year that opens next. A posting's period is the month of its posting date (Appendix B); a date no period covers cannot be posted. Read-only; no side effects.
@@ -221714,6 +225954,8 @@ tags:
     name: Corporate profile
   - description: "Long work that runs in the background, polled until it is done: a request that starts it answers 202 with the operation in Location (FR-INT-11)."
     name: Operations
+  - description: "The organisation's own knowledge base: the notes, policies and decisions its administrators write, from which the pages the assistant explains are compiled and, with a person's approval, published (AI-50, AI-56)."
+    name: Knowledge base
   - description: "Statutory compliance: the GST registration monitor and its forecasts (FR-TAX-05), and the statutory calendar of filing and payment deadlines as it arrives (FR-TAX-07, CMP-02)."
     name: Compliance
   - description: "The move from the zh-sheet-accounting workbook (FR-MIG-01, §17.1): the organisation's one migration, its steps M1 to M6, the workbook uploaded as M1's evidence and its validation report before anything is committed."

@@ -51,6 +51,7 @@ var verifications = map[string]verification{
 	"ai.traces":                aiTraces,
 	"ai.proposals-approved":    proposalsApproved,
 	"ai.agent-runs":            agentRuns,
+	"kb.pages":                 kbPages,
 }
 
 // Built reports whether the verification name is built.

@@ -35,6 +35,9 @@ var infrastructure = []string{
 	// The bank-data providers' webhooks (FR-BNK-16, FR-INT-27), verified by the connector against the provider's signature,
 	// not API operations: each only queues an early sync of the connector it names.
 	"POST /webhooks/bank/{connector}/{id}",
+	// The payment providers' webhooks (FR-PSP-01), verified by the connector against the provider's signature, not API
+	// operations: each stores the event once and parks one it does not know.
+	"POST /webhooks/psp/{connector}/{id}",
 }
 
 // Every route the API serves is a documented operation or named infrastructure: no private

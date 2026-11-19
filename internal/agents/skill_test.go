@@ -36,7 +36,7 @@ Check, explain, draft.
 
 // The release's skills load (AI-61): the company secretary's, with its tools within its profile and its outputs its
 // report and catalogue task types. A run offers the model only the tools the release's registry has, and proposes only
-// the task types the catalogue has: the knowledge base's tools, and the secretary's document, wait for their changes.
+// the task types the catalogue has: the secretary's document waits for its change. The knowledge base's tools arrived with p1-knowledge-base.
 // req: AI-61
 // req: CTL-AI-09
 func TestTheReleasesSkillsLoad(t *testing.T) {
@@ -44,7 +44,7 @@ func TestTheReleasesSkillsLoad(t *testing.T) {
 	if !ok || s.Version < 1 || s.Agent() != "company_secretary" || !strings.Contains(s.Instructions, "Rules that never bend") || len(s.SHA256) != 64 {
 		t.Fatalf("the company secretary's skill: %+v", s)
 	}
-	if offered := s.Offered(aitool.Default()); slices.Contains(offered, "kb.read") || !slices.Contains(offered, "checks.list") {
+	if offered := s.Offered(aitool.Default()); !slices.Contains(offered, "kb.read") || !slices.Contains(offered, "kb.search") || !slices.Contains(offered, "checks.list") {
 		t.Errorf("the tools a run offers: %v", offered)
 	}
 	if got := s.Proposes(proposal.Default()); slices.Contains(got, agents.RunReport) {

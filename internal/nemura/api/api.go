@@ -6,6 +6,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"regexp"
 	"slices"
 	"strings"
@@ -48,6 +49,7 @@ func Config(v string) huma.Config {
 			Description: "http://localhost:8180/api behind Nemura's edge (PEOPLE=yes make up); http://localhost:8087 for the api service"}}}}
 	cfg.Tags = []*huma.Tag{
 		{Name: "Platform", Description: "What the service is and the error codes it returns (NM-ARC-03)."},
+		{Name: "API clients", Description: "Systems that call Nemura's API on their own, registered by the Owner with a key pair they hold (NM-ARC-06)."},
 		{Name: "Session", Description: "Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02)."},
 	}
 	return cfg
@@ -55,8 +57,33 @@ func Config(v string) huma.Config {
 
 // Session is who a request's session is: the person, their organisation and the roles they hold now.
 type Session struct {
-	Organisation, Member uuid.UUID
+	ID, Organisation, Member uuid.UUID
+	StepUpAt                 *time.Time // when the person last confirmed the session with a passkey
 }
+
+// StepUpWindow is how long a passkey confirmation stays fresh.
+const StepUpWindow = 5 * time.Minute
+
+// Fresh reports whether the session was confirmed with a passkey within the window.
+func (s Session) Fresh(now time.Time) bool {
+	return s.StepUpAt != nil && !s.StepUpAt.After(now) && now.Sub(*s.StepUpAt) <= StepUpWindow
+}
+
+// Passkeys are the passkey ceremonies of a signed-in person (NM-ARC-06): registering one and confirming a session with one. A ceremony is
+// begun and completed, each answer used once.
+type Passkeys interface {
+	BeginRegistration(ctx context.Context, s Session) ([]byte, error)
+	CompleteRegistration(ctx context.Context, s Session, name string, credential []byte) (uuid.UUID, error)
+	BeginStepUp(ctx context.Context, s Session) ([]byte, error)
+	CompleteStepUp(ctx context.Context, s Session, credential []byte) error
+}
+
+// The passkey service's refusals, which the API turns into its stable codes.
+var (
+	ErrPasskeyRefused = errors.New("the passkey's answer was refused")
+	ErrNoCeremony     = errors.New("no passkey ceremony is open")
+	ErrNoPasskey      = errors.New("the member has no passkey")
+)
 
 // Sessions is what the API needs of sign-in and the database to know who is asking. Roles are read again on every request, so a
 // change of roles is seen on the next one.
@@ -68,6 +95,8 @@ type Sessions interface {
 // Deps are what the API is given.
 type Deps struct {
 	Sessions Sessions
+	Passkeys Passkeys
+	Clients  APIClients
 	Clock    ports.Clock
 	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
 	CookieNames []string
@@ -84,6 +113,8 @@ func New(mux humago.Mux, d Deps) *API {
 	a := &API{API: humago.New(mux, Config(version.Version)), d: d}
 	a.register()
 	a.registerSession()
+	a.registerPasskeys()
+	a.registerClients()
 	return a
 }
 

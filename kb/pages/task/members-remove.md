@@ -24,6 +24,9 @@ aliases:
   - owner left the company
   - co-founder died
   - remove an owner
+  - stop access
+  - remove access
+  - revoke access to our books
 ---
 
 # Remove someone from the company, or give an external person a new end date

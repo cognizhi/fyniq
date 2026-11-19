@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/nemura/apiclient"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 )
 
@@ -36,25 +37,61 @@ var versionLine = regexp.MustCompile(`(?m)^  version: .*$`)
 
 // fakeSessions knows one session token and the roles of its member.
 type fakeSessions struct {
-	token string
-	roles []authz.Role
+	token  string
+	roles  []authz.Role
+	stepUp bool
 }
 
 func (f fakeSessions) Authenticate(_ context.Context, token string, _ time.Time) (Session, error) {
 	if token != f.token || token == "" {
 		return Session{}, errors.New("no such session")
 	}
-	return Session{Organisation: uuid.MustParse("0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"), Member: uuid.MustParse("0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45")}, nil
+	s := Session{ID: uuid.MustParse("0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e46"), Organisation: uuid.MustParse("0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"), Member: uuid.MustParse("0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45")}
+	if f.stepUp {
+		at := testNow
+		s.StepUpAt = &at
+	}
+	return s, nil
 }
 
 func (f fakeSessions) RolesAt(context.Context, uuid.UUID, uuid.UUID, time.Time) ([]authz.Role, error) {
 	return f.roles, nil
 }
 
+// fakePasskeys answers each ceremony with the error the test sets (nil: it works).
+type fakePasskeys struct{ err error }
+
+func (f fakePasskeys) BeginRegistration(context.Context, Session) ([]byte, error) {
+	return []byte(`{"publicKey":{"challenge":"abc"}}`), f.err
+}
+func (f fakePasskeys) CompleteRegistration(context.Context, Session, string, []byte) (uuid.UUID, error) {
+	return uuid.MustParse("0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e50"), f.err
+}
+func (f fakePasskeys) BeginStepUp(context.Context, Session) ([]byte, error) {
+	return []byte(`{"publicKey":{"challenge":"abc"}}`), f.err
+}
+func (f fakePasskeys) CompleteStepUp(context.Context, Session, []byte) error { return f.err }
+
+// fakeClients registers whatever it is told and answers with clientsErr.
+type fakeClients struct{ err error }
+
+func (f fakeClients) Register(_ context.Context, _ Session, name string, scopes []string, _ string, _ json.RawMessage) (Client, error) {
+	return Client{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e60", Name: name, Scopes: scopes, ClientID: "c-1", Audience: "nemura-api"}, f.err
+}
+func (f fakeClients) List(context.Context, Session) ([]Client, error)  { return nil, f.err }
+func (f fakeClients) Revoke(context.Context, Session, uuid.UUID) error { return f.err }
+
+var (
+	passkeyErr, clientsErr error
+	testRoles              = []authz.Role{authz.HRAdmin}
+	testStepUp             bool
+	testNow                = time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)
+)
+
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: []authz.Role{authz.HRAdmin}}, Clock: clock.NewFrozen(time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -186,6 +223,9 @@ func TestEveryWriteAcceptsAnIdempotencyKey(t *testing.T) {
 					}
 				}
 			}
+			if _, exempt := IdempotencyExempt[op.method+" "+op.path]; exempt {
+				continue
+			}
 			if !slices.Contains(names, "idempotency-key") {
 				out = append(out, op.method+" "+op.path+" has no Idempotency-Key header")
 			}
@@ -208,21 +248,50 @@ func TestEveryWriteAcceptsAnIdempotencyKey(t *testing.T) {
 // Every code of the catalogue is triggered by an operation, returns RFC 9457 problem details with the code, a plain detail and a
 // fix, and the catalogue is served as the document says.
 // req: NM-ARC-03
+const clientBody = `{"name":"Payroll bureau","scopes":["directory.read"],"algorithm":"ES256","public_key":{"kty":"EC","crv":"P-256","x":"a","y":"b"}}`
+
 func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
-	_, mux := testAPI(t)
-	triggers := map[string]string{ // code -> a request that returns it
-		CodeNotFound:        "/v1/errors/NM_NOPE",
-		CodeInvalid:         "/v1/errors/not-a-code",
-		CodeUnauthenticated: "/v1/session",
+	type trigger struct {
+		method, path, body string
+		signedIn           bool
+		err                error // what the passkey or client service answers
+		owner, stepUp      bool  // the person is the Owner, and confirmed with a passkey
+	}
+	triggers := map[string]trigger{ // code -> a request that returns it
+		CodeNotFound:        {method: "GET", path: "/v1/errors/NM_NOPE"},
+		CodeInvalid:         {method: "GET", path: "/v1/errors/not-a-code"},
+		CodeUnauthenticated: {method: "GET", path: "/v1/session"},
+		CodePasskeyRefused:  {method: "POST", path: "/v1/session/step-up/confirm", body: `{"credential":{}}`, signedIn: true, err: ErrPasskeyRefused},
+		CodeNoCeremony:      {method: "POST", path: "/v1/session/step-up/confirm", body: `{"credential":{}}`, signedIn: true, err: ErrNoCeremony},
+		CodeNoPasskey:       {method: "POST", path: "/v1/session/step-up", signedIn: true, err: ErrNoPasskey},
+		CodeRoleRequired:    {method: "GET", path: "/v1/api-clients", signedIn: true},
+		CodeStepUp:          {method: "DELETE", path: "/v1/api-clients/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e60", signedIn: true, owner: true},
+		CodeClientInvalid:   {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeInvalid, Message: "The scope \"x\" does not exist."}},
+		CodeUnavailable:     {method: "GET", path: "/v1/api-clients", signedIn: true, owner: true, err: ErrUnavailable},
+		CodeClientExists:    {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
 	}
 	for _, c := range Catalogue {
-		path, ok := triggers[c.Code]
+		tr, ok := triggers[c.Code]
 		if !ok {
 			t.Errorf("%s is in the catalogue and no test triggers it", c.Code)
 			continue
 		}
+		passkeyErr, clientsErr = tr.err, tr.err
+		if tr.owner {
+			testRoles = []authz.Role{authz.Owner}
+		}
+		testStepUp = tr.stepUp
+		_, mux := testAPI(t)
+		passkeyErr, clientsErr, testRoles, testStepUp = nil, nil, []authz.Role{authz.HRAdmin}, false
+		req := httptest.NewRequest(tr.method, tr.path, strings.NewReader(tr.body))
+		if tr.body != "" {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if tr.signedIn {
+			req.Header.Set("Cookie", "nemura_session=good-token")
+		}
 		rec := httptest.NewRecorder()
-		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		mux.ServeHTTP(rec, req)
 		var p Problem
 		if err := json.Unmarshal(rec.Body.Bytes(), &p); err != nil || rec.Code != c.Status || p.Code != c.Code ||
 			!strings.HasPrefix(rec.Header().Get("Content-Type"), "application/problem+json") || p.Detail == "" || p.Fix == "" || p.Title != c.Title {
@@ -235,6 +304,7 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		}
 	}
 	// The invalid field is named, with its path and the fix.
+	_, mux := testAPI(t)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/v1/errors/not-a-code", nil))
 	var p Problem
@@ -328,5 +398,92 @@ func TestEachRoleLandsWhereThePRDSays(t *testing.T) {
 		if got := Landing(tc.roles); got != tc.want {
 			t.Errorf("%v lands on %s, want %s", tc.roles, got, tc.want)
 		}
+	}
+}
+
+// The passkey operations need a session, answer the options and ceremonies of the service, and every operation that takes no Idempotency-Key
+// is named, with its reason, in IdempotencyExempt and is a real operation (NM-ARC-06, NM-ARC-03).
+// req: NM-ARC-03
+// asvs: V6.4.1, V7.2.1
+func TestThePasskeyOperationsNeedASessionAndEveryExemptionIsReal(t *testing.T) {
+	_, mux := testAPI(t)
+	post := func(path, body, cookie string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		if cookie != "" {
+			req.Header.Set("Cookie", cookie)
+		}
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec
+	}
+	for path, body := range map[string]string{"/v1/passkeys/registration": "", "/v1/passkeys": `{"name":"x","credential":{}}`, "/v1/session/step-up": "", "/v1/session/step-up/confirm": `{"credential":{}}`} {
+		if rec := post(path, body, ""); rec.Code != http.StatusUnauthorized || !strings.Contains(rec.Body.String(), CodeUnauthenticated) {
+			t.Errorf("POST %s with no session: %d %s", path, rec.Code, rec.Body.String())
+		}
+	}
+	if rec := post("/v1/passkeys/registration", "", "nemura_session=good-token"); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "challenge") {
+		t.Errorf("registration options: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := post("/v1/passkeys", `{"name":"My laptop","credential":{"id":"x"}}`, "nemura_session=good-token"); rec.Code != http.StatusCreated || !strings.Contains(rec.Body.String(), "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e50") {
+		t.Errorf("registering: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := post("/v1/session/step-up/confirm", `{"credential":{"id":"x"}}`, "nemura_session=good-token"); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"confirmed":true`) {
+		t.Errorf("confirming: %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := post("/v1/passkeys", `{"name":"","credential":{}}`, "nemura_session=good-token"); rec.Code != http.StatusUnprocessableEntity {
+		t.Errorf("a passkey with no name: %d", rec.Code)
+	}
+	ops := operations(t)
+	for key, why := range IdempotencyExempt {
+		method, path, _ := strings.Cut(key, " ")
+		if _, ok := ops[operation{method, path}]; !ok || len(why) < 20 {
+			t.Errorf("the exemption %q names no operation, or no reason", key)
+		}
+	}
+}
+
+// Only the Owner registers, lists and revokes API clients, and a change needs a passkey confirmation in the last five minutes; a registered
+// client's answer names its audience and never a key (NM-ARC-06).
+// req: NM-ARC-06
+// asvs: V8.2.1, V6.4.1, V13.2.1
+func TestOnlyTheOwnerManagesAPIClientsWithAFreshPasskeyConfirmation(t *testing.T) {
+	do := func(owner, stepUp bool, method, path, body string) *httptest.ResponseRecorder {
+		if owner {
+			testRoles = []authz.Role{authz.Owner}
+		}
+		testStepUp = stepUp
+		defer func() { testRoles, testStepUp = []authz.Role{authz.HRAdmin}, false }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec
+	}
+	const id = "/v1/api-clients/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e60"
+	for _, tc := range []struct {
+		owner, stepUp bool
+		method, path  string
+		body          string
+		want          int
+	}{
+		{false, true, "POST", "/v1/api-clients", clientBody, http.StatusForbidden},
+		{false, true, "GET", "/v1/api-clients", "", http.StatusForbidden},
+		{false, true, "DELETE", id, "", http.StatusForbidden},
+		{true, false, "POST", "/v1/api-clients", clientBody, http.StatusForbidden},
+		{true, false, "DELETE", id, "", http.StatusForbidden},
+		{true, false, "GET", "/v1/api-clients", "", http.StatusOK},
+		{true, true, "POST", "/v1/api-clients", clientBody, http.StatusCreated},
+		{true, true, "DELETE", id, "", http.StatusNoContent},
+	} {
+		if rec := do(tc.owner, tc.stepUp, tc.method, tc.path, tc.body); rec.Code != tc.want {
+			t.Errorf("owner=%v stepUp=%v %s %s: %d %s, want %d", tc.owner, tc.stepUp, tc.method, tc.path, rec.Code, rec.Body.String(), tc.want)
+		}
+	}
+	rec := do(true, true, "POST", "/v1/api-clients", clientBody)
+	if !strings.Contains(rec.Body.String(), `"audience":"nemura-api"`) || strings.Contains(rec.Body.String(), "public_key") || strings.Contains(rec.Body.String(), `"x"`) {
+		t.Errorf("a registered client shows its audience and no key: %s", rec.Body.String())
 	}
 }

@@ -239,6 +239,7 @@ func Config(version string) huma.Config {
 		{Name: "Equity", Description: "The equity register (§8.23): its holders, contacts marked shareholder or investor, with their records; the share classes with their rights, each recorded on another person's approval (FR-EQ-15, FR-EQ-16); and the equity transactions that move every share, approved by another person and made effective with ACRA's date (FR-EQ-17)."},
 		{Name: "Corporate profile", Description: "The corporate profile (§9.12): the company's name, registered office and SSIC code from a day, and its officers (directors, the secretary, the CEO and auditors) with their days and lodgements, each recorded on another person's approval with its evidence (FR-CS-01, FR-CS-06)."},
 		{Name: "Operations", Description: "Long work that runs in the background, polled until it is done: a request that starts it answers 202 with the operation in Location (FR-INT-11)."},
+		{Name: "Knowledge base", Description: "The organisation's own knowledge base: the notes, policies and decisions its administrators write, from which the pages the assistant explains are compiled and, with a person's approval, published (AI-50, AI-56)."},
 		{Name: "Compliance", Description: "Statutory compliance: the GST registration monitor and its forecasts (FR-TAX-05), and the statutory calendar of filing and payment deadlines as it arrives (FR-TAX-07, CMP-02)."},
 		{Name: "Migration", Description: "The move from the zh-sheet-accounting workbook (FR-MIG-01, §17.1): the organisation's one migration, its steps M1 to M6, the workbook uploaded as M1's evidence and its validation report before anything is committed."},
 		{Name: "Data", Description: "The organisation's data as a whole: the full tenant export (FR-MIG-04), dual controlled, saved only by its requester."},
@@ -426,6 +427,9 @@ func New(mux humago.Mux, d Deps) *API {
 	registerControls(a)
 	registerComplianceReviews(a)
 	registerRisks(a)
+	registerKnowledgeBase(a)
+	registerKnowledgePublishing(a)
+	registerKnowledgeAdmin(a)
 	registerPolicies(a)
 	registerConsent(a)
 	registerDataInventory(a)
@@ -527,6 +531,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerSuperAdmins(a)
 	registerConnectors(a)
 	registerBanking(a)
+	registerPaymentProviders(a)
 	registerBankLines(a)
 	registerBankRuleBook(a)
 	registerBankReconciliation(a)
@@ -546,6 +551,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerIntegrationClients(a)
 	registerPersonalTokens(a)
 	a.registerInternal(mux)
+	approvalEnumsAreExtensible(a.API)
 	return a
 }
 

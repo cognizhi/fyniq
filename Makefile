@@ -52,7 +52,7 @@ GIT_SHA := $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 # RELEASE is the release tag (vX.Y.Z), set only when building a published release's images: `make images RELEASE=v1.2.0`.
 RELEASE ?=
 
-.PHONY: script-tests trace trace-gate release-policy storybook help setup setup-code people-setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys test-visual
+.PHONY: kb-compile script-tests trace trace-gate release-policy storybook help setup setup-code people-setup-code super-admin-recovery audit-recover dev up down seed seed-load perf restore-drill reset test mutation differential scan db-lint sqlc openapi api-check scan-waivers controls infra-check dast image-scan images-repro image-sign oracle-test test-e2e evals images ci check check-tokens check-config kb-index kb-lint kb-stale spec-check spec-map spec-stale design-kit design-check design-status hooks lint-commits deps-up deps-down deps-logs prototype golden-set test-journeys test-visual
 
 help: ## List the available targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z][a-z0-9-]*:.*## / {printf "  \033[1m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -100,6 +100,10 @@ seed: ## Write the sample company (DEV-04) to .data/seed/company.json
 seed-load: ## Load the sample company (DEV-04) into an organisation of the local database: ORG=<organisation id>; checks its trial balance against the seed
 	@test -n "$(ORG)" || { echo 'usage: make seed-load ORG=<organisation id> (organisation_id in GET /api/v1/session)'; exit 2; }
 	@$(MISE) go run -tags local ./cmd/seed --load "$(ORG)"
+
+kb-compile: ## Compile an organisation's knowledge-base notes into page drafts (AI-52, AI-57): ORG=<organisation id>; the compiler job under its own identity, through the API's compiler operations (needs `make dev` or `make up`, an AI connection and the kb_compiler route)
+	@test -n "$(ORG)" || { echo 'usage: make kb-compile ORG=<organisation id> (organisation_id in GET /api/v1/session)'; exit 2; }
+	@$(MISE) go run -tags local ./cmd/jobs kb-compile "$(ORG)"
 
 uat-organisation: ## A UAT script's organisation in the local database (docs/uat/): NAME="<name>" PEOPLE="<name>:<role>,<role>;…", the sample company loaded; AI=routed routes its chat agent to the scripted model (the AI scripts); prints its ID and a one-time invitation code per person
 	@test -n "$(NAME)" -a -n "$(PEOPLE)" || { echo 'usage: make uat-organisation NAME="UAT Sell Pte Ltd" PEOPLE="Bea Bookkeeper:bookkeeper;Ann Owner:owner,controller"'; exit 2; }

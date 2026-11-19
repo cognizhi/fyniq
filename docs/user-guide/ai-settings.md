@@ -11,7 +11,8 @@ requirements: [AI-13, AI-77, AI-86, QA-AI-04]
 ## What it is
 
 **Settings → AI** (Expert mode) holds the AI switch and the monthly budgets, and shows the providers and model routes
-at a glance. **AI usage and budgets** shows what the assistant and the agents used and cost each month. The Owner, the
+at a glance. **Knowledge base** (its own page, see [Manage the knowledge base the assistant reads](knowledge-base.md)) holds the
+pages the assistant reads for know-how. **AI usage and budgets** shows what the assistant and the agents used and cost each month. The Owner, the
 Administrator, the Controller, the Auditor and the Compliance officer can see them.
 
 ## The AI switch

@@ -247,6 +247,11 @@ export function AIActivity() {
                               <li key={i} className="fy-small">
                                 <span className="fy-mono">{c.tool}</span> {c.outcome === "read" ? `read ${count(c.facts)} figure${c.facts === 1 ? "" : "s"}` : `refused ${c.code ?? ""}`}
                                 {c.withheld ? ", text withheld" : ""}
+                                {c.kb_pages.map((k) => (
+                                  <span key={k.key} className="fy-secondary block">
+                                    Know-how page <span className="fy-mono">{k.key}</span>, version <span className="fy-mono">{k.version}</span>
+                                  </span>
+                                ))}
                               </li>
                             ))}
                           </ul>
