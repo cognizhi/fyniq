@@ -12,6 +12,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/app"
+	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/nemura/role"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
@@ -31,6 +32,21 @@ func init() {
 	}
 	after = nemura.EnableLocalLogins
 	taskWiring = localTasks
+	signInWiring = localSignIn
+}
+
+// localSignIn is the local build's sign-in: an OpenID Connect issuer inside the api whose page asks who you are, as a provider would after
+// checking you, and which the flow checks like any provider's (state, PKCE, issuer, audience, expiry, nonce). Whoever runs the local
+// stack can sign in as anyone, so it exists only in the local build (DEV-07).
+func localSignIn(deps app.Deps, getenv func(string) string, s *httpserver.Server) (ports.SignIn, error) {
+	origin := cmp.Or(getenv("NEMURA_PUBLIC_ORIGIN"), "http://localhost:"+cmp.Or(getenv("PORT"), "8080"))
+	base := getenv("NEMURA_API_BASE")
+	d, err := local.NewLocalSignIn(base, origin+base+"/auth/callback", deps.Clock)
+	if err != nil {
+		return nil, err
+	}
+	d.Register(s)
+	return d, nil
 }
 
 // localTasks is the local substitute for Cloud Tasks: HMAC credentials with a key the local services share

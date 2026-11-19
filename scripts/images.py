@@ -182,7 +182,7 @@ def judge(svc: str, flavour: str, image: str, size: int, cfg: dict, names: list[
         problems.append(f"{image} has no /app binary")
     elif flavour == "release" and LOCAL_MARK in app:
         problems.append(f"{image} is a release image with a local adapter compiled in (DEV-07, CTL-CHG-09)")
-    elif flavour == "local" and LOCAL_MARK not in app and svc in ("api", "worker", "jobs", "executor"):
+    elif flavour == "local" and LOCAL_MARK not in app and svc in ("api", "worker", "jobs", "executor", "nemura"):
         problems.append(f"{image}: the local adapters are missing from a local image, so the release check proves nothing")
     return problems
 

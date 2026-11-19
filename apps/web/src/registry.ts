@@ -273,6 +273,8 @@ export const actions = [
   // Home's per-role work and its deadlines (§7.1, FR-UX-40; docs/design/screens Home's upcoming deadlines).
   { kind: "action", id: "home.your-work", mode: "basic", help: "home.your-work", guide: "home.overview#your-work" },
   // The Auditor's engagement on Reports, where they land (§7.1): until when their read-only access lasts.
+  // The Approver's requests waiting for them, with the step each is at (§7.1).
+  { kind: "action", id: "home.approver-work", mode: "basic", help: "home.approver-work", guide: "home.overview#your-work" },
   { kind: "action", id: "home.auditor-access", mode: "basic", help: "home.auditor-access", guide: "home.overview#your-work" },
   { kind: "action", id: "home.deadlines", mode: "basic", help: "home.deadlines", guide: "home.overview#upcoming-deadlines" },
   { kind: "action", id: "home.revenue-vs-budget", mode: "expert", help: "home.revenue-vs-budget", guide: "home.overview#read-the-plans-on-home" },

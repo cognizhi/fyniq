@@ -450,6 +450,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/equity-transactions/{transaction_id}/evidence/{evidence_id}` (removeEquityTransactionEvidence): Remove a file from a drafted equity transaction
 - `GET /v1/evidence` (searchEvidence): Search the evidence
 - `GET /v1/evidence-downloads/{token}` (getEvidenceDownload): Save an evidence file through its link
+- `GET /v1/evidence-rules` (getEvidenceRules): List the evidence rules
 - `POST /v1/evidence/{evidence_id}/download` (createEvidenceDownload): Get a link that saves an evidence file
 - `GET /v1/evidence/{evidence_id}/file` (getEvidenceFile): Open an evidence file
 - `GET /v1/exempt-statuses` (listExemptStatuses): List the exempt-private-company statuses

@@ -101,6 +101,9 @@ var PlatformSchedules = []Schedule{
 	// Daily at 07:40 Singapore time, after the deadlines, each organisation's 60-day cash projection against its buffer
 	// line, once per crossing (FR-PLN-09, FR-NTF-01; p1-planning design D7).
 	{Job: "notify.cash_buffer", Every: 24 * time.Hour, Offset: 23*time.Hour + 40*time.Minute, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
+	// Daily at 16:00 Singapore time, on each organisation's own Friday, the weekdays of the week with no time entered, to each person on an active
+	// project (FR-PRJ-05, FR-NTF-01; p1-projects task 2.6); nothing while Projects and time are switched off.
+	{Job: "notify.timesheets", Every: 24 * time.Hour, Offset: 8 * time.Hour, Lease: 30 * time.Minute, Stale: 26 * time.Hour},
 	// Every hour, notifications' held and digested email (FR-NTF-02, rev 0.108): the daily digest after 08:00 Singapore
 	// time, the weekly on Mondays, and immediate email held in quiet hours once they end.
 	{Job: "notify.digest", Every: time.Hour, Offset: 5 * time.Minute, Lease: 30 * time.Minute, Stale: 3 * time.Hour},
