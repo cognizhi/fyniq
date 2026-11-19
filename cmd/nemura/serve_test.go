@@ -65,6 +65,9 @@ func TestTheMigrateRolePreparesTheDatabaseAndTheAPIServesOverIt(t *testing.T) {
 	if out, err := migrate("status"); err != nil || !strings.Contains(out, "applied") {
 		t.Fatalf("migrate status: %v\n%s", err, out)
 	}
+	if out, err := migrate("setup-code"); err != nil || !strings.Contains(out, "shown once") || len(strings.Fields(out)[len(strings.Fields(out))-1]) < 40 {
+		t.Fatalf("migrate setup-code: %v\n%s", err, out)
+	}
 	if out, err := migrate("sideways"); err == nil || !strings.Contains(out, "usage:") {
 		t.Fatalf("a bad argument: %v\n%s", err, out)
 	}

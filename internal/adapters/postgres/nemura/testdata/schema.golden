@@ -6,12 +6,16 @@ audit_chain | nemura_migrator | true | true
 audit_event | nemura_migrator | true | true
 deletion_proof | nemura_migrator | true | true
 deletion_report | nemura_migrator | true | true
+identity_directory | nemura_migrator | false | false
+installation | nemura_migrator | false | false
+invitation | nemura_migrator | true | true
 legal_hold | nemura_migrator | true | true
 member | nemura_migrator | true | true
 organisation | nemura_migrator | true | true
 outbox | nemura_migrator | true | true
 reporting_line | nemura_migrator | true | true
 role_assignment | nemura_migrator | true | true
+session | nemura_migrator | true | true
 tenant_directory | nemura_migrator | false | false
 tenants | nemura_migrator | false | false
 transfer_assessment | nemura_migrator | true | true
@@ -79,6 +83,24 @@ deletion_report | review_by | date | true |
 deletion_report | state | text | true | 'pending'::text
 deletion_report | reviewed_by | uuid | false | 
 deletion_report | reviewed_on | date | false | 
+identity_directory | issuer | text | true | 
+identity_directory | subject | text | true | 
+identity_directory | tenant | text | true | 
+identity_directory | organisation_id | uuid | true | 
+identity_directory | member_id | uuid | true | 
+identity_directory | linked_at | timestamp with time zone | true | now()
+identity_directory | active | boolean | true | true
+installation | singleton | boolean | true | true
+installation | setup_code_hash | bytea | false | 
+installation | setup_completed_at | timestamp with time zone | false | 
+invitation | organisation_id | uuid | true | nemura.current_org()
+invitation | id | uuid | true | uuidv7()
+invitation | member_id | uuid | true | 
+invitation | code_hash | bytea | true | 
+invitation | created_by | uuid | true | 
+invitation | created_at | timestamp with time zone | true | now()
+invitation | expires_at | timestamp with time zone | true | 
+invitation | accepted_at | timestamp with time zone | false | 
 legal_hold | organisation_id | uuid | true | nemura.current_org()
 legal_hold | id | uuid | true | uuidv7()
 legal_hold | record_type | text | true | 
@@ -128,6 +150,14 @@ role_assignment | effective_to | date | false |
 role_assignment | granted_by | uuid | false | 
 role_assignment | approval_id | uuid | false | 
 role_assignment | created_at | timestamp with time zone | true | now()
+session | organisation_id | uuid | true | nemura.current_org()
+session | id | uuid | true | uuidv7()
+session | member_id | uuid | true | 
+session | token_hash | bytea | true | 
+session | created_at | timestamp with time zone | true | now()
+session | expires_at | timestamp with time zone | true | 
+session | revoked_at | timestamp with time zone | false | 
+session | step_up_at | timestamp with time zone | false | 
 tenant_directory | organisation_id | uuid | true | 
 tenant_directory | created_at | timestamp with time zone | true | now()
 transfer_assessment | organisation_id | uuid | true | nemura.current_org()
@@ -243,6 +273,39 @@ deletion_report | deletion_report_reviewer_fkey | FOREIGN KEY (organisation_id, 
 deletion_report | deletion_report_state_known | CHECK ((state = ANY (ARRAY['pending'::text, 'reviewed'::text, 'deleted'::text])))
 deletion_report | deletion_report_state_not_null | NOT NULL state
 deletion_report | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+identity_directory | identity_directory_active_not_null | NOT NULL active
+identity_directory | identity_directory_issuer_length | CHECK (((length(issuer) >= 1) AND (length(issuer) <= 500)))
+identity_directory | identity_directory_issuer_not_null | NOT NULL issuer
+identity_directory | identity_directory_linked_at_not_null | NOT NULL linked_at
+identity_directory | identity_directory_member_fkey | FOREIGN KEY (organisation_id, member_id) REFERENCES nemura.member(organisation_id, id)
+identity_directory | identity_directory_member_id_not_null | NOT NULL member_id
+identity_directory | identity_directory_member_key | UNIQUE (organisation_id, member_id, issuer, tenant)
+identity_directory | identity_directory_organisation_id_not_null | NOT NULL organisation_id
+identity_directory | identity_directory_pkey | PRIMARY KEY (issuer, subject, tenant, organisation_id)
+identity_directory | identity_directory_subject_length | CHECK (((length(subject) >= 1) AND (length(subject) <= 500)))
+identity_directory | identity_directory_subject_not_null | NOT NULL subject
+identity_directory | identity_directory_tenant_length | CHECK (((length(tenant) >= 1) AND (length(tenant) <= 500)))
+identity_directory | identity_directory_tenant_not_null | NOT NULL tenant
+installation | installation_code_or_done | CHECK (((setup_code_hash IS NULL) <> (setup_completed_at IS NULL)))
+installation | installation_code_sha256 | CHECK ((length(setup_code_hash) = 32))
+installation | installation_one_row | CHECK (singleton)
+installation | installation_pkey | PRIMARY KEY (singleton)
+installation | installation_singleton_not_null | NOT NULL singleton
+invitation | invitation_code_hash_not_null | NOT NULL code_hash
+invitation | invitation_code_key | UNIQUE (organisation_id, code_hash)
+invitation | invitation_code_sha256 | CHECK ((length(code_hash) = 32))
+invitation | invitation_created_at_not_null | NOT NULL created_at
+invitation | invitation_created_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+invitation | invitation_created_by_not_null | NOT NULL created_by
+invitation | invitation_expires_at_not_null | NOT NULL expires_at
+invitation | invitation_expiry | CHECK ((expires_at > created_at))
+invitation | invitation_id_not_null | NOT NULL id
+invitation | invitation_member_fkey | FOREIGN KEY (organisation_id, member_id) REFERENCES nemura.member(organisation_id, id)
+invitation | invitation_member_id_not_null | NOT NULL member_id
+invitation | invitation_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+invitation | invitation_organisation_id_not_null | NOT NULL organisation_id
+invitation | invitation_pkey | PRIMARY KEY (organisation_id, id)
+invitation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 legal_hold | legal_hold_dates | CHECK (((released_on IS NULL) OR (released_on >= placed_on)))
 legal_hold | legal_hold_id_not_null | NOT NULL id
 legal_hold | legal_hold_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
@@ -326,6 +389,19 @@ role_assignment | role_assignment_privileged_approved | CHECK (((role <> ALL (AR
 role_assignment | role_assignment_role_known | CHECK ((role = ANY (ARRAY['employee'::text, 'line_manager'::text, 'hr_officer'::text, 'hr_admin'::text, 'payroll_admin'::text, 'recruiter'::text, 'interviewer'::text, 'administrator'::text, 'owner'::text])))
 role_assignment | role_assignment_role_not_null | NOT NULL role
 role_assignment | role_assignment_setup_is_owner | CHECK (((granted_by IS NOT NULL) OR (role = 'owner'::text)))
+session | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+session | session_created_at_not_null | NOT NULL created_at
+session | session_expires_at_not_null | NOT NULL expires_at
+session | session_expiry | CHECK ((expires_at > created_at))
+session | session_id_not_null | NOT NULL id
+session | session_member_fkey | FOREIGN KEY (organisation_id, member_id) REFERENCES nemura.member(organisation_id, id)
+session | session_member_id_not_null | NOT NULL member_id
+session | session_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+session | session_organisation_id_not_null | NOT NULL organisation_id
+session | session_pkey | PRIMARY KEY (organisation_id, id)
+session | session_token_hash_not_null | NOT NULL token_hash
+session | session_token_key | UNIQUE (organisation_id, token_hash)
+session | session_token_sha256 | CHECK ((length(token_hash) = 32))
 tenant_directory | tenant_directory_created_at_not_null | NOT NULL created_at
 tenant_directory | tenant_directory_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
 tenant_directory | tenant_directory_organisation_id_not_null | NOT NULL organisation_id
@@ -357,6 +433,11 @@ CREATE UNIQUE INDEX audit_event_pkey ON nemura.audit_event USING btree (organisa
 CREATE UNIQUE INDEX audit_event_seq_key ON nemura.audit_event USING btree (organisation_id, seq)
 CREATE UNIQUE INDEX deletion_proof_pkey ON nemura.deletion_proof USING btree (organisation_id, id)
 CREATE UNIQUE INDEX deletion_report_pkey ON nemura.deletion_report USING btree (organisation_id, id)
+CREATE UNIQUE INDEX identity_directory_member_key ON nemura.identity_directory USING btree (organisation_id, member_id, issuer, tenant)
+CREATE UNIQUE INDEX identity_directory_pkey ON nemura.identity_directory USING btree (issuer, subject, tenant, organisation_id)
+CREATE UNIQUE INDEX installation_pkey ON nemura.installation USING btree (singleton)
+CREATE UNIQUE INDEX invitation_code_key ON nemura.invitation USING btree (organisation_id, code_hash)
+CREATE UNIQUE INDEX invitation_pkey ON nemura.invitation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX legal_hold_pkey ON nemura.legal_hold USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_pkey ON nemura.member USING btree (organisation_id, id)
 CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organisation_id)
@@ -369,6 +450,9 @@ CREATE UNIQUE INDEX reporting_line_pkey ON nemura.reporting_line USING btree (or
 CREATE INDEX role_assignment_member_idx ON nemura.role_assignment USING btree (organisation_id, member_id, effective_from)
 CREATE UNIQUE INDEX role_assignment_once ON nemura.role_assignment USING btree (organisation_id, member_id, role, effective_from)
 CREATE UNIQUE INDEX role_assignment_pkey ON nemura.role_assignment USING btree (organisation_id, id)
+CREATE INDEX session_member_idx ON nemura.session USING btree (organisation_id, member_id)
+CREATE UNIQUE INDEX session_pkey ON nemura.session USING btree (organisation_id, id)
+CREATE UNIQUE INDEX session_token_key ON nemura.session USING btree (organisation_id, token_hash)
 CREATE UNIQUE INDEX tenant_directory_pkey ON nemura.tenant_directory USING btree (organisation_id)
 CREATE UNIQUE INDEX transfer_assessment_pkey ON nemura.transfer_assessment USING btree (organisation_id, id)
 
@@ -385,7 +469,9 @@ CREATE TRIGGER audit_event_immutable BEFORE DELETE OR UPDATE ON nemura.audit_eve
 CREATE TRIGGER audit_event_no_truncate BEFORE TRUNCATE ON nemura.audit_event FOR EACH STATEMENT EXECUTE FUNCTION nemura.audit_immutable()
 CREATE TRIGGER deletion_proof_append_only BEFORE DELETE OR UPDATE ON nemura.deletion_proof FOR EACH ROW EXECUTE FUNCTION nemura.append_only()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.deletion_report DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('deletion_report', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('invitation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.legal_hold DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('legal_hold', 'id')
+CREATE TRIGGER member_deactivated AFTER UPDATE OF deactivated_at ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.member_deactivated()
 CREATE TRIGGER member_no_delete BEFORE DELETE ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.members_no_delete()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('member', 'id')
 CREATE TRIGGER organisation_registered AFTER INSERT ON nemura.organisation FOR EACH ROW EXECUTE FUNCTION nemura.organisation_registered()
@@ -398,6 +484,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.reporti
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('role_assignment', 'id')
 CREATE TRIGGER role_assignment_check BEFORE INSERT ON nemura.role_assignment FOR EACH ROW EXECUTE FUNCTION nemura.role_assignment_check()
 CREATE TRIGGER role_assignment_guard BEFORE DELETE OR UPDATE ON nemura.role_assignment FOR EACH ROW EXECUTE FUNCTION nemura.role_assignment_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.session DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('session', 'id')
+CREATE TRIGGER session_guard BEFORE DELETE OR UPDATE ON nemura.session FOR EACH ROW EXECUTE FUNCTION nemura.session_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.transfer_assessment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('transfer_assessment', 'id')
 CREATE TRIGGER transfer_assessment_append_only BEFORE DELETE OR UPDATE ON nemura.transfer_assessment FOR EACH ROW EXECUTE FUNCTION nemura.append_only()
 
@@ -409,12 +497,14 @@ audit_chain | tenant_isolation | (organisation_id = nemura.current_org()) | (org
 audit_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 deletion_proof | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 deletion_report | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+invitation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 legal_hold | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 outbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 reporting_line | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 role_assignment | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+session | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 transfer_assessment | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 
 ## functions (definition)
@@ -520,6 +610,22 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.claim_setup(p_hash bytea)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  n integer;
+BEGIN
+  UPDATE nemura.installation SET setup_code_hash = NULL, setup_completed_at = now()
+   WHERE setup_code_hash = p_hash AND setup_completed_at IS NULL;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n = 1;
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.current_org()
  RETURNS uuid
  LANGUAGE sql
@@ -560,6 +666,42 @@ AS $function$
      WHERE l.organisation_id = nemura.current_org() AND l.report_id = report AND l.manager_id = nemura.current_person()
        AND l.effective_from <= coalesce(nullif(pg_catalog.current_setting('app.on', true), '')::date, current_date)
        AND (l.effective_to IS NULL OR l.effective_to > coalesce(nullif(pg_catalog.current_setting('app.on', true), '')::date, current_date)))
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.link_identity(p_issuer text, p_subject text, p_tenant text, p_member uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  INSERT INTO nemura.identity_directory (issuer, subject, tenant, organisation_id, member_id)
+  VALUES (p_issuer, p_subject, p_tenant, nemura.require_org(), p_member);
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.member_deactivated()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  UPDATE nemura.identity_directory SET active = (NEW.deactivated_at IS NULL) WHERE organisation_id = NEW.organisation_id AND member_id = NEW.id;
+  RETURN NULL;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.members_for_identity(p_issuer text, p_subject text, p_tenant text)
+ RETURNS TABLE(organisation_id uuid, member_id uuid)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT d.organisation_id, d.member_id
+    FROM nemura.identity_directory d
+   WHERE d.issuer = p_issuer AND d.subject = p_subject AND d.tenant = p_tenant AND d.active
+   ORDER BY d.linked_at
 $function$
 
 CREATE OR REPLACE FUNCTION nemura.members_no_delete()
@@ -722,5 +864,41 @@ BEGIN
   RETURN NEW;
 END
 $function$
+
+CREATE OR REPLACE FUNCTION nemura.session_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.member_id IS DISTINCT FROM OLD.member_id OR NEW.token_hash IS DISTINCT FROM OLD.token_hash
+     OR NEW.expires_at IS DISTINCT FROM OLD.expires_at OR (OLD.revoked_at IS NOT NULL AND NEW.revoked_at IS DISTINCT FROM OLD.revoked_at) THEN
+    RAISE EXCEPTION 'A session can only be revoked, once, or confirmed again' USING ERRCODE = 'NM101';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.set_setup_code(p_hash bytea)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF EXISTS (SELECT 1 FROM nemura.installation WHERE setup_completed_at IS NOT NULL) THEN
+    RAISE EXCEPTION 'Setup is already done' USING ERRCODE = 'NM100', HINT = 'The first-run setup code works once.';
+  END IF;
+  INSERT INTO nemura.installation (singleton, setup_code_hash) VALUES (true, p_hash)
+    ON CONFLICT (singleton) DO UPDATE SET setup_code_hash = EXCLUDED.setup_code_hash;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.setup_done()
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$ SELECT coalesce((SELECT setup_completed_at IS NOT NULL FROM nemura.installation), false) $function$
 
 
