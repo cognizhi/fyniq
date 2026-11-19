@@ -56,3 +56,8 @@ opposite time. Enter the right time as a new entry and send the week again; the 
 
 A working day up to today with no time shows as missing, less the public holidays of Singapore's statutory calendar. Enter the time, or
 ignore a day you did not work.
+
+**On Friday afternoon** (4 pm, Singapore time) Fyniq sends each person on an active project a notice naming the weekdays of the week with no time
+entered, public holidays excluded, once for the week. It is yours alone: nobody sees whose time is missing through it. You can turn this type of notice
+off in your notification settings, as any other. Nothing is sent while Projects and time are switched off.
+

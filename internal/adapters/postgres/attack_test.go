@@ -464,6 +464,7 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"holding_movement.shares":      func(t *testing.T, b porttest.Books, v string) error { return rawMovementShares(t, b, v) },
 	"person_cost_rate.hourly_rate": func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "person_cost_rate", v) },
 	"billing_rate.hourly_rate":     func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "billing_rate", v) },
+	"project_milestone.amount":     func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "project_milestone", v) },
 	"project.budget_amount":        func(t *testing.T, b porttest.Books, v string) error { return rawProject(t, b, v) },
 	"claim_category.line_limit":    func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "limit", v) },
 	"claim_category.receipt_above": func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "receipt", v) },
@@ -1449,6 +1450,10 @@ func rawRate(t *testing.T, b porttest.Books, table, value string) error {
 	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
 		if table == "person_cost_rate" {
 			_, err := tx.Exec(ctx, `INSERT INTO fyniq.person_cost_rate (role_name, effective_from, hourly_rate, currency, minor_units, created_by) VALUES ('Standard', '2030-01-01', $1::numeric, 'SGD', 2, 'user:x')`, value)
+			return err
+		}
+		if table == "project_milestone" {
+			_, err := tx.Exec(ctx, `INSERT INTO fyniq.project_milestone (project_id, kind, name, amount) VALUES ($1, 'milestone', 'x', $2::numeric)`, uuid.New(), value)
 			return err
 		}
 		_, err := tx.Exec(ctx, `INSERT INTO fyniq.billing_rate (project_id, effective_from, hourly_rate, currency, minor_units, created_by) VALUES ($1, '2030-01-01', $2::numeric, 'SGD', 2, 'user:x')`, uuid.New(), value)

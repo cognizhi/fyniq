@@ -46,6 +46,16 @@
   tests' books relax the two rules (`relaxEvidence`). Tests `TestEvidenceRulesHoldBillsAndJournals`. **Left:** the
   rules of activities not built yet (filings, CPF, share transfers, instruments, investor records, grants) with their
   modules; the PRD table's second recommended items (a business purpose note, a call-back note, an explanation).)
+  (18 Nov 2026, PRD-001 rev 0.291: the table is data. `evidence.Catalogue` holds every row of §8.16 with its required and
+  recommended items and the kinds of file that meet them; `GET /v1/evidence-rules` (`getEvidenceRules`, any member)
+  answers it with the level in force for bills, manual journals and filings (CPF payments are filings), and the Evidence
+  panel's **Rules for this activity** shows each item as ✖, ⚠ or ✔ against the files attached. The five defaults are
+  tagged on `TestEvidenceRulesAreTheDefaults`, which pins every row of the table per area, built or not; the enforcement
+  of the activities that exist today is `TestEvidenceRulesHoldBillsAndJournals` and the modules' own refusals (payee
+  bank changes, claims, founders' costs, settlements and the equity register ask for their files before approval).
+  **Left:** the rules of activities with no module (payment-batch release's bank confirmation, grant claims,
+  governance changes, control evidence, investor record changes) apply with their modules; the second recommended items
+  do not list on Checks (C.2 #30 lists the three configurable activities), only warn in the panel.)
 - [x] 3.2 Data classes per file, with unmasked NRIC flagged. Test `// req: FR-DOC-09` (P1 part) (20 Oct 2026, part: a data class per file; payroll and identity refused until FR-PAY-13, rev 0.38. **Left:** the NRIC flag)
   (6 Nov 2026, PRD-001 rev 0.183: the NRIC flag. `evidence.UnmaskedNRIC` reads the text of plain text, CSV, email,
   XLSX and DOCX files and a PDF's uncompressed text; an S, T, F or G number counts only with its right check letter,

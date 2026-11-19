@@ -2,7 +2,9 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +13,12 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/nemura/authz"
 )
 
 var update = flag.Bool("update", false, "rewrite contracts/openapi/nemura/nemura.v1.yaml from the code (make openapi)")
@@ -26,10 +34,29 @@ const contractHeader = `# The contract of Nemura's public API (PRD-002 NM-ARC-03
 // versionLine is info.version: the only line at that indentation named version.
 var versionLine = regexp.MustCompile(`(?m)^  version: .*$`)
 
+// fakeSessions knows one session token and the roles of its member.
+type fakeSessions struct {
+	token string
+	roles []authz.Role
+}
+
+func (f fakeSessions) Authenticate(_ context.Context, token string, _ time.Time) (Session, error) {
+	if token != f.token || token == "" {
+		return Session{}, errors.New("no such session")
+	}
+	return Session{Organisation: uuid.MustParse("0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44"), Member: uuid.MustParse("0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45")}, nil
+}
+
+func (f fakeSessions) RolesAt(context.Context, uuid.UUID, uuid.UUID, time.Time) ([]authz.Role, error) {
+	return f.roles, nil
+}
+
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	return New(mux), mux
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: []authz.Role{authz.HRAdmin}}, Clock: clock.NewFrozen(time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)),
+		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
+	return New(mux, d), mux
 }
 
 func document(t *testing.T) []byte {
@@ -184,8 +211,9 @@ func TestEveryWriteAcceptsAnIdempotencyKey(t *testing.T) {
 func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 	_, mux := testAPI(t)
 	triggers := map[string]string{ // code -> a request that returns it
-		CodeNotFound: "/v1/errors/NM_NOPE",
-		CodeInvalid:  "/v1/errors/not-a-code",
+		CodeNotFound:        "/v1/errors/NM_NOPE",
+		CodeInvalid:         "/v1/errors/not-a-code",
+		CodeUnauthenticated: "/v1/session",
 	}
 	for _, c := range Catalogue {
 		path, ok := triggers[c.Code]
@@ -247,6 +275,58 @@ func TestEveryOperationHasARowInTheAuthorisationMatrix(t *testing.T) {
 		method, path, _ := strings.Cut(row, " ")
 		if _, ok := operations(t)[operation{method, path}]; !ok {
 			t.Errorf("the matrix names %s, which is not an operation", row)
+		}
+	}
+}
+
+// The session operation says who is signed in, the roles they hold now and where they land; without a valid session it is
+// NM_UNAUTHENTICATED, whichever of Nemura's cookie names carries it (NM-ROLE-01, NM-ROLE-02).
+// req: NM-ARC-03
+// asvs: V7.2.1, V8.2.1
+func TestTheSessionOperationSaysWhoIsSignedInAndWhereTheyLand(t *testing.T) {
+	get := func(cookie string) *httptest.ResponseRecorder {
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(http.MethodGet, "/v1/session", nil)
+		if cookie != "" {
+			req.Header.Set("Cookie", cookie)
+		}
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec
+	}
+	for _, c := range []string{"nemura_session=good-token", "other=1; __Host-nemura_session=good-token"} {
+		rec := get(c)
+		var body struct {
+			Organisation string   `json:"organisation_id"`
+			Member       string   `json:"member_id"`
+			Roles        []string `json:"roles"`
+			Landing      string   `json:"landing"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || rec.Code != http.StatusOK || len(body.Roles) != 1 || body.Roles[0] != "hr_admin" || body.Landing != "/people" ||
+			body.Member != "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45" {
+			t.Errorf("%q: %d %s", c, rec.Code, rec.Body.String())
+		}
+	}
+	for _, c := range []string{"", "nemura_session=wrong", "fyniq_session=good-token", "nemura_session="} {
+		if rec := get(c); rec.Code != http.StatusUnauthorized || !strings.Contains(rec.Body.String(), CodeUnauthenticated) {
+			t.Errorf("%q: %d %s", c, rec.Code, rec.Body.String())
+		}
+	}
+}
+
+// Landing follows the highest role: the people team on People home, everyone else on My home (PRD-002 §3).
+// req: NM-ROLE-02
+func TestEachRoleLandsWhereThePRDSays(t *testing.T) {
+	for _, tc := range []struct {
+		roles []authz.Role
+		want  string
+	}{
+		{[]authz.Role{authz.Employee}, "/me"}, {[]authz.Role{authz.Employee, authz.LineManager}, "/me"}, {[]authz.Role{authz.HROfficer}, "/people"},
+		{[]authz.Role{authz.HRAdmin}, "/people"}, {[]authz.Role{authz.PayrollAdmin}, "/people"}, {[]authz.Role{authz.Owner}, "/people"},
+		{[]authz.Role{authz.Administrator}, "/people"}, {nil, "/me"}, {[]authz.Role{authz.Recruiter}, "/me"},
+	} {
+		if got := Landing(tc.roles); got != tc.want {
+			t.Errorf("%v lands on %s, want %s", tc.roles, got, tc.want)
 		}
 	}
 }

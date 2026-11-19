@@ -29,7 +29,7 @@ var Exported = []string{
 	"payment_batch_payment", "payment_batch_release", "pd_anonymisation", "pd_breach", "pd_breach_exercise",
 	"pd_breach_step", "pd_request", "pd_request_step", "pd_shredding_run", "pd_transfer", "period", "period_close",
 	"period_close_check", "period_reopen", "period_variance_explanation", "policy_acknowledgement", "policy_draft",
-	"policy_version", "project", "project_member", "project_task", "billing_rate", "person_cost_rate", "quote_outcome", "time_entry", "time_timer", "timesheet_submission", "recurring_bill", "recurring_bill_version", "recurring_invoice",
+	"policy_version", "project", "project_member", "project_task", "billing_rate", "person_cost_rate", "project_billed_item", "project_milestone", "quote_outcome", "time_entry", "time_timer", "timesheet_submission", "recurring_bill", "recurring_bill_version", "recurring_invoice",
 	"recurring_invoice_version", "recurring_journal", "recurring_journal_version", "report_export", "restore_drill",
 	"review_log_entry", "review_log_review", "risk", "risk_review", "risk_version", "role_assignment", "sales_reminder",
 	"security_incident", "security_incident_step", "share_issue", "sod_override", "statement_mapping",

@@ -450,6 +450,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `DELETE /v1/equity-transactions/{transaction_id}/evidence/{evidence_id}` (removeEquityTransactionEvidence): Remove a file from a drafted equity transaction
 - `GET /v1/evidence` (searchEvidence): Search the evidence
 - `GET /v1/evidence-downloads/{token}` (getEvidenceDownload): Save an evidence file through its link
+- `GET /v1/evidence-rules` (getEvidenceRules): List the evidence rules
 - `POST /v1/evidence/{evidence_id}/download` (createEvidenceDownload): Get a link that saves an evidence file
 - `GET /v1/evidence/{evidence_id}/file` (getEvidenceFile): Open an evidence file
 - `GET /v1/exempt-statuses` (listExemptStatuses): List the exempt-private-company statuses
@@ -835,6 +836,9 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/pre-incorporation-costs/{cost_id}/evidence` (addPreIncorporationCostEvidence): Attach a receipt to a cost paid before the books start
 - `GET /v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}` (getPreIncorporationCostEvidence): Get a cost's receipt file
 - `DELETE /v1/pre-incorporation-costs/{cost_id}/evidence/{evidence_id}` (removePreIncorporationCostEvidence): Remove a receipt from a cost that needs a decision
+- `POST /v1/project-invoice-drafts` (draftProjectInvoice): Draft an invoice from a project's unbilled work
+- `POST /v1/project-milestones` (createProjectMilestone): Add a milestone or a retainer period
+- `POST /v1/project-milestones/{milestone_id}/accept` (acceptProjectMilestone): Record the customer's acceptance of a milestone
 - `GET /v1/project-people` (listProjectPeople): List the members a project can name
 - `POST /v1/project-tasks` (createProjectTask): Add a task to a project
 - `PUT /v1/project-tasks/{task_id}` (replaceProjectTask): Rename a task, change whether it is billable, or put it out of use
@@ -843,9 +847,11 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/projects/{project_id}` (getProject): Get a project
 - `PUT /v1/projects/{project_id}` (replaceProject): Change a project, or set up a value of the Project dimension as one
 - `GET /v1/projects/{project_id}/billing-rates` (listBillingRates): List a project's billing rates
+- `GET /v1/projects/{project_id}/milestones` (listProjectMilestones): A project's milestones or retainer periods
 - `GET /v1/projects/{project_id}/tasks` (listProjectTasks): List a project's tasks
 - `GET /v1/projects/{project_id}/time-cost` (getProjectTimeCost): Read a project's approved time and what it costs
 - `GET /v1/projects/{project_id}/time-entries` (listProjectTimeEntries): The approved time entries behind a project's figures
+- `GET /v1/projects/{project_id}/unbilled` (getProjectUnbilled): What a project can bill now
 - `GET /v1/public/document` (getPublicDocument): Open a quote or invoice through its link
 - `POST /v1/public/document/accept` (acceptQuoteByLink): Accept a quote through its link
 - `POST /v1/public/document/decline` (declineQuoteByLink): Decline a quote through its link
