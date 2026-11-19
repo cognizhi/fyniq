@@ -243,6 +243,7 @@ export const actions = [
   // The heartbeat drill register, a tab of Compliance › Controls (NFR-OBS-02, CTL-RES-05): Expert, as Controls is.
   { kind: "action", id: "compliance.heartbeat-drills", mode: "expert", help: "compliance.heartbeat-drills", guide: "compliance.controls#heartbeat-drills" },
   { kind: "action", id: "heartbeat-drills.minutes", mode: "expert", help: "heartbeat-drills.minutes", guide: "compliance.controls#heartbeat-drills" },
+  { kind: "action", id: "shell.saved", mode: "basic", help: "shell.saved", guide: "home.overview#favourites-and-saved-views" },
   { kind: "action", id: "shell.help", mode: "basic", help: "shell.help", guide: "home.overview#see-which-version-you-are-on" },
   // "What happened? Where to record it" on Home (FR-UX-11), from the workbook's Start Here.
   { kind: "action", id: "home.what-happened", mode: "basic", help: "home.what-happened", guide: "home.overview#what-happened-where-to-record-it" },

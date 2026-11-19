@@ -79,6 +79,10 @@
       "label": "Help",
       "tooltip": "About Fyniq, and the version you are on."
     },
+    "shell.saved": {
+      "label": "Favourites and views",
+      "tooltip": "Pin the pages you open most, and save a page with its filters, columns and sort as a view. They are yours, and the same on every device."
+    },
     "assistant.ask-about-this": {
       "label": "Ask about this",
       "tooltip": "Open the assistant with this record, report or figure as what you are asking about."

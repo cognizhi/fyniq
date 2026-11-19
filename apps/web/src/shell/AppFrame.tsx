@@ -1,6 +1,6 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Info, LayoutGrid, LogOut, Search, Sparkles, X } from "lucide-react";
+import { Info, LayoutGrid, LogOut, Search, Sparkles, Star, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Session } from "../api/client";
 import type { TurnContext } from "../components/ai/assistant";
@@ -13,6 +13,7 @@ import { available, enterToNext, keyOf, matcher, onShortcutSheet, useShortcutSet
 import { Icon } from "../ui";
 import { AppearanceChoices, AppearanceMenu } from "./AppearanceMenu";
 import { About, HelpMenu } from "./HelpMenu";
+import { SavedDialog, SavedMenu } from "./SavedMenu";
 import { TourHost, TourOffer } from "../tour/TourHost";
 import { useBadges, type Badge } from "./badges";
 import { bottomBar, navFor } from "./navigation";
@@ -142,6 +143,7 @@ function Frame({ session, title, mode, operations, bell, banners, logo, children
   const [wanted, setWanted] = useState(false); // load the palette's code only once it is asked for
   const [more, setMore] = useState(false);
   const [about, setAbout] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [assistant, setAssistant] = useState(false);
   const [context, setContext] = useState<TurnContext | undefined>(undefined);
   const [sheet, setSheetOpen] = useState(false);
@@ -159,6 +161,7 @@ function Frame({ session, title, mode, operations, bell, banners, logo, children
   const search = helpText("shell.command-palette");
   const signOut = helpText("auth.sign-out");
   const aboutText = helpText("shell.about");
+  const savedText = helpText("shell.saved");
   const openPalette = () => {
     setWanted(true);
     setOpen(true);
@@ -278,6 +281,7 @@ function Frame({ session, title, mode, operations, bell, banners, logo, children
           </Button>
           {operations}
           {bell}
+          <SavedMenu className="fy-from-medium" />
           <AppearanceMenu className="fy-from-medium" />
           <HelpMenu className="fy-from-medium" />
           <form method="post" action="/api/auth/signout" className="fy-from-medium">
@@ -326,6 +330,14 @@ function Frame({ session, title, mode, operations, bell, banners, logo, children
               <AppearanceChoices />
             </section>
             <div className="fy-row fy-row--between fy-row--wrap mt-3">
+              <button type="button" className="fy-btn fy-btn--ghost fy-btn--sm" aria-haspopup="dialog"
+                onClick={() => {
+                  setMore(false);
+                  setSaved(true);
+                }}>
+                <Icon of={Star} />
+                {savedText.label}
+              </button>
               <button type="button" className="fy-btn fy-btn--ghost fy-btn--sm" title={aboutText.tooltip} aria-haspopup="dialog"
                 onClick={() => {
                   setMore(false);
@@ -345,6 +357,7 @@ function Frame({ session, title, mode, operations, bell, banners, logo, children
         </Dialog.Portal>
       </Dialog.Root>
       <About open={about} onOpenChange={setAbout} />
+      {saved && <SavedDialog open={saved} onOpenChange={setSaved} />}
       {sheetWanted && (
         <Suspense fallback={null}>
           <ShortcutSheet open={sheet} onOpenChange={setSheet} session={session} mode={mode} />

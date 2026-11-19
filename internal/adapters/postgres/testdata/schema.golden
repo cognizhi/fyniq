@@ -2656,6 +2656,16 @@ user_recovery_code | user_id | uuid | not null |
 user_recovery_code | code_hash | bytea | not null | 
 user_recovery_code | created_at | timestamp with time zone | not null | 
 user_recovery_code | used_at | timestamp with time zone | null | 
+user_saved_item | organisation_id | uuid | not null | current_org()
+user_saved_item | id | uuid | not null | uuidv7()
+user_saved_item | user_id | uuid | not null | 
+user_saved_item | kind | text | not null | 
+user_saved_item | item_key | text | not null | 
+user_saved_item | state | text | not null | 
+user_saved_item | title | text | not null | 
+user_saved_item | path | text | not null | 
+user_saved_item | query | text | not null | ''::text
+user_saved_item | set_at | timestamp with time zone | not null | 
 user_session | token_hash | bytea | not null | 
 user_session | issuer | text | not null | 
 user_session | subject | text | not null | 
@@ -6931,6 +6941,25 @@ user_recovery_code | user_recovery_code_pkey | PRIMARY KEY (id)
 user_recovery_code | user_recovery_code_used_after | CHECK (((used_at IS NULL) OR (used_at >= created_at)))
 user_recovery_code | user_recovery_code_user_fkey | FOREIGN KEY (user_id) REFERENCES app_user(user_id)
 user_recovery_code | user_recovery_code_user_id_not_null | NOT NULL user_id
+user_saved_item | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+user_saved_item | user_saved_item_id_not_null | NOT NULL id
+user_saved_item | user_saved_item_item_key_not_null | NOT NULL item_key
+user_saved_item | user_saved_item_key_length | CHECK (((char_length(item_key) >= 1) AND (char_length(item_key) <= 200)))
+user_saved_item | user_saved_item_kind_known | CHECK ((kind = ANY (ARRAY['favourite'::text, 'view'::text])))
+user_saved_item | user_saved_item_kind_not_null | NOT NULL kind
+user_saved_item | user_saved_item_member_fkey | FOREIGN KEY (organisation_id, user_id) REFERENCES user_membership(organisation_id, user_id)
+user_saved_item | user_saved_item_organisation_id_not_null | NOT NULL organisation_id
+user_saved_item | user_saved_item_path_not_null | NOT NULL path
+user_saved_item | user_saved_item_path_shape | CHECK (((path ~ '^/[A-Za-z0-9/_.$-]{0,199}$'::text) AND (path !~ '//'::text)))
+user_saved_item | user_saved_item_pkey | PRIMARY KEY (organisation_id, id)
+user_saved_item | user_saved_item_query_not_null | NOT NULL query
+user_saved_item | user_saved_item_query_shape | CHECK ((query ~ '^(\?[A-Za-z0-9_.%=&:,+~-]{0,254})?$'::text))
+user_saved_item | user_saved_item_set_at_not_null | NOT NULL set_at
+user_saved_item | user_saved_item_state_known | CHECK ((state = ANY (ARRAY['on'::text, 'off'::text])))
+user_saved_item | user_saved_item_state_not_null | NOT NULL state
+user_saved_item | user_saved_item_title_length | CHECK (((char_length(title) >= 1) AND (char_length(title) <= 80)))
+user_saved_item | user_saved_item_title_not_null | NOT NULL title
+user_saved_item | user_saved_item_user_id_not_null | NOT NULL user_id
 user_session | user_session_created_at_not_null | NOT NULL created_at
 user_session | user_session_email_length | CHECK (((email IS NULL) OR ((length(email) >= 3) AND (length(email) <= 320))))
 user_session | user_session_ended_after_start | CHECK ((ended_at >= created_at))
@@ -7181,6 +7210,7 @@ CREATE INDEX user_help_state_latest ON fyniq.user_help_state USING btree (organi
 CREATE INDEX user_identity_user_idx ON fyniq.user_identity USING btree (user_id)
 CREATE INDEX user_preference_latest ON fyniq.user_preference USING btree (organisation_id, user_id, set_at)
 CREATE INDEX user_recovery_code_user ON fyniq.user_recovery_code USING btree (user_id) WHERE (used_at IS NULL)
+CREATE INDEX user_saved_item_latest ON fyniq.user_saved_item USING btree (organisation_id, user_id, kind, item_key, set_at)
 CREATE INDEX user_session_user_idx ON fyniq.user_session USING btree (user_id) WHERE (ended_at IS NULL)
 CREATE INDEX webauthn_challenge_session_idx ON fyniq.webauthn_challenge USING btree (session_hash)
 CREATE INDEX webauthn_credential_user_idx ON fyniq.webauthn_credential USING btree (user_id) WHERE (revoked_at IS NULL)
@@ -7592,6 +7622,7 @@ CREATE UNIQUE INDEX user_membership_user_key ON fyniq.user_membership USING btre
 CREATE UNIQUE INDEX user_preference_pkey ON fyniq.user_preference USING btree (organisation_id, id)
 CREATE UNIQUE INDEX user_recovery_code_hash ON fyniq.user_recovery_code USING btree (code_hash)
 CREATE UNIQUE INDEX user_recovery_code_pkey ON fyniq.user_recovery_code USING btree (id)
+CREATE UNIQUE INDEX user_saved_item_pkey ON fyniq.user_saved_item USING btree (organisation_id, id)
 CREATE UNIQUE INDEX user_session_pkey ON fyniq.user_session USING btree (token_hash)
 CREATE UNIQUE INDEX webauthn_challenge_once ON fyniq.webauthn_challenge USING btree (challenge)
 CREATE UNIQUE INDEX webauthn_challenge_pkey ON fyniq.webauthn_challenge USING btree (id)
@@ -7717,6 +7748,7 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.tick_drill DEFERRA
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.time_timer DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('time_timer', 'user_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.user_help_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_help_state', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.user_preference DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_preference', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.user_saved_item DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('user_saved_item', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.withholding_decision DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('withholding_decision', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF prefix, digits, gap_free, version ON fyniq.document_sequence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('document_sequence', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE OF revoked_at ON fyniq.webauthn_credential DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_passkey_audit()
@@ -8230,6 +8262,8 @@ CREATE TRIGGER user_help_state_guard BEFORE DELETE OR UPDATE ON fyniq.user_help_
 CREATE TRIGGER user_help_state_no_truncate BEFORE TRUNCATE ON fyniq.user_help_state FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER user_preference_guard BEFORE DELETE OR UPDATE ON fyniq.user_preference FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER user_preference_no_truncate BEFORE TRUNCATE ON fyniq.user_preference FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER user_saved_item_guard BEFORE DELETE OR UPDATE ON fyniq.user_saved_item FOR EACH ROW EXECUTE FUNCTION notification_append_only()
+CREATE TRIGGER user_saved_item_no_truncate BEFORE TRUNCATE ON fyniq.user_saved_item FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER webauthn_challenge_guard BEFORE DELETE OR UPDATE ON fyniq.webauthn_challenge FOR EACH ROW EXECUTE FUNCTION webauthn_challenge_guard()
 CREATE TRIGGER webauthn_credential_guard BEFORE DELETE OR UPDATE ON fyniq.webauthn_credential FOR EACH ROW EXECUTE FUNCTION webauthn_credential_guard()
 CREATE TRIGGER withholding_decision_immutable BEFORE DELETE OR UPDATE ON fyniq.withholding_decision FOR EACH ROW EXECUTE FUNCTION withholding_decision_immutable()
@@ -8440,6 +8474,7 @@ timesheet_submission | tenant_isolation | * | (organisation_id = current_org()) 
 user_help_state | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 user_membership | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 user_preference | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+user_saved_item | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 withholding_decision | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 
 ## row-level security
@@ -8682,6 +8717,7 @@ user_identity | disabled | not forced
 user_membership | enabled | forced
 user_preference | enabled | forced
 user_recovery_code | disabled | not forced
+user_saved_item | enabled | forced
 user_session | disabled | not forced
 webauthn_challenge | disabled | not forced
 webauthn_credential | disabled | not forced

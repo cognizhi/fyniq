@@ -704,3 +704,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | home.md -> home.overview (the Auditor's engagement opens the trial balance, general ledger and access list)
 
 ## [2026-11-20] compile | appearance.md -> preferences.appearance (Expert starts Compact)
+
+## [2026-11-20] compile | home.md -> home.overview (favourites and saved views)

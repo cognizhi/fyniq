@@ -149,6 +149,15 @@
   withdraws or marks (removed evidence is kept, a deleted conversation is marked until the purge). The screen half:
   a void is asked in a confirmation that needs its reason (`bills.test.tsx`). Bulk voids, with their typed
   confirmation, come with a bulk void. **Left:** favourites, recents, saved views and comments.)
+  (20 Nov 2026, PRD-001 rev 0.325, FR-UX-12: favourites and saved views. `user_saved_item` (migration 000701; append-only, audited, per member,
+  under row-level security), `GET`/`POST /v1/saved-items`, `DELETE /v1/saved-items/{kind}`; the header's star and the More sheet's
+  Favourites and views dialog pin a page, save it with the filters its address carries, open and take away. A view is an
+  address, so its link shares no data; the server derives the page's Appendix D area from its path and lists an item only while
+  the roles hold a right there (SEC-34). Recent items stay in the browser (audit rule), owner to confirm. Guide `home.md`,
+  compiled into `home.overview`. Tests `TestFavouritesAndViewsAreTheirOwnersOnly`, `TestAttackSavedItemsKeepTheirHistoryAndTheirTenant`,
+  `saveditem_test.go`, `SavedMenu.test.tsx`. **Left:** FR-UX-13's comments and @mentions (a comment on any record needs each
+  mentioned person's right to see it, the record kinds' visibility map, notifications and a panel on each record page) and
+  moving the lists' filters into their addresses so a view keeps them.)
 - [ ] 3.4 The live-update feed with `If-Match` conflicts, clipboard fidelity, the polite status region, no optimistic money (lint rule) and no re-rounding. Tests `// req: FR-UX-19`, `// req: FR-UX-20`, `// req: FR-UX-21`, `// req: FR-UX-22` and `// req: RND-DISPLAY`, plus the in-app notification entry `// req: FR-UX-15` (P1 part)
   (6 Nov 2026, PRD-001 rev 0.193, clipboard fidelity: `installClipboard` (started with the app) rewrites a copy of text on
   screen so each displayed amount is a plain decimal with an ASCII minus (`clipboardText`), and reads a paste into any

@@ -591,6 +591,15 @@ var matrixCalls = map[string]matrixCall{
 	"setTourState": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPut, "/v1/help-state/tour", asMatrixMember(e, tok), map[string]any{"tour": "started", "step": 0}, "If-Match", "*"), nil
 	},
+	"listSavedItems": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/saved-items", asMatrixMember(e, tok), nil), nil
+	},
+	"saveSavedItem": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPost, "/v1/saved-items", asMatrixMember(e, tok), map[string]any{"kind": "favourite", "title": "Home", "path": "/"}), nil
+	},
+	"takeAwaySavedItem": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodDelete, "/v1/saved-items/favourite?id=%2F", asMatrixMember(e, tok), nil), nil
+	},
 	"getMyPreferences": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/preferences", asMatrixMember(e, tok), nil), nil
 	},
