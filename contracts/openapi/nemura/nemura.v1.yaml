@@ -444,6 +444,31 @@ components:
         - content_type
         - content_base64
       type: object
+    ChangeEvidence:
+      additionalProperties: false
+      properties:
+        content_base64:
+          description: The file, base64-encoded; up to 5 MB.
+          examples:
+            - JVBERi0x
+          type: string
+        content_type:
+          description: The file's type.
+          examples:
+            - application/pdf
+          type: string
+        title:
+          description: What the file is.
+          examples:
+            - Deed poll
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - title
+        - content_type
+        - content_base64
+      type: object
     ChangeJobInputBody:
       additionalProperties: false
       properties:
@@ -928,6 +953,99 @@ components:
       required:
         - dependants
       type: object
+    DetailsChange:
+      additionalProperties: false
+      properties:
+        evidence:
+          $ref: "#/components/schemas/ChangeEvidence"
+          description: The evidence the people team checks.
+        kind:
+          description: What changes.
+          enum:
+            - legal_name
+            - residency
+            - nric_fin
+          examples:
+            - legal_name
+          type: string
+        legal_name:
+          description: The new legal name, for a legal-name change.
+          examples:
+            - Ben Lim Wei
+          maxLength: 200
+          type: string
+        note:
+          description: What changed and why. Never an NRIC or FIN number.
+          examples:
+            - My FIN became an NRIC when I became a citizen.
+          maxLength: 500
+          minLength: 1
+          type: string
+        pr_start:
+          description: The day permanent residence began, for a permanent resident.
+          examples:
+            - "2024-03-01"
+          format: date
+          type: string
+        residency:
+          description: The new residency, for a residency change.
+          enum:
+            - citizen
+            - permanent_resident
+            - foreigner
+          examples:
+            - permanent_resident
+          type: string
+      required:
+        - kind
+        - note
+        - evidence
+      type: object
+    DetailsDecisionInputBody:
+      additionalProperties: false
+      properties:
+        approve:
+          description: Approve or refuse.
+          examples:
+            - true
+          type: boolean
+        reason:
+          description: Why it is refused; required to refuse.
+          examples:
+            - "The deed poll is not legible: attach a clearer copy."
+          maxLength: 500
+          type: string
+      required:
+        - approve
+      type: object
+    DetailsSetInputBody:
+      additionalProperties: false
+      properties:
+        address:
+          description: Your home address; empty clears it.
+          examples:
+            - "1 Raffles Place #20-01"
+          maxLength: 300
+          type: string
+        personal_email:
+          description: Your personal email; empty clears it.
+          examples:
+            - ben@example.com
+          maxLength: 200
+          type: string
+        phone:
+          description: Your phone number; empty clears it.
+          examples:
+            - +65 9123 4567
+          maxLength: 30
+          type: string
+        postal_code:
+          description: Its postal code; empty clears it.
+          examples:
+            - "048616"
+          maxLength: 12
+          type: string
+      type: object
     DirectoryEntry:
       additionalProperties: false
       properties:
@@ -1084,6 +1202,49 @@ components:
             - "null"
       required:
         - documents
+      type: object
+    EmergencyContact:
+      additionalProperties: false
+      properties:
+        name:
+          description: Their name.
+          examples:
+            - Mei Lim
+          maxLength: 120
+          minLength: 1
+          type: string
+        phone:
+          description: Their phone number.
+          examples:
+            - +65 9123 4567
+          maxLength: 30
+          minLength: 3
+          type: string
+        relationship:
+          description: How they are related.
+          examples:
+            - spouse
+          maxLength: 60
+          minLength: 1
+          type: string
+      required:
+        - name
+        - relationship
+        - phone
+      type: object
+    EmergencySetInputBody:
+      additionalProperties: false
+      properties:
+        contacts:
+          description: The whole list, in order; it replaces the one before.
+          items:
+            $ref: "#/components/schemas/EmergencyContact"
+          maxItems: 3
+          type:
+            - array
+            - "null"
+      required:
+        - contacts
       type: object
     EncashInputBody:
       additionalProperties: false
@@ -2621,6 +2782,44 @@ components:
         - types
         - fields
       type: object
+    MyDetails:
+      additionalProperties: false
+      properties:
+        address:
+          description: Your home address.
+          examples:
+            - "1 Raffles Place #20-01"
+          maxLength: 300
+          type: string
+        emergency_contacts:
+          description: Up to three people to call, in order.
+          items:
+            $ref: "#/components/schemas/EmergencyContact"
+          maxItems: 3
+          type:
+            - array
+            - "null"
+        personal_email:
+          description: Your personal email.
+          examples:
+            - ben@example.com
+          maxLength: 200
+          type: string
+        phone:
+          description: Your phone number.
+          examples:
+            - +65 9123 4567
+          maxLength: 30
+          type: string
+        postal_code:
+          description: Its postal code.
+          examples:
+            - "048616"
+          maxLength: 12
+          type: string
+      required:
+        - emergency_contacts
+      type: object
     NricInputBody:
       additionalProperties: false
       properties:
@@ -3323,6 +3522,126 @@ components:
         - id
         - name
       type: object
+    QuestionInputBody:
+      additionalProperties: false
+      properties:
+        question:
+          description: What you want to ask the people team.
+          examples:
+            - How many days of annual leave do I get next year?
+          maxLength: 1000
+          minLength: 1
+          type: string
+      required:
+        - question
+      type: object
+    QueueOutputBody:
+      additionalProperties: false
+      properties:
+        queue:
+          description: What waits for the people team, soonest due first.
+          items:
+            $ref: "#/components/schemas/QueueRow"
+          type:
+            - array
+            - "null"
+      required:
+        - queue
+      type: object
+    QueueRow:
+      additionalProperties: false
+      properties:
+        asked_at:
+          description: When it was made.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        change_kind:
+          description: For a change of details, what changes.
+          examples:
+            - legal_name
+          type: string
+        detail:
+          description: What the person wrote.
+          examples:
+            - A bank loan.
+          type: string
+        due_on:
+          description: The day it is due.
+          examples:
+            - "2026-11-25"
+          format: date
+          type: string
+        evidence_id:
+          description: For a change of details, the evidence document on the person's file.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9
+          format: uuid
+          type: string
+        id:
+          description: The request.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+          format: uuid
+          type: string
+        kind:
+          description: What kind of request it is.
+          enum:
+            - letter
+            - flexible_work
+            - details_change
+            - question
+          examples:
+            - letter
+          type: string
+        person:
+          description: Their legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The person who asked.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        reply:
+          description: The reply, or the reason it was refused.
+          examples:
+            - "Thank you: the new address is on your record."
+          type: string
+        state:
+          description: Where it is in its own states.
+          examples:
+            - requested
+          type: string
+        step:
+          description: "Where it is for the person: received, with HR, ready, or closed."
+          enum:
+            - received
+            - with_hr
+            - ready
+            - closed
+          examples:
+            - received
+          type: string
+        title:
+          description: "What it is about: the letter type, the arrangement, the kind of change, or question."
+          examples:
+            - employment_confirmation
+          type: string
+      required:
+        - person_id
+        - person
+        - id
+        - kind
+        - title
+        - state
+        - step
+        - asked_at
+        - due_on
+      type: object
     Record:
       additionalProperties: false
       properties:
@@ -3427,6 +3746,19 @@ components:
       required:
         - id
       type: object
+    ReplyInputBody:
+      additionalProperties: false
+      properties:
+        reply:
+          description: The answer.
+          examples:
+            - You get 8 days from your second year.
+          maxLength: 2000
+          minLength: 1
+          type: string
+      required:
+        - reply
+      type: object
     RequestListOutputBody:
       additionalProperties: false
       properties:
@@ -3487,6 +3819,89 @@ components:
         - counting
         - days_counted
         - away
+      type: object
+    RequestRow:
+      additionalProperties: false
+      properties:
+        asked_at:
+          description: When it was made.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        detail:
+          description: What the person wrote.
+          examples:
+            - A bank loan.
+          type: string
+        due_on:
+          description: The day it is due.
+          examples:
+            - "2026-11-25"
+          format: date
+          type: string
+        id:
+          description: The request.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+          format: uuid
+          type: string
+        kind:
+          description: What kind of request it is.
+          enum:
+            - letter
+            - flexible_work
+            - details_change
+            - question
+          examples:
+            - letter
+          type: string
+        reply:
+          description: The reply, or the reason it was refused.
+          examples:
+            - "Thank you: the new address is on your record."
+          type: string
+        state:
+          description: Where it is in its own states.
+          examples:
+            - requested
+          type: string
+        step:
+          description: "Where it is for the person: received, with HR, ready, or closed."
+          enum:
+            - received
+            - with_hr
+            - ready
+            - closed
+          examples:
+            - received
+          type: string
+        title:
+          description: "What it is about: the letter type, the arrangement, the kind of change, or question."
+          examples:
+            - employment_confirmation
+          type: string
+      required:
+        - id
+        - kind
+        - title
+        - state
+        - step
+        - asked_at
+        - due_on
+      type: object
+    RequestsOutputBody:
+      additionalProperties: false
+      properties:
+        requests:
+          description: The person's requests, newest first.
+          items:
+            $ref: "#/components/schemas/RequestRow"
+          type:
+            - array
+            - "null"
+      required:
+        - requests
       type: object
     SecretOutputBody:
       additionalProperties: false
@@ -4467,6 +4882,77 @@ paths:
       summary: The people checks
       tags:
         - Packs
+  /v1/details-changes/{id}/decision:
+    post:
+      description: Approves or refuses a change of details after reading its evidence. Nobody decides a change to their own details. Approving a legal name or a residency applies it to the person's record from the day of the decision; approving a change of NRIC or FIN records that the evidence was checked, and the new number is then recorded through the restricted fields. Refusing needs a reason. The HR officer, the HR administrator and the Owner. It is audited.
+      operationId: decideDetailsChange
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DetailsDecisionInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Approve or refuse a change of details
+      tags:
+        - Self-service
   /v1/errors:
     get:
       description: Lists every stable error code the API returns, with its HTTP status, its title and the usual fix. It needs no sign-in and changes nothing; a code never changes meaning inside /v1.
@@ -6616,6 +7102,215 @@ paths:
       summary: Withdraw one's own letter request
       tags:
         - Letters
+  /v1/me/details:
+    get:
+      description: The signed-in person's phone, personal email, address and up to three emergency contacts. It changes nothing.
+      operationId: getMyDetails
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyDetails"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: My contact details and emergency contacts
+      tags:
+        - Self-service
+    put:
+      description: "Saves the signed-in person's phone, personal email, address and postal code at once. It is audited: the event names the fields that changed, never their values."
+      operationId: setMyDetails
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DetailsSetInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Change my contact details
+      tags:
+        - Self-service
+  /v1/me/details-changes:
+    post:
+      description: "Asks the people team to change what needs evidence and approval: a legal name, a residency (with the day residence began for a permanent resident) or an NRIC or FIN. The request carries the evidence, up to 5 MB, and the note says what changed; it never carries an NRIC or FIN number. Another member of the people team approves or refuses it within five working days. It is audited."
+      operationId: requestDetailsChange
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DetailsChange"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterAskOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Request Entity Too Large
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Ask to change my legal name, residency or NRIC or FIN
+      tags:
+        - Self-service
+  /v1/me/emergency-contacts:
+    put:
+      description: "Replaces the signed-in person's emergency contacts with the list given, up to three, in order. It is audited: the event says how many there were and are, never who."
+      operationId: setMyEmergencyContacts
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmergencySetInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Change my emergency contacts
+      tags:
+        - Self-service
   /v1/me/flexible-work-requests:
     post:
       description: Records the signed-in person's formal request (type, start, end and reason). Its receipt date is today and never restarts; the employer's written reply is due the country pack's months after (two). The people team is told. It is audited.
@@ -6976,6 +7671,159 @@ paths:
       summary: Record a day's overtime or special-day work
       tags:
         - Leave
+  /v1/me/questions:
+    post:
+      description: Asks the people team a question in writing. Another member of the people team answers it within three working days, and the answer shows on the person's requests. It is audited.
+      operationId: askHRQuestion
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LetterAskOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Ask the people team a question
+      tags:
+        - Self-service
+  /v1/me/requests:
+    get:
+      description: The signed-in person's letters, flexible work requests, changes of details and questions, newest first, each with its step (received, with HR, ready, or closed), its due day and the reply. It changes nothing.
+      operationId: listMyRequests
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: All my requests and where each is
+      tags:
+        - Self-service
+  /v1/me/requests/{id}/withdrawal:
+    post:
+      description: Withdraws a change of details or a question of the signed-in person that nobody has decided or answered. A letter is withdrawn on its own operation. It is audited.
+      operationId: withdrawMyRequest
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Withdraw a request of mine
+      tags:
+        - Self-service
   /v1/me/sick-leave:
     post:
       description: "Records the signed-in person's sick leave: no approval. Each working day is taken against the paid ceiling in force on that day, outpatient and hospitalisation sharing one; days beyond it are recorded as unpaid for the people team to decide on. A notice later than 48 hours after the first day is flagged and accepted. It is audited and the people team is told."
@@ -9462,6 +10310,124 @@ paths:
       summary: Set the company's leave policy
       tags:
         - Packs
+  /v1/questions/{id}/reply:
+    post:
+      description: Answers a person's question in writing, once. Nobody answers their own question. The HR officer, the HR administrator and the Owner. It is audited.
+      operationId: replyToQuestion
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The question.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The question.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplyInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Answer a question
+      tags:
+        - Self-service
+  /v1/requests/queue:
+    get:
+      description: Changes of details and questions that nobody has decided or answered, soonest due first, with the person's name and, for a change, the evidence document on their file. The HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: listRequestQueue
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: What waits for the people team
+      tags:
+        - Self-service
   /v1/session:
     get:
       description: Returns the person the session cookie names, the organisation they are in, the roles they hold today and the page they land on. Roles are read again on each request, so a change is seen at once. It changes nothing; without a valid session it is NM_UNAUTHENTICATED.
@@ -9919,6 +10885,8 @@ tags:
     name: Packs
   - description: Working patterns, leave balances and the ledger behind them (NM-LV-01, NM-LV-02, NM-LV-13, NM-TIM-01).
     name: Leave
+  - description: A person's own details and requests, and what waits for the people team (NM-ESS-03, NM-ESS-04).
+    name: Self-service
   - description: Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07).
     name: Letters
   - description: Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02).

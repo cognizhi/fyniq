@@ -26,6 +26,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
 	"github.com/cognizhi/fyniq/internal/nemura/policy"
+	"github.com/cognizhi/fyniq/internal/nemura/selfservice"
 )
 
 var update = flag.Bool("update", false, "rewrite contracts/openapi/nemura/nemura.v1.yaml from the code (make openapi)")
@@ -318,6 +319,27 @@ func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.
 }
 
 // fakeLetters answers letters with whatever the test says.
+type fakeSelf struct{ err error }
+
+func (f fakeSelf) Details(context.Context, Session) (MyDetails, error) {
+	return MyDetails{Phone: "+65 9123 4567"}, f.err
+}
+func (f fakeSelf) SetDetails(context.Context, Session, MyDetails) error            { return f.err }
+func (f fakeSelf) SetEmergency(context.Context, Session, []EmergencyContact) error { return f.err }
+func (f fakeSelf) RequestChange(context.Context, Session, DetailsChange, []byte) (string, string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0", "2026-11-27", f.err
+}
+func (f fakeSelf) Ask(context.Context, Session, string) (string, string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0", "2026-11-25", f.err
+}
+func (f fakeSelf) Requests(context.Context, Session) ([]RequestRow, error) { return nil, f.err }
+func (f fakeSelf) Withdraw(context.Context, Session, uuid.UUID) error      { return f.err }
+func (f fakeSelf) Queue(context.Context, Session) ([]QueueRow, error)      { return nil, f.err }
+func (f fakeSelf) Decide(context.Context, Session, uuid.UUID, bool, string) error {
+	return f.err
+}
+func (f fakeSelf) Reply(context.Context, Session, uuid.UUID, string) error { return f.err }
+
 type fakeLetters struct{ err error }
 
 func (f fakeLetters) RequestFor(context.Context, Session, uuid.UUID, string, string) (string, string, error) {
@@ -394,7 +416,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -590,6 +612,8 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodeLeaveBalance:       {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026/carry-forward", signedIn: true, err: &leave.Refusal{Code: leave.CodeBalance, Message: "That is more than the balance."}},
 		CodeLeaveConflict:      {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/working-pattern", body: patternBody, signedIn: true, err: &leave.Refusal{Code: leave.CodeConflict, Message: "Overlaps."}},
 		CodeFeatureOff:         {method: "GET", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026", signedIn: true, featuresOff: true},
+		CodeRequestInvalid:     {method: "POST", path: "/v1/me/questions", body: `{"question":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeInvalid, Message: "Write your question."}},
+		CodeRequestConflict:    {method: "POST", path: "/v1/questions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/reply", body: `{"reply":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeConflict, Message: "That question is closed."}},
 		CodeLetterInvalid:      {method: "POST", path: "/v1/me/letters", body: `{"type":"employment_confirmation","purpose":"x"}`, signedIn: true, err: &letters.Refusal{Code: letters.CodeInvalid, Message: "Say what the letter is for."}},
 		CodeLetterConflict:     {method: "POST", path: "/v1/letters/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/check", signedIn: true, err: &letters.Refusal{Code: letters.CodeConflict, Message: "That request is checked."}},
 		CodeClientExists:       {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},

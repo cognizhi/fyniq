@@ -90,6 +90,12 @@ Source: PRD-002 §4 · Priority M · Phase P1
 - **WHEN** the Owner starts to unlink
 - **THEN** work in flight is settled before the link's credentials are revoked (NM-INT-11)
 
+#### Scenario: The second approver on Nemura's API clients
+- **GIVEN** an organisation linked to Fyniq
+- **WHEN** an Owner registers or revokes one of Nemura's own API clients
+- **THEN** another Owner or Admin with a passkey confirmed in the last five minutes approves it
+- **AND** an organisation that has never linked keeps the single Owner's registration
+
 ### Requirement: NM-ARC-05 Shared rules
 Nemura SHALL follow Fyniq's rules for exact-decimal money, auditing in the same transaction, correcting a run by posting the difference of a new version and reversing a posting that should not exist, and payroll checked against an independent oracle.
 

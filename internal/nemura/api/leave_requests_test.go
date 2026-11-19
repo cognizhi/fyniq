@@ -341,6 +341,55 @@ func TestKeyEmploymentTermsAreWrittenInPartsByTheirOwnRoles(t *testing.T) {
 	}
 }
 
+// Anyone signed in changes their own details and asks the people team; only the people team reads the queue, decides a change of details and answers a question; the evidence
+// must be a file of a size the API accepts (NM-ESS-03, NM-ESS-04).
+// req: NM-ESS-03, NM-ESS-04
+func TestOwnDetailsAreEveryonesAndTheQueueIsThePeopleTeams(t *testing.T) {
+	do := func(roles []authz.Role, method, path, body string) int {
+		testRoles = roles
+		defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0"
+	change := `{"kind":"legal_name","legal_name":"Ben Lim Wei","note":"Deed poll.","evidence":{"title":"Deed poll","content_type":"application/pdf","content_base64":"JVBERi0x"}}`
+	for _, tc := range []struct {
+		roles                []authz.Role
+		queue, decide, reply int
+	}{
+		{[]authz.Role{authz.Employee}, 403, 403, 403}, {[]authz.Role{authz.LineManager}, 403, 403, 403}, {[]authz.Role{authz.PayrollAdmin}, 403, 403, 403},
+		{[]authz.Role{authz.HROfficer}, 200, 204, 204}, {[]authz.Role{authz.HRAdmin}, 200, 204, 204}, {[]authz.Role{authz.Owner}, 200, 204, 204},
+	} {
+		for _, call := range []struct{ method, path, body string }{{"GET", "/v1/me/details", ""}, {"PUT", "/v1/me/details", `{"phone":"+65 9123 4567"}`},
+			{"PUT", "/v1/me/emergency-contacts", `{"contacts":[{"name":"Mei","relationship":"spouse","phone":"9123 4567"}]}`}, {"POST", "/v1/me/details-changes", change},
+			{"POST", "/v1/me/questions", `{"question":"When?"}`}, {"GET", "/v1/me/requests", ""}, {"POST", "/v1/me/requests/" + id + "/withdrawal", ""}} {
+			if got := do(tc.roles, call.method, call.path, call.body); got >= 300 {
+				t.Errorf("%v could not %s %s: %d", tc.roles, call.method, call.path, got)
+			}
+		}
+		if got := do(tc.roles, "GET", "/v1/requests/queue", ""); got != tc.queue {
+			t.Errorf("%v reading the queue: %d, want %d", tc.roles, got, tc.queue)
+		}
+		if got := do(tc.roles, "POST", "/v1/details-changes/"+id+"/decision", `{"approve":false,"reason":"Not legible."}`); got != tc.decide {
+			t.Errorf("%v deciding: %d, want %d", tc.roles, got, tc.decide)
+		}
+		if got := do(tc.roles, "POST", "/v1/questions/"+id+"/reply", `{"reply":"Soon."}`); got != tc.reply {
+			t.Errorf("%v replying: %d, want %d", tc.roles, got, tc.reply)
+		}
+	}
+	if got := do([]authz.Role{authz.Employee}, "POST", "/v1/me/details-changes", strings.Replace(change, "JVBERi0x", "not base64!", 1)); got != 422 {
+		t.Errorf("evidence that is not base64: %d", got)
+	}
+	if got := do([]authz.Role{authz.Employee}, "POST", "/v1/me/details-changes", strings.Replace(change, `"kind":"legal_name"`, `"kind":"bank"`, 1)); got != 422 {
+		t.Errorf("a kind that needs no approval path: %d", got)
+	}
+}
+
 // Letters are asked for by the person, checked by the people team (never their own), signed only by the signatory after a fresh passkey confirmation, and read by the person
 // and the people team; the people team writes templates, the HR administrator and the Owner approve them and set the letterhead and the types; a delivery link needs no
 // sign-in (NM-LTR-01, NM-LTR-02, NM-LTR-03).

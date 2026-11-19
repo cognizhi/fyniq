@@ -87,6 +87,14 @@ var Categories = []Category{
 		Columns:    []string{"flex_request.reason", "flex_request.outcome", "flex_request.written_reply"},
 	},
 	{
+		Key: "own-details", What: "A person's own contact details (personal email, home address, postal code), up to three emergency contacts (name, relationship, phone), their requests to change a legal name, residency or NRIC or FIN with the note and the evidence, and their questions to the people team with the answers",
+		Purpose:    "To reach a person and their family in an emergency, to keep the record true on the person's own word and evidence, and to answer what they ask",
+		Capability: "Own profile, balances, payslips, letters, requests",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"},
+		Columns: []string{"person_contact.personal_email", "person_contact.address", "person_contact.postal_code", "emergency_contact.contact_name", "emergency_contact.relationship", "emergency_contact.contact_phone",
+			"details_change.new_legal_name", "details_change.note", "details_change.decision_reason", "hr_question.question", "hr_question.reply"},
+	},
+	{
 		Key: "key-employment-terms", What: "A person's key employment terms: main duties, notice period, medical benefits and a fixed-term contract's end, and the pay terms (salary period, basic salary, fixed allowances and deductions, overtime period, other pay)",
 		Purpose:    "To give the person the key employment terms in writing (Employment Act) and to fill the letter from the record, not from memory",
 		Capability: "Pay, pay history, pay runs",
