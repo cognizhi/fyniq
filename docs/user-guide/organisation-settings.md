@@ -3,7 +3,7 @@ key: settings.organisation
 title: Organisation settings
 mode: basic
 roles: [owner, admin, controller]
-requirements: [CMP-PD-01, FM-8, FR-INT-02, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32]
+requirements: [FR-UX-27, CMP-PD-01, FM-8, FR-INT-02, FR-ORG-03, FR-ORG-04, FR-TAX-05, FR-TAX-07, FR-ORG-06, FR-ORG-07, FR-ORG-08, FR-GL-14, FR-AP-13, FR-AP-15, FR-AP-16, FR-AP-17, FR-AR-05, FR-BNK-16, FR-FA-03, AUD-06, AUD-10, AI-32]
 status: draft
 ---
 
@@ -168,6 +168,21 @@ the setting's history.
 
 Each person can still choose **Reduce motion** in the Appearance menu, and a device set to reduce motion
 always wins.
+
+## Default mode by role
+
+Each person works in **Basic** or **Expert** mode (see Basic and Expert mode), and their own choice, kept on the
+server, is the same on every device. Until someone chooses, their roles decide. An Administrator can change the
+starting mode of each role under **Starting mode for the** … settings: Basic or Expert.
+
+The shipped starting modes are Basic for the Owner, Administrator, Bookkeeper, AR and AP specialists, Approver,
+Employee, Payment releaser, Company secretary, Compliance officer and Board viewer, and Expert for the Accountant,
+Finance controller, Tax agent, Auditor and Payroll administrator. A person with several roles starts in Expert if
+any of their roles starts there, except that **the Owner wins**: a founder who is an Owner starts in the Owner's
+mode, Basic by default.
+
+A change takes effect for people who have not chosen yet; nobody who chose a mode is moved. The mode only changes
+what is shown, never what a person may do.
 
 ## AI routes
 

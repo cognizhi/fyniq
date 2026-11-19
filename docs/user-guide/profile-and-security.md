@@ -3,7 +3,7 @@ key: preferences.security
 title: Your profile and security
 mode: basic
 roles: [all]
-requirements: [CMP-PD-04, FR-UX-23, FR-UX-24, FR-UX-27, FR-ADM-02, FR-ADM-03, FR-ADM-08, SEC-01, SEC-35, FR-AP-22, FM-1, SEC-11]
+requirements: [CMP-PD-04, FR-UX-23, FR-UX-24, FR-UX-27, NFR-L10N-01, FR-ADM-02, FR-ADM-03, FR-ADM-08, SEC-01, SEC-35, FR-AP-22, FM-1, SEC-11]
 status: draft            # written with the app shell's settings pages (P1); reviewed with the shell's screens
 ---
 
@@ -12,7 +12,7 @@ status: draft            # written with the app shell's settings pages (P1); rev
 ## What it is
 
 **Settings › Profile and security** holds what is yours alone: whether Fyniq shows you Basic or
-Expert mode, your keyboard shortcuts, the bank account your expense claims are paid into, the passkeys you confirm it's you
+Expert mode, how numbers and dates are written for you, your keyboard shortcuts, the bank account your expense claims are paid into, the passkeys you confirm it's you
 with, the accounts you sign in with, and the devices you are signed in on. Nobody else changes them.
 
 ## Before you start
@@ -29,9 +29,23 @@ organisation's settings and every detail. The mode changes only what you see: ne
 do, what Fyniq checks, or what an action does. Safety information always shows in both: what
 cannot post, what waits for approval, locked periods and deadlines.
 
-Choose the mode here, or with **Basic | Expert** in the header. Until you choose, your roles
-decide: an Accountant, Controller, Tax agent, Auditor or Payroll administrator starts in Expert;
-everyone else, and every Owner, starts in Basic. For now your choice is kept in this browser.
+Choose the mode here, with **Basic | Expert** in the header, from the command palette (**Ctrl+K**, then "Switch to
+Expert mode") or with **Alt+Shift+M** (**Option+Shift+M** on a Mac). The switch is instant and keeps the page you
+are on, its filters and any draft you have not saved.
+
+Fyniq keeps your choice with your profile, so it is the same on every device you sign in on. Until you choose, your
+roles decide: an Accountant, Controller, Tax agent, Auditor or Payroll administrator starts in Expert; everyone
+else, and every Owner, starts in Basic, unless an Administrator changed a role's starting mode (see
+[Organisation settings](organisation-settings.md#default-mode-by-role)). Your own choice always wins.
+
+## Numbers and dates
+
+Under **Numbers and dates**, choose how amounts and dates are written for you: for example 1,234.56 or 1.234,56 or
+1 234,56, and 12 Oct 2026, 12/10/2026, 10/12/2026 or 2026-10-12. Each choice shows an example. Dates and times are
+written in the organisation's time zone, which an Administrator sets on the organisation's profile.
+
+This changes only how figures look. Amounts stay exact: nothing is rounded again, and when you copy an amount from
+the screen it is a plain decimal such as -1234.56, whatever format you chose. A pasted amount is read the same way.
 
 ## Keyboard
 

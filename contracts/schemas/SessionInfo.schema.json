@@ -33,6 +33,10 @@
       "format": "uuid",
       "type": "string"
     },
+    "preferences": {
+      "$ref": "MyPreferences.schema.json",
+      "description": "Your own preferences in that organisation, with the mode you start in (FR-UX-23, FR-UX-27), so the web app draws the first page the way you chose; absent when you are a member of none."
+    },
     "provider": {
       "description": "The sign-in provider of a browser session (FR-ADM-08); absent for a local dev token.",
       "examples": [
@@ -80,6 +84,13 @@
         false
       ],
       "type": "boolean"
+    },
+    "time_zone": {
+      "description": "The IANA time zone the organisation's days are counted in, which the web app writes dates and times in (NFR-L10N-01); absent when you are a member of none.",
+      "examples": [
+        "Asia/Singapore"
+      ],
+      "type": "string"
     },
     "user_id": {
       "description": "Your Fyniq user; absent until you have one (a new installation before setup, or before you accept an invitation).",

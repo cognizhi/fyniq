@@ -669,3 +669,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md → nemura.sign-in (joining with an invitation or the setup code)
 
 ## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md → nemura.sign-in (the Owner recovery code)
+
+## [2026-11-20] compile | organisation-settings.md, profile-and-security.md, keyboard-shortcuts.md, appearance.md -> settings.organisation, settings.change, preferences.security, shell.shortcuts, preferences.appearance (preferences kept on the server, the starting mode per role, number and date formats, Alt+Shift+M)

@@ -591,6 +591,12 @@ var matrixCalls = map[string]matrixCall{
 	"setTourState": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPut, "/v1/help-state/tour", asMatrixMember(e, tok), map[string]any{"tour": "started", "step": 0}, "If-Match", "*"), nil
 	},
+	"getMyPreferences": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/preferences", asMatrixMember(e, tok), nil), nil
+	},
+	"setMyPreferences": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodPatch, "/v1/preferences", asMatrixMember(e, tok), map[string]any{"mode": "expert"}, "If-Match", "*"), nil
+	},
 	"sendTestNotification": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/notifications/test-messages", asMatrixMember(e, tok), nil), nil
 	},

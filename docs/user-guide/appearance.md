@@ -16,7 +16,7 @@ things move on screen. The choices change only how Fyniq looks for you, never yo
 
 ## Before you start
 
-- For now your choices are kept in this browser. On another computer or browser, choose them again.
+- Fyniq keeps your choices with your profile, so they are the same on every device you sign in on.
 
 ## Steps
 

@@ -5,6 +5,9 @@ import { noViolations } from "../../test/axe";
 import { renderPage } from "../../test/render";
 import { authenticator, credentialJSON } from "../../test/webauthn";
 import { visit } from "../../route";
+import { setLocale } from "../../format/locale";
+import { adopt } from "../../preferences";
+import { setPreferenceSender } from "../../preferenceSink";
 import { Profile } from "./Profile";
 
 vi.mock("../../route", async (original) => {
@@ -35,7 +38,28 @@ function page(extra = {}) {
 // req: FR-ADM-08
 // req: SEC-01
 describe("Profile and security", () => {
-  afterEach(() => window.history.replaceState(null, "", "/"));
+  afterEach(() => {
+    window.history.replaceState(null, "", "/");
+    setLocale({});
+  });
+
+  // req: NFR-L10N-01
+  // req: FR-UX-23
+  it("chooses the number and date formats, shows each as an example and keeps the choice on the server", async () => {
+    const seen = page({ "PATCH /v1/preferences": { status: 200, body: { default_mode: "basic", number_format: "dot_comma", etag: '"v2"' }, headers: { ETag: '"v2"' } } });
+    adopt({ user_id: "u-1", preferences: { default_mode: "basic", etag: '"v1"' }, time_zone: "Asia/Singapore" });
+    renderPage(Profile, { path: "/settings/profile" });
+    const numbers = await screen.findByLabelText("Numbers");
+    expect(within(numbers).getAllByRole("option").map((o) => o.textContent?.split(" (")[0])).toEqual(["1,234.56", "1.234,56", "1\u00a0234,56", "1\u00a0234.56"]);
+    expect(screen.getByText(/Now: 1,234.56 and 12 Oct 2026/)).toBeTruthy();
+    fireEvent.change(numbers, { target: { value: "dot_comma" } });
+    fireEvent.change(screen.getByLabelText("Dates"), { target: { value: "iso" } });
+    await waitFor(() => expect(seen.filter((x) => x.method === "PATCH")).toHaveLength(2));
+    expect(seen.filter((x) => x.method === "PATCH").map((x) => x.body)).toEqual([{ number_format: "dot_comma" }, { date_format: "iso" }]);
+    expect(screen.getByText(/Now: 1\.234,56 and 2026-10-12/)).toBeTruthy();
+    await noViolations(document.body);
+    setPreferenceSender(null);
+  });
 
   it("lists your live passkeys and your devices, and axe finds nothing", async () => {
     page();

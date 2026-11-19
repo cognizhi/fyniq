@@ -3,9 +3,12 @@
 // functions only move characters: they never parse the amount into a JavaScript number, so nothing
 // is re-rounded and no figure loses digits beyond 15 significant ones.
 
+import { chosenNumberFormat, separators, separatorsOf, type NumberFormat } from "./locale";
+
 export type Negatives = "minus" | "parentheses";
 
 const decimal = /^([+-])?(\d+)(?:\.(\d+))?$/;
+const NBSP = "\u00a0";
 const minus = "−"; // "−", the typographic minus sign
 
 interface Parts {
@@ -23,13 +26,14 @@ function parts(value: string): Parts {
   return { negative: m[1] === "-" && !zero, whole, fraction };
 }
 
-// formatAmount shows a decimal string with thousands separators and the person's choice for
-// negatives: "−1,234.56" or "(1,234.56)". The sign or the brackets always show, so colour is never
-// the only cue.
-export function formatAmount(value: string, negatives: Negatives = "minus"): string {
+// formatAmount shows a decimal string with thousands separators, in the person's number format ("1,234.56" by default;
+// NFR-L10N-01), and their choice for negatives: "−1,234.56" or "(1,234.56)". The sign or the brackets always show, so
+// colour is never the only cue.
+export function formatAmount(value: string, negatives: Negatives = "minus", as?: NumberFormat): string {
   const p = parts(value);
-  const grouped = p.whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  const shown = p.fraction === undefined ? grouped : `${grouped}.${p.fraction}`;
+  const { group, decimal } = as ? separatorsOf[as] : separators();
+  const grouped = p.whole.replace(/\B(?=(\d{3})+(?!\d))/g, group);
+  const shown = p.fraction === undefined ? grouped : `${grouped}${decimal}${p.fraction}`;
   if (!p.negative) return shown;
   return negatives === "parentheses" ? `(${shown})` : `${minus}${shown}`;
 }
@@ -42,15 +46,33 @@ export function clipboardAmount(value: string): string {
 }
 
 // clipboardText is what a copy of text on screen carries (FR-UX-20, rev 0.193): each amount as shown, "−1,234.56",
-// "(1,234.56)" or "1,234.56", becomes a plain decimal with an ASCII minus; everything else, such as a table's tabs and
-// lines or a currency code beside an amount, stays as it is. Brackets count as a negative only around a decimal amount,
-// so "(2026)" is left alone.
+// "(1,234.56)" or "1,234.56" (or the person's own format's, such as "1.234,56"), becomes a plain decimal with an ASCII
+// minus; everything else, such as a table's tabs and lines or a currency code beside an amount, stays as it is.
+// Brackets count as a negative only around a decimal amount, so "(2026)" is left alone.
 export function clipboardText(text: string): string {
-  const plain = (whole: string, fraction = "") => `${whole.replaceAll(",", "")}${fraction}`;
+  const { group, decimal } = separators();
+  const spaced = group === NBSP;
+  const g = spaced ? `[${NBSP} ]` : escape(group); // a copy may turn a no-break space into a plain one
+  const d = escape(decimal);
+  const grouped = `\\d{1,3}(?:${g}\\d{3})+|\\d+`;
+  const plain = (whole: string, fraction = "") => `${whole.replace(new RegExp(g, "g"), "")}${fraction.replace(decimal, ".")}`;
+  // What, next to a digit, means the amount is part of a longer number: its own separators and more digits.
+  const before = `[\\d${d}${spaced ? "" : g}]`;
+  const after = `[\\d${spaced ? "" : g}]`;
   return text
-    .replace(/\((\d{1,3}(?:,\d{3})+|\d+)(\.\d+)\)/g, (_, w: string, f: string) => `-${plain(w, f)}`)
-    .replace(new RegExp(`${minus}(\\d{1,3}(?:,\\d{3})+|\\d+)(\\.\\d+)?`, "g"), (_, w: string, f?: string) => `-${plain(w, f)}`)
-    .replace(/(?<![\d,.])(\d{1,3}(?:,\d{3})+)(\.\d+)?(?![\d,])/g, (_, w: string, f?: string) => plain(w, f));
+    .replace(new RegExp(`\\((${grouped})(${d}\\d+)\\)`, "g"), (_, w: string, f: string) => `-${plain(w, f)}`)
+    .replace(new RegExp(`${minus}(${grouped})(${d}\\d+)?`, "g"), (_, w: string, f?: string) => `-${plain(w, f)}`)
+    .replace(new RegExp(`(?<!${before})(\\d{1,3}(?:${g}\\d{3})+)(${d}\\d+)?(?!${after})`, "g"), (_, w: string, f?: string) => plain(w, f));
+}
+
+function escape(c: string): string {
+  return c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// formatCount shows a whole number of things (rows, records, questions) with the person's thousands separator.
+export function formatCount(n: number): string {
+  const { group } = separators();
+  return String(Math.trunc(n)).replace(/\B(?=(\d{3})+(?!\d))/g, group);
 }
 
 // decimalMark is the locale's decimal separator, read from how it writes a sample; the sample is the only number made.
@@ -61,7 +83,7 @@ function decimalMark(locale: string): string {
 // pastedAmount reads an amount pasted into an amount field (FR-UX-20, rev 0.193): "(1,234.56)", "S$1,234.56",
 // "−1,234.56", "-1234.56", "SGD 1,234.56" or the locale's own form, such as "1.234,56" where a comma marks the decimals;
 // the plain decimal with an ASCII minus, or null when it is not an amount. It moves characters only: no number is made.
-export function pastedAmount(text: string, locale: string = typeof navigator === "undefined" ? "en-SG" : navigator.language): string | null {
+export function pastedAmount(text: string, locale?: string): string | null {
   let s = text.trim().replace(/[\s\u00a0\u202f]/g, "");
   let negative = false;
   const currency = /^[A-Za-z]{0,3}[$€£¥]|^[A-Za-z]{3}(?=[\d(−-])|[A-Za-z]{3}$/g; // S$, US$, €, SGD before or after
@@ -79,7 +101,10 @@ export function pastedAmount(text: string, locale: string = typeof navigator ===
   sign();
   s = s.replace(currency, "");
   sign();
-  s = decimalMark(locale) === "," ? s.replaceAll(".", "").replace(",", ".") : s.replaceAll(",", "");
+  // The mark is the person's own number format when they chose one, or the browser's language's.
+  const chosen = chosenNumberFormat();
+  const mark = locale ? decimalMark(locale) : chosen ? separatorsOf[chosen].decimal : decimalMark(typeof navigator === "undefined" ? "en-SG" : navigator.language);
+  s = mark === "," ? s.replaceAll(".", "").replace(",", ".") : s.replaceAll(",", "");
   if (!/^\d+(\.\d+)?$/.test(s)) return null;
   const digits = s.replace(/^0+(?=\d)/, "");
   return `${negative && !/^[0.]*$/.test(digits) ? "-" : ""}${digits}`;

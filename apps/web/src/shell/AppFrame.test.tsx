@@ -7,6 +7,7 @@ import { startAppearance } from "../appearance";
 import { noViolations } from "../test/axe";
 import type { Mode } from "../registry";
 import { AskAboutThis } from "../components/ai/AskAboutThis";
+import { forgetMode } from "../mode";
 import { AppFrame } from "./AppFrame";
 
 const owner: Pick<Session, "roles" | "features"> = {
@@ -160,5 +161,33 @@ describe("the app frame", () => {
     fireEvent.keyDown(basic, { key: "ArrowRight" });
     expect(window.localStorage.getItem("fyniq.mode")).toBe("expert");
     await noViolations(document.body);
+  });
+
+  // req: FR-UX-23
+  it("switches the mode from the command palette and with Alt+Shift+M, offering the other mode each time", async () => {
+    forgetMode();
+    const first = renderFrame(owner, "basic");
+    await screen.findByRole("banner");
+    act(() => {
+      fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    });
+    const input = await screen.findByRole("combobox");
+    fireEvent.change(input, { target: { value: "Switch to" } });
+    expect(await screen.findByRole("option", { name: /Switch to Expert mode/ })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: /Switch to Basic mode/ })).toBeNull();
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(window.localStorage.getItem("fyniq.mode")).toBe("expert"));
+    // The chord works in either mode, and not as a single character: the frame now shows Expert.
+    first.unmount();
+    renderFrame(owner, "expert");
+    await screen.findByRole("banner");
+    act(() => {
+      fireEvent.keyDown(window, { key: "Ä", code: "KeyM", altKey: true, shiftKey: true });
+    });
+    await waitFor(() => expect(window.localStorage.getItem("fyniq.mode")).toBe("basic"));
+    act(() => {
+      fireEvent.keyDown(window, { key: "m", code: "KeyM" });
+    });
+    expect(window.localStorage.getItem("fyniq.mode")).toBe("basic");
   });
 });

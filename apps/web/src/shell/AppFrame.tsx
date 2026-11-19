@@ -173,6 +173,19 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // The mode switches from the keyboard too (FR-UX-23): a chord with modifiers, so it is no single-character shortcut and
+  // works in both modes. It keeps the page, its filters and any unsaved draft, as the header's switch does.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey && e.code === "KeyM") {
+        e.preventDefault();
+        setMode(mode === "basic" ? "expert" : "basic");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode]);
+
   // Keyboard-first entry (FR-UX-06): the single-character shortcuts the person may use in their mode, never while
   // they type in a field or a dialog is open; and Enter to the next field in an entry form.
   useEffect(() => {
@@ -322,7 +335,7 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
       )}
       {wanted && (
         <Suspense fallback={null}>
-          <CommandPalette open={open} onOpenChange={setOpen} />
+          <CommandPalette open={open} onOpenChange={setOpen} mode={mode} />
         </Suspense>
       )}
     </div>

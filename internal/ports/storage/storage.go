@@ -103,6 +103,8 @@ type UnitOfWork interface {
 	Notifications() Notifications
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates
+	// Preferences are each person's own preferences: the mode, the view, the look, the shortcuts and the formats (FR-UX-23).
+	Preferences() Preferences
 	// Announcements are the banners and their dismissals (FR-NTF-03).
 	Announcements() Announcements
 	Outbox() Outbox

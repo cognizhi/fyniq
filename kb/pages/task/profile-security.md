@@ -4,14 +4,14 @@ type: task
 title: Your profile and security: Basic or Expert mode, your bank account, passkeys, sign-ins and devices
 summary: Basic or Expert mode, your bank account for reimbursements, confirming it's you, passkeys, linking or removing a sign-in, and signing out devices
 sources:
-  - docs/user-guide/profile-and-security.md sha256:e8f8e54b018a8965727f750c61079cc6faee1a33153517de6e9a4e9adf9f67ec
+  - docs/user-guide/profile-and-security.md sha256:071a05b50a2a5b4670d1f19def4bf81265568a0571599fc606ebd2106faa4889
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-07
+compiled_at: 2026-11-20
 aliases:
   - profile
   - security settings
@@ -41,7 +41,7 @@ aliases:
 
 ## What the page holds
 
-- **Settings › Profile and security** holds what is the person's own: Basic or Expert mode, their keyboard shortcuts, the bank account their expense claims are paid into, their passkeys, the accounts they sign in with and the devices they are signed in on; nobody else changes them.
+- **Settings › Profile and security** holds what is the person's own: Basic or Expert mode, how numbers and dates are written for them, their keyboard shortcuts, the bank account their expense claims are paid into, their passkeys, the accounts they sign in with and the devices they are signed in on; nobody else changes them.
 - **Settings** is at the foot of the sidebar, under **More** on a phone ([[home.overview]]).
 - Adding or revoking a passkey, and linking or removing a sign-in, needs a confirmation that it's you in the last 5 minutes; Fyniq asks first if there was none.
 
@@ -52,10 +52,19 @@ aliases:
 - **Basic** shows the essentials in plain words; **Expert** adds accounts, rule IDs, the organisation's settings and every detail.
 - The mode changes only what is shown, never what the person may do, what Fyniq checks or what an action does.
 - Safety information shows in both: what cannot post, what waits for approval, locked periods and deadlines.
-- Choose it on this page or with **Basic | Expert** in the header. Until chosen, roles decide: an Accountant, Controller, Tax agent, Auditor or Payroll administrator starts in Expert; everyone else, and every Owner, in Basic.
-- For now the choice is kept in the browser.
+- Choose it on this page, with **Basic | Expert** in the header, from the command palette (**Ctrl+K**, then "Switch to Expert mode") or with **Alt+Shift+M** (**Option+Shift+M** on a Mac); the switch is instant and keeps the page, its filters and any draft not yet saved.
+- Fyniq keeps the choice with the person's profile, so it is the same on every device they sign in on.
+- Until chosen, roles decide: an Accountant, Controller, Tax agent, Auditor or Payroll administrator starts in Expert; everyone else, and every Owner, in Basic, unless an Administrator changed a role's starting mode ([[settings.organisation]]); the person's own choice always wins.
 
 (src: docs/user-guide/profile-and-security.md#basic-and-expert-mode)
+
+## Numbers and dates
+
+- Under **Numbers and dates**, choose how amounts and dates are written: for example 1,234.56 or 1.234,56 or 1 234,56, and 12 Oct 2026, 12/10/2026, 10/12/2026 or 2026-10-12; each choice shows an example.
+- Dates and times are written in the organisation's time zone, which an Administrator sets on the organisation's profile.
+- It changes only how figures look: amounts stay exact, nothing is rounded again, and a copied amount is a plain decimal such as -1234.56 whatever the format; a pasted amount is read the same way.
+
+(src: docs/user-guide/profile-and-security.md#numbers-and-dates)
 
 ## Keyboard
 

@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "contrast": {
+      "description": "Set the contrast.",
+      "enum": [
+        "standard",
+        "more",
+        "system"
+      ],
+      "examples": [
+        "more"
+      ],
+      "type": "string"
+    },
+    "date_format": {
+      "description": "Set the date format.",
+      "enum": [
+        "d_mmm_yyyy",
+        "dd_mm_yyyy",
+        "mm_dd_yyyy",
+        "iso"
+      ],
+      "examples": [
+        "iso"
+      ],
+      "type": "string"
+    },
+    "density": {
+      "description": "Set the density.",
+      "enum": [
+        "comfortable",
+        "compact"
+      ],
+      "examples": [
+        "compact"
+      ],
+      "type": "string"
+    },
+    "ledger_view": {
+      "description": "Set the Plain or Accountant view.",
+      "enum": [
+        "plain",
+        "accountant"
+      ],
+      "examples": [
+        "accountant"
+      ],
+      "type": "string"
+    },
+    "mode": {
+      "description": "Set the experience mode.",
+      "enum": [
+        "basic",
+        "expert"
+      ],
+      "examples": [
+        "expert"
+      ],
+      "type": "string"
+    },
+    "motion": {
+      "description": "Set the motion.",
+      "enum": [
+        "on",
+        "reduce"
+      ],
+      "examples": [
+        "reduce"
+      ],
+      "type": "string"
+    },
+    "number_format": {
+      "description": "Set the number format.",
+      "enum": [
+        "comma_dot",
+        "dot_comma",
+        "space_comma",
+        "space_dot"
+      ],
+      "examples": [
+        "dot_comma"
+      ],
+      "type": "string"
+    },
+    "reset": {
+      "description": "The choices to take back to their defaults: mode, ledger_view, theme, contrast, density, motion, shortcuts_on, shortcut_keys, number_format or date_format.",
+      "examples": [
+        [
+          "theme"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "shortcut_keys": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Replace the keys the caller chose, as a whole: 1 to 12 printable characters each, at most 64 shortcuts. Send an empty object to clear them.",
+      "type": "object"
+    },
+    "shortcuts_on": {
+      "description": "Turn the single-key shortcuts on or off.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "theme": {
+      "description": "Set the theme.",
+      "enum": [
+        "light",
+        "dark",
+        "system"
+      ],
+      "examples": [
+        "dark"
+      ],
+      "type": "string"
+    }
+  },
+  "title": "PreferenceChange",
+  "type": "object"
+}

@@ -3388,6 +3388,23 @@ type FyniqUserMembership struct {
 	Version        int32
 }
 
+type FyniqUserPreference struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Mode           *string
+	LedgerView     *string
+	Theme          *string
+	Contrast       *string
+	Density        *string
+	Motion         *string
+	ShortcutsOn    *bool
+	ShortcutKeys   []byte
+	NumberFormat   *string
+	DateFormat     *string
+	SetAt          time.Time
+}
+
 type FyniqUserRecoveryCode struct {
 	ID        uuid.UUID
 	UserID    uuid.UUID
