@@ -54,12 +54,19 @@ export function BillableFields(props: {
               value={props.markup ?? ""}
               disabled={props.disabled}
               aria-invalid={Boolean(props.error) || undefined}
+              aria-describedby={props.error ? `${id}-err` : undefined}
               onChange={(e) => props.onChange({ billable, markup_percent: e.target.value })}
             />
           </label>
         )}
       </div>
-      {props.error ? <span className="fy-error">{props.error}</span> : <span className="fy-help">{h.tooltip}</span>}
+      {props.error ? (
+        <span className="fy-error" id={`${id}-err`}>
+          {props.error}
+        </span>
+      ) : (
+        <span className="fy-help">{h.tooltip}</span>
+      )}
     </div>
   );
 }

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "milestones": {
+      "description": "Oldest first.",
+      "items": {
+        "$ref": "ProjectMilestone.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Pass it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjEwMCJ9"
+      ],
+      "type": "string"
+    },
+    "retainer": {
+      "$ref": "RetainerBalance.schema.json",
+      "description": "For a retainer project: what it has billed, drawn and has left."
+    }
+  },
+  "required": [
+    "milestones"
+  ],
+  "title": "ProjectMilestones",
+  "type": "object"
+}

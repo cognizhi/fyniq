@@ -98,6 +98,34 @@ type Draft struct {
 	// OpeningItem marks an invoice issued before the books start and still unpaid then (FR-GL-06; rev 0.257): it posts at
 	// the books start under opening_invoice@1, with no revenue or GST, against the opening balance clearing account.
 	OpeningItem bool
+	// ProjectBilling is the work of a project the invoice bills (FR-PRJ-10; rev 0.298): the database marks it billed when the invoice is
+	// posted and releases it when the invoice is voided. Nil for an invoice that bills no project's work.
+	ProjectBilling *ProjectBilling
+}
+
+// ProjectBilling names the approved time entries and the posted billable costs an invoice bills, and the project (FR-PRJ-10).
+type ProjectBilling struct {
+	ProjectID   uuid.UUID       `json:"project_id"`
+	TimeEntries []uuid.UUID     `json:"time_entries,omitempty"`
+	Expenses    []BilledExpense `json:"expenses,omitempty"`
+	MilestoneID *uuid.UUID      `json:"milestone_id,omitempty"` // an accepted milestone, or a retainer period
+}
+
+// BilledExpense is a line of a posted bill or claim an invoice bills on.
+type BilledExpense struct {
+	DocumentID uuid.UUID `json:"document_id"`
+	Line       int       `json:"line"` // from 0, as the line's place in its document
+}
+
+// ProjectBillingOf is the project work a document's version bills, nil when none (or it cannot be read).
+func ProjectBillingOf(doc storage.Document) *ProjectBilling {
+	var p struct {
+		ProjectBilling *ProjectBilling `json:"project_billing"`
+	}
+	if json.Unmarshal(doc.Payload, &p) != nil {
+		return nil
+	}
+	return p.ProjectBilling
 }
 
 // RecurringRef names the recurring invoice, and the version of its content, that an invoice was made from.
@@ -170,19 +198,20 @@ func (l Line) Spread(date time.Time) *ledger.Spread {
 
 // payload is an invoice as a document version stores it: dates as text, quantities and prices as their exact text.
 type payload struct {
-	CustomerID   uuid.UUID     `json:"customer_id"`
-	Reference    string        `json:"reference,omitempty"`
-	Date         string        `json:"date,omitempty"`
-	DueDate      string        `json:"due_date,omitempty"`
-	Currency     string        `json:"currency"`
-	FXRate       string        `json:"fx_rate,omitempty"`
-	FXRateSource string        `json:"fx_rate_source,omitempty"`
-	Lines        []payloadLine `json:"lines"`
-	Notes        string        `json:"notes,omitempty"`
-	Credits      *uuid.UUID    `json:"invoice_id,omitempty"` // a credit note's invoice
-	Deposits     []payloadUse  `json:"deposits,omitempty"`
-	Recurring    *RecurringRef `json:"recurring_invoice,omitempty"`
-	OpeningItem  bool          `json:"opening_item,omitempty"`
+	CustomerID   uuid.UUID       `json:"customer_id"`
+	Reference    string          `json:"reference,omitempty"`
+	Date         string          `json:"date,omitempty"`
+	DueDate      string          `json:"due_date,omitempty"`
+	Currency     string          `json:"currency"`
+	FXRate       string          `json:"fx_rate,omitempty"`
+	FXRateSource string          `json:"fx_rate_source,omitempty"`
+	Lines        []payloadLine   `json:"lines"`
+	Notes        string          `json:"notes,omitempty"`
+	Credits      *uuid.UUID      `json:"invoice_id,omitempty"` // a credit note's invoice
+	Deposits     []payloadUse    `json:"deposits,omitempty"`
+	Recurring    *RecurringRef   `json:"recurring_invoice,omitempty"`
+	OpeningItem  bool            `json:"opening_item,omitempty"`
+	ProjectWork  *ProjectBilling `json:"project_billing,omitempty"`
 }
 
 type payloadUse struct {
@@ -234,7 +263,7 @@ func Encode(d Draft) ([]byte, error) {
 		id := d.Credits
 		p.Credits = &id
 	}
-	p.Recurring, p.OpeningItem = d.RecurringInvoice, d.OpeningItem
+	p.Recurring, p.OpeningItem, p.ProjectWork = d.RecurringInvoice, d.OpeningItem, d.ProjectBilling
 	for _, x := range d.Deposits {
 		p.Deposits = append(p.Deposits, payloadUse{DepositID: x.DepositID, Amount: x.Amount})
 	}
@@ -320,7 +349,7 @@ func ReadContent(payloadJSON []byte, base money.Currency) (Draft, error) {
 	if err != nil {
 		return Draft{}, bad(err.Error())
 	}
-	d := Draft{CustomerID: p.CustomerID, Reference: p.Reference, Currency: cur, Notes: p.Notes, RecurringInvoice: p.Recurring, OpeningItem: p.OpeningItem}
+	d := Draft{CustomerID: p.CustomerID, Reference: p.Reference, Currency: cur, Notes: p.Notes, RecurringInvoice: p.Recurring, OpeningItem: p.OpeningItem, ProjectBilling: p.ProjectWork}
 	if p.Credits != nil {
 		d.Credits = *p.Credits
 	}

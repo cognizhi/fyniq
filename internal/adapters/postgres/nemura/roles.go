@@ -30,10 +30,11 @@ func AddMember(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by a
 		map[string]audit.Change{"display_name": {nil, displayName}}, "")
 }
 
-// ActiveRoles are the roles a member holds on a day: granted from a day on or before it and not yet ended.
+// ActiveRoles are the roles a member holds on a day: granted from a day on or before it and not yet ended, and none for a member
+// who has been deactivated.
 func ActiveRoles(ctx context.Context, tx pgx.Tx, member uuid.UUID, on time.Time) ([]authz.Role, error) {
-	rows, err := tx.Query(ctx, `SELECT DISTINCT role FROM nemura.role_assignment
-WHERE member_id = $1 AND effective_from <= $2 AND (effective_to IS NULL OR effective_to > $2) ORDER BY role`, member, on.Format(time.DateOnly))
+	rows, err := tx.Query(ctx, `SELECT DISTINCT a.role FROM nemura.role_assignment a JOIN nemura.member m ON m.organisation_id = a.organisation_id AND m.id = a.member_id
+WHERE a.member_id = $1 AND m.deactivated_at IS NULL AND a.effective_from <= $2 AND (a.effective_to IS NULL OR a.effective_to > $2) ORDER BY a.role`, member, on.Format(time.DateOnly))
 	if err != nil {
 		return nil, err
 	}

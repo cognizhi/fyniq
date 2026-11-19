@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "description": "The invoice's date. Left out, the organisation's today.",
+      "examples": [
+        "2026-10-31"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "expenses": {
+      "description": "The costs to bill. Left out, all of those in the project's currency.",
+      "items": {
+        "$ref": "DraftProjectExpense.schema.json"
+      },
+      "maxItems": 2000,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "gst_code": {
+      "description": "The GST code of the invoice's lines. Left out, SR, standard-rated; choose OS or ZR where it applies [verify with the tax agent].",
+      "examples": [
+        "SR"
+      ],
+      "pattern": "^[A-Z]{2,4}$",
+      "type": "string"
+    },
+    "milestone_id": {
+      "description": "For a fixed-fee project, an accepted milestone to bill; for a retainer, a period to bill. The invoice then has that one line, at its amount, and bills nothing else.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e91"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "project_id": {
+      "description": "The project to bill.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "revenue_account_id": {
+      "description": "The revenue account the invoice's lines earn.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d62"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "time_entry_ids": {
+      "description": "The priced time entries to bill. Left out, all of them.",
+      "items": {
+        "description": "A time entry's ID (a row of getProjectUnbilled).",
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e71"
+        ],
+        "format": "uuid",
+        "type": "string"
+      },
+      "maxItems": 5000,
+      "type": [
+        "array",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "project_id",
+    "revenue_account_id"
+  ],
+  "title": "DraftProjectInvoiceBody",
+  "type": "object"
+}
