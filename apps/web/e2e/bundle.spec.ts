@@ -2,13 +2,14 @@ import { gzipSync } from "node:zlib";
 import { expect, test } from "@playwright/test";
 
 // NFR-PERF-UI-03: the shell and Home load at most 250 KB of JavaScript, compressed, and heavy parts load on demand.
-// MEASURED 20 Nov 2026: 333 KB (index 96, framework 147, the help catalogue 34, icons 22, registry 17), 83 KB over the
-// PRD's budget, so this test holds a ceiling at what the app weighs now and fails when it grows: lower CEILING as the
-// catalogue, Trace, Recovery and the reports code move out of the initial load, down to BUDGET, and only then tag
-// NFR-PERF-UI-03. The built app is served by `pnpm preview` (the web server of playwright.config.ts); what the page loads before it
+// MEASURED 20 Nov 2026, after Home's dashboard, roles' work, policies and what-happened cards moved behind its first paint:
+// 292 KB (framework 147: react-dom, Base UI and TanStack; the page's own code 113, of which the help catalogue 33 and the
+// registry 25; icons 22; button 10), 42 KB over the PRD's budget, an owner-to-confirm exception (PRD-001 rev 0.332). This test
+// holds a ceiling at what the app weighs now and fails when it grows: lower CEILING as the help catalogue loads per area,
+// down to BUDGET, and only then tag NFR-PERF-UI-03. The built app is served by `pnpm preview` (the web server of playwright.config.ts); what the page loads before it
 // draws is index.html's scripts and the chunks it preloads, each gzipped here as a server would send it.
 const BUDGET = 250 * 1000;
-const CEILING = 340 * 1000;
+const CEILING = 295 * 1000;
 
 // Parts that must never be in the initial load: the command palette's library (loaded when it opens) and the pages
 // nobody sees at first: sign-in and installation (ADR-T1).

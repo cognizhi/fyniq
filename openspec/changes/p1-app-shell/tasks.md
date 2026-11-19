@@ -299,6 +299,12 @@
   strings (`i18n/en-SG.json`). Tests `preferences.test.tsx`, `Profile.test.tsx`, `date.test.ts`. **Left:** the screens
   still writing a date or count with a fixed `en-SG` (the sign-in and install pages, which have no session, and a few
   weekday and month names), and NFR-PERF-UI-03's initial bundle.)
+  (20 Nov 2026, the bundle: Home's dashboard, the roles' work, the policies to acknowledge and what-happened cards load after its first
+  paint (lazy, `screens/Home.tsx`), which took the initial JavaScript from 337 to 292 KB gzip. The rest is the framework
+  (react-dom, Base UI and TanStack, 147 KB), the help catalogue (33) and the registry (25), icons (22) and the shell's own code:
+  250 KB is out of reach without splitting the catalogue per area and the registry per module, which this change does not do. **An
+  exception for the owner to confirm:** the measured gap is 42 KB over the PRD's 250 KB; `e2e/bundle.spec.ts` holds a ceiling
+  of 295 KB. The budget is not raised.)
 ## 6. Screens
 
   (18 Nov 2026, the page-load and interaction budgets, for the launch gate (NFR-PERF-UI-01): `e2e/performance.spec.ts`,
