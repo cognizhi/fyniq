@@ -102,5 +102,13 @@ proposals already made stay as records.
 
 ## Open Questions
 
-- None for the owner beyond those tagged owner-to-confirm in rev 0.370: who signs the monthly review; whether an undo
-  needs its own second approver.
+For the owner, recommended option first (all provisional, PRD-001 rev 0.370):
+- **Who signs an Employee's own proposal?** `exp.draft_claim` is the requester's own and tier 1, so they sign it, but the approvals gate
+  (`(approvals)` A) admits no Employee, so a member who is only an Employee cannot approve their own proposal at all (a member who also
+  holds an approval role can). Options: (a) leave it: Employees ask the assistant for text and make their claim by hand (no change to
+  the gate); (b) admit the requester of a tier-1 proposal of their own claim through the gate, for that proposal alone, with the
+  database's check and an attack test (a security-posture change to the approval gate). Recommendation: (a) until the claim drafts are
+  proved in use.
+- **Does an undo need its own second approver?** As built (D4) an undo is the person's act under the original's own approval policy.
+  Option: a second approval request for every undo. Recommendation: as built.
+- **Who signs the monthly approval-quality review?** As built: the Owner or the DPO. Recommendation: as built.
