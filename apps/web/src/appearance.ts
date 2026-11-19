@@ -11,7 +11,8 @@ import { persist } from "./preferenceSink";
 
 export type Theme = "light" | "dark" | "system";
 export type Contrast = "standard" | "more" | "system";
-export type Density = "comfortable" | "compact";
+// "auto" is no choice made: Basic mode uses Comfortable and Expert mode Compact (experience/modes "Basic and Expert density").
+export type Density = "comfortable" | "compact" | "auto";
 export type MotionChoice = "on" | "reduce";
 
 export interface Appearance {
@@ -28,6 +29,7 @@ export interface Environment {
   prefersMoreContrast: boolean;
   prefersReducedMotion: boolean;
   organisationMotion: "on" | "off";
+  mode?: "basic" | "expert"; // the experience mode, which decides the density
 }
 
 export interface Resolved {
@@ -37,14 +39,22 @@ export interface Resolved {
   motion: "on" | "reduce" | "off";
 }
 
-export const defaults: Appearance = { theme: "system", contrast: "system", density: "comfortable", motion: "on" };
+export const defaults: Appearance = { theme: "system", contrast: "system", density: "auto", motion: "on" };
 
 const choices = {
   theme: ["light", "dark", "system"],
   contrast: ["standard", "more", "system"],
-  density: ["comfortable", "compact"],
+  density: ["comfortable", "compact", "auto"],
   motion: ["on", "reduce"],
 } as const;
+
+// densityOf is the row height in force: Basic mode always Comfortable, Expert mode the person's choice or, when they have
+// made none, Compact. Where the mode is not known (before sign-in) the choice stands, Comfortable when none.
+export function densityOf(choice: Density, mode?: "basic" | "expert"): "comfortable" | "compact" {
+  if (mode === "basic") return "comfortable";
+  if (choice === "auto") return mode === "expert" ? "compact" : "comfortable";
+  return choice;
+}
 
 // resolve turns the person's choices into what the page shows. "System" follows the operating
 // system; the organisation's Off and prefers-reduced-motion always win over the person's choice.
@@ -52,7 +62,7 @@ export function resolve(a: Appearance, env: Environment): Resolved {
   return {
     dark: a.theme === "system" ? env.prefersDark : a.theme === "dark",
     moreContrast: a.contrast === "system" ? env.prefersMoreContrast : a.contrast === "more",
-    density: a.density,
+    density: densityOf(a.density, env.mode),
     motion: env.organisationMotion === "off" ? "off" : env.prefersReducedMotion || a.motion === "reduce" ? "reduce" : "on",
   };
 }
@@ -103,10 +113,19 @@ function environment(): Environment {
     prefersMoreContrast: media("(prefers-contrast: more)").matches,
     prefersReducedMotion: media("(prefers-reduced-motion: reduce)").matches,
     organisationMotion,
+    mode: experienceMode,
   };
 }
 
 let organisationMotion: Environment["organisationMotion"] = "on";
+let experienceMode: "basic" | "expert" | undefined;
+
+// setAppearanceMode tells the look which mode the person is in, which decides the density (experience/modes).
+export function setAppearanceMode(m: "basic" | "expert"): void {
+  if (m === experienceMode) return;
+  experienceMode = m;
+  render();
+}
 
 // setOrganisationMotion applies the organisation's motion from the session (FR-UX-38): its Off wins over each
 // person's choice, as prefers-reduced-motion does.
@@ -135,7 +154,7 @@ export function startAppearance(): void {
 // setAppearance is the person's choice: it applies at once, and is kept on the server.
 export function setAppearance(change: Partial<Appearance>): void {
   applyAppearance(change);
-  persist(change);
+  persist({ ...change, density: change.density === "auto" ? undefined : change.density });
 }
 
 // applyAppearance applies choices without sending them: the person's choices as the server has them.
@@ -147,6 +166,11 @@ export function applyAppearance(change: Partial<Appearance>): void {
     // storage may be off; the choice still applies to this page
   }
   render();
+}
+
+// useDensity is the row height in force now, as the menu shows it selected.
+export function useDensity(): "comfortable" | "compact" {
+  return useSyncExternalStore(subscribe, () => densityOf(current.density, experienceMode));
 }
 
 // theAppearance is the choices in force now.

@@ -4,7 +4,7 @@ type: task
 title: Change how Fyniq looks: theme, high contrast, density and motion
 summary: How a person chooses Light, Dark or System theme, high contrast, Comfortable or Compact density, and reduced motion; choices change the look only
 sources:
-  - docs/user-guide/appearance.md sha256:4dc0bb36ad66fb9373b5ed61f07e3cd1ea0fc823b90dc5d78a6c4d27b46601b3
+  - docs/user-guide/appearance.md sha256:85b1c572d0eb93c42a359e74ff8103d56e6fec24032549492d1280201895cfc3
 data_class: general
 taint: trusted
 status: draft
@@ -45,7 +45,7 @@ aliases:
 ## Density and motion
 
 - **Comfortable** rows are 40 px high; **Compact** rows are 32 px high.
-- Density is an Expert choice: Basic mode always uses Comfortable.
+- Density is an Expert choice: Basic mode always uses Comfortable, and Expert mode starts with Compact until the person chooses.
 - **Reduce motion** shows every change at once; **Motion on** keeps short transitions.
 - A device that asks for reduced motion always wins, and an Administrator can switch motion off for the whole organisation.
 
