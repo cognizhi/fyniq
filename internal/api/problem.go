@@ -811,6 +811,13 @@ var codeFacts = map[string]struct {
 	// A money account's payment file (FR-BNK-12, rev 0.157).
 	paymentfile.CodeProvider: {422, "The payment file is not one the account's bank takes"},
 	paymentfile.CodeNotBuilt: {422, "The payment file is not available yet"},
+	CodePSPNotProvider:       {422, "The money account is not a payment provider's"},
+	CodePSPPayout:            {422, "The account payouts land in cannot take them"},
+	CodePSPFee:               {422, "The account fees post to cannot take them"},
+	CodePSPDisputes:          {422, "The account a dispute waits in cannot hold it"},
+	CodePSPDisputeState:      {409, "The dispute cannot be written off now"},
+	CodePSPDisputeLimit:      {422, "The dispute is above the expense limit"},
+	CodePSPEventState:        {409, "The event is not waiting for a person"},
 
 	// Bank transactions, matches and transfers (FR-BNK-05…09).
 	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},

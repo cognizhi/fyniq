@@ -1,0 +1,96 @@
+openapi: 3.1.0
+info:
+  title: Stripe API (the read operations the stripe connector calls)
+  version: 2025-09-30.clover
+  description: 'The read-only operations the stripe connector calls, written from Stripe''s API reference (docs.stripe.com/api, retrieved 19 Nov 2026) at the API version the adapter pins; Stripe publishes the whole contract as OpenAPI at github.com/stripe/openapi, which is large, so this is a hand-made extract with examples for the mock. [live-verify] each field against Stripe''s own OpenAPI document and a test-mode account before relying on it. Amounts are integer minor units.'
+servers:
+  - url: https://api.stripe.com
+    description: Production and test mode (the key decides)
+paths:
+  /v1/balance:
+    get:
+      operationId: balanceRetrieve
+      summary: Retrieve balance
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: The account's balance, per currency.
+          content:
+            application/json:
+              example:
+                object: balance
+                available: [{ amount: 28830, currency: sgd }]
+                pending: [{ amount: 100, currency: sgd }]
+  /v1/balance_transactions:
+    get:
+      operationId: balanceTransactionList
+      summary: List balance transactions
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: currency, in: query, schema: { type: string } }
+        - { name: payout, in: query, schema: { type: string } }
+        - { name: 'created[gte]', in: query, schema: { type: integer } }
+        - { name: 'created[lt]', in: query, schema: { type: integer } }
+        - { name: limit, in: query, schema: { type: integer, maximum: 100 } }
+        - { name: starting_after, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: A page of balance transactions, newest first.
+          content:
+            application/json:
+              example:
+                object: list
+                has_more: false
+                data:
+                  - { id: txn_1, object: balance_transaction, amount: 10000, fee: 390, net: 9610, currency: sgd, created: 1795800100, available_on: 1795900000, reporting_category: charge, source: ch_1, type: charge, description: Subscription creation }
+  /v1/charges/{id}:
+    get:
+      operationId: chargeRetrieve
+      security: [{ BearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200':
+          description: A charge.
+          content:
+            application/json:
+              example: { id: ch_1, object: charge, amount: 10000, currency: sgd, status: succeeded, created: 1795800100, customer: cus_1, payment_intent: pi_1 }
+  /v1/invoice_payments:
+    get:
+      operationId: invoicePaymentList
+      summary: List invoice payments (which invoice a payment settles)
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: 'payment[type]', in: query, schema: { type: string } }
+        - { name: 'payment[payment_intent]', in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: Invoice payments.
+          content:
+            application/json:
+              example: { object: list, has_more: false, data: [{ id: inpay_1, invoice: in_1 }] }
+  /v1/invoices/{id}:
+    get:
+      operationId: invoiceRetrieve
+      security: [{ BearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200':
+          description: An invoice.
+          content:
+            application/json:
+              example: { id: in_1, object: invoice, total: 4900, currency: sgd, status: paid, created: 1795800000, customer: cus_1, subscription: sub_1 }
+  /v1/payouts/{id}:
+    get:
+      operationId: payoutRetrieve
+      security: [{ BearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200':
+          description: A payout.
+          content:
+            application/json:
+              example: { id: po_1, object: payout, amount: 9610, currency: sgd, status: paid, created: 1795990000, automatic: true }
+components:
+  securitySchemes:
+    BearerAuth: { type: http, scheme: bearer, description: A restricted key with read permissions only. }

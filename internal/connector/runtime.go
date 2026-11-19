@@ -167,6 +167,11 @@ func (r *Runtime) InboundEmail(ctx context.Context, u storage.UnitOfWork, a Auth
 // webhook prompted (p1-bank-import-reconcile design D11).
 var SyncSchedule = Authority{Trigger: TriggerSystem, Rule: "the sync schedule"}
 
+// ProviderWork is the authority of a payment-provider connector's work: a verified webhook, which only names an object to
+// fetch, or the daily completeness sweep (p1-payment-providers design D3). It is a system rule: a provider's own report
+// is never a human authority, and nothing it does moves money (FR-INT-27).
+var ProviderWork = Authority{Trigger: TriggerSystem, Rule: "a verified provider webhook or the completeness sweep"}
+
 // ErrNotEnabled is an organisation connector that is not enabled, or not installed here.
 var ErrNotEnabled = errors.New("the connector is not enabled")
 
@@ -214,6 +219,35 @@ func (r *Runtime) BankData(ctx context.Context, u storage.UnitOfWork, id uuid.UU
 		return nil, c, err
 	}
 	return guardedBankData{BankData: bd, g: r.guard(c.ID, b.Manifest.Limits), clock: r.Clock}, c, nil
+}
+
+// PaymentProvider is an organisation's enabled payment-provider connector id under authority a, behind its rate limit and
+// circuit breaker; ErrNotEnabled while it is paused, disabled or uninstalled. The adapter it returns only reads
+// (FR-PSP-01, FR-INT-27).
+func (r *Runtime) PaymentProvider(ctx context.Context, u storage.UnitOfWork, id uuid.UUID, a Authority) (ports.PaymentProvider, storage.InstalledConnector, error) {
+	b, c, secrets, err := r.organisation(ctx, u, id)
+	if err != nil {
+		return nil, c, err
+	}
+	if c.State != storage.ConnectorEnabled || b.PaymentProvider == nil {
+		return nil, c, fmt.Errorf("%w: %s is %s", ErrNotEnabled, c.Connector, c.State)
+	}
+	if err := checkTrigger(b.Manifest, PaymentProvider, a); err != nil {
+		return nil, c, err
+	}
+	eps, err := r.Endpoints(ctx, u, c)
+	if err != nil {
+		return nil, c, err
+	}
+	config, err := r.config(ctx, c, secrets, eps)
+	if err != nil {
+		return nil, c, err
+	}
+	pp, err := b.PaymentProvider(config)
+	if err != nil {
+		return nil, c, err
+	}
+	return guardedPaymentProvider{PaymentProvider: pp, g: r.guard(c.ID, b.Manifest.Limits), clock: r.Clock}, c, nil
 }
 
 // VerifyWebhook checks a webhook to organisation connector id with its binding, against its configuration and current
@@ -598,6 +632,41 @@ func (e guardedEmail) Send(ctx context.Context, m ports.OutboundEmail) (ports.Em
 	r, err := e.Email.Send(ctx, m)
 	e.g.end(err != nil && !errors.Is(err, ports.ErrEmailRefused), e.clock.Now())
 	return r, err
+}
+
+// guardedPaymentProvider is a payment-provider adapter behind its connector's guard: a call the guard holds reaches no
+// provider.
+type guardedPaymentProvider struct {
+	ports.PaymentProvider
+	g     *guard
+	clock ports.Clock
+}
+
+func (p guardedPaymentProvider) Object(ctx context.Context, kind ports.ProviderKind, id string) (ports.ProviderObject, error) {
+	if err := p.g.begin(p.clock.Now()); err != nil {
+		return ports.ProviderObject{}, err
+	}
+	out, err := p.PaymentProvider.Object(ctx, kind, id)
+	p.g.end(err != nil && !errors.Is(err, ports.ErrProviderNotFound), p.clock.Now())
+	return out, err
+}
+
+func (p guardedPaymentProvider) List(ctx context.Context, kind ports.ProviderKind, from, to time.Time, cursor string) (ports.ProviderPage, error) {
+	if err := p.g.begin(p.clock.Now()); err != nil {
+		return ports.ProviderPage{}, err
+	}
+	out, err := p.PaymentProvider.List(ctx, kind, from, to, cursor)
+	p.g.end(err != nil, p.clock.Now())
+	return out, err
+}
+
+func (p guardedPaymentProvider) Balance(ctx context.Context) ([]ports.ProviderBalance, error) {
+	if err := p.g.begin(p.clock.Now()); err != nil {
+		return nil, err
+	}
+	out, err := p.PaymentProvider.Balance(ctx)
+	p.g.end(err != nil, p.clock.Now())
+	return out, err
 }
 
 // guardedBankData is a bank-data adapter behind its connector's guard: a call the guard holds reaches no provider.

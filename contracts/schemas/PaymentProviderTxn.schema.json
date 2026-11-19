@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "category": {
+      "description": "How Fyniq reads it.",
+      "enum": [
+        "charge",
+        "refund",
+        "dispute",
+        "dispute_reversal",
+        "fee",
+        "payout",
+        "other"
+      ],
+      "examples": [
+        "charge"
+      ],
+      "type": "string"
+    },
+    "fee": {
+      "$ref": "Money.schema.json",
+      "description": "What the provider keeps."
+    },
+    "gross": {
+      "$ref": "Money.schema.json",
+      "description": "Signed: money in positive."
+    },
+    "net": {
+      "$ref": "Money.schema.json",
+      "description": "Gross less fee."
+    },
+    "posted": {
+      "description": "Whether its line, and its fee's line when it has one, have posted.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "txn_id": {
+      "description": "The provider's ID, the reference of its statement line.",
+      "examples": [
+        "txn_1Q3"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "txn_id",
+    "category",
+    "gross",
+    "fee",
+    "net",
+    "posted"
+  ],
+  "title": "PaymentProviderTxn",
+  "type": "object"
+}

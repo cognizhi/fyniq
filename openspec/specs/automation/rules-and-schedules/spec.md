@@ -14,6 +14,10 @@ Source: PRD-001 §8.17 · Priority M · Phase P1
 - **WHEN** a recurring document, depreciation, an auto-reversal, an FX revaluation, a reminder, a scheduled report, a statutory reminder or the nightly verification falls due
 - **THEN** the scheduler runs it
 
+#### Scenario: Provider sweep
+- **WHEN** the hourly tick reaches `psp.sweep`
+- **THEN** each enabled payment-provider connector's balance transactions, payouts and balance are mirrored and the day each provider account is complete to is recorded, as the connector's own principal, the worker posting nothing (FR-PSP-01, FR-PSP-06)
+
 #### Scenario: Nothing has to stay running
 - **WHEN** scheduled work falls due
 - **THEN** a Cloud Scheduler tick starts it through Cloud Tasks
