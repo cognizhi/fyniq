@@ -5,6 +5,7 @@ audit_event | nemura_migrator | true | true
 member | nemura_migrator | true | true
 organisation | nemura_migrator | true | true
 outbox | nemura_migrator | true | true
+reporting_line | nemura_migrator | true | true
 role_assignment | nemura_migrator | true | true
 tenant_directory | nemura_migrator | false | false
 tenants | nemura_migrator | false | false
@@ -62,6 +63,13 @@ outbox | deadline_at | timestamp with time zone | false |
 outbox | last_error | text | false | 
 outbox | created_at | timestamp with time zone | true | now()
 outbox | updated_at | timestamp with time zone | true | now()
+reporting_line | organisation_id | uuid | true | nemura.current_org()
+reporting_line | id | uuid | true | uuidv7()
+reporting_line | report_id | uuid | true | 
+reporting_line | manager_id | uuid | true | 
+reporting_line | effective_from | date | true | 
+reporting_line | effective_to | date | false | 
+reporting_line | created_at | timestamp with time zone | true | now()
 role_assignment | organisation_id | uuid | true | nemura.current_org()
 role_assignment | id | uuid | true | uuidv7()
 role_assignment | member_id | uuid | true | 
@@ -161,6 +169,20 @@ outbox | outbox_task_name_length | CHECK ((length(task_name) <= 500))
 outbox | outbox_updated_at_not_null | NOT NULL updated_at
 outbox | outbox_worker_class_known | CHECK ((worker_class = ANY (ARRAY['worker'::text, 'executor'::text])))
 outbox | outbox_worker_class_not_null | NOT NULL worker_class
+reporting_line | reporting_line_created_at_not_null | NOT NULL created_at
+reporting_line | reporting_line_dates | CHECK (((effective_to IS NULL) OR (effective_to > effective_from)))
+reporting_line | reporting_line_effective_from_not_null | NOT NULL effective_from
+reporting_line | reporting_line_id_not_null | NOT NULL id
+reporting_line | reporting_line_manager_fkey | FOREIGN KEY (organisation_id, manager_id) REFERENCES nemura.member(organisation_id, id)
+reporting_line | reporting_line_manager_id_not_null | NOT NULL manager_id
+reporting_line | reporting_line_not_self | CHECK ((report_id <> manager_id))
+reporting_line | reporting_line_once | UNIQUE (organisation_id, report_id, manager_id, effective_from)
+reporting_line | reporting_line_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+reporting_line | reporting_line_organisation_id_not_null | NOT NULL organisation_id
+reporting_line | reporting_line_pkey | PRIMARY KEY (organisation_id, id)
+reporting_line | reporting_line_report_fkey | FOREIGN KEY (organisation_id, report_id) REFERENCES nemura.member(organisation_id, id)
+reporting_line | reporting_line_report_id_not_null | NOT NULL report_id
+reporting_line | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 role_assignment | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 role_assignment | role_assignment_approval_fkey | FOREIGN KEY (organisation_id, approval_id) REFERENCES nemura.approval_request(organisation_id, id)
 role_assignment | role_assignment_created_at_not_null | NOT NULL created_at
@@ -196,6 +218,9 @@ CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organi
 CREATE UNIQUE INDEX outbox_business_key ON nemura.outbox USING btree (organisation_id, kind, business_key)
 CREATE UNIQUE INDEX outbox_pkey ON nemura.outbox USING btree (organisation_id, id)
 CREATE INDEX outbox_state_idx ON nemura.outbox USING btree (organisation_id, state, deadline_at)
+CREATE INDEX reporting_line_manager_idx ON nemura.reporting_line USING btree (organisation_id, manager_id, effective_from)
+CREATE UNIQUE INDEX reporting_line_once ON nemura.reporting_line USING btree (organisation_id, report_id, manager_id, effective_from)
+CREATE UNIQUE INDEX reporting_line_pkey ON nemura.reporting_line USING btree (organisation_id, id)
 CREATE INDEX role_assignment_member_idx ON nemura.role_assignment USING btree (organisation_id, member_id, effective_from)
 CREATE UNIQUE INDEX role_assignment_once ON nemura.role_assignment USING btree (organisation_id, member_id, role, effective_from)
 CREATE UNIQUE INDEX role_assignment_pkey ON nemura.role_assignment USING btree (organisation_id, id)
@@ -216,6 +241,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.organis
 CREATE TRIGGER outbox_guard BEFORE UPDATE ON nemura.outbox FOR EACH ROW EXECUTE FUNCTION nemura.outbox_guard()
 CREATE TRIGGER outbox_no_delete BEFORE DELETE ON nemura.outbox FOR EACH ROW EXECUTE FUNCTION nemura.outbox_no_delete()
 CREATE TRIGGER outbox_no_truncate BEFORE TRUNCATE ON nemura.outbox FOR EACH STATEMENT EXECUTE FUNCTION nemura.outbox_no_delete()
+CREATE TRIGGER reporting_line_guard BEFORE DELETE OR UPDATE ON nemura.reporting_line FOR EACH ROW EXECUTE FUNCTION nemura.reporting_line_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.reporting_line DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('reporting_line', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.role_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('role_assignment', 'id')
 CREATE TRIGGER role_assignment_check BEFORE INSERT ON nemura.role_assignment FOR EACH ROW EXECUTE FUNCTION nemura.role_assignment_check()
 CREATE TRIGGER role_assignment_guard BEFORE DELETE OR UPDATE ON nemura.role_assignment FOR EACH ROW EXECUTE FUNCTION nemura.role_assignment_guard()
@@ -227,6 +254,7 @@ audit_event | tenant_isolation | (organisation_id = nemura.current_org()) | (org
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 outbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+reporting_line | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 role_assignment | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 
 ## functions (definition)
@@ -302,6 +330,40 @@ AS $function$
   SELECT CAST(nullif(pg_catalog.current_setting('app.org_id', true), '') AS pg_catalog.uuid)
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.current_person()
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE PARALLEL SAFE
+AS $function$
+  SELECT CAST(nullif(pg_catalog.current_setting('app.person_id', true), '') AS pg_catalog.uuid)
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.has_role(wanted text)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1 FROM nemura.role_assignment a
+     WHERE a.organisation_id = nemura.current_org() AND a.member_id = nemura.current_person() AND a.role = wanted
+       AND a.effective_from <= coalesce(nullif(pg_catalog.current_setting('app.on', true), '')::date, current_date)
+       AND (a.effective_to IS NULL OR a.effective_to > coalesce(nullif(pg_catalog.current_setting('app.on', true), '')::date, current_date)))
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.is_manager_of(report uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1 FROM nemura.reporting_line l
+     WHERE l.organisation_id = nemura.current_org() AND l.report_id = report AND l.manager_id = nemura.current_person()
+       AND l.effective_from <= coalesce(nullif(pg_catalog.current_setting('app.on', true), '')::date, current_date)
+       AND (l.effective_to IS NULL OR l.effective_to > coalesce(nullif(pg_catalog.current_setting('app.on', true), '')::date, current_date)))
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.members_no_delete()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -360,6 +422,20 @@ CREATE OR REPLACE FUNCTION nemura.outbox_no_delete()
 AS $function$
 BEGIN
   RAISE EXCEPTION 'Outbox rows are kept (% on %)', TG_OP, TG_TABLE_NAME USING ERRCODE = 'NM070';
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.reporting_line_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.report_id IS DISTINCT FROM OLD.report_id OR NEW.manager_id IS DISTINCT FROM OLD.manager_id
+     OR NEW.effective_from IS DISTINCT FROM OLD.effective_from OR (OLD.effective_to IS NOT NULL AND NEW.effective_to IS DISTINCT FROM OLD.effective_to) THEN
+    RAISE EXCEPTION 'A reporting line is history: it can only be ended, once' USING ERRCODE = 'NM081';
+  END IF;
+  RETURN NEW;
 END
 $function$
 
