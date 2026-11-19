@@ -85,6 +85,19 @@ status: draft
 - If the directors, the secretary or the members change before it is approved, the text approved is no longer what
   would be drafted: the proposal is marked out of date and drafts nothing, and the AI can propose it again.
 
+## Review an invoice the AI drafted
+
+- **Draft an invoice from a project's unbilled work** (`ar.draft_invoice`, tier 1) is a draft invoice the AI asks Fyniq to
+  make for a time-and-materials project it was told the code of: the same draft as
+  [**Draft an invoice** on the project's Unbilled tab](projects-billing.md), with the project's approved time at its billing
+  rates and its billable costs at cost plus markup.
+- The review shows the customer, each line and the total, and says it is a draft: nothing is issued or posted, and the invoice
+  follows your approval policies when someone issues it. Someone who may draft a project's invoice themselves, such as the
+  AR specialist or the accountant, approves it.
+- Nothing is drafted if time was approved, returned or billed, or a billing rate or markup changed, after the review: the
+  proposal is marked out of date and the AI can propose it again. A project that is internal, or has no customer or nothing
+  to bill, is refused with the reason. The AI never sees what anyone is paid.
+
 ## Turn a task type on or off
 
 - Every task type starts off. **Turn on…** asks for a second approver, as the setting **AI task types** in
