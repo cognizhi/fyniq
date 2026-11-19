@@ -121,6 +121,45 @@ func (f fakeFeatures) Set(context.Context, Session, string, string, string, []fe
 	return f.err
 }
 
+// fakeRestricted answers the restricted people data with whatever the test says.
+type fakeRestricted struct{ err error }
+
+func (f fakeRestricted) SetNRIC(context.Context, Session, uuid.UUID, string) error { return f.err }
+func (f fakeRestricted) Secret(context.Context, Session, uuid.UUID, string) (string, string, error) {
+	return "S****567D", "masked", f.err
+}
+func (f fakeRestricted) AddPass(context.Context, Session, uuid.UUID, string, string, time.Time, time.Time) (uuid.UUID, error) {
+	return uuid.New(), f.err
+}
+func (f fakeRestricted) Passes(context.Context, Session, uuid.UUID) ([]Pass, error) {
+	return nil, f.err
+}
+func (f fakeRestricted) AddDependant(context.Context, Session, uuid.UUID, people.Dependant, time.Time) (uuid.UUID, error) {
+	return uuid.New(), f.err
+}
+func (f fakeRestricted) Dependants(context.Context, Session, uuid.UUID) ([]Dependant, error) {
+	return nil, f.err
+}
+func (f fakeRestricted) AddDocument(context.Context, Session, uuid.UUID, string, string, string, string, []byte, []string) (uuid.UUID, error) {
+	return uuid.New(), f.err
+}
+func (f fakeRestricted) Documents(context.Context, Session, uuid.UUID) ([]Document, error) {
+	return nil, f.err
+}
+func (f fakeRestricted) Download(context.Context, Session, uuid.UUID, uuid.UUID) (string, []byte, error) {
+	return "application/pdf", []byte("x"), f.err
+}
+func (f fakeRestricted) ProposeBank(context.Context, Session, uuid.UUID, string) (uuid.UUID, error) {
+	return uuid.New(), f.err
+}
+func (f fakeRestricted) DecideBank(context.Context, Session, uuid.UUID, bool, string) error {
+	return f.err
+}
+func (f fakeRestricted) ConfirmBank(context.Context, Session, uuid.UUID, bool) error { return f.err }
+func (f fakeRestricted) Bank(context.Context, Session, uuid.UUID) (BankChange, error) {
+	return BankChange{ID: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73", State: "proposed"}, f.err
+}
+
 // fakeClients registers whatever it is told and answers with clientsErr.
 type fakeClients struct{ err error }
 
@@ -131,18 +170,18 @@ func (f fakeClients) List(context.Context, Session) ([]Client, error)  { return 
 func (f fakeClients) Revoke(context.Context, Session, uuid.UUID) error { return f.err }
 
 var (
-	passkeyErr, clientsErr, peopleErr, featuresErr error
-	peopleOwn, peopleReport                        bool
-	peopleClassified                               *bool
-	testRoles                                      = []authz.Role{authz.HRAdmin}
-	testStepUp                                     bool
-	testNow                                        = time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)
+	passkeyErr, clientsErr, peopleErr, featuresErr, restrictedErr error
+	peopleOwn, peopleReport                                       bool
+	peopleClassified                                              *bool
+	testRoles                                                     = []authz.Role{authz.HRAdmin}
+	testStepUp                                                    bool
+	testNow                                                       = time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)
 )
 
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr}, Restricted: fakeRestricted{err: restrictedErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -663,5 +702,62 @@ func TestOnlyTheHRAdministratorAndTheOwnerSwitchFeatures(t *testing.T) {
 		if got := do(tc.roles, "PUT", "/v1/features/leave", `{"state":"on"}`); got != tc.set {
 			t.Errorf("%v switching: %d, want %d", tc.roles, got, tc.set)
 		}
+	}
+}
+
+// The restricted people data is reached through the right roles only: the NRIC is set by the HR officer and administrator, passes are listed for the people
+// team, a bank account is proposed by the person, decided by an approver, and confirmed only with a fresh passkey (NM-PPL-02 to NM-PPL-04).
+// req: NM-PPL-02, NM-PPL-04
+// asvs: V8.2.1, V8.3.2
+func TestRestrictedPeopleDataIsReachedByTheRightRolesAndConfirmedWithAPasskey(t *testing.T) {
+	const id = "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"
+	do := func(roles []authz.Role, stepUp bool, method, path, body string) int {
+		testRoles, testStepUp = roles, stepUp
+		defer func() { testRoles, testStepUp = []authz.Role{authz.HRAdmin}, false }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	employee, officer, admin := []authz.Role{authz.Employee}, []authz.Role{authz.HROfficer}, []authz.Role{authz.HRAdmin}
+	const nric = `{"nric":"S1234567D"}`
+	const pass = `{"pass_type":"employment_pass","number":"EP12345678","issued_on":"2026-01-01","expires_on":"2027-12-31"}`
+	const decide = `{"approve":true}`
+	for _, tc := range []struct {
+		name         string
+		roles        []authz.Role
+		stepUp       bool
+		method, path string
+		body         string
+		want         int
+	}{
+		{"setting an NRIC, an employee", employee, false, "PUT", id + "/nric", nric, 403},
+		{"setting an NRIC, the HR officer", officer, false, "PUT", id + "/nric", nric, 204},
+		{"setting an NRIC, the HR administrator", admin, false, "PUT", id + "/nric", nric, 204},
+		{"reading a secret, an employee", employee, false, "GET", id + "/secrets/nric", "", 200},
+		{"adding a pass, an employee", employee, false, "POST", id + "/work-passes", pass, 403},
+		{"adding a pass, the HR officer", officer, false, "POST", id + "/work-passes", pass, 201},
+		{"listing passes, an employee", employee, false, "GET", id + "/work-passes", "", 403},
+		{"listing passes, the Payroll administrator", []authz.Role{authz.PayrollAdmin}, false, "GET", id + "/work-passes", "", 200},
+		{"adding a document, an employee", employee, false, "POST", id + "/documents", `{"doc_type":"contract","title":"C","retention_class":"x","content_type":"application/pdf","content_base64":"eA==","viewers":["hr_admin"]}`, 403},
+		{"adding a document, the HR administrator", admin, false, "POST", id + "/documents", `{"doc_type":"contract","title":"C","retention_class":"x","content_type":"application/pdf","content_base64":"eA==","viewers":["hr_admin"]}`, 201},
+		{"a document that is not base64", admin, false, "POST", id + "/documents", `{"doc_type":"contract","title":"C","retention_class":"x","content_type":"application/pdf","content_base64":"!!","viewers":["hr_admin"]}`, 422},
+		{"confirming a bank account with no passkey", employee, false, "POST", "/v1/bank-account-changes/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73/confirm", "", 403},
+		{"confirming a bank account with a fresh passkey", employee, true, "POST", "/v1/bank-account-changes/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73/confirm", "", 204},
+		{"proposing a bank account", employee, false, "POST", id + "/bank-account-changes", `{"account":"1234567890"}`, 201},
+		{"deciding a bank account change", admin, false, "POST", "/v1/bank-account-changes/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73/decision", decide, 204},
+	} {
+		if got := do(tc.roles, tc.stepUp, tc.method, tc.path, tc.body); got != tc.want {
+			t.Errorf("%s: %d, want %d", tc.name, got, tc.want)
+		}
+	}
+	// A deployment with no key service answers in plain words.
+	restrictedErr = ErrUnavailable
+	defer func() { restrictedErr = nil }()
+	if got := do(admin, false, "PUT", id+"/nric", nric); got != http.StatusServiceUnavailable {
+		t.Errorf("no key service: %d", got)
 	}
 }

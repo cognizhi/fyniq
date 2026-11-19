@@ -4,7 +4,7 @@ type: task
 title: Find a colleague in Nemura's people directory
 summary: What the People page lists, who can read it, how to filter it, and who may open a person's record
 sources:
-  - docs/user-guide/nemura/people.md sha256:8f17beea2dfa750fbde18ddc7f813ce51f9525a6adc98550b9ce7b0b1721b1c7
+  - docs/user-guide/nemura/people.md sha256:8bef2cdb7f14082cc16e630446b0079a26ec624a1b9b2149c24ed805ae5d35a1
 data_class: general
 taint: trusted
 status: published
@@ -33,6 +33,11 @@ aliases:
 3. The people team (HR, the Payroll administrator and the Owner) can select a name to open the record ([[nemura.person]]).
 
 (src: docs/user-guide/nemura/people.md#steps)
+
+## Add a person
+
+- The HR officer and the HR administrator see **Add a person** on the People page: legal name, start date, job title and kind of employment are required; department, line manager, preferred name, work email and phone are optional.
+- The job starts on the start date, and sending the form twice is refused, not added again. (src: docs/user-guide/nemura/people.md#add-a-person)
 
 ## When it looks wrong
 

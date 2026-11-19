@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { App } from "./App";
 import { ReviewBanner } from "./components/ReviewBanner";
 import { Home } from "./pages/Home";
+import { NewPerson } from "./pages/NewPerson";
 import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
 import { Join } from "./pages/Join";
@@ -321,5 +322,32 @@ describe("the feature switches", () => {
     answer("GET /v1/features", { status: 403, body: { code: "NM_ROLE_REQUIRED" } });
     render(<Features roles={["employee"]} />);
     expect(await screen.findByRole("alert")).toBeTruthy();
+  });
+});
+
+// req: NM-PPL-01
+describe("adding a person", () => {
+  it("sends the form with a new ID and the first job, goes to the record, and shows the API's refusal in plain words", async () => {
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e62", name: "Ana Tan" }] } });
+    answer("POST /v1/people", { status: 422, body: { code: "NM_PERSON_INVALID", detail: "The legal name is required: enter it." } });
+    const { container } = render(<NewPerson roles={["hr_officer"]} />);
+    await screen.findByRole("option", { name: "Ana Tan" });
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Legal name"), { target: { value: "Ben Lim" } });
+    fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2026-02-01" } });
+    fireEvent.change(screen.getByLabelText("Job title"), { target: { value: "Engineer" } });
+    fireEvent.submit(container.querySelector("form.fy-stack") as HTMLFormElement);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/legal name is required/);
+    answer("POST /v1/people", { status: 201 });
+    fireEvent.submit(container.querySelector("form.fy-stack") as HTMLFormElement);
+    await waitFor(() => expect(window.location.pathname).toMatch(/^\/people\/[0-9a-f-]{36}$/));
+  });
+
+  it("says who may add people, and disables the button for anyone else", async () => {
+    answer("GET /v1/people", { status: 200, body: { people: [] } });
+    render(<NewPerson roles={["employee"]} />);
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Add person" }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

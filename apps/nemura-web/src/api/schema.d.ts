@@ -48,6 +48,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/bank-account-changes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A bank account change
+         * @description Returns a change with its account masked and where it is. The person it concerns and the approvers (HR administrator, Payroll administrator, Owner) read it; anyone else is told there is none. It changes nothing.
+         */
+        get: operations["getBankAccountChange"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bank-account-changes/{id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm an approved bank account change
+         * @description The employee whose account it is confirms an approved change after a passkey confirmation in the last five minutes (POST /v1/session/step-up); the account then takes effect and the payroll approvers are noticed. It is audited.
+         */
+        post: operations["confirmBankAccountChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bank-account-changes/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or refuse a bank account change
+         * @description Approves or refuses an open change. Only the HR administrator, the Payroll administrator or the Owner, never the proposer nor the person whose account it is. A refusal says why. It is audited.
+         */
+        post: operations["decideBankAccountChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/errors": {
         parameters: {
             query?: never;
@@ -236,6 +296,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people/{id}/bank-account-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Propose a new salary bank account
+         * @description An employee proposes a new salary bank account for themselves. It takes effect only when an HR administrator, the Payroll administrator or the Owner who is not the proposer approves it and the employee confirms it with a passkey. It is audited; the account is never in an event.
+         */
+        post: operations["proposeBankAccountChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people/{id}/classification": {
         parameters: {
             query?: never;
@@ -256,6 +336,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people/{id}/dependants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's dependants
+         * @description Lists the person's dependants at the level the caller's roles give (Appendix B: Dependants): the HR officer in full, the person themselves their own, everyone else nothing. Every read is audited. A line manager is told there are none to see.
+         */
+        get: operations["listPersonDependants"];
+        put?: never;
+        /**
+         * Record a dependant for family leave
+         * @description Records a child with a date of birth, or the formal intent to adopt, for family leave. The person declares their own; the HR administrator records on their behalf. It is audited without the child's date of birth.
+         */
+        post: operations["addPersonDependant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's documents
+         * @description Lists the person's documents that the caller's roles may see: a role sees a document only when it is named a viewer, and the person sees theirs when employee is named. It changes nothing.
+         */
+        get: operations["listPersonDocuments"];
+        put?: never;
+        /**
+         * Add a document to a person's file
+         * @description Stores a document (contract, KETs, letter, pass copy, certificate) of up to 5 MB as write-once evidence, with a retention class and the roles who may see it. The HR officer and the HR administrator. It is audited.
+         */
+        post: operations["addPersonDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/documents/{doc}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A document's content
+         * @description Returns a document's file to a caller who may see it, and audits the read. A document the caller may not see answers as if it did not exist.
+         */
+        get: operations["getPersonDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people/{id}/job": {
         parameters: {
             query?: never;
@@ -270,6 +418,70 @@ export interface paths {
          * @description Ends the person's current job record the day the new one starts and starts it, so job title, department, worksite, employment type and line manager are history, never edited. A day on or before the current record's start is refused (NM_PERSON_HISTORY). The HR officer and the HR administrator. It is audited.
          */
         post: operations["changePersonJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/nric": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a person's NRIC or FIN
+         * @description Seals the NRIC or FIN with the key service and keeps its masked form: it is collected only for statutory filings, never shown in a list, never in a log or an event. The HR officer and the HR administrator. It is audited without the value.
+         */
+        put: operations["setPersonNric"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/secrets/{field}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a restricted field
+         * @description Returns the NRIC or FIN or the salary bank account at the level the caller's roles give (Appendix B): masked for the HR officer, in full for the HR administrator, the Payroll administrator and the Owner as the matrix says, and always in full for the person themselves. Every read, and every refusal, is audited. A field the caller may not see answers as if there were none.
+         */
+        get: operations["getPersonSecret"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/work-passes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's work passes
+         * @description Lists the person's work passes, numbers masked, soonest to expire first. The people team (HR, the Payroll administrator, the Owner). It changes nothing.
+         */
+        get: operations["listPersonWorkPasses"];
+        put?: never;
+        /**
+         * Record a work pass
+         * @description Records a work pass with its number sealed and masked and its dates; the employer is reminded 90, 60 and 30 days before it expires unless a later pass of the same type is recorded. A renewal is a new pass. The HR officer and the HR administrator. It is audited.
+         */
+        post: operations["addPersonWorkPass"];
         delete?: never;
         options?: never;
         head?: never;
@@ -360,6 +572,129 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddDependantInputBody: {
+            /**
+             * @description The formal intent to adopt, when there is no date of birth yet.
+             * @example false
+             */
+            adoption_intent?: boolean;
+            /**
+             * Format: date
+             * @description The child's date of birth.
+             * @example 2025-05-06
+             */
+            birth_date?: string;
+            /**
+             * @description The child's citizenship.
+             * @example citizen
+             * @enum {string}
+             */
+            citizenship: "citizen" | "permanent_resident" | "other";
+            /**
+             * Format: date
+             * @description The day the employee made the declaration.
+             * @example 2026-01-02
+             */
+            declared_on: string;
+            /**
+             * Format: date
+             * @description The day the record starts.
+             * @example 2026-01-02
+             */
+            effective_from: string;
+            /**
+             * @description How the child is related.
+             * @example child
+             * @enum {string}
+             */
+            relationship: "child" | "adopted_child" | "stepchild";
+        };
+        AddDocumentInputBody: {
+            /**
+             * @description The file, base64, up to 5 MB.
+             * @example JVBERi0xLjQK
+             */
+            content_base64: string;
+            /**
+             * @description Its media type.
+             * @example application/pdf
+             */
+            content_type: string;
+            /**
+             * @description The kind of document.
+             * @example contract
+             * @enum {string}
+             */
+            doc_type: "contract" | "kets" | "letter" | "pass_copy" | "certificate" | "other";
+            /**
+             * @description The retention rule it falls under (a key of the retention schedule).
+             * @example employment-records
+             */
+            retention_class: string;
+            /**
+             * @description Its title.
+             * @example Employment contract
+             */
+            title: string;
+            /**
+             * @description The roles who may see it; employee means the person themselves.
+             * @example [
+             *       "hr_admin",
+             *       "employee"
+             *     ]
+             */
+            viewers: string[] | null;
+        };
+        AddPassInputBody: {
+            /**
+             * Format: date
+             * @description The day it expires.
+             * @example 2027-12-31
+             */
+            expires_on: string;
+            /**
+             * Format: date
+             * @description The day it was issued.
+             * @example 2026-01-01
+             */
+            issued_on: string;
+            /**
+             * @description The pass number.
+             * @example EP12345678
+             */
+            number: string;
+            /**
+             * @description The kind of pass.
+             * @example employment_pass
+             * @enum {string}
+             */
+            pass_type: "employment_pass" | "s_pass" | "work_permit" | "dp_work_permit";
+        };
+        BankChange: {
+            /**
+             * @description The proposed account, masked.
+             * @example ****7890
+             */
+            account_masked: string;
+            /**
+             * Format: uuid
+             * @description The change.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description The person whose account it is.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Where the change is.
+             * @example proposed
+             * @enum {string}
+             */
+            state: "proposed" | "approved" | "refused" | "confirmed";
+        };
         ChangeJobInputBody: {
             /**
              * Format: date
@@ -514,6 +849,73 @@ export interface components {
             /** @description Their own fields. */
             person: components["schemas"]["PersonInput"];
         };
+        CreatedOutputBody: {
+            /**
+             * Format: uuid
+             * @description The new record.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e70
+             */
+            id: string;
+        };
+        DecideBankInputBody: {
+            /**
+             * @description Whether to approve the change.
+             * @example true
+             */
+            approve: boolean;
+            /**
+             * @description Why it is refused: required for a refusal.
+             * @example The number does not match the bank letter.
+             */
+            reason?: string;
+        };
+        Dependant: {
+            /**
+             * @description The formal intent to adopt, instead of a date of birth.
+             * @example false
+             */
+            adoption_intent: boolean;
+            /**
+             * Format: date
+             * @description The child's date of birth; hidden at the masked level.
+             * @example 2025-05-06
+             */
+            birth_date?: string;
+            /**
+             * @description The child's citizenship.
+             * @example citizen
+             * @enum {string}
+             */
+            citizenship: "citizen" | "permanent_resident" | "other";
+            /**
+             * Format: date
+             * @description The day the record starts.
+             * @example 2026-01-02
+             */
+            effective_from: string;
+            /**
+             * Format: date
+             * @description The day it ends.
+             * @example 2030-01-02
+             */
+            effective_to?: string;
+            /**
+             * Format: uuid
+             * @description The dependant record.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71
+             */
+            id: string;
+            /**
+             * @description How the child is related.
+             * @example child
+             * @enum {string}
+             */
+            relationship: "child" | "adopted_child" | "stepchild";
+        };
+        DependantsOutputBody: {
+            /** @description The person's dependants. */
+            dependants: components["schemas"]["Dependant"][] | null;
+        };
         DirectoryEntry: {
             /**
              * @description Their department on the day asked.
@@ -561,6 +963,65 @@ export interface components {
         DirectoryOutputBody: {
             /** @description Everyone who works for the organisation on the day, by name. */
             people: components["schemas"]["DirectoryEntry"][] | null;
+        };
+        Document: {
+            /**
+             * @description Its media type.
+             * @example application/pdf
+             */
+            content_type: string;
+            /**
+             * Format: date-time
+             * @description When it was added.
+             * @example 2026-01-05T09:00:00Z
+             */
+            created_at: string;
+            /**
+             * @description The kind of document.
+             * @example contract
+             * @enum {string}
+             */
+            doc_type: "contract" | "kets" | "letter" | "pass_copy" | "certificate" | "other";
+            /**
+             * Format: uuid
+             * @description The document.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e72
+             */
+            id: string;
+            /**
+             * @description The retention rule it falls under.
+             * @example employment-records
+             */
+            retention_class: string;
+            /**
+             * Format: int64
+             * @description Its size in bytes.
+             * @example 20480
+             */
+            size_bytes: number;
+            /**
+             * @description Its title.
+             * @example Employment contract
+             */
+            title: string;
+            /** @description The roles who may see it. */
+            viewers: string[] | null;
+        };
+        DocumentOutputBody: {
+            /**
+             * @description The file, base64.
+             * @example JVBERi0xLjQK
+             */
+            content_base64: string;
+            /**
+             * @description Its media type.
+             * @example application/pdf
+             */
+            content_type: string;
+        };
+        DocumentsOutputBody: {
+            /** @description The documents the caller may see. */
+            documents: components["schemas"]["Document"][] | null;
         };
         ErrorsOutputBody: {
             /** @description Every stable error code, in order. */
@@ -717,6 +1178,48 @@ export interface components {
              */
             worksite: string;
         };
+        NricInputBody: {
+            /**
+             * @description The NRIC or FIN: a letter, seven digits and a letter.
+             * @example S1234567D
+             */
+            nric: string;
+        };
+        Pass: {
+            /**
+             * Format: date
+             * @description The day it expires.
+             * @example 2027-12-31
+             */
+            expires_on: string;
+            /**
+             * Format: uuid
+             * @description The pass record.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e70
+             */
+            id: string;
+            /**
+             * Format: date
+             * @description The day it was issued.
+             * @example 2026-01-01
+             */
+            issued_on: string;
+            /**
+             * @description The number, masked.
+             * @example *******A12
+             */
+            number_masked: string;
+            /**
+             * @description The kind of pass.
+             * @example employment_pass
+             * @enum {string}
+             */
+            pass_type: "employment_pass" | "s_pass" | "work_permit" | "dp_work_permit";
+        };
+        PassesOutputBody: {
+            /** @description The person's work passes, soonest to expire first. */
+            passes: components["schemas"]["Pass"][] | null;
+        };
         PersonInput: {
             /**
              * Format: date
@@ -797,6 +1300,13 @@ export interface components {
              * @example urn:nemura:problem:NM_NOT_FOUND
              */
             type: string;
+        };
+        ProposeBankInputBody: {
+            /**
+             * @description The new salary bank account number: 5 to 20 digits.
+             * @example 123-456-7890
+             */
+            account: string;
         };
         Provider: {
             /**
@@ -888,6 +1398,19 @@ export interface components {
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e50
              */
             id: string;
+        };
+        SecretOutputBody: {
+            /**
+             * @description How much of it the caller sees.
+             * @example masked
+             * @enum {string}
+             */
+            level: "masked" | "full";
+            /**
+             * @description The value at the level the caller's roles give: masked or in full.
+             * @example S****567D
+             */
+            value: string;
         };
         SessionOutputBody: {
             /**
@@ -1103,6 +1626,210 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getBankAccountChange: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The bank account change. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankChange"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    confirmBankAccountChange: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The bank account change. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideBankAccountChange: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The bank account change. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideBankInputBody"];
+            };
+        };
         responses: {
             /** @description No Content */
             204: {
@@ -1774,6 +2501,81 @@ export interface operations {
             };
         };
     };
+    proposeBankAccountChange: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposeBankInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     setPersonClassification: {
         parameters: {
             query?: never;
@@ -1856,6 +2658,371 @@ export interface operations {
             };
         };
     };
+    listPersonDependants: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DependantsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addPersonDependant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddDependantInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPersonDocuments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addPersonDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddDocumentInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPersonDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+                /** @description The document. */
+                doc: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     changePersonJob: {
         parameters: {
             query?: never;
@@ -1929,6 +3096,316 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPersonNric: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NricInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPersonSecret: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+                /** @description The restricted field. */
+                field: "nric" | "bank";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPersonWorkPasses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PassesOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    addPersonWorkPass: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddPassInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

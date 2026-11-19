@@ -32,6 +32,7 @@ export const registry: Entry[] = [
   { kind: "route", id: "join", path: "/join", signedIn: false, screen: "nm-join", mode: "basic", help: "join.page", guide: "nemura.sign-in#joining-with-a-code" },
   { kind: "route", id: "my-home", path: "/me", signedIn: true, screen: "nm-my-home", mode: "basic", help: "home.me", guide: "nemura.home" },
   { kind: "route", id: "people-home", path: "/people", signedIn: true, screen: "nm-people-home", mode: "expert", help: "home.people", guide: "nemura.home" },
+  { kind: "route", id: "person-new", path: "/people/new", signedIn: true, screen: "nm-people", mode: "basic", help: "new.page", guide: "nemura.people" },
   { kind: "route", id: "people-directory", path: "/people/directory", signedIn: true, screen: "nm-people", mode: "basic", help: "directory.page", guide: "nemura.people" },
   { kind: "route", id: "person", path: "/people/:id", signedIn: true, screen: "nm-person", mode: "basic", help: "person.page", guide: "nemura.person" },
   { kind: "route", id: "features", path: "/settings/features", signedIn: true, screen: "nm-features", mode: "expert", help: "features.page", guide: "nemura.features" },

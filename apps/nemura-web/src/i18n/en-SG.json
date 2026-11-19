@@ -143,7 +143,23 @@
     "feature.hiring": "Hiring",
     "feature.performance": "Performance",
     "feature.onboarding": "Onboarding",
-    "feature.time": "Time and attendance"
+    "feature.time": "Time and attendance",
+    "new.title": "Add a person",
+    "new.lead": "Add someone to the people record. Their job starts on their start date; change it later from their record.",
+    "new.legal": "Legal name",
+    "new.preferred": "Preferred name",
+    "new.email": "Work email",
+    "new.phone": "Phone",
+    "new.start": "Start date",
+    "new.jobtitle": "Job title",
+    "new.department": "Department",
+    "new.type": "Employment",
+    "new.manager": "Line manager",
+    "new.nomanager": "No line manager",
+    "new.submit": "Add person",
+    "new.saving": "Saving",
+    "new.failed": "We could not add the person. Check your connection and try again.",
+    "new.add": "Add a person"
   },
   "help": {
     "signin.page": {
@@ -181,6 +197,10 @@
     "features.page": {
       "label": "Features",
       "tooltip": "Each optional feature is on, off, or held by another system. A feature another one needs cannot be switched off, and switching off keeps the records."
+    },
+    "new.page": {
+      "label": "Add a person",
+      "tooltip": "Adds a person with their first job from their start date. Only the HR officer and the HR administrator add people."
     }
   }
 }

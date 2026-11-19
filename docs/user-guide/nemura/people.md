@@ -24,6 +24,12 @@ account, pay or a date of birth.
 2. Type a name, a job title, a department or a manager under **Find a person**.
 3. The people team (HR, the Payroll administrator and the Owner) can select a name to open the person's record.
 
+## Add a person
+
+The HR officer and the HR administrator see **Add a person** on the People page. Enter the legal name, the start date,
+the job title and the kind of employment; the department, line manager, preferred name, work email and phone are
+optional. The job starts on the start date. If you send the form twice, the second is refused, not added again.
+
 ## Common problems
 
 - **Nobody works here yet.** The HR team adds people; ask them.

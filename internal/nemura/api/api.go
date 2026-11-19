@@ -109,13 +109,14 @@ type SignInInfo interface {
 
 // Deps are what the API is given.
 type Deps struct {
-	Sessions Sessions
-	Passkeys Passkeys
-	Clients  APIClients
-	People   People
-	Features Features
-	SignIn   SignInInfo
-	Clock    ports.Clock
+	Sessions   Sessions
+	Passkeys   Passkeys
+	Clients    APIClients
+	People     People
+	Features   Features
+	Restricted Restricted
+	SignIn     SignInInfo
+	Clock      ports.Clock
 	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
 	CookieNames []string
 }
@@ -135,6 +136,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerClients()
 	a.registerPeople()
 	a.registerFeatures()
+	a.registerRestricted()
 	a.registerSignIn()
 	return a
 }

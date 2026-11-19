@@ -298,6 +298,9 @@ services:
       NEMURA_API_BASE: /api
       NEMURA_TENANT: local
       NEMURA_OAUTH_ADMIN_URL: http://nemura-oauth:4445   # Hydra's admin API: never through the edge
+      NEMURA_DATA_DIR: /data                              # documents of restricted people data, in memory: gone on a restart (local only)
+      NEMURA_LOCAL_FIELD_KEY: nemura-local-only-field-keys   # local only, like the database password: the stack's field keys derive from it, so sealed values open after a restart
+    tmpfs: ["/tmp:size=64m", "/data:size=64m,mode=1777"]
     ports: ["127.0.0.1:${NEMURA_API_PORT:-8087}:8080"]
     depends_on: { nemura-migrate: { condition: service_completed_successfully } }
     healthcheck: *health

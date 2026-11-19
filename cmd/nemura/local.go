@@ -5,6 +5,7 @@ package main
 import (
 	"cmp"
 	"context"
+	"crypto/sha512"
 	"fmt"
 	"os"
 	"time"
@@ -35,6 +36,7 @@ func init() {
 	after = nemura.EnableLocalLogins
 	taskWiring = localTasks
 	signInWiring = localSignIn
+	restrictedWiring = localRestricted
 	hydraAdmin = func(admin string) ports.OAuthClients {
 		return hydra.New(admin, (&egress.Guard{Local: true, Propagate: true}).Bounded(0, 10*time.Second).For(egress.HostOf(admin)))
 	}
@@ -61,4 +63,29 @@ func localTasks(deps app.Deps, getenv func(string) string) (ports.TaskTokens, po
 	tokens := local.NewHMACTokens([]byte(cmp.Or(getenv("NEMURA_TASK_KEY"), "nemura-local-only-task-key")), deps.Clock, time.Hour)
 	self := cmp.Or(getenv("NEMURA_WORKER_URL"), "http://127.0.0.1:"+cmp.Or(getenv("PORT"), "8080"))
 	return tokens, local.NewPush(map[string]string{"worker": self}, tokens, deps.Clock, 5, time.Second), nil
+}
+
+// localRestricted keeps the local field keys and the files of restricted people data under NEMURA_DATA_DIR (.data/nemura on a host, a volume in the
+// container). When the directory cannot be written the service runs without them and says so in plain words at the API (NM_UNAVAILABLE).
+func localRestricted(getenv func(string) string) (ports.Cipher, ports.BlobStore) {
+	dir := cmp.Or(getenv("NEMURA_DATA_DIR"), ".data/nemura")
+	var cipher ports.Cipher
+	var err error
+	if phrase := getenv("NEMURA_LOCAL_FIELD_KEY"); phrase != "" {
+		// The local stack's own key (deploy/local/compose.yaml), for a container whose disk is read-only: not a secret, and never in a release image.
+		seed := sha512.Sum512([]byte(phrase))
+		cipher, err = local.NewFieldKeys(seed[:])
+	} else {
+		cipher, err = local.LoadOrCreateFieldKeys(dir + "/field-keys")
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "nemura: restricted people data is off: %v\n", err)
+		return nil, nil
+	}
+	blobs, err := local.NewDir(dir + "/blobs")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "nemura: documents are off: %v\n", err)
+		return cipher, nil
+	}
+	return cipher, blobs
 }

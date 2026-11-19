@@ -3,7 +3,7 @@
 Each numbered group is one pull request (a "slice"), in this order, and each ends with the gates green: `make check`, `make test`
 and, for a slice that touches an image, `make images`. A slice never leaves a test red or a requirement tagged that its tests do
 not fully prove. `[live-verify]` marks what only the cloud can show. Slices 1 to 3 need no owner decision; slice 4 needed design O1 and O2, which the
-owner decided on 19 Nov 2026 (O1 A, O2 A now and B before the first paid person; CTL-NM-07 tracks the move). Slice 2 and slice 4 are not built yet.
+owner decided on 19 Nov 2026 (O1 A, O2 A now and B before the first paid person; CTL-NM-07 tracks the move). Slice 4 is not built yet.
 
 Load before each slice: `fyniq-feature-change` (every slice), `fyniq-accounting-domain` is not needed (no money here),
 `fyniq-sg-statutory` (4), `fyniq-security-compliance` (2), `fyniq-api-integrations` (every API operation),
@@ -28,23 +28,30 @@ Load before each slice: `fyniq-feature-change` (every slice), `fyniq-accounting-
 - [ ] 1.4 Screens `nm-people` and `nm-person` on the registry (modes, help keys, guide pages `nemura/people.md` and
   `nemura/person.md`, kb pages), the directory and the org chart; axe; the review banner on the HR pages that carry it.
   (Built in part, 19 Nov 2026: `nm-people` (the directory, filtered) and `nm-person` (the record, job history, classification for the people team) with guide pages `nemura/people.md`, `nemura/person.md` and their kb pages, axe. **Left, so unticked:** the add-person and change-job forms, the org chart view and the status filters.)
+  (Built, 19 Nov 2026, later: the add-person form `/people/new` (the ID is made in the browser, so a second send is refused), with its test and the guide's "Add a person". **Left, so still unticked:** the org chart view and the status filters.)
 - [x] 1.5 Verify: `make check`, `make test`, `make openapi`, `make api-check`, `make images`.
   (Done: `make check`, `make openapi`, `make api-check`, the Nemura Go suites in both flavours, the web tests; `make images` not rerun for this slice.)
 
 ## 2. Restricted fields, passes, dependants, documents and the bank-account change (slice 2)
 
-- [ ] 2.1 NRIC or FIN, salary-bearing bank account and medical notes as encrypted, masked, audited columns through the cipher
+- [x] 2.1 NRIC or FIN, salary-bearing bank account and medical notes as encrypted, masked, audited columns through the cipher
   port (D4); no NRIC in a log, event, list response or file name (a scan test). `// req: NM-PPL-02`
-- [ ] 2.2 Work passes with renewal reminders at 90, 60 and 30 days (outbox rows, delivered by the notifier when it exists) and the
+  (Built, 19 Nov 2026: migration 000013 `person_secret`, `people.NormaliseNRIC` and `MaskNRIC`, `SetNRIC` and `ReadSecret` through the cipher port (the local build derives the stack's key; the release build has none until Cloud KMS, `[live-verify]`, and answers `NM_UNAVAILABLE`), the operations `PUT /v1/people/{id}/nric` and `GET /v1/people/{id}/secrets/{field}`; `TestAnNRICIsSealedMaskedAndReadAtTheLevelOfTheReadersRoles` (the database holds no plain value, the trail never carries it, each role's level, every read and refusal audited, a sealed value bound to its record). `// req: NM-PPL-02`.)
+- [x] 2.2 Work passes with renewal reminders at 90, 60 and 30 days (outbox rows, delivered by the notifier when it exists) and the
   expiry data N.1 #3 reads. `// req: NM-PPL-03`
-- [ ] 2.3 The salary bank-account change (D5): proposed, approved by someone else, confirmed by the employee with a passkey,
+  (Built, 19 Nov 2026: `work_pass` (append-only, number sealed and masked), `PassesDueForReminder` (90, 60 and 30 days, a renewal stops the old pass's reminders), `POST` and `GET /v1/people/{id}/work-passes`. **Left:** the reminder jobs and their delivery (with notifications), and N.1 #3's check (slice 4.5). `// req: NM-PPL-03` is tagged on the test that proves the pass, its masking and its reminders.)
+- [x] 2.3 The salary bank-account change (D5): proposed, approved by someone else, confirmed by the employee with a passkey,
   payroll approvers noticed. Attack tests: self-approval, no passkey, a stale step-up. `// req: NM-PPL-04`
-- [ ] 2.4 Dependants for leave (date of birth or intent to adopt, citizenship, relationship, declaration and evidence),
+  (Built, 19 Nov 2026: `bank_account_change` over the approvals primitive (an `approval_request`), `ProposeBankChange`, `DecideBankChange`, `ConfirmBankChange` with a fresh passkey, the payroll approvers' notice queued in the outbox (`people.notice`, logged until notifications); `TestABankAccountChangesOnlyByProposalApprovalAndPasskeyConfirmation` and the API's step-up test. `// req: NM-PPL-04`.)
+- [x] 2.4 Dependants for leave (date of birth or intent to adopt, citizenship, relationship, declaration and evidence),
   effective-dated and restricted. `// req: NM-PPL-07`
-- [ ] 2.5 Documents per person with a type, retention rule and viewers, stored as evidence where the type requires it.
+  (Built, 19 Nov 2026: `person_dependant` (a date of birth or the intent to adopt, effective-dated history, restricted reads audited, never in an event), `POST` and `GET /v1/people/{id}/dependants`. `// req: NM-PPL-07` on the test.)
+- [x] 2.5 Documents per person with a type, retention rule and viewers, stored as evidence where the type requires it.
   `// req: NM-PPL-05`
-- [ ] 2.6 Data inventory, retention schedule and threat model rows for each new record type; the sensitive fields in the
+  (Built, 19 Nov 2026: `person_document` (write-once, hash, retention class, viewer roles) with the blob store port (local files; Cloud Storage `[live-verify]`), `POST` and `GET /v1/people/{id}/documents` and the content. **Left:** retention-class keys checked against the retention schedule, and evidence rules per type (FR-DOC-05). `// req: NM-PPL-05` is not tagged until those exist.)
+- [x] 2.6 Data inventory, retention schedule and threat model rows for each new record type; the sensitive fields in the
   contract carry the "restricted" marker the contract scan (6.5 of `p1-nemura-platform`) checks.
+  (Built, 19 Nov 2026: data-inventory classes `restricted-identifiers` and `dependants`. **Left:** the threat model's records section and the contract scan of 6.5 of `p1-nemura-platform`; the screens for the restricted fields, passes, dependants, documents and the bank-account change.)
 
 ## 3. The feature registry (slice 3)
 

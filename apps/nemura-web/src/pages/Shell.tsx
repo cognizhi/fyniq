@@ -35,3 +35,6 @@ export const team = (roles: readonly string[]): boolean => roles.some((r) => ["h
 
 // admin is whether the roles switch features: the HR administrator and the Owner (Appendix B). The API decides; this only shows the link.
 export const admin = (roles: readonly string[]): boolean => roles.some((r) => ["hr_admin", "owner"].includes(r));
+
+// hr is whether the roles add people: the HR officer and the HR administrator (Appendix B). The API decides; this only shows the button.
+export const hr = (roles: readonly string[]): boolean => roles.some((r) => ["hr_officer", "hr_admin"].includes(r));

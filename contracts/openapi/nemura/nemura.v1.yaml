@@ -4,6 +4,184 @@
 # info.version follows the platform version (release-please updates it).
 components:
   schemas:
+    AddDependantInputBody:
+      additionalProperties: false
+      properties:
+        adoption_intent:
+          description: The formal intent to adopt, when there is no date of birth yet.
+          examples:
+            - false
+          type: boolean
+        birth_date:
+          description: The child's date of birth.
+          examples:
+            - "2025-05-06"
+          format: date
+          type: string
+        citizenship:
+          description: The child's citizenship.
+          enum:
+            - citizen
+            - permanent_resident
+            - other
+          examples:
+            - citizen
+          type: string
+        declared_on:
+          description: The day the employee made the declaration.
+          examples:
+            - "2026-01-02"
+          format: date
+          type: string
+        effective_from:
+          description: The day the record starts.
+          examples:
+            - "2026-01-02"
+          format: date
+          type: string
+        relationship:
+          description: How the child is related.
+          enum:
+            - child
+            - adopted_child
+            - stepchild
+          examples:
+            - child
+          type: string
+      required:
+        - relationship
+        - citizenship
+        - declared_on
+        - effective_from
+      type: object
+    AddDocumentInputBody:
+      additionalProperties: false
+      properties:
+        content_base64:
+          description: The file, base64, up to 5 MB.
+          examples:
+            - JVBERi0xLjQK
+          type: string
+        content_type:
+          description: Its media type.
+          examples:
+            - application/pdf
+          type: string
+        doc_type:
+          description: The kind of document.
+          enum:
+            - contract
+            - kets
+            - letter
+            - pass_copy
+            - certificate
+            - other
+          examples:
+            - contract
+          type: string
+        retention_class:
+          description: The retention rule it falls under (a key of the retention schedule).
+          examples:
+            - employment-records
+          type: string
+        title:
+          description: Its title.
+          examples:
+            - Employment contract
+          maxLength: 200
+          minLength: 1
+          type: string
+        viewers:
+          description: The roles who may see it; employee means the person themselves.
+          examples:
+            - - hr_admin
+              - employee
+          items:
+            type: string
+          minItems: 1
+          type:
+            - array
+            - "null"
+      required:
+        - doc_type
+        - title
+        - retention_class
+        - content_type
+        - content_base64
+        - viewers
+      type: object
+    AddPassInputBody:
+      additionalProperties: false
+      properties:
+        expires_on:
+          description: The day it expires.
+          examples:
+            - "2027-12-31"
+          format: date
+          type: string
+        issued_on:
+          description: The day it was issued.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        number:
+          description: The pass number.
+          examples:
+            - EP12345678
+          type: string
+        pass_type:
+          description: The kind of pass.
+          enum:
+            - employment_pass
+            - s_pass
+            - work_permit
+            - dp_work_permit
+          examples:
+            - employment_pass
+          type: string
+      required:
+        - pass_type
+        - number
+        - issued_on
+        - expires_on
+      type: object
+    BankChange:
+      additionalProperties: false
+      properties:
+        account_masked:
+          description: The proposed account, masked.
+          examples:
+            - "****7890"
+          type: string
+        id:
+          description: The change.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73
+          format: uuid
+          type: string
+        person_id:
+          description: The person whose account it is.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        state:
+          description: Where the change is.
+          enum:
+            - proposed
+            - approved
+            - refused
+            - confirmed
+          examples:
+            - proposed
+          type: string
+      required:
+        - id
+        - person_id
+        - account_masked
+        - state
+      type: object
     ChangeJobInputBody:
       additionalProperties: false
       properties:
@@ -234,6 +412,105 @@ components:
         - person
         - job
       type: object
+    CreatedOutputBody:
+      additionalProperties: false
+      properties:
+        id:
+          description: The new record.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e70
+          format: uuid
+          type: string
+      required:
+        - id
+      type: object
+    DecideBankInputBody:
+      additionalProperties: false
+      properties:
+        approve:
+          description: Whether to approve the change.
+          examples:
+            - true
+          type: boolean
+        reason:
+          description: "Why it is refused: required for a refusal."
+          examples:
+            - The number does not match the bank letter.
+          maxLength: 2000
+          type: string
+      required:
+        - approve
+      type: object
+    Dependant:
+      additionalProperties: false
+      properties:
+        adoption_intent:
+          description: The formal intent to adopt, instead of a date of birth.
+          examples:
+            - false
+          type: boolean
+        birth_date:
+          description: The child's date of birth; hidden at the masked level.
+          examples:
+            - "2025-05-06"
+          format: date
+          type: string
+        citizenship:
+          description: The child's citizenship.
+          enum:
+            - citizen
+            - permanent_resident
+            - other
+          examples:
+            - citizen
+          type: string
+        effective_from:
+          description: The day the record starts.
+          examples:
+            - "2026-01-02"
+          format: date
+          type: string
+        effective_to:
+          description: The day it ends.
+          examples:
+            - "2030-01-02"
+          format: date
+          type: string
+        id:
+          description: The dependant record.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71
+          format: uuid
+          type: string
+        relationship:
+          description: How the child is related.
+          enum:
+            - child
+            - adopted_child
+            - stepchild
+          examples:
+            - child
+          type: string
+      required:
+        - id
+        - relationship
+        - adoption_intent
+        - citizenship
+        - effective_from
+      type: object
+    DependantsOutputBody:
+      additionalProperties: false
+      properties:
+        dependants:
+          description: The person's dependants.
+          items:
+            $ref: "#/components/schemas/Dependant"
+          type:
+            - array
+            - "null"
+      required:
+        - dependants
+      type: object
     DirectoryEntry:
       additionalProperties: false
       properties:
@@ -295,6 +572,101 @@ components:
             - "null"
       required:
         - people
+      type: object
+    Document:
+      additionalProperties: false
+      properties:
+        content_type:
+          description: Its media type.
+          examples:
+            - application/pdf
+          type: string
+        created_at:
+          description: When it was added.
+          examples:
+            - "2026-01-05T09:00:00Z"
+          format: date-time
+          type: string
+        doc_type:
+          description: The kind of document.
+          enum:
+            - contract
+            - kets
+            - letter
+            - pass_copy
+            - certificate
+            - other
+          examples:
+            - contract
+          type: string
+        id:
+          description: The document.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e72
+          format: uuid
+          type: string
+        retention_class:
+          description: The retention rule it falls under.
+          examples:
+            - employment-records
+          type: string
+        size_bytes:
+          description: Its size in bytes.
+          examples:
+            - 20480
+          format: int64
+          type: integer
+        title:
+          description: Its title.
+          examples:
+            - Employment contract
+          type: string
+        viewers:
+          description: The roles who may see it.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+      required:
+        - id
+        - doc_type
+        - title
+        - retention_class
+        - content_type
+        - size_bytes
+        - viewers
+        - created_at
+      type: object
+    DocumentOutputBody:
+      additionalProperties: false
+      properties:
+        content_base64:
+          description: The file, base64.
+          examples:
+            - JVBERi0xLjQK
+          type: string
+        content_type:
+          description: Its media type.
+          examples:
+            - application/pdf
+          type: string
+      required:
+        - content_type
+        - content_base64
+      type: object
+    DocumentsOutputBody:
+      additionalProperties: false
+      properties:
+        documents:
+          description: The documents the caller may see.
+          items:
+            $ref: "#/components/schemas/Document"
+          type:
+            - array
+            - "null"
+      required:
+        - documents
       type: object
     ErrorsOutputBody:
       additionalProperties: false
@@ -530,6 +902,73 @@ components:
         - worksite
         - employment_type
       type: object
+    NricInputBody:
+      additionalProperties: false
+      properties:
+        nric:
+          description: "The NRIC or FIN: a letter, seven digits and a letter."
+          examples:
+            - S1234567D
+          type: string
+      required:
+        - nric
+      type: object
+    Pass:
+      additionalProperties: false
+      properties:
+        expires_on:
+          description: The day it expires.
+          examples:
+            - "2027-12-31"
+          format: date
+          type: string
+        id:
+          description: The pass record.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e70
+          format: uuid
+          type: string
+        issued_on:
+          description: The day it was issued.
+          examples:
+            - "2026-01-01"
+          format: date
+          type: string
+        number_masked:
+          description: The number, masked.
+          examples:
+            - "*******A12"
+          type: string
+        pass_type:
+          description: The kind of pass.
+          enum:
+            - employment_pass
+            - s_pass
+            - work_permit
+            - dp_work_permit
+          examples:
+            - employment_pass
+          type: string
+      required:
+        - id
+        - pass_type
+        - number_masked
+        - issued_on
+        - expires_on
+      type: object
+    PassesOutputBody:
+      additionalProperties: false
+      properties:
+        passes:
+          description: The person's work passes, soonest to expire first.
+          items:
+            $ref: "#/components/schemas/Pass"
+          type:
+            - array
+            - "null"
+      required:
+        - passes
+      type: object
     PersonInput:
       additionalProperties: false
       properties:
@@ -634,6 +1073,17 @@ components:
         - status
         - detail
         - code
+      type: object
+    ProposeBankInputBody:
+      additionalProperties: false
+      properties:
+        account:
+          description: "The new salary bank account number: 5 to 20 digits."
+          examples:
+            - 123-456-7890
+          type: string
+      required:
+        - account
       type: object
     Provider:
       additionalProperties: false
@@ -755,6 +1205,26 @@ components:
           type: string
       required:
         - id
+      type: object
+    SecretOutputBody:
+      additionalProperties: false
+      properties:
+        level:
+          description: How much of it the caller sees.
+          enum:
+            - masked
+            - full
+          examples:
+            - masked
+          type: string
+        value:
+          description: "The value at the level the caller's roles give: masked or in full."
+          examples:
+            - S****567D
+          type: string
+      required:
+        - value
+        - level
       type: object
     SessionOutputBody:
       additionalProperties: false
@@ -1041,6 +1511,187 @@ paths:
       summary: Revoke an API client
       tags:
         - API clients
+  /v1/bank-account-changes/{id}:
+    get:
+      description: Returns a change with its account masked and where it is. The person it concerns and the approvers (HR administrator, Payroll administrator, Owner) read it; anyone else is told there is none. It changes nothing.
+      operationId: getBankAccountChange
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The bank account change.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The bank account change.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankChange"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A bank account change
+      tags:
+        - People
+  /v1/bank-account-changes/{id}/confirm:
+    post:
+      description: The employee whose account it is confirms an approved change after a passkey confirmation in the last five minutes (POST /v1/session/step-up); the account then takes effect and the payroll approvers are noticed. It is audited.
+      operationId: confirmBankAccountChange
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The bank account change.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The bank account change.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Confirm an approved bank account change
+      tags:
+        - People
+  /v1/bank-account-changes/{id}/decision:
+    post:
+      description: Approves or refuses an open change. Only the HR administrator, the Payroll administrator or the Owner, never the proposer nor the person whose account it is. A refusal says why. It is audited.
+      operationId: decideBankAccountChange
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The bank account change.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The bank account change.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecideBankInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Approve or refuse a bank account change
+      tags:
+        - People
   /v1/errors:
     get:
       description: Lists every stable error code the API returns, with its HTTP status, its title and the usual fix. It needs no sign-in and changes nothing; a code never changes meaning inside /v1.
@@ -1565,6 +2216,75 @@ paths:
       summary: Change a person's own fields
       tags:
         - People
+  /v1/people/{id}/bank-account-changes:
+    post:
+      description: An employee proposes a new salary bank account for themselves. It takes effect only when an HR administrator, the Payroll administrator or the Owner who is not the proposer approves it and the employee confirms it with a passkey. It is audited; the account is never in an event.
+      operationId: proposeBankAccountChange
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProposeBankInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Propose a new salary bank account
+      tags:
+        - People
   /v1/people/{id}/classification:
     post:
       description: Ends the current classification the day the new one starts and starts it. A contractor (a contract for service) is not covered by the Employment Act; a Part IV class needs cover; a permanent resident has the date residence began (NM-PPL-08). The HR officer and the HR administrator. It is audited; the date of birth never enters the audit event.
@@ -1636,6 +2356,341 @@ paths:
       summary: Set a person's legal classification
       tags:
         - People
+  /v1/people/{id}/dependants:
+    get:
+      description: "Lists the person's dependants at the level the caller's roles give (Appendix B: Dependants): the HR officer in full, the person themselves their own, everyone else nothing. Every read is audited. A line manager is told there are none to see."
+      operationId: listPersonDependants
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DependantsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A person's dependants
+      tags:
+        - People
+    post:
+      description: Records a child with a date of birth, or the formal intent to adopt, for family leave. The person declares their own; the HR administrator records on their behalf. It is audited without the child's date of birth.
+      operationId: addPersonDependant
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddDependantInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Record a dependant for family leave
+      tags:
+        - People
+  /v1/people/{id}/documents:
+    get:
+      description: "Lists the person's documents that the caller's roles may see: a role sees a document only when it is named a viewer, and the person sees theirs when employee is named. It changes nothing."
+      operationId: listPersonDocuments
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A person's documents
+      tags:
+        - People
+    post:
+      description: Stores a document (contract, KETs, letter, pass copy, certificate) of up to 5 MB as write-once evidence, with a retention class and the roles who may see it. The HR officer and the HR administrator. It is audited.
+      operationId: addPersonDocument
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddDocumentInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "413":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Request Entity Too Large
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Add a document to a person's file
+      tags:
+        - People
+  /v1/people/{id}/documents/{doc}:
+    get:
+      description: Returns a document's file to a caller who may see it, and audits the read. A document the caller may not see answers as if it did not exist.
+      operationId: getPersonDocument
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+        - description: The document.
+          in: path
+          name: doc
+          required: true
+          schema:
+            description: The document.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e72
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: A document's content
+      tags:
+        - People
   /v1/people/{id}/job:
     post:
       description: Ends the person's current job record the day the new one starts and starts it, so job title, department, worksite, employment type and line manager are history, never edited. A day on or before the current record's start is refused (NM_PERSON_HISTORY). The HR officer and the HR administrator. It is audited.
@@ -1705,6 +2760,289 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Internal Server Error
       summary: Change a person's job, manager or department
+      tags:
+        - People
+  /v1/people/{id}/nric:
+    put:
+      description: "Seals the NRIC or FIN with the key service and keeps its masked form: it is collected only for statutory filings, never shown in a list, never in a log or an event. The HR officer and the HR administrator. It is audited without the value."
+      operationId: setPersonNric
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NricInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Set a person's NRIC or FIN
+      tags:
+        - People
+  /v1/people/{id}/secrets/{field}:
+    get:
+      description: "Returns the NRIC or FIN or the salary bank account at the level the caller's roles give (Appendix B): masked for the HR officer, in full for the HR administrator, the Payroll administrator and the Owner as the matrix says, and always in full for the person themselves. Every read, and every refusal, is audited. A field the caller may not see answers as if there were none."
+      operationId: getPersonSecret
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+        - description: The restricted field.
+          in: path
+          name: field
+          required: true
+          schema:
+            description: The restricted field.
+            enum:
+              - nric
+              - bank
+            examples:
+              - nric
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecretOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Read a restricted field
+      tags:
+        - People
+  /v1/people/{id}/work-passes:
+    get:
+      description: Lists the person's work passes, numbers masked, soonest to expire first. The people team (HR, the Payroll administrator, the Owner). It changes nothing.
+      operationId: listPersonWorkPasses
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PassesOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A person's work passes
+      tags:
+        - People
+    post:
+      description: Records a work pass with its number sealed and masked and its dates; the employer is reminded 90, 60 and 30 days before it expires unless a later pass of the same type is recorded. A renewal is a new pass. The HR officer and the HR administrator. It is audited.
+      operationId: addPersonWorkPass
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddPassInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Service Unavailable
+      summary: Record a work pass
       tags:
         - People
   /v1/session:

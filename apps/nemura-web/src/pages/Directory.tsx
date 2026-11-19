@@ -3,7 +3,7 @@ import { api } from "../api/client";
 import type { components } from "../api/schema";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { helpText, t } from "../i18n";
-import { Shell, admin, team } from "./Shell";
+import { Shell, admin, hr, team } from "./Shell";
 
 type Entry = components["schemas"]["DirectoryEntry"];
 type State = { status: "loading" } | { status: "failed" } | { status: "ready"; people: Entry[] };
@@ -34,6 +34,7 @@ export function Directory({ roles }: { roles: readonly string[] }) {
         <ReviewBanner screen="nm-people" />
         <h1 className="fy-h1" title={helpText("directory.page").tooltip}>{t("directory.title")}</h1>
         <p className="fy-secondary">{t("directory.lead")}</p>
+        {hr(roles) && <p><a className="fy-btn fy-btn--primary" href="/people/new">{t("new.add")}</a></p>}
         {state.status === "loading" && <p role="status" className="fy-secondary">{t("directory.loading")}</p>}
         {state.status === "failed" && <p role="alert" className="fy-secondary">{t("directory.failed")}</p>}
         {state.status === "ready" && state.people.length === 0 && <p role="status" className="fy-secondary">{t("directory.empty")}</p>}

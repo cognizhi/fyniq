@@ -52,6 +52,20 @@ var Categories = []Category{
 		Columns:    []string{"person_classification.birth_date", "person_classification.pr_start_date"},
 	},
 	{
+		Key: "restricted-identifiers", What: "A person's NRIC or FIN and salary bank account, each sealed by the key service and kept with a masked form and a keyed fingerprint",
+		Purpose:    "To file with the authorities (CPF, IRAS, MOM) and to pay salary: NRIC only for statutory filings, never to sign in",
+		Capability: "NRIC or FIN",
+		Retention:  Rule{MinMonths: 60, After: "the end of the year it was last used for filing", Reason: "Statutory filings are kept 5 years; the identifier goes with them"},
+		Columns:    []string{"person_secret.nric_sealed", "person_secret.nric_masked", "person_secret.nric_fingerprint", "person_secret.bank_sealed", "person_secret.bank_masked", "person_secret.bank_fingerprint"},
+	},
+	{
+		Key: "dependants", What: "A dependant's date of birth for family leave: relationship, citizenship and the employee's declaration",
+		Purpose:    "To work out which family leave an employee is entitled to, per scheme and period (NM-PPL-07)",
+		Capability: "Dependants (NM-PPL-07)",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record while a leave claim may need it"},
+		Columns:    []string{"person_dependant.birth_date"},
+	},
+	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",
 		Purpose:    "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)",
 		Capability: "Own file beyond routine release (NM-SEC-07)",
