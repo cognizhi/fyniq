@@ -667,6 +667,7 @@ fyniq_executor  SELECT    ledger_boundary
 fyniq_executor  SELECT    ledger_purged_entry
 fyniq_executor  SELECT    ledger_revision
 fyniq_executor  EXECUTE   member_emails()
+fyniq_executor  EXECUTE   member_names()
 fyniq_executor  SELECT    opening_balance
 fyniq_executor  SELECT    operation
 fyniq_executor  SELECT    organisation
