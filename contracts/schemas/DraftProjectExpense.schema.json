@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "description": "The posted bill or claim.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e81"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "line": {
+      "description": "The line's place in its document, from 0.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "document_id",
+    "line"
+  ],
+  "title": "DraftProjectExpense",
+  "type": "object"
+}

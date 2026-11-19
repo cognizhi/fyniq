@@ -88,6 +88,9 @@ first contact**.
   claims to pay and bank-detail changes waiting for a second person.
 - **Payment releaser**: batches waiting for release and payments the bank rejected, then each bank account's balance.
 
+The Approver also sees **Waiting for your approval** on Home: the requests that wait for them, the oldest first, each with
+its step and who that step needs. The department's budget and spend follow the people projection, after go-live.
+
 The Administrator lands on **Settings**, and the Company secretary and the DPO on **Compliance**, so their rows come
 first there:
 

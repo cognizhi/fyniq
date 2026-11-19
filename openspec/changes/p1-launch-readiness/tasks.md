@@ -232,8 +232,9 @@ and names the requirement IDs it proves.
   land, and the Auditor's "Your engagement" (read-only until its expiry, with links) on Reports; the walkthroughs assert
   them (27 journeys pass on the local stack). Owner decisions of 18 Nov (rev 0.288, #806): the Approver's department
   figures wait for the people projection; the Auditor's requests and samples (FR-UX-42) and retention holds (AUD-11)
-  are after go-live. **Left:** the Approver's approvals with their limits, which needs a read an Approver may make
-  (approval policies are refused to them), and each role's Inbox items.)
+  are after go-live. 18 Nov 2026, later: the Approver's Home lists the requests waiting for them with each one's step and
+  who it needs (a request carries its own step, as an Approver reads no approval policy). **Left:** each role's Inbox
+  items in the walkthroughs, which need records waiting for that role.)
 - [ ] 5.4 QA-UI-07 and QA-RPT-04's visual snapshots (design D5; rev 0.284):
   - hash baselines in `apps/web/visual/baselines.json`;
   - the key pages on every pull request, every route nightly and in the release workflow, at the five frames, in light

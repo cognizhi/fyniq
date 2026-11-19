@@ -167,6 +167,13 @@ func (s Invoices) Revise(ctx context.Context, org, id uuid.UUID, d invoice.Draft
 				return err
 			}
 		}
+		// A draft made from a project's unbilled work keeps what it bills, so posting it still marks that work billed (FR-PRJ-10).
+		if d.ProjectBilling == nil && invoice.ProjectBillingOf(doc) != nil {
+			d.ProjectBilling = invoice.ProjectBillingOf(doc)
+			if b, err = invoice.Encode(d); err != nil {
+				return err
+			}
+		}
 		out, err = u.Documents().Revise(ctx, id, b)
 		return err
 	})

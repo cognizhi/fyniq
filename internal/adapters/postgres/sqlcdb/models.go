@@ -2747,6 +2747,17 @@ type FyniqProject struct {
 	ChangedAt      time.Time
 }
 
+type FyniqProjectBilledItem struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Kind           string
+	RefID          uuid.UUID
+	LineNo         int32
+	InvoiceID      uuid.UUID
+	CreatedAt      time.Time
+}
+
 type FyniqProjectMember struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
@@ -2755,6 +2766,20 @@ type FyniqProjectMember struct {
 	IsManager      bool
 	IsActive       bool
 	CreatedAt      time.Time
+}
+
+type FyniqProjectMilestone struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Kind           string
+	Name           string
+	Amount         string
+	DueOn          pgtype.Date
+	AcceptedOn     pgtype.Date
+	Version        int32
+	CreatedAt      time.Time
+	ChangedAt      time.Time
 }
 
 type FyniqProjectTask struct {

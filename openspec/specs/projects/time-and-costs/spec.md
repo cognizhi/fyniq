@@ -53,6 +53,11 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 - **WHEN** reminders run
 - **THEN** the person is reminded of the missing day
 
+#### Scenario: The Friday reminder (rev 0.302)
+- **GIVEN** a person on an active project and a Friday in the organisation's time zone
+- **WHEN** the daily job runs at 16:00 Singapore time
+- **THEN** the person is told once of the weekdays of the week with no time, public holidays excluded, in a notice that is theirs alone, and nobody is told on another day or while Projects and time are off
+
 #### Scenario: Approved or invoiced entries lock
 - **WHEN** a time entry is approved or invoiced
 - **THEN** it is locked
@@ -195,6 +200,30 @@ Source: PRD-001 §8.10 · Priority M · Phase P1
 #### Scenario: Internal or non-billable project
 - **WHEN** time and costs are recorded on an internal or non-billable project
 - **THEN** they are not billed
+
+#### Scenario: The unbilled view and the draft invoice (rev 0.298)
+- **GIVEN** a time-and-materials project with a customer, approved billable time and posted billable costs
+- **WHEN** the unbilled work is drafted into an invoice
+- **THEN** time is valued at the billing rate of each day (RND-TIME per entry) and each cost at its cost plus markup (RND-MARKUP)
+- **AND** an ordinary draft invoice is made to the customer through the invoice command, each line carrying the project
+
+#### Scenario: Work is billed once (rev 0.298)
+- **WHEN** an invoice made from a project's unbilled work is posted
+- **THEN** its time entries and cost lines are marked billed by the database, a voided invoice releases them, and no second invoice can be posted for the same work
+
+#### Scenario: Approved time not invoiced (rev 0.298)
+- **WHEN** approved billable time on a time-and-materials project is on no posted invoice 30 days after the end of its month
+- **THEN** C.2 #40 warns and names the project
+
+#### Scenario: Milestones are billed once after acceptance (rev 0.301)
+- **GIVEN** a fixed-fee project with a milestone
+- **WHEN** the customer's acceptance is recorded and an invoice is drafted for it
+- **THEN** the invoice has one line at the milestone's amount, an unaccepted or already billed milestone is refused, and posting the invoice marks the milestone billed until the invoice is voided
+
+#### Scenario: Retainer drawdown (rev 0.301)
+- **GIVEN** a retainer project whose periods are invoiced without acceptance
+- **WHEN** its approved billable time is valued at billing rates
+- **THEN** the time is drawn down against what the retainer billed, and the balance is billed less drawn, not invoiced as time
 
 ### Requirement: FR-PRJ-11 Revenue over time for fixed-fee projects
 When the accountant elects it, the system SHALL recognise revenue over time for fixed-fee projects by cost-to-cost progress, with a contract asset and contract liability, through a monthly journal proposed for approval.

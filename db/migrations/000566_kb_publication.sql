@@ -1,6 +1,6 @@
 -- A publication of the organisation's knowledge base is an approval object (PRD-001 AI-56, FR-APR-01, open question 18;
 -- p1-knowledge-base task 7.1, design D8): kb_publication.publish, under Appendix D's "Knowledge base" row, whose Owner signs
--- (PRD-001 rev 0.293). In Founder mode the Owner publishes alone and the publication waits in the weekly review (FM-3); in Team
+-- (PRD-001 rev 0.300). In Founder mode the Owner publishes alone and the publication waits in the weekly review (FM-3); in Team
 -- mode another Owner signs a request. The approval objects are widened NOT VALID and 000567 validates them (squawk:
 -- constraint-missing-not-valid). Built from 000432's lists, the newest on main.
 

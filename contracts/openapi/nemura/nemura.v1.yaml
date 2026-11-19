@@ -142,6 +142,41 @@ components:
         - detail
         - code
       type: object
+    SessionOutputBody:
+      additionalProperties: false
+      properties:
+        landing:
+          description: "The page the person lands on: /people for the people team, /me for everyone else."
+          examples:
+            - /people
+          type: string
+        member_id:
+          description: The person who is signed in.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+          format: uuid
+          type: string
+        organisation_id:
+          description: The organisation the session is in.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
+          format: uuid
+          type: string
+        roles:
+          description: The roles the person holds today, from PRD-002 Appendix B.
+          examples:
+            - - hr_admin
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+      required:
+        - organisation_id
+        - member_id
+        - roles
+        - landing
+      type: object
 info:
   contact:
     name: Nemura
@@ -247,6 +282,47 @@ paths:
       summary: What this service is
       tags:
         - Platform
+  /v1/session:
+    get:
+      description: Returns the person the session cookie names, the organisation they are in, the roles they hold today and the page they land on. Roles are read again on each request, so a change is seen at once. It changes nothing; without a valid session it is NM_UNAUTHENTICATED.
+      operationId: getSession
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Who is signed in
+      tags:
+        - Session
 servers:
   - description: Nemura's origin with /api (one origin serves the web app and the API), or the api service itself in make dev.
     url: "{origin}"
@@ -257,3 +333,5 @@ servers:
 tags:
   - description: What the service is and the error codes it returns (NM-ARC-03).
     name: Platform
+  - description: Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02).
+    name: Session

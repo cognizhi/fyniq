@@ -1000,7 +1000,7 @@ Source: PRD-001 §D
 #### Scenario: View, edit and publish
 - **WHEN** a role acts on the knowledge base's compiled pages and index
 - **THEN** the Owner and the Administrator can view, edit and publish (V/C)
-- **AND** the Owner also signs a publication (A, rev 0.293), as in Team mode another Owner signs a request, while in Founder mode the Owner publishes alone and the publication waits in the weekly review (AI-56)
+- **AND** the Owner also signs a publication (A, rev 0.300), as in Team mode another Owner signs a request, while in Founder mode the Owner publishes alone and the publication waits in the weekly review (AI-56)
 
 #### Scenario: View
 - **WHEN** a role acts on the knowledge base's compiled pages and index
