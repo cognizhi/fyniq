@@ -4,6 +4,10 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+
+	"github.com/cognizhi/fyniq/internal/nemura/features"
+	"github.com/cognizhi/fyniq/internal/nemura/people"
+	"github.com/cognizhi/fyniq/internal/nemura/policy"
 )
 
 // Problem is an RFC 9457 problem details object (NM-ARC-03; PRD-001 FR-INT-07): a stable code from the catalogue, what went
@@ -49,17 +53,26 @@ type Code struct {
 // (TestEveryCodeInTheCatalogueIsTriggered). PRD-002 names more (NM_FEATURE_REQUIRED, NM_POLICY_BELOW_STATUTE,
 // NM_FEATURE_OBLIGATIONS_OPEN): they arrive with the features that raise them.
 const (
-	CodeNotFound        = "NM_NOT_FOUND"           // no such record
-	CodeInvalid         = "NM_INVALID"             // a field is invalid
-	CodeUnauthenticated = "NM_UNAUTHENTICATED"     // no valid session
-	CodePasskeyRefused  = "NM_PASSKEY_REFUSED"     // #nosec G101 -- a problem code's name: the passkey's answer failed a check
-	CodeNoCeremony      = "NM_PASSKEY_NO_CEREMONY" // the ceremony was not started, or its challenge was used or has expired
-	CodeRoleRequired    = "NM_ROLE_REQUIRED"       // the person's roles do not allow this
-	CodeStepUp          = "NM_STEP_UP_REQUIRED"    // confirm it is the person with a passkey, then try again
-	CodeClientInvalid   = "NM_API_CLIENT_INVALID"  // the registration is not valid
-	CodeClientExists    = "NM_API_CLIENT_EXISTS"   // a live client has that name
-	CodeUnavailable     = "NM_UNAVAILABLE"         // the service is not configured for this here
-	CodeNoPasskey       = "NM_NO_PASSKEY"          // #nosec G101 -- a problem code's name: no passkey to confirm with
+	CodeNotFound           = "NM_NOT_FOUND"           // no such record
+	CodeInvalid            = "NM_INVALID"             // a field is invalid
+	CodeUnauthenticated    = "NM_UNAUTHENTICATED"     // no valid session
+	CodePasskeyRefused     = "NM_PASSKEY_REFUSED"     // #nosec G101 -- a problem code's name: the passkey's answer failed a check
+	CodeNoCeremony         = "NM_PASSKEY_NO_CEREMONY" // the ceremony was not started, or its challenge was used or has expired
+	CodeRoleRequired       = "NM_ROLE_REQUIRED"       // the person's roles do not allow this
+	CodeStepUp             = "NM_STEP_UP_REQUIRED"    // confirm it is the person with a passkey, then try again
+	CodeClientInvalid      = "NM_API_CLIENT_INVALID"  // the registration is not valid
+	CodeClientExists       = "NM_API_CLIENT_EXISTS"   // a live client has that name
+	CodePersonInvalid      = people.CodeInvalid
+	CodePersonNotFound     = people.CodeNotFound
+	CodePersonHistory      = people.CodeHistory
+	CodePersonExists       = people.CodeExists
+	CodeFeatureRequired    = features.CodeRequired
+	CodeFeatureUnavailable = features.CodeUnavailable
+	CodeFeatureObligations = features.CodeObligations
+	CodeFeatureInvalid     = features.CodeInvalid
+	CodePolicyBelow        = policy.CodeBelowStatute
+	CodeUnavailable        = "NM_UNAVAILABLE" // the service is not configured for this here
+	CodeNoPasskey          = "NM_NO_PASSKEY"  // #nosec G101 -- a problem code's name: no passkey to confirm with
 )
 
 // Catalogue is every stable code the API returns, in order. It is served at GET /v1/errors.
@@ -70,6 +83,15 @@ var Catalogue = []Code{
 	{CodePasskeyRefused, http.StatusUnprocessableEntity, "The passkey's answer was refused", "Try again with the passkey you registered, on this site, and confirm it is you."},
 	{CodeNoCeremony, http.StatusConflict, "No passkey ceremony is open", "Start again: ask for the options, then answer them within five minutes."},
 	{CodeNoPasskey, http.StatusConflict, "No passkey to confirm with", "Register a passkey first, then confirm again."},
+	{CodePersonInvalid, http.StatusUnprocessableEntity, "The person's details are not valid", "Correct the field the message names and send it again."},
+	{CodePersonNotFound, http.StatusNotFound, "No such person", "Check the person's ID: it is in the directory (GET /v1/people)."},
+	{CodePersonHistory, http.StatusConflict, "That would rewrite history", "A job or classification is changed by starting a new one from a later day, never by editing the old one."},
+	{CodePersonExists, http.StatusConflict, "That person exists already", "Use the person's ID with PUT /v1/people/{id} to change them, or a new ID to add another."},
+	{CodeFeatureRequired, http.StatusConflict, "Another feature needs this", "Switch the feature the message names first."},
+	{CodeFeatureUnavailable, http.StatusConflict, "That feature cannot be switched on yet", "It arrives in a later release, or needs an approval that is not built yet."},
+	{CodeFeatureObligations, http.StatusConflict, "Work is still open in this feature", "Record how each open thing will be handled, then switch the feature off."},
+	{CodeFeatureInvalid, http.StatusUnprocessableEntity, "The feature or its state is not valid", "Use a feature from GET /v1/features, a state of on, off or external, and a system name only for external."},
+	{CodePolicyBelow, http.StatusUnprocessableEntity, "The policy gives less than the statute", "Raise each rule the message names to at least the statutory value."},
 	{CodeUnavailable, http.StatusServiceUnavailable, "Not available here", "This deployment has not set it up: ask whoever runs Nemura."},
 	{CodeRoleRequired, http.StatusForbidden, "Not allowed for your roles", "Ask the Owner to do it, or to change your roles."},
 	{CodeStepUp, http.StatusForbidden, "Confirm it is you", "Confirm with your passkey (POST /v1/session/step-up), then try again within five minutes."},

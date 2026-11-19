@@ -38,6 +38,34 @@ var Categories = []Category{
 		Columns:   []string{"identity_directory.subject", "passkey.name", "owner_recovery.operators"},
 	},
 	{
+		Key: "people-records", What: "A person's legal and preferred name, work email, phone, start and leaving, with their job, manager and department history",
+		Purpose:    "To run employment: who works here, in what role and under whom, and to meet the employer's record-keeping duties (Employment Act)",
+		Capability: "People records (not restricted)",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "MOM: employment records of a former employee are kept for 1 year after they leave"},
+		Columns:    []string{"person.legal_name", "person.preferred_name", "person.work_email", "person.phone", "person.leaving_reason"},
+	},
+	{
+		Key: "legal-classification", What: "A person's legal classification: contract of service or for service, Employment Act cover and Part IV class, residency and the date residence began, and date of birth",
+		Purpose:    "To apply the right statutory rules to the person (leave, hours, retirement and re-employment) and no others",
+		Capability: "People records (not restricted)",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"},
+		Columns:    []string{"person_classification.birth_date", "person_classification.pr_start_date"},
+	},
+	{
+		Key: "restricted-identifiers", What: "A person's NRIC or FIN and salary bank account, each sealed by the key service and kept with a masked form and a keyed fingerprint",
+		Purpose:    "To file with the authorities (CPF, IRAS, MOM) and to pay salary: NRIC only for statutory filings, never to sign in",
+		Capability: "NRIC or FIN",
+		Retention:  Rule{MinMonths: 60, After: "the end of the year it was last used for filing", Reason: "Statutory filings are kept 5 years; the identifier goes with them"},
+		Columns:    []string{"person_secret.nric_sealed", "person_secret.nric_masked", "person_secret.nric_fingerprint", "person_secret.bank_sealed", "person_secret.bank_masked", "person_secret.bank_fingerprint"},
+	},
+	{
+		Key: "dependants", What: "A dependant's date of birth for family leave: relationship, citizenship and the employee's declaration",
+		Purpose:    "To work out which family leave an employee is entitled to, per scheme and period (NM-PPL-07)",
+		Capability: "Dependants (NM-PPL-07)",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record while a leave claim may need it"},
+		Columns:    []string{"person_dependant.birth_date"},
+	},
+	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",
 		Purpose:    "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)",
 		Capability: "Own file beyond routine release (NM-SEC-07)",
@@ -68,6 +96,10 @@ var NotPersonal = map[string]string{
 	"identity_directory.issuer":    "the identity provider's address, not a person",
 	"identity_directory.tenant":    "the identity provider's tenant for the organisation, not a person",
 	"api_client.name":              "the name of a system that calls the API (a company or product), not a person",
+	"person_job.job_title":         "the title of a role, not a person's data on its own",
+	"person_job.department":        "the name of a department",
+	"pack_decision.table_name":     "the name of a table of a statutory pack, not a person",
+	"pack_decision.reason":         "the company's reason for using a researched value, written for the record; it names no person by design",
 	"outbox.payload":               "the task's payload: ids only, never pay or bank details (ADR-N5)",
 }
 

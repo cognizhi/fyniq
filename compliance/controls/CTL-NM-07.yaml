@@ -1,0 +1,15 @@
+# CTL-NM-07: PRD-001 Appendix F (F.9). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-NM-07
+section: "F.9"
+control: "Every pack value a Nemura calculation uses is verified by the publishers before the first paid person's leave or pay is calculated; until then each calculation needs the company's recorded decision (NM-PACK-07)"
+mapping: "SOC2 PI1; ISO 5.36"
+automated_check: "Checks N.1 #13 lists a live calculation that needs an unverified value with no recorded decision"
+frequency: "E (before the first paid person)"
+evidence: "Pack record with its verifier and date"
+owner: Owner
+checks:
+  - frequency: E
+    status: running
+    how: "test TestEachPeopleCheckIsTriggeredByAFixture"
+    evidence: "Checks N.1 #13 lists a live calculation that reads a researched value with no recorded company decision, and a decision or a verification clears it; CI artefact test-report (90 days). The verification record itself (the verifier and date in the pack) is the publishers' step before the first paid person"

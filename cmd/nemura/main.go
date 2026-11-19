@@ -21,8 +21,11 @@ package main
 import (
 	"cmp"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"log/slog"
 	"net/url"
 	"os"
 	"time"
@@ -129,7 +132,7 @@ func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) strin
 	// delivers it. The local build and a deployment with no channel yet log it; email and in-app delivery arrive with notifications.
 	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock, Raise: store.RaisePayDayAlerts}
 	s.Handle("POST /tasks", &outbox.Handler{Class: outbox.ClassWorker, Store: store, Tokens: tokens, Clock: deps.Clock,
-		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: map[string]outbox.Work{alert.KindNotify: alert.Work(alert.LogNotifier{}, deps.Clock)}})
+		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: map[string]outbox.Work{alert.KindNotify: alert.Work(alert.LogNotifier{}, deps.Clock), "people.notice": logNotice}})
 	s.Handle("POST /tick", outbox.Tick{Dispatcher: disp, Tokens: tokens, Class: outbox.ClassWorker})
 	return nil
 }
@@ -174,5 +177,16 @@ func migrate(ctx context.Context, getenv func(string) string, args []string, clo
 	if after != nil {
 		return after(ctx, url)
 	}
+	return nil
+}
+
+// logNotice is the delivery of a people notice (the payroll approvers' notice of a changed salary bank account, NM-PPL-04) until notifications carry email and
+// in-app delivery: a line naming the kind and the identifiers, never a name or an account.
+func logNotice(ctx context.Context, org uuid.UUID, row outbox.Row) error {
+	var p struct{ Notice, Person, Change string }
+	if err := json.Unmarshal(row.Payload, &p); err != nil || p.Notice == "" {
+		return fmt.Errorf("the notice row %s is not a notice", row.ID)
+	}
+	slog.InfoContext(ctx, "people.notice", "organisation", org.String(), "notice", p.Notice, "person", p.Person, "change", p.Change)
 	return nil
 }

@@ -2,6 +2,7 @@ package archtest
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -23,6 +24,29 @@ var NemuraShared = []string{
 	"internal/app", "internal/httpserver", "internal/runtime", "internal/clock", "internal/telemetry", "internal/logging",
 	"internal/egress", "internal/version", "internal/ports", "internal/domain/money", "internal/domain/rounding",
 	"internal/domain/audit", "internal/adapters/postgres/gooserun", "internal/adapters/local", "internal/passkey", "internal/adapters/hydra",
+	// The pack validator: a pure library for statutory parameter packs that both apps read the same way (owner decision O1, 19 Nov 2026).
+	// It stays pure, which TestTheSharedPackLibraryStaysPure checks.
+	"internal/domain/pack",
+}
+
+// PurePack are the standard-library packages the shared pack validator may not import: a pure library does no I/O, holds no clock and speaks to no
+// network or database, so sharing it shares rules and no code path (NM-ARC-05).
+var PurePack = []string{"net", "net/http", "database/sql", "os", "os/exec", "syscall"}
+
+// PackViolations reports a way internal/domain/pack stops being pure: it imports another package of the module, or one of PurePack's.
+func PackViolations(pkgs []Pkg) []string {
+	var out []string
+	for _, p := range pkgs {
+		if p.ImportPath != Module+"/internal/domain/pack" {
+			continue
+		}
+		for _, imp := range p.Imports {
+			if strings.HasPrefix(imp, Module+"/") || slices.Contains(PurePack, imp) {
+				out = append(out, fmt.Sprintf("%s imports %s: the shared pack validator is pure, with no I/O, storage or module code (owner decision O1)", p.ImportPath, imp))
+			}
+		}
+	}
+	return out
 }
 
 func inNemura(importPath string) bool {

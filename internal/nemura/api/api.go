@@ -51,6 +51,9 @@ func Config(v string) huma.Config {
 		{Name: "Platform", Description: "What the service is and the error codes it returns (NM-ARC-03)."},
 		{Name: "API clients", Description: "Systems that call Nemura's API on their own, registered by the Owner with a key pair they hold (NM-ARC-06)."},
 		{Name: "Sign-in", Description: "What the sign-in page shows: the providers on offer and whether first-run setup is done."},
+		{Name: "People", Description: "The people record: the directory everyone sees, and each person's record, job history and legal classification (NM-PPL-01, NM-PPL-06, NM-PPL-08)."},
+		{Name: "Features", Description: "Each optional feature of an organisation: on, off or held by another system (NM-FEAT-01 to 05)."},
+		{Name: "Packs", Description: "Country packs with their sources, the company's policy on top and the people checks (NM-PACK-01 to 08)."},
 		{Name: "Session", Description: "Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02)."},
 	}
 	return cfg
@@ -107,11 +110,15 @@ type SignInInfo interface {
 
 // Deps are what the API is given.
 type Deps struct {
-	Sessions Sessions
-	Passkeys Passkeys
-	Clients  APIClients
-	SignIn   SignInInfo
-	Clock    ports.Clock
+	Sessions   Sessions
+	Passkeys   Passkeys
+	Clients    APIClients
+	People     People
+	Features   Features
+	Restricted Restricted
+	Packs      Packs
+	SignIn     SignInInfo
+	Clock      ports.Clock
 	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
 	CookieNames []string
 }
@@ -129,6 +136,10 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerSession()
 	a.registerPasskeys()
 	a.registerClients()
+	a.registerPeople()
+	a.registerFeatures()
+	a.registerRestricted()
+	a.registerPacks()
 	a.registerSignIn()
 	return a
 }

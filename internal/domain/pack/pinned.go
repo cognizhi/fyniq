@@ -75,6 +75,7 @@ func RunPinned(v Version) []Result {
 	out = append(out, runCIT(v)...)
 	out = append(out, runCPFLow(v)...)
 	out = append(out, runSHG(v)...)
+	out = append(out, runPeople(v)...)
 	return append(out, runWages(v)...)
 }
 
