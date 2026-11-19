@@ -346,7 +346,7 @@ export function PaymentBatches() {
           </li>
           <li className="fy-row fy-row--top gap-2">
             <Icon of={Send} />
-            The Payment releaser releases it with a passkey, then pays it in the bank from the payment list.
+            The Payment releaser releases it with a passkey, then pays it in the bank from the payment file it writes.
           </li>
           <li className="fy-row fy-row--top gap-2">
             <Icon of={Hourglass} />

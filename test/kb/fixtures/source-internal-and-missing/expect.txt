@@ -1,0 +1,2 @@
+error KB-SOURCE-BANNED kb/pages/task/a.md
+error KB-SOURCE-GONE kb/pages/task/a.md

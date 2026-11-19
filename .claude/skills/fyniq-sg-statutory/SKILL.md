@@ -25,6 +25,11 @@ Changing a future rate never changes the past.
 > **Every January**, add the new year's public holidays from MOM's page to a new `sg-deadlines` version:
 > a working day in a year without them is Not assessed, so CPF items stop at the year's end.
 
+> **`sg-cpf@2026.2`** (18 Nov 2026, `p1-statutory-packs`) adds the first two years of permanent residence in both rate
+> pairings (`spr1_gg`, `spr2_gg`, `spr1_fg`, `spr2_fg`), the graduated range from S$50 to S$750 (`pack.CPFLowWagesOn`)
+> and the printed Ordinary Wage maxima (`pack.CPFOWMax`), from the CPF Board's tables for 2026 and 2027; the loader holds
+> each band's formula to its full rate at S$750. The pay run's rounding is `p1-payroll-link`'s.
+
 ## Principle: official sources only
 
 Never take a rate from memory, a blog or a model's answer. For every value, open the official

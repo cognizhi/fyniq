@@ -46,7 +46,7 @@
   tests' books relax the two rules (`relaxEvidence`). Tests `TestEvidenceRulesHoldBillsAndJournals`. **Left:** the
   rules of activities not built yet (filings, CPF, share transfers, instruments, investor records, grants) with their
   modules; the PRD table's second recommended items (a business purpose note, a call-back note, an explanation).)
-  (18 Nov 2026, PRD-001 rev 0.290: the table is data. `evidence.Catalogue` holds every row of §8.16 with its required and
+  (18 Nov 2026, PRD-001 rev 0.291: the table is data. `evidence.Catalogue` holds every row of §8.16 with its required and
   recommended items and the kinds of file that meet them; `GET /v1/evidence-rules` (`getEvidenceRules`, any member)
   answers it with the level in force for bills, manual journals and filings (CPF payments are filings), and the Evidence
   panel's **Rules for this activity** shows each item as ✖, ⚠ or ✔ against the files attached. The five defaults are
