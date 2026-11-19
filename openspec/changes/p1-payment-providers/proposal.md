@@ -42,8 +42,8 @@ Everything this change needs from the rest of the platform has landed:
   certain through the rules that exist: a fee to the fee account, a dispute's money to disputes clearing, a payout as a
   transfer to the bank. A charge or a refund waits for the document it settles. No posting source is added, so the Python
   oracle already covers them; a differential scenario of a provider month proves it.
-- **Model B mirror (design D6) is not built here:** how a provider invoice becomes a Fyniq document needs the owner's decision
-  2 (a narrow database function, API-side posting, or by hand). Its events are known and post nothing.
+- **Model B mirror (design D6) follows go-live:** the owner decided on 19 Nov 2026 that a provider invoice is made by a narrow
+  database function the worker calls. Its events are known and post nothing until then (follow-up tasks 4.1 to 4.4).
 - **Payout reconciliation (design D7).** Each payout is stored with the balance transactions it settles. Check C.2 #42
   (a settled payout nets to zero in clearing, error) and C.2 #50 (month-end clearing equals the provider's balance not yet
   paid out, warning) run on the checks engine; a sweep that fell behind is C.2 #43's warning.
@@ -51,9 +51,12 @@ Everything this change needs from the rest of the platform has landed:
   accounts, payouts with their breakdown and the parked events; the setup needs a right on "Bank data… connections".
 - **Screens:** `provider-payouts` and `subscriptions` stay designed and unbuilt in this change; the API gives them
   what they need.
-- **PRD revision** recording the decisions of design D1, D4, D5, D8 and D9, each tagged `[accountant to confirm]`.
+- **A lost dispute (D9):** a draft journal that writes it off to an expense, up to the setting `psp.dispute_expense_limit`
+  (S$100.00 by default), and a person's resolution of a parked event.
+- **PRD revisions 0.304 and 0.305** recording the decisions of design D1, D4, D5, D8 and D9 and the owner's of 19 Nov 2026, each
+  tagged `[accountant to confirm]` where it is not final.
 
-Not in this change: the Model B mirror and its postings (owner decision 2); the two screens and the guide's pages for them; payment links and PayNow QR creation on invoices (FR-PSP-02, FR-AR-13, P2: HitPay's charges are read
+Not in this change: the Model B mirror and its postings (after go-live, tasks 4.1 to 4.4); a lost dispute's credit-note route (task 4.5); the two screens and the guide's pages for them; payment links and PayNow QR creation on invoices (FR-PSP-02, FR-AR-13, P2: HitPay's charges are read
 and matched by the existing reconciliation); instant and manual-payout contents beyond balance data (FR-PSP-06's
 limits); usage prices, bundles, set-up fees and multi-element contracts (parked, FR-PSP-07); MRR and churn from
 subscriptions (FR-KPI-04, P2); the provider's monthly tax invoice capture (needs `p1-document-capture`; FR-PSP-05's

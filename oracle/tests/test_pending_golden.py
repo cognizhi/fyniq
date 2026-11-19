@@ -836,11 +836,16 @@ def test_payment_providers_month_nets_to_the_unpaid_charge():
     """A provider's clearing account (1050), worked by hand from the rules (p1-payment-providers 2.6): three charges of
     100.00 and their fees of 3.90 leave 288.30; the dispute takes 50.00 and its fee 15.00 to 1055 and the win brings 65.00
     back; the payout of the first two charges' net, 2 x 96.10 = 192.20, goes to the bank; what is left in 1050 is the third
-    charge's net, 96.10, which is what the provider still holds for the company (check C.2 #50)."""
+    charge's net, 96.10, less the second, lost dispute's 65.00 written off to 5045, 31.10: what the provider still holds for the
+    company (check C.2 #50)."""
     r = _run("payment-providers")
     assert r["rejected"] == []
     assert _lines(r, "STR-C1F") == [("1050", "SGD", "-3.90", "-3.90"), ("5040", "SGD", "3.90", "3.90")]
     assert _lines(r, "STR-D1F") == [("1050", "SGD", "-15.00", "-15.00"), ("1055", "SGD", "15.00", "15.00")]
     assert _lines(r, "STR-PO1") == [("1020", "SGD", "192.20", "192.20"), ("1050", "SGD", "-192.20", "-192.20")]
-    # 1055 nets to zero (50.00 + 15.00 - 65.00) and is left out; 4010 is 3 x 100.00; 5040 is 3 x 3.90.
-    assert r["trial_balance"] == {"2026-10": {"1020": "192.20", "1050": "96.10", "4010": "-300.00", "5040": "11.70"}}
+    # A second dispute, lost: 50.00 and its fee of 15.00 to 1055, then the draft journal's Dr 5045 · Cr 1055 of 65.00 writes it
+    # off (the owner's decision of 19 Nov 2026), so 1055 nets to zero again and clearing is left with 96.10 - 65.00 = 31.10:
+    # the provider's balance not yet paid out in G4-041 (3 charges, 1 payout, 2 disputes).
+    assert _lines(r, "JNL-0001") == [("5045", "SGD", "65.00", "65.00"), ("1055", "SGD", "-65.00", "-65.00")]
+    # 1055 nets to zero twice (50.00 + 15.00 - 65.00; 50.00 + 15.00 - 65.00) and is left out; 4010 is 3 x 100.00; 5040 is 3 x 3.90.
+    assert r["trial_balance"] == {"2026-10": {"1020": "192.20", "1050": "31.10", "4010": "-300.00", "5040": "11.70", "5045": "65.00"}}

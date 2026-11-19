@@ -4,7 +4,7 @@ type: task
 title: Install, configure, test and run connectors, such as the email providers
 summary: Connectors and the catalogue: install, configure, secrets, test, enable, pause, upgrade, approve; email senders; Stripe and HitPay payment providers
 sources:
-  - docs/user-guide/integrations.md sha256:c415720951d3fcd2b26f20bd5633ec97c7aa3a709f7d45a97db2cd71ac0026da
+  - docs/user-guide/integrations.md sha256:bbc48fc8bb02a5e682f2ff83d1a13443b2d56d3540242a0f57a418c0500747f4
 data_class: general
 taint: trusted
 status: draft
@@ -162,7 +162,8 @@ aliases:
   GST until the provider's monthly tax invoice is matched.
 - Someone with a right on bank connections names the bank for payouts, the fee account and the disputes account; until a
   screen arrives this is the payment providers API.
-- Nothing is posted for a lost dispute: its amount stays in the disputes account until you and your accountant decide.
+- Nothing is posted for a lost dispute by itself: its amount stays in the disputes account. A person with a right on journals asks for a draft journal that writes it off to the dispute losses account, once per dispute, and posts it like any other journal. Up to S$100 that is all; above it the person confirms that the invoice's revenue stays as invoiced and says why. Crediting the invoice instead is not built yet.
+- A person who has dealt with a set-aside event marks it done, with a reason.
 - Checks: a settled payout with what it settles comes to nothing in the provider's account; what the books hold equals what
   the provider holds for you; a sweep that fell behind shows with the other bank syncs. A webhook of an unknown type is kept
   and set aside for a person, and posts nothing.

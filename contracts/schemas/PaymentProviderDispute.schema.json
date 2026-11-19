@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "all_posted": {
+      "description": "Whether every statement line of the dispute has posted; a draft is prepared only when they all have.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "dispute_id": {
+      "description": "The provider's ID.",
+      "examples": [
+        "dp_1Q3"
+      ],
+      "type": "string"
+    },
+    "held": {
+      "$ref": "Money.schema.json",
+      "description": "What its posted lines have moved into disputes clearing and the provider has not given back."
+    },
+    "loss_document_id": {
+      "description": "The draft journal prepared to write it off.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The provider's clearing money account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "over_limit": {
+      "description": "Whether it is above the limit up to which a lost dispute is written off as an expense without a reason (psp.dispute_expense_limit).",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    },
+    "status": {
+      "description": "open: its money waits; won: the provider gave it all back; written_off: a draft journal was prepared to write it off.",
+      "enum": [
+        "open",
+        "won",
+        "written_off"
+      ],
+      "examples": [
+        "open"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "dispute_id",
+    "money_account_id",
+    "held",
+    "status",
+    "all_posted",
+    "over_limit"
+  ],
+  "title": "PaymentProviderDispute",
+  "type": "object"
+}

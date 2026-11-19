@@ -20,7 +20,7 @@ type pspLedger struct{ u *unitOfWork }
 
 func toPSPAccount(r sqlcdb.PSPAccountRow) storage.PSPAccount {
 	return storage.PSPAccount{MoneyAccountID: r.MoneyAccountID, ConnectorID: r.ConnectorID, PayoutAccountID: r.PayoutAccountID, FeeAccountID: r.FeeAccountID,
-		DisputesAccountID: r.DisputesAccountID, SweptThrough: nullDate(r.SweptThrough), SweptAt: r.SweptAt, SweepError: str(r.SweepError), Version: int(r.Version)}
+		DisputesAccountID: r.DisputesAccountID, DisputeLossAccountID: r.DisputeLossAccountID, SweptThrough: nullDate(r.SweptThrough), SweptAt: r.SweptAt, SweepError: str(r.SweepError), Version: int(r.Version)}
 }
 
 func (l pspLedger) Accounts(ctx context.Context) ([]storage.PSPAccount, error) {
@@ -57,7 +57,7 @@ func (l pspLedger) SaveAccount(ctx context.Context, n storage.NewPSPAccount, ver
 	var out storage.PSPAccount
 	if version == 0 {
 		r, err := l.u.q.InsertPSPAccount(ctx, sqlcdb.InsertPSPAccountParams{MoneyAccountID: n.MoneyAccountID, ConnectorID: n.ConnectorID,
-			PayoutAccountID: n.PayoutAccountID, FeeAccountID: n.FeeAccountID, DisputesAccountID: n.DisputesAccountID, CreatedBy: l.u.actor(ctx), CreatedAt: n.At})
+			PayoutAccountID: n.PayoutAccountID, FeeAccountID: n.FeeAccountID, DisputesAccountID: n.DisputesAccountID, DisputeLossAccountID: n.DisputeLossAccountID, CreatedBy: l.u.actor(ctx), CreatedAt: n.At})
 		if err != nil {
 			return storage.PSPAccount{}, mapError(err)
 		}
@@ -72,7 +72,7 @@ func (l pspLedger) SaveAccount(ctx context.Context, n storage.NewPSPAccount, ver
 			return storage.PSPAccount{}, &storage.Error{Code: storage.CodeVersion, Message: "the account moved on"}
 		}
 		r, err := l.u.q.UpdatePSPAccount(ctx, sqlcdb.UpdatePSPAccountParams{PayoutAccountID: n.PayoutAccountID, FeeAccountID: n.FeeAccountID,
-			DisputesAccountID: n.DisputesAccountID, MoneyAccountID: n.MoneyAccountID, Version: int32(version)}) // #nosec G115 -- a version, checked against MaxInt32 above
+			DisputesAccountID: n.DisputesAccountID, DisputeLossAccountID: n.DisputeLossAccountID, MoneyAccountID: n.MoneyAccountID, Version: int32(version)}) // #nosec G115 -- a version, checked against MaxInt32 above
 		if errors.Is(err, pgx.ErrNoRows) {
 			return storage.PSPAccount{}, &storage.Error{Code: storage.CodeVersion, Message: "the provider account was changed by someone else: read it again"}
 		}
@@ -88,12 +88,14 @@ func (l pspLedger) SaveAccount(ctx context.Context, n storage.NewPSPAccount, ver
 		return p.String()
 	}
 	changes := map[string][2]any{"connector_id": {nil, out.ConnectorID.String()}, "fee_account_id": {nil, out.FeeAccountID.String()},
-		"payout_account_id": {nil, ptr(out.PayoutAccountID)}, "disputes_account_id": {nil, ptr(out.DisputesAccountID)}}
+		"payout_account_id": {nil, ptr(out.PayoutAccountID)}, "disputes_account_id": {nil, ptr(out.DisputesAccountID)},
+		"dispute_loss_account_id": {nil, ptr(out.DisputeLossAccountID)}}
 	action := "psp_account.created"
 	if before != nil {
 		action = "psp_account.changed"
 		changes = map[string][2]any{"fee_account_id": {before.FeeAccountID.String(), out.FeeAccountID.String()},
-			"payout_account_id": {ptr(before.PayoutAccountID), ptr(out.PayoutAccountID)}, "disputes_account_id": {ptr(before.DisputesAccountID), ptr(out.DisputesAccountID)}}
+			"payout_account_id": {ptr(before.PayoutAccountID), ptr(out.PayoutAccountID)}, "disputes_account_id": {ptr(before.DisputesAccountID), ptr(out.DisputesAccountID)},
+			"dispute_loss_account_id": {ptr(before.DisputeLossAccountID), ptr(out.DisputeLossAccountID)}}
 	}
 	v := out.Version
 	return out, l.u.event(ctx, action, "psp_account", out.MoneyAccountID, &v, changes)
@@ -284,4 +286,54 @@ func (l pspLedger) LatestBalance(ctx context.Context, connector uuid.UUID, curre
 		return storage.PSPBalance{}, mapError(err)
 	}
 	return storage.PSPBalance{ID: r.ID, ConnectorID: r.ConnectorID, Currency: r.Currency, Amount: storage.Decimal(r.Amount), TakenAt: r.TakenAt}, nil
+}
+
+func (l pspLedger) DisputeTxns(ctx context.Context, connector uuid.UUID) ([]storage.PSPTxn, error) {
+	if err := l.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := l.u.q.PSPDisputeTxns(ctx, connector)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.PSPTxn, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toPSPTxn(pspTxnRow(r)))
+	}
+	return out, nil
+}
+
+func toDisputeLoss(r sqlcdb.InsertPSPDisputeLossRow) storage.PSPDisputeLoss {
+	return storage.PSPDisputeLoss{ID: r.ID, ConnectorID: r.ConnectorID, DisputeID: r.DisputeID, DocumentID: r.DocumentID, Currency: r.Currency, Amount: storage.Decimal(r.Amount),
+		AcceptedOverstatedRevenue: r.AcceptedOverstatedRevenue, Reason: str(r.Reason), CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt}
+}
+
+func (l pspLedger) RecordDisputeLoss(ctx context.Context, n storage.NewPSPDisputeLoss) (storage.PSPDisputeLoss, error) {
+	if err := l.u.check(); err != nil {
+		return storage.PSPDisputeLoss{}, err
+	}
+	r, err := l.u.q.InsertPSPDisputeLoss(ctx, sqlcdb.InsertPSPDisputeLossParams{ConnectorID: n.ConnectorID, DisputeID: n.DisputeID, DocumentID: n.DocumentID, Currency: n.Currency,
+		Amount: string(n.Amount), AcceptedOverstatedRevenue: n.AcceptedOverstatedRevenue, Reason: opt(clip(n.Reason)), CreatedBy: l.u.actor(ctx), CreatedAt: n.At})
+	if err != nil {
+		return storage.PSPDisputeLoss{}, mapError(err)
+	}
+	d := toDisputeLoss(r)
+	return d, l.u.event(ctx, "psp_dispute_loss.prepared", "psp_dispute_loss", d.ID, nil, map[string][2]any{"connector_id": {nil, d.ConnectorID.String()},
+		"dispute_id": {nil, d.DisputeID}, "document_id": {nil, d.DocumentID.String()}, "amount": {nil, string(d.Amount)}, "currency": {nil, d.Currency},
+		"accepted_overstated_revenue": {nil, d.AcceptedOverstatedRevenue}, "reason": {nil, nilIfEmpty(d.Reason)}})
+}
+
+func (l pspLedger) DisputeLosses(ctx context.Context, connector uuid.UUID) ([]storage.PSPDisputeLoss, error) {
+	if err := l.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := l.u.q.PSPDisputeLosses(ctx, connector)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.PSPDisputeLoss, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toDisputeLoss(sqlcdb.InsertPSPDisputeLossRow(r)))
+	}
+	return out, nil
 }

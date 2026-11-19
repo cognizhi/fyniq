@@ -144,8 +144,11 @@ anything.
   until the provider's monthly tax invoice is matched.
 - **Who sets it up.** Someone with a right on bank connections names the bank for payouts, the fee account and the disputes
   account for each provider account. Until a screen for it arrives, this is the payment providers API.
-- **A lost dispute.** Fyniq posts nothing for a lost dispute. Its amount stays in the disputes account until you and your
-  accountant decide whether it is an expense or a credit note.
+- **A lost dispute.** Fyniq posts nothing by itself: the amount stays in the disputes account. A person with a right on
+  journals asks for a draft journal that writes it off to the dispute losses account, once per dispute, and posts it like any
+  other journal. Up to S$100 that is all; above it you confirm that the invoice's revenue stays as invoiced and say why.
+  Crediting the invoice instead is not built yet; ask your accountant which is right.
+- **Events Fyniq could not read.** A person who has dealt with a set-aside event marks it done, with a reason.
 - **Checks.** A settled payout, with what it settles, must come to nothing in the provider's account. What the books hold
   in it should equal what the provider says it holds for you. A sweep that fell behind shows with the other bank syncs.
 - **Events Fyniq cannot read.** A webhook of a type Fyniq does not know is kept and set aside for a person. It posts

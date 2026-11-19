@@ -1067,6 +1067,11 @@ var (
 	SetPaymentProviderAccount   = Policy{Operation: "setPaymentProviderAccount", Capability: BankConnections, Need: Create}
 	ListPaymentProviderPayouts  = Policy{Operation: "listPaymentProviderPayouts", Capability: BankTransactions, Need: View}
 	ListPaymentProviderEvents   = Policy{Operation: "listPaymentProviderEvents", Capability: BankTransactions, Need: View}
+	// ListPaymentProviderDisputes reads the disputes' money; PrepareDisputeLoss prepares the draft journal that writes a lost
+	// one off, which is posted under "Journals" like any other; ResolvePaymentProviderEvent marks a parked event dealt with.
+	ListPaymentProviderDisputes = Policy{Operation: "listPaymentProviderDisputes", Capability: BankTransactions, Need: View}
+	PrepareDisputeLoss          = Policy{Operation: "prepareDisputeLoss", Capability: Journals, Need: Create}
+	ResolvePaymentProviderEvent = Policy{Operation: "resolvePaymentProviderEvent", Capability: BankTransactions, Need: Create}
 	ResolveBankGap              = Policy{Operation: "resolveBankGap", Capability: BankTransactions, Need: Create}
 	ListStatementMappings       = Policy{Operation: "listStatementMappings", Capability: BankTransactions, Need: View}
 	CreateStatementMapping      = Policy{Operation: "createStatementMapping", Capability: BankTransactions, Need: Create}
@@ -2015,7 +2020,7 @@ var Policies = index(ListIntegrationClients, GetIntegrationClient, CreateIntegra
 	GetCustomerCreditApplication, ApplyCustomerCredit, VoidCustomerCreditApplication, RequestCustomerCreditApplicationVoid,
 	GetCustomerRefund, RecordCustomerRefund, VoidCustomerRefund, RequestCustomerRefundVoid,
 	ListCustomerDeposits, GetCustomerDeposit, RecordCustomerDeposit, VoidCustomerDeposit, RequestCustomerDepositVoid, RequestBankRuleAutoApply,
-	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ResolveBankGap, ListStatementMappings,
+	ListMoneyAccounts, CreateMoneyAccount, GetMoneyAccount, ReplaceMoneyAccount, AddMoneyAccountSource, ListPaymentProviderAccounts, SetPaymentProviderAccount, ListPaymentProviderPayouts, ListPaymentProviderEvents, ListPaymentProviderDisputes, PrepareDisputeLoss, ResolvePaymentProviderEvent, ResolveBankGap, ListStatementMappings,
 	CreateStatementMapping, ReplaceStatementMapping, ImportBankStatements, ListBankStatements, ListBankLines, GetBankLine,
 	CategoriseBankLine, SuspendBankLine, MatchBankLineInvoices, MatchBankLineBills, MatchBankLineRecorded, KeepBankLine, ExcludeBankLine,
 	UnreconcileBankLine, AutoReconcileBankLines, RecordBankTransfer, ListBankTransfers, GetBankTransfer, CompleteBankTransfer, UndoBankTransfer,

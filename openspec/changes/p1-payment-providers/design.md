@@ -130,7 +130,7 @@ pressed the button, the preview (`Plan`), the weekly sample (FM-3) and undo, and
 | Refund | credit note on the mirrored invoice (Model B) and a customer refund from clearing | credit note + `customer_refund@1` | task 3.2 |
 | Dispute opened (funds and fee withdrawn) | Dr disputes clearing · Cr clearing, GST code `NA` | `bank_transaction@1` | exact, when the account has a disputes account |
 | Dispute won (funds and fee reinstated) | Dr clearing · Cr disputes clearing | `bank_transaction@1` | exact |
-| Dispute lost | nothing is posted: the amount stays in disputes clearing until a person posts it (D9) | manual journal | a person |
+| Dispute lost | nothing by itself; a person asks for a draft journal Dr the dispute loss account · Cr disputes clearing, posted under Journals with its own approval (D9) | manual journal | a person |
 
 - The audit trail names the connector and the provider's reference, and a locked period or any refusal of the rules leaves
   the line for a person with the reason, as every auto-reconcile does.
@@ -189,17 +189,27 @@ mirrored.
   fee; Dr 2200 · Cr AP when billed apart). Its capture waits for `p1-document-capture`; the matching function and its ⚠
   are built and tested on a fixture.
 
-### D9. A lost dispute, and the accounts `[accountant to confirm]`
+### D9. A lost dispute `[accountant to confirm]` (decided by the owner, 19 Nov 2026)
 
 - A dispute's money waits in a **disputes clearing** account the Owner names on the provider account (`psp_account`), by
-  convention 1055; with none named, a dispute's lines wait for a person. The standard chart gains no row in this change (it
-  is provisional until the accountant's chart review, and every added account moves its fixtures): the Owner adds 1055
-  "Payment disputes clearing" and, for what is lost, 5045 "Dispute losses".
-- The PRD's FR-PSP-04 says a lost dispute goes "to revenue reversal and an expense". The books do not know a dispute is lost
-  until Stripe says so, and posting it needs a journal between two ledger accounts, which no auto-reconcile path makes. So
-  this change posts **nothing** for a lost dispute: the amount stays in disputes clearing, where the balance sheet and the chart
-  show it, and a person decides, with the accountant, between an expense (5045) and a credit note that reverses
-  the revenue and its GST. This is a decision for the owner (below).
+  convention 1055; with none named, a dispute's lines wait for a person. The standard chart gains no row (it is provisional
+  until the accountant's chart review): the Owner adds 1055 "Payment disputes clearing" and 5045 "Dispute losses", and names
+  both on the provider account.
+- **Expense for small amounts.** A person with a right on Journals asks for the draft journal (Dr the dispute loss account · Cr
+  disputes clearing, for what the dispute's posted lines hold; `prepareDisputeLoss`), once per dispute (`psp_dispute_loss`)
+  and only when every line of the dispute has posted. It is a **draft**: posting it is the journal's own approval (FM-1), so
+  the dual control of journals is not bypassed. A dispute in another currency is written off by a person with a journal of
+  their own.
+- **The named parameter** `psp.dispute_expense_limit`, an organisation setting under dual control, **S$100.00 by default**. It is
+  justified by the dispute fee, about S$15 in Stripe's Singapore pricing (`research/bank-payments-cloud-2026-10-12.md`): below
+  S$100, finding the customer's invoice and crediting it costs more than the revenue it corrects (the charges in G4-041 are
+  S$100). Above it the request must confirm that the invoice's revenue stays as invoiced and give a reason, which are kept with
+  the draft. The accountant confirms the amount and the GST of both routes.
+- **Credit note when the invoice is known: decided, not built.** A credit note reverses the revenue and GST and leaves a
+  customer credit on accounts receivable. Settling that credit against disputes clearing needs a posting that exists nowhere:
+  a customer refund pays from a money account (`customer_refund@1` refuses any other), and a manual journal cannot touch
+  accounts receivable (INV-07). It needs a **new posting rule** (a dispute settlement against a customer credit, Dr 1100 ·
+  Cr disputes clearing) with the oracle's half. Left as follow-up task 4.5.
 
 ### D10. Migrations, 000620 to 000639
 
@@ -231,44 +241,30 @@ transaction (set once) and a payout's standing.
 - HitPay: JSON numbers decoded with `json.Number` from the raw text into `money.Parse`, never to a `float64`. A test fails
   the build if either adapter imports `math` for conversion or decodes into a float field.
 
-## Decided, and decisions needed
+## Decided
 
-**Decided (not re-asked):**
 - Stripe Billing for Model B and HitPay for Model A's PayNow QR, both read-only connectors from P1; one adapter per
   capability (PRD-001 open questions 23 and 45, rev 0.25). After go-live (rev 0.146).
 - **Who may enable a connector:** the existing `connector.change` (Owner plus a second approver, step-up; Appendix D
   "Organisation integrations"), pause by one person. No new approval path.
-- **Fees:** from the provider's data, per transaction, no claimable GST without a tax invoice (FR-PSP-05).
-- **Disputes, fee GST and the accounts:** the defaults of D5, D8 and D9 (a dispute's money waits in disputes clearing, a lost
-  dispute posts nothing, a fee carries the GST code OP), built now, `[accountant to confirm]`. The service-period rule of D6
-  waits with the Model B mirror.
+- **Fees:** from the provider's data, per transaction, GST code OP (no claimable GST) until a tax invoice is matched
+  (FR-PSP-05) `[accountant to confirm]`.
 
-**Decisions needed from the owner (with the recommendation):**
-1. **A lost dispute's revenue.** Options: (a) a person posts it to an expense (5045) from disputes clearing, revenue as invoiced
-   (simple, GST untouched; revenue stays overstated until credited); (b) a credit note on the invoice plus the expense (matches
-   the PRD, corrects revenue and GST; needs the customer match, and more code). Nothing is posted by itself either way (D9).
-   **Recommendation: (a) for a small dispute, (b) when the invoice is known and the accountant agrees; build a one-click
-   step from the dispute for (b) after go-live.**
-2. **How a Model B invoice is made in the books (blocks FR-PSP-03 and FR-PSP-07's postings).** The worker may not make a document
-   and this change does not widen that. Options: (a) a narrow SECURITY DEFINER database function the worker calls, as
-   `create_scheduled_invoice_draft` lets the scheduler make recurring invoices' drafts (automatic like recurring invoices; one
-   migration and a second reviewer, since it touches the posting path; the totals-equal-or-parked rule and the service-period
-   rule of D6 sit in it); (b) the API makes it on Reconcile now, like the provider's fees, from the worker's mirror (no new
-   grant or function; revenue is booked only when a person presses the button or imports a statement); (c) a person enters
-   the invoice by hand from the mirror (smallest; the books lag). Posting from the webhook request is rejected: it puts
-   provider I/O and a posting in one request. **Recommendation: (a), after go-live, with the accountant's confirmation of
-   the service-period rule; (b) if (a) is judged too wide.**
-3. **Who sets a provider account up.** Built: one person with a right on "Bank data… connections" (the Owner and the
-   Administrator, as for setting a connector as a money account's source, which is unattended in the same way), audited with
-   the old and new accounts. Option: an approval by a second person as a bank rule's auto-apply has (a new approval object
-   and its tests). The setup only chooses internal accounts, each posting stays within the per-line cap and is undone like
-   any auto-reconciliation, and the connector itself was enabled under dual control. **Recommendation: keep it as built; add
-   the approval if the accountant wants fee and payout accounts reviewed.**
-4. **HitPay's charge leg in P1.** FR-PSP-02's automatic AR leg is P2, but HitPay's connector is P1. Options: (a) charges
-   arrive as unreconciled lines on the HitPay clearing account and are matched by the existing exact-reference reconcile or
-   by a person (built); (b) wait for P2. **Recommendation: (a): no new rule, nothing posts without an invoice or a person.**
-5. **Which currencies.** Stripe can hold several balances. Built: a money account per currency the Owner sets up; a currency
-   with none is not read into the books and shows in the provider's balance only. **Recommendation: as built.**
+**Decided by the owner on 19 Nov 2026 (taken interactively; PRD-001 rev 0.305):**
+1. **A Model B provider invoice is made by a narrow database function**, after go-live: a SECURITY DEFINER function the
+   worker calls with the fetched invoice, as `create_scheduled_invoice_draft` lets the scheduler make recurring invoices' drafts.
+   Not chosen: API-side posting on Reconcile now (revenue booked only when a person presses a button), by hand (the books
+   lag), and posting from the webhook request (provider I/O and a posting in one request). Until it is built, the events of
+   invoices, credit notes, subscriptions and customers are known and post nothing. Follow-up tasks 4.1 to 4.4.
+2. **A lost dispute is expensed up to a named limit and credited when the invoice is known** (D9): built for the expense, with
+   `psp.dispute_expense_limit` at S$100.00 by default; the credit-note route waits for a new posting rule (task 4.5).
+3. **A provider account is set up by one person with a right on "Bank data… connections"**, as built (audited with the old and new
+   accounts; the setup only chooses internal accounts, each posting stays within the per-line cap and is undone like any
+   auto-reconciliation). Not chosen: a second person's approval.
+4. **A HitPay charge is an unreconciled line** in P1: the existing exact match or a person settles it against the invoice it
+   names; the automatic leg is P2 (FR-PSP-02).
+5. **Currencies:** a money account per currency the Owner sets up; a currency with none is not read into the books and shows in
+   the provider's balance only.
 
 ## Risks / Trade-offs
 

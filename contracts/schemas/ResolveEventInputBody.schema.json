@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "What the person did about it, or why nothing is needed.",
+      "examples": [
+        "A fraud warning for a charge we refunded: nothing to post"
+      ],
+      "maxLength": 500,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason"
+  ],
+  "title": "ResolveEventInputBody",
+  "type": "object"
+}

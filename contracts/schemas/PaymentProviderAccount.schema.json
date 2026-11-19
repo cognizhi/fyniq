@@ -22,6 +22,21 @@
       "pattern": "^[A-Z]{3}$",
       "type": "string"
     },
+    "dispute_loss_account_id": {
+      "description": "The expense account a lost dispute is written off to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b14"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "dispute_loss_account_name": {
+      "description": "Its code and name.",
+      "examples": [
+        "5045 Dispute losses"
+      ],
+      "type": "string"
+    },
     "disputes_account_id": {
       "description": "The chart account a disputed amount waits in; none: a dispute waits for a person.",
       "examples": [

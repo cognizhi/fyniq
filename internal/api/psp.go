@@ -31,29 +31,32 @@ const (
 // its payouts land and what its fees and disputes post to, how far the sweep has made it complete, and what the books and
 // the provider each say it holds.
 type PaymentProviderAccount struct {
-	MoneyAccountID    string `json:"money_account_id" format:"uuid" doc:"The provider's clearing money account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
-	MoneyAccountName  string `json:"money_account_name" doc:"Its name." example:"Stripe SGD"`
-	Currency          string `json:"currency" pattern:"^[A-Z]{3}$" doc:"Its currency, the provider balance's." example:"SGD"`
-	ConnectorID       string `json:"connector_id" format:"uuid" doc:"The organisation connector that feeds it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40"`
-	Provider          string `json:"provider" doc:"The connector's manifest ID." example:"stripe"`
-	PayoutAccountID   string `json:"payout_account_id,omitempty" format:"uuid" doc:"The money account payouts land in; none: a payout waits for a person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11"`
-	PayoutAccountName string `json:"payout_account_name,omitempty" doc:"Its name." example:"DBS Operating"`
-	FeeAccountID      string `json:"fee_account_id" format:"uuid" doc:"The chart account fees expense to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b12"`
-	FeeAccountName    string `json:"fee_account_name" doc:"Its code and name." example:"5040 Payment processing fees"`
-	DisputesAccountID string `json:"disputes_account_id,omitempty" format:"uuid" doc:"The chart account a disputed amount waits in; none: a dispute waits for a person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b13"`
-	DisputesName      string `json:"disputes_account_name,omitempty" doc:"Its code and name." example:"1055 Payment disputes clearing"`
-	SweptThrough      string `json:"swept_through,omitempty" format:"date" doc:"The day the daily sweep has made the account complete to (FR-PSP-01)." example:"2026-11-18"`
-	SweepError        string `json:"sweep_error,omitempty" doc:"Why the last sweep could not close a gap (C.2 #43)." example:"the provider answered 503"`
-	ProviderBalance   *Money `json:"provider_balance,omitempty" doc:"What the provider said it holds for the organisation and has not paid out, at the last sweep."`
-	BookBalance       *Money `json:"book_balance,omitempty" doc:"What the books hold in the clearing account."`
-	Version           int    `json:"version" doc:"Its version, for If-Match." example:"1"`
+	MoneyAccountID       string `json:"money_account_id" format:"uuid" doc:"The provider's clearing money account." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"`
+	MoneyAccountName     string `json:"money_account_name" doc:"Its name." example:"Stripe SGD"`
+	Currency             string `json:"currency" pattern:"^[A-Z]{3}$" doc:"Its currency, the provider balance's." example:"SGD"`
+	ConnectorID          string `json:"connector_id" format:"uuid" doc:"The organisation connector that feeds it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b40"`
+	Provider             string `json:"provider" doc:"The connector's manifest ID." example:"stripe"`
+	PayoutAccountID      string `json:"payout_account_id,omitempty" format:"uuid" doc:"The money account payouts land in; none: a payout waits for a person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11"`
+	PayoutAccountName    string `json:"payout_account_name,omitempty" doc:"Its name." example:"DBS Operating"`
+	FeeAccountID         string `json:"fee_account_id" format:"uuid" doc:"The chart account fees expense to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b12"`
+	FeeAccountName       string `json:"fee_account_name" doc:"Its code and name." example:"5040 Payment processing fees"`
+	DisputesAccountID    string `json:"disputes_account_id,omitempty" format:"uuid" doc:"The chart account a disputed amount waits in; none: a dispute waits for a person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b13"`
+	DisputesName         string `json:"disputes_account_name,omitempty" doc:"Its code and name." example:"1055 Payment disputes clearing"`
+	DisputeLossAccountID string `json:"dispute_loss_account_id,omitempty" format:"uuid" doc:"The expense account a lost dispute is written off to." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b14"`
+	DisputeLossName      string `json:"dispute_loss_account_name,omitempty" doc:"Its code and name." example:"5045 Dispute losses"`
+	SweptThrough         string `json:"swept_through,omitempty" format:"date" doc:"The day the daily sweep has made the account complete to (FR-PSP-01)." example:"2026-11-18"`
+	SweepError           string `json:"sweep_error,omitempty" doc:"Why the last sweep could not close a gap (C.2 #43)." example:"the provider answered 503"`
+	ProviderBalance      *Money `json:"provider_balance,omitempty" doc:"What the provider said it holds for the organisation and has not paid out, at the last sweep."`
+	BookBalance          *Money `json:"book_balance,omitempty" doc:"What the books hold in the clearing account."`
+	Version              int    `json:"version" doc:"Its version, for If-Match." example:"1"`
 }
 
 // PaymentProviderAccountDraft is a provider account's setup as written.
 type PaymentProviderAccountDraft struct {
-	PayoutAccountID   string `json:"payout_account_id,omitempty" format:"uuid" doc:"The money account payouts land in, in the same currency; left out, a payout waits for a person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11"`
-	FeeAccountID      string `json:"fee_account_id" format:"uuid" doc:"The expense chart account fees post to, such as 5040." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b12"`
-	DisputesAccountID string `json:"disputes_account_id,omitempty" format:"uuid" doc:"A chart account, not a money account, a disputed amount waits in, such as 1055; left out, a dispute waits for a person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b13"`
+	PayoutAccountID      string `json:"payout_account_id,omitempty" format:"uuid" doc:"The money account payouts land in, in the same currency; left out, a payout waits for a person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b11"`
+	FeeAccountID         string `json:"fee_account_id" format:"uuid" doc:"The expense chart account fees post to, such as 5040." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b12"`
+	DisputesAccountID    string `json:"disputes_account_id,omitempty" format:"uuid" doc:"A chart account, not a money account, a disputed amount waits in, such as 1055; left out, a dispute waits for a person." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b13"`
+	DisputeLossAccountID string `json:"dispute_loss_account_id,omitempty" format:"uuid" doc:"The expense account a lost dispute's draft journal writes its money off to, such as 5045 Dispute losses; left out, no draft can be prepared." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b14"`
 }
 
 // PaymentProviderTxn is a balance transaction a payout settles, and whether its lines have posted.
@@ -211,6 +214,12 @@ func pspAccountOf(ctx context.Context, a *API, u storage.UnitOfWork, x storage.P
 			return out, err
 		}
 	}
+	if x.DisputeLossAccountID != nil {
+		out.DisputeLossAccountID = x.DisputeLossAccountID.String()
+		if out.DisputeLossName, err = name(*x.DisputeLossAccountID); err != nil {
+			return out, err
+		}
+	}
 	if x.SweptThrough != nil {
 		out.SweptThrough = dateOf(*x.SweptThrough)
 	}
@@ -233,6 +242,7 @@ func pspAccountOf(ctx context.Context, a *API, u storage.UnitOfWork, x storage.P
 }
 
 func registerPaymentProviders(a *API) {
+	registerPaymentProviderDisputes(a)
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
 	writes := append([]string{CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeMalformed, CodeTooLarge, CodeMediaType, CodeInvalid,
 		CodeNotFound, CodeStale, CodeIfMatchRequired, storage.CodeVersion, CodePSPNotProvider, CodePSPPayout, CodePSPFee, CodePSPDisputes}, locks...)
@@ -292,9 +302,10 @@ func registerPaymentProviders(a *API) {
 		}
 		payout, bad := optionalID("body.payout_account_id", in.Body.PayoutAccountID)
 		disputes, bad2 := optionalID("body.disputes_account_id", in.Body.DisputesAccountID)
+		lossAcc, bad4 := optionalID("body.dispute_loss_account_id", in.Body.DisputeLossAccountID)
 		fee, bad3 := optionalID("body.fee_account_id", in.Body.FeeAccountID)
-		if bad != nil || bad2 != nil || bad3 != nil || fee == nil {
-			problems := fieldProblems(bad, bad2, bad3)
+		if bad != nil || bad2 != nil || bad3 != nil || bad4 != nil || fee == nil {
+			problems := fieldProblems(bad, bad2, bad3, bad4)
 			if fee == nil && bad3 == nil {
 				problems = append(problems, FieldProblem{Code: CodeInvalid, Field: "body.fee_account_id", Message: "is missing", Fix: "Choose the expense account fees post to, such as 5040"})
 			}
@@ -335,6 +346,15 @@ func registerPaymentProviders(a *API) {
 					return PaymentProviderAccount{}, err
 				}
 			}
+			if lossAcc != nil {
+				lacc, err := u.Accounts().Get(ctx, *lossAcc)
+				if errors.Is(err, ports.ErrNotFound) || (err == nil && (lacc.Type != storage.Expense || lacc.Group || !lacc.Active || lacc.MoneyAccount)) {
+					return PaymentProviderAccount{}, problem(CodePSPFee, "The account a lost dispute is written off to is not an expense account that takes postings.",
+						"Choose an active expense account, such as 5045 Dispute losses", FieldProblem{Code: CodePSPFee, Field: "body.dispute_loss_account_id"})
+				} else if err != nil {
+					return PaymentProviderAccount{}, err
+				}
+			}
 			version := 0
 			if cur, err := u.PSP().Account(ctx, id); err == nil {
 				version = cur.Version
@@ -345,7 +365,7 @@ func registerPaymentProviders(a *API) {
 				return PaymentProviderAccount{}, err
 			}
 			saved, err := u.PSP().SaveAccount(ctx, storage.NewPSPAccount{MoneyAccountID: id, ConnectorID: connector, PayoutAccountID: payout, FeeAccountID: *fee,
-				DisputesAccountID: disputes, At: a.deps.Clock.Now()}, version)
+				DisputesAccountID: disputes, DisputeLossAccountID: lossAcc, At: a.deps.Clock.Now()}, version)
 			if err != nil {
 				return PaymentProviderAccount{}, err
 			}

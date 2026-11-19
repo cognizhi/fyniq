@@ -45,11 +45,11 @@ checks are tagged `[live-verify]`.
   - Tests: G4-041 (30 charges, S$117.00 of fees once, three unsettled charges leave S$288.30); a redelivery and a backfill
     post nothing; a payout that debits the bank and a negative balance post the reverse legs. `// req: FR-PSP-04`,
     `// req: FR-PSP-05`, `// req: FR-PSP-06`
-  - Built (decided in building, design D5): the worker cannot make a document and the bank sync posts nothing (rev 0.143), so the sweep (`internal/psp`, the tick's `psp.sweep` and the event's `psp.run`) only mirrors, and posting is a new exact case of `banking.AutoReconcile`, which keeps the S$500 cap, the audit actor, the preview, the weekly sample and undo: a fee to the fee account with GST code `OP`, a dispute's money to disputes clearing, a payout as a transfer to the bank account. Charges and refunds wait for the document (task 3.2). `TestAProviderAccountIsSweptAndItsLinesReconciledOnce`: fees expensed once (S$11.70 of three), a second sync, sweep and Reconcile now post nothing. **Left:** G4-041's 30 charges (the test has three, with the same arithmetic); a payout that debits the bank and a negative balance (the legs are the lines' signs; a payout that brings money in waits for a person, untested); a locked period's refusal is auto-reconcile's own and is not re-tested here.
+  - Built (decided in building, design D5): the worker cannot make a document and the bank sync posts nothing (rev 0.143), so the sweep (`internal/psp`, the tick's `psp.sweep` and the event's `psp.run`) only mirrors, and posting is a new exact case of `banking.AutoReconcile`, which keeps the S$500 cap, the audit actor, the preview, the weekly sample and undo: a fee to the fee account with GST code `OP`, a dispute's money to disputes clearing, a payout as a transfer to the bank account. Charges and refunds wait for the document (task 3.2). `TestAProviderAccountIsSweptAndItsLinesReconciledOnce`: fees expensed once (S$11.70 of three), a second sync, sweep and Reconcile now post nothing. G4-041's 30 charges: `TestThirtyChargesAFeeEachAndAPayoutOfTwentySeven` (fees S$117.00 once, the payout over the cap recorded by a person and completed by the bank's line, S$288.30 left in clearing equal to the provider's balance). **Left:** a payout that debits the bank and a negative balance (the legs are the lines' signs; a payout that brings money in waits for a person, untested); a locked period's refusal is auto-reconcile's own and is not re-tested here.
 
 - [x] 2.3 Disputes (D9): opened and won through disputes clearing; UC-PSP-03.
   - Tests: opened, won (back in clearing) and lost (expense); both reverse cleanly in clearing. `// req: FR-PSP-04`
-  - Built: a dispute's opened and won legs through disputes clearing, in the same exact case, when the provider account names a disputes account (otherwise the lines wait). **Left:** a lost dispute posts nothing (design D9, owner decision 1); no standard-chart rows 1055 and 5045 (the Owner adds them; the chart is provisional); the settings `psp.disputes_account` and `psp.dispute_loss_account` became the provider account's own fields.
+  - Built: a dispute's opened and won legs through disputes clearing, in the same exact case, when the provider account names a disputes account (otherwise the lines wait); no standard-chart rows 1055 and 5045 (the Owner adds them; the chart is provisional); the accounts are the provider account's own fields. **Added on 19 Nov 2026 (design D9):** migrations 000624 and 000625 (`psp_account.dispute_loss_account_id`, `psp_dispute_loss`), the setting `psp.dispute_expense_limit` (S$100.00), `GET /v1/payment-providers/disputes` and `POST /v1/payment-providers/disputes/{dispute_id}/loss` (the draft journal, once per dispute, under Journals): `TestALostDisputeIsWrittenOffByADraftJournal`; the differential scenario and the oracle's hand-worked figures include a lost dispute written off by a manual journal (31.10 left in clearing). **Left:** the credit-note route (task 4.5).
 
 - [x] 2.4 The daily sweep (`psp.sweep`, on the tick): the bank feed run plus lists by ID, the balance snapshot, the "complete
   to" date; a gap it cannot close is ⚠.
@@ -69,15 +69,15 @@ checks are tagged `[live-verify]`.
 
 ## 3. The setup and reads, the PRD revision and the guide; the Model B mirror and the screens are left
 
-- [ ] 3.1 Migration 000624 (`psp_customer`, `psp_subscription`, `psp_invoice`); the mirror from fetched objects; the customer
+- [ ] 3.1 (moved to 4.1 to 4.4) Migration 000624 (`psp_customer`, `psp_subscription`, `psp_invoice`); the mirror from fetched objects; the customer
   mapping; the typed provider invoice on the port.
-  - **Left, blocked on the owner's decision 2 (design D6):** the collection state is only worth mirroring beside the invoice,
+  - **Left, decided by the owner on 19 Nov 2026 to follow go-live (design D6, tasks 4.1 to 4.4):** the collection state is only worth mirroring beside the invoice,
     and the invoice cannot be made where the worker reads it. Stripe's invoice, credit-note, subscription and customer events
     are known and post nothing (`informational` in the adapter), which `TestEveryHandledProviderEventKindHasAHandler` and
     `TestEventsAreKnownHandledOrUnknown` hold.
 - [ ] 3.2 Finalised, paid, failed, voided, uncollectible and credited invoices (FR-PSP-07): the mirrored AR document, total
   equal to the provider's or parked, the service-period spread (D6), a credit note for a refund; unsupported pricing parked.
-  - **Left:** the same decision. Tests to write with it: G4-040 (out of order, redelivered), G4-106 (collection state
+  - **Left:** with 4.1 to 4.4. Tests to write with it: G4-040 (out of order, redelivered), G4-106 (collection state
     mirrored, no reminder, no charge), UC-PSP-01, a prorated upgrade, an annual plan over twelve months.
 - [x] 3.3 The API (additive): `GET /v1/payment-providers/accounts`, `PUT /v1/payment-providers/accounts/{money_account_id}`
   (the setup, behind a right on "Bank data… connections", checked, audited, If-Match on a change), `GET
@@ -85,8 +85,7 @@ checks are tagged `[live-verify]`.
   /v1/payment-providers/events` (without payloads); `make openapi` run, the matrix rows, errors PSP-01 to PSP-04.
   - Built: `internal/api/psp.go`, `internal/domain/pspnet` (the netting C.2 #42 and the payouts read share), four policies.
     `TestAPaymentProvidersAccountIsSetUpThroughTheAPI`, and the authorisation matrix rows `matrixPaymentProviders`.
-    **Left:** resolving a parked event by a person (no operation yet: a parked event waits and is listed); the web client calls
-    nothing yet.
+    **Added 19 Nov 2026:** `POST /v1/payment-providers/events/{event_id}/resolution` (a person marks a parked or failed event dealt with, with a reason; it posts nothing). **Left:** the web client calls nothing yet.
 - [ ] 3.4 The screens `provider-payouts` and `subscriptions` (designed first, fyniq-openspec Recipe C), their help keys, guide
   pages and compiled knowledge-base pages.
   - **Left:** both screens stay designed and unbuilt (`docs/design/screens`); the API of 3.3 gives provider-payouts what it
@@ -94,6 +93,21 @@ checks are tagged `[live-verify]`.
     into `settings.integrations`.
 - [x] 3.5 PRD revision 0.304 (FR-PSP-01, 04, 05, 06 and FR-AUT-01; the history row), the spec scenarios and the stamp,
   `make roadmap`, the guide section and its knowledge-base page, the threat model.
-  - **Left (owner decisions in design.md):** decision 1, a lost dispute's revenue; decision 2, how a Model B invoice is made in
-    the books; and every live-provider check `[live-verify]`: Stripe's permissions for the list calls, the API version, the
+  - **Left:** the follow-ups of section 4, and every live-provider check `[live-verify]`: Stripe's permissions for the list calls, the API version, the
     invoice-payments lookup of a charge's invoice, HitPay's fee fields, refunds and balance reserve, and G4-107's outage.
+
+## 4. Follow-up, after go-live (the owner's decisions of 19 Nov 2026, design.md)
+
+- [ ] 4.1 A migration for the Model B mirror (`psp_customer`, `psp_subscription`, `psp_invoice` with the collection state and the
+  one mapping of a provider invoice to its document) and the typed provider invoice on the port, read from Stripe's invoice
+  (lines, periods, tax, attempts, next retry).
+- [ ] 4.2 A narrow SECURITY DEFINER function, modelled on `create_scheduled_invoice_draft`, that makes and posts a mirrored invoice
+  from the fetched invoice: its total equal to the provider's or parked, the service-period spread of design D6
+  (`[accountant to confirm]`), GST by the existing rules; a second reviewer, since it touches the posting path.
+- [ ] 4.3 The worker's handlers for the invoice, credit-note, subscription and customer events (they are `informational` in the
+  adapter until then), a credit note for a refund, a void, a write-off for uncollectible, unsupported pricing parked.
+  Tests: G4-040 (out of order, redelivered), G4-106 (collection state mirrored, no reminder, no charge), UC-PSP-01.
+- [ ] 4.4 The `subscriptions` screen and the guide page for it, with the knowledge-base page; MRR and churn stay P2.
+- [ ] 4.5 The credit-note route of a lost dispute: a new posting rule, a dispute settlement against a customer credit (Dr 1100 ·
+  Cr disputes clearing), with the oracle's half, and the one-click step from the dispute `[accountant to confirm the GST]`.
+- [ ] 4.6 The `provider-payouts` screen over the API of 3.3 and the disputes list, with its help keys and guide page.

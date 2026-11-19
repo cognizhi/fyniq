@@ -93,20 +93,23 @@ type PSPAccount struct {
 	PayoutAccountID   *uuid.UUID
 	FeeAccountID      uuid.UUID
 	DisputesAccountID *uuid.UUID
-	SweptThrough      *time.Time
-	SweptAt           *time.Time
-	SweepError        string
-	Version           int
+	// DisputeLossAccountID is the expense account a lost dispute's draft journal writes its money off to; none: not prepared.
+	DisputeLossAccountID *uuid.UUID
+	SweptThrough         *time.Time
+	SweptAt              *time.Time
+	SweepError           string
+	Version              int
 }
 
 // NewPSPAccount sets a provider money account up, or changes its setup at Version (0 for new).
 type NewPSPAccount struct {
-	MoneyAccountID    uuid.UUID
-	ConnectorID       uuid.UUID
-	PayoutAccountID   *uuid.UUID
-	FeeAccountID      uuid.UUID
-	DisputesAccountID *uuid.UUID
-	At                time.Time
+	MoneyAccountID       uuid.UUID
+	ConnectorID          uuid.UUID
+	PayoutAccountID      *uuid.UUID
+	FeeAccountID         uuid.UUID
+	DisputesAccountID    *uuid.UUID
+	DisputeLossAccountID *uuid.UUID
+	At                   time.Time
 }
 
 // The categories a provider transaction is read as.
@@ -194,6 +197,32 @@ type PSPBalance struct {
 	TakenAt     time.Time
 }
 
+// PSPDisputeLoss records that a draft journal was prepared for a lost dispute, once per dispute.
+type PSPDisputeLoss struct {
+	ID                        uuid.UUID
+	ConnectorID               uuid.UUID
+	DisputeID                 string
+	DocumentID                uuid.UUID
+	Currency                  string
+	Amount                    Decimal
+	AcceptedOverstatedRevenue bool
+	Reason                    string
+	CreatedBy                 string
+	CreatedAt                 time.Time
+}
+
+// NewPSPDisputeLoss is a lost dispute's draft journal to record.
+type NewPSPDisputeLoss struct {
+	ConnectorID               uuid.UUID
+	DisputeID                 string
+	DocumentID                uuid.UUID
+	Currency                  string
+	Amount                    Decimal
+	AcceptedOverstatedRevenue bool
+	Reason                    string
+	At                        time.Time
+}
+
 // PSPLedger is the organisation's payment-provider records. Each change is audited in the same transaction (AUD-01).
 type PSPLedger interface {
 	Accounts(ctx context.Context) ([]PSPAccount, error)
@@ -220,6 +249,13 @@ type PSPLedger interface {
 	Payout(ctx context.Context, connector uuid.UUID, payoutID string) (PSPPayout, error)
 	// Payouts are a connector's payouts, newest first.
 	Payouts(ctx context.Context, connector uuid.UUID, limit int) ([]PSPPayout, error)
+
+	// DisputeTxns are a connector's balance transactions of disputes, opened and reinstated.
+	DisputeTxns(ctx context.Context, connector uuid.UUID) ([]PSPTxn, error)
+	// RecordDisputeLoss records the draft prepared for a lost dispute; CodeDuplicate when one was prepared already.
+	RecordDisputeLoss(ctx context.Context, n NewPSPDisputeLoss) (PSPDisputeLoss, error)
+	// DisputeLosses are a connector's prepared dispute losses.
+	DisputeLosses(ctx context.Context, connector uuid.UUID) ([]PSPDisputeLoss, error)
 
 	// RecordBalance adds a reading of the provider's balance.
 	RecordBalance(ctx context.Context, connector uuid.UUID, currency string, amount Decimal, at time.Time) (PSPBalance, error)

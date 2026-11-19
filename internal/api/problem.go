@@ -809,6 +809,9 @@ var codeFacts = map[string]struct {
 	CodePSPPayout:            {422, "The account payouts land in cannot take them"},
 	CodePSPFee:               {422, "The account fees post to cannot take them"},
 	CodePSPDisputes:          {422, "The account a dispute waits in cannot hold it"},
+	CodePSPDisputeState:      {409, "The dispute cannot be written off now"},
+	CodePSPDisputeLimit:      {422, "The dispute is above the expense limit"},
+	CodePSPEventState:        {409, "The event is not waiting for a person"},
 
 	// Bank transactions, matches and transfers (FR-BNK-05…09).
 	banktransaction.CodeNotTransaction: {404, "Not a bank transaction"},

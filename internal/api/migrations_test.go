@@ -347,7 +347,8 @@ func TestTheMappingIsSignedByTheAccountantAlone(t *testing.T) {
 var pastPolicy = map[string]string{"runCompanySecretary": CodeAgentOff, "decideMigrationDifference": migration.CodeCommit, "signMigrationReconciliation": migration.CodeCommit,
 	"uploadMigrationParallelWorkbook": migration.CodeCommit, "decideMigrationParallelDifference": migration.CodeCommit,
 	"signMigrationParallel": migration.CodeCommit, "getMigrationParallelReport": CodeNotFound,
-	"uploadMigrationArchivePDF": migration.CodeCommit, "archiveMigration": migration.CodeParallel}
+	"uploadMigrationArchivePDF": migration.CodeCommit, "archiveMigration": migration.CodeParallel,
+	"prepareDisputeLoss": CodePSPDisputeState, "resolvePaymentProviderEvent": CodePSPEventState}
 
 // matrixMigrations are the authorisation matrix's rows for the workbook migration (FR-MIG-01, Appendix D "Workbook
 // import (migration)"). The matrix's organisation posts entries as it goes, so its migration is started, with the sample

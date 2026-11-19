@@ -85,6 +85,10 @@ Source: PRD-001 §8.5 · Priority M · Phase P2
 - **THEN** the fee posts Dr payment fees · Cr clearing
 - **AND** the payout posts Dr Bank · Cr clearing
 
+#### Scenario: A HitPay charge in P1
+- **WHEN** a HitPay charge arrives in P1
+- **THEN** it is an unreconciled line on the HitPay clearing account that the existing exact match or a person settles against the invoice it names
+
 #### Scenario: B2B invoice paid by PayNow through HitPay (UC-PSP-02)
 - **GIVEN** invoice INV-0150 (S$5,450) carries a HitPay PayNow QR
 - **WHEN** the customer pays
@@ -162,6 +166,12 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **WHEN** a Model B subscription uses fixed-price monthly or annual plans, proration on upgrade or downgrade, cancellation at period end, credit notes or refunds
 - **THEN** it is posted by these rules
 
+#### Scenario: A provider invoice is made by a narrow database function
+- **GIVEN** the worker may not make documents
+- **WHEN** Model B's invoices are mirrored after go-live
+- **THEN** each is made by a narrow database function the worker calls, as the scheduler makes recurring invoices' drafts
+- **AND** until then the events of invoices, credit notes, subscriptions and customers are known and post nothing
+
 #### Scenario: Unsupported pricing is parked
 - **WHEN** a provider invoice has usage prices, bundles, set-up fees, trials with paid add-ons or a multi-element contract
 - **THEN** it is parked with ⚠ for the accountant (revenue policy, FR-ORG-10)
@@ -206,10 +216,21 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **THEN** they go to revenue reversal and an expense
 - **AND** if the dispute is won, they come back
 
-#### Scenario: A lost dispute posts nothing
+#### Scenario: A lost dispute posts nothing by itself
 - **WHEN** a dispute is lost
-- **THEN** Fyniq posts nothing: its amount stays in disputes clearing until a person posts it, with the accountant, to an expense or to a credit note
+- **THEN** Fyniq posts nothing by itself: its amount stays in disputes clearing
 - **AND** with no disputes account named on the provider account, a dispute's lines wait for a person
+
+#### Scenario: A person prepares the journal that writes it off
+- **GIVEN** every line of a dispute has posted and the provider account names a dispute loss account
+- **WHEN** a person with a right on Journals asks for the lost dispute's draft journal
+- **THEN** a draft is prepared, once per dispute: Dr the dispute loss account · Cr disputes clearing, for what the dispute holds
+- **AND** it is posted under Journals with that row's own approval
+
+#### Scenario: Above the expense limit
+- **GIVEN** the setting psp.dispute_expense_limit is S$100.00 by default
+- **WHEN** a lost dispute above it is written off as an expense
+- **THEN** the request must confirm that the invoice's revenue stays as invoiced and give a reason, which are recorded with the draft
 
 ### Requirement: FR-PSP-05 Fees and their GST
 The system SHALL expense provider fees once, per transaction, from the provider's data, and SHALL claim input GST on them only where the provider charges GST and issues a tax invoice.

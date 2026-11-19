@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 	"sync"
@@ -506,5 +507,151 @@ func TestAPayoutEventRecordsThePayoutAndQueuesASweep(t *testing.T) {
 	if err := (psp.Runner{Store: worker, Runtime: e.api.deps.Connectors.Runtime, Clock: e.clock}).Work()(context.Background(), e.books.Org, row); err != nil &&
 		!errors.Is(err, connector.ErrNotEnabled) {
 		t.Fatalf("the sweep of an unset-up connector: %v", err)
+	}
+}
+
+// G4-041: 30 Stripe charges of S$100.00 in a month, fee S$3.90 each (S$117.00 in all), a payout settling 27 of them, and 3 charges
+// not yet paid out at the month's end. The fees are expensed once (S$117.00); the payout, above the per-line limit of
+// auto-reconcile, waits for a person, who records it as a transfer to the bank, whose own line then completes it; the settled
+// payout nets to zero in clearing (C.2 #42), and the S$288.30 left in clearing (3 x S$96.10) agrees to the provider's balance
+// not yet paid out (C.2 #50).
+// req: banking/payment-providers Each settled payout nets to zero
+// req: banking/payment-providers Month-end clearing equals the provider balance
+// req: C.2 #42
+// req: C.2 #50
+func TestThirtyChargesAFeeEachAndAPayoutOfTwentySeven(t *testing.T) {
+	e := newEnv(t)
+	f := &fakeLedgerProvider{payouts: map[string][]string{"po_1": nil}, balance: "288.30"}
+	for i := 1; i <= 30; i++ {
+		id := fmt.Sprintf("txn_c%02d", i)
+		f.txns = append(f.txns, bt(id, "charge", "100.00", "3.90", "96.10", 1+i%9, ports.ProviderCharge, fmt.Sprintf("ch_%02d", i)))
+		if i <= 27 {
+			f.payouts["po_1"] = append(f.payouts["po_1"], id)
+		}
+	}
+	f.txns = append(f.txns, bt("txn_po1", "payout", "-2594.70", "0.00", "-2594.70", 12, ports.ProviderPayout, "po_1")) // 27 x 96.10
+	b := fakeLedgerConnector(t, f)
+	cat, err := connector.NewCatalogue(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt := &connector.Runtime{Catalogue: cat, Secrets: e.api.deps.Connectors.Runtime.Secrets, Egress: &egress.Guard{Local: true}, Clock: e.clock}
+	var c storage.InstalledConnector
+	m := b.Manifest
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if c, err = u.Connectors().InstallOrganisation(ctx, storage.NewConnector{Connector: m.ID, ManifestVersion: m.Version, ManifestHash: m.Hash(),
+			SecretNames: []string{"token"}, Consent: m.Consent(), Position: 1, At: e.clock.Now()}); err != nil {
+			return err
+		}
+		for _, step := range []struct{ s, state string }{{storage.StepConfigure, storage.ConnectorConfigured}, {storage.StepTest, storage.ConnectorTested},
+			{storage.StepEnable, storage.ConnectorEnabled}} {
+			if step.s == storage.StepTest {
+				c.Test = &storage.ConnectorTest{Passed: true, Reason: "Read.", At: e.clock.Now()}
+			}
+			if c, err = u.Connectors().ChangeOrganisation(ctx, c.ID, c.Version, storage.ConnectorChange{Step: step.s, State: step.state,
+				Configuration: map[string]any{}, Position: 1, Test: c.Test, ManifestVersion: m.Version, ManifestHash: m.Hash(), SecretNames: []string{"token"},
+				Consent: m.Consent(), At: e.clock.Now()}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	clearing := e.fedAccount("SGD", c)
+	bankAcc := e.chartMoneyAccount()
+	var bank storage.MoneyAccount
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if bank, err = u.Banking().CreateMoneyAccount(ctx, storage.NewMoneyAccount{AccountID: bankAcc.ID, Kind: storage.MoneyBank, Name: bankAcc.Name,
+			Identifier: "BANK-" + bankAcc.Code, Currency: "SGD", At: e.clock.Now()}); err != nil {
+			return err
+		}
+		_, err = u.PSP().SaveAccount(ctx, storage.NewPSPAccount{MoneyAccountID: clearing.ID, ConnectorID: c.ID, PayoutAccountID: &bank.ID, FeeAccountID: e.books.Rent.ID, At: e.clock.Now()}, 0)
+		return err
+	})
+	worker, err := postgres.Open(context.Background(), db.URL("fyniq_worker"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(worker.Close)
+	txns := journal.BankTransactions{Store: e.store, Clock: e.clock}
+	ctx := context.Background()
+	if got, err := (bankfeed.Syncer{Store: worker, Runtime: rt, Clock: e.clock}).Sync(ctx, e.books.Org, c.ID); err != nil || got.Added != 61 {
+		t.Fatalf("the sync: %+v, %v", got, err)
+	}
+	if res, err := (psp.Runner{Store: worker, Runtime: rt, Clock: e.clock}).Run(ctx, e.books.Org, c.ID); err != nil || len(res.Errors) != 0 || res.Transactions != 31 {
+		t.Fatalf("the sweep: %+v, %v", res, err)
+	}
+	auto, err := banking.AutoReconcile(ctx, txns, e.books.Org, nil, e.clock.Now())
+	if err != nil || len(auto.Reconciled) != 30 { // the 30 fees; the payout is over the cap
+		t.Fatalf("reconcile now: %d reconciled, %v", len(auto.Reconciled), err)
+	}
+	if e.balanceOf(t, e.books.Rent.ID) != "117.00" {
+		t.Fatalf("fees expensed: %s, want 117.00", e.balanceOf(t, e.books.Rent.ID))
+	}
+	var payoutLeft bool
+	for _, l := range auto.Left {
+		if l.Line.Reference == "txn_po1" && l.Why == banking.LeftLineCap {
+			payoutLeft = true
+		}
+	}
+	if !payoutLeft {
+		t.Fatalf("the payout was not left for a person for its size: %+v", auto.Left)
+	}
+	lines := map[string]storage.BankLine{}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		ls, err := u.Banking().Lines(ctx, storage.BankLineFilter{MoneyAccountID: &clearing.ID})
+		for _, l := range ls {
+			lines[l.Reference] = l
+		}
+		return err
+	})
+	for ref, l := range lines {
+		if strings.HasPrefix(ref, "txn_c") && !strings.HasSuffix(ref, ":fee") {
+			if _, err := txns.Categorise(ctx, e.books.Org, journal.Categorisation{Basis: storage.BasisPerson, At: e.clock.Now(),
+				Draft: banktransaction.Draft{LineID: l.ID, Parts: []banktransaction.Part{{AccountID: e.books.Sales.ID, GSTCode: "OS"}}}}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	// A person records the payout as the transfer, and the bank's own line (also over the cap) completes it.
+	paid := money.FromMinor(259470, money.MustLookup("SGD"))
+	po := lines["txn_po1"]
+	tr, err := txns.RecordTransfer(ctx, e.books.Org, journal.TransferRequest{FromLineID: &po.ID, FromAccountID: clearing.ID, ToAccountID: bank.ID, Paid: &paid, Received: &paid,
+		Date: po.BookingDate, Basis: storage.BasisPerson, At: e.clock.Now()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var bankLine storage.BankLine
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		_, ls, err := u.Banking().Import(ctx, storage.NewBankStatement{MoneyAccountID: bank.ID, Source: storage.MoneySourceFile, Format: storage.FormatCSV, ParserVersion: "csv@1",
+			PeriodFrom: porttest.Day(10, 12), PeriodTo: porttest.Day(10, 12), Currency: "SGD", At: e.clock.Now(),
+			Lines: []storage.NewBankLine{{Position: 1, BookingDate: porttest.Day(10, 12), Amount: "2594.70", Description: "STRIPE PAYOUT", Fingerprint: strings.Repeat("cd", 32)}}})
+		bankLine = ls[0]
+		return err
+	})
+	if _, err := txns.CompleteTransfer(ctx, e.books.Org, tr.Transfer.ID, bankLine.ID, storage.BasisPerson, e.clock.Now()); err != nil {
+		t.Fatal(err)
+	}
+	r := checks.Runner{Store: worker, Clock: e.clock, Failed: func(_ context.Context, _ uuid.UUID, key string, err error) {
+		t.Errorf("check %s failed to run: %v", key, err)
+	}}
+	if _, err := r.Request(ctx, e.books.Org, "user:founder"); err != nil {
+		t.Fatal(err)
+	}
+	states := map[string]storage.CheckState{}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		all, err := u.Checks().States(ctx)
+		for _, s := range all {
+			states[s.Key] = s
+		}
+		return err
+	})
+	if s := states["payments.payout-nets"]; checks.Status(s.Status) != checks.OK || !strings.Contains(s.Detail, "1 settled payout") {
+		t.Errorf("C.2 #42: %+v", s)
+	}
+	if s := states["payments.clearing-balance"]; checks.Status(s.Status) != checks.OK {
+		t.Errorf("C.2 #50: %+v", s)
+	}
+	if bal := e.balanceOf(t, clearing.AccountID); bal != "288.30" {
+		t.Errorf("clearing holds %s, want 288.30 (3 x 96.10)", bal)
 	}
 }

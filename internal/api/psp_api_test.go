@@ -66,6 +66,60 @@ var matrixPaymentProviders = map[string]func(e *env, tok string) (response, func
 	"listPaymentProviderEvents": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodGet, "/v1/payment-providers/events", tok, nil), nil
 	},
+	"listPaymentProviderDisputes": func(e *env, tok string) (response, func() bool) {
+		return e.call(http.MethodGet, "/v1/payment-providers/disputes", tok, nil), nil
+	},
+	// The matrix's provider account names no dispute loss account, so an allowed role is answered PSP-05, past its policy.
+	"prepareDisputeLoss": func(e *env, tok string) (response, func() bool) {
+		v, ok := pspMatrixAccounts.Load(e)
+		if !ok {
+			m, _ := e.providerAccount()
+			v = m
+			pspMatrixAccounts.Store(e, m)
+			e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+				c, err := u.Connectors().Organisation(ctx)
+				if err != nil {
+					return err
+				}
+				_, err = u.PSP().SaveAccount(ctx, storage.NewPSPAccount{MoneyAccountID: m.ID, ConnectorID: c[len(c)-1].ID, FeeAccountID: e.books.Rent.ID, At: e.clock.Now()}, 0)
+				return err
+			})
+		}
+		m := v.(storage.MoneyAccount)
+		return e.call(http.MethodPost, "/v1/payment-providers/disputes/dp_matrix/loss", tok, map[string]any{"money_account_id": m.ID.String()}), nil
+	},
+	// A parked event: the first allowed role resolves it, and the others are answered PSP-07, past their policy.
+	"resolvePaymentProviderEvent": func(e *env, tok string) (response, func() bool) {
+		if _, ok := pspMatrixAccounts.Load(e); !ok {
+			m, _ := e.providerAccount()
+			pspMatrixAccounts.Store(e, m)
+		}
+		var ev storage.PSPEvent
+		e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+			var isNew bool
+			all, err := u.Connectors().Organisation(ctx)
+			if err != nil {
+				return err
+			}
+			c := all[len(all)-1]
+			if ev, isNew, err = u.PSPEvents().Receive(ctx, storage.NewPSPEvent{ID: uuid.New(), ConnectorID: c.ID, Provider: "stripe", EventID: "evt_" + uuid.NewString(), EventType: "radar.thing",
+				ParserVersion: "stripe@1", Payload: []byte("sealed"), PayloadSHA256: strings.Repeat("c", 64), ReceivedAt: e.clock.Now()}); err != nil || !isNew {
+				return err
+			}
+			_, err = u.PSPEvents().Settle(ctx, ev.ID, storage.PSPParked, "unknown type", e.clock.Now())
+			return err
+		})
+		r := e.call(http.MethodPost, "/v1/payment-providers/events/"+ev.ID.String()+"/resolution", tok, map[string]any{"reason": "Dealt with"})
+		return r, func() bool {
+			var st string
+			e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+				x, err := u.PSPEvents().Get(ctx, ev.ID)
+				st = x.Status
+				return err
+			})
+			return st == storage.PSPParked
+		}
+	},
 	"setPaymentProviderAccount": func(e *env, tok string) (response, func() bool) {
 		v, ok := pspMatrixAccounts.Load(e)
 		if !ok {

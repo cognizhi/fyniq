@@ -2,6 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "dispute_loss_account_id": {
+      "description": "The expense account a lost dispute's draft journal writes its money off to, such as 5045 Dispute losses; left out, no draft can be prepared.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b14"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "disputes_account_id": {
       "description": "A chart account, not a money account, a disputed amount waits in, such as 1055; left out, a dispute waits for a person.",
       "examples": [

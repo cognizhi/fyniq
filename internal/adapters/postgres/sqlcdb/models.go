@@ -2700,19 +2700,20 @@ type FyniqProjectTask struct {
 }
 
 type FyniqPspAccount struct {
-	OrganisationID    uuid.UUID
-	ID                uuid.UUID
-	MoneyAccountID    uuid.UUID
-	ConnectorID       uuid.UUID
-	PayoutAccountID   *uuid.UUID
-	FeeAccountID      uuid.UUID
-	DisputesAccountID *uuid.UUID
-	SweptThrough      pgtype.Date
-	SweptAt           *time.Time
-	SweepError        *string
-	CreatedBy         string
-	CreatedAt         time.Time
-	Version           int32
+	OrganisationID       uuid.UUID
+	ID                   uuid.UUID
+	MoneyAccountID       uuid.UUID
+	ConnectorID          uuid.UUID
+	PayoutAccountID      *uuid.UUID
+	FeeAccountID         uuid.UUID
+	DisputesAccountID    *uuid.UUID
+	SweptThrough         pgtype.Date
+	SweptAt              *time.Time
+	SweepError           *string
+	CreatedBy            string
+	CreatedAt            time.Time
+	Version              int32
+	DisputeLossAccountID *uuid.UUID
 }
 
 type FyniqPspBalance struct {
@@ -2722,6 +2723,20 @@ type FyniqPspBalance struct {
 	Currency       string
 	Amount         string
 	TakenAt        time.Time
+}
+
+type FyniqPspDisputeLoss struct {
+	OrganisationID            uuid.UUID
+	ID                        uuid.UUID
+	ConnectorID               uuid.UUID
+	DisputeID                 string
+	DocumentID                uuid.UUID
+	Currency                  string
+	Amount                    string
+	AcceptedOverstatedRevenue bool
+	Reason                    *string
+	CreatedBy                 string
+	CreatedAt                 time.Time
 }
 
 type FyniqPspEvent struct {
