@@ -1,6 +1,6 @@
-import { LogOut } from "lucide-react";
 import type { Session } from "../api/client";
 import { ReviewBanner } from "../components/ReviewBanner";
+import { Shell, admin, team } from "./Shell";
 import { helpText, t, textKeys } from "../i18n";
 
 const roleLabel = (r: string): string => (textKeys.includes(`role.${r}`) ? t(`role.${r}`) : r);
@@ -11,19 +11,7 @@ export function Home({ session, screen }: { session: Session; screen: "me" | "pe
   const key = screen === "people" ? "home.people" : "home.me";
   const roles = session.roles ?? [];
   return (
-    <div className="nm-shell">
-      <header className="nm-shell__bar">
-        <span className="fy-brand">
-          <span className="fy-brand__mark" aria-hidden="true">n</span>
-          <span>{t("app.name").toLowerCase()}</span>
-        </span>
-        <form method="post" action="/api/auth/signout">
-          <button className="fy-btn fy-btn--secondary" type="submit" title={helpText("nav.signOut").tooltip}>
-            <LogOut size={16} aria-hidden="true" />
-            {t("nav.signOut")}
-          </button>
-        </form>
-      </header>
+    <Shell directory={team(roles)} features={admin(roles)}>
       <main className="nm-shell__main" id="main">
         <ReviewBanner screen={screen === "people" ? "nm-people-home" : "nm-my-home"} />
         <h1 className="fy-h1" title={helpText(key).tooltip}>{t(key)}</h1>
@@ -42,6 +30,6 @@ export function Home({ session, screen }: { session: Session; screen: "me" | "pe
         </section>
         <p className="fy-muted">{t("home.soon")}</p>
       </main>
-    </div>
+    </Shell>
   );
 }

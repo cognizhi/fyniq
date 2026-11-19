@@ -1,0 +1,5 @@
+case,born,date,want,why,source
+born 1959,1959-01-01,2026-11-19,62/69,"MOM: 1 July 1958 to 30 June 1960",mom-re-employment
+born 1961,1961-05-05,2026-11-19,63/69,"MOM: 1 July 1960 to 30 June 1963",mom-re-employment
+born 1970,1970-01-01,2026-11-19,64/69,"MOM: from 1 July 1963",mom-re-employment
+born before the first cohort,1950-01-01,2026-11-19,none,"Not in MOM's table",mom-re-employment

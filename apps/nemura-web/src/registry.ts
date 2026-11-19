@@ -32,7 +32,35 @@ export const registry: Entry[] = [
   { kind: "route", id: "join", path: "/join", signedIn: false, screen: "nm-join", mode: "basic", help: "join.page", guide: "nemura.sign-in#joining-with-a-code" },
   { kind: "route", id: "my-home", path: "/me", signedIn: true, screen: "nm-my-home", mode: "basic", help: "home.me", guide: "nemura.home" },
   { kind: "route", id: "people-home", path: "/people", signedIn: true, screen: "nm-people-home", mode: "expert", help: "home.people", guide: "nemura.home" },
+  { kind: "route", id: "person-new", path: "/people/new", signedIn: true, screen: "nm-people", mode: "basic", help: "new.page", guide: "nemura.people" },
+  { kind: "route", id: "people-directory", path: "/people/directory", signedIn: true, screen: "nm-people", mode: "basic", help: "directory.page", guide: "nemura.people" },
+  { kind: "route", id: "person", path: "/people/:id", signedIn: true, screen: "nm-person", mode: "basic", help: "person.page", guide: "nemura.person" },
+  { kind: "route", id: "features", path: "/settings/features", signedIn: true, screen: "nm-features", mode: "expert", help: "features.page", guide: "nemura.features" },
+  { kind: "route", id: "packs", path: "/settings/packs", signedIn: true, screen: "nm-country-pack", mode: "expert", help: "packs.page", guide: "nemura.packs" },
+  { kind: "route", id: "policy", path: "/settings/policy", signedIn: true, screen: "nm-leave-policy", mode: "expert", help: "policy.page", guide: "nemura.packs" },
   { kind: "action", id: "sign-out", mode: "basic", help: "nav.signOut", guide: "nemura.sign-in#signing-out" },
 ];
 
 export const routes = registry.filter((e): e is RouteFeature => e.kind === "route");
+
+// matchRoute finds the route a path belongs to: a path is exact, or has ":id" for one segment, and the more specific route wins ("/people/directory" is not a person).
+export function matchRoute(path: string): { route: RouteFeature; params: Record<string, string> } | undefined {
+  const parts = path.split("/");
+  let found: { route: RouteFeature; params: Record<string, string>; exact: boolean } | undefined;
+  for (const route of routes) {
+    const want = route.path.split("/");
+    if (want.length !== parts.length) continue;
+    const params: Record<string, string> = {};
+    let exact = true;
+    const ok = want.every((w, i) => {
+      if (w.startsWith(":")) {
+        exact = false;
+        params[w.slice(1)] = decodeURIComponent(parts[i] ?? "");
+        return Boolean(parts[i]);
+      }
+      return w === parts[i];
+    });
+    if (ok && (!found || (exact && !found.exact))) found = { route, params, exact };
+  }
+  return found && { route: found.route, params: found.params };
+}
