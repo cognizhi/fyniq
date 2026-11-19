@@ -4,10 +4,14 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"errors"
+	"slices"
 	"strings"
 	"testing"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/cognizhi/fyniq/internal/ports"
 )
 
 // corpus is the fuzz corpus per type of FR-DOC-08: a file of each type Check accepts (PDF, PNG, JPEG, WebP, CSV, plain
@@ -218,5 +222,65 @@ func TestHEICIsRefusedWithItsOwnMessage(t *testing.T) {
 			strings.Contains(ps[0].Fix, "JPEG and attach") != c.heic {
 			t.Errorf("%s: Check = %+v %v", name, ps, err)
 		}
+	}
+}
+
+// convert stands in for the converter service: it answers what it is told to.
+type convert struct {
+	out ports.Converted
+	err error
+}
+
+func (c convert) Convert(context.Context, ports.ConvertKind, []byte) (ports.Converted, error) {
+	return c.out, c.err
+}
+
+// Where the installation has a converter, a HEIC photo is scanned as received, converted to JPEG, the picture scanned
+// again as the converter's output, stripped of its metadata and kept as a JPEG named .jpg, with the SHA-256 of the
+// original as received and of the file kept (FR-DOC-07, FR-DOC-08; rev 0.292). A converter that is down is an error, never
+// a stored file; a photo it cannot read, or a picture that is not a JPEG or is flagged, is refused in plain words; a
+// malicious HEIC is flagged before it reaches the converter; the 25 MB limit holds; the organisation's lower limit applies.
+// req: FR-DOC-08
+// req: FR-DOC-07
+func TestAHEICPhotoIsConvertedWhereTheInstallationHasAConverter(t *testing.T) {
+	ctx := context.Background()
+	photo := []byte("\x00\x00\x00\x18ftypheic\x00\x00\x00\x00mif1heic\x00\x00\x00\x08meta")
+	jpeg := convert{out: ports.Converted{MediaType: "image/jpeg", Data: jpegWithEXIF()}}
+
+	f, ps, err := CheckWith(ctx, Checker{Scanner: flagger{}, Converter: jpeg}, "IMG_2201.HEIC", photo)
+	if err != nil || len(ps) != 0 || f.MediaType != "image/jpeg" || f.Name != "IMG_2201.jpg" {
+		t.Fatalf("a photo: %+v %v %v", f, ps, err)
+	}
+	if bytes.Contains(f.Data, []byte("GPS")) || f.OriginalSHA256 != hash(photo) || f.SHA256 != hash(f.Data) || f.SHA256 == f.OriginalSHA256 {
+		t.Errorf("the converted file keeps its location or the hashes are wrong: %+v", f)
+	}
+
+	for name, c := range map[string]struct {
+		conv convert
+		code string
+		fail bool
+	}{
+		"a photo the converter cannot read": {convert{err: ports.ErrNotConvertible}, CodeConvert, false},
+		"a converter that is down":          {convert{err: errors.New("503")}, "", true},
+		"a picture that is not a JPEG":      {convert{out: ports.Converted{MediaType: "image/jpeg", Data: []byte("MZ not a picture")}}, CodeConvert, false},
+		"a picture the scan flags":          {convert{out: ports.Converted{MediaType: "image/jpeg", Data: append(jpegWithEXIF()[:len(jpegWithEXIF())-2], append([]byte("MALWARE"), 0xff, 0xd9)...)}}, CodeMalware, false},
+	} {
+		_, ps, err := CheckWith(ctx, Checker{Scanner: flagger{}, Converter: c.conv}, "IMG.HEIC", photo)
+		if c.fail != (err != nil) || c.code != "" && (len(ps) != 1 || ps[0].Code != c.code) {
+			t.Errorf("%s: %+v %v", name, ps, err)
+		}
+	}
+
+	// A malicious HEIC is flagged before it is sent to the converter.
+	if _, ps, err := CheckWith(ctx, Checker{Scanner: flagger{}, Converter: convert{err: errors.New("must not be called")}}, "x.heic", append(slices.Clone(photo), "MALWARE"...)); err != nil || len(ps) != 1 || ps[0].Code != CodeMalware {
+		t.Errorf("a malicious HEIC: %+v %v", ps, err)
+	}
+	// The limits: 25 MB, or the organisation's lower one; never above 25 MB.
+	big := append(slices.Clone(photo), make([]byte, 3<<20)...)
+	if _, ps, _ := CheckWith(ctx, Checker{Scanner: flagger{}, Converter: jpeg, MaxBytes: 2 << 20}, "big.heic", big); len(ps) != 1 || ps[0].Code != CodeSize || !strings.Contains(ps[0].Message, "the limit is 2 MB") {
+		t.Errorf("a file above the organisation's limit: %+v", ps)
+	}
+	if _, ps, _ := CheckWith(ctx, Checker{Scanner: flagger{}, Converter: jpeg, MaxBytes: 100 << 20}, "ok.heic", big); len(ps) != 0 {
+		t.Errorf("a limit above 25 MB must not raise the cap: %+v", ps)
 	}
 }

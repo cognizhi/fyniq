@@ -14,6 +14,7 @@ legal_hold | nemura_migrator | true | true
 member | nemura_migrator | true | true
 organisation | nemura_migrator | true | true
 outbox | nemura_migrator | true | true
+owner_recovery | nemura_migrator | true | true
 passkey | nemura_migrator | true | true
 passkey_challenge | nemura_migrator | true | true
 reporting_line | nemura_migrator | true | true
@@ -145,6 +146,15 @@ outbox | deadline_at | timestamp with time zone | false |
 outbox | last_error | text | false | 
 outbox | created_at | timestamp with time zone | true | now()
 outbox | updated_at | timestamp with time zone | true | now()
+owner_recovery | organisation_id | uuid | true | nemura.current_org()
+owner_recovery | id | uuid | true | 
+owner_recovery | member_id | uuid | true | 
+owner_recovery | code_hash | bytea | true | 
+owner_recovery | operators | text[] | true | 
+owner_recovery | created_at | timestamp with time zone | true | now()
+owner_recovery | expires_at | timestamp with time zone | true | 
+owner_recovery | used_at | timestamp with time zone | false | 
+owner_recovery | used_xact | bigint | false | 
 passkey | organisation_id | uuid | true | nemura.current_org()
 passkey | id | uuid | true | uuidv7()
 passkey | member_id | uuid | true | 
@@ -405,6 +415,21 @@ outbox | outbox_task_name_length | CHECK ((length(task_name) <= 500))
 outbox | outbox_updated_at_not_null | NOT NULL updated_at
 outbox | outbox_worker_class_known | CHECK ((worker_class = ANY (ARRAY['worker'::text, 'executor'::text])))
 outbox | outbox_worker_class_not_null | NOT NULL worker_class
+owner_recovery | owner_recovery_code_hash_not_null | NOT NULL code_hash
+owner_recovery | owner_recovery_code_key | UNIQUE (organisation_id, code_hash)
+owner_recovery | owner_recovery_code_sha256 | CHECK ((length(code_hash) = 32))
+owner_recovery | owner_recovery_created_at_not_null | NOT NULL created_at
+owner_recovery | owner_recovery_expires_at_not_null | NOT NULL expires_at
+owner_recovery | owner_recovery_expiry | CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '24:00:00'::interval))))
+owner_recovery | owner_recovery_id_not_null | NOT NULL id
+owner_recovery | owner_recovery_member_fkey | FOREIGN KEY (organisation_id, member_id) REFERENCES nemura.member(organisation_id, id)
+owner_recovery | owner_recovery_member_id_not_null | NOT NULL member_id
+owner_recovery | owner_recovery_operators_not_null | NOT NULL operators
+owner_recovery | owner_recovery_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nemura.organisation(organisation_id)
+owner_recovery | owner_recovery_organisation_id_not_null | NOT NULL organisation_id
+owner_recovery | owner_recovery_pkey | PRIMARY KEY (organisation_id, id)
+owner_recovery | owner_recovery_two_operators | CHECK ((cardinality(operators) = 2))
+owner_recovery | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 passkey | passkey_aaguid_16 | CHECK ((length(aaguid) = 16))
 passkey | passkey_aaguid_not_null | NOT NULL aaguid
 passkey | passkey_backup_eligible_not_null | NOT NULL backup_eligible
@@ -529,6 +554,9 @@ CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organi
 CREATE UNIQUE INDEX outbox_business_key ON nemura.outbox USING btree (organisation_id, kind, business_key)
 CREATE UNIQUE INDEX outbox_pkey ON nemura.outbox USING btree (organisation_id, id)
 CREATE INDEX outbox_state_idx ON nemura.outbox USING btree (organisation_id, state, deadline_at)
+CREATE UNIQUE INDEX owner_recovery_code_key ON nemura.owner_recovery USING btree (organisation_id, code_hash)
+CREATE INDEX owner_recovery_member_idx ON nemura.owner_recovery USING btree (organisation_id, member_id, created_at)
+CREATE UNIQUE INDEX owner_recovery_pkey ON nemura.owner_recovery USING btree (organisation_id, id)
 CREATE UNIQUE INDEX passkey_challenge_pkey ON nemura.passkey_challenge USING btree (organisation_id, id)
 CREATE INDEX passkey_challenge_session_idx ON nemura.passkey_challenge USING btree (organisation_id, session_id, purpose)
 CREATE UNIQUE INDEX passkey_credential_key ON nemura.passkey USING btree (organisation_id, credential_id)
@@ -571,6 +599,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.organis
 CREATE TRIGGER outbox_guard BEFORE UPDATE ON nemura.outbox FOR EACH ROW EXECUTE FUNCTION nemura.outbox_guard()
 CREATE TRIGGER outbox_no_delete BEFORE DELETE ON nemura.outbox FOR EACH ROW EXECUTE FUNCTION nemura.outbox_no_delete()
 CREATE TRIGGER outbox_no_truncate BEFORE TRUNCATE ON nemura.outbox FOR EACH STATEMENT EXECUTE FUNCTION nemura.outbox_no_delete()
+CREATE TRIGGER owner_recovery_guard BEFORE DELETE OR UPDATE ON nemura.owner_recovery FOR EACH ROW EXECUTE FUNCTION nemura.owner_recovery_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.owner_recovery DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('owner_recovery', 'id')
 CREATE TRIGGER passkey_guard BEFORE DELETE OR UPDATE ON nemura.passkey FOR EACH ROW EXECUTE FUNCTION nemura.passkey_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.passkey DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('passkey', 'id')
 CREATE TRIGGER passkey_challenge_guard BEFORE DELETE OR UPDATE ON nemura.passkey_challenge FOR EACH ROW EXECUTE FUNCTION nemura.passkey_challenge_guard()
@@ -598,6 +628,7 @@ legal_hold | tenant_isolation | (organisation_id = nemura.current_org()) | (orga
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 outbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+owner_recovery | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 passkey | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 passkey_challenge | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 reporting_line | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -780,6 +811,35 @@ AS $function$
        AND (l.effective_to IS NULL OR l.effective_to > coalesce(nullif(pg_catalog.current_setting('app.on', true), '')::date, current_date)))
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.issue_owner_recovery(p_org uuid, p_id uuid, p_member uuid, p_hash bytea, p_operators text[], p_event_id uuid, p_body text, p_on date)
+ RETURNS timestamp with time zone
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  expires timestamptz := now() + interval '24 hours';
+  names text[];
+BEGIN
+  PERFORM set_config('app.org_id', p_org::text, true);
+  SELECT array_agg(btrim(n)) INTO names FROM unnest(p_operators) AS n;
+  IF names IS NULL OR cardinality(names) <> 2 OR EXISTS (SELECT 1 FROM unnest(names) n WHERE length(n) NOT BETWEEN 1 AND 100)
+     OR lower(names[1]) = lower(names[2]) THEN
+    RAISE EXCEPTION 'A recovery needs exactly two different operators, by name' USING ERRCODE = 'NM110';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM nemura.member m JOIN nemura.role_assignment a ON a.organisation_id = m.organisation_id AND a.member_id = m.id
+     WHERE m.organisation_id = p_org AND m.id = p_member AND m.deactivated_at IS NULL AND a.role = 'owner'
+       AND a.effective_from <= p_on AND (a.effective_to IS NULL OR a.effective_to > p_on)) THEN
+    RAISE EXCEPTION 'The member is not an active Owner of that organisation' USING ERRCODE = 'NM111';
+  END IF;
+  INSERT INTO nemura.audit_event (id, body) VALUES (p_event_id, p_body);
+  INSERT INTO nemura.owner_recovery (id, member_id, code_hash, operators, created_at, expires_at)
+  VALUES (p_id, p_member, p_hash, names, now(), expires);
+  RETURN expires;
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.link_identity(p_issuer text, p_subject text, p_tenant text, p_member uuid)
  RETURNS void
  LANGUAGE plpgsql
@@ -877,6 +937,25 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.owner_recovery_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.member_id IS DISTINCT FROM OLD.member_id OR NEW.code_hash IS DISTINCT FROM OLD.code_hash
+     OR NEW.operators IS DISTINCT FROM OLD.operators OR NEW.expires_at IS DISTINCT FROM OLD.expires_at OR NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR OLD.used_at IS NOT NULL OR NEW.used_at IS NULL OR NEW.used_xact IS DISTINCT FROM OLD.used_xact THEN
+    RAISE EXCEPTION 'A recovery code can only be used, once' USING ERRCODE = 'NM113';
+  END IF;
+  IF OLD.expires_at <= now() THEN
+    RAISE EXCEPTION 'The recovery code has expired' USING ERRCODE = 'NM113';
+  END IF;
+  NEW.used_xact := pg_current_xact_id()::text::bigint;
+  RETURN NEW;
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.passkey_challenge_guard()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -906,6 +985,34 @@ BEGIN
     RAISE EXCEPTION 'A passkey''s signature counter never goes back: the authenticator may be cloned' USING ERRCODE = 'NM103';
   END IF;
   RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.replace_member_identities(p_member uuid, p_issuer text, p_subject text, p_tenant text)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  org uuid := nemura.require_org();
+  replaced integer;
+  holder uuid;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM nemura.owner_recovery r WHERE r.organisation_id = org AND r.member_id = p_member AND r.used_xact = pg_current_xact_id()::text::bigint) THEN
+    RAISE EXCEPTION 'Sign-ins are replaced only by a recovery used in this transaction' USING ERRCODE = 'NM112';
+  END IF;
+  SELECT member_id INTO holder FROM nemura.identity_directory WHERE issuer = p_issuer AND subject = p_subject AND tenant = p_tenant AND organisation_id = org;
+  IF holder IS NOT NULL AND holder <> p_member THEN
+    RAISE EXCEPTION 'That account belongs to another member of the organisation' USING ERRCODE = 'NM112';
+  END IF;
+  DELETE FROM nemura.identity_directory
+   WHERE organisation_id = org AND member_id = p_member AND NOT (issuer = p_issuer AND subject = p_subject AND tenant = p_tenant);
+  GET DIAGNOSTICS replaced = ROW_COUNT;
+  IF holder IS NULL THEN
+    INSERT INTO nemura.identity_directory (issuer, subject, tenant, organisation_id, member_id) VALUES (p_issuer, p_subject, p_tenant, org, p_member);
+  END IF;
+  RETURN replaced;
 END
 $function$
 

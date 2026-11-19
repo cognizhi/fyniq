@@ -1,7 +1,7 @@
 # compliance/technology-controls Specification
 
 ## Purpose
-The access and identity, change and supply-chain, data-protection and resilience controls of the control registry (`compliance/controls/`): each control, its automated check and frequency, the evidence kept, and the frameworks it maps to (ISO = ISO/IEC 27001:2022 Annex A; SOC2 = SOC 2 Trust Services Criteria; CE/CT = CSA Cyber Essentials / Cyber Trust; ASVS = OWASP ASVS 5.0). Derived from PRD-001 §F.3, §F.4, §F.5 and §F.6.
+The access and identity, change and supply-chain, data-protection, resilience and Nemura (§F.9) controls of the control registry (`compliance/controls/`): each control, its automated check and frequency, the evidence kept, and the frameworks it maps to (ISO = ISO/IEC 27001:2022 Annex A; SOC2 = SOC 2 Trust Services Criteria; CE/CT = CSA Cyber Essentials / Cyber Trust; ASVS = OWASP ASVS 5.0). Derived from PRD-001 §F.3, §F.4, §F.5, §F.6 and §F.9.
 
 ## Requirements
 
@@ -556,3 +556,86 @@ Source: PRD-001 §F.6
 #### Scenario: Framework mapping
 - **WHEN** the control is listed in the control registry
 - **THEN** it is mapped to ISO 8.16 and SOC2 A1.1 and CC7.2
+
+### Requirement: CTL-NM-01 Nemura's data is kept apart per organisation and per service
+Nemura's data SHALL be kept apart per organisation and per service: forced row-level security on every tenant table, one database role per service holding exactly its grants, and only Nemura's roles connecting to its database. The control is checked on every change in CI, with the test report and golden files kept as evidence.
+
+Source: PRD-001 §F.9
+
+#### Scenario: Checked on every change
+- **WHEN** a change runs through CI
+- **THEN** the schema and grant golden files and the tenancy attack tests (NM-SEC-01) pass, and the report is kept as evidence
+
+#### Scenario: Framework mapping
+- **WHEN** the control is listed in the control registry
+- **THEN** it is mapped to ISO 5.15 and 8.3, SOC2 CC6.1 and ASVS V8.2
+
+### Requirement: CTL-NM-02 Every Nemura change has its audit event, in a verified hash chain
+Every saved Nemura change SHALL have its audit event in the same transaction, and the trail SHALL be a verified hash chain that nobody can edit or truncate (AUD-01, AUD-03). The control is checked on every change in CI, with the test report kept as evidence.
+
+Source: PRD-001 §F.9
+
+#### Scenario: Checked on every change
+- **WHEN** a change runs through CI
+- **THEN** the tamper-detection and same-transaction tests pass, and the report is kept as evidence
+
+#### Scenario: Framework mapping
+- **WHEN** the control is listed in the control registry
+- **THEN** it is mapped to ISO 8.15 and SOC2 CC7.2
+
+### Requirement: CTL-NM-03 Nemura and Fyniq stay apart
+Nemura and Fyniq SHALL stay apart: Nemura's code imports only the shared infrastructure list, nothing imports it, and no Nemura identity holds a role on a Fyniq resource (NM-ARC-05). The control is checked on every change in CI, with the test report and the Infrastructure job's log kept as evidence.
+
+Source: PRD-001 §F.9
+
+#### Scenario: Checked on every change
+- **WHEN** a change runs through CI
+- **THEN** the import-rule tests and the infrastructure module's tests pass, and the report and log are kept as evidence
+
+#### Scenario: Framework mapping
+- **WHEN** the control is listed in the control registry
+- **THEN** it is mapped to ISO 8.31 and SOC2 CC6.1
+
+### Requirement: CTL-NM-04 An Owner is recovered only by two named operators
+An Owner who cannot sign in SHALL be recovered only by two named operators with the migrator credential: a one-time code valid 24 hours, kept as a hash, used once, audited with both names, replacing every other sign-in, session and passkey of that member. The control is checked on every change in CI and on each recovery, with the test report and the trail's events kept as evidence.
+
+Source: PRD-001 §F.9
+
+#### Scenario: Attack tests on every change
+- **WHEN** a change runs through CI
+- **THEN** the attack tests cover one operator, the same operator twice, a non-Owner, and a replayed, older, expired, forged or other organisation's code, and the application roles' grants
+- **AND** the report is kept as evidence
+
+#### Scenario: Each recovery is audited
+- **WHEN** an Owner is recovered
+- **THEN** the trail holds the recovery issued, naming both operators, and the recovery done
+
+#### Scenario: Framework mapping
+- **WHEN** the control is listed in the control registry
+- **THEN** it is mapped to ISO 5.17 and 5.18 and SOC2 CC6.1
+
+### Requirement: CTL-NM-05 API clients are the Owner's, with a fresh passkey
+API clients SHALL be registered and revoked only by the Owner with a passkey confirmed in the last five minutes, for Nemura's audience and the scopes given, with no private key accepted; a second approver arrives with the Fyniq link (NM-ARC-04). The control is checked on every change in CI, with the test report and the trail's events kept as evidence.
+
+Source: PRD-001 §F.9
+
+#### Scenario: Checked on every change
+- **WHEN** a change runs through CI
+- **THEN** the role, step-up, registration and revocation tests pass, and the report is kept as evidence
+
+#### Scenario: Framework mapping
+- **WHEN** the control is listed in the control registry
+- **THEN** it is mapped to ISO 5.15 and 8.2, SOC2 CC6.1 and ASVS V6.4 and V13.2
+
+### Requirement: CTL-NM-06 A dead pay-day job alerts the Payroll administrator and the Owner
+A pay-day job that dies SHALL alert the Payroll administrator and the Owner within an hour, once each, and the notice SHALL survive a stopped consumer (NM-NFR-05). The control is checked on every change in CI and on each dead job, with the test report and the worker's log lines kept as evidence.
+
+Source: PRD-001 §F.9
+
+#### Scenario: Checked on every change
+- **WHEN** a change runs through CI
+- **THEN** the dead-job alert tests pass: the sweep raises one notice for each person, and a notice waits while its consumer is stopped
+
+#### Scenario: Framework mapping
+- **WHEN** the control is listed in the control registry
+- **THEN** it is mapped to SOC2 A1.2 and CC7.4

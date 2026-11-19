@@ -1,0 +1,18 @@
+# CTL-NM-06: PRD-001 Appendix F (F.9). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-NM-06
+section: "F.9"
+control: "A pay-day job that dies alerts the Payroll administrator and the Owner within an hour, once each, and the notice survives a stopped consumer (NM-NFR-05)"
+mapping: "SOC2 A1.2, CC7.4"
+automated_check: "Dead-job alert tests; the sweep raises the notices"
+frequency: "CI, E (each dead job)"
+evidence: "Test report; the worker's `payday.alert` log lines"
+owner: Owner
+checks:
+  - frequency: CI
+    status: running
+    how: "test TestADeadPayDayJobAlertsThePayrollAdministratorAndTheOwnerOnce"
+    evidence: "a dead pay-day job raises one notice for each Payroll administrator and Owner, once, which waits while its consumer is stopped; CI artefact test-report (90 days)"
+  - frequency: E
+    status: manual
+    evidence: "the worker's payday.alert log lines and the dead row's nemura.outbox.row.dead event for each dead job (docs/runbooks/nemura-first-run.md)"

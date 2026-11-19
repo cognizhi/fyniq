@@ -17,6 +17,7 @@ on:
       - "go.sum"
       - "pnpm-lock.yaml"
       - "apps/web/package.json"
+      - "apps/nemura-web/package.json"
       - ".github/workflows/images-repro.yml"
 
 permissions: {}

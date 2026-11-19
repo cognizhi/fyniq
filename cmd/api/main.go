@@ -106,6 +106,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 	// anchors' bucket and the signing key's public key].
 	d.Anchors, d.Signer, d.Keyed = kit.Blobs, kit.Signer, kit.Keyed()
 	d.Staging, d.Scanner = kit.Staging, kit.Scanner // nil until configured: then no file can be attached
+	d.Converter = kit.Converter                     // nil until configured: then a HEIC photo is refused (FR-DOC-08)
 	d.Evidence = kit.Evidence                       // read only: committed files open from it
 	d.Fields = kit.Fields                           // nil until configured: then no bank details can be kept (SEC-11)
 	d.Renderer = kit.Render                         // nil until configured: then no document preview renders

@@ -624,6 +624,10 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-18] compile | docs/user-guide/approvals.md → approvals.decide (FM-6: unusual items in the weekly review, rev 0.287)
 
+## [2026-11-18] compile | docs/user-guide/bills.md, journals.md → purchases.bills, accounting.journals (a HEIC photo is converted where the installation has a converter)
+
+## [2026-11-18] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the largest evidence file setting)
+
 ## [2026-11-18] compile | docs/user-guide/journals.md → accounting.journals (the Evidence panel's date it relates to, paste, drop and details)
 
 ## [2026-11-18] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the Evidence panel's Rules for this activity)
@@ -648,6 +652,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-19] compile | docs/user-guide/projects-rates.md → projects.rates (rates and time at cost, p1-projects slice 3)
 
+## [2026-11-19] compile | every page → kb-schema@2 (the optional packs field; content unchanged); compliance.gst declares sg-gst@2026.3 and compliance.calendar sg-deadlines@2026.1 (AI-53)
+
 ## [2026-11-19] compile | docs/user-guide/integrations.md → settings.integrations (Stripe and HitPay as read-only payment providers: set up, what arrives, what posts on Reconcile now, a lost dispute, the checks; p1-payment-providers, PRD rev 0.304)
 
 ## [2026-11-19] compile | docs/user-guide/organisation-settings.md, integrations.md → settings.organisation (lost disputes: the expense limit setting), settings.integrations (a lost dispute's draft journal, resolving a set-aside event; p1-payment-providers, PRD rev 0.305)
@@ -655,3 +661,9 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | kb/pages/task/settings-change.md re-hashed to the guide's new section (lost disputes); the page's content is unchanged
 
 ## [2026-11-19] compile | docs/user-guide/banking.md → banking.payouts (the Payouts screen and the credit-note route for a lost dispute; p1-payment-providers task 4.5, 4.6), the other banking pages re-hashed; docs/user-guide/integrations.md → settings.integrations (the credit-note route)
+
+## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md, home.md → nemura.sign-in, nemura.home (the sign-in page and the landing, p1-nemura-platform slice 7a)
+
+## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md → nemura.sign-in (joining with an invitation or the setup code)
+
+## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md → nemura.sign-in (the Owner recovery code)

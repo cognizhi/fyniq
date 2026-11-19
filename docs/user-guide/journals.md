@@ -200,7 +200,8 @@ Several files can go on one journal, each with its own kind, note and date.
 - Select **Details** under a file to see its SHA-256 fingerprint, how it arrived (uploaded or pasted),
   the personal data it holds and who added it. When Fyniq stripped image metadata, both the
   fingerprint of the stored file and of the file as you sent it are shown.
-- A HEIC photo, as an iPhone takes by default, is not accepted yet: export it as JPEG first.
+- A HEIC photo, as an iPhone takes by default, is converted to JPEG where your installation has its photo
+  converter, and kept as a JPEG; otherwise it is refused and you export it as JPEG first.
 - A file whose text shows an NRIC or FIN in full is marked **Shows an NRIC**: mask the number
   before you share the file.
 - A journal whose debits are above S$1,000 posts only with a supporting calculation or document

@@ -43,6 +43,13 @@ expires = 2027-05-31
 [[waiver]]
 tool = "gosec"
 rule = "G704"
+path = "internal/convertservice/convertservice.go"
+reason = "The API calls the converter service at the deployment's URL (FYNIQ_GCP's converter entry in the cloud, written by OpenTofu; local mode's own address), never from a request, and the client's HTTP goes through the egress guard, which reaches that one host (SEC-36); only the picture to convert comes from the caller, as the body."
+expires = 2027-05-31
+
+[[waiver]]
+tool = "gosec"
+rule = "G704"
 path = "internal/assistant/client.go"
 reason = "The AI service calls the API's internal operations at the deployment's URL (FYNIQ_API_INTERNAL_URL locally, FYNIQ_GCP's api entry in the cloud, written by OpenTofu) and one of two fixed paths, never anything a turn sends; its HTTP goes through the egress guard, which reaches that one host (SEC-36)."
 expires = 2027-05-31

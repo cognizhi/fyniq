@@ -8,6 +8,7 @@ var Matrix = map[string]string{ // #nosec G101 -- operation names and who may ca
 	"GET /v1/info":                     "anyone",
 	"GET /v1/errors":                   "anyone",
 	"GET /v1/errors/{code}":            "anyone",
+	"GET /v1/sign-in":                  "anyone",
 	"GET /v1/session":                  "signed in (any role)",
 	"POST /v1/passkeys/registration":   "signed in (any role), for themselves",
 	"POST /v1/passkeys":                "signed in (any role), for themselves",

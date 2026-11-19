@@ -165,7 +165,7 @@ What exists (checked on `main`, 18 Nov 2026):
 - **D7. Standalone identity and the token issuer (NM-ARC-01, NM-ARC-06, ADR-N3).**
   - Nemura runs its own Ory Hydra (same pinned image and settings: opaque tokens, PKCE only, access tokens at
     most 60 minutes) on its own database `nemura_hydra`, with its own migrate job. The API serves Hydra's login
-    and consent pages at `/api/auth/…` of Nemura's origin. API clients and the integration client that the link
+    and consent pages at `/api/auth/…` of Nemura's origin once an authorisation-code client exists (P1 has only client-credentials integrations, so none is built). API clients and the integration client that the link
     change registers in Fyniq are Nemura's own clients, audience-bound.
   - The `SignIn` port is reused: the local adapter is a sign-in page; the Identity Platform adapter takes the
     tenant per organisation (`[live-verify]` against the real service; tested against its fake).
@@ -294,7 +294,7 @@ What exists (checked on `main`, 18 Nov 2026):
 
 ## Decisions (owner, 19 Nov 2026)
 
-The owner decided all five on 19 Nov 2026, each as recommended. The options stay below as the record of what was weighed;
+The owner decided the first five on 19 Nov 2026, each as recommended, and O6 and O7 later the same day (O7 not as recommended). The options stay below as the record of what was weighed;
 each heading says what was decided.
 
 ### O1. Where Nemura's database lives in the cloud (needed before the cloud gate; D15). **Decided: B**, a second database and roles on Fyniq's Cloud SQL instance until Nemura holds a first paid person's pay data, then its own instance before that data arrives
@@ -362,6 +362,24 @@ It is the one choice that is expensive to undo once the audit, outbox and identi
 | **C. Copy the shared code into Nemura** | No coupling at all | Two audit, clock and money implementations to keep correct; against the "shared rules" intent (NM-ARC-05) |
 
 Recommendation: **A**, and revisit B when Nemura has its own team (the alternative ADR-N1 already keeps open).
+
+### O6. Dual control for API clients (needed before slice 5's API clients; D7). **Decided: A (19 Nov 2026)**, the Owner with a fresh passkey now; the second approver arrives with the Fyniq link (NM-ARC-04)
+
+| Option | Pros | Cons |
+|---|---|---|
+| **A. Owner plus a passkey confirmed in the last five minutes now; a second approver with the link** | A team of one can still register a client; the step-up already stops a stolen session; the approvals primitive's second approver needs the Fyniq side the link builds | Until the link, one Owner alone registers a client that can read the directory (`directory.read` only, audited, revocable) |
+| **B. A second Owner's approval now** | The strongest control from the first client | A company with one Owner cannot register one; reuses the role-grant approval for a thing it was not built for |
+
+Recommendation: **A**. Built as A: `POST /v1/api-clients` needs the Owner and a passkey confirmation within five minutes.
+
+### O7. Recovering an Owner who cannot sign in (needed before the first paid person; D7). **Decided: B (19 Nov 2026)**, Nemura's own two-person deployment recovery, built now like Fyniq's
+
+| Option | Pros | Cons |
+|---|---|---|
+| **A. A second Owner approves a new Owner's role request** | Nothing to build; works when a company holds two Owners | Useless to a one-Owner company, and a stolen second account approves a takeover |
+| **B. A deployment recovery by two named operators with the migrator credential: a one-time code valid 24 hours, audited, replacing every other sign-in** | The same proven pattern as Fyniq's Super admin recovery (FR-ADM-09, SEC-35); works for any company; no standing path an attacker with the api's credential can use | Needs two trusted operators; the cooling-off and the notice to every Owner wait for notifications |
+
+Recommendation: A now and B before the first paid person; the owner chose **B now**. Built: migration 000010, `make people-owner-recovery`, the join form's "I have a recovery code", the runbook and the attack tests.
 
 ## Risks / Trade-offs
 

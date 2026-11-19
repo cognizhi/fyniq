@@ -94,6 +94,9 @@ type Dispatcher struct {
 	Queue    ports.Queue
 	Clock    ports.Clock
 	Deadline time.Duration // how long a dispatched row may take before the sweep sends it again; 0 means 15 min
+	// Raise, when set, runs for every organisation at the end of its sweep and may enqueue rows of its own: the pay-day alert for the jobs
+	// that died (internal/nemura/alert). A failure is returned after the other organisations are swept.
+	Raise func(ctx context.Context, org uuid.UUID, now time.Time) (int, error)
 }
 
 func (d Dispatcher) deadline() time.Duration {
@@ -204,6 +207,7 @@ func Sweep(ctx context.Context, d Dispatcher, pendingBefore time.Time) (int, err
 		return 0, err
 	}
 	sent := 0
+	var raised error
 	for _, org := range orgs {
 		now := d.Clock.Now()
 		rows, err := d.Store.Due(ctx, org, now, pendingBefore)
@@ -222,8 +226,13 @@ func Sweep(ctx context.Context, d Dispatcher, pendingBefore time.Time) (int, err
 			}
 			sent++
 		}
+		if d.Raise != nil {
+			if _, err := d.Raise(ctx, org, d.Clock.Now()); err != nil {
+				raised = errors.Join(raised, err)
+			}
+		}
 	}
-	return sent, nil
+	return sent, raised
 }
 
 // Tick is the scheduler's endpoint: with the worker class's credential it sweeps every organisation once and answers how many

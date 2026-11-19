@@ -1,5 +1,5 @@
 // Package knowledge is the knowledge base's own logic (PRD-001 §9.11, AI-50, AI-52, AI-53; p1-knowledge-base design D1):
-// the page format of kb/schema.md (kb-schema@1), its front matter, the deterministic lint, the generated index, and the
+// the page format of kb/schema.md (kb-schema@2), its front matter, the deterministic lint, the generated index, and the
 // reader filter's vocabulary. It reads pages and their raw sources from file systems and touches no database and no
 // network. scripts/kb.py does the same for the repository's pages, and the two agree on the shared fixtures in
 // test/kb/fixtures/ (a rule changed in one fails the other).
@@ -14,7 +14,7 @@ import (
 )
 
 // Schema is the page format this release reads and writes (kb/schema.md).
-const Schema = "kb-schema@1"
+const Schema = "kb-schema@2"
 
 // The page types, data classes and statuses of kb/schema.md.
 var (
@@ -30,6 +30,7 @@ type Page struct {
 	Title       string
 	Summary     string
 	Aliases     []string
+	Packs       []string // the statutory pack versions the page's values were read from, "<pack>@<year>.<n>" (kb-schema@2)
 	Sources     []Source
 	DataClass   string
 	Taint       string
@@ -83,6 +84,7 @@ var (
 	linkTarget   = regexp.MustCompile(`\]\([^)]*\)`)
 	orderedItem  = regexp.MustCompile(`(?m)^\s*\d+\.\s`)
 	sectionSplit = regexp.MustCompile(`(?m)^## `)
+	packRe       = regexp.MustCompile(`^([a-z][a-z0-9-]*)@(\d{4})\.(\d+)$`)
 	dateRe       = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 	citeMarker   = regexp.MustCompile(` ?\(src: [^)]*\)`)
 )
@@ -143,6 +145,7 @@ func ParsePage(file, text string) Page {
 	p.HumanEdited = s["human_edited"] == "true"
 	p.CompiledBy, p.Schema, p.CompiledAt = s["compiled_by"], s["schema"], s["compiled_at"]
 	p.Aliases = fm.lists["aliases"]
+	p.Packs = fm.lists["packs"]
 	for _, item := range fm.lists["sources"] {
 		if m := sourceLine.FindStringSubmatch(item); m != nil {
 			p.Sources = append(p.Sources, Source{Path: m[1], SHA256: m[2]})

@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/gcp"
 	"github.com/cognizhi/fyniq/internal/adapters/litellm"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres"
+	"github.com/cognizhi/fyniq/internal/convertservice"
 	"github.com/cognizhi/fyniq/internal/domain/backup"
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -58,6 +59,10 @@ type Config struct {
 	// Scanner is the private scanner service, clamd behind an HTTP front (FR-DOC-08, SEC-24; PRD-001 rev 0.247): its URL,
 	// its audience and its callers' accounts; without it, or FYNIQ_CLAMD_ADDR, no file can be attached.
 	Scanner gcp.Callers `json:"scanner"`
+	// Converter is the private converter service that turns a HEIC photo into a JPEG (FR-DOC-08; PRD-001 rev 0.292) [live-verify:
+	// its engine, image and Cloud Run service are not built yet]: its URL, its audience and its callers' accounts. Without
+	// it a HEIC photo is refused, with a message to export it as JPEG.
+	Converter gcp.Callers `json:"converter"`
 	// AI is the AI service (p1-ai-assistant design D3) [live-verify]: its URL on internal ingress and its audience; the
 	// api's account is among its callers. Without it every turn fails, saying the AI service is not set up.
 	AI gcp.Callers `json:"ai"`
@@ -155,6 +160,10 @@ func Build(_ context.Context, service string, clock ports.Clock) (*Kit, error) {
 			HTTP: platform.Bounded(64<<10, 2*time.Minute).For(egress.HostOf(c.Scanner.URL))}
 	case os.Getenv("FYNIQ_CLAMD_ADDR") != "": // clamd beside the service (SEC-24)
 		kit.Scanner = clamav.Scanner{Addr: os.Getenv("FYNIQ_CLAMD_ADDR")}
+	}
+	if strings.HasPrefix(c.Converter.URL, "https://") && c.Converter.Audience != "" { // as the service's own account [live-verify]
+		kit.Converter = &convertservice.Client{URL: c.Converter.URL, Token: gcp.IdentityTokens(c.Converter.Audience, nil),
+			HTTP: platform.Bounded(64<<20, 2*time.Minute).For(egress.HostOf(c.Converter.URL))}
 	}
 	// The connectors (FR-INT-20, rev 0.139): their keys in Secret Manager, only the secrets FYNIQ_CONNECTOR_SECRETS names
 	// and the organisations' connector secrets; their traffic through the egress guard, never to the platform's own
