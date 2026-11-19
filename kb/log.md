@@ -743,3 +743,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/nemura/leaver-account.md, home.md -> nemura.leaver-account, nemura.home (p1-nemura-self-service-letters 3.1, 3.4)
 
 ## [2026-11-20] compile | docs/user-guide/nemura/letters-templates.md -> nemura.letters.templates (automatic issue; p1-nemura-self-service-letters 4.1)
+
+## [2026-11-20] compile | docs/user-guide/nemura/onboarding.md, leaver-account.md -> nemura.onboarding, nemura.leaver-account (p1-nemura-self-service-letters 4.2)

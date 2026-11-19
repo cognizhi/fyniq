@@ -2048,6 +2048,93 @@ components:
         - worksite
         - employment_type
       type: object
+    JoinDecisionInputBody:
+      additionalProperties: false
+      properties:
+        note:
+          description: A note.
+          examples:
+            - Invited as an employee.
+          maxLength: 300
+          type: string
+        state:
+          description: Done once the person is invited; dismissed when it does not apply, such as a person who does not claim expenses.
+          enum:
+            - done
+            - dismissed
+          examples:
+            - done
+          type: string
+      required:
+        - state
+      type: object
+    JoinTask:
+      additionalProperties: false
+      properties:
+        id:
+          description: The task.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20
+          format: uuid
+          type: string
+        note:
+          description: The note left when it was decided.
+          examples:
+            - Invited as an employee.
+          type: string
+        person:
+          description: Their legal name.
+          examples:
+            - Ben Lim
+          type: string
+        person_id:
+          description: The new person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        raised_at:
+          description: When the task was raised.
+          examples:
+            - "2026-11-20T10:00:00Z"
+          format: date-time
+          type: string
+        start_date:
+          description: The day they start.
+          examples:
+            - "2026-12-01"
+          format: date
+          type: string
+        state:
+          description: Waiting; the person was invited; or it does not apply to them.
+          enum:
+            - open
+            - done
+            - dismissed
+          examples:
+            - open
+          type: string
+      required:
+        - id
+        - person_id
+        - person
+        - start_date
+        - state
+        - raised_at
+      type: object
+    JoinTasksOutputBody:
+      additionalProperties: false
+      properties:
+        tasks:
+          description: The tasks, the open ones first.
+          items:
+            $ref: "#/components/schemas/JoinTask"
+          type:
+            - array
+            - "null"
+      required:
+        - tasks
+      type: object
     LeaveAsk:
       additionalProperties: false
       properties:
@@ -2964,6 +3051,209 @@ components:
           type: string
       required:
         - nric
+      type: object
+    Offboarding:
+      additionalProperties: false
+      properties:
+        equipment_returned_on:
+          description: When equipment was returned.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        exit_interview_on:
+          description: When the exit interview was held.
+          examples:
+            - "2026-11-27"
+          format: date
+          type: string
+        fyniq_access_removed_on:
+          description: When the person's Fyniq access was removed.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        id:
+          description: The leaving.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f21
+          format: uuid
+          type: string
+        kind:
+          description: How the employment ends.
+          enum:
+            - resignation
+            - termination
+            - retrenchment
+            - end_of_contract
+            - retirement
+            - other
+          examples:
+            - resignation
+          type: string
+        last_day:
+          description: The last day of employment, the notice period included.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        leave_settlement:
+          $ref: "#/components/schemas/Settlement"
+          description: The annual leave to the last day; left out when the person has no legal classification or no pack covers the year.
+        nemura_access_narrows_on:
+          description: "The day the person's Nemura account becomes the narrow one for their own documents: the day after the last day."
+          examples:
+            - "2026-12-01"
+          format: date
+          type: string
+        notice_given_on:
+          description: "When notice was given or the company learned of the cessation: it starts the tax-clearance hold."
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        person:
+          description: Their legal name.
+          examples:
+            - Chen Yu
+          type: string
+        person_id:
+          description: The person.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        retrenchment_notified_on:
+          description: For a retrenchment, when employees were told.
+          examples:
+            - "2026-09-28"
+          format: date
+          type: string
+        service_letter:
+          description: "Where the person's service letter is: none asked for yet, or the latest request's state."
+          enum:
+            - none
+            - requested
+            - checked
+            - issued
+            - refused
+            - withdrawn
+          examples:
+            - none
+          type: string
+      required:
+        - id
+        - person_id
+        - person
+        - kind
+        - last_day
+        - nemura_access_narrows_on
+        - service_letter
+      type: object
+    OffboardingInput:
+      additionalProperties: false
+      properties:
+        equipment_returned_on:
+          description: When equipment was returned.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        exit_interview_on:
+          description: When the exit interview was held.
+          examples:
+            - "2026-11-27"
+          format: date
+          type: string
+        fyniq_access_removed_on:
+          description: When the person's Fyniq access was removed.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        kind:
+          description: How the employment ends.
+          enum:
+            - resignation
+            - termination
+            - retrenchment
+            - end_of_contract
+            - retirement
+            - other
+          examples:
+            - resignation
+          type: string
+        last_day:
+          description: The last day of employment, the notice period included.
+          examples:
+            - "2026-11-30"
+          format: date
+          type: string
+        notice_given_on:
+          description: When notice was given or the company learned of the cessation.
+          examples:
+            - "2026-10-01"
+          format: date
+          type: string
+        retrenchment_notified_on:
+          description: For a retrenchment only, when employees were told.
+          examples:
+            - "2026-09-28"
+          format: date
+          type: string
+      required:
+        - kind
+        - last_day
+      type: object
+    OffboardingOutputBody:
+      additionalProperties: false
+      properties:
+        leaving:
+          $ref: "#/components/schemas/Offboarding"
+          description: The leaving.
+        recorded:
+          description: Whether the person has a leaving recorded.
+          examples:
+            - true
+          type: boolean
+      required:
+        - recorded
+        - leaving
+      type: object
+    OffboardingsOutputBody:
+      additionalProperties: false
+      properties:
+        leavings:
+          description: The active leavings, the soonest last day first.
+          items:
+            $ref: "#/components/schemas/Offboarding"
+          type:
+            - array
+            - "null"
+      required:
+        - leavings
+      type: object
+    OnboardingSettingsInputBody:
+      additionalProperties: false
+      properties:
+        invite_to_fyniq:
+          description: Raise a task to invite each new person to Fyniq.
+          examples:
+            - true
+          type: boolean
+      required:
+        - invite_to_fyniq
+      type: object
+    OnboardingSettingsOutputBody:
+      additionalProperties: false
+      properties:
+        invite_to_fyniq:
+          description: Whether adding a person raises a task to invite them to Fyniq.
+          examples:
+            - true
+          type: boolean
+      required:
+        - invite_to_fyniq
       type: object
     OvertimeAsk:
       additionalProperties: false
@@ -4210,6 +4500,50 @@ components:
       required:
         - requests
         - days
+      type: object
+    Settlement:
+      additionalProperties: false
+      properties:
+        basis:
+          description: The steps of the calculation, one plain line each.
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        booked:
+          description: The days still booked after the last day, to cancel.
+          examples:
+            - "0.00"
+          type: string
+        entitled:
+          description: The annual leave prorated to the last day, as a decimal string.
+          examples:
+            - "13.00"
+          type: string
+        taken:
+          description: The days taken.
+          examples:
+            - "10.00"
+          type: string
+        untaken:
+          description: "Entitled less taken: negative when the person took more than the prorated entitlement."
+          examples:
+            - "3.00"
+          type: string
+        year:
+          description: The leave year of the last day.
+          examples:
+            - 2026
+          format: int64
+          type: integer
+      required:
+        - year
+        - entitled
+        - taken
+        - booked
+        - untaken
+        - basis
       type: object
     SickAsk:
       additionalProperties: false
@@ -8217,6 +8551,260 @@ paths:
       summary: Tell the company you are sick
       tags:
         - Leave
+  /v1/offboardings:
+    get:
+      description: The active leavings, the soonest last day first, each with its dates kept apart, its checklist, where the service letter is and the leave settlement to the last day. The HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: listLeavings
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OffboardingsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: People who are leaving
+      tags:
+        - Onboarding
+  /v1/onboarding/settings:
+    get:
+      description: Whether adding a person raises a task to invite them to Fyniq. The HR administrator, the Administrator and the Owner. It changes nothing.
+      operationId: getOnboardingSettings
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingSettingsOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Whether new people are invited to Fyniq
+      tags:
+        - Onboarding
+    put:
+      description: Switches on or off the task to invite each new person to Fyniq. Switching on raises no task for people already added. The HR administrator and the Owner. It is audited.
+      operationId: setOnboardingSettings
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingSettingsInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Invite new people to Fyniq
+      tags:
+        - Onboarding
+  /v1/onboarding/tasks:
+    get:
+      description: "The tasks to invite new people to Fyniq with the Employee role, the open ones first. Nemura never grants a Fyniq role itself: whoever may invite does it in Fyniq and marks the task done. The HR administrator, the Administrator and the Owner. It changes nothing."
+      operationId: listJoinTasks
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JoinTasksOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Tasks to invite new people to Fyniq
+      tags:
+        - Onboarding
+  /v1/onboarding/tasks/{id}/decision:
+    post:
+      description: Marks a task done (the person was invited in Fyniq) or dismissed (it does not apply), once. The HR administrator, the Administrator and the Owner. It is audited.
+      operationId: decideJoinTask
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The task.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The task.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinDecisionInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Mark an invitation task done or dismissed
+      tags:
+        - Onboarding
   /v1/overtime:
     get:
       description: Lists the caller's own records, their reports' for a line manager, and everyone's for the people team, the Owner and the Payroll administrator. It changes nothing.
@@ -10103,6 +10691,198 @@ paths:
       summary: Set a person's NRIC or FIN
       tags:
         - People
+  /v1/people/{id}/offboarding:
+    get:
+      description: The person's active leaving, when there is one. The HR officer, the HR administrator and the Owner. It changes nothing.
+      operationId: getLeaving
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OffboardingOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: A person's leaving
+      tags:
+        - Onboarding
+    put:
+      description: "Records how and when a person leaves: the day notice was given (it starts the tax-clearance hold), the last day (it prorates the leave and, the day after, narrows the account), for a retrenchment the day employees were told, and the checklist. It sets the leaving date on the person's record. The HR officer, the HR administrator and the Owner. It is audited."
+      operationId: setLeaving
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OffboardingInput"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Record or change a person's leaving
+      tags:
+        - Onboarding
+  /v1/people/{id}/offboarding/cancellation:
+    post:
+      description: "Withdraws a leaving before its last day has passed, such as a resignation withdrawn: the leaving date on the record is cleared. The HR officer, the HR administrator and the Owner. It is audited."
+      operationId: cancelLeaving
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Withdraw a person's leaving
+      tags:
+        - Onboarding
   /v1/people/{id}/secrets/{field}:
     get:
       description: "Returns the NRIC or FIN or the salary bank account at the level the caller's roles give (Appendix B): masked for the HR officer, in full for the HR administrator, the Payroll administrator and the Owner as the matrix says, and always in full for the person themselves. Every read, and every refusal, is audited. A field the caller may not see answers as if there were none."
@@ -11219,6 +11999,8 @@ tags:
     name: Packs
   - description: Working patterns, leave balances and the ledger behind them (NM-LV-01, NM-LV-02, NM-LV-13, NM-TIM-01).
     name: Leave
+  - description: The task to invite new people to Fyniq, and a leaver's dates, checklist and leave settlement (NM-ONB-02, NM-ONB-03).
+    name: Onboarding
   - description: A person's own details and requests, and what waits for the people team (NM-ESS-03, NM-ESS-04).
     name: Self-service
   - description: Letters, their templates, and what an issued letter proves (NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-07).

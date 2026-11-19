@@ -1144,6 +1144,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/offboardings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * People who are leaving
+         * @description The active leavings, the soonest last day first, each with its dates kept apart, its checklist, where the service letter is and the leave settlement to the last day. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listLeavings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/onboarding/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether new people are invited to Fyniq
+         * @description Whether adding a person raises a task to invite them to Fyniq. The HR administrator, the Administrator and the Owner. It changes nothing.
+         */
+        get: operations["getOnboardingSettings"];
+        /**
+         * Invite new people to Fyniq
+         * @description Switches on or off the task to invite each new person to Fyniq. Switching on raises no task for people already added. The HR administrator and the Owner. It is audited.
+         */
+        put: operations["setOnboardingSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/onboarding/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tasks to invite new people to Fyniq
+         * @description The tasks to invite new people to Fyniq with the Employee role, the open ones first. Nemura never grants a Fyniq role itself: whoever may invite does it in Fyniq and marks the task done. The HR administrator, the Administrator and the Owner. It changes nothing.
+         */
+        get: operations["listJoinTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/onboarding/tasks/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark an invitation task done or dismissed
+         * @description Marks a task done (the person was invited in Fyniq) or dismissed (it does not apply), once. The HR administrator, the Administrator and the Owner. It is audited.
+         */
+        post: operations["decideJoinTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/overtime": {
         parameters: {
             query?: never;
@@ -1634,6 +1718,50 @@ export interface paths {
          */
         put: operations["setPersonNric"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/offboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's leaving
+         * @description The person's active leaving, when there is one. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["getLeaving"];
+        /**
+         * Record or change a person's leaving
+         * @description Records how and when a person leaves: the day notice was given (it starts the tax-clearance hold), the last day (it prorates the leave and, the day after, narrows the account), for a retrenchment the day employees were told, and the checklist. It sets the leaving date on the person's record. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        put: operations["setLeaving"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/offboarding/cancellation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw a person's leaving
+         * @description Withdraws a leaving before its last day has passed, such as a resignation withdrawn: the leaving date on the record is cleared. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["cancelLeaving"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3348,6 +3476,65 @@ export interface components {
              */
             worksite: string;
         };
+        JoinDecisionInputBody: {
+            /**
+             * @description A note.
+             * @example Invited as an employee.
+             */
+            note?: string;
+            /**
+             * @description Done once the person is invited; dismissed when it does not apply, such as a person who does not claim expenses.
+             * @example done
+             * @enum {string}
+             */
+            state: "done" | "dismissed";
+        };
+        JoinTask: {
+            /**
+             * Format: uuid
+             * @description The task.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20
+             */
+            id: string;
+            /**
+             * @description The note left when it was decided.
+             * @example Invited as an employee.
+             */
+            note?: string;
+            /**
+             * @description Their legal name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The new person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * Format: date-time
+             * @description When the task was raised.
+             * @example 2026-11-20T10:00:00Z
+             */
+            raised_at: string;
+            /**
+             * Format: date
+             * @description The day they start.
+             * @example 2026-12-01
+             */
+            start_date: string;
+            /**
+             * @description Waiting; the person was invited; or it does not apply to them.
+             * @example open
+             * @enum {string}
+             */
+            state: "open" | "done" | "dismissed";
+        };
+        JoinTasksOutputBody: {
+            /** @description The tasks, the open ones first. */
+            tasks: components["schemas"]["JoinTask"][] | null;
+        };
         LeaveAsk: {
             /**
              * @description Only half of the last day.
@@ -3956,6 +4143,152 @@ export interface components {
              * @example S1234567D
              */
             nric: string;
+        };
+        Offboarding: {
+            /**
+             * Format: date
+             * @description When equipment was returned.
+             * @example 2026-11-30
+             */
+            equipment_returned_on?: string;
+            /**
+             * Format: date
+             * @description When the exit interview was held.
+             * @example 2026-11-27
+             */
+            exit_interview_on?: string;
+            /**
+             * Format: date
+             * @description When the person's Fyniq access was removed.
+             * @example 2026-11-30
+             */
+            fyniq_access_removed_on?: string;
+            /**
+             * Format: uuid
+             * @description The leaving.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f21
+             */
+            id: string;
+            /**
+             * @description How the employment ends.
+             * @example resignation
+             * @enum {string}
+             */
+            kind: "resignation" | "termination" | "retrenchment" | "end_of_contract" | "retirement" | "other";
+            /**
+             * Format: date
+             * @description The last day of employment, the notice period included.
+             * @example 2026-11-30
+             */
+            last_day: string;
+            /** @description The annual leave to the last day; left out when the person has no legal classification or no pack covers the year. */
+            leave_settlement?: components["schemas"]["Settlement"];
+            /**
+             * Format: date
+             * @description The day the person's Nemura account becomes the narrow one for their own documents: the day after the last day.
+             * @example 2026-12-01
+             */
+            nemura_access_narrows_on: string;
+            /**
+             * Format: date
+             * @description When notice was given or the company learned of the cessation: it starts the tax-clearance hold.
+             * @example 2026-10-01
+             */
+            notice_given_on?: string;
+            /**
+             * @description Their legal name.
+             * @example Chen Yu
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * Format: date
+             * @description For a retrenchment, when employees were told.
+             * @example 2026-09-28
+             */
+            retrenchment_notified_on?: string;
+            /**
+             * @description Where the person's service letter is: none asked for yet, or the latest request's state.
+             * @example none
+             * @enum {string}
+             */
+            service_letter: "none" | "requested" | "checked" | "issued" | "refused" | "withdrawn";
+        };
+        OffboardingInput: {
+            /**
+             * Format: date
+             * @description When equipment was returned.
+             * @example 2026-11-30
+             */
+            equipment_returned_on?: string;
+            /**
+             * Format: date
+             * @description When the exit interview was held.
+             * @example 2026-11-27
+             */
+            exit_interview_on?: string;
+            /**
+             * Format: date
+             * @description When the person's Fyniq access was removed.
+             * @example 2026-11-30
+             */
+            fyniq_access_removed_on?: string;
+            /**
+             * @description How the employment ends.
+             * @example resignation
+             * @enum {string}
+             */
+            kind: "resignation" | "termination" | "retrenchment" | "end_of_contract" | "retirement" | "other";
+            /**
+             * Format: date
+             * @description The last day of employment, the notice period included.
+             * @example 2026-11-30
+             */
+            last_day: string;
+            /**
+             * Format: date
+             * @description When notice was given or the company learned of the cessation.
+             * @example 2026-10-01
+             */
+            notice_given_on?: string;
+            /**
+             * Format: date
+             * @description For a retrenchment only, when employees were told.
+             * @example 2026-09-28
+             */
+            retrenchment_notified_on?: string;
+        };
+        OffboardingOutputBody: {
+            /** @description The leaving. */
+            leaving: components["schemas"]["Offboarding"];
+            /**
+             * @description Whether the person has a leaving recorded.
+             * @example true
+             */
+            recorded: boolean;
+        };
+        OffboardingsOutputBody: {
+            /** @description The active leavings, the soonest last day first. */
+            leavings: components["schemas"]["Offboarding"][] | null;
+        };
+        OnboardingSettingsInputBody: {
+            /**
+             * @description Raise a task to invite each new person to Fyniq.
+             * @example true
+             */
+            invite_to_fyniq: boolean;
+        };
+        OnboardingSettingsOutputBody: {
+            /**
+             * @description Whether adding a person raises a task to invite them to Fyniq.
+             * @example true
+             */
+            invite_to_fyniq: boolean;
         };
         OvertimeAsk: {
             /**
@@ -4809,6 +5142,36 @@ export interface components {
              * @example 1
              */
             requests: number;
+        };
+        Settlement: {
+            /** @description The steps of the calculation, one plain line each. */
+            basis: string[] | null;
+            /**
+             * @description The days still booked after the last day, to cancel.
+             * @example 0.00
+             */
+            booked: string;
+            /**
+             * @description The annual leave prorated to the last day, as a decimal string.
+             * @example 13.00
+             */
+            entitled: string;
+            /**
+             * @description The days taken.
+             * @example 10.00
+             */
+            taken: string;
+            /**
+             * @description Entitled less taken: negative when the person took more than the prorated entitlement.
+             * @example 3.00
+             */
+            untaken: string;
+            /**
+             * Format: int64
+             * @description The leave year of the last day.
+             * @example 2026
+             */
+            year: number;
         };
         SickAsk: {
             /**
@@ -9288,6 +9651,317 @@ export interface operations {
             };
         };
     };
+    listLeavings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OffboardingsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getOnboardingSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingSettingsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setOnboardingSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OnboardingSettingsInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listJoinTasks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinTasksOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideJoinTask: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The task. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinDecisionInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listOvertime: {
         parameters: {
             query?: {
@@ -11342,6 +12016,228 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getLeaving: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OffboardingOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setLeaving: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OffboardingInput"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    cancelLeaving: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

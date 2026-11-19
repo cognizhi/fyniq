@@ -24,6 +24,7 @@ import { Person } from "./pages/Person";
 import { TermsPanel } from "./components/TermsPanel";
 import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
+import { PeopleOnboarding } from "./pages/PeopleOnboarding";
 import { Delegations } from "./components/Delegations";
 import { AskQuestion } from "./pages/AskQuestion";
 import { PeopleRequests } from "./pages/PeopleRequests";
@@ -1115,5 +1116,51 @@ describe("automatic issue", () => {
     expect(await screen.findByText(/ended because the template changed/)).toBeTruthy();
     expect(screen.queryByRole("form")).toBeNull();
     expect(screen.queryByRole("button", { name: /Revoke/ })).toBeNull();
+  });
+});
+
+// req: NM-ONB-02, NM-ONB-03
+describe("joiners and leavers", () => {
+  const person = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61";
+  const task = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20", person_id: person, person: "Eve On", start_date: "2026-12-01", state: "open", raised_at: "2026-11-20T10:00:00Z" };
+  const leaving = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f21", person_id: person, person: "Chen Yu", kind: "resignation", notice_given_on: "2026-10-01", last_day: "2026-11-30", equipment_returned_on: "2026-11-30", nemura_access_narrows_on: "2026-12-01", service_letter: "none",
+    leave_settlement: { year: 2026, entitled: "13.00", taken: "10.00", booked: "0.00", untaken: "3.00", basis: [] } };
+
+  it("lists the invitation tasks and the leavers with their dates apart and their leave, and records and withdraws a leaving", async () => {
+    answer("GET /v1/onboarding/tasks", { status: 200, body: { tasks: [task] } });
+    answer("GET /v1/onboarding/settings", { status: 200, body: { invite_to_fyniq: true } });
+    answer("GET /v1/offboardings", { status: 200, body: { leavings: [leaving] } });
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: person, name: "Chen Yu" }] } });
+    answer(`POST /v1/onboarding/tasks/${task.id}/decision`, { status: 204, body: undefined });
+    answer(`PUT /v1/people/${person}/offboarding`, { status: 204, body: undefined });
+    answer(`POST /v1/people/${person}/offboarding/cancellation`, { status: 204, body: undefined });
+    const { container } = render(<PeopleOnboarding roles={["hr_admin"]} />);
+    expect(await screen.findByText("Invite Eve On, who starts 2026-12-01, to Fyniq as an employee")).toBeTruthy();
+    expect(await screen.findByText("Chen Yu: Resignation, last day 2026-11-30")).toBeTruthy();
+    expect(screen.getByText(/Notice given 2026-10-01; employees told of a retrenchment –/)).toBeTruthy();
+    expect(screen.getByText(/entitled 13.00 days, taken 10.00, untaken 3.00/)).toBeTruthy();
+    expect(screen.getByText(/becomes the narrow one for their documents on 2026-12-01/)).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Mark Eve On invited" }));
+    expect(await screen.findByText("Done.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/onboarding/tasks/${task.id}/decision`)).toMatchObject({ state: "done" });
+    expect(screen.queryByLabelText("Employees told of the retrenchment")).toBeNull();
+    fireEvent.change(screen.getByLabelText("How the employment ends"), { target: { value: "retrenchment" } });
+    expect(screen.getByLabelText("Employees told of the retrenchment")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Last day of employment"), { target: { value: "2026-12-31" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Record a leaving" }));
+    expect(await screen.findByText("Saved. The leaving date is on the person's record.")).toBeTruthy();
+    expect(bodies.get(`PUT /v1/people/${person}/offboarding`)).toMatchObject({ kind: "retrenchment", last_day: "2026-12-31" });
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw Chen Yu's leaving" }));
+    expect(await screen.findByText("Withdrawn. The leaving date on the record is cleared.")).toBeTruthy();
+  });
+
+  it("shows an HR officer the leavers and no invitation tasks", async () => {
+    answer("GET /v1/offboardings", { status: 200, body: { leavings: [] } });
+    answer("GET /v1/people", { status: 200, body: { people: [] } });
+    render(<PeopleOnboarding roles={["hr_officer"]} />);
+    expect(await screen.findByText("No one is leaving.")).toBeTruthy();
+    expect(screen.queryByText("Invite new people to Fyniq")).toBeNull();
   });
 });

@@ -24,6 +24,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/features"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
+	"github.com/cognizhi/fyniq/internal/nemura/onboarding"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
 	"github.com/cognizhi/fyniq/internal/nemura/policy"
 	"github.com/cognizhi/fyniq/internal/nemura/selfservice"
@@ -326,6 +327,25 @@ func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.
 }
 
 // fakeLetters answers letters with whatever the test says.
+type fakeOnboarding struct{ err error }
+
+func (f fakeOnboarding) Settings(context.Context, Session) (bool, error)    { return true, f.err }
+func (f fakeOnboarding) SetSettings(context.Context, Session, bool) error   { return f.err }
+func (f fakeOnboarding) Tasks(context.Context, Session) ([]JoinTask, error) { return nil, f.err }
+func (f fakeOnboarding) DecideTask(context.Context, Session, uuid.UUID, string, string) error {
+	return f.err
+}
+func (f fakeOnboarding) Offboardings(context.Context, Session) ([]Offboarding, error) {
+	return nil, f.err
+}
+func (f fakeOnboarding) Offboarding(context.Context, Session, uuid.UUID) (Offboarding, bool, error) {
+	return Offboarding{}, false, f.err
+}
+func (f fakeOnboarding) SetOffboarding(context.Context, Session, uuid.UUID, OffboardingInput) error {
+	return f.err
+}
+func (f fakeOnboarding) CancelOffboarding(context.Context, Session, uuid.UUID) error { return f.err }
+
 type fakeSelf struct{ err error }
 
 func (f fakeSelf) Details(context.Context, Session) (MyDetails, error) {
@@ -428,7 +448,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -626,6 +646,8 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodeLeaveConflict:      {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/working-pattern", body: patternBody, signedIn: true, err: &leave.Refusal{Code: leave.CodeConflict, Message: "Overlaps."}},
 		CodeFeatureOff:         {method: "GET", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026", signedIn: true, featuresOff: true},
 		CodeLeaverAccount:      {method: "GET", path: "/v1/me/details", signedIn: true, leaver: true},
+		CodeOnboardingInvalid:  {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/offboarding", body: `{"kind":"resignation","last_day":"2026-11-30"}`, signedIn: true, err: &onboarding.Refusal{Code: onboarding.CodeInvalid, Message: "The last day is required."}},
+		CodeOnboardingConflict: {method: "POST", path: "/v1/onboarding/tasks/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f20/decision", body: `{"state":"done"}`, signedIn: true, err: &onboarding.Refusal{Code: onboarding.CodeConflict, Message: "Decided already."}},
 		CodeRequestInvalid:     {method: "POST", path: "/v1/me/questions", body: `{"question":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeInvalid, Message: "Write your question."}},
 		CodeRequestConflict:    {method: "POST", path: "/v1/questions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/reply", body: `{"reply":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeConflict, Message: "That question is closed."}},
 		CodeLetterInvalid:      {method: "POST", path: "/v1/me/letters", body: `{"type":"employment_confirmation","purpose":"x"}`, signedIn: true, err: &letters.Refusal{Code: letters.CodeInvalid, Message: "Say what the letter is for."}},
