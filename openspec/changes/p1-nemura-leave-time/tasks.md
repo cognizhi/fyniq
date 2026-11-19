@@ -55,7 +55,11 @@ Load before each slice: `fyniq-feature-change`, `fyniq-sg-statutory` (1, 3), `fy
 - [x] 3.2 The government-paid portion and the employer's reimbursement claim with its deadline (NM-LV-07): claims with amount, day and the portal's reference, partial
   and repeated claims, receipts and rejections as separate records, the guide maximum from the caps, N.1 #10; screen `nm-govt-claims`. The portal filing is a person's,
   `[live-verify]`. Left: the claim's evidence file (the restricted document framework takes it when the screen asks for one).
-- [ ] 3.3 Flexible work requests with the two-month reply deadline and the written reply (NM-LV-10); N.1 #5 for this part.
+- [x] 3.3 Flexible work requests (NM-LV-10): a formal request with its receipt date and the reply deadline the pack gives (`sg-people@2026.3`, two months,
+  clamped to the month's end), the written reply once and by someone other than the person, a reason for a refusal or an alternative, withdrawal while it waits;
+  N.1 #5; migration 000019; screens `nm-my-requests` and the replies on `nm-team-leave`. `// req: NM-LV-10`
+  Also in `sg-people@2026.3`: unpaid infant care leave (12 days a year per parent, 3 months' service, a citizen child under 2, at most 24 days per child), read from
+  MOM on 20 Nov 2026. Left: infant care leave as a ledger type with its entitlement (it needs the child's age at each day), and letter requests on `nm-my-requests`.
 - [~] 3.4 N.1 #4 (a negative balance, a request waiting more than 3 working days) is built, with #10; the people home's leave tiles (`nm-people-home`) are left.
 
 ## 4. Into pay and the books (slice 4)

@@ -385,7 +385,45 @@
     "gov.from": "First day",
     "gov.to": "Last day",
     "gov.record": "Record leave",
-    "gov.choose": "Choose"
+    "gov.choose": "Choose",
+    "nav.requests": "My requests",
+    "requests.title": "My requests",
+    "requests.lead": "Where your requests are: leave and flexible work. A flexible work request is a formal one: the company answers it in writing within two months.",
+    "requests.loading": "Loading your requests.",
+    "requests.failed": "We could not show your requests. Check your connection and try again.",
+    "requests.leave": "Leave",
+    "requests.noLeave": "You have asked for no leave.",
+    "requests.leaveLine": "{from} to {to}: {days} days, {state}",
+    "requests.cancel": "Cancel",
+    "requests.cancelled": "Cancelled.",
+    "requests.flex": "Flexible work",
+    "requests.noFlex": "You have made no flexible work request.",
+    "requests.flexLine": "{arrangement} from {from}: {state}. The company's written reply is due by {due}.",
+    "requests.flexReplied": "{arrangement} from {from}: {outcome}.",
+    "requests.reply": "The company's reply: {reply}",
+    "requests.withdraw": "Withdraw",
+    "requests.withdrawn": "Withdrawn.",
+    "requests.newFlex": "Make a formal flexible work request",
+    "requests.arrangement": "What do you want to change?",
+    "requests.arrangement.flexi_time": "When I work (flexi-time)",
+    "requests.arrangement.flexi_place": "Where I work (flexi-place)",
+    "requests.arrangement.flexi_load": "How much I work (flexi-load)",
+    "requests.from": "Starting on",
+    "requests.to": "Until (leave empty if open)",
+    "requests.reason": "Why",
+    "requests.send": "Send the request",
+    "requests.sent": "Sent. Your formal request is dated today, and the company must answer in writing by {due}.",
+    "requests.outcome.accepted": "accepted",
+    "requests.outcome.rejected": "refused",
+    "requests.outcome.alternative": "an alternative was offered",
+    "flexteam.title": "Flexible work requests",
+    "flexteam.none": "No flexible work request is waiting.",
+    "flexteam.col.due": "Reply due",
+    "flexteam.line": "{arrangement} from {from}: {reason}",
+    "flexteam.outcome": "Outcome",
+    "flexteam.replyFor": "Written reply to {name}",
+    "flexteam.send": "Send reply",
+    "flexteam.sent": "Replied. The record of the written reply is kept."
   },
   "help": {
     "signin.page": {
@@ -455,6 +493,10 @@
     "gov.page": {
       "label": "Government-paid leave",
       "tooltip": "Maternity, paternity and shared parental leave under the country pack's rules, with the employer's reimbursement claims and their deadlines. Nothing here moves money."
+    },
+    "requests.page": {
+      "label": "My requests",
+      "tooltip": "Your leave and flexible work requests and where each is. A formal flexible work request is answered in writing within two months."
     }
   }
 }

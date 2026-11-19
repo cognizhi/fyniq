@@ -68,6 +68,23 @@ nemura_api | column nemura.feature_state.feature | INSERT
 nemura_api | column nemura.feature_state.id | INSERT
 nemura_api | column nemura.feature_state.state | INSERT
 nemura_api | column nemura.feature_state.state | UPDATE
+nemura_api | column nemura.flex_request.arrangement | INSERT
+nemura_api | column nemura.flex_request.end_date | INSERT
+nemura_api | column nemura.flex_request.id | INSERT
+nemura_api | column nemura.flex_request.outcome | UPDATE
+nemura_api | column nemura.flex_request.pack_version | INSERT
+nemura_api | column nemura.flex_request.person_id | INSERT
+nemura_api | column nemura.flex_request.reason | INSERT
+nemura_api | column nemura.flex_request.received_on | INSERT
+nemura_api | column nemura.flex_request.replied_at | UPDATE
+nemura_api | column nemura.flex_request.replied_by | UPDATE
+nemura_api | column nemura.flex_request.reply_due | INSERT
+nemura_api | column nemura.flex_request.requested_at | INSERT
+nemura_api | column nemura.flex_request.requested_by | INSERT
+nemura_api | column nemura.flex_request.start_date | INSERT
+nemura_api | column nemura.flex_request.state | UPDATE
+nemura_api | column nemura.flex_request.withdrawn_at | UPDATE
+nemura_api | column nemura.flex_request.written_reply | UPDATE
 nemura_api | column nemura.gov_claim.amount | INSERT
 nemura_api | column nemura.gov_claim.created_at | INSERT
 nemura_api | column nemura.gov_claim.filed_by | INSERT
@@ -340,6 +357,7 @@ nemura_api | table nemura.company_policy | SELECT
 nemura_api | table nemura.deletion_proof | SELECT
 nemura_api | table nemura.deletion_report | SELECT
 nemura_api | table nemura.feature_state | SELECT
+nemura_api | table nemura.flex_request | SELECT
 nemura_api | table nemura.gov_claim | SELECT
 nemura_api | table nemura.gov_claim_event | SELECT
 nemura_api | table nemura.gov_leave | SELECT
@@ -420,6 +438,7 @@ nemura_readonly | table nemura.company_policy | SELECT
 nemura_readonly | table nemura.deletion_proof | SELECT
 nemura_readonly | table nemura.deletion_report | SELECT
 nemura_readonly | table nemura.feature_state | SELECT
+nemura_readonly | table nemura.flex_request | SELECT
 nemura_readonly | table nemura.gov_claim | SELECT
 nemura_readonly | table nemura.gov_claim_event | SELECT
 nemura_readonly | table nemura.gov_leave | SELECT
@@ -502,6 +521,7 @@ nemura_worker | table nemura.company_policy | SELECT
 nemura_worker | table nemura.deletion_proof | SELECT
 nemura_worker | table nemura.deletion_report | SELECT
 nemura_worker | table nemura.feature_state | SELECT
+nemura_worker | table nemura.flex_request | SELECT
 nemura_worker | table nemura.gov_claim | SELECT
 nemura_worker | table nemura.gov_claim_event | SELECT
 nemura_worker | table nemura.gov_leave | SELECT

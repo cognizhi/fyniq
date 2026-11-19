@@ -15,17 +15,17 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 	if err != nil {
 		t.Fatalf("the packs do not load: %v", err)
 	}
-	if len(versions) != 2 || versions[0].ID != "sg-people@2026.1" || versions[1].ID != "sg-people@2026.2" || versions[1].Supersedes != "sg-people@2026.1" {
+	if len(versions) != 3 || versions[0].ID != "sg-people@2026.1" || versions[1].ID != "sg-people@2026.2" || versions[1].Supersedes != "sg-people@2026.1" || versions[2].ID != "sg-people@2026.3" || versions[2].Supersedes != "sg-people@2026.2" {
 		t.Fatalf("%d versions", len(versions))
 	}
-	for _, old := range versions[:1] { // the first version is kept as it was: it still loads and its cases pass
+	for _, old := range versions[:2] { // the first version is kept as it was: it still loads and its cases pass
 		for _, r := range pack.RunPinned(old) {
 			if !r.Pass {
 				t.Errorf("%s %s: %s", old.ID, r.Case, r.Why)
 			}
 		}
 	}
-	v := versions[1]
+	v := versions[2]
 	cases := 0
 	for _, r := range pack.RunPinned(v) {
 		cases++
@@ -33,7 +33,7 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 			t.Errorf("%s %s: got %q, want %q (%s)", r.Table, r.Case, r.Got, r.Want, r.Why)
 		}
 	}
-	if cases < 33 {
+	if cases < 36 {
 		t.Errorf("only %d pinned cases", cases)
 	}
 	if got := pack.Unverified(v); len(got) < 40 {
@@ -58,7 +58,7 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 // pass (ENG-32).
 // req: NM-PACK-02
 func TestAWrongValueOrStatusIsRefused(t *testing.T) {
-	v, err := pack.Load(Files(), "sg-people/2026.2")
+	v, err := pack.Load(Files(), "sg-people/2026.3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func TestAWrongValueOrStatusIsRefused(t *testing.T) {
 // four weeks from 1 April 2025, and shared parental leave's six weeks then ten from 1 April 2026; a scheme's cap and claim window come with it (NM-LV-14).
 // req: NM-PACK-06
 func TestParentalLeaveSchemesAreKeyedByTheChildsBirthDate(t *testing.T) {
-	v, err := pack.Load(Files(), "sg-people/2026.2")
+	v, err := pack.Load(Files(), "sg-people/2026.3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,5 +119,37 @@ func TestParentalLeaveSchemesAreKeyedByTheChildsBirthDate(t *testing.T) {
 	}
 	if _, ok := pack.ParentalLeave(first, "paternity_citizen", d("2026-06-01")); ok {
 		t.Error("the first version holds the parental leave table")
+	}
+}
+
+// The flexible work request rules and the unpaid infant care entitlement are in sg-people@2026.3 and not before: the earlier versions are kept as they were
+// (NM-LV-10, NM-PACK-06).
+// req: NM-PACK-06
+func TestFlexibleWorkAndInfantCareAreInTheThirdVersionOnly(t *testing.T) {
+	v3, err := pack.Load(Files(), "sg-people/2026.3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	v2, err := pack.Load(Files(), "sg-people/2026.2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	on, _ := pack.ParseDate("2026-11-20")
+	if n, ok := pack.FlexibleWorkMonths(v3, "reply_months", on); !ok || n != 2 {
+		t.Errorf("reply window %d %v", n, ok)
+	}
+	if before, _ := pack.ParseDate("2024-11-30"); true {
+		if _, ok := pack.FlexibleWorkMonths(v3, "reply_months", before); ok {
+			t.Error("the window before the guidelines took effect")
+		}
+	}
+	if _, ok := pack.FlexibleWorkMonths(v2, "reply_months", on); ok {
+		t.Error("the second version holds the flexible work table")
+	}
+	if days, months, ok := pack.FamilyLeave(v3, "unpaid_infant_care_citizen_under_2", on); !ok || days != 12 || months != 3 {
+		t.Errorf("infant care %d %d %v", days, months, ok)
+	}
+	if _, _, ok := pack.FamilyLeave(v2, "unpaid_infant_care_citizen_under_2", on); ok {
+		t.Error("the second version holds infant care")
 	}
 }

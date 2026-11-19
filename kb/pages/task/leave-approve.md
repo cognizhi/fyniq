@@ -4,7 +4,7 @@ type: task
 title: Approve or refuse leave in Nemura
 summary: Who sees and decides leave requests in Nemura, how to approve or refuse with a reason, and why nobody decides their own
 sources:
-  - docs/user-guide/nemura/leave-approve.md sha256:19053276bd71b744e50157ed049d7e6f6096ff638118f8df5f62c5397495771e
+  - docs/user-guide/nemura/leave-approve.md sha256:502cf0a7e4c2d6aa150d2e96e3b854cb1659e463d1a72ed28229dad479bbffae
 data_class: general
 taint: trusted
 status: published
@@ -49,6 +49,12 @@ aliases:
 - The HR officer and the HR administrator see **Certificates to verify** and select **Verify** once a certificate is checked: once, and never for their own. A manager cannot refuse a certified sick day and does not see the certificate. See [[leave.report-sick]].
 
 (src: docs/user-guide/nemura/leave-approve.md#verify-medical-certificates)
+
+## Answer flexible work requests
+
+- The HR officer, the HR administrator and the Owner see each flexible work request waiting for its written reply, soonest deadline first: choose accepted, refused or an alternative, write the reply and select **Send reply**. A refusal or an alternative gives the business grounds; the reply is kept as the record, and nobody answers their own request. See [[nemura.requests]].
+
+(src: docs/user-guide/nemura/leave-approve.md#answer-flexible-work-requests)
 
 ## When it looks wrong
 

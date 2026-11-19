@@ -80,6 +80,13 @@ var Categories = []Category{
 		Columns:    []string{"sick_notification.note", "sick_notification.issuer"},
 	},
 	{
+		Key: "flexible-work", What: "A person's formal request for a flexible work arrangement, their reason, and the employer's written reply with the grounds for a refusal",
+		Purpose:    "To answer a request in writing within the time the Tripartite Guidelines give, and to keep the written reply the guidelines ask the employer to keep",
+		Capability: "Leave requests",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: the written reply is evidence the employer followed the guidelines"},
+		Columns:    []string{"flex_request.reason", "flex_request.outcome", "flex_request.written_reply"},
+	},
+	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",
 		Purpose:    "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)",
 		Capability: "Own file beyond routine release (NM-SEC-07)",

@@ -30,6 +30,8 @@ func init() {
 			"records":      {"person", "months", "keep_after_leaving_months", "effective_from", "effective_to", "status", "source"},
 			"retirement":   {"born_from", "born_to", "retirement_age", "reemployment_age", "effective_from", "effective_to", "status", "source"},
 			// The government-paid parental leave schemes (sg-people@2026.2): effective_from and effective_to are the first and last birth date a row applies to.
+			// The flexible work arrangement request rules (sg-people@2026.3).
+			"flexible_work":  {"rule", "months", "effective_from", "effective_to", "status", "source"},
 			"parental_leave": {"scheme", "total_weeks", "employer_weeks", "government_weeks", "min_service_months", "cap_per_period", "cap_period_weeks", "cap_total", "claim_months", "effective_from", "effective_to", "status", "source"},
 		},
 		Pinned: map[string][]string{
@@ -40,9 +42,10 @@ func init() {
 			"timing":         {"case", "rule", "date", "want_days", "why", "source"},
 			"records":        {"case", "person", "date", "want_months", "why", "source"},
 			"retirement":     {"case", "born", "date", "want", "why", "source"},
+			"flexible_work":  {"case", "rule", "date", "want_months", "why", "source"},
 			"parental_leave": {"case", "scheme", "birth", "want", "why", "source"},
 		},
-		Since: map[string][2]int{"parental_leave": {2026, 2}},
+		Since: map[string][2]int{"parental_leave": {2026, 2}, "flexible_work": {2026, 3}},
 	}
 }
 
@@ -96,6 +99,14 @@ func checkPeople(dir string, v Version) Problems {
 	nums("timing", "days")
 	nums("records", "months", "keep_after_leaving_months")
 	nums("retirement", "retirement_age", "reemployment_age")
+	if t, ok := v.Tables["flexible_work"]; ok {
+		for i, row := range t.Rows {
+			if n, ok := atoi(row[t.Col("months")]); !ok || n < 0 {
+				add(CodeValue, fmt.Sprintf("flexible_work.csv row %d", i+2), fmt.Sprintf("months %q is not a whole number", row[t.Col("months")]), "Write the number of months the official page gives")
+			}
+		}
+		periods(add, "flexible_work.csv", t.Rows, func(r []string) string { return r[0] }, 2, 3)
+	}
 	if t, ok := v.Tables["parental_leave"]; ok {
 		for i, row := range t.Rows {
 			for _, c := range []string{"total_weeks", "employer_weeks", "government_weeks", "min_service_months", "cap_per_period", "cap_period_weeks", "cap_total", "claim_months"} {
@@ -249,6 +260,9 @@ func peopleTables(v Version) []string {
 	if _, ok := v.Tables["parental_leave"]; ok {
 		names = append(names, "parental_leave")
 	}
+	if _, ok := v.Tables["flexible_work"]; ok {
+		names = append(names, "flexible_work")
+	}
 	return names
 }
 
@@ -278,6 +292,22 @@ func ParentalLeave(v Version, scheme string, born time.Time) (ParentalLeaveSchem
 		}
 	}
 	return ParentalLeaveScheme{}, false
+}
+
+// FlexibleWorkMonths is a rule of the flexible work arrangement request guidelines in force on a day: reply_months is how long the employer has to answer a formal
+// request in writing (NM-LV-10).
+func FlexibleWorkMonths(v Version, rule string, on time.Time) (int, bool) {
+	t, ok := v.Tables["flexible_work"]
+	if !ok {
+		return 0, false
+	}
+	for _, r := range t.Rows {
+		if r[0] == rule && peopleInForce(r[2], r[3], on) {
+			n, _ := atoi(r[1])
+			return n, true
+		}
+	}
+	return 0, false
 }
 
 // Unverified lists the values of a version that are only researched (NM-PACK-07): what a company must decide on before a calculation uses them.
@@ -371,6 +401,15 @@ func runPeople(v Version) []Result {
 		r := Result{Table: "records", Case: row[0], Why: row[4], Want: row[3]}
 		if d, ok := day(&r, row[2]); ok {
 			n, _, found := RecordKeeping(v, row[1], d)
+			r.Got = num(n, found)
+			r.Pass = r.Got == r.Want
+		}
+		out = append(out, r)
+	}
+	for _, row := range v.Pinned["flexible_work"].Rows {
+		r := Result{Table: "flexible_work", Case: row[0], Why: row[4], Want: row[3]}
+		if d, ok := day(&r, row[2]); ok {
+			n, found := FlexibleWorkMonths(v, row[1], d)
 			r.Got = num(n, found)
 			r.Pass = r.Got == r.Want
 		}

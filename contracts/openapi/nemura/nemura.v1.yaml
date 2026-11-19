@@ -1118,6 +1118,195 @@ components:
         - subject
         - message
       type: object
+    FlexAsk:
+      additionalProperties: false
+      properties:
+        arrangement:
+          description: Flexi-time (when), flexi-place (where) or flexi-load (how much).
+          enum:
+            - flexi_time
+            - flexi_place
+            - flexi_load
+          examples:
+            - flexi_time
+          type: string
+        from:
+          description: The day the arrangement would start.
+          examples:
+            - "2027-01-04"
+          format: date
+          type: string
+        reason:
+          description: Why the arrangement is wanted.
+          examples:
+            - School run on Tuesdays.
+          maxLength: 2000
+          minLength: 1
+          type: string
+        to:
+          description: The day it would end; open when absent.
+          examples:
+            - "2027-06-30"
+          format: date
+          type: string
+      required:
+        - arrangement
+        - from
+        - reason
+      type: object
+    FlexListOutputBody:
+      additionalProperties: false
+      properties:
+        requests:
+          description: "The requests the caller may read: their own, or everyone's for the people team; those waiting first, by deadline."
+          items:
+            $ref: "#/components/schemas/FlexRequest"
+          type:
+            - array
+            - "null"
+      required:
+        - requests
+      type: object
+    FlexReplyInputBody:
+      additionalProperties: false
+      properties:
+        outcome:
+          description: Accept, refuse, or offer an alternative.
+          enum:
+            - accepted
+            - rejected
+            - alternative
+          examples:
+            - alternative
+          type: string
+        written_reply:
+          description: The written reply; a refusal or an alternative gives the business grounds.
+          examples:
+            - We can offer a 9am start on Tuesdays.
+          maxLength: 4000
+          minLength: 1
+          type: string
+      required:
+        - outcome
+        - written_reply
+      type: object
+    FlexRequest:
+      additionalProperties: false
+      properties:
+        arrangement:
+          description: The kind of arrangement.
+          enum:
+            - flexi_time
+            - flexi_place
+            - flexi_load
+          examples:
+            - flexi_time
+          type: string
+        from:
+          description: The day it would start.
+          examples:
+            - "2027-01-04"
+          format: date
+          type: string
+        id:
+          description: The request.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0
+          format: uuid
+          type: string
+        outcome:
+          description: How the employer answered.
+          enum:
+            - accepted
+            - rejected
+            - alternative
+          examples:
+            - alternative
+          type: string
+        person_id:
+          description: The person asking.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        person_name:
+          description: Their name.
+          examples:
+            - Ben Lim
+          type: string
+        reason:
+          description: The person's reason.
+          examples:
+            - School run on Tuesdays.
+          type: string
+        received_on:
+          description: The formal receipt date, which never restarts.
+          examples:
+            - "2026-11-20"
+          format: date
+          type: string
+        replied_at:
+          description: When it was answered.
+          examples:
+            - "2026-11-21T10:00:00Z"
+          format: date-time
+          type: string
+        reply_due:
+          description: "The last day for the written reply: the country pack's months after receipt."
+          examples:
+            - "2027-01-20"
+          format: date
+          type: string
+        state:
+          description: Received and waiting for the written reply, replied, or withdrawn.
+          enum:
+            - received
+            - replied
+            - withdrawn
+          examples:
+            - received
+          type: string
+        to:
+          description: The day it would end.
+          examples:
+            - "2027-06-30"
+          format: date
+          type: string
+        written_reply:
+          description: The employer's written reply, with its reason for a refusal.
+          examples:
+            - We can offer a 9am start on Tuesdays.
+          type: string
+      required:
+        - id
+        - person_id
+        - person_name
+        - arrangement
+        - from
+        - reason
+        - state
+        - received_on
+        - reply_due
+      type: object
+    FlexRequestedOutputBody:
+      additionalProperties: false
+      properties:
+        id:
+          description: The new request.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0
+          format: uuid
+          type: string
+        reply_due:
+          description: The last day for the employer's written reply.
+          examples:
+            - "2027-01-20"
+          format: date
+          type: string
+      required:
+        - id
+        - reply_due
+      type: object
     GovAsk:
       additionalProperties: false
       properties:
@@ -3343,6 +3532,206 @@ paths:
       summary: Switch a feature
       tags:
         - Features
+  /v1/flexible-work-requests:
+    get:
+      description: Lists the caller's own requests; the people team (HR officer, HR administrator, Owner) reads everyone's. Requests waiting come first, by deadline. It changes nothing.
+      operationId: listFlexibleWorkRequests
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: Only requests in this state; all when absent.
+          explode: false
+          in: query
+          name: state
+          schema:
+            description: Only requests in this state; all when absent.
+            enum:
+              - pending
+              - approved
+              - refused
+              - cancelled
+            examples:
+              - pending
+            type: string
+        - description: Only the caller's own, whatever else their roles let them read.
+          explode: false
+          in: query
+          name: mine
+          schema:
+            description: Only the caller's own, whatever else their roles let them read.
+            examples:
+              - true
+            type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlexListOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Flexible work requests the caller may read
+      tags:
+        - Leave
+  /v1/flexible-work-requests/{id}/reply:
+    post:
+      description: The HR officer, the HR administrator or the Owner records the employer's written reply, once and never to their own request. A refusal or an alternative gives the business grounds. The reply is the record the guidelines ask the employer to keep. It is audited and the person is told.
+      operationId: replyFlexibleWork
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlexReplyInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Answer a flexible work request in writing
+      tags:
+        - Leave
+  /v1/flexible-work-requests/{id}/withdrawal:
+    post:
+      description: The person withdraws their own request while it waits for a reply. It is audited.
+      operationId: withdrawFlexibleWork
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The request.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The request.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Withdraw one's own flexible work request
+      tags:
+        - Leave
   /v1/government-paid-claims/{id}/events:
     post:
       description: "Records what the portal answered: a receipt of some or all of the amount, or a rejection. A claim's state is worked out from its events. The HR officer and the HR administrator. It is audited."
@@ -3634,6 +4023,15 @@ paths:
             examples:
               - pending
             type: string
+        - description: Only the caller's own, whatever else their roles let them read.
+          explode: false
+          in: query
+          name: mine
+          schema:
+            description: Only the caller's own, whatever else their roles let them read.
+            examples:
+              - true
+            type: boolean
       responses:
         "200":
           content:
@@ -3918,6 +4316,65 @@ paths:
                 $ref: "#/components/schemas/Problem"
           description: Internal Server Error
       summary: Record the leave that has been taken
+      tags:
+        - Leave
+  /v1/me/flexible-work-requests:
+    post:
+      description: Records the signed-in person's formal request (type, start, end and reason). Its receipt date is today and never restarts; the employer's written reply is due the country pack's months after (two). The people team is told. It is audited.
+      operationId: requestFlexibleWork
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlexAsk"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlexRequestedOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Make a formal flexible work request
       tags:
         - Leave
   /v1/me/leave-requests:

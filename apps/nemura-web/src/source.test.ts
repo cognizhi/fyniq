@@ -35,7 +35,7 @@ describe("localisation", () => {
     const used = new Set<string>();
     for (const f of code) for (const m of readFileSync(f, "utf8").matchAll(/"([a-z]+\.[\w.]+)"/g)) used.add(m[1] ?? ""); // a key, passed to t() directly or through a table
     for (const f of code) for (const m of readFileSync(f, "utf8").matchAll(/\bt\("([\w.]+)"/g)) expect(textKeys, m[1]).toContain(m[1]);
-    const dynamic = ["role.", "join.title.", "join.lead.", "join.code.", "signin.error.", "value.", "feature.", "state.", "leave.day.", "calendar.kind.", "gov.scheme.", "gov.state.", "gov.event."]; // looked up by the person's role, the form's kind or the refusal's code
+    const dynamic = ["role.", "join.title.", "join.lead.", "join.code.", "signin.error.", "value.", "feature.", "state.", "leave.day.", "calendar.kind.", "gov.scheme.", "gov.state.", "gov.event.", "requests.arrangement.", "requests.outcome."]; // looked up by the person's role, the form's kind or the refusal's code
     expect(textKeys.filter((k) => !used.has(k) && !dynamic.some((d) => k.startsWith(d)))).toEqual([]);
   });
 });

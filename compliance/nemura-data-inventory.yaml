@@ -76,6 +76,15 @@ classes:
     protection: "Row-level security; a notification is evidence that takes a certificate and a verification once; the audit event carries the days and never the kind or the note; the certificate is a restricted document"
     transfers: "None"
     columns: [sick_notification.note, sick_notification.issuer]
+  - key: flexible-work
+    what: "A person's formal request for a flexible work arrangement, their reason, and the employer's written reply with the grounds for a refusal"
+    why: "To answer a request in writing within the time the Tripartite Guidelines give, and to keep the written reply the guidelines ask the employer to keep"
+    where: "Nemura's database, in Singapore"
+    who: "The person their own; HR officer, HR administrator and Owner (Appendix B: Leave requests)"
+    retention: "Kept with the employment record: the written reply is evidence the employer followed the guidelines"
+    protection: "Row-level security; a request keeps its words, its receipt date and its deadline, and is answered once; the audit event carries the outcome, never the reason or the reply"
+    transfers: "None"
+    columns: [flex_request.reason, flex_request.outcome, flex_request.written_reply]
   - key: access-requests
     what: "A person's request for their own data, the decision for each category of record and the written outcome"
     why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"

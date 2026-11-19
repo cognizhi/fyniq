@@ -10,6 +10,7 @@ company_policy | nemura_migrator | true | true
 deletion_proof | nemura_migrator | true | true
 deletion_report | nemura_migrator | true | true
 feature_state | nemura_migrator | true | true
+flex_request | nemura_migrator | true | true
 gov_claim | nemura_migrator | true | true
 gov_claim_event | nemura_migrator | true | true
 gov_leave | nemura_migrator | true | true
@@ -141,6 +142,24 @@ feature_state | state | text | true |
 feature_state | external_system | text | false | 
 feature_state | changed_by | uuid | true | 
 feature_state | changed_at | timestamp with time zone | true | now()
+flex_request | organisation_id | uuid | true | nemura.current_org()
+flex_request | id | uuid | true | uuidv7()
+flex_request | person_id | uuid | true | 
+flex_request | arrangement | text | true | 
+flex_request | start_date | date | true | 
+flex_request | end_date | date | false | 
+flex_request | reason | text | true | 
+flex_request | received_on | date | true | 
+flex_request | reply_due | date | true | 
+flex_request | pack_version | text | true | 
+flex_request | state | text | true | 'received'::text
+flex_request | requested_by | uuid | true | 
+flex_request | requested_at | timestamp with time zone | true | 
+flex_request | outcome | text | false | 
+flex_request | written_reply | text | false | 
+flex_request | replied_by | uuid | false | 
+flex_request | replied_at | timestamp with time zone | false | 
+flex_request | withdrawn_at | timestamp with time zone | false | 
 gov_claim | organisation_id | uuid | true | nemura.current_org()
 gov_claim | id | uuid | true | uuidv7()
 gov_claim | gov_leave_id | uuid | true | 
@@ -609,6 +628,32 @@ feature_state | feature_state_pkey | PRIMARY KEY (organisation_id, id)
 feature_state | feature_state_state_known | CHECK ((state = ANY (ARRAY['on'::text, 'off'::text, 'external'::text])))
 feature_state | feature_state_state_not_null | NOT NULL state
 feature_state | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+flex_request | flex_request_arrangement_known | CHECK ((arrangement = ANY (ARRAY['flexi_time'::text, 'flexi_place'::text, 'flexi_load'::text])))
+flex_request | flex_request_arrangement_not_null | NOT NULL arrangement
+flex_request | flex_request_by_fkey | FOREIGN KEY (organisation_id, requested_by) REFERENCES nemura.member(organisation_id, id)
+flex_request | flex_request_dates | CHECK (((end_date IS NULL) OR (end_date >= start_date)))
+flex_request | flex_request_due | CHECK ((reply_due > received_on))
+flex_request | flex_request_id_not_null | NOT NULL id
+flex_request | flex_request_organisation_id_not_null | NOT NULL organisation_id
+flex_request | flex_request_outcome_known | CHECK (((outcome IS NULL) OR (outcome = ANY (ARRAY['accepted'::text, 'rejected'::text, 'alternative'::text]))))
+flex_request | flex_request_pack_version_not_null | NOT NULL pack_version
+flex_request | flex_request_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+flex_request | flex_request_person_id_not_null | NOT NULL person_id
+flex_request | flex_request_pkey | PRIMARY KEY (organisation_id, id)
+flex_request | flex_request_reason_length | CHECK (((length(btrim(reason)) >= 1) AND (length(btrim(reason)) <= 2000)))
+flex_request | flex_request_reason_not_null | NOT NULL reason
+flex_request | flex_request_received_on_not_null | NOT NULL received_on
+flex_request | flex_request_replied_by_fkey | FOREIGN KEY (organisation_id, replied_by) REFERENCES nemura.member(organisation_id, id)
+flex_request | flex_request_reply_due_not_null | NOT NULL reply_due
+flex_request | flex_request_reply_length | CHECK (((written_reply IS NULL) OR ((length(btrim(written_reply)) >= 1) AND (length(btrim(written_reply)) <= 4000))))
+flex_request | flex_request_reply_whole | CHECK ((((state = 'replied'::text) = (outcome IS NOT NULL)) AND ((outcome IS NULL) = (written_reply IS NULL)) AND ((outcome IS NULL) = (replied_by IS NULL)) AND ((outcome IS NULL) = (replied_at IS NULL))))
+flex_request | flex_request_requested_at_not_null | NOT NULL requested_at
+flex_request | flex_request_requested_by_not_null | NOT NULL requested_by
+flex_request | flex_request_start_date_not_null | NOT NULL start_date
+flex_request | flex_request_state_known | CHECK ((state = ANY (ARRAY['received'::text, 'replied'::text, 'withdrawn'::text])))
+flex_request | flex_request_state_not_null | NOT NULL state
+flex_request | flex_request_withdrawn_whole | CHECK (((state = 'withdrawn'::text) = (withdrawn_at IS NOT NULL)))
+flex_request | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 gov_claim | gov_claim_amount | CHECK (((amount > (0)::numeric) AND (amount = round(amount, 2))))
 gov_claim | gov_claim_amount_not_null | NOT NULL amount
 gov_claim | gov_claim_by_fkey | FOREIGN KEY (organisation_id, filed_by) REFERENCES nemura.member(organisation_id, id)
@@ -1115,6 +1160,9 @@ CREATE UNIQUE INDEX deletion_proof_pkey ON nemura.deletion_proof USING btree (or
 CREATE UNIQUE INDEX deletion_report_pkey ON nemura.deletion_report USING btree (organisation_id, id)
 CREATE UNIQUE INDEX feature_state_feature_key ON nemura.feature_state USING btree (organisation_id, feature)
 CREATE UNIQUE INDEX feature_state_pkey ON nemura.feature_state USING btree (organisation_id, id)
+CREATE INDEX flex_request_person_idx ON nemura.flex_request USING btree (organisation_id, person_id, requested_at)
+CREATE UNIQUE INDEX flex_request_pkey ON nemura.flex_request USING btree (organisation_id, id)
+CREATE INDEX flex_request_state_idx ON nemura.flex_request USING btree (organisation_id, state, reply_due)
 CREATE INDEX gov_claim_event_claim_idx ON nemura.gov_claim_event USING btree (organisation_id, claim_id, happened_on)
 CREATE UNIQUE INDEX gov_claim_event_pkey ON nemura.gov_claim_event USING btree (organisation_id, id)
 CREATE INDEX gov_claim_leave_idx ON nemura.gov_claim USING btree (organisation_id, gov_leave_id)
@@ -1201,6 +1249,8 @@ CREATE TRIGGER deletion_proof_append_only BEFORE DELETE OR UPDATE ON nemura.dele
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.deletion_report DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('deletion_report', 'id')
 CREATE TRIGGER feature_state_guard BEFORE DELETE OR UPDATE ON nemura.feature_state FOR EACH ROW EXECUTE FUNCTION nemura.feature_state_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.feature_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('feature_state', 'id')
+CREATE TRIGGER flex_request_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.flex_request FOR EACH ROW EXECUTE FUNCTION nemura.flex_request_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.flex_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('flex_request', 'id')
 CREATE TRIGGER gov_claim_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.gov_claim FOR EACH ROW EXECUTE FUNCTION nemura.gov_leave_guard('A claim')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.gov_claim DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('gov_claim', 'id')
 CREATE TRIGGER gov_claim_event_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.gov_claim_event FOR EACH ROW EXECUTE FUNCTION nemura.gov_leave_guard('A claim event')
@@ -1270,6 +1320,7 @@ company_policy | tenant_isolation | (organisation_id = nemura.current_org()) | (
 deletion_proof | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 deletion_report | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 feature_state | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+flex_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_claim | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_claim_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_leave | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -1500,6 +1551,37 @@ AS $function$
 BEGIN
   IF TG_OP = 'DELETE' OR NEW.feature IS DISTINCT FROM OLD.feature THEN
     RAISE EXCEPTION 'A feature switch is changed, never removed or renamed' USING ERRCODE = 'NM125';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.flex_request_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'A flexible work request is evidence: it is withdrawn, never deleted' USING ERRCODE = 'NM151';
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.state <> 'received' THEN
+      RAISE EXCEPTION 'A flexible work request starts received' USING ERRCODE = 'NM151';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.arrangement IS DISTINCT FROM OLD.arrangement OR NEW.start_date IS DISTINCT FROM OLD.start_date
+     OR NEW.end_date IS DISTINCT FROM OLD.end_date OR NEW.reason IS DISTINCT FROM OLD.reason OR NEW.received_on IS DISTINCT FROM OLD.received_on
+     OR NEW.reply_due IS DISTINCT FROM OLD.reply_due OR NEW.pack_version IS DISTINCT FROM OLD.pack_version OR NEW.requested_by IS DISTINCT FROM OLD.requested_by
+     OR NEW.requested_at IS DISTINCT FROM OLD.requested_at THEN
+    RAISE EXCEPTION 'A flexible work request keeps its words, its receipt date and its deadline' USING ERRCODE = 'NM151';
+  END IF;
+  IF OLD.state <> 'received' THEN
+    RAISE EXCEPTION 'A % flexible work request is closed', OLD.state USING ERRCODE = 'NM151';
+  END IF;
+  IF NEW.state = 'replied' AND EXISTS (SELECT 1 FROM nemura.person p WHERE p.organisation_id = NEW.organisation_id AND p.id = NEW.person_id AND p.member_id = NEW.replied_by) THEN
+    RAISE EXCEPTION 'Nobody answers their own flexible work request' USING ERRCODE = 'NM152';
   END IF;
   RETURN NEW;
 END

@@ -208,6 +208,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/flexible-work-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Flexible work requests the caller may read
+         * @description Lists the caller's own requests; the people team (HR officer, HR administrator, Owner) reads everyone's. Requests waiting come first, by deadline. It changes nothing.
+         */
+        get: operations["listFlexibleWorkRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/flexible-work-requests/{id}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer a flexible work request in writing
+         * @description The HR officer, the HR administrator or the Owner records the employer's written reply, once and never to their own request. A refusal or an alternative gives the business grounds. The reply is the record the guidelines ask the employer to keep. It is audited and the person is told.
+         */
+        post: operations["replyFlexibleWork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/flexible-work-requests/{id}/withdrawal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw one's own flexible work request
+         * @description The person withdraws their own request while it waits for a reply. It is audited.
+         */
+        post: operations["withdrawFlexibleWork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/government-paid-claims/{id}/events": {
         parameters: {
             query?: never;
@@ -402,6 +462,26 @@ export interface paths {
          * @description Turns the reserved days of each approved request that ended before the day into taken days, once. The HR officer and the HR administrator. It is audited.
          */
         post: operations["settleLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/flexible-work-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a formal flexible work request
+         * @description Records the signed-in person's formal request (type, start, end and reason). Its receipt date is today and never restarts; the employer's written reply is due the country pack's months after (two). The people team is told. It is audited.
+         */
+        post: operations["requestFlexibleWork"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1844,6 +1924,139 @@ export interface components {
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
              */
             subject: string;
+        };
+        FlexAsk: {
+            /**
+             * @description Flexi-time (when), flexi-place (where) or flexi-load (how much).
+             * @example flexi_time
+             * @enum {string}
+             */
+            arrangement: "flexi_time" | "flexi_place" | "flexi_load";
+            /**
+             * Format: date
+             * @description The day the arrangement would start.
+             * @example 2027-01-04
+             */
+            from: string;
+            /**
+             * @description Why the arrangement is wanted.
+             * @example School run on Tuesdays.
+             */
+            reason: string;
+            /**
+             * Format: date
+             * @description The day it would end; open when absent.
+             * @example 2027-06-30
+             */
+            to?: string;
+        };
+        FlexListOutputBody: {
+            /** @description The requests the caller may read: their own, or everyone's for the people team; those waiting first, by deadline. */
+            requests: components["schemas"]["FlexRequest"][] | null;
+        };
+        FlexReplyInputBody: {
+            /**
+             * @description Accept, refuse, or offer an alternative.
+             * @example alternative
+             * @enum {string}
+             */
+            outcome: "accepted" | "rejected" | "alternative";
+            /**
+             * @description The written reply; a refusal or an alternative gives the business grounds.
+             * @example We can offer a 9am start on Tuesdays.
+             */
+            written_reply: string;
+        };
+        FlexRequest: {
+            /**
+             * @description The kind of arrangement.
+             * @example flexi_time
+             * @enum {string}
+             */
+            arrangement: "flexi_time" | "flexi_place" | "flexi_load";
+            /**
+             * Format: date
+             * @description The day it would start.
+             * @example 2027-01-04
+             */
+            from: string;
+            /**
+             * Format: uuid
+             * @description The request.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0
+             */
+            id: string;
+            /**
+             * @description How the employer answered.
+             * @example alternative
+             * @enum {string}
+             */
+            outcome?: "accepted" | "rejected" | "alternative";
+            /**
+             * Format: uuid
+             * @description The person asking.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            person_name: string;
+            /**
+             * @description The person's reason.
+             * @example School run on Tuesdays.
+             */
+            reason: string;
+            /**
+             * Format: date
+             * @description The formal receipt date, which never restarts.
+             * @example 2026-11-20
+             */
+            received_on: string;
+            /**
+             * Format: date-time
+             * @description When it was answered.
+             * @example 2026-11-21T10:00:00Z
+             */
+            replied_at?: string;
+            /**
+             * Format: date
+             * @description The last day for the written reply: the country pack's months after receipt.
+             * @example 2027-01-20
+             */
+            reply_due: string;
+            /**
+             * @description Received and waiting for the written reply, replied, or withdrawn.
+             * @example received
+             * @enum {string}
+             */
+            state: "received" | "replied" | "withdrawn";
+            /**
+             * Format: date
+             * @description The day it would end.
+             * @example 2027-06-30
+             */
+            to?: string;
+            /**
+             * @description The employer's written reply, with its reason for a refusal.
+             * @example We can offer a 9am start on Tuesdays.
+             */
+            written_reply?: string;
+        };
+        FlexRequestedOutputBody: {
+            /**
+             * Format: uuid
+             * @description The new request.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0
+             */
+            id: string;
+            /**
+             * Format: date
+             * @description The last day for the employer's written reply.
+             * @example 2027-01-20
+             */
+            reply_due: string;
         };
         GovAsk: {
             /**
@@ -3659,6 +3872,221 @@ export interface operations {
             };
         };
     };
+    listFlexibleWorkRequests: {
+        parameters: {
+            query?: {
+                /** @description Only requests in this state; all when absent. */
+                state?: "pending" | "approved" | "refused" | "cancelled";
+                /** @description Only the caller's own, whatever else their roles let them read. */
+                mine?: boolean;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlexListOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    replyFlexibleWork: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlexReplyInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    withdrawFlexibleWork: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     recordGovernmentPaidClaimEvent: {
         parameters: {
             query?: never;
@@ -3971,6 +4399,8 @@ export interface operations {
             query?: {
                 /** @description Only requests in this state; all when absent. */
                 state?: "pending" | "approved" | "refused" | "cancelled";
+                /** @description Only the caller's own, whatever else their roles let them read. */
+                mine?: boolean;
             };
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
@@ -4286,6 +4716,78 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    requestFlexibleWork: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlexAsk"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlexRequestedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

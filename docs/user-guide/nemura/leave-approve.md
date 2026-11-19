@@ -3,7 +3,7 @@ key: nemura.leave.approve
 title: Approve or refuse leave
 mode: basic
 roles: [line_manager, hr_officer, hr_admin, owner]
-requirements: [NM-LV-04, NM-LV-05, NM-LV-06, NM-LV-12]
+requirements: [NM-LV-04, NM-LV-05, NM-LV-06, NM-LV-10, NM-LV-12]
 ---
 
 # Approve or refuse leave
@@ -40,6 +40,13 @@ leave is shown as such only to the person and to the HR officer and the HR admin
 The HR officer and the HR administrator also see **Certificates to verify**. Select **Verify** once you have checked a
 certificate. It is verified once, and never by the person it is about. A manager cannot refuse a certified sick day the person is
 entitled to, and does not see the certificate.
+
+## Answer flexible work requests
+
+The HR officer, the HR administrator and the Owner also see **Flexible work requests**: each request waiting for its written
+reply, soonest deadline first. Choose **accepted**, **refused** or **an alternative was offered**, write the reply, and select
+**Send reply**. A refusal or an alternative gives the business grounds. The reply is kept as the record the guidelines ask the
+employer to keep, and the person is told. You cannot answer your own request.
 
 ## Common problems
 

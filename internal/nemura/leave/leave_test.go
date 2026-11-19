@@ -11,7 +11,7 @@ import (
 
 func version(t *testing.T) pack.Version {
 	t.Helper()
-	v, err := pack.Load(packs.Files(), "sg-people/2026.2")
+	v, err := pack.Load(packs.Files(), "sg-people/2026.3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -357,5 +357,25 @@ func TestGovernmentPaidSchemesAreReadFromThePackByBirthDate(t *testing.T) {
 		if _, err := leave.ParseCents(bad); err == nil {
 			t.Errorf("%q accepted", bad)
 		}
+	}
+}
+
+// The reply to a flexible work request is due the pack's months after the formal receipt, never later than the guidelines give, and every reply is written with its
+// reason when it is not an acceptance (NM-LV-10).
+// req: NM-LV-10
+func TestAFlexibleWorkReplyIsDueTwoMonthsAfterReceiptAndIsWritten(t *testing.T) {
+	for in, want := range map[string]string{"2026-11-20": "2027-01-20", "2026-12-31": "2027-02-28", "2027-12-31": "2028-02-29", "2026-10-31": "2026-12-31", "2026-08-31": "2026-10-31", "2026-07-31": "2026-09-30"} {
+		if got := leave.ReplyDue(d(in), 2).Format(time.DateOnly); got != want {
+			t.Errorf("%s: %s, want %s", in, got, want)
+		}
+	}
+	if err := leave.CheckReply(leave.Accepted, "Approved from 1 January."); err != nil {
+		t.Errorf("an acceptance: %v", err)
+	}
+	if leave.CheckReply(leave.Rejected, "No.") == nil || leave.CheckReply(leave.Alternative, "   ") == nil || leave.CheckReply("maybe", "A reply of enough words.") == nil || leave.CheckReply(leave.Accepted, "") == nil {
+		t.Error("a bad reply passed")
+	}
+	if err := leave.CheckReply(leave.Rejected, "The team cannot cover the afternoons while the release is on."); err != nil {
+		t.Errorf("a refusal with a reason: %v", err)
 	}
 }

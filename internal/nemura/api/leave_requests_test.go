@@ -156,3 +156,42 @@ func TestGovernmentPaidLeaveIsWrittenByHRAndReadByThePeopleTeamOwnerAndPayroll(t
 		t.Errorf("a claim with a day that is not a date: %d", got)
 	}
 }
+
+// Flexible work requests are made by the person for themselves, answered in writing by the HR officer, the HR administrator or the Owner, and read by the person and
+// the people team only (NM-LV-10).
+// req: NM-LV-10
+// asvs: V8.2.1
+func TestFlexibleWorkRequestsAreMadeByThePersonAndAnsweredByThePeopleTeam(t *testing.T) {
+	do := func(roles []authz.Role, method, path, body string) int {
+		testRoles = roles
+		defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0"
+	for _, tc := range []struct {
+		roles []authz.Role
+		reply int
+	}{
+		{[]authz.Role{authz.Employee}, 403}, {[]authz.Role{authz.LineManager}, 403}, {[]authz.Role{authz.PayrollAdmin}, 403}, {[]authz.Role{authz.Administrator}, 403},
+		{[]authz.Role{authz.HROfficer}, 204}, {[]authz.Role{authz.HRAdmin}, 204}, {[]authz.Role{authz.Owner}, 204},
+	} {
+		if got := do(tc.roles, "POST", "/v1/me/flexible-work-requests", `{"arrangement":"flexi_time","from":"2027-01-04","reason":"School run."}`); got != 201 {
+			t.Errorf("%v could not ask: %d", tc.roles, got)
+		}
+		if got := do(tc.roles, "GET", "/v1/flexible-work-requests", ""); got != 200 {
+			t.Errorf("%v could not list: %d", tc.roles, got)
+		}
+		if got := do(tc.roles, "POST", "/v1/flexible-work-requests/"+id+"/reply", `{"outcome":"accepted","written_reply":"Approved from January."}`); got != tc.reply {
+			t.Errorf("%v replying: %d, want %d", tc.roles, got, tc.reply)
+		}
+		if got := do(tc.roles, "POST", "/v1/flexible-work-requests/"+id+"/withdrawal", ""); got != 204 {
+			t.Errorf("%v could not withdraw their own: %d", tc.roles, got)
+		}
+	}
+}

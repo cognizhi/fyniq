@@ -8,6 +8,7 @@ import { NewPerson } from "./pages/NewPerson";
 import { ApplyLeave } from "./pages/ApplyLeave";
 import { GovernmentLeave } from "./pages/GovernmentLeave";
 import { MyLeave } from "./pages/MyLeave";
+import { MyRequests } from "./pages/MyRequests";
 import { ReportSick } from "./pages/ReportSick";
 import { TeamLeave } from "./pages/TeamLeave";
 import { Packs } from "./pages/Packs";
@@ -679,5 +680,64 @@ describe("government-paid leave and its claims", () => {
 
   it("is routed from the address", () => {
     expect(matchRoute("/people/leave/government-paid")?.route.id).toBe("government-leave");
+  });
+});
+
+// req: NM-LV-10
+describe("flexible work requests", () => {
+  const flex = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0", person_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61", person_name: "Ben Lim", arrangement: "flexi_time", from: "2027-01-04", reason: "School run on Tuesdays.", state: "received", received_on: "2026-11-20", reply_due: "2027-01-20" };
+  const leaveReq = { id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80", person_id: flex.person_id, person_name: "Ben Lim", type: "annual", from: "2026-12-21", to: "2026-12-24", start_half: false, end_half: false, days: "4.00", state: "pending", requested_at: "2026-11-20T09:00:00Z" };
+
+  it("shows own leave and flexible work with the reply deadline, sends a formal request and withdraws one", async () => {
+    answer("GET /v1/leave-requests", { status: 200, body: { requests: [leaveReq] } });
+    answer("GET /v1/flexible-work-requests", { status: 200, body: { requests: [flex] } });
+    answer("POST /v1/me/flexible-work-requests", { status: 201, body: { id: flex.id, reply_due: "2027-01-20" } });
+    answer(`POST /v1/flexible-work-requests/${flex.id}/withdrawal`, { status: 204 });
+    answer(`POST /v1/leave-requests/${leaveReq.id}/cancellation`, { status: 204 });
+    const { container } = render(<MyRequests roles={["employee"]} />);
+    expect(await screen.findByText(/When I work \(flexi-time\) from 2027-01-04: Waiting\. The company's written reply is due by 2027-01-20\./)).toBeTruthy();
+    expect(screen.getByText("2026-12-21 to 2026-12-24: 4.00 days, Waiting")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Starting on"), { target: { value: "2027-02-01" } });
+    fireEvent.change(screen.getByLabelText("Why"), { target: { value: "Work from home on Fridays." } });
+    fireEvent.submit(screen.getByRole("heading", { name: "Make a formal flexible work request" }).closest("form") as HTMLFormElement);
+    expect(await screen.findByText("Sent. Your formal request is dated today, and the company must answer in writing by 2027-01-20.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw" }));
+    expect(await screen.findByText("Withdrawn.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(calls).toContain(`POST /v1/leave-requests/${leaveReq.id}/cancellation`));
+  });
+
+  it("shows the written reply of an answered request", async () => {
+    answer("GET /v1/leave-requests", { status: 200, body: { requests: [] } });
+    answer("GET /v1/flexible-work-requests", { status: 200, body: { requests: [{ ...flex, state: "replied", outcome: "alternative", written_reply: "We can offer a 9am start on Tuesdays." }] } });
+    render(<MyRequests roles={["employee"]} />);
+    expect(await screen.findByText("The company's reply: We can offer a 9am start on Tuesdays.")).toBeTruthy();
+    expect(screen.getByText(/an alternative was offered/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Withdraw" })).toBeNull();
+  });
+
+  it("lets the people team answer a request in writing, and shows the refusal for a missing reason", async () => {
+    answer("GET /v1/leave-requests", { status: 200, body: { requests: [] } });
+    answer("GET /v1/leave-calendar", { status: 200, body: { month: "2026-11", people: [] } });
+    answer("GET /v1/sick-leave", { status: 200, body: { notifications: [] } });
+    answer("GET /v1/flexible-work-requests", { status: 200, body: { requests: [flex] } });
+    answer(`POST /v1/flexible-work-requests/${flex.id}/reply`, { status: 422, body: { code: "NM_LEAVE_INVALID", detail: "A refusal or an alternative gives its reason: write the business grounds, so the person can understand the decision." } });
+    render(<TeamLeave roles={["hr_officer"]} />);
+    expect(await screen.findByText("flexi_time from 2027-01-04: School run on Tuesdays.".replace("flexi_time", "When I work (flexi-time)"))).toBeTruthy();
+    expect(screen.getByText(/Reply due: 2027-01-20/)).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Outcome"), { target: { value: "rejected" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send reply" }));
+    expect((await screen.findAllByRole("alert")).map((a) => a.textContent).join(" ")).toMatch(/gives its reason/);
+    answer(`POST /v1/flexible-work-requests/${flex.id}/reply`, { status: 204 });
+    fireEvent.change(screen.getByLabelText("Written reply to Ben Lim"), { target: { value: "The team cannot cover Tuesday afternoons during the release." } });
+    fireEvent.click(screen.getByRole("button", { name: "Send reply" }));
+    expect(await screen.findByText("Replied. The record of the written reply is kept.")).toBeTruthy();
+  });
+
+  it("is routed from the address", () => {
+    expect(matchRoute("/me/requests")?.route.id).toBe("my-requests");
   });
 });
