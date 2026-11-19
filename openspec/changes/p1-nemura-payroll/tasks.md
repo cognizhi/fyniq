@@ -28,6 +28,10 @@ Load before each slice: `fyniq-accounting-domain` (money, rounding, postings), `
   the run's totals and B.3's entry. It found three engine defects (the wage band on wages paid, advances not kept apart for 1250, no refund in the graduated range), fixed. **Left:** the rules the sources leave
   open, decided in the oracle and marked `[verify]` in `test/differential/README.md` (the year's estimated ordinary wages, the joint election as F/G, SHG and SDL on the gross, final-pay advances `[accountant to confirm]`);
   overrides (FR-PAY-06) are not in the differential.
+  Second review (20 Nov 2026): the rules were re-decided from the CPF Board, MOM and SkillsFuture pages (`test/differential/README.md`, "Payroll months and runs" with each source's URL and quote);
+  a refund's employee share is whole dollars on a whole-dollar total (engine fixed, `fix(engine)`), F/F is built in the engine and oracle, and overrides, ratio amounts (part month, unpaid leave, overtime)
+  and final-pay advances are in the differential with golden runs. **Left:** recording F/F (`nemura.pr_election` has no kind: a migration, the API and the screen); NM-PAY-12 counts calendar days
+  for a part month where MOM's page counts working days (owner decision O5); SDL and SHG on the gross, 29 February and the refund total's rounding `[accountant to confirm]`.
 - [x] 1.6 Verify: the local gates; the foreign worker levy is an expense input (O2), not a calculation.
   Built in slice 1: `internal/domain/rounding/payroll.go`; `internal/nemura/payroll` (`Classify`, `Calculate`, `CheckDeductions`, `Total`, `Postings`, `Diff`); Nemura's copies of `sg-cpf`, `sg-sdl` and
   `sg-shg` (`internal/nemura/packs.StatutoryFiles`, kept equal to Fyniq's by an archtest); `test/differential/payroll.schema.json` and 16 hand-worked golden months, with a property test of a thousand

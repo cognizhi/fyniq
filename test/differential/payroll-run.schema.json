@@ -43,6 +43,7 @@
           "deductions": {"$ref": "#/$defs/deductions"},
           "final": {"type": "boolean"},
           "held": {"$ref": "#/$defs/money"},
+          "overrides": {"$ref": "#/$defs/overrides"},
           "posted": {
             "type": "object",
             "description": "The same person's facts as last posted; the difference from them is what the later run posts",
@@ -55,7 +56,8 @@
               "reimbursements": {"$ref": "#/$defs/reimbursements"},
               "deductions": {"$ref": "#/$defs/deductions"},
               "final": {"type": "boolean"},
-              "held": {"$ref": "#/$defs/money"}
+              "held": {"$ref": "#/$defs/money"},
+              "overrides": {"$ref": "#/$defs/overrides"}
             }
           }
         }
@@ -65,6 +67,20 @@
   "$defs": {
     "money": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,2})?$"},
     "reimbursements": {"type": "array", "items": {"$ref": "#/$defs/money"}},
+    "overrides": {
+      "type": "array",
+      "description": "Overrides (FR-PAY-06): each replaces one figure the engine works out, with a reason; the figure is taken as given",
+      "items": {
+        "type": "object",
+        "required": ["field", "value", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "field": {"enum": ["cpf_employee", "cpf_employer", "sdl", "shg"]},
+          "value": {"$ref": "#/$defs/money"},
+          "reason": {"type": "string", "minLength": 10, "maxLength": 500}
+        }
+      }
+    },
     "ytd": {
       "type": "object",
       "required": ["ow", "aw_subject", "aw_paid"],
@@ -75,12 +91,24 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["key", "name", "amount", "cpf_wages"],
+        "required": ["key", "name", "cpf_wages"],
+        "oneOf": [{"required": ["amount"]}, {"required": ["derive"]}],
         "additionalProperties": false,
         "properties": {
           "key": {"type": "string"},
           "name": {"type": "string"},
           "amount": {"type": "string", "pattern": "^-?[0-9]+(\\.[0-9]{1,2})?$"},
+          "derive": {
+            "description": "Instead of an amount: an amount worked out by a ratio (PRD-002 NM-PAY-12, RND-PAY-RATIO), exactly and rounded once to the cent, half away from zero",
+            "oneOf": [
+              {"type": "object", "required": ["kind", "base", "days", "of"], "additionalProperties": false,
+               "properties": {"kind": {"const": "part_month"}, "base": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,2})?$"}, "days": {"type": "integer", "minimum": 0}, "of": {"type": "integer", "minimum": 1}}},
+              {"type": "object", "required": ["kind", "monthly", "days", "working_days"], "additionalProperties": false,
+               "properties": {"kind": {"const": "unpaid_leave"}, "monthly": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,2})?$"}, "days": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$"}, "working_days": {"type": "integer", "minimum": 1}}},
+              {"type": "object", "required": ["kind", "monthly", "weekly_hours", "multiple", "hours"], "additionalProperties": false,
+               "properties": {"kind": {"const": "overtime"}, "monthly": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,2})?$"}, "weekly_hours": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$"}, "multiple": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$"}, "hours": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$"}}}
+            ]
+          },
           "cpf_wages": {"type": "boolean"},
           "for_month": {"type": "string", "format": "date"},
           "payable_on": {"type": "string", "format": "date"},

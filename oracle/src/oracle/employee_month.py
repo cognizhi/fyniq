@@ -47,6 +47,8 @@ The rules this module applies, with the source of each:
   whether the 12 and 25% limits also stop the rest of an advance on final pay]. A breach is ✖ with its rule named.
 * **Net pay** is the gross less the employee's CPF, the SHG and the deductions; the **amount to disburse** is net pay plus the non-wage
   reimbursements less the monies held (FR-PAY-18). The employer's cost is the gross, the employer's CPF and the SDL.
+* **Overrides** (FR-PAY-06) replace one of the CPF shares, the SDL or the SHG fund with the person's figure and a reason; the CPF total follows its two
+  shares and net pay, the amount to disburse and the employer's cost follow. **Amounts by a ratio** (PRD-002 NM-PAY-12, ``RND-PAY-RATIO``) are an item's ``derive``.
 * **The entry** (B.3): Dr salary expense (the gross); Dr 6020 (employer CPF); Dr 6030 (SDL payable); Dr 2150 (reimbursements); Cr 1250
   (advances recovered); Cr the other deductions' own accounts; Cr 2100 (the amount to disburse plus the monies held); Cr 2110 (the
   employees' and employers' CPF, the SDL payable and the SHG). It balances.
@@ -84,6 +86,8 @@ EXEMPT_FROM_HALF = ("absence", "recovery", "cooperative")
 HALF = Decimal("0.5")
 QUARTER = Decimal("0.25")
 MAX_ADVANCE_INSTALMENTS = 12
+
+OVERRIDE_FIELDS = ("cpf_employee", "cpf_employer", "sdl", "shg")
 
 RESIDENCIES = ("citizen", "permanent_resident", "foreigner")
 FUNDS = ("CDAC", "ECF", "MBMF", "SINDA")
@@ -319,11 +323,42 @@ def last_day(month: date) -> date:
     return date(month.year + (month.month == 12), month.month % 12 + 1, 1) - timedelta(days=1)
 
 
+def ratio(amount: Decimal, num: Decimal, den: Decimal) -> Decimal:
+    """``RND-PAY-RATIO`` (PRD-002 NM-PAY-12): ``amount x num / den`` worked out exactly and rounded once to the cent, half away from zero."""
+    return cents_half_up(amount * num / den)
+
+
+def derived_amount(item: dict[str, Any]) -> Decimal:
+    """The amount of an item the facts give as a ratio, by NM-PAY-12: a part month's pay is the calendar days over the days of the month; an unpaid-leave
+    deduction the day's share of the month's working days (a half day counts as one half), taken off; overtime pay twelve months of basic salary over fifty-two
+    weeks of the normal hours, times the multiple, times the hours. Each amount is rounded once, on its own."""
+    spec, key = item["derive"], item["key"]
+    kind = spec["kind"]
+    if kind == "part_month":
+        den = _d(spec["of"], f"item {key}: of")
+        if den <= 0 or not 0 <= _d(spec["days"], f"item {key}: days") <= den:
+            raise PayrollError(f"item {key}: the days are between nothing and the days of the month")
+        return ratio(_money(spec["base"], f"item {key}"), _d(spec["days"], "days"), den)
+    if kind == "unpaid_leave":
+        den = _d(spec["working_days"], f"item {key}: working_days")
+        if den <= 0:
+            raise PayrollError(f"item {key}: the month has working days")
+        return -ratio(_money(spec["monthly"], f"item {key}"), _d(spec["days"], "days"), den)
+    if kind == "overtime":
+        weekly = _d(spec["weekly_hours"], f"item {key}: weekly_hours")
+        if weekly <= 0:
+            raise PayrollError(f"item {key}: the normal hours of a week are above nothing")
+        return cents_half_up(_money(spec["monthly"], f"item {key}") * 12 * _d(spec["multiple"], "multiple") * _d(spec["hours"], "hours") / (52 * weekly))
+    raise PayrollError(f"item {key}: {kind!r} is not a ratio")
+
+
 def _facts(doc: dict[str, Any]) -> dict[str, Any]:
     """The facts of a month, read and checked: ``{items, ytd, last_month, reimbursements, deductions, final, held}``."""
     items = []
     for raw in doc["items"]:
-        items.append({**raw, "amount": _money(raw["amount"], f"item {raw['key']}")})
+        if ("derive" in raw) == ("amount" in raw):
+            raise PayrollError(f"item {raw['key']}: it has an amount or a ratio to work it out from, and not both")
+        items.append({**raw, "amount": derived_amount(raw) if "derive" in raw else _money(raw["amount"], f"item {raw['key']}")})
     ytd = None
     if doc.get("ytd") is not None:
         ytd = {k: _d(doc["ytd"][k], f"ytd.{k}") for k in ("ow", "aw_subject", "aw_paid")}
@@ -341,7 +376,15 @@ def _facts(doc: dict[str, Any]) -> dict[str, Any]:
                 "is_advance": bool(raw.get("is_advance", False)),
             }
         )
+    overrides = []
+    for raw in doc.get("overrides") or []:
+        if raw["field"] not in OVERRIDE_FIELDS:
+            raise PayrollError(f"override: {raw['field']!r} is not one of {', '.join(OVERRIDE_FIELDS)}")
+        if len(raw["reason"].strip()) < 10 or len(raw["reason"]) > 500:
+            raise PayrollError(f"override of {raw['field']}: the reason is 10 to 500 characters")
+        overrides.append({"field": raw["field"], "value": _money(raw["value"], f"override of {raw['field']}")})
     return {
+        "overrides": overrides,
         "items": items,
         "ytd": ytd,
         "last_month": bool(doc.get("last_month", False)),
@@ -422,6 +465,20 @@ def employee_month(person: dict[str, Any], month: date, facts: dict[str, Any], p
     shg = ZERO
     if employee and person.get("shg_fund") and not person.get("shg_opt_out"):
         shg = shg_fund_amount(shg_id, month, person["shg_fund"], gross)
+
+    # FR-PAY-06: an override replaces one calculated figure with the figure given (no dollar rounding: it is the person's figure, [accountant to confirm]); the CPF total
+    # follows its two shares; net pay, the amount to disburse and the employer's cost follow from the figures they are made of.
+    for ov in facts["overrides"]:
+        if ov["field"] == "cpf_employee":
+            cpf_employee = ov["value"]
+        elif ov["field"] == "cpf_employer":
+            cpf_employer = ov["value"]
+        elif ov["field"] == "sdl":
+            sdl = ov["value"]
+        else:
+            shg = ov["value"]
+    if any(ov["field"] in ("cpf_employee", "cpf_employer") for ov in facts["overrides"]):
+        cpf_total = cpf_employee + cpf_employer
 
     deductions_total = sum((d["amount"] for d in facts["deductions"]), ZERO)
     reimbursements = sum(facts["reimbursements"], ZERO)

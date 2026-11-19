@@ -1,0 +1,178 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "final-pay-advances",
+ "why": "An advance on final pay is recovered only as far as the employee consented in writing (FR-PAY-16, MOM; the instalment limits on final pay are for the accountant): with and without consent, the 50% limit lifted on termination, and the same advance in an ordinary month",
+ "month": "2026-06-01",
+ "people": [
+  {
+   "id": "final-consent",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "final": true,
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "4000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "deductions": [
+    {
+     "key": "adv",
+     "kind": "recovery",
+     "amount": "3500.00",
+     "is_advance": true,
+     "instalment": 1,
+     "consent": true
+    }
+   ]
+  },
+  {
+   "id": "final-no-consent",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "final": true,
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "4000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "deductions": [
+    {
+     "key": "adv",
+     "kind": "recovery",
+     "amount": "3500.00",
+     "is_advance": true,
+     "instalment": 1
+    }
+   ]
+  },
+  {
+   "id": "final-13th-instalment",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "final": true,
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "4000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "deductions": [
+    {
+     "key": "adv",
+     "kind": "recovery",
+     "amount": "500.00",
+     "is_advance": true,
+     "instalment": 13,
+     "consent": true
+    }
+   ]
+  },
+  {
+   "id": "final-damage-over-half",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "final": true,
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "4000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "deductions": [
+    {
+     "key": "dmg",
+     "kind": "damage_or_loss",
+     "amount": "3900.00"
+    },
+    {
+     "key": "adv",
+     "kind": "recovery",
+     "amount": "200.00",
+     "is_advance": true,
+     "instalment": 1,
+     "consent": true
+    }
+   ]
+  },
+  {
+   "id": "ordinary-same-advance",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "4000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "deductions": [
+    {
+     "key": "adv",
+     "kind": "recovery",
+     "amount": "3500.00",
+     "is_advance": true,
+     "instalment": 1,
+     "consent": true
+    }
+   ]
+  },
+  {
+   "id": "ordinary-quarter",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "4000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "deductions": [
+    {
+     "key": "adv",
+     "kind": "recovery",
+     "amount": "1000.00",
+     "is_advance": true,
+     "instalment": 1
+    },
+    {
+     "key": "adv2",
+     "kind": "recovery",
+     "amount": "1000.01",
+     "is_advance": true,
+     "instalment": 13
+    }
+   ]
+  }
+ ]
+}

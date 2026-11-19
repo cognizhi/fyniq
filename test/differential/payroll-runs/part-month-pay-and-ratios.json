@@ -1,0 +1,165 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "part-month-pay-and-ratios",
+ "why": "Amounts worked out by a ratio (NM-PAY-12, RND-PAY-RATIO): a joiner's part month, a pay change as two records, unpaid leave with a half day, overtime, and the half-away-from-zero tie, each exact and rounded once",
+ "month": "2026-05-01",
+ "people": [
+  {
+   "id": "joiner",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "cpf_wages": true,
+     "derive": {
+      "kind": "part_month",
+      "base": "3000.00",
+      "days": 17,
+      "of": 31
+     }
+    }
+   ]
+  },
+  {
+   "id": "pay-change",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic-a",
+     "name": "Basic salary to the 12th",
+     "cpf_wages": true,
+     "derive": {
+      "kind": "part_month",
+      "base": "2000.00",
+      "days": 12,
+      "of": 31
+     }
+    },
+    {
+     "key": "basic-b",
+     "name": "Basic salary from the 13th",
+     "cpf_wages": true,
+     "derive": {
+      "kind": "part_month",
+      "base": "2500.00",
+      "days": 19,
+      "of": 31
+     }
+    }
+   ]
+  },
+  {
+   "id": "unpaid-half-day",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "3000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    },
+    {
+     "key": "unpaid",
+     "name": "Unpaid leave",
+     "cpf_wages": true,
+     "derive": {
+      "kind": "unpaid_leave",
+      "monthly": "3000.00",
+      "days": "0.5",
+      "working_days": 21
+     }
+    }
+   ]
+  },
+  {
+   "id": "overtime",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "3000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    },
+    {
+     "key": "ot",
+     "name": "Overtime",
+     "cpf_wages": true,
+     "derive": {
+      "kind": "overtime",
+      "monthly": "3000.00",
+      "weekly_hours": "44",
+      "multiple": "1.5",
+      "hours": "10"
+     }
+    }
+   ]
+  },
+  {
+   "id": "tie",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "t1",
+     "name": "Tie",
+     "cpf_wages": true,
+     "derive": {
+      "kind": "part_month",
+      "base": "0.05",
+      "days": 1,
+      "of": 2
+     }
+    },
+    {
+     "key": "t2",
+     "name": "Tie",
+     "cpf_wages": true,
+     "derive": {
+      "kind": "unpaid_leave",
+      "monthly": "0.05",
+      "days": "1",
+      "working_days": 2
+     }
+    }
+   ]
+  },
+  {
+   "id": "leaver-low",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "cpf_wages": true,
+     "derive": {
+      "kind": "part_month",
+      "base": "1000.00",
+      "days": 20,
+      "of": 31
+     }
+    }
+   ]
+  }
+ ]
+}

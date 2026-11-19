@@ -39,10 +39,15 @@ def test_a_runs_entry_balances_and_its_totals_follow_from_its_people(doc):
 # req: QA-ENG-03, FR-PAY-02
 @given(payroll_runs())
 def test_each_months_cpf_is_in_whole_dollars_and_its_shares_add_up(doc):
+    overridden = {e["id"] for e in doc["people"] if any(o["field"].startswith("cpf_") for o in e.get("overrides", []))}
     for person in em.payroll_run(doc)["people"]:
         if "error" in person:
             continue
         total, employee, employer = d(person["cpf_total"]), d(person["cpf_employee"]), d(person["cpf_employer"])
+        assert d(person["net"]) == d(person["gross"]) - employee - d(person["shg"]) - d(person["deductions"])
+        if person["id"] in overridden:  # an override is the person's figure (FR-PAY-06): not a whole dollar, and the total follows the shares
+            assert total == employee + employer
+            continue
         assert total == total.to_integral_value() and employee == employee.to_integral_value()
         assert employee <= total and employer == total - employee
         assert d(person["net"]) == d(person["gross"]) - employee - d(person["shg"]) - d(person["deductions"])
@@ -84,7 +89,7 @@ def test_one_months_ordinary_pay_split_across_runs_gives_the_same_month(a, b, bo
 @given(payroll_runs())
 def test_a_later_run_with_the_same_facts_posts_nothing(doc):
     for entry in doc["people"]:
-        entry["posted"] = {k: v for k, v in entry.items() if k in ("items", "ytd", "last_month", "reimbursements", "deductions", "final", "held")}
+        entry["posted"] = {k: v for k, v in entry.items() if k in ("items", "ytd", "last_month", "reimbursements", "deductions", "final", "held", "overrides")}
     for person in em.payroll_run(doc)["people"]:
         if "difference" in person:
             assert all(d(v) == 0 for v in person["difference"].values())
