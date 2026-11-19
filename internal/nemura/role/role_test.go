@@ -19,7 +19,7 @@ func TestParse(t *testing.T) {
 		{in: "", says: "NEMURA_ROLE is not set"},
 		{in: "worker", says: "worker role is not built yet"},
 		{in: "assistant", says: "assistant role is not built yet"},
-		{in: "migrate", says: "migrate role is not built yet"},
+		{in: "migrate", want: Migrate},
 		{in: "admin", says: `"admin" is not a role`},
 	} {
 		got, err := Parse(tc.in)
@@ -47,5 +47,22 @@ func TestEveryBuiltRoleIsAKnownRole(t *testing.T) {
 func TestServiceName(t *testing.T) {
 	if got := API.Service(); got != "nemura-api" {
 		t.Fatalf("Service() = %q", got)
+	}
+}
+
+func TestEachRoleHasItsOwnDatabaseRole(t *testing.T) {
+	seen := map[string]Role{}
+	for _, r := range All {
+		d := r.DatabaseRole()
+		if other, dup := seen[d]; dup {
+			t.Errorf("%s and %s share the database role %s", r, other, d)
+		}
+		seen[d] = r
+		if !strings.HasPrefix(d, "nemura_") {
+			t.Errorf("%s connects as %s: Nemura's roles are nemura_*", r, d)
+		}
+	}
+	if Migrate.DatabaseRole() != "nemura_migrator" || API.DatabaseRole() != "nemura_api" {
+		t.Errorf("api %s, migrate %s", API.DatabaseRole(), Migrate.DatabaseRole())
 	}
 }

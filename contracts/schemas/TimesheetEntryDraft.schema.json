@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billable": {
+      "description": "Left out, as the task is.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "id": {
+      "description": "The ID of an entry that exists, to change it; left out for a new one.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c5001"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "minutes": {
+      "description": "Whole minutes.",
+      "examples": [
+        135
+      ],
+      "format": "int64",
+      "maximum": 1440,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "note": {
+      "description": "What was done.",
+      "examples": [
+        "Migrated the customer tables"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "project_id": {
+      "description": "A project the person is on.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "task_id": {
+      "description": "One of its tasks in use.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e51"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "work_date": {
+      "description": "A day of the week.",
+      "examples": [
+        "2026-11-17"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "task_id",
+    "work_date",
+    "minutes"
+  ],
+  "title": "TimesheetEntryDraft",
+  "type": "object"
+}

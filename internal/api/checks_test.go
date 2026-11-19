@@ -74,8 +74,8 @@ func TestTheChecksAsEachReaderSeesThem(t *testing.T) {
 	if health["score"] != "problems" || health["problems"] == float64(0) || controller.Body["may_name_owners"] != true || controller.Body["last_run"] == nil {
 		t.Fatalf("the Controller's checks: %s", controller.Raw)
 	}
-	if n := len(controller.Body["checks"].([]any)); n != len(checks.Catalogue()) {
-		t.Errorf("the Controller sees %d checks of %d", n, len(checks.Catalogue()))
+	if n := len(controller.Body["checks"].([]any)); n != ungatedChecks() {
+		t.Errorf("the Controller sees %d checks of %d", n, ungatedChecks())
 	}
 	roles := checkNamed(controller, "setup.system-accounts-exist")
 	if roles["status"] != "error" || roles["count"] != float64(len(storage.SystemRoles)) || len(roles["items"].([]any)) != len(storage.SystemRoles) ||
@@ -240,4 +240,15 @@ func TestACatalogueProblemRefusesTheClose(t *testing.T) {
 	if cc["clean"] != false || !strings.Contains(r.Raw, "checks.setup.system-accounts-exist") || !strings.Contains(r.Raw, string(closing.Failed)) {
 		t.Errorf("the close's checks: %s", r.Raw)
 	}
+}
+
+// ungatedChecks counts the checks no feature switch gates: an organisation with its modules off (the default) sees those only (FR-ORG-06).
+func ungatedChecks() int {
+	n := 0
+	for _, d := range checks.Catalogue() {
+		if d.Module == "" {
+			n++
+		}
+	}
+	return n
 }

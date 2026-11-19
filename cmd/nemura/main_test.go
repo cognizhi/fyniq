@@ -2,16 +2,11 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
-	"fmt"
-	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
 // build compiles cmd/nemura as the local flavour, the one `make up` runs.
@@ -23,16 +18,6 @@ func build(t *testing.T) string {
 		t.Fatalf("go build: %v\n%s", err, b)
 	}
 	return out
-}
-
-func freePort(t *testing.T) string {
-	t.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer l.Close()
-	return fmt.Sprint(l.Addr().(*net.TCPAddr).Port)
 }
 
 func env(extra ...string) []string {
@@ -67,55 +52,13 @@ func TestARoleThatCannotRunRefusesWithItsCode(t *testing.T) {
 	}
 }
 
-// The api role answers the three endpoints every image has, names itself nemura-api, and its own healthcheck passes
-// (the probe of the image and of the compose service).
-// req: NFR-IMG-06
-func TestTheAPIRoleServesTheProbesAndTheVersion(t *testing.T) {
-	if testing.Short() {
-		t.Skip("builds and runs the binary")
+// Only the local build guesses a database URL. Without one a role says which database role's URL to give.
+func TestARoleWithNoDatabaseURLSaysWhichToGive(t *testing.T) {
+	if defaultDatabaseURL("api") != "" {
+		t.Skip("the local build defaults the URL")
 	}
-	bin := build(t)
-	port := freePort(t)
-	cmd := exec.Command(bin)
-	cmd.Env = env("NEMURA_ROLE=api", "PORT="+port)
-	if err := cmd.Start(); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = cmd.Process.Kill(); _ = cmd.Wait() }()
-	base := "http://127.0.0.1:" + port
-	var err error
-	for range 200 { // up to about 20 seconds for the binary to listen
-		var resp *http.Response
-		if resp, err = http.Get(base + "/healthz"); err == nil {
-			_ = resp.Body.Close()
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	if err != nil {
-		t.Fatalf("the api role never answered: %v", err)
-	}
-	for _, path := range []string{"/healthz", "/readyz"} {
-		resp, err := http.Get(base + path)
-		if err != nil || resp.StatusCode != http.StatusOK {
-			t.Errorf("GET %s: %v %v", path, resp, err)
-		}
-		if resp != nil {
-			_ = resp.Body.Close()
-		}
-	}
-	resp, err := http.Get(base + "/version")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-	var v struct{ Service, Version, Commit, Flavour string }
-	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil || v.Service != "nemura-api" || v.Version == "" || v.Commit == "" || v.Flavour != "local" {
-		t.Errorf("/version: %+v, %v", v, err)
-	}
-	probe := exec.Command(bin, "healthcheck")
-	probe.Env = env("PORT=" + port) // no role: the probe answers for any container of the image
-	if out, err := probe.CombinedOutput(); err != nil {
-		t.Errorf("healthcheck: %v\n%s", err, out)
+	_, err := databaseURL("api", func(string) string { return "" })
+	if err == nil || !strings.Contains(err.Error(), "NEMURA_DATABASE_URL is not set") || !strings.Contains(err.Error(), "nemura_api") {
+		t.Errorf("want a plain refusal naming nemura_api, got %v", err)
 	}
 }

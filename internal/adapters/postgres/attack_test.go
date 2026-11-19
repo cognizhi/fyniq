@@ -457,6 +457,8 @@ var nanAttacks = map[string]func(t *testing.T, b porttest.Books, value string) e
 	"share_issue.price":            func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "price", v) },
 	"share_issue.amount":           func(t *testing.T, b porttest.Books, v string) error { return rawShareIssueValue(t, b, "amount", v) },
 	"holding_movement.shares":      func(t *testing.T, b porttest.Books, v string) error { return rawMovementShares(t, b, v) },
+	"person_cost_rate.hourly_rate": func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "person_cost_rate", v) },
+	"billing_rate.hourly_rate":     func(t *testing.T, b porttest.Books, v string) error { return rawRate(t, b, "billing_rate", v) },
 	"project.budget_amount":        func(t *testing.T, b porttest.Books, v string) error { return rawProject(t, b, v) },
 	"claim_category.line_limit":    func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "limit", v) },
 	"claim_category.receipt_above": func(t *testing.T, b porttest.Books, v string) error { return rawClaimCategory(t, b, "receipt", v) },
@@ -1426,6 +1428,25 @@ func rawTransfer(t *testing.T, b porttest.Books, target, value string) error {
 from_minor_units, from_amount, to_currency, to_minor_units, to_amount, fee, made_by, made_at)
 VALUES ($1, $2, $3, '2026-10-04', 'SGD', 2, $4::numeric, 'USD', 2, $5::numeric, $6::numeric, 'user:x', now())`,
 			uuid.New(), uuid.New(), uuid.New(), pick("from", "1350.00"), pick("to", "1000.00"), pick("fee", "5.00"))
+		return err
+	})
+}
+
+// rawRate inserts a cost rate (the standard one) or a billing rate whose hourly rate is value, in a transaction never committed.
+func rawRate(t *testing.T, b porttest.Books, table, value string) error {
+	t.Helper()
+	ctx := context.Background()
+	c, err := pgx.Connect(ctx, db.URL("fyniq_api"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close(ctx) }()
+	return asOrg(ctx, c, b.Org, func(tx pgx.Tx) error {
+		if table == "person_cost_rate" {
+			_, err := tx.Exec(ctx, `INSERT INTO fyniq.person_cost_rate (role_name, effective_from, hourly_rate, currency, minor_units, created_by) VALUES ('Standard', '2030-01-01', $1::numeric, 'SGD', 2, 'user:x')`, value)
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO fyniq.billing_rate (project_id, effective_from, hourly_rate, currency, minor_units, created_by) VALUES ($1, '2030-01-01', $2::numeric, 'SGD', 2, 'user:x')`, uuid.New(), value)
 		return err
 	})
 }
