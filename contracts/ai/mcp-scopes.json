@@ -96,6 +96,9 @@
   "propose": ["sec.create_task", "sec.draft_document", "sec.draft_reminder"],
   "unexposed": {
     "calc": "It runs in the AI service on facts of a conversation; an MCP client does its own arithmetic from the facts it is given.",
+    "kb.index": "The knowledge base reaches MCP clients in a later slice: it needs its own read scope and the per-reader filter proven on the MCP path (AI-54); until the Owner grants that, an MCP client reads no know-how page, and no scope is widened to carry it.",
+    "kb.read": "The knowledge base reaches MCP clients in a later slice: it needs its own read scope and the per-reader filter proven on the MCP path (AI-54); until the Owner grants that, an MCP client reads no know-how page, and no scope is widened to carry it.",
+    "kb.search": "The knowledge base reaches MCP clients in a later slice: it needs its own read scope and the per-reader filter proven on the MCP path (AI-54); until the Owner grants that, an MCP client reads no know-how page, and no scope is widened to carry it.",
     "records.get.kind=expense_claim": "A claim names a person and their reimbursement: not exposed over MCP in P1.",
     "records.get.kind=contact": "A contact is a customer, a vendor, a director or a holder: personal data, not exposed over MCP in P1.",
     "records.search.kind=claims": "As expense_claim.",
