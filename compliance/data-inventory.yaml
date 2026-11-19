@@ -142,7 +142,7 @@ classes:
     retention: "Kept with the organisation's records: nothing removes a proposal, as a decision's record (§9.5) [counsel to confirm]"
     protection: "Only catalogue task types, from what the AI read without NRIC and FIN numbers, bank account numbers, secrets and home addresses (AI-02, AI-20); the audit trail keeps the payload's hash, not the payload"
     transfers: "None"
-    columns: [ai_proposal.payload, ai_proposal.rationale, ai_proposal.reason]
+    columns: [ai_proposal.payload, ai_proposal.rationale, ai_proposal.reason, ai_proposal_undo.reason, ai_quality_review.note]
   - key: document-capture
     what: "The files captured for bills and claims (uploaded, pasted or received at an email-in address), what the model read from each with its confidences, the platform's checks of that reading, and the draft a person made of it"
     why: "So a supplier's invoice or a receipt becomes a draft in one action, with each field checked (FR-DOC-12, FR-DOC-14, FR-AP-04, FR-AP-12)"

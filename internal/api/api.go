@@ -393,6 +393,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerCapture(a)
 	registerInbound(a)
 	registerDocumentCaptures(a)
+	registerProposalUndoAndQuality(a)
 	registerNotifications(a)
 	registerHelpState(a)
 	registerPreferences(a)

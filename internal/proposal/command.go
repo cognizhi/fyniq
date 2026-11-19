@@ -36,6 +36,22 @@ type Command interface {
 	Execute(ctx context.Context, u storage.UnitOfWork, payload json.RawMessage, base map[string]int64, as Actor) (Execution, error)
 }
 
+// Undoer is the optional side of a command that can be undone (PRD-001 AI-31, AI-91): a command that posts or changes master data reverses what it did
+// through the domain's own function, as the person who undoes it, only while the records are as the execution left them and, for ledger entries,
+// the period is open; it never updates or deletes posted history. A command that does not implement it is not undoable: a draft posts nothing and is
+// never deleted, and a message sent cannot be unsent.
+type Undoer interface {
+	// Undo reverses what an execution made, as as (the person undoing it), in u, and says what it reversed. A refusal names the field and the fix, as the
+	// API's own do; ErrStale when a record moved since the execution.
+	Undo(ctx context.Context, u storage.UnitOfWork, done Execution, as Actor) (Execution, error)
+}
+
+// Undoable is whether cmd can be undone.
+func Undoable(cmd Command) bool {
+	_, ok := cmd.(Undoer)
+	return ok
+}
+
 // ErrStale is a command's refusal to execute because a record it read moved since the dry run (AI-P5).
 var ErrStale = errors.New("a record the proposal relied on changed since its dry run")
 

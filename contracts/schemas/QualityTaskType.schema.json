@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "count": {
+      "description": "How many of the month's proposals were of it.",
+      "examples": [
+        12
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "share": {
+      "description": "Of the month's proposals, from 0 to 1.",
+      "examples": [
+        0.4
+      ],
+      "format": "double",
+      "type": "number"
+    },
+    "task_type": {
+      "description": "The task type.",
+      "examples": [
+        "ap.draft_bill"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "task_type",
+    "count",
+    "share"
+  ],
+  "title": "QualityTaskType",
+  "type": "object"
+}

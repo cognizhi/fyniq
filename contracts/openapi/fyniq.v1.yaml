@@ -3787,6 +3787,65 @@ components:
         - duration_ms
         - kb_pages
       type: object
+    AIUndoRequest:
+      additionalProperties: false
+      properties:
+        proposal_id:
+          description: The executed proposal to undo.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+          format: uuid
+          type: string
+        reason:
+          description: "Why it is undone: the audit trail and the undo's record keep it."
+          examples:
+            - The supplier credited the bill
+          maxLength: 500
+          minLength: 1
+          type: string
+      required:
+        - proposal_id
+        - reason
+      type: object
+    AIUndone:
+      additionalProperties: false
+      properties:
+        proposal_id:
+          description: The proposal, which stays Executed.
+          examples:
+            - 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+          format: uuid
+          type: string
+        reason:
+          description: Why.
+          examples:
+            - The supplier credited the bill
+          type: string
+        reversed:
+          description: "What was reversed: the records and entries the command reports."
+          examples:
+            - entries: []
+              records:
+                - bill:0193a3c2
+        undone_at:
+          description: When.
+          examples:
+            - "2026-11-20T09:00:00Z"
+          format: date-time
+          type: string
+        undone_by:
+          description: Who undid it.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+      required:
+        - proposal_id
+        - undone_by
+        - undone_at
+        - reason
+        - reversed
+      type: object
     AIUsage:
       additionalProperties: false
       properties:
@@ -13087,6 +13146,11 @@ components:
           examples:
             - false
           type: boolean
+        save_defaults:
+          description: Keep the first line's account and GST code as the supplier's defaults on its contact (FR-AP-12), for the bills made from it from now on; needs the right to change contacts, else it is refused, and a default the contact already has is left.
+          examples:
+            - true
+          type: boolean
         supplier_id:
           description: "The supplier: a contact marked as a vendor."
           examples:
@@ -13102,6 +13166,35 @@ components:
       required:
         - currency
         - lines
+      type: object
+    CaptureDefaults:
+      additionalProperties: false
+      properties:
+        account_id:
+          description: "The account most of the supplier's bill lines cost: its contact's default when it has one, else the most used."
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40
+          format: uuid
+          type: string
+        from_bills:
+          description: How many of the supplier's bills the suggestion rests on; 0 when only the contact's own defaults are shown.
+          examples:
+            - 5
+          format: int64
+          type: integer
+        gst_code:
+          description: "The GST code most of its lines use: its contact's default when it has one, else the most used."
+          examples:
+            - TX
+          type: string
+        saved_on_contact:
+          description: true when the contact already holds these as its defaults.
+          examples:
+            - false
+          type: boolean
+      required:
+        - from_bills
+        - saved_on_contact
       type: object
     CaptureDismissal:
       additionalProperties: false
@@ -13177,6 +13270,9 @@ components:
           examples:
             - uen
           type: string
+        defaults:
+          $ref: "#/components/schemas/CaptureDefaults"
+          description: What this supplier's bills have usually used, suggested for the draft (FR-AP-12).
         id:
           description: The contact's ID.
           examples:
@@ -46647,6 +46743,186 @@ components:
         - reversal
         - boundary
       type: object
+    Quality:
+      additionalProperties: false
+      properties:
+        approved:
+          description: Decided by a person's approval.
+          examples:
+            - 22
+          format: int64
+          type: integer
+        expired:
+          description: Left undecided until they expired.
+          examples:
+            - 2
+          format: int64
+          type: integer
+        invalid:
+          description: Found invalid when they were made.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        made:
+          description: Proposals made in the month.
+          examples:
+            - 30
+          format: int64
+          type: integer
+        median_decision_seconds:
+          description: The median time from a proposal to its decision, in seconds.
+          examples:
+            - 420
+          format: double
+          type: number
+        per_approver:
+          description: What each person approved, the most first.
+          items:
+            $ref: "#/components/schemas/QualityApprover"
+          type: array
+        quick_share:
+          description: The share of approvals made within ten seconds of the decider first opening the review with no item changed, or with no look recorded, from 0 to 1.
+          examples:
+            - 0.18
+          format: double
+          type: number
+        rejected:
+          description: Rejected by a person.
+          examples:
+            - 4
+          format: int64
+          type: integer
+        rejected_with_reason_share:
+          description: The share of rejections that gave a reason, from 0 to 1.
+          examples:
+            - 0.75
+          format: double
+          type: number
+        stale:
+          description: Approved, then not run because a record had changed.
+          examples:
+            - 1
+          format: int64
+          type: integer
+        task_types:
+          description: Each task type's share of the month's proposals, the most first.
+          items:
+            $ref: "#/components/schemas/QualityTaskType"
+          type: array
+      required:
+        - made
+        - approved
+        - rejected
+        - expired
+        - invalid
+        - stale
+        - quick_share
+        - median_decision_seconds
+        - rejected_with_reason_share
+        - per_approver
+        - task_types
+      type: object
+    QualityApprover:
+      additionalProperties: false
+      properties:
+        approved:
+          description: How many proposals they approved in the month.
+          examples:
+            - 14
+          format: int64
+          type: integer
+        quick:
+          description: How many of them within ten seconds of first opening the review, with no item changed, or with no look at all.
+          examples:
+            - 3
+          format: int64
+          type: integer
+        user:
+          description: The person.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          type: string
+      required:
+        - user
+        - approved
+        - quick
+      type: object
+    QualityMonth:
+      additionalProperties: false
+      properties:
+        metrics:
+          $ref: "#/components/schemas/Quality"
+          description: Computed from the month's proposals' own records (AI-92).
+        month:
+          description: The month, YYYY-MM.
+          examples:
+            - 2026-11
+          type: string
+        note:
+          description: The reviewer's note.
+          examples:
+            - Two stale proposals followed up
+          type: string
+        signed_at:
+          description: When.
+          examples:
+            - "2026-12-01T09:00:00Z"
+          format: date-time
+          type: string
+        signed_by:
+          description: Who signed the month's review.
+          examples:
+            - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+          format: uuid
+          type: string
+      required:
+        - month
+        - metrics
+      type: object
+    QualitySignInputBody:
+      additionalProperties: false
+      properties:
+        month:
+          description: The month reviewed, YYYY-MM.
+          examples:
+            - 2026-11
+          pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+          type: string
+        note:
+          description: What the reviewer concluded.
+          examples:
+            - Two stale proposals followed up
+          maxLength: 1000
+          type: string
+      required:
+        - month
+      type: object
+    QualityTaskType:
+      additionalProperties: false
+      properties:
+        count:
+          description: How many of the month's proposals were of it.
+          examples:
+            - 12
+          format: int64
+          type: integer
+        share:
+          description: Of the month's proposals, from 0 to 1.
+          examples:
+            - 0.4
+          format: double
+          type: number
+        task_type:
+          description: The task type.
+          examples:
+            - ap.draft_bill
+          type: string
+      required:
+        - task_type
+        - count
+        - share
+      type: object
     QuietHours:
       additionalProperties: false
       properties:
@@ -61816,6 +62092,299 @@ paths:
       x-fyniq-permission:
         capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
         right: V
+  /v1/ai/approval-quality:
+    get:
+      description: "How the month's AI proposals were decided (CTL-AI-07, AI-92): those made, approved, rejected, expired, invalid and stale, the share approved within 10 seconds of the decider first opening the review with no item changed (a sign of rubber-stamping), the median time to a decision, the approvals per approver, the share of rejections that gave a reason and each task type's share, with the month's signed review when there is one. For the Owner and the DPO. Computed from the proposals' own records; no side effects. On the never-list for the AI and MCP (§9.6)."
+      operationId: getAIApprovalQuality
+      parameters:
+        - description: The month, YYYY-MM.
+          explode: false
+          in: query
+          name: month
+          required: true
+          schema:
+            description: The month, YYYY-MM.
+            examples:
+              - 2026-11
+            pattern: ^[0-9]{4}-(0[1-9]|1[0-2])$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QualityMonth"
+          description: OK
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `AI-QUALITY-01` Only the Owner and the DPO read the approval quality; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `AI-QUALITY-02` Not a month that can be reviewed; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Read a month's approval-quality metrics
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-ASSISTANT-01
+        - AI-QUALITY-01
+        - AI-QUALITY-02
+        - API-AUTH-01
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-exempt:
+        cursor: It is one month's figures, not a list, so there is nothing to page through or resume.
+      x-fyniq-permission:
+        capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
+        note: The month's approval-quality metrics, for the Owner and the DPO (CTL-AI-07).
+        right: V
+  /v1/ai/approval-reviews:
+    post:
+      description: "The monthly review of how AI proposals were decided (CTL-AI-07): the Owner or the DPO signs it after step-up, and the metrics as they stand are kept with the signature as evidence. A month is signed once, and only after it has ended. Side effects: the review and its audit event. On the never-list for the AI and MCP (§9.6). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: signAIApprovalReview
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QualitySignInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QualityMonth"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QualityMonth"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `AI-QUALITY-01` Only the Owner and the DPO read the approval quality; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "412":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `AI-QUALITY-02` Not a month that can be reviewed; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Sign a month's approval-quality review
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-ASSISTANT-01
+        - AI-QUALITY-01
+        - AI-QUALITY-02
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-05
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+        - STORAGE-VERSION-01
+      x-fyniq-permission:
+        capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
+        note: Signs the month's review of the approval-quality metrics, as the Owner or the DPO, after step-up (CTL-AI-07).
+        right: V
   /v1/ai/budgets:
     get:
       description: "The organisation's monthly AI budgets (AI-77, AI-86, AI-13), in its base currency and in tokens: the organisation's, each agent's, connection's and person's, with what this calendar month in Singapore used of each, a reservation whose outcome is unknown counting whole until it is reconciled, and whether its 80% alert was raised. Read-only; no side effects."
@@ -65450,6 +66019,180 @@ paths:
       x-fyniq-permission:
         capability: "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)"
         right: A
+  /v1/ai/proposal-undos:
+    post:
+      description: "Undoes an executed proposal in one action (AI-31, AI-91): as the caller, who holds the right its command needs, through the domain's own reversal in one transaction. An entry it posted is reversed by a reversing entry, never updated or deleted; master data it changed returns to its previous version; each carries its own approval policy as when a person does it, so the undo needs the approval the original did. Refused unless the proposal is Executed (AI-UNDO-01), its task type can be undone (a draft posts nothing and is never deleted, a message sent cannot be unsent: AI-UNDO-02), it was not undone already (AI-UNDO-03) and its records are as the execution left them with their period open (AI-UNDO-04). The undo is kept in an append-only record and audited; the proposal stays Executed. On the never-list for the AI and MCP (§9.6). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing."
+      operationId: undoAIProposal
+      parameters:
+        - description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+          in: header
+          name: Idempotency-Key
+          schema:
+            description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08)."
+            examples:
+              - 5b1a6f0e-8d0c-4c1e-9b7a-2f6d3c8e1a90
+            maxLength: 255
+            minLength: 1
+            pattern: ^[\x21-\x7E]+$
+            type: string
+        - description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+          in: header
+          name: Prefer
+          schema:
+            description: "return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept."
+            examples:
+              - return=preview
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIUndoRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIUndone"
+          description: "OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14)."
+          headers:
+            Preference-Applied:
+              description: "return=preview when this is a preview: nothing was saved (FR-INT-14)."
+              schema:
+                examples:
+                  - return=preview
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIUndone"
+          description: Created
+          headers:
+            Idempotent-Replayed:
+              schema:
+                description: true when this is the saved answer to an earlier request with the same Idempotency-Key.
+                type: string
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unauthorized: `API-AUTH-01` Sign-in required."
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required."
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Not Found: `API-NOT-FOUND-01` Not found."
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Conflict: `AI-UNDO-01` The proposal did not execute; `AI-UNDO-02` That change cannot be undone; `AI-UNDO-03` It was undone already; `AI-UNDO-04` A record changed since the proposal ran; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress."
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid."
+        "429":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Too Many Requests: `API-RATE-01` Too many requests."
+          headers:
+            RateLimit:
+              description: What is left of the limit (r) and the seconds until the window ends (t).
+              schema:
+                examples:
+                  - "\"reads\";r=599;t=42"
+                type: string
+            RateLimit-Policy:
+              description: "The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers)."
+              schema:
+                examples:
+                  - "\"reads\";q=600;w=60"
+                type: string
+            Retry-After:
+              description: Seconds to wait before sending the request again.
+              schema:
+                examples:
+                  - "42"
+                type: string
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Internal Server Error: `API-FAILURE-01` Something went wrong."
+        "503":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: "Service Unavailable: `STORAGE-RETRY-01` Busy: try again."
+      summary: Undo an executed AI proposal
+      tags:
+        - AI
+      x-fyniq-error-codes:
+        - AI-ASSISTANT-01
+        - AI-UNDO-01
+        - AI-UNDO-02
+        - AI-UNDO-03
+        - AI-UNDO-04
+        - API-AUTH-01
+        - API-AUTH-02
+        - API-AUTHZ-01
+        - API-AUTHZ-02
+        - API-AUTHZ-03
+        - API-AUTHZ-07
+        - API-FAILURE-01
+        - API-IDEMPOTENCY-01
+        - API-IDEMPOTENCY-02
+        - API-IDEMPOTENCY-03
+        - API-INPUT-02
+        - API-NOT-FOUND-01
+        - API-RATE-01
+        - STORAGE-LOCK-01
+        - STORAGE-RETRY-01
+      x-fyniq-permission:
+        capability: "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)"
+        note: Undoes an executed proposal as the person who holds the right its command needs, through the domain's own reversal (AI-31, AI-91).
+        right: V
   /v1/ai/proposals:
     get:
       description: "The AI's proposals you may see (design D5), newest first, a page at a time: those made for you, those you may approve now, and, for the Owner and the DPO, every one; filtered by state. The summary is the platform's, never the model's (AI-07). No side effects. On the never-list for the AI and MCP (§9.6)."
@@ -65613,7 +66356,7 @@ paths:
         right: V
   /v1/ai/proposals/{proposal_id}:
     get:
-      description: "A proposal as its approver reviews it (AI-07): the platform's summary from the payload and the dry run, the items, each selectable by its number, the impact and the evidence, and the AI's rationale apart, labelled as AI text; what it was made from, its approval request and what became of it. Not found unless you may see it (design D5). No side effects. On the never-list for the AI and MCP (§9.6)."
+      description: "A proposal as its approver reviews it (AI-07): the platform's summary from the payload and the dry run, the items, each selectable by its number, the impact and the evidence, and the AI's rationale apart, labelled as AI text; what it was made from, its approval request and what became of it. Not found unless you may see it (design D5). Side effects: the first time you open it, the time is kept, so the month's approval quality can tell a decision made after a look from one made without (AI-92). On the never-list for the AI and MCP (§9.6)."
       operationId: getAIProposal
       parameters:
         - description: The proposal's ID.

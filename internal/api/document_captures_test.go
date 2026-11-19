@@ -311,3 +311,40 @@ var matrixCaptures = map[string]func(e *env, tok string) (response, func() bool)
 		return r, func() bool { return captureStatus(e, id) == "read" }
 	},
 }
+
+// A supplier's defaults are suggested from its posted bills and kept on its contact once a person confirms them with the draft (FR-AP-12): the account
+// and GST code its lines used most, or the contact's own; saving them needs the right to change contacts and never replaces a default the contact holds.
+// req: FR-AP-12
+func TestASuppliersDefaultsAreSuggestedFromItsBillsAndSavedOnConfirmation(t *testing.T) {
+	e, _ := captureEnv(t, captureReading("AU-3001", "109.00", nil), captureReading("AU-3002", "109.00", nil))
+	acc := e.as(authz.Accountant)
+	e.postedBill("100.00", "9.00") // the supplier's bill: rent, TX
+	supplier := e.supplier()
+	read := func(name string) response {
+		c := e.capture(acc, name+".pdf", []byte("%PDF-1.7\n% "+name+"\n"))
+		r := e.call(http.MethodPost, "/v1/captures/"+c.str("id")+"/read", acc, nil, "If-Match", c.Header.Get("ETag"))
+		if r.Status != http.StatusOK {
+			t.Fatalf("reading %s: %d %s", name, r.Status, r.Raw)
+		}
+		return r
+	}
+	r := read("first")
+	d := r.Body["supplier"].(map[string]any)["defaults"].(map[string]any)
+	if d["gst_code"] != "TX" || d["account_id"] != e.books.Rent.ID.String() || d["from_bills"] != float64(1) || d["saved_on_contact"] != false {
+		t.Fatalf("the suggested defaults: %v", d)
+	}
+	draft := e.billDraft("100.00", "9.00")
+	draft["supplier_ref"], draft["save_defaults"] = "AU-3001", true
+	made := e.call(http.MethodPost, "/v1/captures/"+r.str("id")+"/bill", acc, draft, "If-Match", r.Header.Get("ETag"))
+	if made.Status != http.StatusCreated {
+		t.Fatalf("drafting with the defaults saved: %d %s", made.Status, made.Raw)
+	}
+	c := e.call(http.MethodGet, "/v1/contacts/"+supplier, acc, nil)
+	if c.str("default_account_id") != e.books.Rent.ID.String() || c.str("default_gst_code") != "TX" {
+		t.Errorf("the contact's defaults: %s", c.Raw)
+	}
+	r2 := read("second")
+	if d := r2.Body["supplier"].(map[string]any)["defaults"].(map[string]any); d["saved_on_contact"] != true {
+		t.Errorf("the saved defaults: %v", d)
+	}
+}

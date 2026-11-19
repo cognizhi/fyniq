@@ -99,6 +99,13 @@
       ],
       "type": "boolean"
     },
+    "save_defaults": {
+      "description": "Keep the first line's account and GST code as the supplier's defaults on its contact (FR-AP-12), for the bills made from it from now on; needs the right to change contacts, else it is refused, and a default the contact already has is left.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
     "supplier_id": {
       "description": "The supplier: a contact marked as a vendor.",
       "examples": [

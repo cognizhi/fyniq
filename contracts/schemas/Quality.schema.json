@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approved": {
+      "description": "Decided by a person's approval.",
+      "examples": [
+        22
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "expired": {
+      "description": "Left undecided until they expired.",
+      "examples": [
+        2
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "invalid": {
+      "description": "Found invalid when they were made.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "made": {
+      "description": "Proposals made in the month.",
+      "examples": [
+        30
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "median_decision_seconds": {
+      "description": "The median time from a proposal to its decision, in seconds.",
+      "examples": [
+        420
+      ],
+      "format": "double",
+      "type": "number"
+    },
+    "per_approver": {
+      "description": "What each person approved, the most first.",
+      "items": {
+        "$ref": "QualityApprover.schema.json"
+      },
+      "type": "array"
+    },
+    "quick_share": {
+      "description": "The share of approvals made within ten seconds of the decider first opening the review with no item changed, or with no look recorded, from 0 to 1.",
+      "examples": [
+        0.18
+      ],
+      "format": "double",
+      "type": "number"
+    },
+    "rejected": {
+      "description": "Rejected by a person.",
+      "examples": [
+        4
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "rejected_with_reason_share": {
+      "description": "The share of rejections that gave a reason, from 0 to 1.",
+      "examples": [
+        0.75
+      ],
+      "format": "double",
+      "type": "number"
+    },
+    "stale": {
+      "description": "Approved, then not run because a record had changed.",
+      "examples": [
+        1
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "task_types": {
+      "description": "Each task type's share of the month's proposals, the most first.",
+      "items": {
+        "$ref": "QualityTaskType.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "made",
+    "approved",
+    "rejected",
+    "expired",
+    "invalid",
+    "stale",
+    "quick_share",
+    "median_decision_seconds",
+    "rejected_with_reason_share",
+    "per_approver",
+    "task_types"
+  ],
+  "title": "Quality",
+  "type": "object"
+}

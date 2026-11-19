@@ -428,6 +428,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/approval-quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a month's approval-quality metrics
+         * @description How the month's AI proposals were decided (CTL-AI-07, AI-92): those made, approved, rejected, expired, invalid and stale, the share approved within 10 seconds of the decider first opening the review with no item changed (a sign of rubber-stamping), the median time to a decision, the approvals per approver, the share of rejections that gave a reason and each task type's share, with the month's signed review when there is one. For the Owner and the DPO. Computed from the proposals' own records; no side effects. On the never-list for the AI and MCP (§9.6).
+         */
+        get: operations["getAIApprovalQuality"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ai/approval-reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign a month's approval-quality review
+         * @description The monthly review of how AI proposals were decided (CTL-AI-07): the Owner or the DPO signs it after step-up, and the metrics as they stand are kept with the signature as evidence. A month is signed once, and only after it has ended. Side effects: the review and its audit event. On the never-list for the AI and MCP (§9.6). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["signAIApprovalReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ai/budgets": {
         parameters: {
             query?: never;
@@ -860,6 +900,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ai/proposal-undos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Undo an executed AI proposal
+         * @description Undoes an executed proposal in one action (AI-31, AI-91): as the caller, who holds the right its command needs, through the domain's own reversal in one transaction. An entry it posted is reversed by a reversing entry, never updated or deleted; master data it changed returns to its previous version; each carries its own approval policy as when a person does it, so the undo needs the approval the original did. Refused unless the proposal is Executed (AI-UNDO-01), its task type can be undone (a draft posts nothing and is never deleted, a message sent cannot be unsent: AI-UNDO-02), it was not undone already (AI-UNDO-03) and its records are as the execution left them with their period open (AI-UNDO-04). The undo is kept in an append-only record and audited; the proposal stays Executed. On the never-list for the AI and MCP (§9.6). Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing.
+         */
+        post: operations["undoAIProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ai/proposals": {
         parameters: {
             query?: never;
@@ -889,7 +949,7 @@ export interface paths {
         };
         /**
          * Read an AI proposal
-         * @description A proposal as its approver reviews it (AI-07): the platform's summary from the payload and the dry run, the items, each selectable by its number, the impact and the evidence, and the AI's rationale apart, labelled as AI text; what it was made from, its approval request and what became of it. Not found unless you may see it (design D5). No side effects. On the never-list for the AI and MCP (§9.6).
+         * @description A proposal as its approver reviews it (AI-07): the platform's summary from the payload and the dry run, the items, each selectable by its number, the impact and the evidence, and the AI's rationale apart, labelled as AI text; what it was made from, its approval request and what became of it. Not found unless you may see it (design D5). Side effects: the first time you open it, the time is kept, so the month's approval quality can tell a decision made after a look from one made without (AI-92). On the never-list for the AI and MCP (§9.6).
          */
         get: operations["getAIProposal"];
         put?: never;
@@ -19825,6 +19885,54 @@ export interface components {
              */
             withheld: boolean;
         };
+        AIUndoRequest: {
+            /**
+             * Format: uuid
+             * @description The executed proposal to undo.
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+             */
+            proposal_id: string;
+            /**
+             * @description Why it is undone: the audit trail and the undo's record keep it.
+             * @example The supplier credited the bill
+             */
+            reason: string;
+        };
+        AIUndone: {
+            /**
+             * Format: uuid
+             * @description The proposal, which stays Executed.
+             * @example 0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d
+             */
+            proposal_id: string;
+            /**
+             * @description Why.
+             * @example The supplier credited the bill
+             */
+            reason: string;
+            /**
+             * @description What was reversed: the records and entries the command reports.
+             * @example {
+             *       "entries": [],
+             *       "records": [
+             *         "bill:0193a3c2"
+             *       ]
+             *     }
+             */
+            reversed: unknown;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-11-20T09:00:00Z
+             */
+            undone_at: string;
+            /**
+             * Format: uuid
+             * @description Who undid it.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            undone_by: string;
+        };
         AIUsage: {
             /** @description The assistant's month, as its monitoring counts it (QA-AI-04). */
             assistant: components["schemas"]["AIAssistantUsage"];
@@ -26078,6 +26186,11 @@ export interface components {
              */
             opening_item?: boolean;
             /**
+             * @description Keep the first line's account and GST code as the supplier's defaults on its contact (FR-AP-12), for the bills made from it from now on; needs the right to change contacts, else it is refused, and a default the contact already has is left.
+             * @example true
+             */
+            save_defaults?: boolean;
+            /**
              * Format: uuid
              * @description The supplier: a contact marked as a vendor.
              * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
@@ -26088,6 +26201,30 @@ export interface components {
              * @example AU-1182
              */
             supplier_ref?: string;
+        };
+        CaptureDefaults: {
+            /**
+             * Format: uuid
+             * @description The account most of the supplier's bill lines cost: its contact's default when it has one, else the most used.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f40
+             */
+            account_id?: string;
+            /**
+             * Format: int64
+             * @description How many of the supplier's bills the suggestion rests on; 0 when only the contact's own defaults are shown.
+             * @example 5
+             */
+            from_bills: number;
+            /**
+             * @description The GST code most of its lines use: its contact's default when it has one, else the most used.
+             * @example TX
+             */
+            gst_code?: string;
+            /**
+             * @description true when the contact already holds these as its defaults.
+             * @example false
+             */
+            saved_on_contact: boolean;
         };
         CaptureDismissal: {
             /**
@@ -26137,6 +26274,8 @@ export interface components {
              * @enum {string}
              */
             by: "uen" | "name";
+            /** @description What this supplier's bills have usually used, suggested for the draft (FR-AP-12). */
+            defaults?: components["schemas"]["CaptureDefaults"];
             /**
              * Format: uuid
              * @description The contact's ID.
@@ -49599,6 +49738,142 @@ export interface components {
              */
             source_type: string;
         };
+        Quality: {
+            /**
+             * Format: int64
+             * @description Decided by a person's approval.
+             * @example 22
+             */
+            approved: number;
+            /**
+             * Format: int64
+             * @description Left undecided until they expired.
+             * @example 2
+             */
+            expired: number;
+            /**
+             * Format: int64
+             * @description Found invalid when they were made.
+             * @example 1
+             */
+            invalid: number;
+            /**
+             * Format: int64
+             * @description Proposals made in the month.
+             * @example 30
+             */
+            made: number;
+            /**
+             * Format: double
+             * @description The median time from a proposal to its decision, in seconds.
+             * @example 420
+             */
+            median_decision_seconds: number;
+            /** @description What each person approved, the most first. */
+            per_approver: components["schemas"]["QualityApprover"][];
+            /**
+             * Format: double
+             * @description The share of approvals made within ten seconds of the decider first opening the review with no item changed, or with no look recorded, from 0 to 1.
+             * @example 0.18
+             */
+            quick_share: number;
+            /**
+             * Format: int64
+             * @description Rejected by a person.
+             * @example 4
+             */
+            rejected: number;
+            /**
+             * Format: double
+             * @description The share of rejections that gave a reason, from 0 to 1.
+             * @example 0.75
+             */
+            rejected_with_reason_share: number;
+            /**
+             * Format: int64
+             * @description Approved, then not run because a record had changed.
+             * @example 1
+             */
+            stale: number;
+            /** @description Each task type's share of the month's proposals, the most first. */
+            task_types: components["schemas"]["QualityTaskType"][];
+        };
+        QualityApprover: {
+            /**
+             * Format: int64
+             * @description How many proposals they approved in the month.
+             * @example 14
+             */
+            approved: number;
+            /**
+             * Format: int64
+             * @description How many of them within ten seconds of first opening the review, with no item changed, or with no look at all.
+             * @example 3
+             */
+            quick: number;
+            /**
+             * @description The person.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            user: string;
+        };
+        QualityMonth: {
+            /** @description Computed from the month's proposals' own records (AI-92). */
+            metrics: components["schemas"]["Quality"];
+            /**
+             * @description The month, YYYY-MM.
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * @description The reviewer's note.
+             * @example Two stale proposals followed up
+             */
+            note?: string;
+            /**
+             * Format: date-time
+             * @description When.
+             * @example 2026-12-01T09:00:00Z
+             */
+            signed_at?: string;
+            /**
+             * Format: uuid
+             * @description Who signed the month's review.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01
+             */
+            signed_by?: string;
+        };
+        QualitySignInputBody: {
+            /**
+             * @description The month reviewed, YYYY-MM.
+             * @example 2026-11
+             */
+            month: string;
+            /**
+             * @description What the reviewer concluded.
+             * @example Two stale proposals followed up
+             */
+            note?: string;
+        };
+        QualityTaskType: {
+            /**
+             * Format: int64
+             * @description How many of the month's proposals were of it.
+             * @example 12
+             */
+            count: number;
+            /**
+             * Format: double
+             * @description Of the month's proposals, from 0 to 1.
+             * @example 0.4
+             */
+            share: number;
+            /**
+             * @description The task type.
+             * @example ap.draft_bill
+             */
+            task_type: string;
+        };
         QuietHours: {
             /**
              * @description When they start, as HH:MM.
@@ -60267,6 +60542,229 @@ export interface operations {
             };
         };
     };
+    getAIApprovalQuality: {
+        parameters: {
+            query: {
+                /** @description The month, YYYY-MM. */
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityMonth"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `AI-QUALITY-01` Only the Owner and the DPO read the approval quality; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `AI-QUALITY-02` Not a month that can be reviewed; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    signAIApprovalReview: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QualitySignInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityMonth"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualityMonth"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `AI-QUALITY-01` Only the Owner and the DPO read the approval quality; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Precondition Failed: `STORAGE-VERSION-01` The record changed since you read it. */
+            412: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `AI-QUALITY-02` Not a month that can be reviewed; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getAIBudgets: {
         parameters: {
             query?: never;
@@ -63007,6 +63505,133 @@ export interface operations {
                 };
             };
             /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `STORAGE-RETRY-01` Busy: try again. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    undoAIProposal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08). */
+                "Idempotency-Key"?: string;
+                /** @description return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept. */
+                Prefer?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIUndoRequest"];
+            };
+        };
+        responses: {
+            /** @description OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). */
+            200: {
+                headers: {
+                    /** @description return=preview when this is a preview: nothing was saved (FR-INT-14). */
+                    "Preference-Applied"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIUndone"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    "Idempotent-Replayed"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIUndone"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `AI-ASSISTANT-01` Only a person asks the assistant; `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict: `AI-UNDO-01` The proposal did not execute; `AI-UNDO-02` That change cannot be undone; `AI-UNDO-03` It was undone already; `AI-UNDO-04` A record changed since the proposal ran; `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid. */
             422: {
                 headers: {
                     [name: string]: unknown;

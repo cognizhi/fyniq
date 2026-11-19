@@ -39,6 +39,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/acra-extracts/{extract_id}/record` (recordAcraExtract): Record an ACRA register extract
 - `GET /v1/ai/activity` (listAIActivity): List the AI activity log
 - `GET /v1/ai/activity/turns` (listAITurnActivity): List the assistant's turns in the AI activity log
+- `GET /v1/ai/approval-quality` (getAIApprovalQuality): Read a month's approval-quality metrics
+- `POST /v1/ai/approval-reviews` (signAIApprovalReview): Sign a month's approval-quality review
 - `GET /v1/ai/budgets` (getAIBudgets): Get the AI budgets
 - `PUT /v1/ai/budgets/{budget}` (setAIBudget): Set an AI budget
 - `GET /v1/ai/connections` (listAIConnections): List the organisation's AI connections
@@ -63,6 +65,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/ai/price-catalogues` (listAIPriceCatalogues): List the price catalogue's downloads
 - `POST /v1/ai/prices/{price_id}/review` (reviewAIPrice): Review a model's price waiting for the Owner
 - `POST /v1/ai/prices/{price_id}/withdraw` (withdrawAIPrice): Withdraw an Owner's price
+- `POST /v1/ai/proposal-undos` (undoAIProposal): Undo an executed AI proposal
 - `GET /v1/ai/proposals` (listAIProposals): List the AI's proposals
 - `GET /v1/ai/proposals/{proposal_id}` (getAIProposal): Read an AI proposal
 - `GET /v1/ai/routes` (getAIRoutes): Get every agent's route

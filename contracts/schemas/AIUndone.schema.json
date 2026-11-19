@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "proposal_id": {
+      "description": "The proposal, which stays Executed.",
+      "examples": [
+        "0193a3c2-6d0e-7a1b-9c4d-5e6f7a8b9c0d"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Why.",
+      "examples": [
+        "The supplier credited the bill"
+      ],
+      "type": "string"
+    },
+    "reversed": {
+      "description": "What was reversed: the records and entries the command reports.",
+      "examples": [
+        {
+          "entries": [],
+          "records": [
+            "bill:0193a3c2"
+          ]
+        }
+      ]
+    },
+    "undone_at": {
+      "description": "When.",
+      "examples": [
+        "2026-11-20T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "undone_by": {
+      "description": "Who undid it.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "proposal_id",
+    "undone_by",
+    "undone_at",
+    "reason",
+    "reversed"
+  ],
+  "title": "AIUndone",
+  "type": "object"
+}

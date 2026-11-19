@@ -26,8 +26,13 @@
 
 - [x] 3.1 Draft a bill from a read row, as the person, through the function `ap.draft_bill` shares; the claim likewise
   (design D4). Tests `// req: FR-AP-04`, `// req: FR-AP-12`, `// req: AI-30`.
-- [ ] 3.2 Supplier defaults suggested from approved bills and saved as a supplier rule on confirmation (design D7). Tests
+- [x] 3.2 Supplier defaults suggested from approved bills and saved as a supplier rule on confirmation (design D7). Tests
   `// req: FR-AP-12`.
+  As built (design D7, revised): no new table. A supplier's rule is its contact's own default account and GST code (columns it already
+  has): the read capture suggests them from the supplier's posted bills (the contact's own first), and a person who confirms the draft
+  with `save_defaults` keeps the first line's as the contact's defaults, as them, where it has none (a default it holds is never replaced).
+  The terms and dimensions the PRD names stay with the contact's own fields; the web form pre-selects the suggested account for the person
+  to check.
 - [ ] 3.3 Suggested bank or card lines for a receipt (design D8). Test `// req: FR-DOC-12`.
 
 ## 4. The screen, the guide, the evals

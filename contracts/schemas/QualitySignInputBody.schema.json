@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "month": {
+      "description": "The month reviewed, YYYY-MM.",
+      "examples": [
+        "2026-11"
+      ],
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+      "type": "string"
+    },
+    "note": {
+      "description": "What the reviewer concluded.",
+      "examples": [
+        "Two stale proposals followed up"
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    }
+  },
+  "required": [
+    "month"
+  ],
+  "title": "QualitySignInputBody",
+  "type": "object"
+}

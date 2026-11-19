@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "metrics": {
+      "$ref": "Quality.schema.json",
+      "description": "Computed from the month's proposals' own records (AI-92)."
+    },
+    "month": {
+      "description": "The month, YYYY-MM.",
+      "examples": [
+        "2026-11"
+      ],
+      "type": "string"
+    },
+    "note": {
+      "description": "The reviewer's note.",
+      "examples": [
+        "Two stale proposals followed up"
+      ],
+      "type": "string"
+    },
+    "signed_at": {
+      "description": "When.",
+      "examples": [
+        "2026-12-01T09:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "signed_by": {
+      "description": "Who signed the month's review.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "month",
+    "metrics"
+  ],
+  "title": "QualityMonth",
+  "type": "object"
+}

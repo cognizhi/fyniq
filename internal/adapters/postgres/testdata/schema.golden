@@ -355,6 +355,17 @@ ai_proposal | proposed_at | timestamp with time zone | not null |
 ai_proposal | expires_at | timestamp with time zone | not null | 
 ai_proposal | version | integer | not null | 1
 ai_proposal | mcp_app | text | null | 
+ai_proposal_undo | organisation_id | uuid | not null | current_org()
+ai_proposal_undo | id | uuid | not null | uuidv7()
+ai_proposal_undo | proposal_id | uuid | not null | 
+ai_proposal_undo | undone_by | uuid | not null | 
+ai_proposal_undo | undone_at | timestamp with time zone | not null | 
+ai_proposal_undo | reason | text | not null | 
+ai_proposal_undo | reversed | jsonb | not null | 
+ai_proposal_view | organisation_id | uuid | not null | current_org()
+ai_proposal_view | proposal_id | uuid | not null | 
+ai_proposal_view | user_id | uuid | not null | 
+ai_proposal_view | first_viewed_at | timestamp with time zone | not null | 
 ai_qualification | organisation_id | uuid | not null | current_org()
 ai_qualification | id | uuid | not null | uuidv7()
 ai_qualification | agent | text | not null | 
@@ -372,6 +383,13 @@ ai_qualification | ran_by | text | not null |
 ai_qualification | ran_at | timestamp with time zone | not null | 
 ai_qualification | out_of_date_at | timestamp with time zone | null | 
 ai_qualification | out_of_date_why | text | null | 
+ai_quality_review | organisation_id | uuid | not null | current_org()
+ai_quality_review | id | uuid | not null | uuidv7()
+ai_quality_review | month | date | not null | 
+ai_quality_review | signed_by | uuid | not null | 
+ai_quality_review | signed_at | timestamp with time zone | not null | 
+ai_quality_review | report | jsonb | not null | 
+ai_quality_review | note | text | null | 
 ai_reservation | organisation_id | uuid | not null | current_org()
 ai_reservation | id | uuid | not null | uuidv7()
 ai_reservation | run_id | uuid | not null | 
@@ -3392,6 +3410,24 @@ ai_proposal | ai_proposal_version | CHECK ((version >= 1))
 ai_proposal | ai_proposal_version_not_null | NOT NULL version
 ai_proposal | ai_proposal_words | CHECK (((length(rationale) <= 4000) AND (length(reason) <= 1000) AND (jsonb_typeof(evidence) = 'array'::text) AND (jsonb_array_length(evidence) <= 50) AND (jsonb_typeof(base_versions) = 'object'::text) AND (pg_column_size(impact) <= 262144)))
 ai_proposal | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_proposal_undo | ai_proposal_undo_id_not_null | NOT NULL id
+ai_proposal_undo | ai_proposal_undo_once | UNIQUE (organisation_id, proposal_id)
+ai_proposal_undo | ai_proposal_undo_organisation_id_not_null | NOT NULL organisation_id
+ai_proposal_undo | ai_proposal_undo_pkey | PRIMARY KEY (organisation_id, id)
+ai_proposal_undo | ai_proposal_undo_proposal_fkey | FOREIGN KEY (organisation_id, proposal_id) REFERENCES ai_proposal(organisation_id, id)
+ai_proposal_undo | ai_proposal_undo_proposal_id_not_null | NOT NULL proposal_id
+ai_proposal_undo | ai_proposal_undo_reason | CHECK (((length(reason) >= 1) AND (length(reason) <= 500)))
+ai_proposal_undo | ai_proposal_undo_reason_not_null | NOT NULL reason
+ai_proposal_undo | ai_proposal_undo_reversed_not_null | NOT NULL reversed
+ai_proposal_undo | ai_proposal_undo_undone_at_not_null | NOT NULL undone_at
+ai_proposal_undo | ai_proposal_undo_undone_by_not_null | NOT NULL undone_by
+ai_proposal_undo | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_proposal_view | ai_proposal_view_first_viewed_at_not_null | NOT NULL first_viewed_at
+ai_proposal_view | ai_proposal_view_organisation_id_not_null | NOT NULL organisation_id
+ai_proposal_view | ai_proposal_view_pkey | PRIMARY KEY (organisation_id, proposal_id, user_id)
+ai_proposal_view | ai_proposal_view_proposal_fkey | FOREIGN KEY (organisation_id, proposal_id) REFERENCES ai_proposal(organisation_id, id)
+ai_proposal_view | ai_proposal_view_proposal_id_not_null | NOT NULL proposal_id
+ai_proposal_view | ai_proposal_view_user_id_not_null | NOT NULL user_id
 ai_qualification | ai_qualification_agent_fkey | FOREIGN KEY (agent) REFERENCES ai_agent(id)
 ai_qualification | ai_qualification_agent_not_null | NOT NULL agent
 ai_qualification | ai_qualification_cases_not_null | NOT NULL cases
@@ -3418,6 +3454,16 @@ ai_qualification | ai_qualification_threshold_not_null | NOT NULL threshold
 ai_qualification | ai_qualification_version_length | CHECK ((length(version) <= 200))
 ai_qualification | ai_qualification_version_not_null | NOT NULL version
 ai_qualification | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+ai_quality_review | ai_quality_review_id_not_null | NOT NULL id
+ai_quality_review | ai_quality_review_month | CHECK ((month = (date_trunc('month'::text, (month)::timestamp with time zone))::date))
+ai_quality_review | ai_quality_review_month_not_null | NOT NULL month
+ai_quality_review | ai_quality_review_note | CHECK ((length(note) <= 1000))
+ai_quality_review | ai_quality_review_organisation_id_not_null | NOT NULL organisation_id
+ai_quality_review | ai_quality_review_pkey | PRIMARY KEY (organisation_id, month)
+ai_quality_review | ai_quality_review_report_not_null | NOT NULL report
+ai_quality_review | ai_quality_review_signed_at_not_null | NOT NULL signed_at
+ai_quality_review | ai_quality_review_signed_by_not_null | NOT NULL signed_by
+ai_quality_review | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 ai_reservation | ai_reservation_agent_fkey | FOREIGN KEY (agent) REFERENCES ai_agent(id)
 ai_reservation | ai_reservation_agent_not_null | NOT NULL agent
 ai_reservation | ai_reservation_amounts | CHECK (((amount <> 'NaN'::numeric) AND (amount >= (0)::numeric) AND (actual <> 'NaN'::numeric) AND (actual >= (0)::numeric)))
@@ -7657,7 +7703,11 @@ CREATE UNIQUE INDEX ai_price_rate_one ON fyniq.ai_price_rate USING btree (organi
 CREATE UNIQUE INDEX ai_price_rate_pkey ON fyniq.ai_price_rate USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_price_waiting ON fyniq.ai_price USING btree (organisation_id, connection_id, model) WHERE (status = 'pending'::text)
 CREATE UNIQUE INDEX ai_proposal_pkey ON fyniq.ai_proposal USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_proposal_undo_once ON fyniq.ai_proposal_undo USING btree (organisation_id, proposal_id)
+CREATE UNIQUE INDEX ai_proposal_undo_pkey ON fyniq.ai_proposal_undo USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_proposal_view_pkey ON fyniq.ai_proposal_view USING btree (organisation_id, proposal_id, user_id)
 CREATE UNIQUE INDEX ai_qualification_pkey ON fyniq.ai_qualification USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_quality_review_pkey ON fyniq.ai_quality_review USING btree (organisation_id, month)
 CREATE UNIQUE INDEX ai_reservation_pkey ON fyniq.ai_reservation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_route_pkey ON fyniq.ai_route USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_route_step_once ON fyniq.ai_route_step USING btree (organisation_id, route_id, connection_id, model)
@@ -8082,7 +8132,9 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_budget DEFERRAB
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_data_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_data_policy', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_model_list_read DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_connection', 'connection_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_price DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_price', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_proposal_undo DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_proposal', 'proposal_id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_qualification DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_qualification', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_quality_review DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_quality_review', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.ai_route DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('ai_route', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.allocation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('allocation', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON fyniq.approval_policy DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION require_audit('approval_policy', 'id')
@@ -8314,9 +8366,15 @@ CREATE TRIGGER ai_price_rate_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai
 CREATE TRIGGER ai_price_rate_no_truncate BEFORE TRUNCATE ON fyniq.ai_price_rate FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_proposal_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_proposal FOR EACH ROW EXECUTE FUNCTION ai_proposal_guard()
 CREATE TRIGGER ai_proposal_no_truncate BEFORE TRUNCATE ON fyniq.ai_proposal FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_proposal_undo_guard BEFORE DELETE OR UPDATE ON fyniq.ai_proposal_undo FOR EACH ROW EXECUTE FUNCTION ai_append_only_guard()
+CREATE TRIGGER ai_proposal_undo_no_truncate BEFORE TRUNCATE ON fyniq.ai_proposal_undo FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER ai_proposal_view_guard BEFORE DELETE OR UPDATE ON fyniq.ai_proposal_view FOR EACH ROW EXECUTE FUNCTION ai_append_only_guard()
+CREATE TRIGGER ai_proposal_view_no_truncate BEFORE TRUNCATE ON fyniq.ai_proposal_view FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER ai_proposal_voids AFTER UPDATE OF status ON fyniq.ai_proposal FOR EACH ROW WHEN (((old.status = 'pending'::text) AND (new.status = ANY (ARRAY['superseded'::text, 'expired'::text])))) EXECUTE FUNCTION ai_proposal_voids()
 CREATE TRIGGER ai_qualification_guard BEFORE DELETE OR UPDATE ON fyniq.ai_qualification FOR EACH ROW EXECUTE FUNCTION ai_qualification_guard()
 CREATE TRIGGER ai_qualification_no_truncate BEFORE TRUNCATE ON fyniq.ai_qualification FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
+CREATE TRIGGER ai_quality_review_guard BEFORE DELETE OR UPDATE ON fyniq.ai_quality_review FOR EACH ROW EXECUTE FUNCTION ai_append_only_guard()
+CREATE TRIGGER ai_quality_review_no_truncate BEFORE TRUNCATE ON fyniq.ai_quality_review FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER ai_reservation_guard BEFORE DELETE OR UPDATE ON fyniq.ai_reservation FOR EACH ROW EXECUTE FUNCTION ai_budget_guard()
 CREATE TRIGGER ai_reservation_no_truncate BEFORE TRUNCATE ON fyniq.ai_reservation FOR EACH STATEMENT EXECUTE FUNCTION audit_immutable()
 CREATE TRIGGER ai_route_guard BEFORE INSERT OR DELETE OR UPDATE ON fyniq.ai_route FOR EACH ROW EXECUTE FUNCTION ai_route_guard()
@@ -8751,7 +8809,10 @@ ai_model_list_read | tenant_isolation | * | (organisation_id = current_org()) | 
 ai_price | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_price_rate | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_proposal | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_proposal_undo | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_proposal_view | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_qualification | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
+ai_quality_review | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_reservation | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_route | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
 ai_route_step | tenant_isolation | * | (organisation_id = current_org()) | (organisation_id = current_org())
@@ -8978,7 +9039,10 @@ ai_price | enabled | forced
 ai_price_catalogue | disabled | not forced
 ai_price_rate | enabled | forced
 ai_proposal | enabled | forced
+ai_proposal_undo | enabled | forced
+ai_proposal_view | enabled | forced
 ai_qualification | enabled | forced
+ai_quality_review | enabled | forced
 ai_reservation | enabled | forced
 ai_route | enabled | forced
 ai_route_step | enabled | forced
@@ -9229,6 +9293,7 @@ accountant_review_reopened() → trigger | security invoker | v | search_path=pg
 accounting_version_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | a9d73309237dc816104a7b7ba3b544f9
 acra_extract_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | adc99242292d20e7a934d8f70e75a14c
 agent_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 1bc211e3823c86ad40c5756aed596097
+ai_append_only_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 4ba64e3e8ab9e066ff7f27a93557041e
 ai_budget_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 59adc0b6ced792e22b069f66bc8ccb23
 ai_call_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | b4e1754c041a743ac2f43d2baf8bb4b4
 ai_connection_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 051ffeb8214e6453575d1964f565ecfd
