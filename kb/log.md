@@ -772,3 +772,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/nemura/payroll-final-pay.md -> nemura.payroll-final-pay (p1-nemura-payroll 5.1)
 
 ## [2026-11-20] compile | payroll-approval.md -> nemura.payroll-approval link to final pay
+
+## [2026-11-20] compile | payroll-approval.md -> nemura.payroll-approval (hand-off files, p1-nemura-payroll 6.1)

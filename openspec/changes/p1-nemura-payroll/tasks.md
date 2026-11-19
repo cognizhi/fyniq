@@ -74,7 +74,7 @@ Load before each slice: `fyniq-accounting-domain` (money, rounding, postings), `
 
 ## 6. Hand-off files (slice 6)
 
-- [ ] 6.1 The standalone journal file and salary payment file with a manifest and a digest (O3), built from the approved run and the sealed bank details; never proof of payment. `// req: NM-PAY-05`
+- [x] 6.1 The standalone journal file and salary payment file with a manifest and a digest (O3), built from the approved run and the sealed bank details; never proof of payment. `// req: NM-PAY-05`
 - [ ] 6.2 Verify the whole change: `make check`, `make test` offline, the differential run once the oracle's half exists `[oracle]`, the performance of a 100-person run, and the second reviewer's list.
 
 ## Coverage

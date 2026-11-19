@@ -304,10 +304,10 @@ func onboardingService(store *nemura.Store, deps app.Deps) api.Onboarding {
 }
 
 func payrollService(store *nemura.Store, deps app.Deps, getenv func(string) string) api.Payroll {
-	_, blobs := restrictedWiring(getenv)
+	cipher, blobs := restrictedWiring(getenv)
 	p, err := nemura.NewPacksService(store, deps.Clock)
 	if err != nil {
 		panic(err) // a pack that does not validate is a build error: the files are embedded
 	}
-	return nemura.PayrollService{Store: store, Clock: deps.Clock, Packs: p, Blobs: blobs, Renderer: letterRenderer}
+	return nemura.PayrollService{Store: store, Clock: deps.Clock, Packs: p, Blobs: blobs, Renderer: letterRenderer, Cipher: cipher}
 }

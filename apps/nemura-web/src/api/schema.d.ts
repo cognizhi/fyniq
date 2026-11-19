@@ -1596,6 +1596,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll/runs/{id}/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a hand-off file for an approved version
+         * @description Makes the standalone journal file (the run's balanced entry, one line for each account) or the bank payment file (one row for each person owed money with a bank account on record) of an approved version, as generic CSV with a manifest of the run, the version, the totals and the SHA-256 of the exact bytes. The file is not kept, only its manifest is. A person is left out of a payment file, and listed with why, when nothing is owed (a tax-clearance hold), no bank account is on record, the payment is on its way or paid, or its outcome is unknown. A file is never proof of payment. The payment file holds bank account numbers, so it needs a passkey confirmation in the last five minutes. The Payroll administrator and the Owner. It is audited, never with an amount or an account.
+         */
+        post: operations["exportPayRunFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payroll/runs/{id}/overrides": {
         parameters: {
             query?: never;
@@ -3464,6 +3484,94 @@ export interface components {
         ErrorsOutputBody: {
             /** @description Every stable error code, in order. */
             codes: components["schemas"]["Code"][] | null;
+        };
+        ExportFile: {
+            /** @description The CSV, base64-encoded. It is not kept: only its manifest is. */
+            content_base64: string;
+            /**
+             * Format: uuid
+             * @description The manifest's ID.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f70
+             */
+            id: string;
+            /**
+             * @description The journal file or the bank payment file.
+             * @example payments
+             * @enum {string}
+             */
+            kind: "journal" | "payments";
+            /**
+             * Format: int64
+             * @description How many lines the file has.
+             * @example 12
+             */
+            lines: number;
+            /**
+             * @description Always says the file is not proof of payment.
+             * @example This file is not proof of payment.
+             */
+            note: string;
+            /**
+             * @description The payment reference in a payment file.
+             * @example Salary 2026-06
+             */
+            reference?: string;
+            /**
+             * @description The SHA-256 of the exact bytes handed out; kept in the manifest.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            sha256: string;
+            /** @description The people left out of a payment file, with why. */
+            skipped: components["schemas"]["ExportSkipped"][] | null;
+            /**
+             * @description The payment file's total in dollars, or the journal's debit total.
+             * @example 42000.00
+             */
+            total: string;
+            /**
+             * Format: int64
+             * @description The approved version it was made from.
+             * @example 2
+             */
+            version: number;
+            /**
+             * Format: date
+             * @description The wage month.
+             * @example 2026-06-01
+             */
+            wage_month: string;
+        };
+        ExportInput: {
+            /**
+             * @description The journal file or the bank payment file.
+             * @example payments
+             * @enum {string}
+             */
+            kind: "journal" | "payments";
+            /**
+             * Format: int64
+             * @description The approved version to make the file from.
+             * @example 2
+             */
+            version: number;
+        };
+        ExportSkipped: {
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+             */
+            person_id: string;
+            /**
+             * @description Why they are not in the file.
+             * @example No salary bank account is on record.
+             */
+            reason: string;
         };
         Feature: {
             /**
@@ -13167,6 +13275,99 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    exportPayRunFile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportFile"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

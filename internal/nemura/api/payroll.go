@@ -375,8 +375,37 @@ type FinalPayRow struct {
 	Used   bool   `json:"used" doc:"Whether a run used it." example:"false"`
 }
 
+// ExportSkipped is a person left out of a payment file.
+type ExportSkipped struct {
+	PersonID string `json:"person_id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
+	Person   string `json:"person" doc:"Their name." example:"Ben Lim"`
+	Reason   string `json:"reason" doc:"Why they are not in the file." example:"No salary bank account is on record."`
+}
+
+// ExportFile is a hand-off file with its manifest.
+type ExportFile struct {
+	ID            string          `json:"id" format:"uuid" doc:"The manifest's ID." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f70"`
+	Kind          string          `json:"kind" enum:"journal,payments" doc:"The journal file or the bank payment file." example:"payments"`
+	Version       int             `json:"version" minimum:"1" doc:"The approved version it was made from." example:"2"`
+	Month         string          `json:"wage_month" format:"date" doc:"The wage month." example:"2026-06-01"`
+	Lines         int             `json:"lines" doc:"How many lines the file has." example:"12"`
+	Total         string          `json:"total" doc:"The payment file's total in dollars, or the journal's debit total." example:"42000.00"`
+	SHA256        string          `json:"sha256" doc:"The SHA-256 of the exact bytes handed out; kept in the manifest." example:"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"`
+	Note          string          `json:"note" doc:"Always says the file is not proof of payment." example:"This file is not proof of payment."`
+	Reference     string          `json:"reference,omitempty" doc:"The payment reference in a payment file." example:"Salary 2026-06"`
+	Skipped       []ExportSkipped `json:"skipped" doc:"The people left out of a payment file, with why."`
+	ContentBase64 string          `json:"content_base64" doc:"The CSV, base64-encoded. It is not kept: only its manifest is."`
+}
+
+// ExportInput asks for a file.
+type ExportInput struct {
+	Version int    `json:"version" minimum:"1" doc:"The approved version to make the file from." example:"2"`
+	Kind    string `json:"kind" enum:"journal,payments" doc:"The journal file or the bank payment file." example:"payments"`
+}
+
 // Payroll is pay records behind the API.
 type Payroll interface {
+	Export(ctx context.Context, s Session, run uuid.UUID, in ExportInput) (ExportFile, error)
 	FinalPayOf(ctx context.Context, s Session, person uuid.UUID) (FinalPay, bool, error)
 	TaxHold(ctx context.Context, s Session, person uuid.UUID) (TaxHoldView, error)
 	SetTaxHold(ctx context.Context, s Session, person uuid.UUID, in TaxHoldInput) error
@@ -409,6 +438,7 @@ func init() {
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/payslips"] = "a version's payslips are published once: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/payments"] = "a payment's state moves one legal step at a time: a repeat of the same state is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/people/{id}/tax-hold"] = "a hold is put on once and released once: a repeat is refused (NM_PAYROLL_CONFLICT)"
+	IdempotencyExempt["POST /v1/payroll/runs/{id}/exports"] = "each request is a file with a manifest of its own: a repeat is another file and another manifest, never a second payment"
 	IdempotencyExempt["POST /v1/payroll/runs"] = "a month has one run for a pay group: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/versions"] = "each calculation is its own version of the run, with its own digest"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/overrides"] = "each override is its own record with its own reason: a repeat replaces nothing and the next calculation applies both in order"
@@ -756,6 +786,14 @@ type runChangesOutput struct{ Body RunChanges }
 
 type runPaymentsOutput struct{ Body RunPayments }
 
+type exportInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The run." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"`
+	Body   ExportInput
+}
+
+type exportOutput struct{ Body ExportFile }
+
 type finalPayOutput struct{ Body FinalPay }
 
 type taxHoldOutput struct{ Body TaxHoldView }
@@ -993,6 +1031,27 @@ func (a *API) registerPayRuns() {
 			return nil, payrollError(err)
 		}
 		return nil, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "exportPayRunFile", Method: "POST", Path: "/v1/payroll/runs/{id}/exports", Tags: []string{"Payroll"}, Summary: "Make a hand-off file for an approved version",
+		Description: "Makes the standalone journal file (the run's balanced entry, one line for each account) or the bank payment file (one row for each person owed money with a bank account on record) of an approved version, as generic CSV with a manifest of the run, the version, the totals and the SHA-256 of the exact bytes. The file is not kept, only its manifest is. A person is left out of a payment file, and listed with why, when nothing is owed (a tax-clearance hold), no bank account is on record, the payment is on its way or paid, or its outcome is unknown. A file is never proof of payment. The payment file holds bank account numbers, so it needs a passkey confirmation in the last five minutes. The Payroll administrator and the Owner. It is audited, never with an amount or an account.", Errors: []int{401, 403, 404, 409, 422, 503}, DefaultStatus: 201,
+	}, func(ctx context.Context, in *exportInput) (*exportOutput, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		if in.Body.Kind == "payments" && !s.Fresh(a.d.Clock.Now()) {
+			return nil, Err(CodeStepUp, "Confirm it is you with your passkey, then try again: the payment file holds bank account numbers.")
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such pay run.")
+		}
+		f, err := a.d.Payroll.Export(ctx, s, id, in.Body)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		return &exportOutput{Body: f}, nil
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "getPayRunPayments", Method: "GET", Path: "/v1/payroll/runs/{id}/payments", Tags: []string{"Payroll"}, Summary: "A run's payments",

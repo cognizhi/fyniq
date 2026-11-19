@@ -72,6 +72,11 @@ An approved pay run SHALL post to a linked Fyniq as PRD-001 FR-PPL-04 describes,
 
 Source: PRD-002 §9 · Priority M · Phase P1
 
+#### Scenario: A person left out of the payment file
+- **GIVEN** a person with no bank account on record
+- **WHEN** the payment file is made
+- **THEN** they are not in it and the manifest says why
+
 #### Scenario: Linked
 - **WHEN** a run is approved and Nemura is linked
 - **THEN** the summary journal by department and the salary payment lines go to Fyniq, and the run shows the posting reference

@@ -330,6 +330,9 @@ func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.
 // fakeLetters answers letters with whatever the test says.
 type fakePayroll struct{ err error }
 
+func (f fakePayroll) Export(context.Context, Session, uuid.UUID, ExportInput) (ExportFile, error) {
+	return ExportFile{Skipped: []ExportSkipped{}}, f.err
+}
 func (f fakePayroll) FinalPayOf(context.Context, Session, uuid.UUID) (FinalPay, bool, error) {
 	return FinalPay{}, true, f.err
 }
