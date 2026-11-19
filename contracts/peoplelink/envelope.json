@@ -1,0 +1,38 @@
+{
+ "Note": "Ed25519 over SigningInput(header); the key is derived from SHA-256 of the phrase 'fyniq people link test vector 1'; Nemura's copy of the rule must verify this and reproduce this signature.",
+ "public_key": "4e963495e120319e25e50675376ae9a9fa339237dab17c9f6cc26d800079e9df",
+ "Now": "2026-11-02T03:00:30Z",
+ "Epoch": 3,
+ "Envelope": {
+  "header": {
+   "event_id": "0192a000-0000-7000-8000-000000000001",
+   "type": "payroll.run.approved",
+   "schema_version": 1,
+   "source_system": "nemura",
+   "source_organisation": "0192a000-0000-7000-8000-0000000000a1",
+   "target_organisation": "0192a000-0000-7000-8000-0000000000b2",
+   "epoch": 3,
+   "sequence": 41,
+   "object_type": "payroll_run",
+   "object_id": "0192a000-0000-7000-8000-0000000000c3",
+   "object_version": 2,
+   "effective_at": "2026-10-31T00:00:00Z",
+   "recorded_at": "2026-11-02T03:00:00Z",
+   "signed_at": "2026-11-02T03:00:01Z",
+   "correlation_id": "0192a000-0000-7000-8000-0000000000d4",
+   "payload_sha256": "66efa66354e42bb9b3d89e4d2b124e1de79d18b252721e1c9b65fe9c6e2b9b9d"
+  },
+  "signature": "GPNpZEORk96bYLmwOTaCdDx6pcxq7opzJheL_pb3-ZigmB2mkw-6b2k6-JfT7Qq1ECI_-JQoUc-eM7TkaFmHAg",
+  "payload": {
+   "wage_month": "2026-10",
+   "totals": [
+    {
+     "department": "G\u0026A",
+     "pay_item": "basic",
+     "amount": "10200.0000"
+    }
+   ],
+   "currency": "SGD"
+  }
+ }
+}
