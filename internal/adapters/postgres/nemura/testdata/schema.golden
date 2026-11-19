@@ -14,6 +14,8 @@ details_change | nemura_migrator | true | true
 emergency_contact | nemura_migrator | true | true
 feature_state | nemura_migrator | true | true
 flex_request | nemura_migrator | true | true
+fyniq_link | nemura_migrator | true | true
+fyniq_link_secret | nemura_migrator | true | true
 gov_claim | nemura_migrator | true | true
 gov_claim_event | nemura_migrator | true | true
 gov_leave | nemura_migrator | true | true
@@ -34,6 +36,8 @@ letter_request | nemura_migrator | true | true
 letter_settings | nemura_migrator | true | true
 letter_template_version | nemura_migrator | true | true
 letter_type | nemura_migrator | true | true
+link_inbox | nemura_migrator | true | true
+link_run_posting | nemura_migrator | true | true
 member | nemura_migrator | true | true
 offboarding | nemura_migrator | true | true
 onboarding_settings | nemura_migrator | true | true
@@ -227,6 +231,20 @@ flex_request | written_reply | text | false |
 flex_request | replied_by | uuid | false | 
 flex_request | replied_at | timestamp with time zone | false | 
 flex_request | withdrawn_at | timestamp with time zone | false | 
+fyniq_link | organisation_id | uuid | true | nemura.current_org()
+fyniq_link | id | uuid | true | uuidv7()
+fyniq_link | state | text | true | 
+fyniq_link | epoch | integer | true | 
+fyniq_link | fyniq_organisation_id | uuid | true | 
+fyniq_link | fyniq_key | bytea | true | 
+fyniq_link | link_public | bytea | true | 
+fyniq_link | sequence | bigint | true | 0
+fyniq_link | version | integer | true | 1
+fyniq_link | created_at | timestamp with time zone | true | 
+fyniq_link | changed_at | timestamp with time zone | true | 
+fyniq_link_secret | organisation_id | uuid | true | nemura.current_org()
+fyniq_link_secret | link_id | uuid | true | 
+fyniq_link_secret | link_private | bytea | true | 
 gov_claim | organisation_id | uuid | true | nemura.current_org()
 gov_claim | id | uuid | true | uuidv7()
 gov_claim | gov_leave_id | uuid | true | 
@@ -430,6 +448,29 @@ letter_type | enabled | boolean | true |
 letter_type | due_days | integer | true | 
 letter_type | updated_by | uuid | true | 
 letter_type | updated_at | timestamp with time zone | true | 
+link_inbox | organisation_id | uuid | true | nemura.current_org()
+link_inbox | id | uuid | true | uuidv7()
+link_inbox | event_id | uuid | true | 
+link_inbox | link_id | uuid | true | 
+link_inbox | epoch | integer | true | 
+link_inbox | sequence | bigint | true | 
+link_inbox | type | text | true | 
+link_inbox | object_type | text | true | 
+link_inbox | object_id | text | true | 
+link_inbox | object_version | integer | true | 
+link_inbox | payload_sha256 | text | true | 
+link_inbox | outcome | text | true | 
+link_inbox | code | text | false | 
+link_inbox | received_at | timestamp with time zone | true | 
+link_run_posting | organisation_id | uuid | true | nemura.current_org()
+link_run_posting | id | uuid | true | uuidv7()
+link_run_posting | run_id | uuid | true | 
+link_run_posting | version | integer | true | 
+link_run_posting | status | text | true | 
+link_run_posting | posting_ref | text | false | 
+link_run_posting | code | text | false | 
+link_run_posting | message | text | false | 
+link_run_posting | received_at | timestamp with time zone | true | 
 member | organisation_id | uuid | true | nemura.current_org()
 member | id | uuid | true | uuidv7()
 member | display_name | text | true | 
@@ -1126,6 +1167,28 @@ flex_request | flex_request_state_known | CHECK ((state = ANY (ARRAY['received':
 flex_request | flex_request_state_not_null | NOT NULL state
 flex_request | flex_request_withdrawn_whole | CHECK (((state = 'withdrawn'::text) = (withdrawn_at IS NOT NULL)))
 flex_request | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+fyniq_link | fyniq_link_changed_at_not_null | NOT NULL changed_at
+fyniq_link | fyniq_link_created_at_not_null | NOT NULL created_at
+fyniq_link | fyniq_link_epoch_not_null | NOT NULL epoch
+fyniq_link | fyniq_link_epoch_positive | CHECK ((epoch >= 1))
+fyniq_link | fyniq_link_fyniq_key_not_null | NOT NULL fyniq_key
+fyniq_link | fyniq_link_fyniq_organisation_id_not_null | NOT NULL fyniq_organisation_id
+fyniq_link | fyniq_link_id_not_null | NOT NULL id
+fyniq_link | fyniq_link_keys | CHECK (((octet_length(fyniq_key) = 32) AND (octet_length(link_public) = 32)))
+fyniq_link | fyniq_link_link_public_not_null | NOT NULL link_public
+fyniq_link | fyniq_link_organisation_id_not_null | NOT NULL organisation_id
+fyniq_link | fyniq_link_pkey | PRIMARY KEY (organisation_id, id)
+fyniq_link | fyniq_link_sequence_not_null | NOT NULL sequence
+fyniq_link | fyniq_link_state_known | CHECK ((state = ANY (ARRAY['active'::text, 'suspended'::text, 'unlinking'::text, 'unlinked'::text])))
+fyniq_link | fyniq_link_state_not_null | NOT NULL state
+fyniq_link | fyniq_link_version_not_null | NOT NULL version
+fyniq_link | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+fyniq_link_secret | fyniq_link_secret_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES nemura.fyniq_link(organisation_id, id)
+fyniq_link_secret | fyniq_link_secret_link_id_not_null | NOT NULL link_id
+fyniq_link_secret | fyniq_link_secret_link_private_not_null | NOT NULL link_private
+fyniq_link_secret | fyniq_link_secret_organisation_id_not_null | NOT NULL organisation_id
+fyniq_link_secret | fyniq_link_secret_pkey | PRIMARY KEY (organisation_id, link_id)
+fyniq_link_secret | fyniq_link_secret_size | CHECK ((octet_length(link_private) = 64))
 gov_claim | gov_claim_amount | CHECK (((amount > (0)::numeric) AND (amount = round(amount, 2))))
 gov_claim | gov_claim_amount_not_null | NOT NULL amount
 gov_claim | gov_claim_by_fkey | FOREIGN KEY (organisation_id, filed_by) REFERENCES nemura.member(organisation_id, id)
@@ -1454,6 +1517,35 @@ letter_type | letter_type_type_key_not_null | NOT NULL type_key
 letter_type | letter_type_updated_at_not_null | NOT NULL updated_at
 letter_type | letter_type_updated_by_not_null | NOT NULL updated_by
 letter_type | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+link_inbox | link_inbox_code_with_refusal | CHECK (((outcome = 'refused'::text) = (code IS NOT NULL)))
+link_inbox | link_inbox_digest | CHECK ((payload_sha256 ~ '^[0-9a-f]{64}$'::text))
+link_inbox | link_inbox_epoch_not_null | NOT NULL epoch
+link_inbox | link_inbox_event_id_not_null | NOT NULL event_id
+link_inbox | link_inbox_event_key | UNIQUE (organisation_id, event_id)
+link_inbox | link_inbox_id_not_null | NOT NULL id
+link_inbox | link_inbox_link_fkey | FOREIGN KEY (organisation_id, link_id) REFERENCES nemura.fyniq_link(organisation_id, id)
+link_inbox | link_inbox_link_id_not_null | NOT NULL link_id
+link_inbox | link_inbox_object_id_not_null | NOT NULL object_id
+link_inbox | link_inbox_object_type_not_null | NOT NULL object_type
+link_inbox | link_inbox_object_version_not_null | NOT NULL object_version
+link_inbox | link_inbox_organisation_id_not_null | NOT NULL organisation_id
+link_inbox | link_inbox_outcome_known | CHECK ((outcome = ANY (ARRAY['applied'::text, 'ignored_older'::text, 'refused'::text])))
+link_inbox | link_inbox_outcome_not_null | NOT NULL outcome
+link_inbox | link_inbox_payload_sha256_not_null | NOT NULL payload_sha256
+link_inbox | link_inbox_pkey | PRIMARY KEY (organisation_id, id)
+link_inbox | link_inbox_received_at_not_null | NOT NULL received_at
+link_inbox | link_inbox_sequence_not_null | NOT NULL sequence
+link_inbox | link_inbox_type_not_null | NOT NULL type
+link_run_posting | link_run_posting_id_not_null | NOT NULL id
+link_run_posting | link_run_posting_once | UNIQUE (organisation_id, run_id, version, status)
+link_run_posting | link_run_posting_organisation_id_not_null | NOT NULL organisation_id
+link_run_posting | link_run_posting_pkey | PRIMARY KEY (organisation_id, id)
+link_run_posting | link_run_posting_received_at_not_null | NOT NULL received_at
+link_run_posting | link_run_posting_run_id_not_null | NOT NULL run_id
+link_run_posting | link_run_posting_shape | CHECK ((((status = 'posted'::text) = (posting_ref IS NOT NULL)) AND ((status = 'refused'::text) = (code IS NOT NULL))))
+link_run_posting | link_run_posting_status | CHECK ((status = ANY (ARRAY['posted'::text, 'refused'::text])))
+link_run_posting | link_run_posting_status_not_null | NOT NULL status
+link_run_posting | link_run_posting_version_not_null | NOT NULL version
 member | member_created_at_not_null | NOT NULL created_at
 member | member_display_name_length | CHECK (((length(btrim(display_name)) >= 1) AND (length(btrim(display_name)) <= 200)))
 member | member_display_name_not_null | NOT NULL display_name
@@ -2180,6 +2272,10 @@ CREATE UNIQUE INDEX feature_state_pkey ON nemura.feature_state USING btree (orga
 CREATE INDEX flex_request_person_idx ON nemura.flex_request USING btree (organisation_id, person_id, requested_at)
 CREATE UNIQUE INDEX flex_request_pkey ON nemura.flex_request USING btree (organisation_id, id)
 CREATE INDEX flex_request_state_idx ON nemura.flex_request USING btree (organisation_id, state, reply_due)
+CREATE UNIQUE INDEX fyniq_link_epoch ON nemura.fyniq_link USING btree (organisation_id, epoch)
+CREATE UNIQUE INDEX fyniq_link_one_live ON nemura.fyniq_link USING btree (organisation_id) WHERE (state <> 'unlinked'::text)
+CREATE UNIQUE INDEX fyniq_link_pkey ON nemura.fyniq_link USING btree (organisation_id, id)
+CREATE UNIQUE INDEX fyniq_link_secret_pkey ON nemura.fyniq_link_secret USING btree (organisation_id, link_id)
 CREATE INDEX gov_claim_event_claim_idx ON nemura.gov_claim_event USING btree (organisation_id, claim_id, happened_on)
 CREATE UNIQUE INDEX gov_claim_event_pkey ON nemura.gov_claim_event USING btree (organisation_id, id)
 CREATE INDEX gov_claim_leave_idx ON nemura.gov_claim USING btree (organisation_id, gov_leave_id)
@@ -2222,6 +2318,11 @@ CREATE UNIQUE INDEX letter_template_version_numbered ON nemura.letter_template_v
 CREATE UNIQUE INDEX letter_template_version_pkey ON nemura.letter_template_version USING btree (organisation_id, id)
 CREATE UNIQUE INDEX letter_type_once ON nemura.letter_type USING btree (organisation_id, type_key)
 CREATE UNIQUE INDEX letter_type_pkey ON nemura.letter_type USING btree (organisation_id, id)
+CREATE UNIQUE INDEX link_inbox_event_key ON nemura.link_inbox USING btree (organisation_id, event_id)
+CREATE INDEX link_inbox_object ON nemura.link_inbox USING btree (organisation_id, object_type, object_id, object_version)
+CREATE UNIQUE INDEX link_inbox_pkey ON nemura.link_inbox USING btree (organisation_id, id)
+CREATE UNIQUE INDEX link_run_posting_once ON nemura.link_run_posting USING btree (organisation_id, run_id, version, status)
+CREATE UNIQUE INDEX link_run_posting_pkey ON nemura.link_run_posting USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_pkey ON nemura.member USING btree (organisation_id, id)
 CREATE UNIQUE INDEX offboarding_one_active ON nemura.offboarding USING btree (organisation_id, person_id) WHERE (state = 'active'::text)
 CREATE UNIQUE INDEX offboarding_pkey ON nemura.offboarding USING btree (organisation_id, id)
@@ -2341,6 +2442,8 @@ CREATE TRIGGER feature_state_guard BEFORE DELETE OR UPDATE ON nemura.feature_sta
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.feature_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('feature_state', 'id')
 CREATE TRIGGER flex_request_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.flex_request FOR EACH ROW EXECUTE FUNCTION nemura.flex_request_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.flex_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('flex_request', 'id')
+CREATE TRIGGER fyniq_link_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.fyniq_link FOR EACH ROW EXECUTE FUNCTION nemura.fyniq_link_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.fyniq_link DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('fyniq_link', 'id')
 CREATE TRIGGER gov_claim_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.gov_claim FOR EACH ROW EXECUTE FUNCTION nemura.gov_leave_guard('A claim')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.gov_claim DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('gov_claim', 'id')
 CREATE TRIGGER gov_claim_event_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.gov_claim_event FOR EACH ROW EXECUTE FUNCTION nemura.gov_leave_guard('A claim event')
@@ -2372,6 +2475,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_
 CREATE TRIGGER letter_template_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.letter_template_version FOR EACH ROW EXECUTE FUNCTION nemura.letter_template_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_template_version DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_template_version', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_type DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('letter_type', 'id')
+CREATE TRIGGER link_inbox_guard BEFORE DELETE OR UPDATE ON nemura.link_inbox FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
+CREATE TRIGGER link_run_posting_guard BEFORE DELETE OR UPDATE ON nemura.link_run_posting FOR EACH ROW EXECUTE FUNCTION nemura.link_append_only()
 CREATE TRIGGER member_deactivated AFTER UPDATE OF deactivated_at ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.member_deactivated()
 CREATE TRIGGER member_no_delete BEFORE DELETE ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.members_no_delete()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('member', 'id')
@@ -2466,6 +2571,8 @@ details_change | tenant_isolation | (organisation_id = nemura.current_org()) | (
 emergency_contact | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 feature_state | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 flex_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+fyniq_link | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+fyniq_link_secret | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_claim | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_claim_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 gov_leave | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -2484,6 +2591,8 @@ letter_request | tenant_isolation | (organisation_id = nemura.current_org()) | (
 letter_settings | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 letter_template_version | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 letter_type | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+link_inbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+link_run_posting | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 offboarding | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 onboarding_settings | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -2791,6 +2900,36 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.fyniq_link_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+DECLARE
+  top integer;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'A link is kept: unlink it instead' USING ERRCODE = 'NM190';
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    SELECT coalesce(max(epoch), 0) INTO top FROM nemura.fyniq_link WHERE organisation_id = NEW.organisation_id;
+    IF NEW.state <> 'active' OR NEW.version <> 1 OR NEW.epoch <> top + 1 THEN
+      RAISE EXCEPTION 'A link starts active, at its first version, one epoch above the last' USING ERRCODE = 'NM190';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF (NEW.id, NEW.epoch, NEW.fyniq_organisation_id, NEW.fyniq_key, NEW.link_public, NEW.created_at) IS DISTINCT FROM
+     (OLD.id, OLD.epoch, OLD.fyniq_organisation_id, OLD.fyniq_key, OLD.link_public, OLD.created_at)
+     OR NEW.sequence < OLD.sequence
+     OR NEW.version <> OLD.version + 1
+     OR (NEW.state <> OLD.state AND NOT ((OLD.state, NEW.state) IN (('active', 'suspended'), ('suspended', 'active'), ('active', 'unlinking'),
+                                       ('suspended', 'unlinking'), ('unlinking', 'unlinked'), ('unlinking', 'active')))) THEN
+    RAISE EXCEPTION 'A link only moves between its states, at its next version, and keeps its epoch and keys' USING ERRCODE = 'NM190';
+  END IF;
+  RETURN NEW;
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.gov_leave_guard()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -3047,6 +3186,16 @@ BEGIN
     RAISE EXCEPTION 'A published template version is immutable: change it with a new version' USING ERRCODE = 'NM160';
   END IF;
   RETURN NEW;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.link_append_only()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  RAISE EXCEPTION 'What the link received is kept as it came: a change is a new event' USING ERRCODE = 'NM191';
 END
 $function$
 
