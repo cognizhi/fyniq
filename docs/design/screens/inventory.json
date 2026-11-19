@@ -2194,6 +2194,7 @@
    "content": [
     "Budget burn: 340 of 400 budgeted hours (85% ⚠ at 80%), forecast at completion",
     "Margin = revenue − time at cost − direct costs (payroll-cost accounts excluded); role-average rates unless the viewer has payroll rights",
+    "Profitability card (rev 0.331): the project's report row for its last twelve months at the viewer's tier, the rate named, a small-group warning, the approved entries behind the hours on request, Export CSV",
     "Unbilled tab: 62.5 approved hours at billing rates plus a S$420 billable expense with 10% markup → 'Draft invoice' (AI may draft, ar.draft_invoice)",
     "Milestones for fixed-fee projects; retainer drawdown",
     "Project managers, members, billing rates by role or person",
@@ -2780,7 +2781,8 @@
     "Profitability per project, customer and person: revenue − time at cost − direct costs",
     "Utilisation (billable ÷ available hours; 40 h a week, 173.33 a month, less public holidays) and realisation (billed ÷ standard value)",
     "Unbilled work and budget burn; project-tagged payroll lines listed separately to reconcile",
-    "Per-person cost hidden without payroll rights: hours shown instead; small-group warning"
+    "Per-person cost hidden without payroll rights: hours shown instead; small-group warning",
+    "Export CSV and Excel of the report's rows, only the columns the viewer's own report holds (rev 0.331)"
    ],
    "states": [
     "role-average rates (no payroll rights)",

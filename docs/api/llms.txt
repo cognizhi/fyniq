@@ -928,6 +928,7 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `GET /v1/reports/budget-vs-actual` (getBudgetVsActual): Get Budget vs Actual
 - `GET /v1/reports/general-ledger` (getGeneralLedger): Get the general ledger report
 - `GET /v1/reports/projects` (getProjectReport): Project profitability, utilisation and realisation
+- `GET /v1/reports/projects/export` (exportProjectReport): Export the project report
 - `GET /v1/reports/sales-by-customer` (getSalesByCustomer): Get sales by customer
 - `GET /v1/reports/sales-by-item` (getSalesByItem): Get sales by item
 - `GET /v1/reports/schedules` (getSchedules): Get the prepayment and deferral schedules

@@ -702,3 +702,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | nemura.my-leave links nemura.leave.government-paid
 ## [2026-11-20] compile | home.md -> home.overview (the Auditor's engagement opens the trial balance, general ledger and access list)
+
+## [2026-11-20] compile | projects.reports recompiled: a project's profitability card, the CSV and Excel export, project metrics (p1-projects 4.2, 4.4)
