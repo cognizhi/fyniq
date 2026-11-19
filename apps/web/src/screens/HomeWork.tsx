@@ -13,20 +13,9 @@ import { mayOpen } from "../shell/navigation";
 import { operationLabel, stepWho } from "./approvals/words";
 import { Icon } from "../ui";
 
-// A tally is how many items a read found, and whether there were more than one page holds; null when the person's
-// roles may not read them, so the row is left out rather than shown as nothing to do (the API decides who sees what).
-export interface Tally {
-  n: number;
-  more: boolean;
-}
+import { tally, type Tally } from "../tally";
 
-type Page<T> = { data?: { items?: T[] | null; next_cursor?: string }; error?: unknown };
-
-export async function tally<T>(read: () => Promise<Page<T>>, keep: (x: T) => boolean = () => true): Promise<Tally | null> {
-  const { data, error } = await read();
-  if (error || !data) return null;
-  return { n: (data.items ?? []).filter(keep).length, more: !!data.next_cursor };
-}
+export { tally, type Tally };
 
 // Work is one row of "Your work": what §7.1's table says a role's Home shows, counted from the list it opens.
 interface Work {
@@ -470,7 +459,10 @@ export function AuditorAccess() {
 }
 
 const auditorPages: { to: string; icon: LucideIcon; title: string; meta: string }[] = [
+  { to: "/reports/statements/tb", icon: FileSearch, title: "Trial balance", meta: "As at any date or revision, each figure traced to its ledger lines" },
+  { to: "/reports/general-ledger", icon: ScrollText, title: "General ledger", meta: "Every account's lines, with the user and time each was posted" },
   { to: "/accounting/journals", icon: FileText, title: "Journals", meta: "Every journal, with its lines, evidence and history" },
+  { to: "/settings/access-review", icon: UserCog, title: "Who has access", meta: "Every member's roles, the external users and the quarterly attestations" },
   { to: "/compliance/evidence", icon: FileSearch, title: "Evidence", meta: "The files kept for each record, searchable and exportable" },
   { to: "/compliance/audit-trail", icon: ScrollText, title: "Audit trail", meta: "Who changed what, when and why, with each change's before and after" },
 ];

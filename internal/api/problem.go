@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cognizhi/fyniq/internal/domain/preference"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -426,6 +427,10 @@ var codeFacts = map[string]struct {
 	CodeCaptureTaken:              {409, "The name belongs to another organisation"},
 	CodeCaptureNoUser:             {422, "Not a person with an address of their own"},
 	CodeHelpNoUser:                {422, "Not a person with a tour of their own"},
+	CodePreferenceNoUser:          {422, "Not a person with preferences of their own"},
+	preference.CodeValue:          {422, "Not a value for this preference"},
+	preference.CodeKeys:           {422, "Not valid shortcut keys"},
+	preference.CodeReset:          {422, "Not a preference that can be reset"},
 	CodeSenderNotAddress:          {422, "Not one email address"},
 	CodeMessageFile:               {422, "Not an attachment of accepted mail at your own address"},
 	CodeNotifyLocked:              {409, "A security notice is always on"},

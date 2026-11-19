@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatCount } from "../../format/amount";
 import { Link } from "@tanstack/react-router";
 import { CircleCheck, CircleX, ClockAlert, Download, FileArchive, Hourglass, Lock, MapPin, ShieldCheck, Users } from "lucide-react";
 import { useState } from "react";
@@ -86,7 +87,7 @@ function ExportRow({ x, mine }: { x: Export; mine: boolean }) {
         <span className="fy-list__title whitespace-normal">{x.file ? x.file.name : `Asked on ${dateTime(x.requested_at)}`}</span>
         <span className="fy-list__meta whitespace-normal">
           {mine ? "You asked for it" : "Another member asked for it"}
-          {x.file && ` · ${size(x.file.size)} · ${x.file.rows.toLocaleString("en-SG")} rows · ready until ${dateTime(x.file.expires_at)}`}
+          {x.file && ` · ${size(x.file.size)} · ${formatCount(x.file.rows)} rows · ready until ${dateTime(x.file.expires_at)}`}
           {x.failure && ` · ${x.failure}`}
         </span>
         {x.file && <span className="fy-small fy-muted fy-mono fy-expert-only">SHA-256 {x.file.sha256.slice(0, 16)}…</span>}

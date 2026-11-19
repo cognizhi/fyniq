@@ -190,6 +190,18 @@
   is the provider's); on users-roles, the columns the API does not return yet (email, last sign-in, MFA status,
   scopes), default experience mode per invitation, Owner transfer and succession, and the access review;
   account-recovery, auditor-workspace and super-admin-console.)
+  (20 Nov 2026, audit of what stands: account-recovery is built (`screens/Recovery.tsx`, `RecoveryCodes.tsx`: a recovery code plus a
+  still-bound authenticator or an Owner's or Administrator's confirmation, the cooling-off banner, `recovery.test.tsx`, guide
+  `profile-and-security.md`, SEC-35); the auditor's workspace is the Auditor's landing, Reports, where **Your engagement**
+  says until when the read-only access lasts and opens the trial balance as at any date, the general ledger, the journals,
+  who has access, the evidence and the audit trail (`AuditorAccess`, `HomeWork.test.tsx`, QA-UI-08's walkthrough). **Left:**
+  (1) mfa-enrolment's guided first-run steps at `/sign-in/enrol`: TOTP is the provider's and passkeys and recovery codes have
+  their cards on Profile and security, but no single guided page walks a new person through passkey, codes and a second
+  authenticator; (2) the super-admin-console at `/admin`: it needs two reads that do not exist yet, the platform's health
+  (services, scheduler heartbeat, outbox backlog, last audit anchor, across organisations through a definer function) and
+  the list of Super admins, besides the installation's connectors, announcements and sign-in providers that have their pages;
+  (3) on users-roles, the columns the API does not return (email, last sign-in, MFA status, scopes), the default
+  experience mode per invitation, and department scopes (see 2.1).)
 - [x] 4.2 Run the walkthrough test for each role (QA-UI-08) on the workspaces these rights produce
   (20 Nov 2026, found built: `apps/web/journeys/walkthroughs.spec.ts` runs QA-UI-08 for each of the sixteen roles of §7.1
   in an organisation of its own: landing page, sidebar, Home blocks, Inbox, the "not part of your access" page and

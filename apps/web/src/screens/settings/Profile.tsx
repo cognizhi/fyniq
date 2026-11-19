@@ -15,15 +15,18 @@ import {
   Trash2,
   Unlink,
 } from "lucide-react";
-import { useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { api, type Session, type SignInProvider } from "../../api/client";
 import { LedgerViewToggle } from "../../components/LedgerViewToggle";
 import { Refusal } from "../../components/Refusal";
 import { Button, buttonVariants } from "../../components/ui/button";
 import { Dialog } from "../../components/ui/dialog";
-import { browserOf, clock, date, dateTime } from "../../format/date";
+import { formatAmount } from "../../format/amount";
+import { browserOf, clock, date, dateAs, dateTime } from "../../format/date";
+import { chosenNumberFormat, dateFormat, dateFormats, negativeStyle, numberFormats, onLocale, setLocale, timeZone, type DateFormat, type NumberFormat } from "../../format/locale";
 import { helpText } from "../../i18n";
 import { setMode } from "../../mode";
+import { persist, type PreferenceChange } from "../../preferenceSink";
 import { ShortcutSettings } from "../../shell/Shortcuts";
 import { openShortcutSheet } from "../../shortcuts";
 import * as passkey from "../../passkey";
@@ -111,6 +114,66 @@ function ModeChoice({ mode }: { mode: Mode }) {
           <LedgerViewToggle mode={mode} />
         </div>
       )}
+    </section>
+  );
+}
+
+// FormatChoice is how amounts, counts and dates are written for this person (NFR-L10N-01): each choice shows an example,
+// is kept on the server with their other preferences, and moves characters only: amounts stay exact, and what is copied
+// is always the plain decimal.
+function FormatChoice() {
+  const h = helpText("shell.formats");
+  const [, redraw] = useState(0);
+  useEffect(() => onLocale(() => redraw((n) => n + 1)), []);
+  const number = chosenNumberFormat() ?? "comma_dot";
+  const dates = dateFormat();
+  const negatives = negativeStyle();
+  const choose = (change: PreferenceChange) => {
+    persist(change);
+    setLocale({ number: change.number_format ?? chosenNumberFormat(), date: change.date_format ?? dates, negatives: change.negative_format ?? negatives, timeZone });
+  };
+  const sample = "2026-10-12T08:30:00Z";
+  const numberNames: Record<NumberFormat, string> = { comma_dot: "1,234.56", dot_comma: "1.234,56", space_comma: "1 234,56", space_dot: "1 234.56" };
+  return (
+    <section className="fy-card" aria-labelledby="formats-title">
+      <div className="fy-card__head">
+        <h2 className="fy-h3" id="formats-title">
+          {h.label}
+        </h2>
+      </div>
+      <div className="fy-card__body fy-stack fy-stack--2">
+        <p className="fy-small fy-secondary">{h.tooltip}</p>
+        <label className="fy-field">
+          <span className="fy-label">Numbers</span>
+          <select className="fy-select" value={number} onChange={(e) => choose({ number_format: e.target.value as NumberFormat })}>
+            {numberFormats.map((f) => (
+              <option key={f} value={f}>
+                {formatAmount("1234.56", "minus", f)} (a thousand and more, and decimals)
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="fy-field">
+          <span className="fy-label">Dates</span>
+          <select className="fy-select" value={dates} onChange={(e) => choose({ date_format: e.target.value as DateFormat })}>
+            {dateFormats.map((f) => (
+              <option key={f} value={f}>
+                {dateAs(sample, f)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="fy-field">
+          <span className="fy-label">Negative amounts</span>
+          <select className="fy-select" value={negatives} onChange={(e) => choose({ negative_format: e.target.value as "minus" | "parentheses" })}>
+            <option value="minus">{formatAmount("-1234.56", "minus", number)} (a minus sign)</option>
+            <option value="parentheses">{formatAmount("-1234.56", "parentheses", number)} (in brackets)</option>
+          </select>
+        </label>
+        <p className="fy-small fy-secondary">
+          Now: {numberNames[number]} and {date(sample)}. Dates are in the organisation's time zone, {timeZone}.
+        </p>
+      </div>
     </section>
   );
 }
@@ -596,6 +659,7 @@ export function Profile() {
   return (
     <SettingsPage title="Profile and security" screen="profile-preferences" lead="How Fyniq behaves for you, and how you confirm it's you.">
       <ModeChoice mode={mode} />
+      <FormatChoice />
       <section className="fy-card" aria-labelledby="keyboard-title">
         <div className="fy-card__head">
           <h2 className="fy-h3" id="keyboard-title">

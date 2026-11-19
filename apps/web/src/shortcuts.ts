@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import type { Session } from "./api/client";
 import { helpText } from "./i18n";
+import { persist } from "./preferenceSink";
 import { nav, routes, type Mode } from "./registry";
 import { mayOpen, navFor } from "./shell/navigation";
 
@@ -9,8 +10,8 @@ import { mayOpen, navFor } from "./shell/navigation";
 // Ctrl+J, which work in both modes (§7.8, experience/modes "Basic keyboard"). Each person may turn the
 // single-character shortcuts off or change their keys (WCAG 2.1 SC 2.1.4), and none fires while focus is in a field.
 //
-// Provisional, like the mode and the appearance: the choice is kept in this browser's storage, under the person's
-// user ID so it applies to them only, until the preferences operation stores it on the server (p1-app-shell task 4.1).
+// The choice is kept on the server as the person's own preference, the same on every device (FR-UX-23; preferences.ts),
+// and in this browser's storage under the person's user ID, so it applies to them only and draws the first page.
 
 export interface Shortcut {
   id: string;
@@ -176,7 +177,14 @@ export function shortcutSettings(user: string): ShortcutSettings {
   return s;
 }
 
+// setShortcutSettings is the person's choice: it applies at once, and is kept on the server.
 export function setShortcutSettings(user: string, s: ShortcutSettings): void {
+  applyShortcutSettings(user, s);
+  persist({ shortcuts_on: s.on, shortcut_keys: s.keys });
+}
+
+// applyShortcutSettings applies settings without sending them: the person's choice as the server has it.
+export function applyShortcutSettings(user: string, s: ShortcutSettings): void {
   cache.set(user, s);
   try {
     window.localStorage.setItem(prefix + user, JSON.stringify(s));

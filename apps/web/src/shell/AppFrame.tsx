@@ -14,7 +14,9 @@ import { Icon } from "../ui";
 import { AppearanceChoices, AppearanceMenu } from "./AppearanceMenu";
 import { About, HelpMenu } from "./HelpMenu";
 import { TourHost, TourOffer } from "../tour/TourHost";
+import { useBadges, type Badge } from "./badges";
 import { bottomBar, navFor } from "./navigation";
+import { StatusRegion } from "./status";
 
 const CommandPalette = lazy(() => import("./CommandPalette"));
 const AssistantPanel = lazy(() => import("../components/ai/AssistantPanel"));
@@ -27,12 +29,23 @@ const mainGroups = [
 const footGroups = [["footer", ""]] as const;
 const allGroups = [...mainGroups, ["footer", "Settings"]] as const;
 
-function NavItem({ item, current, className, onNavigate }: { item: NavFeature; current: boolean; className: string; onNavigate?: () => void }) {
+// NavItem is one item of the navigation, with its badge where it has one (experience/navigation): the count is drawn for
+// the eye and said in words for a screen reader, "Inbox, 3 approvals waiting", never as a bare number (FR-UX-21).
+function NavItem({ item, current, className, onNavigate, badge }: { item: NavFeature; current: boolean; className: string; onNavigate?: () => void; badge?: Badge }) {
   const label = helpText(item.help).label;
+  const shown = badge && badge.n > 0 ? badge : undefined;
   return (
     <Link to={item.route} className={className} aria-current={current ? "page" : undefined} onClick={onNavigate} data-tour={item.id}>
       <Icon of={item.icon} />
       <span className="fy-nav__label">{label}</span>
+      {shown && (
+        <>
+          <span className="fy-badge" aria-hidden="true">
+            {shown.n > 99 ? "99+" : `${shown.n}${shown.more ? "+" : ""}`}
+          </span>
+          <span className="fy-sr">, {shown.said}</span>
+        </>
+      )}
     </Link>
   );
 }
@@ -42,7 +55,7 @@ function current(item: NavFeature, path: string): boolean {
   return item.route === "/" ? path === "/" : path === item.route || path.startsWith(`${item.route}/`);
 }
 
-function NavList({ items, path, onNavigate, groups = mainGroups }: { items: readonly NavFeature[]; path: string; onNavigate?: () => void; groups?: readonly (readonly [NavFeature["group"], string])[] }) {
+function NavList({ items, path, onNavigate, groups = mainGroups, badges }: { items: readonly NavFeature[]; path: string; onNavigate?: () => void; groups?: readonly (readonly [NavFeature["group"], string])[]; badges: Record<string, Badge> }) {
   return (
     <div className="fy-nav">
       {groups.map(([g, title]) => {
@@ -51,7 +64,7 @@ function NavList({ items, path, onNavigate, groups = mainGroups }: { items: read
           <div key={g} className="contents">
             {title && <div className="fy-nav__group fy-eyebrow">{title}</div>}
             {mine.map((n) => (
-              <NavItem key={n.id} item={n} current={current(n, path)} className="fy-nav__item" onNavigate={onNavigate} />
+              <NavItem key={n.id} item={n} current={current(n, path)} className="fy-nav__item" onNavigate={onNavigate} badge={badges[n.id]} />
             ))}
           </div>
         );
@@ -105,7 +118,16 @@ export function ModeSwitch({ mode }: { mode: Mode }) {
 // banners on top (FR-NTF-01, FR-NTF-03; the signed-in layout passes both, which read the API). The organisation
 // switcher joins it with p1-app-shell 2.1–4.1. The assistant's button and Ctrl+J or ⌘J open the AI panel (FR-UX-17,
 // p1-ai-assistant design D12), docked beside the page in expanded, a sheet in medium and full screen in compact.
-export function AppFrame({ session, title, mode, operations, bell, banners, logo, children }: {
+// AppFrame is the shell around every signed-in page, with the one polite status region its badges, bell and tray share.
+export function AppFrame(props: Parameters<typeof Frame>[0]) {
+  return (
+    <StatusRegion>
+      <Frame {...props} />
+    </StatusRegion>
+  );
+}
+
+function Frame({ session, title, mode, operations, bell, banners, logo, children }: {
   session: Pick<Session, "roles" | "features"> & { user_id?: string; super_admin?: boolean };
   title: string;
   mode: Mode;
@@ -132,6 +154,7 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
   const keys = useShortcutSettings(session.user_id ?? "");
   const opener = useRef<HTMLButtonElement>(null);
   const visible = navFor(nav, session, mode);
+  const badges = useBadges(visible.map((n) => n.id), session);
   const bottom = bottomBar(visible);
   const search = helpText("shell.command-palette");
   const signOut = helpText("auth.sign-out");
@@ -172,6 +195,19 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // The mode switches from the keyboard too (FR-UX-23): a chord with modifiers, so it is no single-character shortcut and
+  // works in both modes. It keeps the page, its filters and any unsaved draft, as the header's switch does.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey && e.code === "KeyM") {
+        e.preventDefault();
+        setMode(mode === "basic" ? "expert" : "basic");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode]);
 
   // Keyboard-first entry (FR-UX-06): the single-character shortcuts the person may use in their mode, never while
   // they type in a field or a dialog is open; and Enter to the next field in an entry form.
@@ -214,9 +250,9 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
             Fyniq
           </span>
         </Link>
-        <NavList items={visible} path={path} />
+        <NavList items={visible} path={path} badges={badges} />
         <div className="fy-side__foot">
-          <NavList items={visible} path={path} groups={footGroups} />
+          <NavList items={visible} path={path} groups={footGroups} badges={badges} />
         </div>
       </nav>
       <header className="fy-top">
@@ -261,7 +297,7 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
       <TourHost session={session} />
       <nav className="fy-bottom" aria-label="Main, bottom bar">
         {bottom.map((n) => (
-          <NavItem key={n.id} item={n} current={current(n, path)} className="fy-bottom__item" />
+          <NavItem key={n.id} item={n} current={current(n, path)} className="fy-bottom__item" badge={badges[n.id]} />
         ))}
         <button type="button" className="fy-bottom__item border-0 bg-transparent font-[inherit]" onClick={() => setMore(true)} aria-haspopup="dialog">
           <Icon of={LayoutGrid} />
@@ -281,7 +317,7 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
                 <Icon of={X} size={20} />
               </Dialog.Close>
             </div>
-            <NavList items={visible} path={path} onNavigate={() => setMore(false)} groups={allGroups} />
+            <NavList items={visible} path={path} onNavigate={() => setMore(false)} groups={allGroups} badges={badges} />
             <hr className="fy-divider my-3" />
             <section className="fy-stack fy-stack--3" aria-labelledby="more-appearance">
               <h3 className="fy-eyebrow" id="more-appearance">
@@ -322,7 +358,7 @@ export function AppFrame({ session, title, mode, operations, bell, banners, logo
       )}
       {wanted && (
         <Suspense fallback={null}>
-          <CommandPalette open={open} onOpenChange={setOpen} />
+          <CommandPalette open={open} onOpenChange={setOpen} mode={mode} />
         </Suspense>
       )}
     </div>

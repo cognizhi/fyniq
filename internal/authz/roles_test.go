@@ -248,15 +248,14 @@ func TestPayrollAdministratorHandlesPayRunsAndNeverApprovesOrReleases(t *testing
 		[]grant{{authz.PayRuns, "AR"}, {authz.PaymentBatches, "AR"}, {authz.Journals, "CAPR"}})
 }
 
-// The Payment releaser releases and creates or approves nothing it releases. Not tagged for the role's requirement:
-// its text also says the releaser manages bank connections, which Appendix D gives them no right on ("—"; the Owner
-// approves and the Administrator prepares), so the PRD's text and its matrix disagree and the owner decides which is
-// right (reported in the p1-users-roles hand-over).
+// The Payment releaser releases and creates or approves nothing it releases, and holds no right on bank connections: the
+// prose that said otherwise predates Appendix D's row (PRD-001 rev 0.324).
+// req: access/roles-and-segregation Payment releaser role
 // asvs: V8.2.1
 func TestPaymentReleaserReleasesAndNeverCreatesOrApproves(t *testing.T) {
 	checkRole(t, authz.PaymentReleaser,
 		[]grant{{authz.PaymentBatches, "R"}},
-		[]grant{{authz.PaymentBatches, "CAP"}, {authz.VendorBankDetails, "CAPR"}, {authz.Bills, "CAPR"}, {authz.Journals, "CAPR"}})
+		[]grant{{authz.PaymentBatches, "CAP"}, {authz.VendorBankDetails, "CAPR"}, {authz.Bills, "CAPR"}, {authz.Journals, "CAPR"}, {authz.BankConnections, "CAPRV"}})
 }
 
 // req: access/roles-and-segregation Approver role
@@ -333,7 +332,9 @@ func TestAuditorReadsEverythingAndChangesNothing(t *testing.T) {
 func TestTaxAgentWorksTheTaxPapersAndNeverAdministersUsers(t *testing.T) {
 	checkRole(t, authz.TaxAgent,
 		[]grant{{authz.GSTReturns, "C"}, {authz.StatutoryParameters, "C"}, {authz.Journals, "C"}, {authz.StatutoryCalendar, "C"}},
-		[]grant{{authz.UsersAndRoles, "CAPRV"}, {authz.ApprovalPolicies, "CAPR"}, {authz.Journals, "AP"}, {authz.PaymentBatches, "CAPR"}, {authz.GSTReturns, "AP"}})
+		[]grant{{authz.UsersAndRoles, "CAPRV"}, {authz.ApprovalPolicies, "CAPR"}, {authz.Journals, "AP"}, {authz.PaymentBatches, "CAPR"}, {authz.GSTReturns, "AP"},
+			// Not the Accountant's rights as a whole (PRD-001 rev 0.324): no invoice, bill, bank, reconciliation or fixed asset right to prepare.
+			{authz.Invoices, "CP"}, {authz.Bills, "CP"}, {authz.BankTransactions, "CP"}, {authz.BankReconciliation, "C"}, {authz.FixedAssets, "CP"}})
 }
 
 // req: access/roles-and-segregation Board viewer role

@@ -678,9 +678,13 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-19] compile | docs/user-guide/nemura/packs.md → nemura.packs (the country pack and leave policy, p1-nemura-records-packs slice 4)
 
+## [2026-11-20] compile | organisation-settings.md, profile-and-security.md, keyboard-shortcuts.md, appearance.md -> settings.organisation, settings.change, preferences.security, shell.shortcuts, preferences.appearance (preferences kept on the server, the starting mode per role, number and date formats, Alt+Shift+M)
+
 ## [2026-11-20] compile | accounting.chart: the Balance column from the trial balance (p1-organisation-chart 5.2)
 
 ## [2026-11-20] compile | settings.brand: the logo on PDF reports (p1-organisation-chart 2.4)
+
+## [2026-11-20] compile | home.md -> home.overview (the sidebar's counts, announced in words through one polite status region)
 
 ## [2026-11-20] compile | claims.my-claims: the receipt forwarded to the claimant's own address (p1-expense-claims 8.1)
 
@@ -697,3 +701,4 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura.leave.government-paid (p1-nemura-leave-time 3.1, 3.2)
 
 ## [2026-11-20] compile | nemura.my-leave links nemura.leave.government-paid
+## [2026-11-20] compile | home.md -> home.overview (the Auditor's engagement opens the trial balance, general ledger and access list)

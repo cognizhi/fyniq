@@ -4,14 +4,14 @@ type: task
 title: The Home page, search and commands, long work, Settings, the version, and signing out
 summary: Home (pulse, tiles, plans, your work, deadlines, set-up), Search and commands (Ctrl+K), Operations, Settings, the version (Help › About), signing out
 sources:
-  - docs/user-guide/home.md sha256:294dc028fd0bb2fb9aa18174985a748baa2fc9530f6414fa310e93ca5b5ab697
+  - docs/user-guide/home.md sha256:627ba66ca4b0331f3329a8821e9faaa930eafcfec2b84485c1da49bc8579a580
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-18
+compiled_at: 2026-11-20
 aliases:
   - your work
   - what do I need to do today
@@ -73,6 +73,14 @@ aliases:
 
 (src: docs/user-guide/home.md#what-it-is)
 
+## The sidebar's counts
+
+- Some sidebar items carry a count: the **Inbox** (requests waiting for approval), **Sales** (invoices overdue), **Purchases** (bills due), **Banking** (bank lines to categorise) and **Compliance** (statutory deadlines due).
+- Each is counted from the list it opens and read again every minute, so it follows what the person may read: an item whose list their roles cannot read shows no count.
+- A screen reader hears each in words, such as "Inbox, 3 approvals waiting", and when a count changes it says so once, in words, without moving the focus.
+
+(src: docs/user-guide/home.md#the-sidebars-counts)
+
 ## Your work and upcoming deadlines
 
 - **Your work** shows what the person's roles work through, each row counting a list and opening it.
@@ -82,7 +90,7 @@ aliases:
 - **Payment releaser**: batches waiting for release and payments the bank rejected, then each bank account's balance.
 - The Approver also sees **Waiting for your approval** on Home: the requests that wait for them, the oldest first, each with its step and who that step needs.
 - The Administrator lands on **Settings**, and the Company secretary and the DPO on **Compliance**, where their rows come first: the Administrator's people asking to join, invitations waiting to be accepted, role changes waiting for a second approver and integrations failing; the Company secretary's items to see to, register updates waiting for approval and the upcoming deadlines; the DPO's data requests to answer and breaches still open.
-- The Auditor lands on **Reports**, where **Your engagement** says until when the read-only access lasts and opens the journals, the evidence and the audit trail.
+- The Auditor lands on **Reports**, where **Your engagement** says until when the read-only access lasts and opens the trial balance and the general ledger, the journals, who has access, the evidence and the audit trail.
 - A row whose list the person's roles cannot read is left out rather than shown as nothing to do; with several roles each row shows once.
 - The Owner, the Controller, the Accountant and the Tax agent read the same work from the pulse card, the tiles and the Inbox, so the card does not show for them alone.
 - **Upcoming deadlines** lists the next five statutory deadlines from the calendar, those **Overdue** or **Due soon** first, each with its date; **The statutory calendar** opens it when Compliance is one of the person's areas ([[compliance.calendar]]).

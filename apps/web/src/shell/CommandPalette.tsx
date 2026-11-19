@@ -1,9 +1,10 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { useNavigate } from "@tanstack/react-router";
 import { Command } from "cmdk";
-import { Compass, Contrast, House, Keyboard, ListChecks, Monitor, Moon, Rows3, Search, Sun } from "lucide-react";
+import { Compass, Contrast, House, Keyboard, ListChecks, Monitor, Moon, Rows3, Search, Sparkles, Sun } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { setAppearance, type Appearance } from "../appearance";
+import { setMode } from "../mode";
 import { helpText } from "../i18n";
 import { routes, type Mode } from "../registry";
 import { openShortcutSheet } from "../shortcuts";
@@ -26,7 +27,7 @@ function ModeTag({ mode }: { mode: Mode }) {
   return mode === "expert" ? <span className="ms-auto rounded-sm border border-border px-1 text-xs text-foreground-secondary">Expert</span> : null;
 }
 
-export default function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export default function CommandPalette({ open, onOpenChange, mode = "basic" }: { open: boolean; onOpenChange: (open: boolean) => void; mode?: Mode }) {
   const navigate = useNavigate();
   const [typed, setTyped] = useState("");
   const run = (f: () => void) => () => {
@@ -72,6 +73,11 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
                 {routes
                   .filter((r) => r.signedIn && !r.path.includes("$")) // a page of one record is reached from its list
                   .map((r) => action(helpText(r.help).label, <Icon of={House} />, run(() => void navigate({ to: r.path })), r.mode))}
+              </Command.Group>
+              <Command.Group heading={helpText("shell.mode").label} className={group}>
+                {mode === "basic"
+                  ? action("Switch to Expert mode", <Icon of={Sparkles} />, run(() => setMode("expert")))
+                  : action("Switch to Basic mode", <Icon of={Sparkles} />, run(() => setMode("basic")))}
               </Command.Group>
               <Command.Group heading={helpText("appearance.theme").label} className={group}>
                 {action("Light theme", <Icon of={Sun} />, look({ theme: "light" }))}

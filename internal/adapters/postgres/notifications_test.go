@@ -92,6 +92,7 @@ func emailOf(t *testing.T, org uuid.UUID, id uuid.UUID) storage.EmailMessage {
 // req: FR-NTF-01
 // req: FR-NTF-02
 // req: FR-NTF-05
+// req: FR-UX-15
 func TestNotificationsAreFannedOutEmailedAndDigested(t *testing.T) {
 	ctx := context.Background()
 	b := books(t, "Notify fan-out Pte Ltd")

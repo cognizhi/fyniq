@@ -4,14 +4,14 @@ type: task
 title: Change how Fyniq looks: theme, high contrast, density and motion
 summary: How a person chooses Light, Dark or System theme, high contrast, Comfortable or Compact density, and reduced motion; choices change the look only
 sources:
-  - docs/user-guide/appearance.md sha256:032c56f51974c06114e416d9cb98843b98cad49b8e52f39b0c90980273db5815
+  - docs/user-guide/appearance.md sha256:4dc0bb36ad66fb9373b5ed61f07e3cd1ea0fc823b90dc5d78a6c4d27b46601b3
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-10-20
+compiled_at: 2026-11-20
 aliases:
   - dark mode
   - light mode
@@ -30,7 +30,7 @@ aliases:
 
 - A person chooses the theme, high contrast, table density and motion for themselves.
 - The choices change only how Fyniq looks, never the data.
-- For now they are kept in the browser, so another computer or browser needs them chosen again.
+- They are kept with the person's profile, so they are the same on every device they sign in on.
 - Open them from **Appearance** in the header (on a phone, under **More**), or from search and commands (**Ctrl+K**, **⌘K** on a Mac) by typing the choice, such as "dark theme": [[home.overview]].
 
 (src: docs/user-guide/appearance.md#what-it-is) (src: docs/user-guide/appearance.md#before-you-start) (src: docs/user-guide/appearance.md#steps)

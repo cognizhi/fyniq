@@ -71,6 +71,13 @@
   deadlines** lists the calendar's next five, overdue and due soon first, for whoever may read it. Tests
   `HomeWork.test.tsx` and the walkthroughs' rows per role. The payroll administrator's rows (next pay run, salary
   batches, payroll postings) wait for payroll (after go-live); CPF shows under Upcoming deadlines.
+  (20 Nov 2026, the badges: the Inbox (requests waiting for the person's approval), Sales (invoices overdue), Purchases (bills
+  due), Banking (bank lines to categorise) and Compliance (statutory deadlines due) carry their count, each read from the
+  list it opens by the API, which decides who may read it, and again every minute (`shell/badges.ts`); a screen reader hears
+  it in words ("Inbox, 3 approvals waiting"). Guide `home.md` (The sidebar's counts), compiled into `home.overview`. Test
+  `AppFrame.test.tsx`. **Left:** the badges of Accounting (the close status), Equity (ACRA tasks due), Projects (over
+  budget) and Payroll (due status), with their modules' work; the Inbox's count of its other groups; the record page
+  anatomy, the organisation switcher, the Finance | People switch, the Approver's My department and the Auditor's workspace.)
 - [ ] 2.2 The command palette, global search in PostgreSQL under row-level security, and Inbox triage whose approve shortcut opens the confirmation. Tests `// req: FR-UX-01`, `// req: FR-UX-02` and `// req: FR-UX-03`
   (20 Oct 2026, in part: the Inbox lists the approval requests and the weekly review; a request opens on its own page,
   and only its confirmation decides (FR-UX-03). The command palette leaves out pages of one record. **Left:** global
@@ -113,6 +120,9 @@
   `profile-and-security.md`'s Keyboard section. Tests `shell/keyboard.test.tsx`, `categorise.test.tsx`. **Left:** the
   shortcut stored server-side with the mode (task 4.1); the mode-toggle shortcut (FR-UX-23).)
 
+  (20 Nov 2026, PRD-001 rev 0.321: the shortcut sheet's on switch and each person's keys are kept on the server with
+  the other preferences, and the mode-toggle shortcut (Alt+Shift+M, FR-UX-23) is built. **Left:** side peeks and the
+  split view, the Trace panel from Home's tiles and the other reports.)
 ## 3. Grids, records and correctness
 
 - [ ] 3.1 The grid (Community edition until the licence arrives) virtualised to 100,000 rows, and statement tables with TanStack. Tests `// req: FR-UX-07` and `// req: NFR-PERF-UI-02` (≥ 50 fps in Playwright tracing)
@@ -130,6 +140,8 @@
   same figures, and under Settings › Profile and security. Guide `banking.md`, compiled. Tests
   `LedgerViewToggle.test.tsx`, `categorise.test.tsx`. **Left:** the view on the grids still to come (journal lines,
   budgets, opening balances) as each is built.)
+  (20 Nov 2026, PRD-001 rev 0.321: the Plain or Accountant view is kept on the server with the other preferences.
+  **Left:** the sample company to explore, the checklist's later steps, the view on the grids still to come.)
 - [ ] 3.3 Favourites, recents and saved views shareable by link, comments with mentions, and no hard delete. Tests `// req: FR-UX-12`, `// req: FR-UX-13` and `// req: FR-UX-14`
   (17 Nov 2026, in part, for the launch gate: no hard delete (FR-UX-14). `TestEachRoleHoldsExactlyItsGrants` refuses a
   DELETE grant to any application role but on five tables named with why (housekeeping swept on its schedule, and an
@@ -154,6 +166,13 @@
   replaced, so nothing shows twice. Test `freshness.test.tsx`. **Left:** FR-UX-19's change feed itself (S), with
   its resume cursor, which this reload stands in for until it is built.)
 
+  (20 Nov 2026, FR-UX-21: badge and status changes go through one polite, atomic status region (`shell/status.tsx`, in the app
+  frame), as contextual phrases ("3 approvals waiting", "No approvals waiting", "2 unread notifications"), never bare
+  numbers and never moving focus; the first count a page loads with is not announced, and the bell and the operations
+  tray say theirs through it instead of each having a region. Test `AppFrame.test.tsx`. FR-UX-15's in-app, email and daily
+  digest half is the notification centre of FR-NTF-01 to 05, tagged on its tests. **Left:** FR-UX-19's change feed, whose
+  transport, server-sent events or polling, is chosen by a measurement under NFR-COST-02 that needs the cloud
+  (`[live-verify]`); the page reload of `freshness.ts` stands in for it.)
 ## 4. Modes and help
 
 - [ ] 4.1 The mode toggle stored server-side, presentation only, the disclosure of hidden fields, discoverable growth and defaults by role. Tests `// req: FR-UX-23` through `// req: FR-UX-27`, and `// req: experience/modes <title>` for each of the 13 unnumbered requirements, with a check that safety information shows in Basic mode
@@ -171,6 +190,21 @@
   a field is Expert's in Basic now even with a value, unless its account or category requires it or it carries an
   error to fix. Guides `invoices.md`, `bills.md`, `claims-my-claims.md`, compiled. Tests `AdvancedDetails.test.tsx`,
   `invoices.test.tsx`.)
+  (20 Nov 2026, PRD-001 rev 0.321, the server half: `user_preference` (migration 000700; append-only, audited, under
+  row-level security and with the members' foreign key) keeps each person's mode, Plain or Accountant view, theme,
+  contrast, density, motion, shortcuts' switch and keys, number format, date format and way of writing negatives, the
+  same on every device. `GET` and `PATCH /v1/preferences` (`getMyPreferences`, `setMyPreferences`; If-Match,
+  Idempotency-Key, preview; a save names only what it sets and what it resets) and the session carries them with the
+  mode the person starts in and the organisation's time zone, so the first page is drawn as chosen. The Administrator's
+  default per role (FR-UX-27) is the organisation setting `experience.default_mode.<role>` (Basic or Expert, shipped as the
+  PRD's table), the Owner's winning. The mode switches from the command palette ("Switch to Expert mode") and with
+  Alt+Shift+M, a chord that works in both modes. `preferences.ts` adopts the session's preferences and sends each later
+  choice one after another, once more after a stale save; the browser's own copy only draws the sign-in page and the
+  first paint, and a choice made in a browser before the server kept any is sent once. Tests `TestPreferencesAreKeptOnTheServer`,
+  `TestAttackPreferencesKeepTheirHistoryAndTheirTenant`, `TestAStartingModeFollowsTheRolesAndTheOwnerWins`,
+  `preferences.test.tsx`, `AppFrame.test.tsx` (the palette and the chord). **Left:** the disclosure of hidden fields'
+  other half (FR-UX-25 on the lists, banking and reports), and the mode-parity test with the 13 unnumbered
+  `experience/modes` requirements.)
 - [ ] 4.2 Tooltips, `/help` built from `docs/user-guide/`, context-aware help, the first-run tour, practice in the sample company, and the FR-UX-41 banner from the review register. Tests `// req: FR-UX-30`, `// req: FR-UX-32`, `// req: FR-UX-33` (guide half), `// req: FR-UX-34`, `// req: FR-UX-36` and `// req: FR-UX-41`
   (20 Oct 2026, in part: the FR-UX-41 banner, `components/ReviewBanner.tsx`, reads the review register at build time
   and shows on each Settings page whose screen it lists while the area is pending. Test `ReviewBanner.test.tsx`.
@@ -230,7 +264,7 @@
   and 44 px targets on coarse pointers (app.css); twelve radios and checkboxes had the 18 px box's class as their
   label, now a row whose whole label is the target. **Left:** visual snapshots (QA-UI-07's hashes, p1-launch-readiness
   5.4); devices without the Viewport Segments API split by CSS alone.)
-- [ ] 5.2 WCAG 2.2 AA with axe on every shell screen, keyboard and focus tests, focus not obscured, dragging alternatives and accessible authentication. Tests `// req: NFR-A11Y-01` through `// req: NFR-A11Y-05`
+- [x] 5.2 WCAG 2.2 AA with axe on every shell screen, keyboard and focus tests, focus not obscured, dragging alternatives and accessible authentication. Tests `// req: NFR-A11Y-01` through `// req: NFR-A11Y-05`
   (17 Nov 2026, in part, for the launch gate: NFR-A11Y-03 to 05. `e2e/focus.spec.ts` tabs through Home, the invoices,
   a statement and Settings at the desktop and phone frames, and through Home with the AI panel open: no focused control
   is hidden by the sticky header, the bottom bar or the AI panel (by what is drawn at its centre, so stacking counts)
@@ -240,8 +274,22 @@
   cognitive test, the step-up offers a passkey and a new sign-in, a pasted recovery code is taken, and a refused
   submit's summary takes focus. **Left:** NFR-A11Y-01 and 02's axe pass on every shell screen and keyboard tests; the
   sticky first column's scrolling when the grid is built.)
+  (20 Nov 2026, the rest: `e2e/accessibility.spec.ts` runs axe-core's WCAG 2.0 to 2.2 A and AA rules and its best practices on each of
+  the 12 shell screens as drawn in Chrome, at the desktop frame in light, dark and high-contrast themes and at the phone
+  frame (motion reduced, as a person who asks for it has it: a fade caught half-way is a colour no one sees at rest), and
+  tabs through each screen: one main, the main navigation and banner, the skip link first on a fresh page and going to the
+  main content, and every control that takes focus with an accessible name and a visible focus indicator. All 60 pass.
+  **Left:** the sticky first column's scrolling comes with the grid (3.1).)
 - [ ] 5.3 Externalised strings with per-user formats and the organisation's time zone, and the page-load, interaction and bundle budgets measured in CI. Tests `// req: NFR-L10N-01`, `// req: NFR-PERF-UI-01` and `// req: NFR-PERF-UI-03`
 
+  (20 Nov 2026, PRD-001 rev 0.321, NFR-L10N-01: each person's number format (1,234.56, 1.234,56, 1 234,56, 1 234.56), date
+  format (12 Oct 2026, 12/10/2026, 10/12/2026, 2026-10-12) and way of writing negatives are chosen in Settings › Profile
+  and security and kept on the server; every date and time is written in the organisation's time zone, which the
+  session carries (`format/locale.ts`: only characters move, and a calendar day with no time is never moved by a zone);
+  copying and pasting amounts follow the format (`clipboardText`, `pastedAmount`); the help catalogue is the externalised
+  strings (`i18n/en-SG.json`). Tests `preferences.test.tsx`, `Profile.test.tsx`, `date.test.ts`. **Left:** the screens
+  still writing a date or count with a fixed `en-SG` (the sign-in and install pages, which have no session, and a few
+  weekday and month names), and NFR-PERF-UI-03's initial bundle.)
 ## 6. Screens
 
   (18 Nov 2026, the page-load and interaction budgets, for the launch gate (NFR-PERF-UI-01): `e2e/performance.spec.ts`,

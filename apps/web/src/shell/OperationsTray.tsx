@@ -1,4 +1,5 @@
 import { Dialog as Primitive } from "@base-ui/react/dialog";
+import { useStatusPhrase } from "./status";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CircleCheck, CircleX, Download, FileCheck, FileSpreadsheet, Hourglass, ListChecks, LoaderCircle, X, type LucideIcon } from "lucide-react";
@@ -180,6 +181,7 @@ export function OperationsTray() {
   });
   const running = items.filter((o) => o.status === "running").length;
   const runningSaid = `${running} ${running === 1 ? "operation" : "operations"} running`;
+  const status = useStatusPhrase(running > 0 ? runningSaid : "", "fy-sr fy-from-medium");
   const close = () => setOpen(false);
   return (
     <>
@@ -192,9 +194,7 @@ export function OperationsTray() {
           </span>
         )}
       </button>
-      <span className="fy-sr fy-from-medium" role="status" aria-live="polite">
-        {running > 0 ? runningSaid : ""}
-      </span>
+      {status}
       <Primitive.Root open={open} onOpenChange={setOpen}>
         <Primitive.Portal container={device ?? undefined}>
           <Primitive.Backdrop className="fixed inset-0 z-(--z-modal) bg-scrim" />
