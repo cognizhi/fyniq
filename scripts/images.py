@@ -512,6 +512,8 @@ def build_command(svc: str, builder: str, version: str, sha: str, release: str, 
         cmd += ["-f", "deploy/docker/Dockerfile.go-service", "--target", TARGETS.get(svc, "service"),
                 "--build-arg", f"SERVICE={svc}", "--build-arg", "FLAVOUR=release", "--build-arg", f"VERSION={version}",
                 "--build-arg", f"GIT_SHA={sha[:12]}", "--build-arg", f"RELEASE={release}"]
+        if svc == "nemura":  # the web app is inside its binary (PRD-002 NM-ARC-02); no other image runs Node
+            cmd += ["--build-arg", "NEMURA_WEB=nemura-web-build"]
     return [*cmd, *extra, "."]
 
 

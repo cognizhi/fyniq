@@ -1,0 +1,37 @@
+// The feature registry (PRD-002 NM-UX-02, NM-UX-04; design D11), Nemura's own: every route and action of the app, with
+// - its experience mode: "basic" for what everyone sees (employees get one simple mode), "expert" for the people team's own pages;
+// - its help key: the label and tooltip live under that key in src/i18n/en-SG.json, never in code;
+// - its guide page in docs/user-guide/nemura/ (the page's front-matter `key`, optionally "#<heading>");
+// - for a route, its path and whether it needs a session.
+// registry.test.ts fails when an entry lacks any of them, and when the app serves a route the registry does not list.
+export type Mode = "basic" | "expert";
+
+interface Feature {
+  id: string;
+  mode: Mode;
+  help: string;
+  guide: string;
+}
+
+export interface RouteFeature extends Feature {
+  kind: "route";
+  path: string;
+  signedIn: boolean;
+  // The page's id in the review register (docs/prd/reviews/review-status.json): its banner shows while an area it lists awaits review.
+  screen: string;
+}
+
+export interface ActionFeature extends Feature {
+  kind: "action";
+}
+
+export type Entry = RouteFeature | ActionFeature;
+
+export const registry: Entry[] = [
+  { kind: "route", id: "sign-in", path: "/sign-in", signedIn: false, screen: "nm-sign-in", mode: "basic", help: "signin.page", guide: "nemura.sign-in" },
+  { kind: "route", id: "my-home", path: "/me", signedIn: true, screen: "nm-my-home", mode: "basic", help: "home.me", guide: "nemura.home" },
+  { kind: "route", id: "people-home", path: "/people", signedIn: true, screen: "nm-people-home", mode: "expert", help: "home.people", guide: "nemura.home" },
+  { kind: "action", id: "sign-out", mode: "basic", help: "nav.signOut", guide: "nemura.sign-in#signing-out" },
+];
+
+export const routes = registry.filter((e): e is RouteFeature => e.kind === "route");

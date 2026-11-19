@@ -1,0 +1,64 @@
+{
+  "text": {
+    "app.name": "Nemura",
+    "app.skip": "Skip to the main content",
+    "signin.title": "Sign in",
+    "signin.lead": "Sign in with your company account. Nemura never asks for your NRIC to sign in.",
+    "signin.continue": "Continue with {provider}",
+    "signin.none": "No way to sign in is set up yet. Ask whoever runs Nemura for your company.",
+    "signin.notSetUp": "Nemura is not set up yet. The person who installs it creates the first organisation with the one-time setup code; after that you can sign in.",
+    "signin.invite": "New here? Your company sends you an invitation. Open it after you sign in.",
+    "signin.loading": "Checking how you can sign in",
+    "signin.failed": "We could not reach Nemura. Check your connection and try again.",
+    "signin.retry": "Try again",
+    "signin.art.lead": "Your leave, your pay, your letters. One place.",
+    "signin.art.label": "About Nemura",
+    "signin.art.leave": "Apply for leave in under a minute",
+    "signin.art.pay": "Every payslip, ready to print",
+    "signin.art.letters": "Letters for the bank, a landlord or a visa",
+    "home.me": "My home",
+    "home.people": "People home",
+    "home.hello": "You are signed in.",
+    "home.roles": "Your roles",
+    "home.noRoles": "You have no role yet. Ask the Owner to give you one.",
+    "home.soon": "Your leave, pay and letters appear here as each is switched on for your company.",
+    "nav.signOut": "Sign out",
+    "notfound.title": "There is nothing at this address",
+    "notfound.fix": "Go to your home page and start again.",
+    "notfound.home": "Go to my home",
+    "session.loading": "Loading your session",
+    "role.owner": "Owner",
+    "role.hr_admin": "HR administrator",
+    "role.hr_officer": "HR officer",
+    "role.payroll_admin": "Payroll administrator",
+    "role.employee": "Employee",
+    "review.heading": "Needs additional verification",
+    "role.line_manager": "Line manager",
+    "role.recruiter": "Recruiter",
+    "role.interviewer": "Interviewer",
+    "role.administrator": "Administrator",
+    "role.ai": "AI assistant"
+  },
+  "help": {
+    "signin.page": {
+      "label": "Sign in",
+      "tooltip": "Sign in to Nemura with the account your company set up. A passkey confirms it is you for sensitive changes, not to sign in."
+    },
+    "home.me": {
+      "label": "My home",
+      "tooltip": "Where you start: your own leave, pay and letters, and what waits for you."
+    },
+    "home.people": {
+      "label": "People home",
+      "tooltip": "Where the people team starts: who is away, what waits for approval and the checks that need you."
+    },
+    "nav.signOut": {
+      "label": "Sign out",
+      "tooltip": "Ends this session on this device. Other devices stay signed in until you sign out there."
+    },
+    "review.awaiting-verification": {
+      "label": "Needs additional verification",
+      "tooltip": "The rules this page uses have not had their second review yet. Check what it shows before you rely on it."
+    }
+  }
+}

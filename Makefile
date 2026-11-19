@@ -155,6 +155,7 @@ openapi: ## Regenerate Nemura's API contract contracts/openapi/nemura/nemura.v1.
 	@$(MISE) go test ./internal/api -run 'TestTheContractIsTheCode|TestTheInternalContractIsTheCode|TestTheReferenceIsTheContract' -count=1 -args -update && echo "✔ contracts/openapi/fyniq.v1.yaml, contracts/schemas/ and docs/api/ regenerated"
 	@$(MISE) go test ./internal/nemura/api -run 'TestTheContractIsTheCode' -count=1 -args -update && echo "✔ contracts/openapi/nemura/nemura.v1.yaml regenerated"
 	@$(MISE) pnpm --filter @fyniq/sdk -s gen >/dev/null && echo "✔ sdk/typescript/src/schema.d.ts regenerated"
+	@$(MISE) pnpm --filter @fyniq/nemura-web -s gen:api >/dev/null && echo "✔ apps/nemura-web/src/api/schema.d.ts regenerated"
 
 api-check: ## The API contract: Spectral lint (NFR-API-01) and the SDK's generated types (the web app's too) are current (FR-INT-17); oasdiff runs in the Go tests (QA-API-02)
 	@$(MISE) pnpm exec spectral lint contracts/openapi/fyniq.v1.yaml --ruleset contracts/openapi/spectral.yaml --fail-severity warn --quiet \
@@ -163,6 +164,8 @@ api-check: ## The API contract: Spectral lint (NFR-API-01) and the SDK's generat
 	  && echo "✔ Nemura's API contract passes Spectral"
 	@$(MISE) pnpm --filter @fyniq/sdk -s check:api >/dev/null || { echo "✖ sdk/typescript/src/schema.d.ts is stale: run pnpm --filter @fyniq/sdk gen"; exit 1; }
 	@echo "✔ the SDK's types (the web app's too) match the contract"
+	@$(MISE) pnpm --filter @fyniq/nemura-web -s check:api >/dev/null || { echo "✖ apps/nemura-web/src/api/schema.d.ts is stale: run make openapi"; exit 1; }
+	@echo "✔ Nemura's web app's types match its contract"
 
 test-e2e: ## Run the Playwright journeys (P0: the web shell smoke test)
 	@$(MISE) pnpm --filter @fyniq/web test:e2e
@@ -193,7 +196,7 @@ images: ## Build the Go and web images (FLAVOURS="release local", PLATFORM=the e
 	  tag=$$( [ "$$f" = local ] && echo local || echo "$(VERSION)" ); \
 	  target=$$( case "$$svc" in render|clamd) echo "$$svc" ;; *) echo service ;; esac ); \
 	  docker build -q $(if $(PLATFORM),--platform $(PLATFORM)) -f deploy/docker/Dockerfile.go-service --target $$target --build-arg SERVICE=$$svc --build-arg FLAVOUR=$$f \
-	    --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) --build-arg RELEASE=$(RELEASE) -t fyniq-$$svc:$$tag . >/dev/null; \
+	    $$( [ "$$svc" = nemura ] && echo --build-arg NEMURA_WEB=nemura-web-build ) --build-arg VERSION=$(VERSION) --build-arg GIT_SHA=$(GIT_SHA) --build-arg RELEASE=$(RELEASE) -t fyniq-$$svc:$$tag . >/dev/null; \
 	  echo "✔ fyniq-$$svc:$$tag"; done; done
 	@docker build -q $(if $(PLATFORM),--platform $(PLATFORM)) -f deploy/docker/Dockerfile.web -t fyniq-web:local . >/dev/null && echo "✔ fyniq-web:local"
 	@python3 scripts/images.py check --version $(VERSION) --flavours "$(FLAVOURS)" --platform "$(PLATFORM)"

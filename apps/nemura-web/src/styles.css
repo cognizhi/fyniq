@@ -1,0 +1,11 @@
+/* Nemura's stylesheet (PRD-002 NM-UX-01, design D11): the generated kit (docs/design/screens/kit/nemura-ui.css) is Nemura's tokens in four themes
+   plus the shared component layer and Nemura's own. No third-party font is requested: the stack falls back to the system's fonts until the
+   self-hosted Funnel fonts ship (`Left` in p1-nemura-platform 7.1). */
+@import "../../../docs/design/screens/kit/nemura-ui.css";
+
+.nm-skip { position: absolute; inset-inline-start: var(--space-3); inset-block-start: -4rem; z-index: 10; }
+.nm-skip:focus { inset-block-start: var(--space-3); }
+.nm-shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; background: var(--background); color: var(--text-primary); }
+.nm-shell__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--surface-1); border-bottom: 2px solid var(--border); }
+.nm-shell__main { padding: var(--space-6) var(--space-4); max-width: 72rem; width: 100%; margin-inline: auto; display: grid; gap: var(--space-4); align-content: start; }
+@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }

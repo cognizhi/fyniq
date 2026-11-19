@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	nemuraweb "github.com/cognizhi/fyniq/apps/nemura-web"
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/app"
@@ -33,6 +34,22 @@ var signInWiring = func(app.Deps, func(string) string, *httpserver.Server) (port
 var hydraAdmin = func(admin string) ports.OAuthClients {
 	return hydra.New(admin, (&egress.Guard{Propagate: true}).Bounded(0, 10*time.Second).For(egress.HostOf(admin)))
 }
+
+// signInInfo is what the sign-in page shows: the providers behind the shared SignIn port, and whether setup is done.
+type signInInfo struct {
+	provider ports.SignIn
+	store    *nemura.Store
+}
+
+func (i signInInfo) Providers() []api.Provider {
+	var out []api.Provider
+	for _, p := range i.provider.Providers() {
+		out = append(out, api.Provider{ID: p.ID, Name: p.Name})
+	}
+	return out
+}
+
+func (i signInInfo) SetupDone(ctx context.Context) (bool, error) { return i.store.SetupDone(ctx) }
 
 // sessions is the database as the sign-in flow and the API see it.
 type sessions struct{ *nemura.Store }
@@ -76,11 +93,17 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	if admin := getenv("NEMURA_OAUTH_ADMIN_URL"); admin != "" {
 		oauth = hydraAdmin(admin)
 	}
-	api.New(s, api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, Clock: deps.Clock, CookieNames: []string{auth.SessionCookie(true), auth.SessionCookie(false)}})
 	provider, err := signInWiring(deps, getenv, s)
 	if err != nil {
 		return err
 	}
+	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, Clock: deps.Clock,
+		CookieNames: []string{auth.SessionCookie(true), auth.SessionCookie(false)}}
+	if provider != nil {
+		d.SignIn = signInInfo{provider: provider, store: store}
+	}
+	api.New(s, d)
+	s.Handle("/", webApp(nemuraweb.Files()))
 	if provider == nil {
 		return nil
 	}
