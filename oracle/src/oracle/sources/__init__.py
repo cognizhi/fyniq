@@ -26,6 +26,7 @@ RULE_SETS: dict[str, RuleSet] = {
     "invoice": sales.invoice,
     "credit_note": sales.credit_note,
     "customer_receipt": sales.customer_receipt,
+    "dispute_settlement": sales.dispute_settlement,
     "customer_deposit": sales.customer_deposit,
     "deposit_refund": sales.deposit_refund,
     "write_off": sales.write_off,

@@ -31,7 +31,7 @@ func leaveCode(err error) string {
 
 func peoplePack(t *testing.T) pack.Version {
 	t.Helper()
-	v, err := pack.Load(packs.Files(), "sg-people/2026.3")
+	v, err := pack.Load(packs.Files(), "sg-people/2026.5")
 	if err != nil {
 		t.Fatal(err)
 	}

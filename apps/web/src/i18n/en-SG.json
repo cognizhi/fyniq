@@ -16,6 +16,10 @@
       "label": "Sign in",
       "tooltip": "Sign in with the provider your organisation uses."
     },
+    "auth.enrol": {
+      "label": "Set up how you confirm it's you",
+      "tooltip": "Three steps: a passkey, your recovery codes, and a second authenticator, so confirming it's you for approvals and payments takes a touch and losing a device never locks you out."
+    },
     "installation.setup": {
       "label": "Set up Fyniq",
       "tooltip": "The one-time setup of a new installation: the setup code, the first company and the recovery codes."
@@ -78,6 +82,10 @@
     "shell.help": {
       "label": "Help",
       "tooltip": "About Fyniq, and the version you are on."
+    },
+    "shell.saved": {
+      "label": "Favourites and views",
+      "tooltip": "Pin the pages you open most, and save a page with its filters, columns and sort as a view. They are yours, and the same on every device."
     },
     "assistant.ask-about-this": {
       "label": "Ask about this",
@@ -835,6 +843,10 @@
       "label": "Enter a price",
       "tooltip": "The Owner's own price, per million tokens in the provider's currency, for a model no source prices; it applies once a second approver approves it."
     },
+    "kb.recompile": {
+      "label": "Recompile",
+      "tooltip": "Queue the compiler: it drafts a page from each note that changed and checks the whole knowledge base, raising findings. It never publishes, and never overwrites a page a person wrote."
+    },
     "settings.ai-knowledge-base": {
       "label": "Knowledge base",
       "tooltip": "The pages the assistant reads for know-how: Fyniq's and your organisation's. Write the notes they are made from, compare versions, and publish. Nothing changes for the assistant until a person publishes."
@@ -854,6 +866,14 @@
     "settings.ai-activity": {
       "label": "AI activity",
       "tooltip": "Every model call the AI made: for whom, on which connection and model, what happened, the tokens and the cost. Yours, or everyone's for the Owner and the DPO."
+    },
+    "oauth.consent": {
+      "label": "Connect an app",
+      "tooltip": "An AI app asks to read your company's books as you. Check who it is and what it asks for, keep only the areas you want, then allow or deny. It can only read and suggest."
+    },
+    "settings.connected-apps": {
+      "label": "Connected apps",
+      "tooltip": "AI apps, such as Claude Code, that work for you: what the organisation allows, what you have allowed each, and what they did. They read as you and can only propose changes."
     },
     "settings.ai-plan": {
       "label": "Use your own AI plan",
@@ -1298,6 +1318,22 @@
     "banking.auto-reconciled": {
       "label": "Auto-reconciled",
       "tooltip": "What Fyniq reconciled by itself, why and when; undo any of it while its month is open."
+    },
+    "banking.payouts": {
+      "label": "Payouts",
+      "tooltip": "Each payment provider's payouts broken into the charges, refunds, disputes and fees they settle, with its clearing account checked against what the provider says it holds."
+    },
+    "psp.dispute-loss": {
+      "label": "Write it off",
+      "tooltip": "Prepare the draft journal that writes a lost dispute off to the dispute loss account. Nothing posts until the draft is posted under Journals."
+    },
+    "psp.dispute-credit": {
+      "label": "Settle a credit note",
+      "tooltip": "Clear an issued credit note's credit against the money a lost dispute holds, instead of writing the invoice's revenue off as an expense."
+    },
+    "psp.event-resolve": {
+      "label": "Mark as dealt with",
+      "tooltip": "Record that you looked at an event Fyniq could not place, and what you did. It posts and fetches nothing."
     },
     "bank-rule.auto-apply": {
       "label": "Ask to apply by itself",
@@ -2230,6 +2266,14 @@
     "project.new": {
       "label": "Add a project",
       "tooltip": "A project is a value of your Project dimension, so lines you tag with it already count towards it. Choose how it is billed, its customer and who works on it."
+    },
+    "project.profitability": {
+      "label": "Profitability",
+      "tooltip": "This project's revenue, direct costs, margin and approved time over its last twelve months or since it started. Time is costed at the rate you may see, and the card says which."
+    },
+    "project.export": {
+      "label": "Export the report",
+      "tooltip": "Download the projects' rows as CSV or Excel. A file holds only the figures your own report shows."
     },
     "project.people": {
       "label": "People on the project",

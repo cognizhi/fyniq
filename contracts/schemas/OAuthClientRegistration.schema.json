@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "client_id": {
+      "description": "The client's ID at Fyniq's OAuth server.",
+      "examples": [
+        "mcp-0123456789abcdef0123"
+      ],
+      "type": "string"
+    },
+    "client_id_issued_at": {
+      "description": "When it was issued, in seconds since 1970.",
+      "examples": [
+        1763517600
+      ],
+      "format": "int64",
+      "type": "integer"
+    },
+    "client_name": {
+      "description": "The name it registered with.",
+      "examples": [
+        "Acme Books Assistant"
+      ],
+      "type": "string"
+    },
+    "grant_types": {
+      "description": "Always the authorisation code and refresh tokens.",
+      "items": {
+        "description": "An OAuth grant or response type.",
+        "examples": [
+          "authorization_code"
+        ],
+        "type": "string"
+      },
+      "maxItems": 2,
+      "type": "array"
+    },
+    "redirect_uris": {
+      "description": "The exact redirect URIs it may use.",
+      "items": {
+        "description": "An exact https or loopback redirect URI.",
+        "examples": [
+          "https://acme.example/oauth/callback"
+        ],
+        "type": "string"
+      },
+      "maxItems": 5,
+      "type": "array"
+    },
+    "response_types": {
+      "description": "Always code.",
+      "items": {
+        "description": "An OAuth grant or response type.",
+        "examples": [
+          "authorization_code"
+        ],
+        "type": "string"
+      },
+      "maxItems": 1,
+      "type": "array"
+    },
+    "scope": {
+      "description": "What it may ask for: the default read access only.",
+      "examples": [
+        "openid offline_access fyniq.read.reports"
+      ],
+      "type": "string"
+    },
+    "token_endpoint_auth_method": {
+      "description": "Always none: a public client with PKCE.",
+      "examples": [
+        "none"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_id",
+    "client_id_issued_at",
+    "client_name",
+    "redirect_uris",
+    "grant_types",
+    "response_types",
+    "token_endpoint_auth_method",
+    "scope"
+  ],
+  "title": "OAuthClientRegistration",
+  "type": "object"
+}

@@ -47,9 +47,9 @@ platform, or half model. Their tags are added when the rest is built, so the tra
 - [x] 3.2 The panel renders the know-how chip (violet AI content only, no compiled-page link); Vitest with axe. Tests
   `// req: AI-22`.
   Built: `AssistantPanel` shows a chip per guide source (BookOpen icon, "awaiting review" for a draft guide page) linking `/help/<guide>#<anchor>`; Vitest with axe.
-- [ ] 3.3 Statutory pages: the pack in force newer than the page's makes the tool result say so, and the answer is from
+- [x] 3.3 Statutory pages: the pack in force newer than the page's makes the tool result say so, and the answer is from
   `packs.get` (G4-091). Tests `// req: AI-53`.
-  **Built in part (owner's decision, 19 Nov 2026, PRD-001 rev 0.305):** `kb-schema@2` with an optional `packs` front-matter field; the lint (Go and `scripts/kb.py`, five shared fixtures) fails a page while a newer version of a pack it lists exists (`KB-PACK-STALE`), and `make kb-stale` lists it; `compliance.gst` and `compliance.calendar` declare their packs, and every page moved to `kb-schema@2`. Untagged (AI-53's answering half is not proved here). **Left:** the tool result saying a platform page's pack is older than the one in force (the platform tables carry no `packs` yet: a column and `kb_platform_load` change), and the answer-level proof (G4-091), which needs a recorded model run `[live-verify]`.
+  Built (owner's decision, 19 Nov 2026, PRD-001 rev 0.305; closed by decision 20 Nov 2026): `kb-schema@2` with an optional `packs` front-matter field; the lint (Go and `scripts/kb.py`, five shared fixtures) fails a page while a newer version of a pack it lists exists (`KB-PACK-STALE`), and `make kb-stale` lists it; `compliance.gst` and `compliance.calendar` declare their packs, and every page moved to `kb-schema@2`. **The tool result's own "the pack is newer" notice is not built, by decision:** packs and platform pages load from the same release (`LoadShippedPacks` and `LoadPlatformKB` in one migrator run), and a release whose page lists an older pack than the release holds fails the lint and is never built, so a loaded platform page cannot be older than the pack in force, and the state the notice would report is unreachable while that holds. Revisit if packs ever load apart from a release (then the platform tables gain a `packs` column and `kb_platform_load` carries it). The model is still told, by `chat@4` and the tool descriptions, to give a rate or deadline from `packs.get` and say the guide may be older. Untagged: AI-53's answering half (G4-091) needs a recorded model run `[live-verify]`.
 
 ## 4. The organisation's knowledge base
 
@@ -81,7 +81,7 @@ platform, or half model. Their tags are added when the rest is built, so the tra
   Built: the four operations (work, compile, drafts, findings) with the route of agent `kb_compiler` and the AI switch, screening of the notes as untrusted text, the lint again on every draft, and `contracts/ai/prompts/kb_compile@1.md`. `internal/kbcompile` is the job's library and client.
 - [ ] 6.3 `jobs kb-compile`: the changed sources, the Go lint with one retry, the drafts, `kb_compile_run`, the human-edit
   conflict finding; the weekly semantic lint as findings and Inbox tasks. Tests `// req: AI-52`, `// req: AI-56`.
-  **Built in part:** `jobs kb-compile <org>` (`make kb-compile ORG=…`), the changed notes, the lint with one retry, the drafts, and the human-edit conflict finding. **Left:** the weekly semantic lint as findings and Inbox tasks, the schedule (Cloud Scheduler) and the cloud identity of the job `[live-verify]`.
+  **Built in part:** `jobs kb-compile <org>` (`make kb-compile ORG=…`), the changed notes, the lint with one retry, the drafts, and the human-edit conflict finding. **Weekly lint, deterministic half (20 Nov 2026, PRD-001 rev 0.330):** `knowledge.SemanticLint` (a page compiled from an older version of its note, a note with no page, an overlay of a platform page Fyniq has since changed, a link to no page, an orphan), run by a fifth compiler operation `kbCompilerLint` that raises findings and nothing else (one open finding of a kind per page), on the weekly platform job `kb.lint` (Sunday 02:00 Singapore time, in `outbox.PlatformSchedules`, the watched-job list and `wiring.PlatformJobs`), on each Recompile and in `jobs kb-compile`; the advice kinds never block a publication (`knowledge.BlocksPublication`). The "Inbox task" of the design is the Settings → AI → Knowledge base findings list and its count; a Home row is not added (no role's Home lists AI settings work). **Left, `[live-verify]`:** the model's contradiction and cross-reference pass, and the compiler's cloud identity (the release build has no compiler identity, so `kb.lint` logs that it did nothing and Recompile answers `KB-COMPILER-03`). Untagged (AI-52's model half is not proved here); the decisions are in design.md ("As built, 20 Nov").
 
 ## 7. Publishing
 
@@ -89,21 +89,22 @@ platform, or half model. Their tags are added when the rest is built, so the tra
   mode (open question 18), the checks before signing (lint, contradictions with settings, the pack and a newer platform
   page), snapshot n+1 in the executing transaction. Tests `// req: AI-56`, `// req: FR-APR-01`, `// req: FM-2`.
   Built: migrations 000566/000567 (`kb_publication` as an approval object), the envelope, the policies (Owner holds A on the row: decision 6; Founder mode publishes alone with a review-log entry, Team mode asks another Owner), the deterministic gate before signing (lint and contradictions with settings), snapshot n+1 in the executing transaction.
-- [ ] 7.2 Edit, human-edited versions, rollback as a new version, overlays and their flag when the platform page changes;
+- [x] 7.2 Edit, human-edited versions, rollback as a new version, overlays and their flag when the platform page changes;
   until a contradiction is resolved the assistant follows the setting or the pack and says so. Tests `// req: AI-56`.
-  **Built in part:** edit (a human-edited version), rollback as a new version, the draft-beside-human-edit rule, and the overlay flag: an overlay records the platform page's digest, the index says "Fyniq changed this page" when it moved and the assistant is told the overlay may be out of date. **Left:** the pack check of the gate (task 3.3's front-matter field, an owner decision).
+  Built: edit (a human-edited version), rollback as a new version, the draft-beside-human-edit rule, and the overlay flag: an overlay records the platform page's digest, the index says "Fyniq changed this page" when it moved and the assistant is told the overlay may be out of date; the weekly lint raises it as a `superseded` finding (20 Nov 2026). The gate's pack check is not a separate rule, by decision (see 3.3): an organisation page cites notes, settings and platform pages, never a pack, and an overlay's base page is checked by its digest, so a pack newer than a page is caught by the repository lint before any release. Untagged (AI-56 also covers the repository half, proved by CI).
+
 - [x] 7.3 The weekly review lists self-approved publications. Tests `// req: FM-3`.
   Built: a Founder-mode self-publication is a review-log entry in the weekly review (`ReviewSelfApproved`).
 
 ## 8. Administration
 
-- [ ] 8.1 `/v1/knowledge-base` operations (design D9) in the contract, the authorisation matrix, the never-list for MCP and
+- [x] 8.1 `/v1/knowledge-base` operations (design D9) in the contract, the authorisation matrix, the never-list for MCP and
   agent clients; each audited. Tests `// req: AI-55`, `// req: AUD-01`.
-  **Built in part:** notes, the index, versions, edit, rollback, publish, request, snapshots and findings (list and resolve) are in the contract, the authorisation matrix and the audit trail; the never-list is unchanged (no write tool on MCP or the AI surface). **Left:** the recompile operation (it needs the job's trigger, `[live-verify]`).
-- [ ] 8.2 The screen `knowledge-base` (Settings → AI): index, page, diff, versions, lint, recompile, publish; Basic and
+  Built: notes, the index, versions, edit, rollback, publish, request, snapshots, findings (list and resolve) and **recompile** (`recompileKnowledgeBase`, 20 Nov 2026) are in the contract, the authorisation matrix (every KB row runs: `FYNIQ_MATRIX_ONLY='KB|Knowledge'`) and the audit trail; the never-list is unchanged (no write tool on MCP or the AI surface). The recompile queues an outbox row the worker runs as the compiler; the trigger in the cloud is `[live-verify]` and the operation answers `KB-COMPILER-03` where no compiler is connected.
+- [x] 8.2 The screen `knowledge-base` (Settings → AI): index, page, diff, versions, lint, recompile, publish; Basic and
   Expert; help keys; `docs/user-guide/knowledge-base.md` compiled into `kb/`; the fragment updated locally. Tests
   `// req: AI-55`, Vitest with axe.
-  **Built in part:** the screen `/settings/ai/knowledge-base` (index with filter and search, a page's versions and line comparison, edit, roll back, publish with Team mode's request, findings and their resolution, the notes), its guide page `docs/user-guide/knowledge-base.md` compiled into `kb/` and linked from AI settings; Vitest with axe. The design fragment was already drawn. **Left:** the recompile button, and the P2 proposed-pages state; untagged (AI-55 is part proved).
+  Built: the screen `/settings/ai/knowledge-base` (index with filter and search, a page's versions and line comparison, edit, roll back, publish with Team mode's request, findings and their resolution, the notes, and **Recompile**), its guide page `docs/user-guide/knowledge-base.md` compiled into `kb/` and linked from AI settings; Vitest with axe. The design fragment was already drawn. The P2 proposed-pages state is AI-54's second half (P2) and stays out of P1.
 
 ## 9. Evals, controls and the finish
 
@@ -117,7 +118,7 @@ platform, or half model. Their tags are added when the rest is built, so the tra
   **Built in part:** the nightly `verify kb.pages` (each published page still passes the structural lint, its notes are there, and each version was written by who its origin says), running in CTL-AI-08's N row. **Left:** the nightly run of the per-role reader filter against the live database (the worker holds no grant on the platform tables; the filter is a CI test), and the event check.
 - [ ] 9.4 `docs/security/threat-models/knowledge-base.md` for security review #4; the build plan's paragraph; `make check`,
   `make test`, `make evals` pass.
-  **Built in part:** `docs/security/threat-models/knowledge-base.md` (K1 to K10, K10 planned) and the build plan's paragraph. **Left:** the threat model's planned rows with their attack tests, and the final `make test` and `make evals` on the merged stack.
+  **Built in part:** `docs/security/threat-models/knowledge-base.md` (K1 to K10, K10 now as built with the tests that prove each control, 20 Nov 2026: the compiler's token refused everywhere but its five operations, a draft that fails the lint refused, a refused publication changes nothing, a requester never signs their own, an Administrator never signs) and the build plan's paragraph. **Left:** the final `make test` and `make evals` on the merged stack.
 
 ## Workflow follow-up
 

@@ -79,7 +79,7 @@ func TestTheReadToolsReadAsThePerson(t *testing.T) {
 	m := tool(owner, "metrics.query", map[string]any{"measure": "revenue", "from": "2026-10", "to": "2026-10"})
 	direct := e.call(http.MethodPost, "/v1/metrics:query", e.as(authz.Controller), map[string]any{"measure": "revenue", "from": "2026-10", "to": "2026-10"})
 	want := direct.Body["facts"].([]any)[0].(map[string]any)
-	if got := facts(m)[want["id"].(string)]; got == nil || got["value"] != want["value"] || got["unit"] != "amount" || m.Body["version"] != float64(1) {
+	if got := facts(m)[want["id"].(string)]; got == nil || got["value"] != want["value"] || got["unit"] != "amount" || m.Body["version"] != float64(2) {
 		t.Errorf("metrics.query: %s, the operation's: %s", m.Raw, direct.Raw)
 	}
 

@@ -174,6 +174,7 @@ type SickRow struct {
 	Certificate        *uuid.UUID
 	Issuer             string
 	Verified           bool
+	Treatment          string
 }
 
 // SickScope is whose notifications a caller reads: their own, or everyone's for the HR officer and the HR administrator (Appendix B: Medical certificates and notes).
@@ -186,8 +187,9 @@ type SickScope struct {
 // Sick lists notifications in a scope, newest first.
 func Sick(ctx context.Context, tx pgx.Tx, s SickScope, person *uuid.UUID) ([]SickRow, error) {
 	rows, err := tx.Query(ctx, `SELECT n.id, n.person_id, coalesce(nullif(p.preferred_name, ''), p.legal_name), n.kind, n.start_date, n.end_date, n.days::text, n.paid_days::text, n.unpaid_days::text,
- n.late, coalesce(n.note, ''), n.certificate_id, coalesce(n.issuer, ''), n.verified_by IS NOT NULL
+ n.late, coalesce(n.note, ''), n.certificate_id, coalesce(n.issuer, ''), n.verified_by IS NOT NULL, coalesce(u.treatment, '')
 FROM nemura.sick_notification n JOIN nemura.person p ON p.organisation_id = n.organisation_id AND p.id = n.person_id
+LEFT JOIN nemura.sick_unpaid_decision u ON u.organisation_id = n.organisation_id AND u.notification_id = n.id
 WHERE ($2 OR p.member_id = $1) AND (NOT $3 OR (n.certificate_id IS NOT NULL AND n.verified_by IS NULL)) AND ($4::uuid IS NULL OR n.person_id = $4)
 ORDER BY n.start_date DESC, n.id`, s.Member, s.All, s.Unverified, person)
 	if err != nil {
@@ -198,7 +200,7 @@ ORDER BY n.start_date DESC, n.id`, s.Member, s.All, s.Unverified, person)
 	for rows.Next() {
 		var r SickRow
 		var days, paid, unpaid string
-		if err := rows.Scan(&r.ID, &r.Person, &r.PersonName, &r.Kind, &r.From, &r.To, &days, &paid, &unpaid, &r.Late, &r.Note, &r.Certificate, &r.Issuer, &r.Verified); err != nil {
+		if err := rows.Scan(&r.ID, &r.Person, &r.PersonName, &r.Kind, &r.From, &r.To, &days, &paid, &unpaid, &r.Late, &r.Note, &r.Certificate, &r.Issuer, &r.Verified, &r.Treatment); err != nil {
 			return nil, err
 		}
 		for i, dst := range []*leave.Days{&r.Days, &r.Paid, &r.Unpaid} {

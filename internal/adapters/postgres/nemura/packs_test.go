@@ -43,7 +43,7 @@ func TestACompanyAcceptsAPackDecidesOnResearchedValuesAndSetsAPolicyAgainstTheSt
 	}
 	s := api.Session{Organisation: c.org, Member: c.owner}
 	list, err := svc.Versions(ctx, s)
-	if err != nil || len(list) != 3 || list[0].ID != "sg-people@2026.1" || list[2].ID != "sg-people@2026.3" || list[0].Accepted || list[2].Researched < 50 || len(list[0].Sources) != 7 || len(list[2].Sources) != 12 {
+	if err != nil || len(list) != 5 || list[0].ID != "sg-people@2026.1" || list[4].ID != "sg-people@2026.5" || list[0].Accepted || list[4].Researched < 50 || len(list[0].Sources) != 7 || len(list[4].Sources) != 15 {
 		t.Fatalf("%d versions: %v", len(list), err)
 	}
 	if err := svc.Accept(ctx, s, "sg-people@2026.1"); err != nil {
@@ -85,7 +85,7 @@ func TestACompanyAcceptsAPackDecidesOnResearchedValuesAndSetsAPolicyAgainstTheSt
 	if _, err := svc.SetPolicy(ctx, s, d("2099-06-01"), statutePolicy()); err != nil {
 		t.Fatal(err)
 	}
-	if r, v, found, _ := svc.Policy(ctx, s, d("2099-04-01")); !found || v != "sg-people@2026.3" || r.ChildcareNonCitizenDays != 4 {
+	if r, v, found, _ := svc.Policy(ctx, s, d("2099-04-01")); !found || v != "sg-people@2026.5" || r.ChildcareNonCitizenDays != 4 {
 		t.Errorf("the policy in April: %+v %s %v", r, v, found)
 	}
 	if r, _, _, _ := svc.Policy(ctx, s, d("2099-07-01")); r.ChildcareNonCitizenDays != 2 {
@@ -110,16 +110,16 @@ func TestACompanyAcceptsAPackDecidesOnResearchedValuesAndSetsAPolicyAgainstTheSt
 	if before < 10 {
 		t.Fatalf("researched values in use: %d", before)
 	}
-	if err := svc.Decide(ctx, s, "sg-people@2026.3", "annual_leave", "1", "short"); personRefusal(err) != people.CodeInvalid {
+	if err := svc.Decide(ctx, s, "sg-people@2026.5", "annual_leave", "1", "short"); personRefusal(err) != people.CodeInvalid {
 		t.Errorf("a decision with no reason: %v", err)
 	}
-	if err := svc.Decide(ctx, s, "sg-people@2026.3", "annual_leave", "99", "We read MOM's page and it matches."); personRefusal(err) != people.CodeInvalid {
+	if err := svc.Decide(ctx, s, "sg-people@2026.5", "annual_leave", "99", "We read MOM's page and it matches."); personRefusal(err) != people.CodeInvalid {
 		t.Errorf("a value that is not in the pack: %v", err)
 	}
-	if err := svc.Decide(ctx, s, "sg-people@2026.3", "annual_leave", "1", "We read MOM's page and it matches our contracts."); err != nil {
+	if err := svc.Decide(ctx, s, "sg-people@2026.5", "annual_leave", "1", "We read MOM's page and it matches our contracts."); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.Decide(ctx, s, "sg-people@2026.3", "annual_leave", "1", "We read MOM's page and it matches our contracts."); personRefusal(err) != people.CodeExists {
+	if err := svc.Decide(ctx, s, "sg-people@2026.5", "annual_leave", "1", "We read MOM's page and it matches our contracts."); personRefusal(err) != people.CodeExists {
 		t.Errorf("deciding twice: %v", err)
 	}
 	if after := count(13); after != before-1 {

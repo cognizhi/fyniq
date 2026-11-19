@@ -59,14 +59,14 @@ classes:
     transfers: "None"
     columns: [person_dependant.birth_date]
   - key: leave-records
-    what: "A person's working pattern, their leave ledger (each grant, use, reservation and correction by type and year, with its note) their leave requests, with the person's note and the approver's reason, and their government-paid leave with the claims filed for it and what the portal answered"
+    what: "A person's working pattern, their leave ledger (each grant, use, reservation and correction by type and year, with its note) their leave requests, with the person's note and the approver's reason, and their government-paid leave with the claims filed for it what the portal answered, their hours worked on special days and what leave gives their pay"
     why: "To keep an exact balance of leave, to show how it was worked out, and to meet the employer's record-keeping duties for leave (Employment Act)"
     where: "Nemura's database, in Singapore"
     who: "The person their own; the line manager their reports'; HR (Appendix B's leave records)"
     retention: "MOM: employment records, leave included, of a former employee are kept for 1 year after they leave"
     protection: "Row-level security; the ledger is append-only and every entry is audited; the notes are never in the audit event, and the approver's reason is its reason (never a diagnosis: leave requests carry no medical detail)"
     transfers: "None"
-    columns: [leave_ledger.note, leave_request.note, leave_request.decision_reason, gov_claim_event.note]
+    columns: [leave_ledger.note, leave_request.note, leave_request.decision_reason, gov_claim_event.note, overtime_entry.note, overtime_entry.decision_reason, pay_input.note]
   - key: sick-leave
     what: "A person's notice that they were sick: the days, whether outpatient or hospitalisation, their note, and a pointer to the medical certificate (a restricted document) with who issued it and who verified it"
     why: "To record sick leave against the statutory ceiling, to check the certificate (Employment Act) and to pay what is due"
@@ -85,6 +85,15 @@ classes:
     protection: "Row-level security; a request keeps its words, its receipt date and its deadline, and is answered once; the audit event carries the outcome, never the reason or the reply"
     transfers: "None"
     columns: [flex_request.reason, flex_request.outcome, flex_request.written_reply]
+  - key: letters
+    what: "A person's request for a letter and what it is for, the facts filled into it from their record, the issued letter's data, the company's letterhead and the notes on a template"
+    why: "To issue letters the person asked for, exactly and attributably, and to keep the issued letter as evidence of what was said and who signed it"
+    where: "Nemura's database, in Singapore; the PDF in Nemura's file store, in Singapore"
+    who: "The person their own; HR officer, HR administrator and Owner (Appendix B: Letters and templates); a delivery link delivers one letter to whoever holds the token for seven days"
+    retention: "Kept with the employment record: an issued letter is evidence of what the company stated about the person"
+    protection: "Row-level security; a request, a checked letter and an issued letter are evidence that never change; the PDF's SHA-256 is checked whenever it is read; a link's token is kept as a hash; the audit event carries the reference and the hash, never the letter's text"
+    transfers: "None"
+    columns: [letter_request.purpose, letter_request.data, letter_request.decision_reason, letter_issued.data, letter_template_version.note]
   - key: access-requests
     what: "A person's request for their own data, the decision for each category of record and the written outcome"
     why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"

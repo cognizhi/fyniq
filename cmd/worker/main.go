@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/email"
 	"github.com/cognizhi/fyniq/internal/httpserver"
+	"github.com/cognizhi/fyniq/internal/kbcompile"
 	"github.com/cognizhi/fyniq/internal/migration"
 	"github.com/cognizhi/fyniq/internal/notify"
 	"github.com/cognizhi/fyniq/internal/outbox"
@@ -49,7 +50,9 @@ func main() {
 		kinds := map[string]outbox.Work{}
 		if admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL"); admin != "" {
 			kinds[tokens.Kind] = tokens.Work(wiring.Hydra(admin))                         // AI-38: revoke a user's tokens after a change
+			kinds[tokens.AgentKind] = tokens.AgentWork(wiring.Hydra(admin))               // AI-35: an opt-out stops the person's AI apps' tokens
 			kinds[tokens.RemoveClientKind] = tokens.RemoveClientWork(wiring.Hydra(admin)) // FR-INT-02: a revoked API client deleted
+			kit.OAuthClients = wiring.Hydra(admin)                                        // AI-90: the job that removes lapsed AI app registrations
 		}
 		kinds[security.SignInKind] = security.SignInWork(kit.Store, kit.Alerts(deps.Clock)) // SEC-31: an admin's sign-in, checked
 		if c, ok := kit.Committer(deps.Clock); ok {                                         // FR-DOC-13: commit a final record's files to the locked store
@@ -82,6 +85,7 @@ func main() {
 		kinds[pspevents.Kind] = events.Work()
 		kinds[psp.Kind] = kit.PSPRunner(deps.Clock).Work()       // FR-PSP-06: a provider's sweep, after its events                       // FR-PSP-01: a provider's event worked: its object fetched and posted
 		kinds[notify.FanoutKind] = kit.Fanout(deps.Clock).Work() // FR-NTF-05: one event, every person it concerns
+		kinds[kbcompile.Kind] = kit.KBCompile()                  // AI-52, AI-55: a person's Recompile, as the compiler under its own token
 		kinds[agents.RunKind] = kit.AgentRuns(deps.Clock).Work   // AI-64, AI-65: a scheduled agent's run at its slot
 		kinds[notify.RelayKind] = kit.Relays(deps.Clock).Work()  // FR-ADM-07: the installation's notices, in each Super admin's organisation
 		for kind, work := range kit.CheckKinds(deps.Clock) {     // FR-CTL-01: the checks after a change, and Run now

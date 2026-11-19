@@ -4,7 +4,7 @@ type: task
 title: See requests and make a flexible work request in Nemura
 summary: What My requests shows, how a formal flexible work request works and when the written reply is due, and who answers it
 sources:
-  - docs/user-guide/nemura/requests.md sha256:9975b0bc8f334c8e4a23b85965825ac5fca0527efeb08e43734c18aaff63bda6
+  - docs/user-guide/nemura/requests.md sha256:18a74c4d1e7cd1d4b06c36fd4eab87b148827b6c226c7d6beec8418abe038796
 data_class: general
 taint: trusted
 status: published
@@ -38,6 +38,13 @@ aliases:
 4. **Withdraw** it while it waits for a reply.
 
 (src: docs/user-guide/nemura/requests.md#steps)
+
+## Hours worked on special days
+
+- A Part IV employee enters overtime, work on a rest day and work on a public holiday under their requests, one day at a time, without clocking; for rest-day work they say whether it was at the employer's request or theirs.
+- The manager or the people team approves each day and a pay run uses it once. Overtime beyond the monthly limit in the country pack stays recorded and is paid, and the people team is told; a person who is not a Part IV employee on that day is refused.
+
+(src: docs/user-guide/nemura/requests.md#hours-worked-on-special-days)
 
 ## What happens next
 

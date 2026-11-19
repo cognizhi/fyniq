@@ -12,6 +12,8 @@ globalThis.Request = class extends NodeRequest {
 type Answer = { status: number; body?: unknown };
 let answers = new Map<string, Answer>();
 export const calls: string[] = [];
+// bodies are the JSON bodies the fake API was sent, by route: what a page put on the wire.
+export const bodies = new Map<string, unknown>();
 
 // answer sets what the fake API replies to "GET /v1/session" and the like; an unset call is a 404.
 export function answer(route: string, a: Answer): void {
@@ -22,6 +24,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const req = input instanceof Request ? input : new Request(input, init);
   const route = `${req.method} ${new URL(req.url).pathname.replace(/^\/api/, "")}`;
   calls.push(route);
+  if (req.method !== "GET" && req.headers.get("content-type")?.includes("json")) bodies.set(route, await req.clone().json());
   const a = answers.get(route) ?? { status: 404, body: { code: "NM_NOT_FOUND" } };
   return new Response(a.body === undefined ? null : JSON.stringify(a.body), { status: a.status, headers: { "Content-Type": a.status >= 400 ? "application/problem+json" : "application/json" } });
 }) as typeof fetch;
@@ -29,6 +32,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 beforeEach(() => {
   answers = new Map();
   calls.length = 0;
+  bodies.clear();
   window.history.replaceState(null, "", "/");
 });
 

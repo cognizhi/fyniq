@@ -52,6 +52,8 @@ var (
 var (
 	GetProjectReport       = Policy{Operation: "getProjectReport", Capability: ProjectReports, Need: View}
 	ListProjectTimeEntries = Policy{Operation: "listProjectTimeEntries", Capability: ProjectReports, Need: View}
+	ExportProjectReport    = Policy{Operation: "exportProjectReport", Capability: ProjectReports, Need: View,
+		Note: "The same rows the caller's own report holds, as a file: costs, margin and salary tagged only for those who may see them (G4-050)."}
 )
 
 // Billing a project's work (FR-PRJ-10): the unbilled view is read under "Project reports and cost rates" and shows hours and billing rates,

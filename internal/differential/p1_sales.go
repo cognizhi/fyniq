@@ -196,6 +196,7 @@ func (r *p1) invoice(i int, d Document, date time.Time, credit bool) (ledger.Ent
 		if of != nil {
 			of.credited, _ = of.credited.Add(totals.Total)
 		}
+		r.keepOpenCredit(d.ID, e) // a credit note's credit, which a dispute settlement settles
 		r.hold(d.ID, date, e, ledger.RoleAccountsReceivable)
 		return e, true
 	}
@@ -296,6 +297,42 @@ func (r *p1) customerReceipt(d Document, date time.Time) (ledger.Entry, bool) {
 	}
 	r.settled(date, settlements, r.idsOf(d))
 	r.holdCredit(d.ID, date, e, ledger.RoleAccountsReceivable, settlements)
+	return e, true
+}
+
+// keepOpenCredit records an issued credit note's credit on 1100, positive, which a dispute settlement settles.
+func (r *p1) keepOpenCredit(id string, e ledger.Entry) {
+	for _, l := range e.Lines {
+		if r.settings.Accounts[l.AccountID].Role == ledger.RoleAccountsReceivable {
+			r.open[id] = &openDocument{kind: "credit_note", total: l.Amount.Neg(), rate: l.Rate, open: l.Amount.Neg(), carrying: l.Base.Neg()}
+			return
+		}
+	}
+}
+
+// disputeSettlement posts a lost dispute's customer credit settled against a provider's disputes clearing account
+// (dispute_settlement@1, FR-PSP-04): one issued credit note in the base currency, nothing unapplied, no part in full, to an
+// account of settings.dispute_accounts, as customercredit.PrepareRefund reads it.
+func (r *p1) disputeSettlement(d Document, date time.Time) (ledger.Entry, bool) {
+	var x settlementDoc
+	if json.Unmarshal(d.Raw, &x) != nil || x.Currency != r.base.Code || len(x.Parts) != 1 || x.Parts[0].InFull || x.Unapplied != "" || x.BaseAmount != "" || x.FXRate != "" {
+		return ledger.Entry{}, false
+	}
+	if cur, ok := r.s.Settings.DisputeAccounts[x.Account]; !ok || cur != x.Currency {
+		return ledger.Entry{}, false
+	} else if _, isMoney := r.s.Settings.MoneyAccounts[x.Account]; isMoney {
+		return ledger.Entry{}, false
+	}
+	p, ok := r.settlement(d, date, "credit_note")
+	if !ok || len(p.Bills) != 1 {
+		return ledger.Entry{}, false
+	}
+	rf := ledger.CustomerRefund{ID: p.ID, Version: p.Version, Date: p.Date, Account: p.Account, Currency: p.Currency, Credit: p.Bills[0]}
+	e, st, err := ledger.PostDisputeSettlement(rf, r.settings)
+	if err != nil || !r.fits(e) {
+		return ledger.Entry{}, false
+	}
+	r.settled(date, []ledger.Settlement{st}, r.idsOf(d))
 	return e, true
 }
 

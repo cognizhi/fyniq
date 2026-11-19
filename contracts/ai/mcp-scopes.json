@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "note": "Which scope each read tool needs over MCP (AI-37, AI-40), by the tool and by the input that selects what it reads. A tool, or an input value, with no entry here is not exposed and not callable: a new tool is invisible to MCP until a reviewer maps it. Several scopes at once all apply. The scopes are fyniq.read.<area>; payroll and equity are never mapped in P1. `propose` lists the catalogue's task types a client may propose over MCP, each needing fyniq.propose.<type>; a proposal waits for a person to approve it in Fyniq, and proposals.list and proposals.get (fyniq.read.proposals) read the person's own.",
+  "tools": {
+    "metrics.query": {
+      "inputs": [
+        {
+          "field": "measure",
+          "map": {
+            "revenue": "fyniq.read.reports", "gross_profit": "fyniq.read.reports", "ebitda": "fyniq.read.reports",
+            "net_profit": "fyniq.read.reports", "costs": "fyniq.read.reports", "spend_sm": "fyniq.read.reports",
+            "spend_rd": "fyniq.read.reports", "spend_ga": "fyniq.read.reports", "net_burn": "fyniq.read.reports",
+            "cash": "fyniq.read.reports", "receivables": "fyniq.read.reports", "payables": "fyniq.read.reports",
+            "current_assets": "fyniq.read.reports", "current_liabilities": "fyniq.read.reports",
+            "total_liabilities": "fyniq.read.reports", "equity": "fyniq.read.reports",
+            "account_movement": "fyniq.read.accounting", "account_balance": "fyniq.read.accounting",
+            "gross_margin": "fyniq.read.reports", "ebitda_margin": "fyniq.read.reports", "net_margin": "fyniq.read.reports",
+            "revenue_growth": "fyniq.read.reports", "booked_mrr": "fyniq.read.reports", "arr": "fyniq.read.reports",
+            "runway": "fyniq.read.reports", "burn_multiple": "fyniq.read.reports", "current_ratio": "fyniq.read.reports",
+            "quick_ratio": "fyniq.read.reports", "working_capital": "fyniq.read.reports", "dso": "fyniq.read.reports",
+            "dpo": "fyniq.read.reports"
+          }
+        },
+        {
+          "field": "by",
+          "optional": true,
+          "map": {
+            "account": "fyniq.read.accounting", "customer": "fyniq.read.sales", "vendor": "fyniq.read.purchases",
+            "department": "fyniq.read.reports"
+          }
+        }
+      ]
+    },
+    "lineage.explain": {
+      "inputs": [
+        {
+          "field": "measure",
+          "map": {
+            "revenue": "fyniq.read.reports", "gross_profit": "fyniq.read.reports", "ebitda": "fyniq.read.reports",
+            "net_profit": "fyniq.read.reports", "costs": "fyniq.read.reports", "spend_sm": "fyniq.read.reports",
+            "spend_rd": "fyniq.read.reports", "spend_ga": "fyniq.read.reports", "net_burn": "fyniq.read.reports",
+            "cash": "fyniq.read.reports", "receivables": "fyniq.read.reports", "payables": "fyniq.read.reports",
+            "current_assets": "fyniq.read.reports", "current_liabilities": "fyniq.read.reports",
+            "total_liabilities": "fyniq.read.reports", "equity": "fyniq.read.reports",
+            "account_movement": "fyniq.read.accounting", "account_balance": "fyniq.read.accounting",
+            "gross_margin": "fyniq.read.reports", "ebitda_margin": "fyniq.read.reports", "net_margin": "fyniq.read.reports",
+            "revenue_growth": "fyniq.read.reports", "booked_mrr": "fyniq.read.reports", "arr": "fyniq.read.reports",
+            "runway": "fyniq.read.reports", "burn_multiple": "fyniq.read.reports", "current_ratio": "fyniq.read.reports",
+            "quick_ratio": "fyniq.read.reports", "working_capital": "fyniq.read.reports", "dso": "fyniq.read.reports",
+            "dpo": "fyniq.read.reports"
+          }
+        },
+        {
+          "field": "by",
+          "optional": true,
+          "map": {
+            "account": "fyniq.read.accounting", "customer": "fyniq.read.sales", "vendor": "fyniq.read.purchases",
+            "department": "fyniq.read.reports"
+          }
+        }
+      ]
+    },
+    "records.get": {
+      "inputs": [
+        {
+          "field": "kind",
+          "map": {
+            "invoice": "fyniq.read.sales", "credit_note": "fyniq.read.sales", "quote": "fyniq.read.sales",
+            "sales_order": "fyniq.read.sales", "item": "fyniq.read.sales",
+            "bill": "fyniq.read.purchases", "vendor_credit": "fyniq.read.purchases", "purchase_order": "fyniq.read.purchases",
+            "journal": "fyniq.read.accounting", "account": "fyniq.read.accounting"
+          }
+        }
+      ]
+    },
+    "records.search": {
+      "inputs": [
+        {
+          "field": "kind",
+          "required": true,
+          "describe": "The kind of record to search. Required: an MCP client searches one kind at a time.",
+          "map": {
+            "invoices": "fyniq.read.sales", "quotes": "fyniq.read.sales", "items": "fyniq.read.sales",
+            "bills": "fyniq.read.purchases", "purchase_orders": "fyniq.read.purchases",
+            "journals": "fyniq.read.accounting", "accounts": "fyniq.read.accounting"
+          }
+        }
+      ]
+    },
+    "checks.list": { "scope": "fyniq.read.compliance" },
+    "checks.explain": { "scope": "fyniq.read.compliance" },
+    "packs.get": { "scope": "fyniq.read.compliance" },
+    "proposals.list": { "scope": "fyniq.read.proposals" },
+    "proposals.get": { "scope": "fyniq.read.proposals" }
+  },
+  "propose": ["sec.create_task", "sec.draft_document", "sec.draft_reminder"],
+  "unexposed": {
+    "calc": "It runs in the AI service on facts of a conversation; an MCP client does its own arithmetic from the facts it is given.",
+    "kb.index": "The knowledge base reaches MCP clients in a later slice: it needs its own read scope and the per-reader filter proven on the MCP path (AI-54); until the Owner grants that, an MCP client reads no know-how page, and no scope is widened to carry it.",
+    "kb.read": "The knowledge base reaches MCP clients in a later slice: it needs its own read scope and the per-reader filter proven on the MCP path (AI-54); until the Owner grants that, an MCP client reads no know-how page, and no scope is widened to carry it.",
+    "kb.search": "The knowledge base reaches MCP clients in a later slice: it needs its own read scope and the per-reader filter proven on the MCP path (AI-54); until the Owner grants that, an MCP client reads no know-how page, and no scope is widened to carry it.",
+    "metrics.query.by=project": "Projects reach MCP clients in a later slice: project reports have their own right (Appendix D) and a manager sees only their projects, which the MCP path has not proved; until then no scope is widened to carry it.",
+    "metrics.query.measure=project_minutes": "As metrics.query.by=project: approved project time is read by project only.",
+    "records.get.kind=expense_claim": "A claim names a person and their reimbursement: not exposed over MCP in P1.",
+    "records.get.kind=contact": "A contact is a customer, a vendor, a director or a holder: personal data, not exposed over MCP in P1.",
+    "records.search.kind=claims": "As expense_claim.",
+    "records.search.kind=contacts": "As contact.",
+    "records.search.kind=(left out)": "Searching every kind crosses every area: a kind must be named."
+  }
+}

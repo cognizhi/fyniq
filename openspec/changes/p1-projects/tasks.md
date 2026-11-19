@@ -106,8 +106,10 @@ project's Rates card; G4-050 tests.
 Built (slice 4, PR 864): `projectreport` (revenue and direct costs through `balance.BySet`, payroll-cost accounts listed apart, time at cost at the viewer's tier,
 utilisation, realisation, budget use); `GET /v1/reports/projects` and the time-entries drill (hours only); Reports > Projects; checks C.1 #26, C.1 #27 and
 C.2 #41; migration `000605` (a week's `submitted_at` from the application's clock); PRD-001 rev 0.296. Utilisation uses 8 hours a weekday less public holidays until
-FR-PPL-07 supplies working patterns. Deferred: the CSV export and the semantic-layer metrics of 4.2, and the project record's profitability tile (the report and
-the Unbilled card carry them).
+FR-PPL-07 supplies working patterns. Deferred then, built 20 Nov 2026 (PRD-001 rev 0.331): the CSV and Excel export of 4.2 (`GET /v1/reports/projects/export`, the caller's own columns, audited), the semantic layer's
+Project dimension and `project_minutes` measure (the `metrics.query` tool is version 2; hours only, never a rate or a cost; a manager sees only their projects), and the project
+record's Profitability card of 4.4 (the report's row at the viewer's tier, the rate named, the small-group warning, the approved entries on request, Export CSV). The time-cost
+margin is not a semantic measure by decision (it depends on the viewer's tier; the assistant is never given a person's cost).
 
 ## 5. Billing and project costs (slice 5)
 

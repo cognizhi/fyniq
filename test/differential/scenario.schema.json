@@ -235,7 +235,7 @@
       "type": "object",
       "required": ["type"],
       "properties": {"type": {"enum": ["manual_journal", "opening_balances", "bank_transaction", "bank_transfer", "bill", "vendor_credit",
-                                         "bill_payment", "invoice", "credit_note", "customer_receipt", "customer_deposit",
+                                         "bill_payment", "invoice", "credit_note", "customer_receipt", "dispute_settlement", "customer_deposit",
                                          "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
                                          "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
                                          "director_fee", "director_waiver", "director_repayment",
@@ -248,7 +248,7 @@
         {"if": {"properties": {"type": {"const": "bank_transaction"}}}, "then": {"$ref": "#/$defs/bankTransaction"}},
         {"if": {"properties": {"type": {"const": "bank_transfer"}}}, "then": {"$ref": "#/$defs/bankTransfer"}},
         {"if": {"properties": {"type": {"enum": ["bill", "vendor_credit"]}}}, "then": {"$ref": "#/$defs/bill"}},
-        {"if": {"properties": {"type": {"enum": ["bill_payment", "customer_receipt", "claim_reimbursement"]}}},
+        {"if": {"properties": {"type": {"enum": ["bill_payment", "customer_receipt", "claim_reimbursement", "dispute_settlement"]}}},
          "then": {"$ref": "#/$defs/settlement"}},
         {"if": {"properties": {"type": {"const": "expense_claim"}}}, "then": {"$ref": "#/$defs/expenseClaim"}},
         {"if": {"properties": {"type": {"const": "cash_advance"}}}, "then": {"$ref": "#/$defs/cashAdvance"}},
@@ -296,6 +296,12 @@
         },
         "money_accounts": {
           "description": "Bank, card, wallet and cash accounts (FR-BNK-01) -> the currency each holds.",
+          "type": "object",
+          "propertyNames": {"$ref": "#/$defs/accountCode"},
+          "additionalProperties": {"$ref": "#/$defs/currencyCode"}
+        },
+        "dispute_accounts": {
+          "description": "A payment provider's disputes clearing accounts (FR-PSP-04, rev 0.308) -> the currency each is kept in: accounts that hold no money, which a dispute_settlement credits. Not money accounts.",
           "type": "object",
           "propertyNames": {"$ref": "#/$defs/accountCode"},
           "additionalProperties": {"$ref": "#/$defs/currencyCode"}
@@ -416,7 +422,7 @@
       "required": ["type", "id", "version", "date", "account", "currency", "parts"],
       "dependentRequired": {"fx_rate": ["fx_rate_source"]},
       "properties": {
-        "type": {"enum": ["bill_payment", "customer_receipt", "claim_reimbursement"]},
+        "type": {"enum": ["bill_payment", "customer_receipt", "claim_reimbursement", "dispute_settlement"]},
         "id": {"$ref": "#/$defs/documentId"},
         "version": {"$ref": "#/$defs/version"},
         "date": {"$ref": "#/$defs/date"},

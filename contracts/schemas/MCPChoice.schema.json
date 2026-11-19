@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "opted_in": {
+      "description": "true to allow AI apps the organisation allows to act for you over MCP; false to stop them at once.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "opted_in"
+  ],
+  "title": "MCPChoice",
+  "type": "object"
+}

@@ -22,6 +22,7 @@ export const queryClient = new QueryClient({
 // load on demand and are preloaded on intent (NFR-PERF-UI-03).
 const screens: Record<RouteId, RouteComponent> = {
   home: Home,
+  enrol: lazyRouteComponent(() => import("./screens/Enrol"), "Enrol"),
   "sign-in": lazyRouteComponent(() => import("./screens/SignIn"), "SignIn"),
   install: lazyRouteComponent(() => import("./screens/Install"), "Install"),
   "document-view": lazyRouteComponent(() => import("./screens/public/DocumentView"), "DocumentView"),
@@ -83,6 +84,7 @@ const screens: Record<RouteId, RouteComponent> = {
   categorise: lazyRouteComponent(() => import("./screens/banking/Categorise"), "Categorise"),
   "bank-rules": lazyRouteComponent(() => import("./screens/banking/BankRules"), "BankRules"),
   "auto-reconciled": lazyRouteComponent(() => import("./screens/banking/AutoReconciled"), "AutoReconciled"),
+  "provider-payouts": lazyRouteComponent(() => import("./screens/banking/ProviderPayouts"), "ProviderPayouts"),
   "bank-reconciliation": lazyRouteComponent(() => import("./screens/banking/BankReconciliation"), "BankReconciliation"),
   accounting: lazyRouteComponent(() => import("./screens/accounting/Accounting"), "Accounting"),
   journals: lazyRouteComponent(() => import("./screens/accounting/Journals"), "Journals"),
@@ -140,6 +142,8 @@ const screens: Record<RouteId, RouteComponent> = {
   "settings-ai-route": lazyRouteComponent(() => import("./screens/settings/AIRoutes"), "AIRouteEditor"),
   "settings-ai-knowledge-base": lazyRouteComponent(() => import("./screens/settings/KnowledgeBase"), "KnowledgeBase"),
   "settings-ai-activity": lazyRouteComponent(() => import("./screens/settings/AIActivity"), "AIActivity"),
+  "oauth-consent": lazyRouteComponent(() => import("./screens/OAuthConsent"), "OAuthConsent"),
+  "settings-connected-apps": lazyRouteComponent(() => import("./screens/settings/ConnectedApps"), "ConnectedApps"),
   "settings-ai-plan": lazyRouteComponent(() => import("./screens/settings/MyAIPlan"), "MyAIPlan"),
   "settings-import": lazyRouteComponent(() => import("./screens/settings/WorkbookImport"), "WorkbookImport"),
   "director-accounts": lazyRouteComponent(() => import("./screens/founders/DirectorAccounts"), "DirectorAccounts"),

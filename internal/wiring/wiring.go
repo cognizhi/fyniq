@@ -31,10 +31,13 @@ type Kit struct {
 	// it from version.Version and version.Commit. Empty: a development build.
 	Stamp  string
 	Tokens ports.TaskTokens
-	Queue  ports.Queue
-	Jobs   ports.JobRunner
-	Blobs  ports.BlobStore
-	Signer ports.Signer
+	// OAuthClients is the OAuth server's client registry, for the job that removes the AI apps' registrations that lapsed (AI-90). Nil:
+	// they are marked expired and the OAuth server is left as it is.
+	OAuthClients ports.OAuthClients
+	Queue        ports.Queue
+	Jobs         ports.JobRunner
+	Blobs        ports.BlobStore
+	Signer       ports.Signer
 	// Fields seals the most sensitive fields (SEC-11): vendor bank account numbers. Nil: none can be kept.
 	Fields ports.Cipher
 	// Staging keeps uploads until their record is final; Evidence is the retention-locked store they are
@@ -82,6 +85,13 @@ type Kit struct {
 	AgentModelURL   string
 	AgentModelToken func(ctx context.Context) (string, error)
 	AgentModelHTTP  *http.Client
+	// KBCompiler is the API's compiler operations as the knowledge-base compiler's job calls them (PRD-001 AI-57; p1-knowledge-base
+	// task 8.1): their URL, the compiler's token (of the class kbcompile.Class, never the worker's own) and the client. The local build
+	// signs it with the local key; the release build leaves it unset until the compiler has its own Cloud Run job and service account
+	// [live-verify], and a recompile is then refused rather than run as another identity.
+	KBCompilerURL   string
+	KBCompilerToken func(ctx context.Context) (string, error)
+	KBCompilerHTTP  *http.Client
 	// Screening screens what the AI sends a model and what it answers (AI-18, AI-P7; p1-ai-assistant design D8): Model
 	// Armor in the cloud, local mode's stub of it; nil: no AI call is sent (fail closed).
 	Screening ports.Screening

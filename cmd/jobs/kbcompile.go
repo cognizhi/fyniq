@@ -21,7 +21,7 @@ import (
 var kbCompilerTokens func(clock ports.Clock) func(ctx context.Context) (string, error)
 
 // runKBCompile is `jobs kb-compile <organisation id>` (PRD-001 AI-52, AI-57; p1-knowledge-base design D7): the knowledge-base
-// compiler, run to completion. It opens no database and holds no provider key: it reaches the API's four compiler operations with its
+// compiler, run to completion. It opens no database and holds no provider key: it reaches the API's compiler operations with its
 // own service token, which open nothing else, so it can make drafts and findings and cannot publish, read the ledger or run a command.
 func runKBCompile(ctx context.Context, clock ports.Clock, args []string) error {
 	if len(args) != 1 {
@@ -40,6 +40,9 @@ func runKBCompile(ctx context.Context, clock ports.Clock, args []string) error {
 	}
 	client := kbcompile.APIClient{URL: url, Token: kbCompilerTokens(clock), HTTP: wiring.PlatformEgress().Bounded(4<<20, 10*time.Minute).For(egress.HostOf(url))}
 	rep, err := kbcompile.Run(ctx, client, org)
+	found, raised, lintErr := kbcompile.RunLint(ctx, client, org)
+	fmt.Fprintf(os.Stderr, "jobs: knowledge-base lint for %s: %d finding(s) in the lint, %d newly raised\n", org, found, raised)
+	err = errors.Join(err, lintErr)
 	fmt.Fprintf(os.Stderr, "jobs: knowledge-base compiler for %s: %d note(s) considered, %d draft(s), %d finding(s), %d failed\n", org, rep.Considered, rep.Drafts, rep.Findings, len(rep.Failed))
 	for _, f := range rep.Failed {
 		fmt.Fprintln(os.Stderr, "jobs:   failed:", f)

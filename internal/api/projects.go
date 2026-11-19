@@ -693,6 +693,7 @@ func registerProjects(a *API) {
 	registerTimesheetOps(a)
 	registerProjectRates(a)
 	registerProjectReports(a)
+	registerProjectReportExport(a)
 	registerProjectBilling(a)
 	registerProjectMilestones(a)
 }

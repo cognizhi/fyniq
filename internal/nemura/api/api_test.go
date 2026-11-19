@@ -23,6 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/checks"
 	"github.com/cognizhi/fyniq/internal/nemura/features"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
+	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
 	"github.com/cognizhi/fyniq/internal/nemura/policy"
 )
@@ -286,6 +287,80 @@ func (f fakeFlex) List(context.Context, Session, bool) ([]FlexRequest, error) {
 func (f fakeFlex) Reply(context.Context, Session, uuid.UUID, string, string) error { return f.err }
 func (f fakeFlex) Withdraw(context.Context, Session, uuid.UUID) error              { return f.err }
 
+// fakeTime answers hours worked and pay inputs with whatever the test says.
+type fakeTime struct{ err error }
+
+func (f fakeTime) RecordOvertime(context.Context, Session, OvertimeAsk) (string, bool, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1eb0", false, f.err
+}
+func (f fakeTime) Overtime(context.Context, Session, LeaveScope, string) ([]OvertimeRecord, error) {
+	return []OvertimeRecord{}, f.err
+}
+func (f fakeTime) DecideOvertime(context.Context, Session, LeaveScope, uuid.UUID, bool, string) error {
+	return f.err
+}
+func (f fakeTime) PayInputs(context.Context, Session, time.Time) ([]PayInput, error) {
+	return []PayInput{}, f.err
+}
+func (f fakeTime) DecideUnpaid(context.Context, Session, uuid.UUID, string) (string, error) {
+	return "2.00", f.err
+}
+func (f fakeTime) DraftAccrual(context.Context, Session, time.Time) (int, error) { return 1, f.err }
+func (f fakeTime) Accruals(context.Context, Session, time.Time) ([]AccrualLine, error) {
+	return []AccrualLine{}, f.err
+}
+func (f fakeTime) ApproveAccrual(context.Context, Session, time.Time) (int, error) { return 1, f.err }
+func (f fakeTime) Availability(context.Context, Session, uuid.UUID, time.Time, time.Time) (Availability, error) {
+	return Availability{WorkingDays: "21.00", AwayDays: "0.00", HoursPerDay: "8.80", Hours: "184.80"}, f.err
+}
+func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.Time, string) error {
+	return f.err
+}
+
+// fakeLetters answers letters with whatever the test says.
+type fakeLetters struct{ err error }
+
+func (f fakeLetters) Settings(context.Context, Session) (LetterSettings, bool, error) {
+	return LetterSettings{Name: "Acme", UEN: "1", Address: "x"}, true, f.err
+}
+func (f fakeLetters) SetSettings(context.Context, Session, LetterSettings) error { return f.err }
+func (f fakeLetters) Types(context.Context, Session) ([]LetterType, error) {
+	return []LetterType{{Key: "employment_confirmation", Title: "Employment confirmation", Fields: []string{}}}, f.err
+}
+func (f fakeLetters) SetType(context.Context, Session, string, bool, int) error { return f.err }
+func (f fakeLetters) Templates(context.Context, Session, string) ([]LetterTemplate, error) {
+	return []LetterTemplate{}, f.err
+}
+func (f fakeLetters) SaveDraft(context.Context, Session, string, []LetterBlock, string) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ee0", f.err
+}
+func (f fakeLetters) Publish(context.Context, Session, uuid.UUID) (int, error) { return 1, f.err }
+func (f fakeLetters) Request(context.Context, Session, string, string) (string, string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0", "2026-11-25", f.err
+}
+func (f fakeLetters) List(context.Context, Session, bool, string) ([]LetterRequest, error) {
+	return []LetterRequest{}, f.err
+}
+func (f fakeLetters) Check(context.Context, Session, uuid.UUID) (string, string, error) {
+	return "EC-2026-0001", "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", f.err
+}
+func (f fakeLetters) Draft(context.Context, Session, uuid.UUID) (string, []byte, error) {
+	return "EC-2026-0001", []byte("%PDF-1.4"), f.err
+}
+func (f fakeLetters) Sign(context.Context, Session, uuid.UUID, string) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f00", f.err
+}
+func (f fakeLetters) Refuse(context.Context, Session, uuid.UUID, string, bool) error { return f.err }
+func (f fakeLetters) File(context.Context, Session, uuid.UUID, bool) (string, []byte, error) {
+	return "EC-2026-0001", []byte("%PDF-1.4"), f.err
+}
+func (f fakeLetters) Link(context.Context, Session, uuid.UUID, bool) (string, string, error) {
+	return "org.token", "2026-11-28T10:00:00Z", f.err
+}
+func (f fakeLetters) ByLink(context.Context, string) (string, []byte, error) {
+	return "EC-2026-0001", []byte("%PDF-1.4"), f.err
+}
+
 // fakeClients registers whatever it is told and answers with clientsErr.
 type fakeClients struct{ err error }
 
@@ -309,7 +384,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -505,6 +580,8 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodeLeaveBalance:       {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026/carry-forward", signedIn: true, err: &leave.Refusal{Code: leave.CodeBalance, Message: "That is more than the balance."}},
 		CodeLeaveConflict:      {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/working-pattern", body: patternBody, signedIn: true, err: &leave.Refusal{Code: leave.CodeConflict, Message: "Overlaps."}},
 		CodeFeatureOff:         {method: "GET", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026", signedIn: true, featuresOff: true},
+		CodeLetterInvalid:      {method: "POST", path: "/v1/me/letters", body: `{"type":"employment_confirmation","purpose":"x"}`, signedIn: true, err: &letters.Refusal{Code: letters.CodeInvalid, Message: "Say what the letter is for."}},
+		CodeLetterConflict:     {method: "POST", path: "/v1/letters/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/check", signedIn: true, err: &letters.Refusal{Code: letters.CodeConflict, Message: "That request is checked."}},
 		CodeClientExists:       {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
 	}
 	for _, c := range Catalogue {

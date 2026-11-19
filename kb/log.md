@@ -646,6 +646,16 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-18] edit | added aliases for users' own wording to 17 pages after the QA-AI-06 retrieval baseline (a retrieval miss is fixed in the compile step, AI-58)
 
+## [2026-11-19] compile | organisation-settings: AI apps through MCP and AI app limits (p1-mcp-first-party 2.1)
+
+## [2026-11-19] compile | organisation-settings: AI apps may register themselves (p1-mcp-first-party 11.1)
+
+## [2026-11-19] compile | connected-apps: the Connected apps guide page (p1-mcp-first-party 9.4)
+
+## [2026-11-19] compile | connected-apps: when an app asks to connect (p1-mcp-first-party 9.3)
+
+## [2026-11-19] compile | connected-apps: changes an app proposes (p1-mcp-first-party 7.x)
+
 ## [2026-11-19] compile | docs/user-guide/knowledge-base.md, docs/user-guide/ai-settings.md → settings.ai-knowledge-base, settings.ai (the knowledge-base administration page and its link)
 
 ## [2026-11-19] compile | docs/user-guide/projects-projects.md → projects.projects (the projects screens, p1-projects slice 1)
@@ -663,6 +673,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | docs/user-guide/organisation-settings.md, integrations.md → settings.organisation (lost disputes: the expense limit setting), settings.integrations (a lost dispute's draft journal, resolving a set-aside event; p1-payment-providers, PRD rev 0.305)
 
 ## [2026-11-19] compile | kb/pages/task/settings-change.md re-hashed to the guide's new section (lost disputes); the page's content is unchanged
+
+## [2026-11-19] compile | docs/user-guide/banking.md → banking.payouts (the Payouts screen and the credit-note route for a lost dispute; p1-payment-providers task 4.5, 4.6), the other banking pages re-hashed; docs/user-guide/integrations.md → settings.integrations (the credit-note route)
 
 ## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md, home.md → nemura.sign-in, nemura.home (the sign-in page and the landing, p1-nemura-platform slice 7a)
 
@@ -694,6 +706,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | leave.apply recompiled, leave.approve new (p1-nemura-leave-time slice 2.1, 2.2)
 
+## [2026-11-20] compile | settings.ai-knowledge-base recompiled: Recompile and the weekly check (p1-knowledge-base 6.3, 8.1, 8.2)
+
 ## [2026-11-20] compile | leave.report-sick recompiled (p1-nemura-leave-time 2.4)
 
 ## [2026-11-20] compile | leave.approve and nemura.my-leave: the month at a glance, certificates to verify (p1-nemura-leave-time 2.3, 2.4)
@@ -701,9 +715,21 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | nemura.leave.government-paid (p1-nemura-leave-time 3.1, 3.2)
 
 ## [2026-11-20] compile | nemura.my-leave links nemura.leave.government-paid
+
 ## [2026-11-20] compile | home.md -> home.overview (the Auditor's engagement opens the trial balance, general ledger and access list)
 
+## [2026-11-20] compile | projects.reports recompiled: a project's profitability card, the CSV and Excel export, project metrics (p1-projects 4.2, 4.4)
+
 ## [2026-11-20] compile | nemura.requests new; leave.approve: flexible work replies (p1-nemura-leave-time 3.3)
+
 ## [2026-11-20] compile | appearance.md -> preferences.appearance (Expert starts Compact)
 
 ## [2026-11-20] compile | ai.proposals.approve and projects.billing recompiled: the AI's draft of a project invoice, ar.draft_invoice (p1-projects)
+
+## [2026-11-20] compile | sign-in.md -> auth.sign-in (set up how you confirm it's you: the enrolment page)
+
+## [2026-11-20] compile | home.md -> home.overview (favourites and saved views)
+
+## [2026-11-20] compile | nemura requests, leave.approve, nemura.my-leave, nemura.home: hours worked, pay inputs, accrual, encashment, people tiles
+
+## [2026-11-20] compile | nemura.letters.request, nemura.letters.issue, nemura.letters.templates new (p1-nemura-self-service-letters 1.6)

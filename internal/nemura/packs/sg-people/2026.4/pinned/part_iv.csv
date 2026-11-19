@@ -1,0 +1,6 @@
+case,rule,date,want,why,source
+overtime rate,overtime_rate_hundredths,2026-11-20,150,"MOM: at least 1.5 times the hourly basic rate",mom-hours-overtime
+monthly limit,overtime_hours_per_month,2026-11-20,72,"MOM: up to 72 overtime hours in a month",mom-hours-overtime
+non-workman threshold,non_workman_basic_cap,2026-11-20,2600,"MOM: a non-workman earning $2,600 or less",mom-hours-overtime
+workman threshold,workman_basic_cap,2026-11-20,4500,"MOM: a workman earning $4,500 or less",mom-hours-overtime
+no such rule,nothing,2026-11-20,none,"Not a rule of the pack",mom-hours-overtime

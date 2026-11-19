@@ -178,3 +178,24 @@ func FlexReplies(waiting []FlexRequest, on time.Time) []Finding {
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
 	return out
 }
+
+// OvertimeMonth is a person's overtime recorded in a month, in hundredths of an hour.
+type OvertimeMonth struct {
+	Person string
+	Month  time.Time
+	Hours  int
+}
+
+// OvertimeOverLimit is N.1 #16 (NM-TIM-04): a Part IV employee's overtime in a month beyond the pack's monthly limit is ⚠. The hours stay recorded and are paid; HR acts on
+// them with an exemption or a change of pattern.
+func OvertimeOverLimit(months []OvertimeMonth, limitHours int) []Finding {
+	var out []Finding
+	for _, m := range months {
+		if m.Hours > limitHours*100 {
+			out = append(out, Finding{16, "Time", Warn, m.Person, fmt.Sprintf("Overtime in %s is %d.%02d hours, beyond the monthly limit of %d: the hours stay recorded and are paid, so apply for an overtime exemption or change the person's working pattern.",
+				m.Month.Format("January 2006"), m.Hours/100, m.Hours%100, limitHours)})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
+	return out
+}

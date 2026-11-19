@@ -297,6 +297,13 @@ func (p *PacksService) Checks(ctx context.Context, s api.Session, on time.Time) 
 				return err
 			}
 			out = append(out, checks.LeaveWaiting(v, waiting, negative, on)...)
+			if limit, ok := pack.PartIV(v, "overtime_hours_per_month", on); ok {
+				months, err := OvertimeMonths(ctx, tx)
+				if err != nil {
+					return err
+				}
+				out = append(out, checks.OvertimeOverLimit(months, limit)...)
+			}
 		}
 		claims, err := GovClaimFacts(ctx, tx)
 		if err != nil {

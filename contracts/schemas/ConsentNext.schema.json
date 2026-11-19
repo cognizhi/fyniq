@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "redirect_to": {
+      "description": "Where to send the browser next: the OAuth server, which carries the app's authorisation on.",
+      "examples": [
+        "http://localhost:8080/oauth/oauth2/auth?consent_verifier=abc"
+      ],
+      "format": "uri",
+      "type": "string"
+    }
+  },
+  "required": [
+    "redirect_to"
+  ],
+  "title": "ConsentNext",
+  "type": "object"
+}

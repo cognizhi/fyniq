@@ -337,3 +337,38 @@ func (l pspLedger) DisputeLosses(ctx context.Context, connector uuid.UUID) ([]st
 	}
 	return out, nil
 }
+
+func toDisputeCredit(r sqlcdb.InsertPSPDisputeCreditRow) storage.PSPDisputeCredit {
+	return storage.PSPDisputeCredit{ID: r.ID, ConnectorID: r.ConnectorID, DisputeID: r.DisputeID, CreditNoteID: r.CreditNoteID, RefundID: r.RefundID,
+		Currency: r.Currency, Amount: storage.Decimal(r.Amount), CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt}
+}
+
+func (l pspLedger) RecordDisputeCredit(ctx context.Context, n storage.NewPSPDisputeCredit) (storage.PSPDisputeCredit, error) {
+	if err := l.u.check(); err != nil {
+		return storage.PSPDisputeCredit{}, err
+	}
+	r, err := l.u.q.InsertPSPDisputeCredit(ctx, sqlcdb.InsertPSPDisputeCreditParams{ConnectorID: n.ConnectorID, DisputeID: n.DisputeID, CreditNoteID: n.CreditNoteID,
+		RefundID: n.RefundID, Currency: n.Currency, Amount: string(n.Amount), CreatedBy: l.u.actor(ctx), CreatedAt: n.At})
+	if err != nil {
+		return storage.PSPDisputeCredit{}, mapError(err)
+	}
+	d := toDisputeCredit(r)
+	return d, l.u.event(ctx, "psp_dispute_credit.settled", "psp_dispute_credit", d.ID, nil, map[string][2]any{"connector_id": {nil, d.ConnectorID.String()},
+		"dispute_id": {nil, d.DisputeID}, "credit_note_id": {nil, d.CreditNoteID.String()}, "refund_id": {nil, d.RefundID.String()},
+		"amount": {nil, string(d.Amount)}, "currency": {nil, d.Currency}})
+}
+
+func (l pspLedger) DisputeCredits(ctx context.Context, connector uuid.UUID) ([]storage.PSPDisputeCredit, error) {
+	if err := l.u.check(); err != nil {
+		return nil, err
+	}
+	rows, err := l.u.q.PSPDisputeCredits(ctx, connector)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]storage.PSPDisputeCredit, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toDisputeCredit(sqlcdb.InsertPSPDisputeCreditRow(r)))
+	}
+	return out, nil
+}

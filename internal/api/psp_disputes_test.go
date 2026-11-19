@@ -199,3 +199,70 @@ func TestALostDisputeIsWrittenOffByADraftJournal(t *testing.T) {
 		t.Errorf("a second resolution: %d %s", r.Status, r.Raw)
 	}
 }
+
+// FR-PSP-04 (rev 0.308, the owner's decision of 19 Nov 2026): when the invoice of a lost dispute is known, an issued credit note
+// credits it and its credit is settled against the dispute's money in disputes clearing (dispute_settlement@1: Dr 1100, Cr
+// disputes clearing, never a manual journal), once per dispute, up to the disputed amount and in the base currency; what is
+// left held, the dispute fee, is then written off by the draft journal. A person with the right to post on Invoices settles.
+// req: FR-PSP-04
+// req: FR-AR-04
+func TestALostDisputeIsSettledAgainstACustomerCredit(t *testing.T) {
+	e := newEnv(t)
+	admin, acct := e.as(authz.Administrator), e.as(authz.Accountant)
+	m, c := e.providerAccount()
+	var disputes, loss storage.Account
+	e.do(func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		if disputes, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "1055", Name: "Payment disputes clearing", Type: storage.Asset}); err != nil {
+			return err
+		}
+		loss, err = u.Accounts().Create(ctx, storage.NewAccount{Code: "5045", Name: "Dispute losses", Type: storage.Expense})
+		return err
+	})
+	if r := e.call(http.MethodPut, "/v1/payment-providers/accounts/"+m.ID.String(), admin, map[string]any{"fee_account_id": e.books.Rent.ID.String(),
+		"disputes_account_id": disputes.ID.String(), "dispute_loss_account_id": loss.ID.String()}); r.Status != http.StatusOK {
+		t.Fatalf("setup: %d %s", r.Status, r.Raw)
+	}
+	cn := e.issuedCreditNote("1", "10.00")
+	total := e.call(http.MethodGet, "/v1/invoices/"+cn, acct, nil).str("total", "amount")
+	e.disputeOn(t, m, c, disputes, "dp_201", "-"+total, "15.00", true) // holds the credit and the S$15.00 fee
+	e.disputeOn(t, m, c, disputes, "dp_202", "-5.00", "15.00", true)   // smaller than the credit
+	path := func(id string) string { return "/v1/payment-providers/disputes/" + id + "/credit-settlement" }
+	body := func() map[string]any { return map[string]any{"money_account_id": m.ID.String(), "credit_note_id": cn} }
+
+	if r := e.call(http.MethodPost, path("dp_201"), admin, body()); r.Status != http.StatusForbidden {
+		t.Errorf("an administrator settled a credit: %d", r.Status)
+	}
+	if r := e.call(http.MethodPost, path("dp_202"), acct, body()); r.Status != http.StatusUnprocessableEntity || r.problemCode() != CodePSPCredit {
+		t.Errorf("a credit above the disputed amount: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, path("dp_201"), acct, map[string]any{"money_account_id": m.ID.String(), "credit_note_id": uuid.NewString()}); r.Status < 400 {
+		t.Errorf("a credit that does not exist: %d", r.Status)
+	}
+	before := e.balanceOf(t, disputes.ID)
+	r := e.call(http.MethodPost, path("dp_201"), acct, body())
+	if r.Status != http.StatusCreated || r.str("amount", "amount") != total || r.str("still_held", "amount") != "15.00" {
+		t.Fatalf("the settlement: %d %s", r.Status, r.Raw)
+	}
+	if got := e.balanceOf(t, disputes.ID); got == before {
+		t.Errorf("disputes clearing did not move: %s", got)
+	}
+	if g := e.call(http.MethodGet, "/v1/invoices/"+cn, acct, nil); g.str("open", "amount") != "0.00" {
+		t.Errorf("the credit note after the settlement: %s", g.Raw)
+	}
+	if g := e.call(http.MethodGet, "/v1/customer-refunds/"+r.str("settlement_id"), acct, nil); g.Status != http.StatusOK {
+		t.Errorf("the settlement as a refund document: %d %s", g.Status, g.Raw)
+	}
+	if again := e.call(http.MethodPost, path("dp_201"), acct, body()); again.Status != http.StatusConflict {
+		t.Errorf("a second settlement: %d %s", again.Status, again.Raw)
+	}
+	// What is left is the fee: the draft journal writes off S$15.00, and the dispute is listed as written off.
+	acc := e.as(authz.Accountant)
+	if w := e.call(http.MethodPost, "/v1/payment-providers/disputes/dp_201/loss", acc, map[string]any{"money_account_id": m.ID.String()}); w.Status != http.StatusCreated || w.str("amount", "amount") != "15.00" {
+		t.Errorf("the draft for what is left: %d %s", w.Status, w.Raw)
+	}
+	for _, x := range e.call(http.MethodGet, "/v1/payment-providers/disputes", acc, nil).Body["items"].([]any) {
+		if it := x.(map[string]any); it["dispute_id"] == "dp_201" && (it["status"] != "written_off" || it["settlement_id"] == nil || it["credited"].(map[string]any)["amount"] != total) {
+			t.Errorf("dp_201: %v", it)
+		}
+	}
+}

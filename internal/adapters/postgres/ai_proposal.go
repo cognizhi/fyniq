@@ -29,7 +29,7 @@ func (r aiProposals) Create(ctx context.Context, p storage.AIProposal) (storage.
 		TaskSha256: p.TaskSHA256, Payload: p.Payload, PayloadSha256: p.PayloadSHA256, ItemCount: int32(min(max(p.ItemCount, 0), 1<<30)), // #nosec G115 -- capped
 		Rationale: p.Rationale, Evidence: evidence, RiskTier: int16(min(max(p.RiskTier, 0), 9)), // #nosec G115 -- capped
 		RequiredApprovals: int16(min(max(p.RequiredApprovals, 0), 9)), Agent: p.Agent, RequestedBy: p.RequestedBy, TurnID: p.Turn, // #nosec G115 -- capped
-		RunID: p.Run, Model: p.Model, Prompt: p.Prompt, ToolsSha256: p.ToolsSHA256, ProposedAt: p.ProposedAt, ExpiresAt: p.ExpiresAt})
+		RunID: p.Run, McpApp: mcpAppOf(p.MCPApp), Model: p.Model, Prompt: p.Prompt, ToolsSha256: p.ToolsSHA256, ProposedAt: p.ProposedAt, ExpiresAt: p.ExpiresAt})
 	if err != nil {
 		return storage.AIProposal{}, mapError(err)
 	}
@@ -59,7 +59,7 @@ func (r aiProposals) List(ctx context.Context, q storage.AIProposalQuery) ([]sto
 		return nil, err
 	}
 	rows, err := r.u.q.AIProposalsPage(ctx, sqlcdb.AIProposalsPageParams{Statuses: statusesOf(q.Statuses), RequestedBy: q.RequestedBy, TurnID: q.Turn,
-		RunID: q.Run, Agent: q.Agent, After: q.After, MaxRows: int32(min(max(q.Limit, 1), 500))}) // #nosec G115 -- capped
+		RunID: q.Run, Agent: q.Agent, Since: q.Since, After: q.After, MaxRows: int32(min(max(q.Limit, 1), 500))}) // #nosec G115 -- capped
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -194,7 +194,7 @@ func toAIProposal(row sqlcdb.FyniqAiProposal) (storage.AIProposal, error) {
 	p := storage.AIProposal{ID: row.ID, TaskType: row.TaskType, TaskVersion: int(row.TaskVersion), TaskSHA256: row.TaskSha256, Payload: row.Payload,
 		PayloadSHA256: row.PayloadSha256, ItemCount: int(row.ItemCount), Rationale: row.Rationale, RiskTier: int(row.RiskTier),
 		RequiredApprovals: int(row.RequiredApprovals), Agent: row.Agent, RequestedBy: row.RequestedBy, Turn: row.TurnID, Run: row.RunID,
-		Model: row.Model, Prompt: row.Prompt, ToolsSHA256: row.ToolsSha256, Status: row.Status, Reason: row.Reason,
+		MCPApp: deref(row.McpApp), Model: row.Model, Prompt: row.Prompt, ToolsSHA256: row.ToolsSha256, Status: row.Status, Reason: row.Reason,
 		ApprovalRequest: row.ApprovalRequestID, DecidedBy: row.DecidedBy, DecidedAt: row.DecidedAt, SupersededBy: row.SupersededBy,
 		StartedAt: row.StartedAt, FinishedAt: row.FinishedAt, ProposedAt: row.ProposedAt, ExpiresAt: row.ExpiresAt, Version: int(row.Version)}
 	if row.ApprovedPayload != nil {
@@ -248,4 +248,12 @@ func statusesOf(s []string) []string {
 		return []string{}
 	}
 	return s
+}
+
+// mcpAppOf is the app an AI proposal came from over MCP, nil for one from a turn or a run.
+func mcpAppOf(app string) *string {
+	if app == "" {
+		return nil
+	}
+	return &app
 }

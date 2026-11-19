@@ -1,0 +1,248 @@
+{
+  "id": "QA-MCP-01",
+  "note": "The MCP security suite (PRD-001 section 16.2, QA-MCP-01), one row per red-team case, each naming the tests that prove it. internal/archtest checks that every named test exists, so a row cannot name a test that was renamed or removed. Cloud-only checks (the load balancer, Cloud Armor, KMS) are [live-verify] and are not here.",
+  "rows": [
+    {
+      "id": "agent-direct-write",
+      "threat": "Agent writes directly",
+      "requirements": "AI-34, CTL-MCP-01",
+      "control": "An agent-class token's write to the public API is refused; the MCP operation runs a read tool, or makes a proposal from the catalogue that waits for a person (AI-16)",
+      "tests": [
+        "TestAnMCPToolCallPassesEveryGateOrIsRefused",
+        "TestTheNightlyChecksOfTheMCPControlsFindNothingAndCatchWhatBreaksThem"
+      ]
+    },
+    {
+      "id": "dangerous-tool-exposed",
+      "threat": "A tool on the never-list is exposed",
+      "requirements": "AI-40, CTL-MCP-02",
+      "control": "The surface is the registry minus the never-list, default-deny; a planted write, approve, pay, export or settings tool fails the build",
+      "tests": [
+        "TestThePlantedToolsThatBreakTheNeverListFailTheBuild",
+        "TestEveryToolAndInputValueIsMappedOrDeliberatelyNot",
+        "TestTheNeverListRefusesByWords"
+      ]
+    },
+    {
+      "id": "tool-definition-altered",
+      "threat": "A pinned tool definition is altered",
+      "requirements": "AI-40, CTL-MCP-02",
+      "control": "An altered description, schema, annotation or scope, an added or dropped tool, or an edited pin is refused",
+      "tests": [
+        "TestAnAlteredDefinitionIsRefused",
+        "TestTheManifestIsWhatTheToolsAndTheScopeMapGive"
+      ]
+    },
+    {
+      "id": "tool-description-injection",
+      "threat": "Injection text reaches tools/list",
+      "requirements": "AI-40",
+      "control": "Definitions hold only the contracts' text: no organisation data can reach them",
+      "tests": [
+        "TestDefinitionsHoldOnlyTheContractsText"
+      ]
+    },
+    {
+      "id": "token-passthrough",
+      "threat": "The MCP token is sent to the API (confused deputy)",
+      "requirements": "AI-36",
+      "control": "The API refuses an MCP-audience token; the API is reached with a separate delegated token",
+      "tests": [
+        "TestAnMCPCallReachesTheDataOnlyAsTheDelegatedPerson",
+        "TestMCPDelegationOptionB"
+      ]
+    },
+    {
+      "id": "audience-mix-up",
+      "threat": "A token for another audience, expired, revoked or for both audiences",
+      "requirements": "AI-36, AI-38",
+      "control": "Only a token for the MCP server alone, of an agent-class client, live and consented within 90 days is accepted",
+      "tests": [
+        "TestOnlyATokenForThisServerIsAccepted",
+        "TestTheMCPServerChecksATokenHydraIssued"
+      ]
+    },
+    {
+      "id": "assertion-replay",
+      "threat": "A delegation assertion is replayed",
+      "requirements": "AI-36",
+      "control": "An assertion is used once; a scope beyond the trust relationship is refused",
+      "tests": [
+        "TestMCPDelegationLimitsAreMeasured"
+      ]
+    },
+    {
+      "id": "stale-rights",
+      "threat": "A role change, opt-out or removal leaves the app working",
+      "requirements": "AI-35, AI-38, CTL-MCP-04",
+      "control": "Each gate is asked on every call; an opt-out revokes the AI apps' tokens",
+      "tests": [
+        "TestTheMCPGateAdmitsOnlyWhenTheOrganisationTheAppAndThePersonAllow",
+        "TestAnOptOutRevokesTheAIAppsTokensAndNothingElse",
+        "TestAnMCPCallReachesTheDataOnlyAsTheDelegatedPerson"
+      ]
+    },
+    {
+      "id": "scope-widening",
+      "threat": "A scope reaches more than it names",
+      "requirements": "AI-37",
+      "control": "The reports scope reaches no invoice, bill, journal, contact or claim; searching every kind is refused; payroll and equity are never granted",
+      "tests": [
+        "TestAScopeReachesOnlyWhatItNames",
+        "TestAnMCPToolCallPassesEveryGateOrIsRefused",
+        "TestAClaudeCodeFlowEndsInATokenOnlyThroughTheGates"
+      ]
+    },
+    {
+      "id": "sensitive-exfiltration",
+      "threat": "An NRIC, bank number or payroll leaves in a result",
+      "requirements": "AI-41, AI-02",
+      "control": "The output filter masks every string of a result; the AI exclusions apply; payroll is unreachable",
+      "tests": [
+        "TestAResultIsFilteredBeforeItLeaves",
+        "TestAnMCPToolCallPassesEveryGateOrIsRefused"
+      ]
+    },
+    {
+      "id": "oversized-result",
+      "threat": "An oversized result",
+      "requirements": "AI-41, AI-43",
+      "control": "A result larger than the organisation's ceiling is refused, never cut silently",
+      "tests": [
+        "TestAnOversizedResultIsRefusedNotCut"
+      ]
+    },
+    {
+      "id": "dns-rebinding",
+      "threat": "A bad or missing Origin",
+      "requirements": "AI-39",
+      "control": "A present, unlisted Origin is 403 before the token is looked at; only POST reaches the endpoint",
+      "tests": [
+        "TestBadOriginsAndVerbsAreRefused"
+      ]
+    },
+    {
+      "id": "header-mismatch",
+      "threat": "Protocol headers differ from the body",
+      "requirements": "AI-39",
+      "control": "HeaderMismatch and an unsupported revision are refused; a legacy initialize is told what is served",
+      "tests": [
+        "TestTheProtocolHeadersAreCheckedAgainstTheBody"
+      ]
+    },
+    {
+      "id": "session-fixation",
+      "threat": "A session ID is planted or reused",
+      "requirements": "AI-39",
+      "control": "A session ID is ignored and never minted; the token is checked on every request",
+      "tests": [
+        "TestASessionIDIsIgnoredAndNeverMinted"
+      ]
+    },
+    {
+      "id": "consent-phishing",
+      "threat": "An unknown client, an unregistered redirect or a stolen consent",
+      "requirements": "AI-35, AI-37",
+      "control": "Only registered clients, exact redirects, a fresh second factor and every gate reach a token",
+      "tests": [
+        "TestAClaudeCodeFlowEndsInATokenOnlyThroughTheGates",
+        "TestAnMCPConsentPassesEveryGateOrIsRefused",
+        "TestConsentTurnsTheResourceIntoTheAudience"
+      ]
+    },
+    {
+      "id": "registration-abuse",
+      "threat": "Self-registration abuse",
+      "requirements": "AI-90",
+      "control": "Closed by default; exact redirects; nothing fetched; no impersonation; limits by network; pending until an Owner approves; expiry",
+      "tests": [
+        "TestAnAIAppRegistersOnlyThroughTheClosedPolicyCheckedEndpoint",
+        "TestEveryRedirectIsExactOrRefused",
+        "TestANameCannotImpersonate",
+        "TestNothingTheClientNamesIsFetchedOrTrusted",
+        "TestARegisteredAppIsUsableOnlyOnceAnOwnerAllowsIt",
+        "TestTheExpiryJobEndsLapsedRegistrationsAndRemovesTheirClients"
+      ]
+    },
+    {
+      "id": "no-dynamic-registration-at-hydra",
+      "threat": "The OAuth server's own registration",
+      "requirements": "AI-35",
+      "control": "Hydra's own registration answers 404",
+      "tests": [
+        "TestHydraAndTheParametersAnMCPClientSends"
+      ]
+    },
+    {
+      "id": "denial-of-wallet",
+      "threat": "Request floods",
+      "requirements": "AI-43",
+      "control": "Limits per minute, hour and day are counted from the trail and answered with 429 and Retry-After",
+      "tests": [
+        "TestEveryMCPCallIsInTheTrailAndTheLimitsAreCountedFromIt",
+        "TestAnAIAppProposesAndAPersonApproves"
+      ]
+    },
+    {
+      "id": "trail-tampering",
+      "threat": "The trail is changed or erased",
+      "requirements": "AI-44",
+      "control": "The trail is append-only; the API's role cannot change it; the AI's role cannot read it",
+      "tests": [
+        "TestAttackTheMCPTrailGoesOnlyForward",
+        "TestTheMCPTrailIsPurgedAfterItsRetentionByTheWorkerAlone"
+      ]
+    },
+    {
+      "id": "opened-by-accident",
+      "threat": "The server answers before it is opened",
+      "requirements": "AI-35",
+      "control": "The launch shell answers until the deployment switch is on; a typo stops the service",
+      "tests": [
+        "TestTheShellAnswersUntilTheDeploymentSwitchIsOn",
+        "TestTheShellExposesNoToolAndRefusesEveryCall"
+      ]
+    },
+    {
+      "id": "database-access",
+      "threat": "The MCP service reaches the database",
+      "requirements": "AI-16, CTL-MCP-01",
+      "control": "The MCP binary carries no database adapter or domain command, in both flavours",
+      "tests": [
+        "TestTheMCPServiceCarriesNoDatabaseCode"
+      ]
+    },
+    {
+      "id": "proposal-self-approval",
+      "threat": "An AI app approves, or is approved as, the person it proposes for",
+      "requirements": "AI-89, AI-10, AI-34, CTL-MCP-01",
+      "control": "The delegated token reaches no approval; another member signs an app's proposal, or the person on a step-up taken after the app proposed it (tier 1 only); the database refuses the same signature and any request authenticated by the wrong method",
+      "tests": [
+        "TestAnAIAppProposesAndAPersonApproves",
+        "TestAttackAnAppsProposalIsSignedOnAFreshStepUpOrByAnotherMember",
+        "TestAttackAnAppsProposalIsForAPersonWhoAllowedAIApps"
+      ]
+    },
+    {
+      "id": "proposal-out-of-catalogue",
+      "threat": "A proposal outside the catalogue, or a verb that decides, through MCP",
+      "requirements": "AI-16, AI-42, AI-40, CTL-MCP-02",
+      "control": "A propose tool exists only for each task type a reviewer names in the scope map, with its own scope; the contract's tool names are the manifest's; approve, reject, execute and withdraw are no tools; the task type is never an input",
+      "tests": [
+        "TestTheOnlyWriteAClientHasIsAProposalThatWaitsForAPerson",
+        "TestAProposalToolNeedsTheScopeOfItsTaskTypeAlone",
+        "TestATaskTypeIsExposedOnlyWhenAReviewerNamesIt",
+        "TestAnAIAppProposesAndAPersonApproves"
+      ]
+    },
+    {
+      "id": "unusual-use",
+      "threat": "An app, a network, a volume or a run of denied scopes that is unusual for a person goes unnoticed",
+      "requirements": "AI-45, SEC-31",
+      "control": "Each is an alert to the Owners and the DPO, once per rule and person in the window, an audit event and the log entry Cloud Monitoring alerts on; no token, argument or result in it",
+      "tests": [
+        "TestAnAIAppsUnusualUseRaisesAnAlertOncePerWindow"
+      ]
+    }
+  ]
+}

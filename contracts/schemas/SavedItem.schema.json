@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The item's ID: a favourite's address, or a view's own ID; send it to take the item away.",
+      "examples": [
+        "3f9c2b7a-61d0-4b1e-9d1e-0a1b2c3d4e5f"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "description": "A page pinned, or a page with the filters, columns and sort its address carries.",
+      "enum": [
+        "favourite",
+        "view"
+      ],
+      "examples": [
+        "view"
+      ],
+      "type": "string"
+    },
+    "path": {
+      "description": "The page's path in the web app.",
+      "examples": [
+        "/sales/invoices"
+      ],
+      "type": "string"
+    },
+    "query": {
+      "description": "A view's filters, columns and sort, as the page's address carries them; the link to share is path and query.",
+      "examples": [
+        "?status=overdue\u0026sort=due"
+      ],
+      "type": "string"
+    },
+    "saved_at": {
+      "description": "When it was last saved.",
+      "examples": [
+        "2026-11-20T09:30:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "title": {
+      "description": "The name the caller gave it.",
+      "examples": [
+        "Overdue this quarter"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "title",
+    "path",
+    "saved_at"
+  ],
+  "title": "SavedItem",
+  "type": "object"
+}

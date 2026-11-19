@@ -43,6 +43,11 @@ func (f *fakeOAuth) RemoveClient(_ context.Context, id string) error {
 	return nil
 }
 
+// RegisterPublicClient is an AI app's registration at Fyniq's OAuth server; Nemura registers none, so the fake refuses it.
+func (f *fakeOAuth) RegisterPublicClient(context.Context, ports.PublicRegistration) (string, error) {
+	return "", errors.New("Nemura registers no public clients")
+}
+
 const jwk = `{"kty":"EC","crv":"P-256","x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU","y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0"}`
 
 // An API client is registered with Nemura's own OAuth server for the API's audience only, with the key it holds and a token lifetime of an hour

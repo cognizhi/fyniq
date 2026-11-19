@@ -235,7 +235,8 @@ func (s kbSources) text(ctx context.Context, ref string) (string, bool) {
 }
 
 // kbGate is what a version must pass before it is published: the lint, and no open finding of the kinds that stop a publication
-// (a contradiction with a setting, a pack or a newer page, or a recompile that conflicts with a person's edit).
+// (a contradiction with a setting, a pack or a newer page, or a recompile that conflicts with a person's edit); the weekly lint's advice
+// (knowledge.BlocksPublication) does not stop one.
 func (a *API) kbGate(ctx context.Context, u storage.UnitOfWork, p authn.Principal, v storage.KBVersion) ([]knowledge.Finding, error) {
 	var srcs []struct{ Kind, Ref, Title string }
 	_ = json.Unmarshal(v.Sources, &srcs)
@@ -274,6 +275,9 @@ func (a *API) kbGate(ctx context.Context, u storage.UnitOfWork, p authn.Principa
 		return nil, err
 	}
 	for _, f := range open {
+		if !knowledge.BlocksPublication(f.Kind) {
+			continue // the weekly pass's advice: the new version is the answer to it
+		}
 		found = append(found, knowledge.Finding{Rule: "KB-OPEN-FINDING", Where: v.Key, Detail: "an open finding stops the publication: " + f.Kind + ": " + f.Detail})
 	}
 	return found, nil

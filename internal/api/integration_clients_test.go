@@ -3,6 +3,7 @@
 package api
 
 import (
+	"cmp"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -299,6 +300,10 @@ type fakeOAuthClients struct{}
 func (fakeOAuthClients) RegisterIntegration(context.Context, ports.IntegrationRegistration) (string, error) {
 	return "fake-" + uuid.NewString(), nil
 }
+func (fakeOAuthClients) RegisterPublicClient(_ context.Context, c ports.PublicRegistration) (string, error) {
+	return cmp.Or(c.ID, "fake-"+uuid.NewString()), nil
+}
+
 func (fakeOAuthClients) RegisterPersonal(context.Context, ports.PersonalRegistration) (string, string, error) {
 	return "fake-" + uuid.NewString(), "fake-secret", nil
 }
