@@ -7,7 +7,7 @@ import { landingOf } from "../shell/navigation";
 import { Icon } from "../ui";
 import { PoliciesToAcknowledge } from "./compliance/Policies";
 import { Dashboard } from "./Dashboard";
-import { Deadlines, YourWork } from "./HomeWork";
+import { ApproverWork, Deadlines, YourWork } from "./HomeWork";
 import { WhatHappened } from "./WhatHappened";
 
 // Each read answers null when the person's roles may not read it: the step it feeds is left out
@@ -228,6 +228,7 @@ function Workspace() {
           <Dashboard />
           <Waiting toApprove={c.toApprove.data ?? null} review={c.review.data ?? null} reversals={c.reversals.data ?? null} />
           <YourWork />
+          <ApproverWork />
           <Deadlines />
           <PoliciesToAcknowledge />
           {!allDone && <SetUp steps={steps} />}
