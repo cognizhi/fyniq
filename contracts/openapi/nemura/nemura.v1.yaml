@@ -3734,6 +3734,12 @@ components:
     MyPayslipsOutputBody:
       additionalProperties: false
       properties:
+        next_pay_day:
+          description: The next day the person is paid, from their pay group's calendar; left out when they have no pay record in force. No amount.
+          examples:
+            - "2026-11-25"
+          format: date
+          type: string
         payslips:
           description: The person's payslips, newest month first.
           items:

@@ -1368,9 +1368,11 @@ describe("my pay", () => {
     overtime_hours: "3", overtime_pay: "106.21" };
 
   it("lists the person's payslips with the net salary, marks a corrected one and has no axe violation", async () => {
-    answer("GET /v1/me/payslips", { status: 200, body: { payslips: [summary, { ...summary, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f51", version: 1, corrected: true }] } });
+    answer("GET /v1/me/payslips", { status: 200, body: { next_pay_day: "2026-11-25", payslips: [summary, { ...summary, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f51", version: 1, corrected: true }] } });
     const { container } = render(<MyPay roles={["employee"]} />);
-    expect((await screen.findAllByText("2026-06: net salary 3878.00, paid 2026-06-25")).length).toBe(2);
+    expect((await screen.findAllByText("2026-06: net salary S$3,878.00, paid 25 Jun 2026")).length).toBe(2);
+    expect(screen.getByText("Your next pay day is 25 Nov 2026.")).toBeTruthy();
+    expect(screen.getByText(/Tax forms: none is ready yet/)).toBeTruthy();
     expect(screen.getByText("Corrected")).toBeTruthy();
     expect(await violations(container)).toEqual([]);
   });

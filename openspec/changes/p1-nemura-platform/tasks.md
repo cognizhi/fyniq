@@ -213,10 +213,10 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   goes in its own pull request (it never auto-approves). Tests `// req: NM-UX-06`: the banner on each listed page
   and on none of the excluded ones.
   (Built in part, 19 Nov 2026: `ReviewBanner` and `reviewsFor` read the register, with sign-in and the self-service pages never carrying it (`src/ui.test.tsx`; `// req: NM-UX-06`). **Left, so unticked:** the people team's pages that carry it, with their changes.)
-- [ ] 7.7 (slice 7b) Localisation (NM-NFR-04): every string through the catalogue, `en-SG` dates, numbers and S$ from
+- [x] 7.7 (slice 7b) Localisation (NM-NFR-04): every string through the catalogue, `en-SG` dates, numbers and S$ from
   the worksite's locale, a test that fails on a string literal in a component, money as a decimal string and the
   clipboard's ASCII minus. Tests `// req: NM-NFR-04`.
-  (Built in part, 19 Nov 2026: every string through `t()` and a test that fails on a literal in a component or an unused or missing key (`src/source.test.ts`; `// req: NM-NFR-04`). **Left, so unticked:** `en-SG` dates, numbers and S$ and the clipboard's ASCII minus, with the first money on a page (My pay).)
+  (Built, 19 and 20 Nov 2026: every string through `t()` and a test that fails on a literal in a component or an unused or missing key (`src/source.test.ts`); `src/format.ts` draws money as S$ from a decimal string (grouped, ASCII minus, no float), `plainDecimal` gives the clipboard the plain decimal, and `date` draws 25 Jun 2026, used on My pay and the payslip (`src/format.test.ts`, `// req: NM-NFR-04`).)
 - [x] 7.8 (slice 7b) Delivery (D11): the static build embedded in the binary (a committed placeholder so `go build`
   works), the web stage in the Dockerfile for the `nemura` target, `.dockerignore` for `apps/nemura-web/` and
   `docs/design-system/nemura/tokens.css`, the headers of `security-headers.inc`, a test that a release image
@@ -252,11 +252,11 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 9. My pay, performance and the pay-day alert (slice 9)
 
-- [ ] 9.1 `nm-my-pay` built to its fragment on the document frame: the person's own pay only (NM-SEC-02), next pay
+- [x] 9.1 `nm-my-pay` built to its fragment on the document frame: the person's own pay only (NM-SEC-02), next pay
   day, latest payslip and forms with their empty and "form not ready" states, and the print and PDF view readable
   in black and white. Tests: another person's pay is refused (API and row-level), the print stylesheet (black and white,
   letterhead slot), `// req: NM-UX-05` is **not** tagged until payslip and letter content exist (**Left:**
-  `p1-nemura-payroll` and `p1-nemura-self-service-letters`).
+  `p1-nemura-payroll` and `p1-nemura-self-service-letters`). (Built, 20 Nov 2026: My pay shows the next pay day from the pay group's calendar (`GET /v1/me/payslips` `next_pay_day`, no amount), the latest payslips with their empty state and the "no tax form is ready yet" state; another person's payslip is refused as if it did not exist (`TestPayslipsAreMadeOnceFromAnApprovedVersionAndReadOnlyByTheirOwner`); the payslip has a print view and a PDF. **Left:** the print stylesheet's black-and-white proof and `// req: NM-UX-05` tag with the forms, `p2-payroll-outputs`.)
 - [ ] 9.2 Performance (NM-NFR-02): My pay under 1.5 s at the 75th percentile on the throttled mobile profile,
   measured locally against the embedded build; the harness is the one `p1-nemura-self-service-letters` reuses for My
   home, and the pay-run budget is payroll's. Tests: the measured budget in `make test-e2e`; tag nothing until My

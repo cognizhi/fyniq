@@ -420,6 +420,12 @@ func TestPayslipsAreMadeOnceFromAnApprovedVersionAndReadOnlyByTheirOwner(t *test
 	// (Overtime is paid to Ben as a Part IV non-workman: see the payslip's overtime items.)
 	// Gross 4,500 + 100 + 500 + overtime 106.21 (3 hours at 12 × 4,500 / (52 × 44) = 23.60 an hour, 1.5 times: RND-PAY-RATIO) = 5,206.21; the employee's CPF is 20% of it, 1,041.24 taken as 1,041; the CDAC
 	// fund 2.00; the dormitory 200: net 5,206.21 − 1,041 − 2.00 − 200 = 3,963.21.
+	if next, err := svc.MyNextPayDay(ctx, ben); err != nil || next != "2026-11-25" {
+		t.Errorf("the next pay day on 20 Nov with a pay day of the 25th: %q %v", next, err)
+	}
+	if next, _ := svc.MyNextPayDay(ctx, stranger); next != "" {
+		t.Errorf("a pay day for somebody with no pay record: %q", next)
+	}
 	list, err := svc.MyPayslips(ctx, ben)
 	if err == nil && (len(list) != 1 || list[0].Reference != "PS-202606-0001" || list[0].Net != "3963.21" || list[0].Corrected || list[0].PayDate != "2026-06-26") {
 		t.Errorf("list: %+v", list)

@@ -378,6 +378,7 @@ func (f fakePayroll) RecordPayment(context.Context, Session, uuid.UUID, PaymentR
 func (f fakePayroll) PublishPayslips(context.Context, Session, uuid.UUID, int) (int, error) {
 	return 2, f.err
 }
+func (f fakePayroll) MyNextPayDay(context.Context, Session) (string, error) { return "", f.err }
 func (f fakePayroll) MyPayslips(context.Context, Session) ([]PayslipSummary, error) {
 	return nil, f.err
 }

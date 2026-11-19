@@ -5179,6 +5179,12 @@ export interface components {
             postal_code?: string;
         };
         MyPayslipsOutputBody: {
+            /**
+             * Format: date
+             * @description The next day the person is paid, from their pay group's calendar; left out when they have no pay record in force. No amount.
+             * @example 2026-11-25
+             */
+            next_pay_day?: string;
             /** @description The person's payslips, newest month first. */
             payslips: components["schemas"]["PayslipSummary"][] | null;
         };

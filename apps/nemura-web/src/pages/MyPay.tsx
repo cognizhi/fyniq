@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { components } from "../api/schema";
 import { ReviewBanner } from "../components/ReviewBanner";
+import { date, money } from "../format";
 import { helpText, t } from "../i18n";
 import { Shell, admin, team } from "./Shell";
 
@@ -20,10 +21,14 @@ export async function openPdf(id: string): Promise<boolean> {
 // MyPay is nm-my-pay: a person's payslips by month, each with its net salary and a view, a print and a PDF (NM-PAY-04, NM-ESS-02). Only their own; never the company's figures.
 export function MyPay({ roles }: { roles: readonly string[] }) {
   const [list, setList] = useState<Summary[] | null>(null);
+  const [next, setNext] = useState("");
   const [note, setNote] = useState<string | null>(null);
   useEffect(() => {
     api.GET("/v1/me/payslips").then(
-      ({ data }) => setList(data?.payslips ?? []),
+      ({ data }) => {
+        setList(data?.payslips ?? []);
+        setNext(data?.next_pay_day ?? "");
+      },
       () => setList([]),
     );
   }, []);
@@ -33,11 +38,13 @@ export function MyPay({ roles }: { roles: readonly string[] }) {
         <ReviewBanner screen="nm-my-pay" />
         <h1 className="fy-h1" title={helpText("mypay.page").tooltip}>{t("mypay.title")}</h1>
         <p className="fy-secondary">{t("mypay.lead")}</p>
+        <p>{next ? t("mypay.next", { date: date(next) }) : t("mypay.nextNone")}</p>
+        <p className="fy-secondary">{t("mypay.forms")}</p>
         {list !== null && list.length === 0 && <p className="fy-secondary">{t("mypay.none")}</p>}
         <ul className="fy-stack fy-stack--2">
           {(list ?? []).map((p) => (
             <li key={p.id} className="fy-row" style={{ gap: "var(--space-3)" }}>
-              <a href={`/me/pay/${p.id}`}>{t("mypay.line", { month: p.month.slice(0, 7), net: p.net_salary, date: p.payment_date })}</a>
+              <a href={`/me/pay/${p.id}`}>{t("mypay.line", { month: p.month.slice(0, 7), net: money(p.net_salary), date: date(p.payment_date) })}</a>
               {p.corrected && <span className="fy-chip">{t("mypay.corrected")}</span>}
               <button className="fy-btn fy-btn--secondary" type="button" onClick={async () => setNote((await openPdf(p.id)) ? null : t("mypay.failed"))}>{t("mypay.pdf", { month: p.month.slice(0, 7) })}</button>
             </li>
@@ -76,17 +83,17 @@ export function Payslip({ id, roles }: { id: string; roles: readonly string[] })
             <dl className="fy-stack fy-stack--1">
               {row(t("payslip.employer"), v.employer)}
               {row(t("payslip.employee"), v.employee)}
-              {row(t("payslip.paid"), v.payment_date)}
-              {row(t("payslip.period"), `${v.period_start} ${t("payslip.to")} ${v.period_end}`)}
-              {row(t("payslip.basic"), v.basic_salary)}
-              {(v.allowances ?? []).map((a) => row(t("payslip.allowance", { name: a.name }), a.amount))}
-              {(v.additional_payments ?? []).map((a) => row(t("payslip.additional", { name: a.name }), a.amount))}
+              {row(t("payslip.paid"), date(v.payment_date))}
+              {row(t("payslip.period"), `${date(v.period_start)} ${t("payslip.to")} ${date(v.period_end)}`)}
+              {row(t("payslip.basic"), money(v.basic_salary))}
+              {(v.allowances ?? []).map((a) => row(t("payslip.allowance", { name: a.name }), money(a.amount)))}
+              {(v.additional_payments ?? []).map((a) => row(t("payslip.additional", { name: a.name }), money(a.amount)))}
               {v.overtime_pay && v.overtime_hours && row(t("payslip.otHours"), v.overtime_hours)}
-              {v.overtime_pay && row(t("payslip.otPay"), v.overtime_pay)}
+              {v.overtime_pay && row(t("payslip.otPay"), money(v.overtime_pay))}
               {v.overtime_period && row(t("payslip.otPeriod"), v.overtime_period)}
-              {(v.deductions ?? []).map((a) => row(t("payslip.deduction", { name: a.name }), a.amount))}
-              {row(t("payslip.net"), v.net_salary)}
-              {v.reimbursements && row(t("payslip.reimbursements"), v.reimbursements)}
+              {(v.deductions ?? []).map((a) => row(t("payslip.deduction", { name: a.name }), money(a.amount)))}
+              {row(t("payslip.net"), money(v.net_salary))}
+              {v.reimbursements && row(t("payslip.reimbursements"), money(v.reimbursements))}
               {row(t("payslip.reference"), v.reference)}
             </dl>
             {v.corrected && <p className="fy-secondary">{t("payslip.corrected")}</p>}

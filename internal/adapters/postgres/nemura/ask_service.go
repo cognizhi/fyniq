@@ -2,6 +2,7 @@ package nemura
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -69,17 +70,12 @@ func (r toolRunner) Run(ctx context.Context, c assistant.Call) (assistant.Result
 		}
 		return assistant.Result{Tool: c.Tool, Facts: map[string]string{"year": fmt.Sprint(year), "entitled": b.Entitled.String(), "taken": b.Taken.String(), "booked": b.Booked.String(), "left": b.Left.String()}, Sources: []string{"your leave record"}}, nil
 	case assistant.ToolPayDay:
-		var payDay, cutoff, approval int
-		err := r.tx.QueryRow(ctx, `SELECT g.pay_day, g.cutoff_days, g.approval_days FROM nemura.person_pay p JOIN nemura.pay_group g ON g.organisation_id = p.organisation_id AND g.id = p.pay_group_id
-WHERE p.person_id = $1 AND p.effective_from <= $2 AND (p.effective_to IS NULL OR p.effective_to > $2)`, r.person, day(r.now)).Scan(&payDay, &cutoff, &approval)
+		next, ok, err := NextPayDay(ctx, r.tx, r.person, r.now)
 		if err != nil {
-			return assistant.Result{Tool: c.Tool, Facts: map[string]string{"next_pay_day": "not set yet: ask the people team"}, Sources: []string{"your pay group"}}, nil
+			return assistant.Result{}, err
 		}
-		g := payroll.PayGroup{PayDay: payDay, CutoffDays: cutoff, ApprovalDays: approval}
-		this := time.Date(r.now.Year(), r.now.Month(), 1, 0, 0, 0, 0, time.UTC)
-		next := g.PayDate(this)
-		if next.Before(time.Date(r.now.Year(), r.now.Month(), r.now.Day(), 0, 0, 0, 0, time.UTC)) {
-			next = g.PayDate(this.AddDate(0, 1, 0))
+		if !ok {
+			return assistant.Result{Tool: c.Tool, Facts: map[string]string{"next_pay_day": "not set yet: ask the people team"}, Sources: []string{"your pay group"}}, nil
 		}
 		return assistant.Result{Tool: c.Tool, Facts: map[string]string{"next_pay_day": next.Format(time.DateOnly)}, Sources: []string{"the calendar of your pay group"}}, nil
 	case assistant.ToolPayslipLine:
@@ -164,4 +160,25 @@ func (a AskService) Ask(ctx context.Context, s api.Session, question string) (ap
 			map[string]audit.Change{"tools": {nil, ans.Tools}, "refused": {nil, ans.Refused != ""}, "model": {nil, a.Model.ID()}}, "")
 	})
 	return out, err
+}
+
+// NextPayDay is the next day a person is paid, from the calendar of their pay group: this month's pay day if it has not passed, otherwise next month's. It reads the group's calendar only, never an amount
+// (NM-SEC-02): false when the person has no pay record in force.
+func NextPayDay(ctx context.Context, tx pgx.Tx, person uuid.UUID, now time.Time) (time.Time, bool, error) {
+	var payDay, cutoff, approval int
+	err := tx.QueryRow(ctx, `SELECT g.pay_day, g.cutoff_days, g.approval_days FROM nemura.person_pay p JOIN nemura.pay_group g ON g.organisation_id = p.organisation_id AND g.id = p.pay_group_id
+WHERE p.person_id = $1 AND p.effective_from <= $2 AND (p.effective_to IS NULL OR p.effective_to > $2)`, person, day(now)).Scan(&payDay, &cutoff, &approval)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return time.Time{}, false, nil
+	}
+	if err != nil {
+		return time.Time{}, false, err
+	}
+	g := payroll.PayGroup{PayDay: payDay, CutoffDays: cutoff, ApprovalDays: approval}
+	this := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	next := g.PayDate(this)
+	if next.Before(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)) {
+		next = g.PayDate(this.AddDate(0, 1, 0))
+	}
+	return next, true, nil
 }

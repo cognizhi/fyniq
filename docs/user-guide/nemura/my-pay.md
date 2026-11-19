@@ -10,7 +10,7 @@ requirements: [NM-PAY-04, NM-ESS-02, NM-PAY-12]
 
 ## What it is
 
-**My pay** lists your payslips by month, each with the net salary you were paid and the day you were paid. A payslip holds the twelve items MOM requires of an itemised pay slip: the employer's and
+**My pay** shows your next pay day, from the calendar of your pay group, and lists your payslips by month, each with the net salary you were paid and the day you were paid. A payslip holds the twelve items MOM requires of an itemised pay slip: the employer's and
 your full names, the date of payment, your basic salary, the start and end of the salary period, your allowances, any other additional payments such as a bonus, your deductions (your CPF contribution,
 a self-help group fund, no-pay leave and any other), your overtime hours, overtime pay and overtime payment period when overtime applies, and your net salary. Only you read your payslips.
 
