@@ -392,7 +392,7 @@ var (
 	ListSavedItems             = Policy{Operation: "listSavedItems", Capability: OwnNotifications, Need: View} // favourites and views (FR-UX-12)
 	SaveSavedItem              = Policy{Operation: "saveSavedItem", Capability: OwnNotifications, Need: Create}
 	TakeAwaySavedItem          = Policy{Operation: "takeAwaySavedItem", Capability: OwnNotifications, Need: Create}
-	// Comments and @mentions on a record (FR-UX-13, rev 0.376): any member may read, write and mention on a record they may see; the
+	// Comments and @mentions on a record (FR-UX-13, rev 0.382): any member may read, write and mention on a record they may see; the
 	// record's own row of Appendix D decides that, as a search does (SEC-34), so a record the caller may not see is not found.
 	ListRecordComments = Policy{Operation: "listRecordComments", Capability: OwnNotifications, Need: View, ByRecord: true,
 		Note: "Needs a view of the record's own Appendix D row without a qualifier; a record the caller may not see is not found."}

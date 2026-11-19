@@ -23,7 +23,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
-// ------------------------------------------------------------------ comments and @mentions (FR-UX-13, rev 0.376)
+// ------------------------------------------------------------------ comments and @mentions (FR-UX-13, rev 0.382)
 //
 // A comment belongs to one record: a document or a contact. A member reads, writes and is mentioned on a record only if they may
 // see it, which is the record's own row of Appendix D, as a search decides it (SEC-34), and for an Approver narrowed to departments
