@@ -120,7 +120,7 @@
   `profile-and-security.md`'s Keyboard section. Tests `shell/keyboard.test.tsx`, `categorise.test.tsx`. **Left:** the
   shortcut stored server-side with the mode (task 4.1); the mode-toggle shortcut (FR-UX-23).)
 
-  (20 Nov 2026, PRD-001 rev 0.321: the shortcut sheet's on switch and each person's keys are kept on the server with
+  (20 Nov 2026, PRD-001 rev 0.326: the shortcut sheet's on switch and each person's keys are kept on the server with
   the other preferences, and the mode-toggle shortcut (Alt+Shift+M, FR-UX-23) is built. **Left:** side peeks and the
   split view, the Trace panel from Home's tiles and the other reports.)
 ## 3. Grids, records and correctness
@@ -140,7 +140,7 @@
   same figures, and under Settings › Profile and security. Guide `banking.md`, compiled. Tests
   `LedgerViewToggle.test.tsx`, `categorise.test.tsx`. **Left:** the view on the grids still to come (journal lines,
   budgets, opening balances) as each is built.)
-  (20 Nov 2026, PRD-001 rev 0.321: the Plain or Accountant view is kept on the server with the other preferences.
+  (20 Nov 2026, PRD-001 rev 0.326: the Plain or Accountant view is kept on the server with the other preferences.
   **Left:** the sample company to explore, the checklist's later steps, the view on the grids still to come.)
 - [ ] 3.3 Favourites, recents and saved views shareable by link, comments with mentions, and no hard delete. Tests `// req: FR-UX-12`, `// req: FR-UX-13` and `// req: FR-UX-14`
   (17 Nov 2026, in part, for the launch gate: no hard delete (FR-UX-14). `TestEachRoleHoldsExactlyItsGrants` refuses a
@@ -149,6 +149,15 @@
   withdraws or marks (removed evidence is kept, a deleted conversation is marked until the purge). The screen half:
   a void is asked in a confirmation that needs its reason (`bills.test.tsx`). Bulk voids, with their typed
   confirmation, come with a bulk void. **Left:** favourites, recents, saved views and comments.)
+  (20 Nov 2026, PRD-001 rev 0.325, FR-UX-12: favourites and saved views. `user_saved_item` (migration 000701; append-only, audited, per member,
+  under row-level security), `GET`/`POST /v1/saved-items`, `DELETE /v1/saved-items/{kind}`; the header's star and the More sheet's
+  Favourites and views dialog pin a page, save it with the filters its address carries, open and take away. A view is an
+  address, so its link shares no data; the server derives the page's Appendix D area from its path and lists an item only while
+  the roles hold a right there (SEC-34). Recent items stay in the browser (audit rule), owner to confirm. Guide `home.md`,
+  compiled into `home.overview`. Tests `TestFavouritesAndViewsAreTheirOwnersOnly`, `TestAttackSavedItemsKeepTheirHistoryAndTheirTenant`,
+  `saveditem_test.go`, `SavedMenu.test.tsx`. **Left:** FR-UX-13's comments and @mentions (a comment on any record needs each
+  mentioned person's right to see it, the record kinds' visibility map, notifications and a panel on each record page) and
+  moving the lists' filters into their addresses so a view keeps them.)
 - [ ] 3.4 The live-update feed with `If-Match` conflicts, clipboard fidelity, the polite status region, no optimistic money (lint rule) and no re-rounding. Tests `// req: FR-UX-19`, `// req: FR-UX-20`, `// req: FR-UX-21`, `// req: FR-UX-22` and `// req: RND-DISPLAY`, plus the in-app notification entry `// req: FR-UX-15` (P1 part)
   (6 Nov 2026, PRD-001 rev 0.193, clipboard fidelity: `installClipboard` (started with the app) rewrites a copy of text on
   screen so each displayed amount is a plain decimal with an ASCII minus (`clipboardText`), and reads a paste into any
@@ -190,7 +199,7 @@
   a field is Expert's in Basic now even with a value, unless its account or category requires it or it carries an
   error to fix. Guides `invoices.md`, `bills.md`, `claims-my-claims.md`, compiled. Tests `AdvancedDetails.test.tsx`,
   `invoices.test.tsx`.)
-  (20 Nov 2026, PRD-001 rev 0.321, the server half: `user_preference` (migration 000700; append-only, audited, under
+  (20 Nov 2026, PRD-001 rev 0.326, the server half: `user_preference` (migration 000700; append-only, audited, under
   row-level security and with the members' foreign key) keeps each person's mode, Plain or Accountant view, theme,
   contrast, density, motion, shortcuts' switch and keys, number format, date format and way of writing negatives, the
   same on every device. `GET` and `PATCH /v1/preferences` (`getMyPreferences`, `setMyPreferences`; If-Match,
@@ -282,7 +291,7 @@
   **Left:** the sticky first column's scrolling comes with the grid (3.1).)
 - [ ] 5.3 Externalised strings with per-user formats and the organisation's time zone, and the page-load, interaction and bundle budgets measured in CI. Tests `// req: NFR-L10N-01`, `// req: NFR-PERF-UI-01` and `// req: NFR-PERF-UI-03`
 
-  (20 Nov 2026, PRD-001 rev 0.321, NFR-L10N-01: each person's number format (1,234.56, 1.234,56, 1 234,56, 1 234.56), date
+  (20 Nov 2026, PRD-001 rev 0.326, NFR-L10N-01: each person's number format (1,234.56, 1.234,56, 1 234,56, 1 234.56), date
   format (12 Oct 2026, 12/10/2026, 10/12/2026, 2026-10-12) and way of writing negatives are chosen in Settings › Profile
   and security and kept on the server; every date and time is written in the organisation's time zone, which the
   session carries (`format/locale.ts`: only characters move, and a calendar day with no time is never moved by a zone);

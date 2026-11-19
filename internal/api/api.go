@@ -393,6 +393,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerNotifications(a)
 	registerHelpState(a)
 	registerPreferences(a)
+	registerSavedItems(a)
 	registerMCPOptIn(a)
 	registerConnectedApps(a)
 	registerOAuthConsent(a)

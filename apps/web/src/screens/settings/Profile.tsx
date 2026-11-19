@@ -44,7 +44,7 @@ type Passkey = NonNullable<Awaited<ReturnType<typeof listPasskeys>>>[number];
 type Device = NonNullable<Awaited<ReturnType<typeof listDevices>>>[number];
 type Identity = NonNullable<Awaited<ReturnType<typeof listIdentities>>>[number];
 
-async function listPasskeys() {
+export async function listPasskeys() {
   const { data, error } = await api.GET("/v1/session/passkeys", { params: { query: { page_size: 100 } } });
   if (error) throw error;
   return data.items ?? [];
@@ -347,7 +347,7 @@ function RevokePasskey({ target, onClose }: { target: Passkey | null; onClose: (
   );
 }
 
-function Passkeys() {
+export function Passkeys() {
   const keys = useQuery({ queryKey: ["passkeys"], queryFn: listPasskeys });
   const [adding, setAdding] = useState(false);
   const [revoking, setRevoking] = useState<Passkey | null>(null);
@@ -699,6 +699,11 @@ export function Profile() {
           </span>
         </div>
         <SecondFactor session={session} />
+        <div className="fy-row px-4 pt-3">
+          <Link className={buttonVariants({ variant: "ghost", size: "sm" })} to="/sign-in/enrol">
+            {helpText("auth.enrol").label}
+          </Link>
+        </div>
         <Passkeys />
         <MyRecoveryCodes />
         <SignIns />

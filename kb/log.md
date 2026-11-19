@@ -722,4 +722,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-20] compile | appearance.md -> preferences.appearance (Expert starts Compact)
 
+## [2026-11-20] compile | sign-in.md -> auth.sign-in (set up how you confirm it's you: the enrolment page)
+
+## [2026-11-20] compile | home.md -> home.overview (favourites and saved views)
+
 ## [2026-11-20] compile | nemura requests, leave.approve, nemura.my-leave, nemura.home: hours worked, pay inputs, accrual, encashment, people tiles
