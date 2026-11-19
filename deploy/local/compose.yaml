@@ -277,6 +277,18 @@ services:
     depends_on: { nemura-migrate: { condition: service_completed_successfully } }
     healthcheck: *health
 
+  nemura-worker:                              # background work from the outbox: /tasks and the sweep's /tick (ADR-T7)
+    <<: *hardened
+    image: fyniq-nemura:local
+    profiles: [people]
+    environment:
+      FYNIQ_ENV: local
+      PORT: "8080"
+      NEMURA_ROLE: worker
+      NEMURA_DATABASE_URL: postgres://nemura_worker:nemura-local-only@postgres:5432/nemura?sslmode=disable
+    depends_on: { nemura-migrate: { condition: service_completed_successfully } }
+    healthcheck: *health
+
   web:                                        # the built web app on nginx-unprivileged
     <<: *hardened
     image: fyniq-web:local

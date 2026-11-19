@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -35,7 +36,21 @@ func (s *Store) Ping(ctx context.Context) error { return s.pool.Ping(ctx) }
 // InOrg runs fn in one transaction for org: it sets app.org_id first, transaction-scoped, so row-level security matches
 // only org's rows (golden rule 8, PRD-001 §11.4), and commits when fn returns nil. Unset, nothing matches.
 // The transaction type is the adapter's own, for the adapter's code and its tests; the domain gets ports.
-func (s *Store) InOrg(ctx context.Context, org uuid.UUID, fn func(ctx context.Context, tx pgx.Tx) error) (err error) {
+func (s *Store) InOrg(ctx context.Context, org uuid.UUID, fn func(ctx context.Context, tx pgx.Tx) error) error {
+	return s.in(ctx, org, uuid.Nil, time.Time{}, fn)
+}
+
+// InOrgAs is InOrg for work done on behalf of a person on a day: it also sets app.person_id and app.on, which the scope
+// functions of row-level policies read (nemura.current_person, is_manager_of, has_role). A policy that asks "is it mine, or my
+// report's?" then matches only what the role may read, so a missed check in the API cannot read more (NM-SEC-02, golden rule 2).
+func (s *Store) InOrgAs(ctx context.Context, org, person uuid.UUID, on time.Time, fn func(ctx context.Context, tx pgx.Tx) error) error {
+	if person == uuid.Nil {
+		return errors.New("nemura store: no person: work on behalf of someone names them")
+	}
+	return s.in(ctx, org, person, on, fn)
+}
+
+func (s *Store) in(ctx context.Context, org, person uuid.UUID, on time.Time, fn func(ctx context.Context, tx pgx.Tx) error) (err error) {
 	if org == uuid.Nil {
 		return ErrNoOrganisation
 	}
@@ -50,6 +65,11 @@ func (s *Store) InOrg(ctx context.Context, org uuid.UUID, fn func(ctx context.Co
 	}()
 	if _, err = tx.Exec(ctx, "SELECT set_config('app.org_id', $1, true)", org.String()); err != nil {
 		return fmt.Errorf("set the organisation: %w", err)
+	}
+	if person != uuid.Nil {
+		if _, err = tx.Exec(ctx, "SELECT set_config('app.person_id', $1, true), set_config('app.on', $2, true)", person.String(), on.Format(time.DateOnly)); err != nil {
+			return fmt.Errorf("set the person: %w", err)
+		}
 	}
 	if err = fn(ctx, tx); err != nil {
 		return err
