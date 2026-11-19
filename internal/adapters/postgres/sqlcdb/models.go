@@ -2794,6 +2794,99 @@ type FyniqProjectTask struct {
 	ChangedAt      time.Time
 }
 
+type FyniqPspAccount struct {
+	OrganisationID       uuid.UUID
+	ID                   uuid.UUID
+	MoneyAccountID       uuid.UUID
+	ConnectorID          uuid.UUID
+	PayoutAccountID      *uuid.UUID
+	FeeAccountID         uuid.UUID
+	DisputesAccountID    *uuid.UUID
+	SweptThrough         pgtype.Date
+	SweptAt              *time.Time
+	SweepError           *string
+	CreatedBy            string
+	CreatedAt            time.Time
+	Version              int32
+	DisputeLossAccountID *uuid.UUID
+}
+
+type FyniqPspBalance struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectorID    uuid.UUID
+	Currency       string
+	Amount         string
+	TakenAt        time.Time
+}
+
+type FyniqPspDisputeLoss struct {
+	OrganisationID            uuid.UUID
+	ID                        uuid.UUID
+	ConnectorID               uuid.UUID
+	DisputeID                 string
+	DocumentID                uuid.UUID
+	Currency                  string
+	Amount                    string
+	AcceptedOverstatedRevenue bool
+	Reason                    *string
+	CreatedBy                 string
+	CreatedAt                 time.Time
+}
+
+type FyniqPspEvent struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectorID    uuid.UUID
+	Provider       string
+	EventID        string
+	EventType      string
+	ApiVersion     *string
+	ParserVersion  string
+	ObjectKind     *string
+	ObjectID       *string
+	Payload        []byte
+	PayloadSha256  string
+	ReceivedAt     time.Time
+	Status         string
+	ParkedReason   *string
+	ProcessedAt    *time.Time
+	LastError      *string
+}
+
+type FyniqPspPayout struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectorID    uuid.UUID
+	PayoutID       string
+	Currency       string
+	Amount         string
+	Status         string
+	ArrivalDate    pgtype.Date
+	Automatic      bool
+	ProviderAt     time.Time
+	SeenAt         time.Time
+}
+
+type FyniqPspTxn struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectorID    uuid.UUID
+	TxnID          string
+	Type           string
+	Category       string
+	SourceKind     *string
+	SourceID       *string
+	Currency       string
+	Gross          string
+	Fee            string
+	Net            string
+	AvailableOn    pgtype.Date
+	PayoutID       *string
+	ProviderAt     time.Time
+	SeenAt         time.Time
+}
+
 type FyniqQuoteOutcome struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID

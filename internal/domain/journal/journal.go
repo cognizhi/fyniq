@@ -128,23 +128,30 @@ func linesOf(lines []ledger.JournalLine) []payloadLine {
 
 // Create saves a draft (✎). Drafts are not validated beyond their amounts: Post validates.
 func (s Service) Create(ctx context.Context, org uuid.UUID, d Draft) (storage.Document, error) {
+	var doc storage.Document
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		doc, err = CreateIn(ctx, u, d)
+		return err
+	})
+	return doc, err
+}
+
+// CreateIn saves a draft in a unit of work that does more, so that the draft and what records it commit together.
+func CreateIn(ctx context.Context, u storage.UnitOfWork, d Draft) (storage.Document, error) {
 	b, err := encode(d)
 	if err != nil {
 		return storage.Document{}, err
 	}
-	var doc storage.Document
-	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		if doc, err = u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: b}); err != nil {
-			return err
-		}
-		// A sequence that is not gap-free numbers a journal when it is saved (FR-ORG-04).
-		seq, err := u.Sequences().Get(ctx, storage.DocumentJournal)
-		if err != nil || seq.GapFree {
-			return err
-		}
-		doc.Number, err = u.Sequences().Number(ctx, doc.ID, storage.DocumentJournal)
-		return err
-	})
+	doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentJournal, Payload: b})
+	if err != nil {
+		return storage.Document{}, err
+	}
+	// A sequence that is not gap-free numbers a journal when it is saved (FR-ORG-04).
+	seq, err := u.Sequences().Get(ctx, storage.DocumentJournal)
+	if err != nil || seq.GapFree {
+		return doc, err
+	}
+	doc.Number, err = u.Sequences().Number(ctx, doc.ID, storage.DocumentJournal)
 	return doc, err
 }
 

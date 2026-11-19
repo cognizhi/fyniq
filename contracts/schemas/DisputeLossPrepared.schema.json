@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "What it writes off."
+    },
+    "dispute_id": {
+      "description": "The provider's ID.",
+      "examples": [
+        "dp_1Q3"
+      ],
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The draft journal: Dr the dispute loss account, Cr disputes clearing. Post it under Journals, with its approval.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b80"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "over_limit": {
+      "description": "Whether it was above the expense limit.",
+      "examples": [
+        false
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "dispute_id",
+    "document_id",
+    "amount",
+    "over_limit"
+  ],
+  "title": "DisputeLossPrepared",
+  "type": "object"
+}

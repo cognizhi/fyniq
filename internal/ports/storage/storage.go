@@ -96,6 +96,10 @@ type UnitOfWork interface {
 	EmailSuppressions() EmailSuppressions
 	CaptureAddresses() CaptureAddresses
 	InboundMessages() InboundMessages
+	// PSPEvents are the payment providers' webhook events, kept as received (FR-PSP-01).
+	PSPEvents() PSPEvents
+	// PSP is the payment providers' accounts, transactions, payouts and balances (FR-PSP-06).
+	PSP() PSPLedger
 	Notifications() Notifications
 	// Help is each person's first-run tour state (FR-UX-34).
 	Help() HelpStates

@@ -647,3 +647,9 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | docs/user-guide/projects-rates.md → projects.rates (rates and time at cost, p1-projects slice 3)
 
 ## [2026-11-19] compile | every page → kb-schema@2 (the optional packs field; content unchanged); compliance.gst declares sg-gst@2026.3 and compliance.calendar sg-deadlines@2026.1 (AI-53)
+
+## [2026-11-19] compile | docs/user-guide/integrations.md → settings.integrations (Stripe and HitPay as read-only payment providers: set up, what arrives, what posts on Reconcile now, a lost dispute, the checks; p1-payment-providers, PRD rev 0.304)
+
+## [2026-11-19] compile | docs/user-guide/organisation-settings.md, integrations.md → settings.organisation (lost disputes: the expense limit setting), settings.integrations (a lost dispute's draft journal, resolving a set-aside event; p1-payment-providers, PRD rev 0.305)
+
+## [2026-11-19] compile | kb/pages/task/settings-change.md re-hashed to the guide's new section (lost disputes); the page's content is unchanged

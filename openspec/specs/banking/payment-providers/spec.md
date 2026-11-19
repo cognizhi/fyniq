@@ -55,6 +55,21 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **AND** it fetches the missing charges, refunds and fees by ID with no duplicate posting
 - **AND** the payout clearing then nets to zero (C.2 #42)
 
+#### Scenario: A provider is a money account its connector feeds
+- **WHEN** a payment-provider connector is set as the source of a payment gateway money account
+- **THEN** the provider's balance transactions arrive as the account's statement lines, a gross line and a fee line referenced with ":fee"
+- **AND** import's duplicate and continuity checks and the feed's cursor apply as to any bank feed
+
+#### Scenario: A provider that sends no event ID
+- **GIVEN** HitPay's webhook body is the object itself, with no event ID
+- **WHEN** a webhook is received
+- **THEN** Fyniq makes the event's ID of its type, its object's ID and a digest of its body, so a redelivery repeats it and a changed object does not
+
+#### Scenario: The worker mirrors and the API posts
+- **WHEN** the hourly sweep runs
+- **THEN** it mirrors the provider's balance transactions, payouts and balance and records the day the account is complete to
+- **AND** it posts nothing: auto-reconcile in the API posts what the mirror makes certain
+
 ### Requirement: FR-PSP-02 Model A: Fyniq invoices, the provider collects
 In Model A the system SHALL put a payment link or a PayNow QR from the provider on a Fyniq invoice (FR-AR-13) and post the payment, fee and payout through the provider clearing account.
 
@@ -69,6 +84,10 @@ Source: PRD-001 §8.5 · Priority M · Phase P2
 - **WHEN** the provider's fee and payout are received
 - **THEN** the fee posts Dr payment fees · Cr clearing
 - **AND** the payout posts Dr Bank · Cr clearing
+
+#### Scenario: A HitPay charge in P1
+- **WHEN** a HitPay charge arrives in P1
+- **THEN** it is an unreconciled line on the HitPay clearing account that the existing exact match or a person settles against the invoice it names
 
 #### Scenario: B2B invoice paid by PayNow through HitPay (UC-PSP-02)
 - **GIVEN** invoice INV-0150 (S$5,450) carries a HitPay PayNow QR
@@ -147,6 +166,12 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **WHEN** a Model B subscription uses fixed-price monthly or annual plans, proration on upgrade or downgrade, cancellation at period end, credit notes or refunds
 - **THEN** it is posted by these rules
 
+#### Scenario: A provider invoice is made by a narrow database function
+- **GIVEN** the worker may not make documents
+- **WHEN** Model B's invoices are mirrored after go-live
+- **THEN** each is made by a narrow database function the worker calls, as the scheduler makes recurring invoices' drafts
+- **AND** until then the events of invoices, credit notes, subscriptions and customers are known and post nothing
+
 #### Scenario: Unsupported pricing is parked
 - **WHEN** a provider invoice has usage prices, bundles, set-up fees, trials with paid add-ons or a multi-element contract
 - **THEN** it is parked with ⚠ for the accountant (revenue policy, FR-ORG-10)
@@ -191,6 +216,22 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **THEN** they go to revenue reversal and an expense
 - **AND** if the dispute is won, they come back
 
+#### Scenario: A lost dispute posts nothing by itself
+- **WHEN** a dispute is lost
+- **THEN** Fyniq posts nothing by itself: its amount stays in disputes clearing
+- **AND** with no disputes account named on the provider account, a dispute's lines wait for a person
+
+#### Scenario: A person prepares the journal that writes it off
+- **GIVEN** every line of a dispute has posted and the provider account names a dispute loss account
+- **WHEN** a person with a right on Journals asks for the lost dispute's draft journal
+- **THEN** a draft is prepared, once per dispute: Dr the dispute loss account · Cr disputes clearing, for what the dispute holds
+- **AND** it is posted under Journals with that row's own approval
+
+#### Scenario: Above the expense limit
+- **GIVEN** the setting psp.dispute_expense_limit is S$100.00 by default
+- **WHEN** a lost dispute above it is written off as an expense
+- **THEN** the request must confirm that the invoice's revenue stays as invoiced and give a reason, which are recorded with the draft
+
 ### Requirement: FR-PSP-05 Fees and their GST
 The system SHALL expense provider fees once, per transaction, from the provider's data, and SHALL claim input GST on them only where the provider charges GST and issues a tax invoice.
 
@@ -224,6 +265,10 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 - **AND** each settled payout nets to zero in clearing (C.2 #42)
 - **AND** the S$288.30 still in clearing (3 × S$96.10, plus any reserves) agrees to Stripe's balance not yet paid out (C.2 #50)
 
+#### Scenario: A fee posts as out of scope
+- **WHEN** a provider's fee line is reconciled
+- **THEN** it posts to the provider account's fee account with the GST code OP, so no input GST is claimed until a matched tax invoice claims it
+
 ### Requirement: FR-PSP-06 Payout reconciliation
 The system SHALL match each payout to its bank line (FR-BNK-15) and break it down into the charges, refunds, disputes and fees it settles, keeping clearing per provider and per currency.
 
@@ -254,6 +299,16 @@ Source: PRD-001 §8.5 · Priority M · Phase P1
 #### Scenario: Negative balance or bank debit
 - **WHEN** the provider balance is negative or a payout debits the bank
 - **THEN** the same legs post in reverse
+
+#### Scenario: A payout is a transfer to the bank
+- **WHEN** a payout's line is reconciled
+- **THEN** it is recorded as a transfer from the provider's clearing account to the bank account named on the provider account, in transit until the bank's own line completes it
+- **AND** a payout above the per-line cap of auto-reconcile waits for a person
+
+#### Scenario: A provider account is set up with a right on bank connections
+- **WHEN** someone sets a provider's money account up
+- **THEN** they need a right on "Bank data… connections", as for setting a connector as a source
+- **AND** the setup chooses the bank for payouts, the fee account and the disputes account, each checked
 
 ### Requirement: Recommended collection models
 The recommended default SHALL be Stripe Billing for self-serve product subscriptions (Model B) and HitPay or a free static PayNow QR for B2B invoices (Model A) (open question 23).

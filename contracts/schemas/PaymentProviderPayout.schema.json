@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "$ref": "Money.schema.json",
+      "description": "Paid out, as the provider reports it."
+    },
+    "arrival_date": {
+      "description": "When it was due in the bank.",
+      "examples": [
+        "2026-11-12"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "automatic": {
+      "description": "Whether it is an automatic payout, which Stripe itemises (FR-PSP-06).",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "difference": {
+      "$ref": "Money.schema.json",
+      "description": "What they come to, when not nothing."
+    },
+    "id": {
+      "description": "The payout's ID in Fyniq.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b60"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "missing": {
+      "description": "References of lines that are not imported or not posted, separated by commas.",
+      "examples": [
+        "txn_1Q3, txn_1Q3:fee"
+      ],
+      "type": "string"
+    },
+    "money_account_id": {
+      "description": "The provider's clearing money account.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4b10"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "nets_to_zero": {
+      "description": "Whether the payout and what it settles come to nothing in clearing; absent until the payout's own line has posted.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "payout_id": {
+      "description": "The provider's ID.",
+      "examples": [
+        "po_1Q3"
+      ],
+      "type": "string"
+    },
+    "payout_line_posted": {
+      "description": "Whether the payout's own statement line has posted, as a transfer to the bank.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "status": {
+      "description": "The provider's status.",
+      "examples": [
+        "paid"
+      ],
+      "type": "string"
+    },
+    "transactions": {
+      "description": "What it settles.",
+      "items": {
+        "$ref": "PaymentProviderTxn.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "payout_id",
+    "money_account_id",
+    "amount",
+    "status",
+    "automatic",
+    "transactions",
+    "payout_line_posted"
+  ],
+  "title": "PaymentProviderPayout",
+  "type": "object"
+}
