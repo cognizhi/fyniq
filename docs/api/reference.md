@@ -826,6 +826,172 @@ Runs the connector's test action through the egress guard (SEC-36) and records t
   - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
 - **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IF-MATCH-01`, `API-IF-MATCH-02`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `CONNECTOR-01`, `CONNECTOR-02`, `CONNECTOR-03`, `CONNECTOR-04`, `CONNECTOR-05`, `CONNECTOR-06`, `CONNECTOR-07`, `CONNECTOR-08`, `CONNECTOR-09`, `EML-01`, `STORAGE-CONNECTOR-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`, `STORAGE-VERSION-01`
 
+## People
+
+The link to the people platform (Nemura): where each feature lives, linking and unlinking with two approvers, and the signed events Nemura sends through its own client (PRD-001 §8.26, FR-PPL-01, FR-PPL-15, FR-PPL-16).
+
+### `GET /v1/payroll-mapping`
+
+**Show the account mapping pay runs post by** (`getPayrollMapping`)
+
+The current version of what each department's salary and each kind of deduction post to (FR-EMP-02's minimum, p1-payroll-link design D8), for the people with payroll rights. A pay run is calculated against one version and Fyniq refuses a run for another. Read-only; no side effects.
+
+- **Permission:** View on Pay runs, employee data
+- **Responses:**
+  - `200` OK [`PayrollMapping`](../../contracts/schemas/PayrollMapping.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `404` Not Found: `API-NOT-FOUND-01` Not found.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-NOT-FOUND-01`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/payroll-mapping`
+
+**Set the next version of the account mapping** (`setPayrollMapping`)
+
+Sets the next version of the mapping pay runs post by (FR-EMP-02's minimum): each department's salary expense account and each kind of deduction's account. A new version makes a run calculated against the old one refused until Nemura recalculates it. Side effects: the new version and its audit event. Idempotent with Idempotency-Key. On the never-list for the AI and MCP (§9.6). Left: dual control by the approval engine.
+
+- **Permission:** Create on Pay runs, employee data
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PayrollMappingChange`](../../contracts/schemas/PayrollMappingChange.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`PayrollMapping`](../../contracts/schemas/PayrollMapping.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `GET /v1/people-link`
+
+**Show the link to the people platform and where each feature lives** (`getPeopleLink`)
+
+Settings → People and HR (FR-PPL-01, FR-PPL-08): where each feature (people records, payroll, leave, letters) lives, whether the organisation is linked to a Nemura organisation, the link's state and epoch, and how many events the link received by outcome (applied, ignored as older, refused). Never a key or a token. Read-only; no side effects.
+
+- **Permission:** View on People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals
+- **Responses:**
+  - `200` OK [`PeopleLink`](../../contracts/schemas/PeopleLink.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `STORAGE-LOCK-01` Another change is in progress.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `STORAGE-LOCK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/people-link`
+
+**Ask to link the organisation to a Nemura organisation** (`requestPeopleLink`)
+
+Asks to link the organisation to a Nemura organisation (FR-PPL-01, FR-PPL-16, PRD-002 NM-ARC-04): you give Nemura's link key (the public key every event is checked against), the public key of the client Nemura calls with, its expiry within a year, and the features that live in Nemura. It is dual controlled (golden rule 6): the answer is the approval request, which the Owner approves with a second approver; only then is the client registered with the OAuth server, holding Appendix E's scopes and no other, and the link recorded at the next epoch with each feature's source. Fyniq never loads a feature that lives in Nemura. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key; Prefer: return=preview checks it and asks nothing. Needs a person signed in with step-up. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PeopleLinkRequest`](../../contracts/schemas/PeopleLinkRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PPL-10` The organisation is linked already; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PEOPLE-LINK-01` The link or a person of the projection moved against its course.
+  - `422` Unprocessable Entity: `API-CLIENT-01` The client's name is not valid; `API-CLIENT-05` The client's expiry is not within a year; `API-CLIENT-06` Not a public key an integration may sign with; `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-CLIENT-01`, `API-CLIENT-05`, `API-CLIENT-06`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `PPL-10`, `STORAGE-LOCK-01`, `STORAGE-PEOPLE-LINK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/people-link/hold-events`
+
+**Receive a tax-clearance hold event from Nemura** (`receivePeopleHoldEvent`)
+
+Nemura's `people.tax_hold.changed` (PRD-002 NM-INT-08, Appendix E): a person held from a date, or released after IRAS's notice or directive recorded with evidence. It needs the link's client and the scope people.holds.write and is checked, applied once and versioned exactly as receivePeopleProjectionEvent is. A held person's lines are not released (FR-PPL-13); only Nemura's release clears a hold. Only the link's client may call it; on the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals
+- **Request body:** [`PeopleLinkEvent`](../../contracts/schemas/PeopleLinkEvent.schema.json)
+- **Responses:**
+  - `200` OK [`PeopleLinkReceipt`](../../contracts/schemas/PeopleLinkReceipt.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PPL-02` The event's signature does not verify with the link key; `PPL-03` The event's payload is not the one its signed header names; `PPL-04` The event was signed more than 5 minutes from now; `PPL-05` The event is of another epoch of the link; `PPL-06` The event is not from the linked organisation to this one; `PPL-08` The event came through a client that is not the link's.
+  - `409` Conflict: `PPL-07` The organisation has no active link to the people platform; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PEOPLE-LINK-01` The link or a person of the projection moved against its course.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PPL-01` The event is not well formed; `PPL-09` The event carries more than the people platform shares (PRD-002 Appendix E).
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PPL-01`, `PPL-02`, `PPL-03`, `PPL-04`, `PPL-05`, `PPL-06`, `PPL-07`, `PPL-08`, `PPL-09`, `STORAGE-LOCK-01`, `STORAGE-PEOPLE-LINK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/people-link/payroll-runs`
+
+**Receive an approved pay run from Nemura and post it** (`submitPayrollRun`)
+
+Nemura's `payroll.run.approved` (PRD-002 Appendix E, NM-INT-06): the link's envelope carrying the approval envelope over the run's canonical figures, its SHA-256 and the approver's signed record. It needs the link's client and the scope payroll.journal.submit. Before anything posts, Fyniq verifies in one transaction the link's signature and epoch, the approval envelope's digest, the linked organisation, that the preparer is not the approver and the approver held the right, the approver's passkey assertion against a passkey they enrolled in Fyniq, the account-mapping version, that the envelope is unused and the version newer than any posted; each failure has its own code (PPL-11 to PPL-19), posts nothing, creates nothing and is audited. It then posts the difference from what the run's earlier versions posted (payroll_run@1) under the period locks and checks of any posting: department salary expense, employer CPF, SDL, 2110, 2100, deductions and claims paid with salary, no per-person line, attributed to the approver via Nemura; a closed wage month's difference posts in the current open month. Side effects: the entry, the receipt and the inbox row, with their audit events. Idempotent on the event ID (a repeat answers duplicate). Only the link's client may call it; on the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals
+- **Request body:** [`PeopleLinkEvent`](../../contracts/schemas/PeopleLinkEvent.schema.json)
+- **Responses:**
+  - `200` OK [`PayrollRunReceipt`](../../contracts/schemas/PayrollRunReceipt.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PPL-02` The event's signature does not verify with the link key; `PPL-03` The event's payload is not the one its signed header names; `PPL-04` The event was signed more than 5 minutes from now; `PPL-05` The event is of another epoch of the link; `PPL-06` The event is not from the linked organisation to this one; `PPL-08` The event came through a client that is not the link's; `PPL-12` The approval was signed for another organisation; `PPL-13` The run's preparer cannot approve it; `PPL-14` The approver did not hold the right to approve a pay run; `PPL-15` The approver's signed record does not verify against their passkey; `PPL-19` The approver has no sign-in identity or passkey in Fyniq.
+  - `409` Conflict: `PPL-07` The organisation has no active link to the people platform; `PPL-16` The run was calculated against another account mapping than Fyniq's current one; `PPL-17` The approval envelope was used before; `PPL-18` The version is no newer than one already posted; `STORAGE-INV-03` The period is closed; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PAYROLL-RUN-01` A pay run's receipt is kept once, and a payroll entry needs one.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `DIM-05` The line needs a value its account requires; `DIM-06` The line's dimension values are not valid; `LEDGER-01` The journal has no date; `LEDGER-04` An account does not exist; `LEDGER-11` A text is too long; `LEDGER-22` A system account is missing; `LEDGER-51` The pay run does not fit the posting rule; `PPL-01` The event is not well formed; `PPL-09` The event carries more than the people platform shares (PRD-002 Appendix E); `PPL-11` The approval envelope is not the one the approval names.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `DIM-05`, `DIM-06`, `LEDGER-01`, `LEDGER-04`, `LEDGER-11`, `LEDGER-22`, `LEDGER-51`, `PPL-01`, `PPL-02`, `PPL-03`, `PPL-04`, `PPL-05`, `PPL-06`, `PPL-07`, `PPL-08`, `PPL-09`, `PPL-11`, `PPL-12`, `PPL-13`, `PPL-14`, `PPL-15`, `PPL-16`, `PPL-17`, `PPL-18`, `PPL-19`, `STORAGE-INV-03`, `STORAGE-LOCK-01`, `STORAGE-PAYROLL-RUN-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/people-link/projection-events`
+
+**Receive a person or bank-details event from Nemura** (`receivePeopleProjectionEvent`)
+
+Nemura's `people.person.upserted` and `people.bank_details.changed` (PRD-002 Appendix E): an envelope (NM-INT-10) whose header the link key signed, with the payload's canonical SHA-256 in it. It needs the link's client and the scope people.projection.write, and the envelope is checked against the link as Fyniq holds it: its organisations, its epoch, a signing time within 5 minutes, its signature and its digest; nothing the message carries decides who may send it. An event received before does nothing (duplicate); a version no newer than the one applied is ignored and recorded (a late version 1 never sets the manager back); a payload with a field Appendix E does not list is refused (NM-INT-05). Side effects: the projection's change and its audit event, by field name and never by value, and the inbox row (identities and a digest, never the payload). Pay and bank details are never logged. Only the link's client may call it; on the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals
+- **Request body:** [`PeopleLinkEvent`](../../contracts/schemas/PeopleLinkEvent.schema.json)
+- **Responses:**
+  - `200` OK [`PeopleLinkReceipt`](../../contracts/schemas/PeopleLinkReceipt.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required; `PPL-02` The event's signature does not verify with the link key; `PPL-03` The event's payload is not the one its signed header names; `PPL-04` The event was signed more than 5 minutes from now; `PPL-05` The event is of another epoch of the link; `PPL-06` The event is not from the linked organisation to this one; `PPL-08` The event came through a client that is not the link's.
+  - `409` Conflict: `PPL-07` The organisation has no active link to the people platform; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PEOPLE-LINK-01` The link or a person of the projection moved against its course.
+  - `422` Unprocessable Entity: `API-INPUT-02` A field is not valid; `PPL-01` The event is not well formed; `PPL-09` The event carries more than the people platform shares (PRD-002 Appendix E).
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-INPUT-02`, `API-RATE-01`, `PPL-01`, `PPL-02`, `PPL-03`, `PPL-04`, `PPL-05`, `PPL-06`, `PPL-07`, `PPL-08`, `PPL-09`, `STORAGE-LOCK-01`, `STORAGE-PEOPLE-LINK-01`, `STORAGE-RETRY-01`
+
+### `POST /v1/people-link/unlink`
+
+**Ask to end the link to the people platform** (`requestPeopleUnlink`)
+
+Asks to end the link (FR-PPL-16, PRD-002 NM-INT-11). It is dual controlled like linking: the Owner and a second approver approve. Unlinking first settles work in flight (runs approved and not posted, salary payments with an unknown outcome, open tax-clearance holds, events waiting) and only then revokes the link's client; events and credentials of the ended epoch are refused from then. Both sides keep their data. Side effects: the approval request and its audit event. Idempotent with Idempotency-Key. Needs a person signed in with step-up. On the never-list for the AI and MCP (§9.6).
+
+- **Permission:** Create on People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals
+- **Parameters:**
+  - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
+  - `Prefer` (header): return=preview runs every check of the command and answers with what it would return, saving nothing (FR-INT-14): no Idempotency-Key is claimed, and IDs in the answer are not kept.
+- **Request body:** [`PeopleUnlinkRequest`](../../contracts/schemas/PeopleUnlinkRequest.schema.json)
+- **Responses:**
+  - `200` OK; or, with Prefer: return=preview, what the command would return, with nothing saved (FR-INT-14). [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `202` Accepted [`Approval`](../../contracts/schemas/Approval.schema.json)
+  - `401` Unauthorized: `API-AUTH-01` Sign-in required.
+  - `403` Forbidden: `API-AUTH-02` Sent from another site; `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-04` A person must be signed in; `API-AUTHZ-05` Step-up required; `API-AUTHZ-07` A second factor is required.
+  - `409` Conflict: `API-IDEMPOTENCY-02` The first request with this Idempotency-Key is still running; `APR-06` A change to it is waiting for approval already; `PPL-07` The organisation has no active link to the people platform; `STORAGE-LOCK-01` Another change is in progress; `STORAGE-PEOPLE-LINK-01` The link or a person of the projection moved against its course.
+  - `422` Unprocessable Entity: `API-IDEMPOTENCY-01` The Idempotency-Key was used for another request; `API-IDEMPOTENCY-03` The Idempotency-Key expired; `API-INPUT-02` A field is not valid.
+  - `429` Too Many Requests: `API-RATE-01` Too many requests.
+  - `500` Internal Server Error: `API-FAILURE-01` Something went wrong.
+  - `503` Service Unavailable: `API-UNAVAILABLE-01` Not available here; `STORAGE-RETRY-01` Busy: try again.
+- **Error codes:** `API-AUTH-01`, `API-AUTH-02`, `API-AUTHZ-01`, `API-AUTHZ-02`, `API-AUTHZ-03`, `API-AUTHZ-04`, `API-AUTHZ-05`, `API-AUTHZ-07`, `API-FAILURE-01`, `API-IDEMPOTENCY-01`, `API-IDEMPOTENCY-02`, `API-IDEMPOTENCY-03`, `API-INPUT-02`, `API-RATE-01`, `API-UNAVAILABLE-01`, `APR-06`, `PPL-07`, `STORAGE-LOCK-01`, `STORAGE-PEOPLE-LINK-01`, `STORAGE-RETRY-01`
+
 ## Integrations
 
 Integration clients: systems that call the API on their own, with OAuth client credentials by class, narrow scopes, their networks and limits, registered by two people and revoked at once (FR-INT-02, SEC-07).

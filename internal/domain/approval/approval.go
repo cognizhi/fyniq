@@ -183,6 +183,10 @@ const (
 	// apps" and approved by the Owner, who holds its A with a second approver; its key is the client's ID. Revoking one is
 	// never held back.
 	ObjectAPIClient = "api_client"
+	// ObjectPeopleLink is the link to the people platform (FR-PPL-01, FR-PPL-16, NM-ARC-04): linking and unlinking are asked by an
+	// Admin or the Owner and approved by the Owner with a second approver (golden rule 6); its key is the organisation's ID, since an
+	// organisation has one link at a time.
+	ObjectPeopleLink = "people_link"
 	// ObjectAIProposal is an AI proposal to execute (AI-89, AI-P4, AI-P5, AI-10; rev 0.280): one step of the task type's
 	// approver roles who could do its command themselves signs the payload's hash; the person who asked may sign their
 	// own tier-1 proposal; no organisation changes its policy. Its key is the proposal's id.
@@ -337,6 +341,11 @@ const (
 	OpKBPublish = "kb_publication.publish"
 	// OpAPIClientCreate registers an integration client with the OAuth server and records it (FR-INT-02).
 	OpAPIClientCreate = "api_client.create"
+	// OpPeopleLink links the organisation to a Nemura organisation: the link's client registered with the OAuth server, then the link
+	// recorded at the next epoch (FR-PPL-01, FR-PPL-16).
+	OpPeopleLink = "people_link.link"
+	// OpPeopleUnlink ends the link: work in flight settles first, then the link's client is revoked (FR-PPL-16).
+	OpPeopleUnlink = "people_link.unlink"
 	// OpAPIClientReclass reclasses a personal access token from agent to integration (FR-INT-02).
 	OpAPIClientReclass = "api_client.reclass"
 	// OpAIDataPolicyChange makes the asked policy the organisation's next version (AI-75).
@@ -406,6 +415,8 @@ var Operations = map[string]string{
 	OpAIRouteChange:            ObjectAIRoute,
 	OpKBPublish:                ObjectKBPublication,
 	OpAPIClientCreate:          ObjectAPIClient,
+	OpPeopleLink:               ObjectPeopleLink,
+	OpPeopleUnlink:             ObjectPeopleLink,
 	OpAPIClientReclass:         ObjectAPIClient,
 	OpAIProposalExecute:        ObjectAIProposal,
 	OpCorporateDetailRecord:    ObjectCorporateDetail,
@@ -535,6 +546,8 @@ var Dependencies = map[string][]string{
 	ObjectKBPublication: {"pages", "snapshot"},
 	// the client's version and whether it is live ("new" before it exists): what is registered or reclassed
 	ObjectAPIClient: {"status"},
+	// the link's state and epoch: what is linked or unlinked
+	ObjectPeopleLink: {"state", "epoch"},
 	// the proposal's status and its payload's hash: what executes
 	ObjectAIProposal: {"status", "payload_sha256"},
 	// the detail's version and status, and the day it takes effect: what is recorded
@@ -610,6 +623,7 @@ var Rows = map[string]string{
 	ObjectAIRoute:             "AI providers and model routes: connections, credentials, billing, data-class policy, per-agent routes (rev 0.12, AI-72…AI-75)",
 	ObjectKBPublication:       "Knowledge base: compiled pages and index (rev 0.4)",
 	ObjectAPIClient:           "Connected apps: enable MCP, allowlist clients, grant integration scopes (rev 0.2)",
+	ObjectPeopleLink:          "People and HR: the Nemura link and external HR or payroll systems (rev 0.15, FR-PPL-01); imported payroll journals are approved under Journals",
 	// Who signs a proposal is its task type's (the request names the roles and the command's right); who sees it is the
 	// AI activity log's: each member their own, the Owner and the DPO every one.
 	ObjectAIProposal:         "AI activity log: each member's own entries; all of them for the Owner and the DPO (rev 0.276, AI-12)",
@@ -710,6 +724,7 @@ var Policies = map[string]Policy{
 	ObjectAIDataPolicy:        {ObjectType: ObjectAIDataPolicy, Version: "founder/ai_data_policy@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAIRoute:             {ObjectType: ObjectAIRoute, Version: "founder/ai_route@2026-11-14.1", Steps: []Step{{Quorum: 1}}},
 	ObjectAPIClient:           {ObjectType: ObjectAPIClient, Version: "founder/api_client@2026-11-17.1", Steps: []Step{{Quorum: 1}}},
+	ObjectPeopleLink:          {ObjectType: ObjectPeopleLink, Version: "founder/people_link@2026-11-20.1", Steps: []Step{{Quorum: 1}}},
 	ObjectKBPublication:       {ObjectType: ObjectKBPublication, Version: "founder/kb_publication@2026-11-19.1", Steps: []Step{{Quorum: 1}}},
 	// Fixed: no policy removes a proposal's step or automates it, in any team mode (AI-P4, AI-06, CTL-AI-03); the request
 	// narrows its step to the task type's approver roles.

@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "client_name": {
+      "description": "The name of the client Nemura calls with.",
+      "examples": [
+        "Nemura link"
+      ],
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "client_public_key": {
+      "additionalProperties": {},
+      "description": "The public half of the key Nemura's client signs its private_key_jwt assertions with, as a JWK: an EC P-256 key or an RSA key of 2048 bits or more. Never the private key.",
+      "type": "object"
+    },
+    "expires_at": {
+      "description": "When the client stops, within a year (SEC-07); link again before then.",
+      "examples": [
+        "2027-11-17T00:00:00Z"
+      ],
+      "format": "date-time",
+      "type": "string"
+    },
+    "features": {
+      "description": "The features that live in Nemura from now on: Fyniq never loads them itself (FR-PPL-01).",
+      "items": {
+        "description": "A feature that can live in Nemura.",
+        "enum": [
+          "records",
+          "payroll",
+          "leave",
+          "letters"
+        ],
+        "examples": [
+          "payroll"
+        ],
+        "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ],
+      "uniqueItems": true
+    },
+    "link_key": {
+      "description": "Nemura's Ed25519 public key for the link's envelopes, 32 bytes as base64url without padding: shown on Nemura's link page. Every event is checked against it.",
+      "examples": [
+        "EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE"
+      ],
+      "maxLength": 43,
+      "minLength": 43,
+      "type": "string"
+    },
+    "nemura_organisation_id": {
+      "description": "The Nemura organisation to link to.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "nemura_origin": {
+      "description": "Where Nemura's web app is served from, such as https://people.example.com: a passkey assertion made there names it, and Fyniq checks a pay run's approval against it (one relying-party ID, two origins).",
+      "examples": [
+        "https://people.example.com"
+      ],
+      "pattern": "^https?://[a-z0-9.-]{1,200}(:[0-9]{1,5})?$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "nemura_organisation_id",
+    "nemura_origin",
+    "link_key",
+    "client_name",
+    "client_public_key",
+    "expires_at",
+    "features"
+  ],
+  "title": "PeopleLinkRequest",
+  "type": "object"
+}

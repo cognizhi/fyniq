@@ -26,13 +26,14 @@ type linkRow struct {
 	id, nemura, approval uuid.UUID
 	client               *uuid.UUID
 	state, createdBy     string
+	origin               string
 	epoch, version       int32
 	key                  []byte
 	created, changed     time.Time
 }
 
 func toLink(r linkRow) storage.PeopleLinkRow {
-	out := storage.PeopleLinkRow{ID: r.id, State: r.state, Epoch: int(r.epoch), NemuraOrganisationID: r.nemura, LinkKey: slices.Clone(r.key), ApprovalID: r.approval,
+	out := storage.PeopleLinkRow{ID: r.id, State: r.state, Epoch: int(r.epoch), NemuraOrganisationID: r.nemura, NemuraOrigin: r.origin, LinkKey: slices.Clone(r.key), ApprovalID: r.approval,
 		Version: int(r.version), CreatedBy: r.createdBy, CreatedAt: r.created, ChangedAt: r.changed}
 	if r.client != nil {
 		out.ClientID = *r.client
@@ -61,7 +62,7 @@ func (r peopleLinks) Live(ctx context.Context) (storage.PeopleLinkRow, error) {
 	if err != nil {
 		return storage.PeopleLinkRow{}, mapError(err)
 	}
-	return toLink(linkRow{x.ID, x.NemuraOrganisationID, x.ApprovalID, x.ClientID, x.State, x.CreatedBy, x.Epoch, x.Version, x.LinkKey, x.CreatedAt, x.ChangedAt}), nil
+	return toLink(linkRow{x.ID, x.NemuraOrganisationID, x.ApprovalID, x.ClientID, x.State, x.CreatedBy, x.NemuraOrigin, x.Epoch, x.Version, x.LinkKey, x.CreatedAt, x.ChangedAt}), nil
 }
 
 func (r peopleLinks) Link(ctx context.Context, l storage.PeopleLinkRow) (storage.PeopleLinkRow, error) {
@@ -72,12 +73,12 @@ func (r peopleLinks) Link(ctx context.Context, l storage.PeopleLinkRow) (storage
 	if err != nil {
 		return storage.PeopleLinkRow{}, mapError(err)
 	}
-	x, err := r.u.q.InsertPeopleLink(ctx, sqlcdb.InsertPeopleLinkParams{Epoch: last + 1, NemuraOrganisationID: l.NemuraOrganisationID, LinkKey: l.LinkKey,
+	x, err := r.u.q.InsertPeopleLink(ctx, sqlcdb.InsertPeopleLinkParams{Epoch: last + 1, NemuraOrganisationID: l.NemuraOrganisationID, NemuraOrigin: l.NemuraOrigin, LinkKey: l.LinkKey,
 		ClientID: optionalID(l.ClientID), ApprovalID: l.ApprovalID, CreatedBy: l.CreatedBy, At: l.CreatedAt})
 	if err != nil {
 		return storage.PeopleLinkRow{}, mapError(err)
 	}
-	out := toLink(linkRow{x.ID, x.NemuraOrganisationID, x.ApprovalID, x.ClientID, x.State, x.CreatedBy, x.Epoch, x.Version, x.LinkKey, x.CreatedAt, x.ChangedAt})
+	out := toLink(linkRow{x.ID, x.NemuraOrganisationID, x.ApprovalID, x.ClientID, x.State, x.CreatedBy, x.NemuraOrigin, x.Epoch, x.Version, x.LinkKey, x.CreatedAt, x.ChangedAt})
 	return out, r.u.event(ctx, "people_link.linked", "people_link", out.ID, &out.Version, map[string][2]any{"link": {nil, linkView(out)}})
 }
 
@@ -92,12 +93,12 @@ func (r peopleLinks) SetState(ctx context.Context, id uuid.UUID, version int, st
 	if int(b.Version) != version {
 		return storage.PeopleLinkRow{}, &storage.Error{Code: storage.CodeVersion, Message: "the link changed since it was read", Hint: "Read it again and try again"}
 	}
-	before := toLink(linkRow{b.ID, b.NemuraOrganisationID, b.ApprovalID, b.ClientID, b.State, b.CreatedBy, b.Epoch, b.Version, b.LinkKey, b.CreatedAt, b.ChangedAt})
+	before := toLink(linkRow{b.ID, b.NemuraOrganisationID, b.ApprovalID, b.ClientID, b.State, b.CreatedBy, b.NemuraOrigin, b.Epoch, b.Version, b.LinkKey, b.CreatedAt, b.ChangedAt})
 	x, err := r.u.q.SetPeopleLinkState(ctx, sqlcdb.SetPeopleLinkStateParams{State: state, ClientID: optionalID(client), At: at, ID: id, Version: int32(version)}) // #nosec G115 -- a version counts up from 1
 	if err != nil {
 		return storage.PeopleLinkRow{}, mapError(err)
 	}
-	out := toLink(linkRow{x.ID, x.NemuraOrganisationID, x.ApprovalID, x.ClientID, x.State, x.CreatedBy, x.Epoch, x.Version, x.LinkKey, x.CreatedAt, x.ChangedAt})
+	out := toLink(linkRow{x.ID, x.NemuraOrganisationID, x.ApprovalID, x.ClientID, x.State, x.CreatedBy, x.NemuraOrigin, x.Epoch, x.Version, x.LinkKey, x.CreatedAt, x.ChangedAt})
 	return out, r.u.event(ctx, "people_link."+state, "people_link", out.ID, &out.Version, map[string][2]any{"link": {linkView(before), linkView(out)}})
 }
 

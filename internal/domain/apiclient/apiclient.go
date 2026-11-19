@@ -224,3 +224,42 @@ func PublicJWK(raw json.RawMessage, alg string) (json.RawMessage, error) {
 	pub.Algorithm, pub.Use = alg, "sig"
 	return pub.MarshalJSON()
 }
+
+// LinkScopes are the scopes of the one client Nemura calls Fyniq with (PRD-002 Appendix E): the link registers it with these and no
+// others, and no personal access token, integration client, agent-class client or MCP token can hold one (p1-payroll-link design D1).
+var LinkScopes = []string{"payroll.journal.submit", "payroll.payments.submit", "people.availability.write", "people.holds.read", "people.holds.write",
+	"people.projection.write"}
+
+// LinkScope reports whether s is one of the link's scopes.
+func LinkScope(s string) bool { return slices.Contains(LinkScopes, s) }
+
+// Link is what the link's client is asked to be: a name, the public key its private_key_jwt assertions are signed with and its expiry.
+type Link struct {
+	Name      string
+	ExpiresAt time.Time
+	Key       json.RawMessage
+}
+
+// CheckLink checks the link's client at now and returns it as it will be registered, with the link's scopes, no networks and the
+// platform's limits, or every refusal at once.
+func CheckLink(d Link, now time.Time) (Checked, error) {
+	var errs Errors
+	if n := len([]rune(d.Name)); n == 0 || n > 80 || d.Name != strings.TrimSpace(d.Name) {
+		errs = append(errs, &Error{Code: CodeName, Field: "name", Message: "is empty, longer than 80 characters or has spaces at either end", Fix: "Give the client a name of 1 to 80 characters"})
+	}
+	switch {
+	case !d.ExpiresAt.After(now):
+		errs = append(errs, &Error{Code: CodeExpiry, Field: "expires_at", Message: "is not in the future", Fix: "Give a time within the next year"})
+	case d.ExpiresAt.Sub(now) > MaxIntegrationLife-time.Minute:
+		errs = append(errs, &Error{Code: CodeExpiry, Field: "expires_at", Message: "is more than the next year away", Fix: "Give a time within the next year; link again before it expires"})
+	}
+	alg, thumb, err := publicKey(d.Key)
+	if err != nil {
+		errs = append(errs, &Error{Code: CodeKey, Field: "client_public_key", Message: err.Error(),
+			Fix: "Give the public half of an EC P-256 key (ES256) or an RSA key of 2048 bits or more (RS256), as a JWK"})
+	}
+	if len(errs) > 0 {
+		return Checked{}, errs
+	}
+	return Checked{Integration: Integration{Name: d.Name, Scopes: slices.Clone(LinkScopes), Networks: []string{}, ExpiresAt: d.ExpiresAt, Key: d.Key}, Alg: alg, Thumbprint: thumb}, nil
+}

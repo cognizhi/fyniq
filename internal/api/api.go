@@ -233,6 +233,7 @@ func Config(version string) huma.Config {
 	cfg.Tags = []*huma.Tag{
 		{Name: "Installation", Description: "First-run setup of a new installation (FR-ADM-06)."},
 		{Name: "Connectors", Description: "Outside services as connectors: the catalogue, the installation's and the organisation's, their lifecycle, keys and tests (FR-INT-20, FR-INT-25…27)."},
+		{Name: "People", Description: "The link to the people platform (Nemura): where each feature lives, linking and unlinking with two approvers, and the signed events Nemura sends through its own client (PRD-001 §8.26, FR-PPL-01, FR-PPL-15, FR-PPL-16)."},
 		{Name: "Integrations", Description: "Integration clients: systems that call the API on their own, with OAuth client credentials by class, narrow scopes, their networks and limits, registered by two people and revoked at once (FR-INT-02, SEC-07)."},
 		{Name: "Session", Description: "Signing in to the web app: the providers, and your own session (SEC-05, FR-ADM-08)."},
 		{Name: "Organisation", Description: "The organisation your session is in."},
@@ -571,6 +572,8 @@ func New(mux humago.Mux, d Deps) *API {
 	registerClaimEvidenceFromMessage(a)
 	registerSession(a)
 	registerIntegrationClients(a)
+	registerPeopleLink(a)
+	registerPayrollRuns(a)
 	registerPersonalTokens(a)
 	a.registerInternal(mux)
 	approvalEnumsAreExtensible(a.API)
@@ -803,7 +806,23 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 			"Do it after then, or ask another member to do it.")
 	}
 	var d authz.Decision
-	if refusal == nil {
+	switch {
+	case refusal != nil:
+	case policy.LinkScope != "":
+		// The link's operations (PRD-002 Appendix E): only the link's client, holding that scope; no role, personal access token, integration
+		// client, agent-class client or MCP token reaches one (p1-payroll-link design D1).
+		if !p.Link || !slices.Contains(p.Scopes, policy.LinkScope) {
+			d = authz.Decision{Reason: fmt.Sprintf("the operation needs the link's scope %q", policy.LinkScope)}
+			refusal = problem(CodeForbidden, fmt.Sprintf("This operation is only for the link to the people platform, with the scope %q.", policy.LinkScope),
+				"Nemura calls it with the link's client; nobody else does.")
+		} else {
+			d = authz.Decision{Allowed: true}
+		}
+	case p.Link:
+		// The link's client reaches only the link's operations.
+		d = authz.Decision{Reason: "the link's client reaches only the link's operations"}
+		refusal = problem(CodeForbidden, "The link's client may only call the link's operations.", "Nemura sends its events and runs through the link, and does nothing else.")
+	default:
 		if d = authz.Decide(policy, p.Roles, p.AI()); !d.Allowed {
 			refusal = problem(CodeForbidden, fmt.Sprintf("Your roles hold no %q right on %q.", string(policy.Need), policy.Capability),
 				"Ask an Owner or Administrator for a role with that right (PRD-001 Appendix D).")

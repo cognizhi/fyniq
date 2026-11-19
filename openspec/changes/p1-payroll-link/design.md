@@ -64,6 +64,9 @@ Nemura's side of the link (`p1-nemura-fyniq-link`); a real provider's connector 
   version with a preview; the payroll go-live gate (FR-PAY-15) records, as evidence, how that month's statutory outputs are met and blocks approval for
   payment while an arrangement is missing.
 
+- **D13. Two origins, one relying party.** A passkey assertion names the origin it was made at in its client data. Nemura's web app is served from its own origin (`people.<domain>`), so the link records that origin (`people_link.nemura_origin`, asked for with the link and approved with it) and Fyniq checks a Nemura approval against it (`passkey.ReverifyAt`), while the relying-party ID is the one both apps share. An approval made at any other origin is refused (`PPL-15`).
+- **D14. The approver's right is the envelope's statement.** Fyniq cannot read Nemura's roles, so that the approver "held the payroll-approval right when they signed" is the approval envelope's own field, covered by the passkey's signature over its digest and by the link's signature over the message. A compromised Nemura that holds the link key can claim the right for a person who has a Fyniq passkey, but cannot make that person sign; a person who has no passkey enrolled in Fyniq cannot approve at all (`PPL-19`). Recorded owner-to-confirm with D3.
+
 ## Risks / Trade-offs
 
 - A pay payload must never reach a log, an outbox row or a task: archtest-style greps and a redaction test on the inbox and the logs.

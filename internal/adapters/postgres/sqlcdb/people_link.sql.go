@@ -57,15 +57,16 @@ func (q *Queries) InsertPeopleInbox(ctx context.Context, arg InsertPeopleInboxPa
 }
 
 const insertPeopleLink = `-- name: InsertPeopleLink :one
-INSERT INTO fyniq.people_link (state, epoch, nemura_organisation_id, link_key, client_id, approval_id, created_by, created_at, changed_at)
-VALUES ('active', $1, $2, $3, $4, $5,
-        $6, $7, $7)
-RETURNING id, state, epoch, nemura_organisation_id, link_key, client_id, approval_id, version, created_by, created_at, changed_at
+INSERT INTO fyniq.people_link (state, epoch, nemura_organisation_id, nemura_origin, link_key, client_id, approval_id, created_by, created_at, changed_at)
+VALUES ('active', $1, $2, $3, $4, $5, $6,
+        $7, $8, $8)
+RETURNING id, state, epoch, nemura_organisation_id, nemura_origin, link_key, client_id, approval_id, version, created_by, created_at, changed_at
 `
 
 type InsertPeopleLinkParams struct {
 	Epoch                int32
 	NemuraOrganisationID uuid.UUID
+	NemuraOrigin         string
 	LinkKey              []byte
 	ClientID             *uuid.UUID
 	ApprovalID           uuid.UUID
@@ -78,6 +79,7 @@ type InsertPeopleLinkRow struct {
 	State                string
 	Epoch                int32
 	NemuraOrganisationID uuid.UUID
+	NemuraOrigin         string
 	LinkKey              []byte
 	ClientID             *uuid.UUID
 	ApprovalID           uuid.UUID
@@ -91,6 +93,7 @@ func (q *Queries) InsertPeopleLink(ctx context.Context, arg InsertPeopleLinkPara
 	row := q.db.QueryRow(ctx, insertPeopleLink,
 		arg.Epoch,
 		arg.NemuraOrganisationID,
+		arg.NemuraOrigin,
 		arg.LinkKey,
 		arg.ClientID,
 		arg.ApprovalID,
@@ -103,6 +106,7 @@ func (q *Queries) InsertPeopleLink(ctx context.Context, arg InsertPeopleLinkPara
 		&i.State,
 		&i.Epoch,
 		&i.NemuraOrganisationID,
+		&i.NemuraOrigin,
 		&i.LinkKey,
 		&i.ClientID,
 		&i.ApprovalID,
@@ -150,7 +154,7 @@ func (q *Queries) LastPeopleLinkEpoch(ctx context.Context) (int32, error) {
 }
 
 const livePeopleLink = `-- name: LivePeopleLink :one
-SELECT id, state, epoch, nemura_organisation_id, link_key, client_id, approval_id, version, created_by, created_at, changed_at
+SELECT id, state, epoch, nemura_organisation_id, nemura_origin, link_key, client_id, approval_id, version, created_by, created_at, changed_at
 FROM fyniq.people_link WHERE state <> 'unlinked'
 `
 
@@ -159,6 +163,7 @@ type LivePeopleLinkRow struct {
 	State                string
 	Epoch                int32
 	NemuraOrganisationID uuid.UUID
+	NemuraOrigin         string
 	LinkKey              []byte
 	ClientID             *uuid.UUID
 	ApprovalID           uuid.UUID
@@ -176,6 +181,7 @@ func (q *Queries) LivePeopleLink(ctx context.Context) (LivePeopleLinkRow, error)
 		&i.State,
 		&i.Epoch,
 		&i.NemuraOrganisationID,
+		&i.NemuraOrigin,
 		&i.LinkKey,
 		&i.ClientID,
 		&i.ApprovalID,
@@ -218,7 +224,7 @@ func (q *Queries) PeopleInboxCounts(ctx context.Context, linkID uuid.UUID) ([]Pe
 }
 
 const peopleLinkForUpdate = `-- name: PeopleLinkForUpdate :one
-SELECT id, state, epoch, nemura_organisation_id, link_key, client_id, approval_id, version, created_by, created_at, changed_at
+SELECT id, state, epoch, nemura_organisation_id, nemura_origin, link_key, client_id, approval_id, version, created_by, created_at, changed_at
 FROM fyniq.people_link WHERE id = $1 FOR UPDATE
 `
 
@@ -227,6 +233,7 @@ type PeopleLinkForUpdateRow struct {
 	State                string
 	Epoch                int32
 	NemuraOrganisationID uuid.UUID
+	NemuraOrigin         string
 	LinkKey              []byte
 	ClientID             *uuid.UUID
 	ApprovalID           uuid.UUID
@@ -244,6 +251,7 @@ func (q *Queries) PeopleLinkForUpdate(ctx context.Context, id uuid.UUID) (People
 		&i.State,
 		&i.Epoch,
 		&i.NemuraOrganisationID,
+		&i.NemuraOrigin,
 		&i.LinkKey,
 		&i.ClientID,
 		&i.ApprovalID,
@@ -477,7 +485,7 @@ func (q *Queries) PersonProjections(ctx context.Context) ([]PersonProjectionsRow
 const setPeopleLinkState = `-- name: SetPeopleLinkState :one
 UPDATE fyniq.people_link SET state = $1, client_id = $2, version = version + 1, changed_at = $3
 WHERE id = $4 AND version = $5
-RETURNING id, state, epoch, nemura_organisation_id, link_key, client_id, approval_id, version, created_by, created_at, changed_at
+RETURNING id, state, epoch, nemura_organisation_id, nemura_origin, link_key, client_id, approval_id, version, created_by, created_at, changed_at
 `
 
 type SetPeopleLinkStateParams struct {
@@ -493,6 +501,7 @@ type SetPeopleLinkStateRow struct {
 	State                string
 	Epoch                int32
 	NemuraOrganisationID uuid.UUID
+	NemuraOrigin         string
 	LinkKey              []byte
 	ClientID             *uuid.UUID
 	ApprovalID           uuid.UUID
@@ -516,6 +525,7 @@ func (q *Queries) SetPeopleLinkState(ctx context.Context, arg SetPeopleLinkState
 		&i.State,
 		&i.Epoch,
 		&i.NemuraOrganisationID,
+		&i.NemuraOrigin,
 		&i.LinkKey,
 		&i.ClientID,
 		&i.ApprovalID,

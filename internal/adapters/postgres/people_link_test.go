@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -205,5 +206,31 @@ func TestAttackTheProjectionOnlyMovesForwardAndTheInboxReceivesOnce(t *testing.T
 	}
 	if !strings.Contains(trail, "line_manager") {
 		t.Errorf("the audit trail names the field that changed: %s", trail)
+	}
+}
+
+// Only the link holds Appendix E's scopes (p1-payroll-link design D1): an integration client or a personal access token cannot be given one, and
+// the link's client cannot be given an ordinary scope; the database refuses each, whatever the API asks.
+// asvs: V8.2.1, V4.2.1
+func TestAttackOnlyTheLinkHoldsTheLinkScopes(t *testing.T) {
+	ctx := context.Background()
+	b := books(t, "Link scopes Pte Ltd")
+	now := clock.System{}.Now()
+	owner := founder(t, store(t, "fyniq_api"), b.Org, 91, now)
+	insert := func(kind, class, scopes string) string {
+		return "INSERT INTO fyniq.api_client (kind, client_id, name, class, owner_id, scopes, key_thumbprint, expires_at, approval_id, created_by, created_at) VALUES ('" +
+			kind + "', gen_random_uuid()::text, 'x', '" + class + "', '" + owner.String() + "', " + scopes + ", repeat('t', 43), now() + interval '30 days', gen_random_uuid(), 'user:x', now())"
+	}
+	for _, x := range []struct{ what, stmt, state string }{
+		{"an integration client with a link scope", insert("integration", "integration", "ARRAY['people.projection.write']"), "23514"},
+		{"a personal token with a link scope", insert("personal", "agent", "ARRAY['payroll.journal.submit']"), "23514"},
+		{"the link's client with an ordinary scope", insert("link", "integration", "ARRAY['fyniq.read.accounting']"), "23514"},
+		{"the link's client with an ordinary scope beside a link scope", insert("link", "integration", "ARRAY['people.holds.write', 'fyniq.write.sales']"), "23514"},
+		{"the link's client with a scope nobody defined", insert("link", "integration", "ARRAY['people.everything']"), "23514"},
+		{"the link's client as an agent", insert("link", "agent", "ARRAY['people.holds.write']"), "23514"},
+		{"a client of a kind nobody defined", insert("service", "integration", "ARRAY['people.holds.write']"), "23514"},
+	} {
+		err := asOrg(ctx, conn(t, "fyniq_api"), b.Org, func(tx pgx.Tx) error { _, err := tx.Exec(ctx, x.stmt); return err })
+		wantState(t, x.what, err, x.state)
 	}
 }

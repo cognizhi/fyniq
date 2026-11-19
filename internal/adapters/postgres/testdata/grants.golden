@@ -428,6 +428,12 @@ fyniq_api       INSERT    payment_batch_payment (payment_id, release_id)
 fyniq_api       SELECT    payment_batch_payment
 fyniq_api       INSERT    payment_batch_release (approval_id, batch_id, batch_version, break_glass_id, currency, file_name, file_sealed, file_sha256, media_type, minor_units, payments, released_at, released_by, total, writer)
 fyniq_api       SELECT    payment_batch_release
+fyniq_api       INSERT    payroll_mapping (set_at, set_by, version)
+fyniq_api       SELECT    payroll_mapping
+fyniq_api       INSERT    payroll_mapping_entry (account_id, key, mapping_id)
+fyniq_api       SELECT    payroll_mapping_entry
+fyniq_api       INSERT    payroll_run_receipt (approver_issuer, approver_subject, entry_id, envelope_sha256, epoch, link_id, mapping_version, preparer_issuer, preparer_subject, received_at, run_id, source_system, totals, version, wage_month)
+fyniq_api       SELECT    payroll_run_receipt
 fyniq_api       INSERT    pd_anonymisation (anonymised_at, anonymised_by, contact_id, reason, register, request_id)
 fyniq_api       SELECT    pd_anonymisation
 fyniq_api       INSERT    pd_breach (assessment_due_on, aware_at, classes, description, individuals, prescribed, recorded_at, recorded_by, title)
@@ -444,7 +450,7 @@ fyniq_api       SELECT    pd_shredding_run
 fyniq_api       UPDATE    pd_shredding_run (approved_at, approved_by, status, version)
 fyniq_api       INSERT    pd_transfer (assessed_by, assessed_on, basis, countries, data, evidence, flow, next_review_on, purpose, recipient, saved_at, saved_by, state, transfer_id, version)
 fyniq_api       SELECT    pd_transfer
-fyniq_api       INSERT    people_link (approval_id, changed_at, client_id, created_at, created_by, epoch, id, link_key, nemura_organisation_id, state)
+fyniq_api       INSERT    people_link (approval_id, changed_at, client_id, created_at, created_by, epoch, id, link_key, nemura_organisation_id, nemura_origin, state)
 fyniq_api       SELECT    people_link
 fyniq_api       UPDATE    people_link (changed_at, client_id, state, version)
 fyniq_api       INSERT    people_link_inbox (code, epoch, event_id, link_id, object_id, object_type, object_version, outcome, payload_sha256, received_at, sequence, type)
@@ -908,6 +914,9 @@ fyniq_readonly  SELECT    owner_succession
 fyniq_readonly  SELECT    payee_bank_account
 fyniq_readonly  SELECT    payment_batch_payment
 fyniq_readonly  SELECT    payment_batch_release
+fyniq_readonly  SELECT    payroll_mapping
+fyniq_readonly  SELECT    payroll_mapping_entry
+fyniq_readonly  SELECT    payroll_run_receipt
 fyniq_readonly  SELECT    pd_anonymisation
 fyniq_readonly  SELECT    pd_breach
 fyniq_readonly  SELECT    pd_breach_exercise
@@ -1238,6 +1247,9 @@ fyniq_worker    SELECT    owner_succession
 fyniq_worker    SELECT    payee_bank_account
 fyniq_worker    SELECT    payment_batch_payment
 fyniq_worker    SELECT    payment_batch_release
+fyniq_worker    SELECT    payroll_mapping
+fyniq_worker    SELECT    payroll_mapping_entry
+fyniq_worker    SELECT    payroll_run_receipt
 fyniq_worker    INSERT    pd_anonymisation (anonymised_at, anonymised_by, contact_id, reapplied, reason, register, request_id)
 fyniq_worker    SELECT    pd_anonymisation
 fyniq_worker    SELECT    pd_breach

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entries": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "department:\u003cdepartment ID\u003e (a dimension value of the Department dimension) or deduction:\u003ckind\u003e -\u003e the account's ID: a salary expense account, or the asset or liability account a deduction is recovered through (1250 for an advance recovered).",
+      "examples": [
+        {
+          "department:0192a000-0000-7000-8000-0000000000d1": "0192a000-0000-7000-8000-000000006011"
+        }
+      ],
+      "maxProperties": 200,
+      "minProperties": 1,
+      "type": "object"
+    }
+  },
+  "required": [
+    "entries"
+  ],
+  "title": "PayrollMappingChange",
+  "type": "object"
+}

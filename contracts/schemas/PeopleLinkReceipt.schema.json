@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "description": "The event's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "outcome": {
+      "description": "applied; ignored_older: a version no newer than the one applied, recorded and changing nothing; duplicate: the event ID was received before.",
+      "enum": [
+        "applied",
+        "ignored_older",
+        "duplicate"
+      ],
+      "examples": [
+        "applied"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "outcome"
+  ],
+  "title": "PeopleLinkReceipt",
+  "type": "object"
+}

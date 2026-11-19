@@ -201,6 +201,7 @@ Source: PRD-001 §8.26 · Priority M · Phase P1
 - **WHEN** Fyniq verifies the approver's signed record
 - **THEN** it uses a public key Fyniq already holds for the person, matched by issuer and subject, from their own enrolment in Fyniq, and the challenge is the approval envelope's SHA-256
 - **AND** a key supplied by the submission or by a Nemura event is never used
+- **AND** the assertion is checked at the origin Nemura's web app is served from, recorded with the link, and the approver's right is the signed envelope's own statement
 
 ### Requirement: FR-PPL-10 Segregation across both apps
 The preparer of a Nemura run SHALL NOT approve or release its salary batch in Fyniq under any account, the batch's approvers and releaser SHALL be checked against the run as one chain, and no emergency path SHALL change a salary account, lift a hold or pay the person using it.
