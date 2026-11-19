@@ -10,6 +10,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -21,6 +22,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/apiclient"
 	"github.com/cognizhi/fyniq/internal/domain/approval"
+	"github.com/cognizhi/fyniq/internal/domain/payee"
+	"github.com/cognizhi/fyniq/internal/domain/paymentbatch"
 	"github.com/cognizhi/fyniq/internal/domain/peoplelink"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
@@ -327,4 +330,45 @@ var matrixPeopleLink = map[string]func(e *env, tok string) (response, func() boo
 	"receivePeopleHoldEvent": func(e *env, tok string) (response, func() bool) {
 		return e.call(http.MethodPost, "/v1/people-link/hold-events", tok, map[string]any{}), nil
 	},
+}
+
+// A payment to a person held for tax clearance is not released (FR-PPL-13, FR-PPL-10): the release refuses while the projection shows the person held, by an approval or by break-glass
+// (both call the one check), names who is held and not a figure, ignores vendors and people who are not mapped, and pays them again once Nemura lifts the hold.
+// part of FR-PPL-13 (asking Nemura at the release and releasing the rest of the batch are open)
+func TestAReleaseNeverPaysAPersonHeldForTaxClearance(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	user, other := uuid.New(), uuid.New()
+	now := e.clock.Now()
+	person := uuid.New()
+	batch := paymentbatch.Batch{Payments: []paymentbatch.Payment{{Payee: payee.Person(user)}, {Payee: payee.Vendor(uuid.New())}, {Payee: payee.Person(other)}}}
+	check := func() error {
+		return e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error { return heldPayees(ctx, u, batch) })
+	}
+	save := func(p peoplelink.Person) {
+		t.Helper()
+		if err := e.store.Do(ctx, e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error { return u.PeopleLinks().SavePerson(ctx, p) }); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := check(); err != nil {
+		t.Fatalf("nobody is mapped: %v", err)
+	}
+	p := peoplelink.Person{ID: person, Version: 1, DisplayName: "Chen Yu", UserID: user, UpdatedAt: now}
+	save(p)
+	if err := check(); err != nil {
+		t.Fatalf("a mapped person who is not held: %v", err)
+	}
+	p.HoldVersion, p.HoldID, p.Held = 1, uuid.New(), true
+	save(p)
+	err := check()
+	var pr *Problem
+	if !errors.As(err, &pr) || pr.Code != peoplelink.CodeHold || !strings.Contains(pr.Detail, "Chen Yu") {
+		t.Fatalf("a held person: %v", err)
+	}
+	p.HoldVersion, p.Held = 2, false
+	save(p)
+	if err := check(); err != nil {
+		t.Errorf("after Nemura lifts the hold: %v", err)
+	}
 }

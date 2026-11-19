@@ -76,6 +76,7 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations` (1, 2),
   Nemura, an unknown outcome blocks a new instruction.
 - [ ] 6.3 The hold check at every release (design D10): salary, claims, advances and director balances; no answer in 5 seconds or an older version waits.
 
+  (Built in part, 21 Nov 2026: `heldPayees` runs in `writeRelease`, so an approved release and a break-glass release both refuse (`PPL-21`) while the projection shows a mapped person held, naming them and no figure, and pay them again when Nemura's release arrives. `TestAReleaseNeverPaysAPersonHeldForTaxClearance`. **Left:** the synchronous ask to Nemura at the release (5 seconds; an older answer than the newest hold event waits), releasing the rest of the batch while the held lines wait, and the same check on a claim reimbursement, an advance and a director's balance paid outside a batch.)
 ## 7. Without Nemura and the checks (FR-PPL-05, FR-PAY-15; C.1 #19, #20, #21; C.2 #14, #24, #45)
 
 - [ ] 7.1 A provider's journal or file import as a draft journal, idempotent per period and version, with a preview (design D12).
