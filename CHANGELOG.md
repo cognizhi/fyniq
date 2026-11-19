@@ -1,5 +1,75 @@
 # Changelog
 
+## [0.2.0](https://github.com/cognizhi/fyniq/compare/v0.1.0...v0.2.0) (2026-11-19)
+
+
+### Features
+
+* **api,contracts:** Nemura's API foundation, contract first, slice 4 of p1-nemura-platform ([#875](https://github.com/cognizhi/fyniq/issues/875)) ([8e23556](https://github.com/cognizhi/fyniq/commit/8e23556c27ee4ad0639b5a38feec92e16ffdd007))
+* **api,db,jobs:** alerts, retention, expiry and nightly checks for AI apps over MCP (AI-45) ([#870](https://github.com/cognizhi/fyniq/issues/870)) ([bad46c4](https://github.com/cognizhi/fyniq/commit/bad46c4a41c36291b6fe832e722a3b86bea8b887))
+* **api,db,jobs:** payment-provider connectors, sweep, postings and checks (FR-PSP-01, FR-PSP-04..06) ([#883](https://github.com/cognizhi/fyniq/issues/883)) ([6d13bfa](https://github.com/cognizhi/fyniq/commit/6d13bfa0dade14745979c3a01ee2f077a8fe9967))
+* **api,db,web,kb:** projects as values of the Project dimension, with people and tasks, behind the feature switch ([#843](https://github.com/cognizhi/fyniq/issues/843)) ([614a6d8](https://github.com/cognizhi/fyniq/commit/614a6d89dc5f493af66fd54a9b7a9212e864c12c))
+* **api,deploy,prd:** a HEIC photo is converted through a converter port; the largest file is a setting (rev 0.292) ([#827](https://github.com/cognizhi/fyniq/issues/827)) ([70f22aa](https://github.com/cognizhi/fyniq/commit/70f22aa66086d46efd184a0e5d87276390f34603))
+* **api,oauth:** personal access tokens: an agent-class client of the OAuth server (FR-INT-02) ([#822](https://github.com/cognizhi/fyniq/issues/822)) ([641e37f](https://github.com/cognizhi/fyniq/commit/641e37fa54b6b6605d913607388428b3bf397149))
+* **api,web,ai,kb:** flag an overlay when Fyniq changes the platform page it replaces ([#856](https://github.com/cognizhi/fyniq/issues/856)) ([e46b715](https://github.com/cognizhi/fyniq/commit/e46b7150e76abcb6112fb0a1338be3e9c03dcf1c))
+* **api,web,kb,prd:** billable project costs with a markup, and a project on a purchase order ([#866](https://github.com/cognizhi/fyniq/issues/866)) ([4d7793b](https://github.com/cognizhi/fyniq/commit/4d7793b2c613e95ff1c862a5ee47a9885e6d71a8))
+* **api,web,oracle:** settle a lost dispute against a credit note and show provider payouts (FR-PSP-04) ([#892](https://github.com/cognizhi/fyniq/issues/892)) ([3e2a429](https://github.com/cognizhi/fyniq/commit/3e2a42927426adcc9c9c36941d304b7bcbee51eb))
+* **api,web,prd:** the evidence rules table is data, and the panel shows the rules for its activity (rev 0.290) ([#821](https://github.com/cognizhi/fyniq/issues/821)) ([ce46510](https://github.com/cognizhi/fyniq/commit/ce465108360414161c62697e7779d2725ddc8fba))
+* **contracts,web:** package the TypeScript client as the @fyniq/sdk workspace package (p1-public-api 3.3) ([#817](https://github.com/cognizhi/fyniq/issues/817)) ([c950d53](https://github.com/cognizhi/fyniq/commit/c950d53464d4905b13040d60b3c0cffe7742ceb1))
+* **contracts:** event catalogue with a schema per event version (p1-public-api 3.4) ([#813](https://github.com/cognizhi/fyniq/issues/813)) ([9c122a7](https://github.com/cognizhi/fyniq/commit/9c122a7ffa9a6d32719833e37732fcbf587a339b))
+* **db,api,deploy:** Nemura's own OAuth server, passkeys and API clients (p1-nemura-platform 5.2, 5.4) ([#885](https://github.com/cognizhi/fyniq/issues/885)) ([ada529c](https://github.com/cognizhi/fyniq/commit/ada529c64e7845b5cf005e9e5caee796653b795d))
+* **db,api,infra,deploy:** Nemura's privacy, cloud module, identity and sign-in (p1-nemura-platform 8, 10a, 5) ([#882](https://github.com/cognizhi/fyniq/issues/882)) ([88b7f75](https://github.com/cognizhi/fyniq/commit/88b7f752c8d75fae47c92ffe4ed870c27ade627f))
+* **db,api,web,packs,prd:** Nemura people record, switches, restricted data and the Singapore pack (rev 0.309) ([#894](https://github.com/cognizhi/fyniq/issues/894)) ([ba69309](https://github.com/cognizhi/fyniq/commit/ba6930985eafbf37cdc8c4cfab00a558d2e978c2))
+* **db,api,web,prd:** Nemura web app, first-run sign-in, Owner recovery and controls (rev 0.307) ([#886](https://github.com/cognizhi/fyniq/issues/886)) ([c5d48ff](https://github.com/cognizhi/fyniq/commit/c5d48ff98e4c793128ae735f3d8cf34a1a6021dc))
+* **db,deploy:** Nemura's outbox and worker role, slice 3b of p1-nemura-platform ([#874](https://github.com/cognizhi/fyniq/issues/874)) ([f1b2335](https://github.com/cognizhi/fyniq/commit/f1b2335819cd2dd0b426f99ff01d6c297a75a153))
+* **db,deploy:** Nemura's own database, migrations runner and migrate role, slice 2 of p1-nemura-platform ([#850](https://github.com/cognizhi/fyniq/issues/850)) ([42b1352](https://github.com/cognizhi/fyniq/commit/42b135256de8ddaf1c90d247ff7b824ed8ebc349))
+* **db:** Nemura's audit chain, written in the same transaction as each change ([#871](https://github.com/cognizhi/fyniq/issues/871)) ([35c48fe](https://github.com/cognizhi/fyniq/commit/35c48fe4c6feee970db30b3079e2c0b093a44f45))
+* **db:** Nemura's need to know and the line manager's scope, slice 6b of p1-nemura-platform ([#877](https://github.com/cognizhi/fyniq/issues/877)) ([b13102b](https://github.com/cognizhi/fyniq/commit/b13102bf0ec3f788c27b6577f225d8b45c1eb2fa))
+* **db:** Nemura's roles, the permission matrix and dual control, slice 6a of p1-nemura-platform ([#876](https://github.com/cognizhi/fyniq/issues/876)) ([24c0a9a](https://github.com/cognizhi/fyniq/commit/24c0a9a0704e5ae4f6afa8ca07549367374809fb))
+* **deploy,docs:** Nemura's service, image and local profile, the first slice of p1-nemura-platform ([#823](https://github.com/cognizhi/fyniq/issues/823)) ([8e4382d](https://github.com/cognizhi/fyniq/commit/8e4382d5f0fd34190c8c922db141be50bd3daa73))
+* **jobs,api,kb,prd:** remind each person on Friday of the weekdays with no time entered ([#873](https://github.com/cognizhi/fyniq/issues/873)) ([de7e25c](https://github.com/cognizhi/fyniq/commit/de7e25c000c7750d362ca7b0082f293c5cf61f75))
+* **kb,db:** load the platform knowledge base into global tables with a reader-filtered search ([#826](https://github.com/cognizhi/fyniq/issues/826)) ([0130ea5](https://github.com/cognizhi/fyniq/commit/0130ea5c79aa37a30138197348289f72a445fcad))
+* **kb,prd:** kb-schema@2 with a packs field, and a lint that flags a page whose statutory pack changed ([#884](https://github.com/cognizhi/fyniq/issues/884)) ([4f5d023](https://github.com/cognizhi/fyniq/commit/4f5d0238df4603d62b51b150f1f109786eb87af7))
+* **packs:** sg-cpf@2026.2, the first two years of permanent residence and the graduated range ([#818](https://github.com/cognizhi/fyniq/issues/818)) ([ff2b994](https://github.com/cognizhi/fyniq/commit/ff2b9944684f801276c53ead3a62b4d98498e2cb))
+* **packs:** sg-shg@2026.1, the self-help group funds' contributions by wage band ([#815](https://github.com/cognizhi/fyniq/issues/815)) ([2ef27cb](https://github.com/cognizhi/fyniq/commit/2ef27cbeb93ecfce3c6429753f6ef818083a22fe))
+* **web,design,kb:** a money account's Payment file setting, and the batch page names its file (FR-BNK-12) ([#816](https://github.com/cognizhi/fyniq/issues/816)) ([6fc7971](https://github.com/cognizhi/fyniq/commit/6fc7971e060b6a103b740962934bea00d0c3c2a4))
+* **web,kb:** the Approver's Home lists the requests waiting for them, with their steps (QA-UI-08) ([#812](https://github.com/cognizhi/fyniq/issues/812)) ([cd669dc](https://github.com/cognizhi/fyniq/commit/cd669dce053beea50d45e1c5280006d033f08629))
+* **web,kb:** the Evidence panel takes the date a file relates to and shows each file's provenance ([#814](https://github.com/cognizhi/fyniq/issues/814)) ([925e729](https://github.com/cognizhi/fyniq/commit/925e7296cdf07eab8ae14dbb169958fefa63f6dd))
+
+
+### Bug fixes
+
+* **api,contracts:** streamed events keep an integer id, and both contracts follow the release version (FR-INT-06) ([#825](https://github.com/cognizhi/fyniq/issues/825)) ([8a6649f](https://github.com/cognizhi/fyniq/commit/8a6649f97884aad4b98000f25c4dbf59c26b385d))
+* **security:** DAST drops a UUID tail or hash that ZAP reads as a card number ([#890](https://github.com/cognizhi/fyniq/issues/890)) ([6a9358b](https://github.com/cognizhi/fyniq/commit/6a9358b769359ef6b0ba8171bd90816f23c042b6))
+
+
+### Documentation
+
+* **prd,specs:** MCP revision 2026-07-28 only and client registration built now (rev 0.294, AI-90) ([#851](https://github.com/cognizhi/fyniq/issues/851)) ([97e5ac2](https://github.com/cognizhi/fyniq/commit/97e5ac252d3ab5f946a47c1638320349191937da))
+* **security:** add the knowledge base's threat model for security review [#4](https://github.com/cognizhi/fyniq/issues/4) ([#889](https://github.com/cognizhi/fyniq/issues/889)) ([e3cc2a5](https://github.com/cognizhi/fyniq/commit/e3cc2a5ae0ea7ba8f843fbc5674bbc079a0a2485))
+* **specs,skills:** propose p1-mcp-first-party: the MCP server for first-party clients, closed by default ([#834](https://github.com/cognizhi/fyniq/issues/834)) ([63d3117](https://github.com/cognizhi/fyniq/commit/63d31178edbcd6a8ee0008be6b1fc7b42ebe1aeb))
+* **specs:** p1-statutory-packs 2.3 built, 2.2's remaining half named with IRAS's deposit page ([#819](https://github.com/cognizhi/fyniq/issues/819)) ([670898f](https://github.com/cognizhi/fyniq/commit/670898f64307fada81102455633ee1d1f1b393bc))
+* **specs:** plan p1-nemura-leave-time ([#893](https://github.com/cognizhi/fyniq/issues/893)) ([25743a2](https://github.com/cognizhi/fyniq/commit/25743a20164f4c64a7db2f7486eaf55fa368c6f8))
+* **specs:** plan p1-nemura-platform, the ground every Nemura change stands on ([#820](https://github.com/cognizhi/fyniq/issues/820)) ([20c1e08](https://github.com/cognizhi/fyniq/commit/20c1e08fa33ad467a10cd4c470a88788f4f7bfcf))
+* **specs:** plan p1-nemura-records-packs, with two owner decisions ([#891](https://github.com/cognizhi/fyniq/issues/891)) ([f322679](https://github.com/cognizhi/fyniq/commit/f322679600f173875143f32afa12d64bf32ecf4c))
+* **specs:** plan p1-projects: projects, time, rates, reports and billing, behind the feature switch ([#835](https://github.com/cognizhi/fyniq/issues/835)) ([bb6d8c3](https://github.com/cognizhi/fyniq/commit/bb6d8c3f1e8b818f10d6fa6cb4faa7b161aa3db4))
+* **specs:** propose p1-knowledge-base: runtime knowledge base, compiler, publishing, evals ([#824](https://github.com/cognizhi/fyniq/issues/824)) ([ddcecbe](https://github.com/cognizhi/fyniq/commit/ddcecbee2d6b9415c30cd00b7ed3f713e083c148))
+* **specs:** tick p1-knowledge-base slices 1 to 5 and record what the build settled ([#833](https://github.com/cognizhi/fyniq/issues/833)) ([f6827fc](https://github.com/cognizhi/fyniq/commit/f6827fcc807024c22d705f9d84d3bf1e97986329))
+
+
+### CI
+
+* **security:** drop the picomatch waiver, which matches nothing since the dependency moved on ([#854](https://github.com/cognizhi/fyniq/issues/854)) ([9d78f22](https://github.com/cognizhi/fyniq/commit/9d78f22f7df0cc1362682790cd4c25f47b4d8d57))
+
+
+### Dependencies
+
+* Bump the go group across 1 directory with 13 updates ([#756](https://github.com/cognizhi/fyniq/issues/756)) ([5823cbf](https://github.com/cognizhi/fyniq/commit/5823cbf45789a5f522facffe4c98f162e4787720))
+* **ci:** Bump the actions group across 1 directory with 3 updates ([#417](https://github.com/cognizhi/fyniq/issues/417)) ([976c59b](https://github.com/cognizhi/fyniq/commit/976c59b4712fae6ee5286e9c54a1bfca667fa187))
+* **deploy:** Bump the local-stack group across 1 directory with 2 updates ([#585](https://github.com/cognizhi/fyniq/issues/585)) ([df6883f](https://github.com/cognizhi/fyniq/commit/df6883f2bd33ca125494b8c00dca40a9f4558671))
+* **oracle:** Bump hatchling from 1.32.4 to 1.33.0 in /oracle in the python group across 1 directory ([#597](https://github.com/cognizhi/fyniq/issues/597)) ([5a35387](https://github.com/cognizhi/fyniq/commit/5a35387ca6b4c600aa41bca5360e152f6ad385c6))
+* **web:** Bump @babel/core from 7.29.7 to 8.0.10 ([#600](https://github.com/cognizhi/fyniq/issues/600)) ([1ad52ab](https://github.com/cognizhi/fyniq/commit/1ad52abb84d87449b1e3ad9daabe3ce32b97784d))
+
 ## 0.1.0 (2026-11-16)
 
 
