@@ -292,8 +292,51 @@ type PayslipView struct {
 	Reimbursements string        `json:"reimbursements,omitempty" doc:"Reimbursements paid with the salary, which are not part of it." example:"45.00"`
 }
 
+// PaymentEvent is one change of a person's payment.
+type PaymentEvent struct {
+	Seq           int    `json:"seq" doc:"The event's number among the payment's events." example:"1"`
+	State         string `json:"state" enum:"scheduled,released,sent,accepted,paid,rejected,returned,unknown" doc:"The state it moved the payment to." example:"paid"`
+	InstructionID string `json:"instruction_id,omitempty" doc:"The payment instruction, from Fyniq." example:"INSTR-2026-06-0001"`
+	Amount        string `json:"amount" doc:"The amount in dollars." example:"3963.21"`
+	PaidOn        string `json:"date" format:"date" doc:"The date of the payment." example:"2026-06-25"`
+	Source        string `json:"source" enum:"fyniq,manual" doc:"Fyniq's status event, or a person with evidence." example:"fyniq"`
+	EvidenceID    string `json:"evidence_id,omitempty" format:"uuid" doc:"The document of the person paid that evidences a manual record." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60"`
+	Note          string `json:"note,omitempty" doc:"A note of up to 500 characters." example:"Seen on the 25 June statement."`
+	RecordedAt    string `json:"recorded_at" format:"date-time" doc:"When it was recorded." example:"2026-06-25T10:00:00Z"`
+}
+
+// PaymentLine is a person's payment in a run.
+type PaymentLine struct {
+	PersonID       string         `json:"person_id" format:"uuid" doc:"The person." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
+	Person         string         `json:"person" doc:"Their name." example:"Ben Lim"`
+	Owed           string         `json:"owed" doc:"The amount to pay, in dollars." example:"3963.21"`
+	State          string         `json:"state,omitempty" doc:"The latest state; empty while nothing is recorded." example:"paid"`
+	Attention      bool           `json:"attention" doc:"True when the payment was rejected, returned or has an unknown outcome: ✖ on Checks, and an unknown outcome blocks a new payment." example:"false"`
+	AmountMismatch bool           `json:"amount_mismatch" doc:"True when it was confirmed paid for an amount other than the one owed." example:"false"`
+	Events         []PaymentEvent `json:"events" doc:"Every change, oldest first."`
+}
+
+// RunPayments is a run's payments.
+type RunPayments struct {
+	Version int           `json:"version" minimum:"1" doc:"The approved version being paid." example:"2"`
+	State   string        `json:"state" enum:"approved,paid in part,paid" doc:"The run's payment state from its people's." example:"approved"`
+	Lines   []PaymentLine `json:"lines" doc:"Each person owed money in the version."`
+}
+
+// PaymentRecord is what a person records of a payment's outcome.
+type PaymentRecord struct {
+	PersonID   string `json:"person_id" format:"uuid" doc:"The person paid." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45"`
+	State      string `json:"state" enum:"scheduled,released,sent,accepted,paid,rejected,returned,unknown" doc:"The new state; only a legal move after the last one." example:"paid"`
+	Amount     string `json:"amount" pattern:"^[0-9]+(\\.[0-9]{1,2})?$" doc:"The amount in dollars and cents." example:"3963.21"`
+	PaidOn     string `json:"date" format:"date" doc:"The date of the payment; not in the future for paid, rejected or returned." example:"2026-06-25"`
+	EvidenceID string `json:"evidence_id" format:"uuid" doc:"A document of the person paid that shows the outcome, such as a bank statement line. Required: a bare word is never enough." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60"`
+	Note       string `json:"note,omitempty" maxLength:"500" doc:"A note." example:"Seen on the 25 June statement."`
+}
+
 // Payroll is pay records behind the API.
 type Payroll interface {
+	Payments(ctx context.Context, s Session, run uuid.UUID) (RunPayments, error)
+	RecordPayment(ctx context.Context, s Session, run uuid.UUID, in PaymentRecord) error
 	PublishPayslips(ctx context.Context, s Session, run uuid.UUID, version int) (int, error)
 	MyPayslips(ctx context.Context, s Session) ([]PayslipSummary, error)
 	MyPayslip(ctx context.Context, s Session, id uuid.UUID) (PayslipView, error)
@@ -319,6 +362,7 @@ type Payroll interface {
 func init() {
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/approval"] = "a version is approved once: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/payslips"] = "a version's payslips are published once: a repeat is refused (NM_PAYROLL_CONFLICT)"
+	IdempotencyExempt["POST /v1/payroll/runs/{id}/payments"] = "a payment's state moves one legal step at a time: a repeat of the same state is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs"] = "a month has one run for a pay group: a repeat is refused (NM_PAYROLL_CONFLICT)"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/versions"] = "each calculation is its own version of the run, with its own digest"
 	IdempotencyExempt["POST /v1/payroll/runs/{id}/overrides"] = "each override is its own record with its own reason: a repeat replaces nothing and the next calculation applies both in order"
@@ -664,6 +708,14 @@ type runApprovalInput struct {
 
 type runChangesOutput struct{ Body RunChanges }
 
+type runPaymentsOutput struct{ Body RunPayments }
+
+type paymentRecordInput struct {
+	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
+	ID     string `path:"id" format:"uuid" doc:"The run." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"`
+	Body   PaymentRecord
+}
+
 type payslipsPublishInput struct {
 	Cookie string `header:"Cookie" doc:"The browser's cookies; the session cookie is read from them." example:"nemura_session=…"`
 	ID     string `path:"id" format:"uuid" doc:"The run." example:"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f43"`
@@ -829,6 +881,41 @@ func (a *API) registerPayRuns() {
 		out := &createdOutput{}
 		out.Body.ID = oid
 		return out, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "getPayRunPayments", Method: "GET", Path: "/v1/payroll/runs/{id}/payments", Tags: []string{"Payroll"}, Summary: "A run's payments",
+		Description: "Each person owed money in the run's approved version with the state of their payment and every change to it (scheduled, released, sent, accepted, paid, rejected, returned or unknown), what is owed and what was confirmed, and the run's own payment state (approved, paid in part, paid). The Payroll administrator and the Owner. It changes nothing.", Errors: []int{401, 403, 404, 409},
+	}, func(ctx context.Context, in *runIDInput) (*runPaymentsOutput, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such pay run.")
+		}
+		p, err := a.d.Payroll.Payments(ctx, s, id)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		return &runPaymentsOutput{Body: p}, nil
+	})
+	huma.Register(a.API, huma.Operation{
+		OperationID: "recordPayment", Method: "POST", Path: "/v1/payroll/runs/{id}/payments", Tags: []string{"Payroll"}, Summary: "Record a payment's outcome",
+		Description: "Records a change of a person's payment as a person, with a document of the person paid as evidence: a bank statement line or a transfer receipt. 'Paid' is never a bare word, and an exported file or a posted journal is never 'paid'. Only the legal moves after the last state are accepted, and an unknown outcome is resolved as paid, rejected or returned before a new payment can be scheduled. Fyniq's status events arrive through the link and use the same rules. The Payroll administrator and the Owner. It is audited with the state, never the amount.", Errors: []int{401, 403, 404, 409, 422}, DefaultStatus: 201,
+	}, func(ctx context.Context, in *paymentRecordInput) (*struct{}, error) {
+		s, err := payroller(ctx, in.Cookie)
+		if err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(in.ID)
+		if err != nil {
+			return nil, Err(CodeNotFound, "There is no such pay run.")
+		}
+		if err := a.d.Payroll.RecordPayment(ctx, s, id, in.Body); err != nil {
+			return nil, payrollError(err)
+		}
+		return nil, nil
 	})
 	huma.Register(a.API, huma.Operation{
 		OperationID: "publishPayslips", Method: "POST", Path: "/v1/payroll/runs/{id}/payslips", Tags: []string{"Payroll"}, Summary: "Publish a run version's payslips",

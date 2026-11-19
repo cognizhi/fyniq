@@ -1316,6 +1316,24 @@ describe("approving a pay run", () => {
     expect(bodies.get(`POST /v1/payroll/runs/${rid}/payslips`)).toMatchObject({ version: 2 });
   });
 
+  it("shows each person's payment and records an outcome only with a document of the person as evidence", async () => {
+    const person = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45";
+    answer(`GET /v1/payroll/runs/${rid}`, { status: 200, body: { ...run(0), latest: { ...version(2, 0), state: "approved" }, versions: [{ ...version(2, 0), state: "approved" }] } });
+    answer(`GET /v1/payroll/runs/${rid}/changes`, { status: 200, body: { ...changes, has_previous: false } });
+    answer(`GET /v1/payroll/runs/${rid}/payments`, { status: 200, body: { version: 2, state: "approved", lines: [{ person_id: person, person: "Ben Lim", owed: "3963.21", state: "unknown", attention: true, amount_mismatch: false, events: [] }] } });
+    answer(`GET /v1/people/${person}/documents`, { status: 200, body: { documents: [{ id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60", title: "Bank statement 25 Jun" }] } });
+    answer(`POST /v1/payroll/runs/${rid}/payments`, { status: 201, body: undefined });
+    const { container } = render(<PayRunApproval id={rid} roles={["owner"]} member={other} />);
+    expect(await screen.findByText("Ben Lim: owed 3963.21, outcome unknown")).toBeTruthy();
+    expect(screen.getByText(/Look at this: rejected, returned or unknown/)).toBeTruthy();
+    expect(await screen.findByRole("option", { name: "Bank statement 25 Jun" })).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Record the outcome" }));
+    expect(await screen.findByText("Recorded.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/payroll/runs/${rid}/payments`)).toMatchObject({ person_id: person, state: "paid", amount: "3963.21", evidence_id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60" });
+  });
+
   it("is refused in words to anyone but the Payroll administrator and the Owner", () => {
     render(<PayRunApproval id={rid} roles={["hr_admin"]} member={other} />);
     expect(screen.getByRole("alert").textContent).toContain("Only the Payroll administrator and the Owner");

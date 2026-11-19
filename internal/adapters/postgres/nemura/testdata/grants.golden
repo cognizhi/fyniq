@@ -437,6 +437,19 @@ nemura_api | column nemura.pay_one_off.payable_on | INSERT
 nemura_api | column nemura.pay_one_off.person_id | INSERT
 nemura_api | column nemura.pay_one_off.used_at | UPDATE
 nemura_api | column nemura.pay_one_off.used_in_run | UPDATE
+nemura_api | column nemura.pay_payment_event.amount | INSERT
+nemura_api | column nemura.pay_payment_event.evidence_id | INSERT
+nemura_api | column nemura.pay_payment_event.id | INSERT
+nemura_api | column nemura.pay_payment_event.instruction_id | INSERT
+nemura_api | column nemura.pay_payment_event.note | INSERT
+nemura_api | column nemura.pay_payment_event.paid_on | INSERT
+nemura_api | column nemura.pay_payment_event.person_id | INSERT
+nemura_api | column nemura.pay_payment_event.recorded_at | INSERT
+nemura_api | column nemura.pay_payment_event.recorded_by | INSERT
+nemura_api | column nemura.pay_payment_event.run_id | INSERT
+nemura_api | column nemura.pay_payment_event.seq | INSERT
+nemura_api | column nemura.pay_payment_event.source | INSERT
+nemura_api | column nemura.pay_payment_event.state | INSERT
 nemura_api | column nemura.pay_run.created_at | INSERT
 nemura_api | column nemura.pay_run.created_by | INSERT
 nemura_api | column nemura.pay_run.id | INSERT
@@ -752,6 +765,7 @@ nemura_api | table nemura.passkey_challenge | SELECT
 nemura_api | table nemura.pay_group | SELECT
 nemura_api | table nemura.pay_input | SELECT
 nemura_api | table nemura.pay_one_off | SELECT
+nemura_api | table nemura.pay_payment_event | SELECT
 nemura_api | table nemura.pay_run | SELECT
 nemura_api | table nemura.pay_run_line | SELECT
 nemura_api | table nemura.pay_run_override | SELECT
@@ -863,6 +877,7 @@ nemura_readonly | table nemura.passkey_challenge | SELECT
 nemura_readonly | table nemura.pay_group | SELECT
 nemura_readonly | table nemura.pay_input | SELECT
 nemura_readonly | table nemura.pay_one_off | SELECT
+nemura_readonly | table nemura.pay_payment_event | SELECT
 nemura_readonly | table nemura.pay_run | SELECT
 nemura_readonly | table nemura.pay_run_line | SELECT
 nemura_readonly | table nemura.pay_run_override | SELECT
@@ -981,6 +996,7 @@ nemura_worker | table nemura.pack_decision | SELECT
 nemura_worker | table nemura.pay_group | SELECT
 nemura_worker | table nemura.pay_input | SELECT
 nemura_worker | table nemura.pay_one_off | SELECT
+nemura_worker | table nemura.pay_payment_event | SELECT
 nemura_worker | table nemura.pay_run | SELECT
 nemura_worker | table nemura.pay_run_line | SELECT
 nemura_worker | table nemura.pay_run_override | SELECT

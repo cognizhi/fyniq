@@ -68,8 +68,8 @@ Load before each slice: `fyniq-accounting-domain` (money, rounding, postings), `
 
 - [ ] 5.1 Final pay (NM-PAY-06, NM-PAY-08): the last salary, leave encashment or deduction from the settlement of `p1-nemura-self-service-letters` 4.2, notice pay, the deadline by case, the IR21
   clearance hold as a flag the payment path reads. `// req: NM-PAY-06, NM-PAY-08`
-- [ ] 5.2 Payment states per person (scheduled to returned or unknown), recorded with evidence when standalone; an unknown outcome blocks a new payment for that person and run. `// req: NM-PAY-10`
-- [ ] 5.3 The payroll checks of N.1: late against the calendar (#2), books not received (#6), a rejected, returned or unknown payment (#14), final pay due (#15). `// req: NM-PAY-03`
+- [x] 5.2 Payment states per person (scheduled to returned or unknown), recorded with evidence when standalone; an unknown outcome blocks a new payment for that person and run. `// req: NM-PAY-10`
+- [ ] 5.3 The payroll checks of N.1: payslip late (#9, done), a rejected, returned or unknown payment (#14, done), late against the calendar (#2), books not received (#6), final pay due (#15). `// req: NM-PAY-03`
 - [ ] 5.4 Verify.
 
 ## 6. Hand-off files (slice 6)

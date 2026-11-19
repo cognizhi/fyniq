@@ -66,3 +66,40 @@ func TestAPersonWithNoKeyEmploymentTermsAfterFourteenDaysFails(t *testing.T) {
 		t.Errorf("the message: %+v", got[1])
 	}
 }
+
+// A payment that was rejected, returned or has an unknown outcome is ✖ and one paid for the wrong amount is ⚠ (N.1 #14); a payslip not yet made is ⏰ until three working days after the person was
+// paid and ✖ after (public holidays and weekends do not count), and one with the wrong date of payment is ⚠ (N.1 #9).
+// req: NM-PAY-10, NM-PAY-04
+func TestPaymentsAndPayslipsAreChecked(t *testing.T) {
+	m := d("2026-06-01")
+	got := Payments([]PaymentFact{{Person: "a", Month: m, State: "rejected"}, {Person: "b", Month: m, State: "returned"}, {Person: "c", Month: m, State: "unknown"},
+		{Person: "d", Month: m, State: "paid", AmountMismatch: true}, {Person: "e", Month: m, State: "paid"}, {Person: "f", Month: m, State: "sent"}})
+	if len(got) != 4 || got[0].Check != 14 || got[0].Status != Fail || !strings.Contains(got[0].Message, "rejected") || !strings.Contains(got[1].Message, "came back") || !strings.Contains(got[2].Message, "Nobody knows") ||
+		got[3].Status != Warn || got[3].Subject != "d" || !strings.Contains(got[3].Message, "June 2026") {
+		t.Fatalf("payments: %+v", got)
+	}
+	v, err := pack.Load(packs.Files(), "sg-people/2026.7")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Paid Wed 24 Jun 2026, so three working days later is Mon 29 Jun 2026.
+	paid := d("2026-06-24")
+	wrong := d("2026-06-25")
+	facts := []PaymentFact{{Person: "a", Month: m, State: "paid", PaidOn: &paid}, {Person: "b", Month: m, State: "paid", PaidOn: &paid, HasPayslip: true, PayslipDate: &paid},
+		{Person: "c", Month: m, State: "paid", PaidOn: &paid, HasPayslip: true, PayslipDate: &wrong}, {Person: "d", Month: m, State: "sent"}}
+	if got := Payslips(v, facts, 3, d("2026-06-29")); len(got) != 2 || got[0].Subject != "a" || got[0].Status != Due || !strings.Contains(got[0].Message, "due by 2026-06-29") || got[1].Subject != "c" || got[1].Status != Warn {
+		t.Errorf("on the due day: %+v", got)
+	}
+	if got := Payslips(v, facts[:1], 3, d("2026-06-30")); len(got) != 1 || got[0].Check != 9 || got[0].Status != Fail || !strings.Contains(got[0].Message, "was due on 2026-06-29") {
+		t.Errorf("a day late: %+v", got)
+	}
+	// A public holiday is not a working day: paid Wed 1 Apr 2026, with Good Friday on 3 Apr, the third working day is Tue 7 Apr, not Mon 6 Apr.
+	wed := d("2026-04-01")
+	hf := []PaymentFact{{Person: "a", Month: d("2026-03-01"), State: "paid", PaidOn: &wed}}
+	if got := Payslips(v, hf, 3, d("2026-04-06")); len(got) != 1 || got[0].Status != Due || !strings.Contains(got[0].Message, "due by 2026-04-07") {
+		t.Errorf("a holiday in the window: %+v", got)
+	}
+	if got := Payslips(v, hf, 3, d("2026-04-08")); len(got) != 1 || got[0].Status != Fail {
+		t.Errorf("after the holiday window: %+v", got)
+	}
+}

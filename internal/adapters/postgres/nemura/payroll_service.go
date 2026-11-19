@@ -446,3 +446,51 @@ func (p PayrollService) MyPayslipFile(ctx context.Context, s api.Session, id uui
 	})
 	return ref, pdf, err
 }
+
+// Payments lists each person's payment of the run's approved version with its events.
+func (p PayrollService) Payments(ctx context.Context, s api.Session, run uuid.UUID) (api.RunPayments, error) {
+	out := api.RunPayments{Lines: []api.PaymentLine{}}
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		if _, _, err := RunOf(ctx, tx, run); err != nil {
+			return err
+		}
+		v, err := PaymentsOf(ctx, tx, run)
+		if err != nil {
+			return err
+		}
+		out.Version, out.State = v.Version, v.State
+		for _, l := range v.Lines {
+			pl := api.PaymentLine{PersonID: l.Person.String(), Person: l.PersonName, Owed: l.Disburse, State: l.State, Attention: l.Attention, AmountMismatch: l.AmountMismatch, Events: []api.PaymentEvent{}}
+			for _, e := range l.Events {
+				ev := api.PaymentEvent{Seq: e.Seq, State: e.State, InstructionID: e.Instruction, Amount: e.Amount, PaidOn: day(e.PaidOn), Source: e.Source, Note: e.Note, RecordedAt: e.RecordedAt.UTC().Format(time.RFC3339)}
+				if e.Evidence != nil {
+					ev.EvidenceID = e.Evidence.String()
+				}
+				pl.Events = append(pl.Events, ev)
+			}
+			out.Lines = append(out.Lines, pl)
+		}
+		return nil
+	})
+	return out, err
+}
+
+// RecordPayment records a person's outcome of a payment, with a document of the person paid as evidence.
+func (p PayrollService) RecordPayment(ctx context.Context, s api.Session, run uuid.UUID, in api.PaymentRecord) error {
+	person, err := uuid.Parse(in.PersonID)
+	if err != nil {
+		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "person_id: choose the person paid."}
+	}
+	ev, err := uuid.Parse(in.EvidenceID)
+	if err != nil {
+		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "evidence_id: choose a document of the person paid as evidence."}
+	}
+	paidOn, err := time.Parse(time.DateOnly, in.PaidOn)
+	if err != nil {
+		return &payroll.Refusal{Code: payroll.CodeInvalid, Message: "date: write the date of the payment as YYYY-MM-DD."}
+	}
+	member := s.Member
+	return p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		return RecordPaymentState(ctx, tx, s.Organisation, p.Clock.Now(), user(member), PaymentInput{Run: run, Person: person, State: in.State, Amount: in.Amount, PaidOn: paidOn, Source: "manual", Evidence: &ev, Note: in.Note, By: &member})
+	})
+}

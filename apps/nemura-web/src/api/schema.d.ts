@@ -1616,6 +1616,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payroll/runs/{id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A run's payments
+         * @description Each person owed money in the run's approved version with the state of their payment and every change to it (scheduled, released, sent, accepted, paid, rejected, returned or unknown), what is owed and what was confirmed, and the run's own payment state (approved, paid in part, paid). The Payroll administrator and the Owner. It changes nothing.
+         */
+        get: operations["getPayRunPayments"];
+        put?: never;
+        /**
+         * Record a payment's outcome
+         * @description Records a change of a person's payment as a person, with a document of the person paid as evidence: a bank statement line or a transfer receipt. 'Paid' is never a bare word, and an exported file or a posted journal is never 'paid'. Only the legal moves after the last state are accepted, and an unknown outcome is resolved as paid, rejected or returned before a new payment can be scheduled. Fyniq's status events arrive through the link and use the same rules. The Payroll administrator and the Owner. It is audited with the state, never the amount.
+         */
+        post: operations["recordPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payroll/runs/{id}/payslips": {
         parameters: {
             query?: never;
@@ -5272,6 +5296,130 @@ export interface components {
             /** @description The year to date for the year of the day asked, when there is one. */
             year_to_date?: components["schemas"]["YearToDate"];
         };
+        PaymentEvent: {
+            /**
+             * @description The amount in dollars.
+             * @example 3963.21
+             */
+            amount: string;
+            /**
+             * Format: date
+             * @description The date of the payment.
+             * @example 2026-06-25
+             */
+            date: string;
+            /**
+             * Format: uuid
+             * @description The document of the person paid that evidences a manual record.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60
+             */
+            evidence_id?: string;
+            /**
+             * @description The payment instruction, from Fyniq.
+             * @example INSTR-2026-06-0001
+             */
+            instruction_id?: string;
+            /**
+             * @description A note of up to 500 characters.
+             * @example Seen on the 25 June statement.
+             */
+            note?: string;
+            /**
+             * Format: date-time
+             * @description When it was recorded.
+             * @example 2026-06-25T10:00:00Z
+             */
+            recorded_at: string;
+            /**
+             * Format: int64
+             * @description The event's number among the payment's events.
+             * @example 1
+             */
+            seq: number;
+            /**
+             * @description Fyniq's status event, or a person with evidence.
+             * @example fyniq
+             * @enum {string}
+             */
+            source: "fyniq" | "manual";
+            /**
+             * @description The state it moved the payment to.
+             * @example paid
+             * @enum {string}
+             */
+            state: "scheduled" | "released" | "sent" | "accepted" | "paid" | "rejected" | "returned" | "unknown";
+        };
+        PaymentLine: {
+            /**
+             * @description True when it was confirmed paid for an amount other than the one owed.
+             * @example false
+             */
+            amount_mismatch: boolean;
+            /**
+             * @description True when the payment was rejected, returned or has an unknown outcome: ✖ on Checks, and an unknown outcome blocks a new payment.
+             * @example false
+             */
+            attention: boolean;
+            /** @description Every change, oldest first. */
+            events: components["schemas"]["PaymentEvent"][] | null;
+            /**
+             * @description The amount to pay, in dollars.
+             * @example 3963.21
+             */
+            owed: string;
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            person: string;
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+             */
+            person_id: string;
+            /**
+             * @description The latest state; empty while nothing is recorded.
+             * @example paid
+             */
+            state?: string;
+        };
+        PaymentRecord: {
+            /**
+             * @description The amount in dollars and cents.
+             * @example 3963.21
+             */
+            amount: string;
+            /**
+             * Format: date
+             * @description The date of the payment; not in the future for paid, rejected or returned.
+             * @example 2026-06-25
+             */
+            date: string;
+            /**
+             * Format: uuid
+             * @description A document of the person paid that shows the outcome, such as a bank statement line. Required: a bare word is never enough.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60
+             */
+            evidence_id: string;
+            /**
+             * @description A note.
+             * @example Seen on the 25 June statement.
+             */
+            note?: string;
+            /**
+             * Format: uuid
+             * @description The person paid.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+             */
+            person_id: string;
+            /**
+             * @description The new state; only a legal move after the last one.
+             * @example paid
+             * @enum {string}
+             */
+            state: "scheduled" | "released" | "sent" | "accepted" | "paid" | "rejected" | "returned" | "unknown";
+        };
         PayslipFileOutputBody: {
             /** @description The PDF, base64-encoded; its SHA-256 is the payslip's. */
             content_base64: string;
@@ -6271,6 +6419,22 @@ export interface components {
              * @example 999.00
              */
             value: string;
+        };
+        RunPayments: {
+            /** @description Each person owed money in the version. */
+            lines: components["schemas"]["PaymentLine"][] | null;
+            /**
+             * @description The run's payment state from its people's.
+             * @example approved
+             * @enum {string}
+             */
+            state: "approved" | "paid in part" | "paid";
+            /**
+             * Format: int64
+             * @description The approved version being paid.
+             * @example 2
+             */
+            version: number;
         };
         RunStartInputBody: {
             /**
@@ -12873,6 +13037,168 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPayRunPayments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunPayments"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordPayment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The run. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentRecord"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

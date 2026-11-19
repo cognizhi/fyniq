@@ -1,10 +1,12 @@
 package packs
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/cognizhi/fyniq/internal/domain/pack"
+	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 )
 
 // The Singapore people pack loads under the shared validator with every source declared, and every hand-worked case passes against its own tables; its
@@ -269,5 +271,33 @@ func TestThePayslipItemsAreInTheSeventhVersionOnly(t *testing.T) {
 	}
 	if len(pack.PayslipItems(v6)) != 0 {
 		t.Error("the sixth version holds the payslip items")
+	}
+}
+
+// Every item of the newest people pack's payslip list has a field on the payslip, so a payslip holds what the pack says MOM requires (NM-PAY-04).
+// req: NM-PAY-04
+func TestEveryPayslipItemOfThePackHasAFieldOnThePayslip(t *testing.T) {
+	versions, err := pack.LoadAll(Files())
+	if err != nil {
+		t.Fatal(err)
+	}
+	newest := versions[len(versions)-1]
+	typ := reflect.TypeOf(payroll.Payslip{})
+	items := pack.PayslipItems(newest)
+	if len(items) == 0 {
+		t.Fatal("the newest people pack has no payslip items")
+	}
+	for _, it := range items {
+		field, ok := payroll.SlipFields[it.Key]
+		if !ok {
+			t.Errorf("payslip item %q (%s) has no field on the payslip", it.Key, it.Label)
+			continue
+		}
+		if _, ok := typ.FieldByName(field); !ok {
+			t.Errorf("payslip item %q names the field %q, which Payslip does not have", it.Key, field)
+		}
+	}
+	if len(payroll.SlipFields) != len(items) {
+		t.Errorf("the payslip maps %d items and the pack lists %d", len(payroll.SlipFields), len(items))
 	}
 }
