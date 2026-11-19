@@ -9,6 +9,14 @@
       ],
       "type": "string"
     },
+    "id": {
+      "description": "The file's ID, to attach it to a claim as a receipt.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4f31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
     "kind": {
       "description": "The message's text, or an attachment.",
       "enum": [
@@ -44,6 +52,7 @@
     }
   },
   "required": [
+    "id",
     "kind",
     "file_name",
     "media_type",

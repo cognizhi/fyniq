@@ -71,7 +71,7 @@
 
 ## 8. The screens and the guide
 
-- [ ] 8.1 `my-claims` and `personal-claims` (`/me/claims`, `/me`: by status, totals, what the company owes, export;
+- [x] 8.1 `my-claims` and `personal-claims` (`/me/claims`, `/me`: by status, totals, what the company owes, export;
   the landing for personal-only people), `claim-editor` (receipt from paste, drop or the capture address), and
   `mileage-claim`; help keys and registry entries; component tests with axe.
   `// req: FR-AP-14`, `// req: FR-UX-39`
@@ -88,6 +88,15 @@
   screenshot pasted into, the evidence panel. Tests `claims.test.tsx` with axe. **Left:** receipt capture through the
   member's capture address (inbound email for claims is not built), and FR-UX-39's personal navigation, which is
   `p1-app-shell` task 2.1's.)
+  (20 Nov 2026, PRD-001 rev 0.322: the receipt forwarded to the member's own address is built. The claim page's
+  **Receipts forwarded to you** (`screens/claims/ForwardedReceipts.tsx`) makes the member's address, lists the attachments
+  of accepted mail there, accepts a waiting sender, and attaches a file to the draft claim through
+  `POST /v1/expense-claims/{claim_id}/evidence:from-message` (`addExpenseClaimEvidenceFromMessage`): checked again as any
+  upload is and kept as evidence from email, EML-10 for any mail that is not the claimant's own, accepted attachment. Tests
+  `TestAReceiptForwardedToTheMembersAddressAttachesToTheirClaim`, the matrix row `addExpenseClaimEvidenceFromMessage`,
+  `claims.test.tsx` with axe; fragment `ClaimEditor.html`; help keys `claim.forwarded-receipts`, `claim.attach-forwarded`;
+  guide `claims.my-claims` (Attach a receipt you forwarded), compiled. FR-UX-39's personal navigation is built
+  (`nav.my-claims` and the personal group, `p1-app-shell` task 2.1). The phone camera is P2.)
 - [x] 8.2 `claims-review` (the approver's queue with the policy outcome, approve and return with a comment) and
   `expense-policy` (categories, limits and the settings); component tests with axe. `// req: FR-AP-15`, `// req: FR-AP-17`
   (26 Oct 2026: `ClaimsReview.tsx` at `/purchases/claims`, To approve and All claims; a claim opened from it at

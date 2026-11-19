@@ -64,7 +64,12 @@
 
 ## 5. Home rows
 
-- [ ] 5.1 (**Left**) Map each §14.2 row of `compliance/singapore-statutory` to the change that closes it, recorded in this change's `design.md`. Close the rows no module owns with tests (`// req: compliance/singapore-statutory <title>`): retention defaults and MAS guidelines as reference only. The electronic-signature conditions close with `p1-approval-engine`, which tags their test
+- [x] 5.1 Map each §14.2 row of `compliance/singapore-statutory` to the change that closes it, recorded in this change's `design.md`. Close the rows no module owns with tests (`// req: compliance/singapore-statutory <title>`): retention defaults and MAS guidelines as reference only. The electronic-signature conditions close with `p1-approval-engine`, which tags their test
+  (20 Nov 2026: each of the 17 rows is mapped in this change's `design.md` ("The rows of PRD-001 §14.2 and the change that
+  closes each"). The rows no module owns are closed here: the retention periods (`TestTheDefaultRetentionCoversEveryStatutoryPeriod`,
+  `// req: compliance/singapore-statutory Record keeping and retention …`, with IRAS's two examples) and the MAS guidelines
+  as reference only (`TestMASGuidelinesAreReferenceOnly`); the electronic signatures are tagged by `p1-approval-engine`. The
+  other rows close with the changes the table names, several of them after go-live or in P2.)
 
 ## 6. Screen
 

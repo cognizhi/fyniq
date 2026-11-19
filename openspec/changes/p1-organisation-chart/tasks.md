@@ -80,7 +80,7 @@
   `organisation_setting`), the self-approval threshold is `approvals.self_approval_threshold`, the evidence rules are
   FR-DOC-06's settings (rev 0.182), the fixed assets read the capitalisation threshold, and Settings › Organisation shows
   them.)
-- [ ] 2.4 Logo and brand: SVG and PNG, light and dark, the icon and the accent colour, through the blob-store port with SVG sanitising. Test `// req: FR-ORG-09` covers G4-099's hostile files, and an issued document keeps its logo version
+- [x] 2.4 Logo and brand: SVG and PNG, light and dark, the icon and the accent colour, through the blob-store port with SVG sanitising. Test `// req: FR-ORG-09` covers G4-099's hostile files, and an issued document keeps its logo version
   (7 Nov 2026, PRD-001 rev 0.200, part: migration 000246 adds `brand_version`, insert-only and numbered by the database
   (FY282, FY283); the files go to the blob store under their SHA-256. `internal/domain/brand` cleans an SVG and writes a
   PNG again; the accent is one of eight contrast-checked options. `GET /v1/organisation/brand`, the files by kind and
@@ -95,9 +95,10 @@
   `API.reportLogo`; a financial statement, the cap table, a director's statement); a logo that cannot be read leaves the
   report without it. Tests `TestAReportShowsTheLogo`, `TestTheRenderServiceRendersAReport`, `TestFinancialStatementsThroughTheAPI`
   (the logo sent with the PDF); guide `logo-and-brand.md`, compiled.)
-  **Left:** the logo in emails, which are plain text until HTML email is built (a change to the `Email` port and its
-  three adapters, which no change plans); board packs, which are not built; and the sign-in page, which knows no
-  organisation before sign-in.
+  (20 Nov 2026, PRD-001 rev 0.323, decided for the absent owner on the recommended option, provisional: emails stay plain
+  text in P1 and carry the logo with HTML email in P2; the sign-in page keeps Fyniq's look, as it knows no organisation
+  before sign-in; board packs show the logo when they are built.)
+  **Left (P2, by that decision):** the logo in HTML email; board packs, which are not built.
 
 ## 3. Chart of accounts and dimensions
 

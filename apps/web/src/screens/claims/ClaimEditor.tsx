@@ -15,6 +15,7 @@ import { AdvancedDetails } from "../../components/AdvancedDetails";
 import { guarded, useConfirm } from "../../stepup";
 import { Icon, problemOf, type ApiProblem } from "../../ui";
 import { EvidencePanel } from "../accounting/JournalEvidence";
+import { ForwardedReceipts } from "./ForwardedReceipts";
 import { DimensionFields, useDimensionDetails } from "../accounting/lines";
 import { BillableFields, markupError } from "../projects/BillableFields";
 import { ConfirmDecision } from "../approvals/Decide";
@@ -545,6 +546,7 @@ export function ClaimEditor() {
         </form>
       )}
       {claim && <EvidencePanel record={{ kind: "claim", id: claim.id, etag: loaded.data?.etag ?? "" }} draft={claim.status === "draft"} mayAttach={editable} onChanged={setSaid} />}
+      {claim && editable && <ForwardedReceipts claimId={claim.id} etag={loaded.data?.etag ?? ""} onAttached={setSaid} />}
       {claim && claim.ledger_impact.length > 0 && (
         <section className="fy-card fy-expert-only" aria-label="Ledger impact">
           <div className="fy-card__head">

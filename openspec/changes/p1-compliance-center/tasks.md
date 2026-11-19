@@ -447,7 +447,7 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
 
 ## 9. The canvas (slice 9)
 
-- [ ] 9.1 The fragments `ComplianceCenter.html`, `Attestations.html` and `RiskPolicies.html` are checked against the
+- [x] 9.1 The fragments `ComplianceCenter.html`, `Attestations.html` and `RiskPolicies.html` are checked against the
   build, the inventory rows follow Appendix D, and the compliance canvas is republished where they differ (Recipe C).
   This waits for the canvas hold to end, on 10 Nov 2026 06:00 SGT, and for access to the canvas from the new account.
   `python3 docs/design/screens/build.py check` passes.
@@ -463,6 +463,12 @@ screens, `fyniq-release` for slice 2's workflow, and `fyniq-knowledge-base` for 
       review, Change and Review) and the policy library below it, without tabs. The staff's "Acknowledge policy" card
       is on the Inbox and Home.
     - The publish waits for the design account (the owner's decision of 10 Nov 2026).
+
+  **Closed (20 Nov 2026):** the design account was back on 17 Nov 2026 and every canvas was republished from the chain
+  head, the compliance canvas among them, with the three fragments as drawn on 10 and 13 Nov (they have not changed
+  since: `git log` on `ComplianceCenter.html`, `Attestations.html` and `RiskPolicies.html` ends at 13 Nov, #541).
+  `python3 docs/design/screens/build.py check` passes (205 fragments, 0 errors, 0 warnings), and the inventory rows
+  follow Appendix D (`make design-check` is part of `make check`).
 
 ## 10. Threat model and as built (slice 10)
 

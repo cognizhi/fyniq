@@ -427,6 +427,7 @@ var codeFacts = map[string]struct {
 	CodeCaptureNoUser:             {422, "Not a person with an address of their own"},
 	CodeHelpNoUser:                {422, "Not a person with a tour of their own"},
 	CodeSenderNotAddress:          {422, "Not one email address"},
+	CodeMessageFile:               {422, "Not an attachment of accepted mail at your own address"},
 	CodeNotifyLocked:              {409, "A security notice is always on"},
 	CodeNotifyTime:                {422, "Not a time of day"},
 	CodeNotifyType:                {404, "No such notification type"},

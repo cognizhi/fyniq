@@ -337,6 +337,40 @@ func TestMappingFrameworks(t *testing.T) {
 	}
 }
 
+// The MAS guidelines are reference only (PRD-001 §14.2, "MAS (reference only)"): Fyniq is not a financial institution and
+// does not serve any, so no framework of the registry is one of MAS's and no control of it names one; a mapping that
+// names the TRM Guidelines, the Cyber Hygiene Notice or the Outsourcing Guidelines is refused as an unknown framework, so
+// adding one is a change to the registry's list, reviewed as such (revisit when the company serves financial institutions).
+// req: compliance/singapore-statutory MAS guidelines as reference only Not in scope
+func TestMASGuidelinesAreReferenceOnly(t *testing.T) {
+	for _, f := range Frameworks {
+		key := strings.ToLower(f.Key + " " + strings.Join(f.Tokens, " "))
+		for _, banned := range []string{"mas", "trm", "cyber hygiene", "outsourcing"} {
+			for _, word := range strings.Fields(strings.NewReplacer(",", " ", ";", " ", "-", " ").Replace(key)) {
+				if word == banned {
+					t.Errorf("framework %s names %q: the MAS guidelines are reference only", f.Key, banned)
+				}
+			}
+		}
+	}
+	for _, mapping := range []string{"MAS TRM", "MAS TRM Guidelines", "Cyber Hygiene Notice", "MAS Outsourcing Guidelines", "SOC2 CC6.1; MAS TRM"} {
+		if got, err := MappingFrameworks(mapping); err == nil {
+			t.Errorf("MappingFrameworks(%q) = %v, want an error: MAS is not a framework the registry claims", mapping, got)
+		}
+	}
+	controls, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range controls {
+		for _, word := range strings.Fields(strings.NewReplacer(",", " ", ";", " ", "(", " ", ")", " ").Replace(c.Mapping)) {
+			if word == "MAS" || word == "TRM" {
+				t.Errorf("%s maps to %s: the MAS guidelines are reference only", c.ID, word)
+			}
+		}
+	}
+}
+
 // Each check that runs in CI names a release asset that the release's evidence job attaches: an artefact or the logs of
 // a workflow of release-assets.json (design D3; scripts/release-evidence.py self-test checks the workflows upload them).
 // req: CMP-01

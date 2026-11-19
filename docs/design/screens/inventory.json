@@ -1876,6 +1876,7 @@
     "Project (e.g. 'Acme rollout'), currency (IDR receipts reimbursed in SGD at the rate cascade), split lines",
     "Policy checks before submit with the rule named (category limit, receipt rules, claim deadline 60 days)",
     "Settles a cash advance option",
+    "Receipts forwarded to the claimant's own email-in address (FR-DOC-12): make the address, accept a sender, attach a forwarded file",
     "Directors: 'Paid personally → reimburse or keep as a loan'",
     "Approver view: line manager then finance, approve or return with comment; audit keeps both versions"
    ],

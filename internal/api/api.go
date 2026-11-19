@@ -550,6 +550,7 @@ func New(mux humago.Mux, d Deps) *API {
 	registerMileage(a)
 	registerClaimCategories(a)
 	registerClaimEvidence(a)
+	registerClaimEvidenceFromMessage(a)
 	registerSession(a)
 	registerIntegrationClients(a)
 	registerPersonalTokens(a)

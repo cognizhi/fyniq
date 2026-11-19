@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Session } from "../../api/client";
 import { answer, ownerSession, problem, seen, type Answer } from "../../test/api";
@@ -435,6 +435,77 @@ describe("a claim's receipt", () => {
     // The test DOM's File reaches the request without its bytes, which a browser sends, so only the part is checked.
     expect(sent?.body).toMatchObject({ evidence_type: "receipt", data_class: "general", source: "upload" });
     expect((sent?.body as Record<string, unknown>).file).toBeDefined();
+  });
+});
+
+// req: FR-AP-14
+// req: FR-DOC-12
+describe("a receipt forwarded to the claimant's own address", () => {
+  const claimAnswers = {
+    "GET /v1/expense-claims/c1": { status: 200, headers: { ETag: '"1-draft"' }, body: claim() },
+    "GET /v1/claim-categories": { status: 200, body: categories },
+    "GET /v1/expense-claims/gst-codes": { status: 200, body: codes },
+    "GET /v1/cash-advances": { status: 200, body: { items: [] } },
+    "GET /v1/expense-claims/c1/evidence": { status: 200, body: { items: [] } },
+  };
+  const mail = (over: Record<string, unknown>) => ({
+    id: "m1", address: "ahkow@in.example.com", for: "member", kind: "documents", sender: "friend@example.net", subject: "Cab receipt", received_at: "2026-10-15T01:00:00Z", status: "accepted",
+    files: [{ id: "f0", kind: "body", file_name: "message.txt", media_type: "text/plain", size_bytes: 40, removed: false }, { id: "f1", kind: "attachment", file_name: "INV-0042.pdf", media_type: "application/pdf", size_bytes: 20480, removed: false }],
+    ...over,
+  });
+
+  it("lists the accepted mail's attachments and attaches one to the claim, over its version", async () => {
+    answer({
+      ...claimAnswers,
+      "GET /v1/organisation/email/capture-addresses": { status: 200, body: { domain: "in.example.com", mine: { address: "ahkow@in.example.com", name: "ahkow", created_at: "2026-10-01T00:00:00Z" }, mine_etag: '"a1"', organisation_etag: '"none"', bank_etag: '"none"' } },
+      "GET /v1/organisation/email/inbound-messages/mine": { status: 200, body: { items: [mail({}), mail({ id: "m2", sender: "stranger@example.org", status: "quarantined" })] } },
+      "POST /v1/expense-claims/c1/evidence:from-message": { status: 201, body: { id: "e9", claim_id: "c1", evidence_type: "receipt", file_name: "INV-0042.pdf", media_type: "application/pdf", size_bytes: 20, sha256: "a", original_sha256: "a", source: "email", data_class: "general", uploaded_by: "user:u1", uploaded_at: "2026-10-15T01:00:00Z", state: "attached", version: 1 } },
+      "POST /v1/organisation/email/capture-senders/mine": { status: 200, body: { sender: "stranger@example.org", decision: "accepted", settled: 1 } },
+    });
+    renderPage(ClaimEditor, { path: "/me/claims/c1", route: "/me/claims/$claimId", session: employee, organisation, mode: "basic" });
+    expect(await screen.findByText("ahkow@in.example.com")).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Accept mail from stranger@example.org" })).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "Attach INV-0042.pdf from friend@example.net to this claim" }));
+    await waitFor(() => expect(seen.some((x) => x.path === "/v1/expense-claims/c1/evidence:from-message")).toBe(true));
+    const sent = seen.find((x) => x.path === "/v1/expense-claims/c1/evidence:from-message");
+    expect(sent?.headers.get("If-Match")).toBe('"1-draft"');
+    expect(sent?.headers.get("Idempotency-Key")).toBeTruthy();
+    expect(sent?.body).toEqual({ message_id: "m1", file_id: "f1" });
+    expect(await screen.findByText("INV-0042.pdf is attached: pick it on its line.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Accept mail from stranger@example.org" }));
+    await waitFor(() => expect(seen.find((x) => x.path === "/v1/organisation/email/capture-senders/mine")?.body).toEqual({ sender: "stranger@example.org", decision: "accepted" }));
+    await noViolations(document.body);
+  });
+
+  it("offers to make the address when there is none, says why a file was refused, and is left out where email-in is not set up", async () => {
+    answer({
+      ...claimAnswers,
+      "GET /v1/organisation/email/capture-addresses": { status: 200, body: { domain: "in.example.com", mine_etag: '"none"', organisation_etag: '"none"', bank_etag: '"none"' } },
+      "PUT /v1/organisation/email/capture-addresses/mine": { status: 200, body: { domain: "in.example.com", mine: { address: "ah-kow@in.example.com", name: "ah-kow", created_at: "2026-10-01T00:00:00Z" }, mine_etag: '"a2"', organisation_etag: '"none"', bank_etag: '"none"' } },
+    });
+    renderPage(ClaimEditor, { path: "/me/claims/c1", route: "/me/claims/$claimId", session: employee, organisation, mode: "basic" });
+    fireEvent.change(await screen.findByLabelText("A name for your address"), { target: { value: "ah-kow" } });
+    fireEvent.click(screen.getByRole("button", { name: "Make my address" }));
+    await waitFor(() => expect(seen.find((x) => x.method === "PUT")?.body).toEqual({ name: "ah-kow" }));
+    expect(seen.find((x) => x.method === "PUT")?.headers.get("If-Match")).toBe('"none"');
+    cleanup();
+
+    answer({
+      ...claimAnswers,
+      "GET /v1/organisation/email/capture-addresses": { status: 200, body: { domain: "in.example.com", mine: { address: "ahkow@in.example.com", name: "ahkow", created_at: "2026-10-01T00:00:00Z" }, mine_etag: '"a1"', organisation_etag: '"none"', bank_etag: '"none"' } },
+      "GET /v1/organisation/email/inbound-messages/mine": { status: 200, body: { items: [mail({})] } },
+      "POST /v1/expense-claims/c1/evidence:from-message": { status: 422, body: { type: "about:blank", title: "Not an attachment of accepted mail at your own address", status: 422, code: "EML-10", detail: "That is not an attachment of accepted mail at your own email-in address.", fix: "List your mail, accept its sender if it waits, and choose one of its attachments." } },
+    });
+    renderPage(ClaimEditor, { path: "/me/claims/c1", route: "/me/claims/$claimId", session: employee, organisation, mode: "basic" });
+    fireEvent.click(await screen.findByRole("button", { name: "Attach INV-0042.pdf from friend@example.net to this claim" }));
+    expect(await screen.findByText(/not an attachment of accepted mail/i)).toBeTruthy();
+    cleanup();
+
+    answer({ ...claimAnswers, "GET /v1/organisation/email/capture-addresses": { status: 200, body: { mine_etag: '"none"', organisation_etag: '"none"', bank_etag: '"none"' } } });
+    renderPage(ClaimEditor, { path: "/me/claims/c1", route: "/me/claims/$claimId", session: employee, organisation, mode: "basic" });
+    await screen.findByLabelText("Drop or paste a file to attach to the claim");
+    await waitFor(() => expect(seen.some((x) => x.path === "/v1/organisation/email/capture-addresses")).toBe(true));
+    expect(screen.queryByText("Receipts forwarded to you")).toBeNull();
   });
 });
 
