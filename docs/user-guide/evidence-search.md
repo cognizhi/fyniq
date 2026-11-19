@@ -34,8 +34,13 @@ In a record's **Evidence** panel, and in each row of **Find evidence**, each fil
 open it:
 
 - **Show** (the eye) shows a picture, such as a photo of a receipt or a screenshot, below the list.
-  Select **Hide** to close it. A PDF is saved rather than shown.
-- **Save** (the arrow) saves any other file, such as a PDF or a spreadsheet, to your device. Fyniq
+  Select **Hide** to close it.
+- **Preview** (the eye, on a PDF) shows the first page of a PDF below the list, as a picture. A
+  separate service draws it in its own sandbox, so nothing in the PDF runs: no script, form or link.
+  Fyniq scans the picture, shows the fingerprints of the PDF and of the picture in the audit trail,
+  and does not keep the picture. If the PDF is encrypted or damaged, or the installation has no
+  preview service, the page says so and you can still save the file.
+- **Save** (the arrow) saves any file, such as a PDF or a spreadsheet, to your device. Fyniq
   keeps only the letters, digits, spaces, dots, dashes and underscores of its name for the saved copy.
 
 You open a file only on a record your role lets you see; an Employee opens the receipts of their own

@@ -228,6 +228,166 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/leave-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Leave requests the caller may read
+         * @description Lists the requests in the caller's scope, newest first: their own, their reports' for a line manager, everyone's for the people team, the Owner and the Payroll administrator (Appendix B: Leave requests). Nobody sees a request outside their scope. It changes nothing.
+         */
+        get: operations["listLeaveRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/leave-requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A leave request
+         * @description Returns one request in the caller's scope; a request outside it is refused as if it did not exist. It changes nothing.
+         */
+        get: operations["getLeaveRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/leave-requests/{id}/cancellation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel one's own leave request
+         * @description The person withdraws their own request while it is pending, or after it is approved and before it starts, and the reserved days come back. Leave that has started is corrected by the people team. It is audited.
+         */
+        post: operations["cancelLeaveRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/leave-requests/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or refuse a leave request
+         * @description The person's line manager decides on their reports' requests and the HR officer, the HR administrator and the Owner on anyone's; nobody decides their own. A refusal needs a reason and gives the reserved days back. A decision is made once (NM_LEAVE_CONFLICT). It is audited and the person is told.
+         */
+        post: operations["decideLeaveRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/leave/settlement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record the leave that has been taken
+         * @description Turns the reserved days of each approved request that ended before the day into taken days, once. The HR officer and the HR administrator. It is audited.
+         */
+        post: operations["settleLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/leave-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask for leave
+         * @description Asks for leave for the signed-in person: the days are counted and reserved in the ledger in the same transaction, a request beyond the balance is refused with the days left (NM_LEAVE_BALANCE), and one that overlaps leave already asked for is refused (NM_LEAVE_CONFLICT). The approver is told. It is audited.
+         */
+        post: operations["createLeaveRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/leave-requests/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview a leave request
+         * @description Works out what the signed-in person's request would cost, day by day (public holidays and rest days left out for a type counted in working days), the balance after it, and who in their team is away on those days: names and dates, never the leave type. It changes nothing.
+         */
+        post: operations["previewLeaveRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/leave/{year}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My leave in a year
+         * @description Returns the signed-in person's own working pattern and balances, as GET /v1/people/{id}/leave/{year} does for the person their login is linked to. A login linked to no person record is refused (NM_NOT_FOUND). It changes nothing.
+         */
+        get: operations["getMyLeave"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/packs": {
         parameters: {
             query?: never;
@@ -504,6 +664,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/people/{id}/leave/{year}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's leave in a year
+         * @description Returns a person's working pattern and, for each leave type, the balance (entitled, taken, booked, expired, encashed, left) and the steps of the calculation with their sources. The person reads their own; the line manager reads their reports'; the people team reads anyone's (Appendix B: Leave requests). Anyone else is refused as if the person did not exist. It changes nothing.
+         */
+        get: operations["getLeave"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/leave/{year}/annual-grant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Work out and record a year's annual leave
+         * @description Works out the person's annual leave for the calendar year from the country pack and the company's policy, by completed months of service, and records it in the ledger: the whole entitlement the first time, only the difference afterwards as a correction. The response gives the steps and sources. The HR officer and the HR administrator. It is audited.
+         */
+        post: operations["grantAnnualLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/leave/{year}/carry-forward": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Carry a year's unused annual leave forward
+         * @description Moves the person's unused annual leave of the year into the next, to be taken within 12 months of the year's end and lapsing after (the default of the company's policy). The HR officer and the HR administrator. It is audited.
+         */
+        post: operations["carryForwardLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/people/{id}/nric": {
         parameters: {
             query?: never;
@@ -562,6 +782,26 @@ export interface paths {
          * @description Records a work pass with its number sealed and masked and its dates; the employer is reminded 90, 60 and 30 days before it expires unless a later pass of the same type is recorded. A renewal is a new pass. The HR officer and the HR administrator. It is audited.
          */
         post: operations["addPersonWorkPass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/working-pattern": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a person's working pattern
+         * @description Ends the person's current working pattern the day before the new one starts and starts it: leave counts days by the pattern, so it is history, never edited. A day on or before the current pattern's start is refused (NM_LEAVE_CONFLICT). The HR officer and the HR administrator. It is audited.
+         */
+        put: operations["setWorkingPattern"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -774,6 +1014,38 @@ export interface components {
              */
             pass_type: "employment_pass" | "s_pass" | "work_permit" | "dp_work_permit";
         };
+        AppliedOutputBody: {
+            /**
+             * @description The days reserved for it.
+             * @example 5.00
+             */
+            days: string;
+            /**
+             * Format: uuid
+             * @description The new request.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80
+             */
+            id: string;
+        };
+        AwayPerson: {
+            /**
+             * Format: date
+             * @description Their first day away.
+             * @example 2026-04-06
+             */
+            from: string;
+            /**
+             * @description The colleague.
+             * @example Ben Lim
+             */
+            name: string;
+            /**
+             * Format: date
+             * @description Their last day away.
+             * @example 2026-04-08
+             */
+            to: string;
+        };
         BankChange: {
             /**
              * @description The proposed account, masked.
@@ -798,6 +1070,13 @@ export interface components {
              * @enum {string}
              */
             state: "proposed" | "approved" | "refused" | "confirmed";
+        };
+        CarryOutputBody: {
+            /**
+             * @description The days carried into the next year; zero when nothing was unused or all was carried already.
+             * @example 5.00
+             */
+            carried: string;
         };
         ChangeJobInputBody: {
             /**
@@ -965,6 +1244,24 @@ export interface components {
              */
             id: string;
         };
+        DayCost: {
+            /**
+             * @description Days it costs: 1.00, 0.50 or 0.00.
+             * @example 0.00
+             */
+            cost: string;
+            /**
+             * Format: date
+             * @description The day.
+             * @example 2026-04-03
+             */
+            date: string;
+            /**
+             * @description Why it costs nothing: a rest day or the name of the public holiday.
+             * @example Good Friday
+             */
+            why?: string;
+        };
         DecideBankInputBody: {
             /**
              * @description Whether to approve the change.
@@ -993,6 +1290,19 @@ export interface components {
              * @example annual_leave
              */
             table: string;
+        };
+        DecisionInputBody: {
+            /**
+             * @description Approve or refuse.
+             * @example approve
+             * @enum {string}
+             */
+            decision: "approve" | "refuse";
+            /**
+             * @description Why; required to refuse.
+             * @example The release freezes that week.
+             */
+            reason?: string;
         };
         Dependant: {
             /**
@@ -1331,6 +1641,215 @@ export interface components {
              * @example SG
              */
             worksite: string;
+        };
+        LeaveAsk: {
+            /**
+             * @description Only half of the last day.
+             * @example false
+             */
+            end_half?: boolean;
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-04-06
+             */
+            from: string;
+            /**
+             * @description A note for the approver.
+             * @example Family trip.
+             */
+            note?: string;
+            /**
+             * @description Only half of the first day.
+             * @example false
+             */
+            start_half?: boolean;
+            /**
+             * Format: date
+             * @description The last day; the same as the first for one day.
+             * @example 2026-04-10
+             */
+            to: string;
+            /**
+             * @description The leave type: annual.
+             * @example annual
+             */
+            type: string;
+        };
+        LeaveBalance: {
+            /**
+             * @description Days reserved for requests not yet taken.
+             * @example 2.00
+             */
+            booked: string;
+            /**
+             * @description Days paid out instead of taken.
+             * @example 0.00
+             */
+            encashed: string;
+            /**
+             * @description Days granted: the year's entitlement, carried-forward days and corrections, as a decimal string.
+             * @example 14.00
+             */
+            entitled: string;
+            /**
+             * @description Carried-forward days that lapsed.
+             * @example 0.00
+             */
+            expired: string;
+            /**
+             * @description What is left: entitled less taken, booked, expired and encashed.
+             * @example 9.00
+             */
+            left: string;
+            /**
+             * @description Days used.
+             * @example 3.00
+             */
+            taken: string;
+        };
+        LeaveGrant: {
+            /** @description The steps of the calculation. */
+            basis: string[] | null;
+            /**
+             * @description The year's entitlement in days.
+             * @example 7.00
+             */
+            days: string;
+            /** @description Where the days come from. */
+            sources: string[] | null;
+            /**
+             * @description What this call wrote to the ledger: the whole entitlement the first time, the difference after, nothing when the ledger was right.
+             * @example 7.00
+             */
+            written: string;
+        };
+        LeaveRequest: {
+            /**
+             * @description The days it costs.
+             * @example 5.00
+             */
+            days: string;
+            /**
+             * Format: date-time
+             * @description When it was decided or cancelled.
+             * @example 2026-03-31T09:00:00Z
+             */
+            decided_at?: string;
+            /**
+             * @description The approver's reason; a refusal always has one.
+             * @example The release freezes that week.
+             */
+            decision_reason?: string;
+            /**
+             * @description Only half of the last day.
+             * @example false
+             */
+            end_half: boolean;
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-04-06
+             */
+            from: string;
+            /**
+             * Format: uuid
+             * @description The request.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e80
+             */
+            id: string;
+            /**
+             * @description The person's note.
+             * @example Family trip.
+             */
+            note?: string;
+            /**
+             * Format: uuid
+             * @description The person asking.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            person_name: string;
+            /**
+             * Format: date-time
+             * @description When it was made.
+             * @example 2026-03-30T09:00:00Z
+             */
+            requested_at: string;
+            /**
+             * @description Only half of the first day.
+             * @example false
+             */
+            start_half: boolean;
+            /**
+             * @description Where the request is.
+             * @example pending
+             * @enum {string}
+             */
+            state: "pending" | "approved" | "refused" | "cancelled";
+            /**
+             * Format: date
+             * @description The last day.
+             * @example 2026-04-10
+             */
+            to: string;
+            /**
+             * @description The leave type.
+             * @example annual
+             */
+            type: string;
+        };
+        LeaveType: {
+            /** @description The balance. */
+            balance: components["schemas"]["LeaveBalance"];
+            /** @description The steps of the calculation, one plain line each, so a person can see where the figure comes from. */
+            basis: string[] | null;
+            /**
+             * Format: date
+             * @description The last day the carried-forward days may be taken.
+             * @example 2027-12-31
+             */
+            carried_until?: string;
+            /**
+             * @description Whether the days are counted by the person's working days or by calendar days (NM-LV-11).
+             * @example working_days
+             * @enum {string}
+             */
+            counting: "working_days" | "calendar_days";
+            /**
+             * @description The leave type's key.
+             * @example annual
+             */
+            key: string;
+            /**
+             * @description Its name.
+             * @example Annual leave
+             */
+            name: string;
+            /** @description Where the days come from: the pack version and table, and the company's policy. */
+            sources: string[] | null;
+        };
+        LeaveView: {
+            /**
+             * Format: uuid
+             * @description The person.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /** @description The leave types the person has, with each balance. */
+            types: components["schemas"]["LeaveType"][] | null;
+            /** @description The working pattern in force on 1 January of the year or the person's first day, when one is set. */
+            working_pattern?: components["schemas"]["WorkingPattern"];
+            /**
+             * Format: int64
+             * @description The leave year: the calendar year.
+             * @example 2026
+             */
+            year: number;
         };
         NricInputBody: {
             /**
@@ -1719,6 +2238,37 @@ export interface components {
              */
             id: string;
         };
+        RequestListOutputBody: {
+            /** @description The requests the caller may read, newest first. */
+            requests: components["schemas"]["LeaveRequest"][] | null;
+        };
+        RequestPreview: {
+            /** @description Colleagues in the team away on those days: the name and the dates only. */
+            away: components["schemas"]["AwayPerson"][] | null;
+            /**
+             * @description How the days were counted.
+             * @example working_days
+             * @enum {string}
+             */
+            counting: "working_days" | "calendar_days";
+            /**
+             * @description The days the request costs.
+             * @example 5.00
+             */
+            days: string;
+            /** @description Each day of the request with its cost, public holidays and rest days at none. */
+            days_counted: components["schemas"]["DayCost"][] | null;
+            /**
+             * @description Whether the balance covers the request.
+             * @example true
+             */
+            enough: boolean;
+            /**
+             * @description The balance after this request, which is negative when it is beyond the balance.
+             * @example 9.00
+             */
+            left_after: string;
+        };
         SecretOutputBody: {
             /**
              * @description How much of it the caller sees.
@@ -1797,6 +2347,27 @@ export interface components {
             /** @description Rules where the policy gives more than the statute. */
             notes: string[] | null;
         };
+        SettleInputBody: {
+            /**
+             * Format: date
+             * @description Settle leave that ended before this day; today when absent.
+             * @example 2026-05-01
+             */
+            on?: string;
+        };
+        SettleOutputBody: {
+            /**
+             * @description The days that became taken.
+             * @example 3.00
+             */
+            days: string;
+            /**
+             * Format: int64
+             * @description How many requests were settled.
+             * @example 1
+             */
+            requests: number;
+        };
         SignInOutputBody: {
             /** @description The providers people may sign in with, in the order to offer them. */
             providers: components["schemas"]["Provider"][] | null;
@@ -1805,6 +2376,30 @@ export interface components {
              * @example true
              */
             setup_done: boolean;
+        };
+        WorkingPattern: {
+            /**
+             * Format: date
+             * @description The day the pattern starts.
+             * @example 2026-01-05
+             */
+            effective_from: string;
+            /**
+             * @description Hours a week, one decimal place.
+             * @example 44.0
+             */
+            hours_per_week: string;
+            /**
+             * @description The days worked, ISO: 1 Monday to 7 Sunday.
+             * @example [
+             *       1,
+             *       2,
+             *       3,
+             *       4,
+             *       5
+             *     ]
+             */
+            weekdays: number[] | null;
         };
     };
     responses: never;
@@ -2512,6 +3107,577 @@ export interface operations {
             };
             /** @description Error */
             default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listLeaveRequests: {
+        parameters: {
+            query?: {
+                /** @description Only requests in this state; all when absent. */
+                state?: "pending" | "approved" | "refused" | "cancelled";
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestListOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getLeaveRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    cancelLeaveRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideLeaveRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    settleLeave: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettleInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettleOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createLeaveRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveAsk"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppliedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    previewLeaveRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveAsk"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestPreview"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyLeave: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The leave year: the calendar year. */
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3720,6 +4886,243 @@ export interface operations {
             };
         };
     };
+    getLeave: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+                /** @description The leave year: the calendar year. */
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveView"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    grantAnnualLeave: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+                /** @description The leave year: the calendar year. */
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveGrant"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    carryForwardLeave: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+                /** @description The leave year: the calendar year. */
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarryOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     setPersonNric: {
         parameters: {
             query?: never;
@@ -4021,6 +5424,88 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setWorkingPattern: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkingPattern"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

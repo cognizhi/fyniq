@@ -201,7 +201,7 @@ const classes: [DataClass, string][] = [
 ];
 
 // sizeOf shows a file's size in KB or MB.
-// pictures are the types shown inline; any other file is saved, a PDF too until previews render (FR-DOC-08).
+// pictures are the types shown inline; a PDF is previewed as a picture of its first page, and any other file is saved (FR-DOC-08).
 export const pictures = ["image/png", "image/jpeg", "image/webp"];
 
 // Shown is a picture shown inline from its download link.
@@ -222,6 +222,14 @@ export async function openEvidence(id: string, fileName: string): Promise<{ show
   link.download = safeName(out.data.file_name, id);
   link.click();
   return {};
+}
+
+// previewEvidence asks for the first page of a PDF drawn as a picture (FR-DOC-08): the converter draws it in its own
+// sandbox and the answer is a PNG as base64, shown as an image and never by the file's name.
+export async function previewEvidence(id: string, fileName: string): Promise<{ shown?: Shown; problem?: ApiProblem }> {
+  const out = await api.GET("/v1/evidence/{evidence_id}/preview", { params: { path: { evidence_id: id } } });
+  if (!out.data) return { problem: problemOf(out.error) };
+  return { shown: { id, url: `data:${out.data.media_type};base64,${out.data.content_base64}`, name: `${fileName}, first page` } };
 }
 
 // safeName is a name a file may be saved under: its own name's letters, digits, spaces, dots, dashes and underscores,
@@ -422,6 +430,18 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
     setBusy(false);
     if (out.problem) {
       setFailed("The file could not be opened");
+      return setProblem(out.problem);
+    }
+    if (out.shown) setShown(out.shown);
+  };
+  // preview shows a PDF's first page below the list, as the converter drew it.
+  const preview = async (e: Evidence) => {
+    setBusy(true);
+    setProblem(null);
+    const out = await previewEvidence(e.id, e.file_name);
+    setBusy(false);
+    if (out.problem) {
+      setFailed("The preview could not be made");
       return setProblem(out.problem);
     }
     if (out.shown) setShown(out.shown);
@@ -764,9 +784,16 @@ export function EvidencePanel({ record, draft, mayAttach, onChanged, label }: {
                     <Icon of={Eye} />
                   </Button>
                 ) : (
-                  <Button variant="ghost" size="sm" onClick={() => void open(e)} disabled={busy} aria-label={`Save ${e.file_name}`} title="Save a copy of the file">
-                    <Icon of={Download} />
-                  </Button>
+                  <>
+                    {e.media_type === "application/pdf" && (
+                      <Button variant="ghost" size="sm" onClick={() => void preview(e)} disabled={busy} aria-label={`Preview ${e.file_name}`} title="Show its first page below">
+                        <Icon of={Eye} />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => void open(e)} disabled={busy} aria-label={`Save ${e.file_name}`} title="Save a copy of the file">
+                      <Icon of={Download} />
+                    </Button>
+                  </>
                 ))}
               {draft && mayAttach && e.state === "attached" && (
                 <Button variant="ghost" size="sm" onClick={() => void remove(e)} disabled={busy} aria-label={`Remove ${e.file_name}`} title="Take the file off the draft">

@@ -15,10 +15,17 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 	if err != nil {
 		t.Fatalf("the packs do not load: %v", err)
 	}
-	if len(versions) != 1 || versions[0].ID != "sg-people@2026.1" {
-		t.Fatalf("versions: %+v", versions)
+	if len(versions) != 2 || versions[0].ID != "sg-people@2026.1" || versions[1].ID != "sg-people@2026.2" || versions[1].Supersedes != "sg-people@2026.1" {
+		t.Fatalf("%d versions", len(versions))
 	}
-	v := versions[0]
+	for _, old := range versions[:1] { // the first version is kept as it was: it still loads and its cases pass
+		for _, r := range pack.RunPinned(old) {
+			if !r.Pass {
+				t.Errorf("%s %s: %s", old.ID, r.Case, r.Why)
+			}
+		}
+	}
+	v := versions[1]
 	cases := 0
 	for _, r := range pack.RunPinned(v) {
 		cases++
@@ -26,7 +33,7 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 			t.Errorf("%s %s: got %q, want %q (%s)", r.Table, r.Case, r.Got, r.Want, r.Why)
 		}
 	}
-	if cases < 25 {
+	if cases < 33 {
 		t.Errorf("only %d pinned cases", cases)
 	}
 	if got := pack.Unverified(v); len(got) < 40 {
@@ -34,7 +41,7 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 	}
 	// A source is an official page read on a day, with its quote.
 	for _, s := range v.Sources {
-		if s.Retrieved != "2026-11-19" || s.Quote == "" || s.Kind != "official guidance" {
+		if (s.Retrieved != "2026-11-19" && s.Retrieved != "2026-11-20") || s.Quote == "" || s.Kind != "official guidance" {
 			t.Errorf("source %s: %+v", s.ID, s)
 		}
 	}
@@ -51,7 +58,7 @@ func TestTheSingaporePeoplePackLoadsAndItsPinnedCasesPass(t *testing.T) {
 // pass (ENG-32).
 // req: NM-PACK-02
 func TestAWrongValueOrStatusIsRefused(t *testing.T) {
-	v, err := pack.Load(Files(), "sg-people/2026.1")
+	v, err := pack.Load(Files(), "sg-people/2026.2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,5 +83,41 @@ func TestAWrongValueOrStatusIsRefused(t *testing.T) {
 	}
 	if failed == 0 {
 		t.Error("a wrong table passed its pinned cases")
+	}
+}
+
+// The government-paid parental leave schemes are read by the birth date of the child: maternity's split between the employer and the Government, paternity's
+// four weeks from 1 April 2025, and shared parental leave's six weeks then ten from 1 April 2026; a scheme's cap and claim window come with it (NM-LV-14).
+// req: NM-PACK-06
+func TestParentalLeaveSchemesAreKeyedByTheChildsBirthDate(t *testing.T) {
+	v, err := pack.Load(Files(), "sg-people/2026.2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := func(s string) time.Time { x, _ := pack.ParseDate(s); return x }
+	got, ok := pack.ParentalLeave(v, "maternity_citizen_1st_2nd", d("2026-06-01"))
+	if !ok || got.TotalWeeks != 16 || got.EmployerWeeks != 8 || got.GovernmentWeeks != 8 || got.CapPerPeriod != 10000 || got.CapPeriodWeeks != 4 || got.CapTotal != 20000 {
+		t.Errorf("maternity: %+v", got)
+	}
+	if got, ok := pack.ParentalLeave(v, "paternity_citizen", d("2025-04-01")); !ok || got.TotalWeeks != 4 || got.CapPerPeriod != 2500 || got.CapTotal != 10000 || got.ClaimMonths != 3 {
+		t.Errorf("paternity: %+v %v", got, ok)
+	}
+	for born, want := range map[string]string{"2025-04-01": "shared_parental_6_weeks", "2026-03-31": "shared_parental_6_weeks", "2026-04-01": "shared_parental_10_weeks"} {
+		six, ok6 := pack.ParentalLeave(v, "shared_parental_6_weeks", d(born))
+		ten, ok10 := pack.ParentalLeave(v, "shared_parental_10_weeks", d(born))
+		if (want == "shared_parental_6_weeks") != ok6 || (want == "shared_parental_10_weeks") != ok10 || (ok6 && six.TotalWeeks != 6) || (ok10 && ten.TotalWeeks != 10) {
+			t.Errorf("born %s: 6 weeks %v, 10 weeks %v", born, ok6, ok10)
+		}
+	}
+	// A figure the page does not state is -1, never a guess; the first version holds no such table.
+	if got, _ := pack.ParentalLeave(v, "maternity_employment_act", d("2026-06-01")); got.EmployerWeeks != -1 || got.TotalWeeks != 12 {
+		t.Errorf("the Employment Act's 12 weeks: %+v", got)
+	}
+	first, err := pack.Load(Files(), "sg-people/2026.1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := pack.ParentalLeave(first, "paternity_citizen", d("2026-06-01")); ok {
+		t.Error("the first version holds the parental leave table")
 	}
 }

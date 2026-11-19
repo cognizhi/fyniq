@@ -693,6 +693,7 @@ var codeFacts = map[string]struct {
 	evidence.CodeImage:            {422, "The picture cannot be read"},
 	evidence.CodeMacro:            {422, "Office files with macros are refused"},
 	evidence.CodeArchive:          {422, "The office file's archive is not safe to open"},
+	evidence.CodePreview:          {422, "The file cannot be previewed"},
 
 	// Customer credits applied to invoices (FR-AR-04).
 	customercredit.CodeNotApplication:   {404, "Not a customer credit application"},

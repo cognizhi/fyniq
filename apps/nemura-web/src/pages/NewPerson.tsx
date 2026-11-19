@@ -43,7 +43,7 @@ export function NewPerson({ roles }: { roles: readonly string[] }) {
     }
   };
   return (
-    <Shell directory={team(roles)} features={admin(roles)}>
+    <Shell roles={roles} directory={team(roles)} features={admin(roles)}>
       <main className="nm-shell__main" id="main">
         <h1 className="fy-h1">{t("new.title")}</h1>
         <p className="fy-secondary">{t("new.lead")}</p>

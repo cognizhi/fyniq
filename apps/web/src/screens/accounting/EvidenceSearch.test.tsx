@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Session } from "../../api/client";
 import { answer, ownerSession } from "../../test/api";
@@ -83,6 +83,32 @@ describe("evidence search", () => {
     expect(seen.filter((x) => x.path.endsWith("/download")).map((x) => `${x.method} ${x.path}`)).toEqual(["POST /v1/evidence/ev1/download", "POST /v1/evidence/ev2/download"]);
     await noViolations(document.body);
     vi.restoreAllMocks();
+  });
+
+  // req: FR-DOC-08
+  it("previews a PDF as a picture of its first page, and says why when the converter is not there", async () => {
+    const seen = answer({
+      "GET /v1/evidence": { status: 200, body: { items: [{ ...found, id: "ev2", file_name: "AU-100.pdf" }], activities: ["bill"] } },
+      "GET /v1/checks/evidence.missing": { status: 200, body: { key: "evidence.missing", status: "ok", items: [] } },
+      "GET /v1/evidence/ev2/preview": { status: 200, body: { id: "ev2", media_type: "image/png", size_bytes: 8, source_sha256: "a".repeat(64), preview_sha256: "b".repeat(64), content_base64: "iVBORw0KGgo=" } },
+    });
+    renderPage(EvidenceSearch, at);
+    fireEvent.click(await screen.findByRole("button", { name: "Preview AU-100.pdf" }));
+    const picture = await screen.findByRole("img", { name: "AU-100.pdf, first page, as attached" });
+    expect(picture.getAttribute("src")).toBe("data:image/png;base64,iVBORw0KGgo=");
+    expect(seen.map((x) => `${x.method} ${x.path}`)).toContain("GET /v1/evidence/ev2/preview");
+    await noViolations(document.body);
+
+    answer({
+      "GET /v1/evidence": { status: 200, body: { items: [{ ...found, id: "ev2", file_name: "AU-100.pdf" }], activities: ["bill"] } },
+      "GET /v1/checks/evidence.missing": { status: 200, body: { key: "evidence.missing", status: "ok", items: [] } },
+      "GET /v1/evidence/ev2/preview": { status: 503, body: { type: "about:blank", title: "Unavailable", status: 503, code: "API-UNAVAILABLE-01", detail: "This installation has no converter, so a PDF cannot be previewed here.", fix: "Save a copy of the file to open it." } },
+    });
+    cleanup();
+    renderPage(EvidenceSearch, at);
+    fireEvent.click(await screen.findByRole("button", { name: "Preview AU-100.pdf" }));
+    expect(await screen.findByText(/has no converter/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Save AU-100.pdf" })).toBeTruthy();
   });
 
   it("says why a file did not open, and shows the next page of files on asking", async () => {

@@ -7221,6 +7221,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/evidence/{evidence_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview a PDF evidence file
+         * @description The first page of a PDF evidence file as a PNG picture (FR-DOC-08; PRD-001 rev 0.321), drawn by the converter service in its own sandbox, so no parser of a PDF runs in the API: nothing in the file runs, no script, form or link. The picture is checked as any file is, its type decided from its content and scanned for malware, and comes with the SHA-256 of the PDF as stored (checked against its record first) and of the picture. For whoever may open the file, as getEvidenceFile is: any other file, and a removed one, is not found. A file that is not a PDF, or that the renderer cannot read (an encrypted one), is DOC-12; an installation with no converter answers 503, and the file can still be saved. Previews are drawn when asked and not kept; the audit trail records each as an opening, with both hashes. Side effects: an audit event of the opening, with both hashes. Never cached.
+         */
+        get: operations["getEvidencePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/exempt-statuses": {
         parameters: {
             query?: never;
@@ -33167,6 +33187,41 @@ export interface components {
              * @example eyJhZnRlciI6IjAxOTIifQ
              */
             next_cursor?: string;
+        };
+        EvidencePreview: {
+            /**
+             * @description The picture, in base64: show it as an image, never by the file's name.
+             * @example iVBORw0KGgo=
+             */
+            content_base64: string;
+            /**
+             * Format: uuid
+             * @description The file this is the preview of.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e20
+             */
+            id: string;
+            /**
+             * @description The preview's type: a PNG, decided from its content.
+             * @example image/png
+             * @enum {string}
+             */
+            media_type: "image/png";
+            /**
+             * @description The SHA-256 of the picture, so a preview is as provable as the file it came from.
+             * @example 2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae
+             */
+            preview_sha256: string;
+            /**
+             * Format: int64
+             * @description The preview's size in bytes.
+             * @example 48213
+             */
+            size_bytes: number;
+            /**
+             * @description The SHA-256 of the PDF as stored, which was checked against its record before it was drawn.
+             * @example 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+             */
+            source_sha256: string;
         };
         EvidenceRecord: {
             /**
@@ -111354,6 +111409,103 @@ export interface operations {
                     Link?: string;
                     /** @description When this operation stops working (RFC 8594): at least six months after its deprecation (FR-INT-06). */
                     Sunset?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getEvidencePreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The file. */
+                evidence_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvidencePreview"];
+                };
+            };
+            /** @description Unauthorized: `API-AUTH-01` Sign-in required. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden: `API-AUTHZ-01` Not allowed for your roles; `API-AUTHZ-02` No organisation; `API-AUTHZ-03` Operation not authorised; `API-AUTHZ-07` A second factor is required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found: `API-NOT-FOUND-01` Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity: `API-INPUT-02` A field is not valid; `DOC-03` The malware scan flagged the file; `DOC-12` The file cannot be previewed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Too Many Requests: `API-RATE-01` Too many requests. */
+            429: {
+                headers: {
+                    /** @description What is left of the limit (r) and the seconds until the window ends (t). */
+                    RateLimit?: string;
+                    /** @description The client's limits a minute in this organisation: reads (GET) or writes (FR-INT-16; draft-ietf-httpapi-ratelimit-headers). */
+                    "RateLimit-Policy"?: string;
+                    /** @description Seconds to wait before sending the request again. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error: `API-FAILURE-01` Something went wrong. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable: `API-UNAVAILABLE-01` Not available here. */
+            503: {
+                headers: {
                     [name: string]: unknown;
                 };
                 content: {

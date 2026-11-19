@@ -51,7 +51,7 @@ export function Policy({ roles }: { roles: readonly string[] }) {
   const r = current?.rules;
   const canSet = admin(roles);
   return (
-    <Shell directory={team(roles)} features={canSet}>
+    <Shell roles={roles} directory={team(roles)} features={canSet}>
       <main className="nm-shell__main" id="main">
         <ReviewBanner screen="nm-leave-policy" />
         <h1 className="fy-h1" title={helpText("policy.page").tooltip}>{t("policy.title")}</h1>

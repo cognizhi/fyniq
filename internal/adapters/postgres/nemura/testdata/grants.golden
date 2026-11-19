@@ -74,6 +74,37 @@ nemura_api | column nemura.invitation.created_by | INSERT
 nemura_api | column nemura.invitation.expires_at | INSERT
 nemura_api | column nemura.invitation.id | INSERT
 nemura_api | column nemura.invitation.member_id | INSERT
+nemura_api | column nemura.leave_head.leave_year | INSERT
+nemura_api | column nemura.leave_head.person_id | INSERT
+nemura_api | column nemura.leave_head.type_key | INSERT
+nemura_api | column nemura.leave_ledger.amount | INSERT
+nemura_api | column nemura.leave_ledger.created_by | INSERT
+nemura_api | column nemura.leave_ledger.expires_on | INSERT
+nemura_api | column nemura.leave_ledger.id | INSERT
+nemura_api | column nemura.leave_ledger.kind | INSERT
+nemura_api | column nemura.leave_ledger.leave_year | INSERT
+nemura_api | column nemura.leave_ledger.negative_ok | INSERT
+nemura_api | column nemura.leave_ledger.note | INSERT
+nemura_api | column nemura.leave_ledger.person_id | INSERT
+nemura_api | column nemura.leave_ledger.request_id | INSERT
+nemura_api | column nemura.leave_ledger.source | INSERT
+nemura_api | column nemura.leave_ledger.type_key | INSERT
+nemura_api | column nemura.leave_request.days | INSERT
+nemura_api | column nemura.leave_request.decided_at | UPDATE
+nemura_api | column nemura.leave_request.decided_by | UPDATE
+nemura_api | column nemura.leave_request.decision_reason | UPDATE
+nemura_api | column nemura.leave_request.end_date | INSERT
+nemura_api | column nemura.leave_request.end_half | INSERT
+nemura_api | column nemura.leave_request.id | INSERT
+nemura_api | column nemura.leave_request.leave_year | INSERT
+nemura_api | column nemura.leave_request.note | INSERT
+nemura_api | column nemura.leave_request.person_id | INSERT
+nemura_api | column nemura.leave_request.requested_by | INSERT
+nemura_api | column nemura.leave_request.settled_at | UPDATE
+nemura_api | column nemura.leave_request.start_date | INSERT
+nemura_api | column nemura.leave_request.start_half | INSERT
+nemura_api | column nemura.leave_request.state | UPDATE
+nemura_api | column nemura.leave_request.type_key | INSERT
 nemura_api | column nemura.legal_hold.id | INSERT
 nemura_api | column nemura.legal_hold.placed_by | INSERT
 nemura_api | column nemura.legal_hold.placed_on | INSERT
@@ -234,6 +265,12 @@ nemura_api | column nemura.work_pass.number_masked | INSERT
 nemura_api | column nemura.work_pass.number_sealed | INSERT
 nemura_api | column nemura.work_pass.pass_type | INSERT
 nemura_api | column nemura.work_pass.person_id | INSERT
+nemura_api | column nemura.working_pattern.effective_from | INSERT
+nemura_api | column nemura.working_pattern.effective_to | UPDATE
+nemura_api | column nemura.working_pattern.hours_per_week | INSERT
+nemura_api | column nemura.working_pattern.id | INSERT
+nemura_api | column nemura.working_pattern.person_id | INSERT
+nemura_api | column nemura.working_pattern.weekdays | INSERT
 nemura_api | database | CONNECT
 nemura_api | function nemura.claim_setup | EXECUTE
 nemura_api | function nemura.current_org | EXECUTE
@@ -241,6 +278,7 @@ nemura_api | function nemura.current_person | EXECUTE
 nemura_api | function nemura.has_role | EXECUTE
 nemura_api | function nemura.is_manager_of | EXECUTE
 nemura_api | function nemura.link_identity | EXECUTE
+nemura_api | function nemura.lock_leave_head | EXECUTE
 nemura_api | function nemura.members_for_identity | EXECUTE
 nemura_api | function nemura.replace_member_identities | EXECUTE
 nemura_api | function nemura.setup_done | EXECUTE
@@ -255,6 +293,9 @@ nemura_api | table nemura.deletion_proof | SELECT
 nemura_api | table nemura.deletion_report | SELECT
 nemura_api | table nemura.feature_state | SELECT
 nemura_api | table nemura.invitation | SELECT
+nemura_api | table nemura.leave_head | SELECT
+nemura_api | table nemura.leave_ledger | SELECT
+nemura_api | table nemura.leave_request | SELECT
 nemura_api | table nemura.legal_hold | SELECT
 nemura_api | table nemura.member | SELECT
 nemura_api | table nemura.organisation | SELECT
@@ -275,6 +316,7 @@ nemura_api | table nemura.role_assignment | SELECT
 nemura_api | table nemura.session | SELECT
 nemura_api | table nemura.transfer_assessment | SELECT
 nemura_api | table nemura.work_pass | SELECT
+nemura_api | table nemura.working_pattern | SELECT
 nemura_assistant | database | CONNECT
 nemura_assistant | function nemura.current_org | EXECUTE
 nemura_assistant | function nemura.current_person | EXECUTE
@@ -327,6 +369,9 @@ nemura_readonly | table nemura.deletion_proof | SELECT
 nemura_readonly | table nemura.deletion_report | SELECT
 nemura_readonly | table nemura.feature_state | SELECT
 nemura_readonly | table nemura.invitation | SELECT
+nemura_readonly | table nemura.leave_head | SELECT
+nemura_readonly | table nemura.leave_ledger | SELECT
+nemura_readonly | table nemura.leave_request | SELECT
 nemura_readonly | table nemura.legal_hold | SELECT
 nemura_readonly | table nemura.member | SELECT
 nemura_readonly | table nemura.organisation | SELECT
@@ -347,6 +392,7 @@ nemura_readonly | table nemura.role_assignment | SELECT
 nemura_readonly | table nemura.session | SELECT
 nemura_readonly | table nemura.transfer_assessment | SELECT
 nemura_readonly | table nemura.work_pass | SELECT
+nemura_readonly | table nemura.working_pattern | SELECT
 nemura_worker | column nemura.audit_event.body | INSERT
 nemura_worker | column nemura.audit_event.id | INSERT
 nemura_worker | column nemura.deletion_proof.deleted_on | INSERT
@@ -401,6 +447,9 @@ nemura_worker | table nemura.deletion_proof | SELECT
 nemura_worker | table nemura.deletion_report | SELECT
 nemura_worker | table nemura.feature_state | SELECT
 nemura_worker | table nemura.invitation | SELECT
+nemura_worker | table nemura.leave_head | SELECT
+nemura_worker | table nemura.leave_ledger | SELECT
+nemura_worker | table nemura.leave_request | SELECT
 nemura_worker | table nemura.legal_hold | SELECT
 nemura_worker | table nemura.member | SELECT
 nemura_worker | table nemura.organisation | SELECT
@@ -420,3 +469,4 @@ nemura_worker | table nemura.session | SELECT
 nemura_worker | table nemura.tenants | SELECT
 nemura_worker | table nemura.transfer_assessment | SELECT
 nemura_worker | table nemura.work_pass | SELECT
+nemura_worker | table nemura.working_pattern | SELECT

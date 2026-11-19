@@ -1,0 +1,4 @@
+scheme,days_per_year,min_service_months,effective_from,effective_to,status,source
+childcare_citizen_under_7,6,3,2026-01-01,,researched,mom-childcare-leave
+extended_childcare_citizen_7_to_12,2,3,2026-01-01,,researched,mom-childcare-leave
+childcare_non_citizen_under_7,2,3,2026-01-01,,researched,mom-childcare-leave
