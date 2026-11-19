@@ -45,6 +45,7 @@ pack_acceptance | nemura_migrator | true | true
 pack_decision | nemura_migrator | true | true
 passkey | nemura_migrator | true | true
 passkey_challenge | nemura_migrator | true | true
+pay_export | nemura_migrator | true | true
 pay_group | nemura_migrator | true | true
 pay_input | nemura_migrator | true | true
 pay_one_off | nemura_migrator | true | true
@@ -535,6 +536,17 @@ passkey_challenge | challenge | bytea | true |
 passkey_challenge | created_at | timestamp with time zone | true | now()
 passkey_challenge | expires_at | timestamp with time zone | true | 
 passkey_challenge | used_at | timestamp with time zone | false | 
+pay_export | organisation_id | uuid | true | nemura.current_org()
+pay_export | id | uuid | true | uuidv7()
+pay_export | run_id | uuid | true | 
+pay_export | version_id | uuid | true | 
+pay_export | kind | text | true | 
+pay_export | sha256 | bytea | true | 
+pay_export | line_count | integer | true | 
+pay_export | skipped_count | integer | true | 
+pay_export | total | numeric(20,4) | true | 
+pay_export | created_by | uuid | true | 
+pay_export | created_at | timestamp with time zone | true | 
 pay_group | organisation_id | uuid | true | nemura.current_org()
 pay_group | id | uuid | true | uuidv7()
 pay_group | name | text | true | 
@@ -1603,6 +1615,25 @@ passkey_challenge | passkey_challenge_purpose_known | CHECK ((purpose = ANY (ARR
 passkey_challenge | passkey_challenge_purpose_not_null | NOT NULL purpose
 passkey_challenge | passkey_challenge_session_fkey | FOREIGN KEY (organisation_id, session_id) REFERENCES nemura.session(organisation_id, id)
 passkey_challenge | passkey_challenge_session_id_not_null | NOT NULL session_id
+pay_export | pay_export_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+pay_export | pay_export_counts | CHECK (((line_count >= 0) AND (skipped_count >= 0)))
+pay_export | pay_export_created_at_not_null | NOT NULL created_at
+pay_export | pay_export_created_by_not_null | NOT NULL created_by
+pay_export | pay_export_id_not_null | NOT NULL id
+pay_export | pay_export_kind | CHECK ((kind = ANY (ARRAY['journal'::text, 'payments'::text])))
+pay_export | pay_export_kind_not_null | NOT NULL kind
+pay_export | pay_export_line_count_not_null | NOT NULL line_count
+pay_export | pay_export_organisation_id_not_null | NOT NULL organisation_id
+pay_export | pay_export_pkey | PRIMARY KEY (organisation_id, id)
+pay_export | pay_export_run_fkey | FOREIGN KEY (organisation_id, run_id) REFERENCES nemura.pay_run(organisation_id, id)
+pay_export | pay_export_run_id_not_null | NOT NULL run_id
+pay_export | pay_export_sha | CHECK ((octet_length(sha256) = 32))
+pay_export | pay_export_sha256_not_null | NOT NULL sha256
+pay_export | pay_export_skipped_count_not_null | NOT NULL skipped_count
+pay_export | pay_export_total_not_null | NOT NULL total
+pay_export | pay_export_version_fkey | FOREIGN KEY (organisation_id, version_id) REFERENCES nemura.pay_run_version(organisation_id, id)
+pay_export | pay_export_version_id_not_null | NOT NULL version_id
+pay_export | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 pay_group | pay_group_approval_days_not_null | NOT NULL approval_days
 pay_group | pay_group_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
 pay_group | pay_group_created_at_not_null | NOT NULL created_at
@@ -2214,6 +2245,8 @@ CREATE INDEX passkey_challenge_session_idx ON nemura.passkey_challenge USING btr
 CREATE UNIQUE INDEX passkey_credential_key ON nemura.passkey USING btree (organisation_id, credential_id)
 CREATE INDEX passkey_member_idx ON nemura.passkey USING btree (organisation_id, member_id)
 CREATE UNIQUE INDEX passkey_pkey ON nemura.passkey USING btree (organisation_id, id)
+CREATE UNIQUE INDEX pay_export_pkey ON nemura.pay_export USING btree (organisation_id, id)
+CREATE INDEX pay_export_run_idx ON nemura.pay_export USING btree (organisation_id, run_id, created_at)
 CREATE UNIQUE INDEX pay_group_name_once ON nemura.pay_group USING btree (organisation_id, name)
 CREATE UNIQUE INDEX pay_group_pkey ON nemura.pay_group USING btree (organisation_id, id)
 CREATE UNIQUE INDEX pay_input_once_per_source ON nemura.pay_input USING btree (organisation_id, source_type, source_id, kind)
@@ -2360,6 +2393,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pack_de
 CREATE TRIGGER passkey_guard BEFORE DELETE OR UPDATE ON nemura.passkey FOR EACH ROW EXECUTE FUNCTION nemura.passkey_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.passkey DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('passkey', 'id')
 CREATE TRIGGER passkey_challenge_guard BEFORE DELETE OR UPDATE ON nemura.passkey_challenge FOR EACH ROW EXECUTE FUNCTION nemura.passkey_challenge_guard()
+CREATE TRIGGER pay_export_append_only BEFORE DELETE OR UPDATE ON nemura.pay_export FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('An export manifest')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.pay_export DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_export', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_group DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_group', 'id')
 CREATE TRIGGER pay_input_guard BEFORE DELETE OR UPDATE ON nemura.pay_input FOR EACH ROW EXECUTE FUNCTION nemura.pay_input_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.pay_input DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('pay_input', 'id')
@@ -2460,6 +2495,7 @@ pack_acceptance | tenant_isolation | (organisation_id = nemura.current_org()) | 
 pack_decision | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 passkey | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 passkey_challenge | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+pay_export | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pay_group | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pay_input | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 pay_one_off | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())

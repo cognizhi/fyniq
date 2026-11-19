@@ -4,7 +4,7 @@ type: task
 title: Read and approve a pay run in Nemura
 summary: Who approves a pay run and why not its preparer, what the approver reads (digest, flags, overrides, what changed since last month) and what approving does
 sources:
-  - docs/user-guide/nemura/payroll-approval.md sha256:c63eecd1a0cb4acdea5a4ab638a1c01f98e3e7dcf06bc745c2b3f84ec230651f
+  - docs/user-guide/nemura/payroll-approval.md sha256:d8c27119fca88c59d087baa4b28c5ffc9c19af62dd6a1c92fa4e97669eac1fa3
 data_class: personal
 taint: trusted
 status: published
@@ -38,7 +38,7 @@ aliases:
 ## What happens next
 
 - The approval is written once with what the passkey confirmed; a correction of an approved month is a new version with a reason, and once approved it supersedes the one before.
-- The one-off items, unpaid leave and overtime the version used are marked used by the run. Under **Payments** each person owed money shows the state of their payment (scheduled, released, sent to the bank, accepted by the bank, paid, rejected, returned or outcome unknown); standalone you record an outcome with the amount, the date and a document of the person as evidence, and "paid" is never accepted without evidence. An unknown outcome blocks a new payment of that person until it is resolved, and a rejected, returned or unknown payment shows on Checks. Select **Publish the payslips** on an approved version to put each person's itemised payslip in their My pay (see [[nemura.my-pay]]; a leaver's final pay: [[nemura.payroll-final-pay]]); a version is published once and the employer's name is the letterhead's. Nothing is posted or paid by approving. (src: docs/user-guide/nemura/payroll-approval.md#what-happens-next)
+- The one-off items, unpaid leave and overtime the version used are marked used by the run. Under **Payments** each person owed money shows the state of their payment (scheduled, released, sent to the bank, accepted by the bank, paid, rejected, returned or outcome unknown); standalone you record an outcome with the amount, the date and a document of the person as evidence, and "paid" is never accepted without evidence. An unknown outcome blocks a new payment of that person until it is resolved, and a rejected, returned or unknown payment shows on Checks. Under **Files for the books and the bank**, make the journal file or, with your passkey, the bank payment file of the approved version as CSV: only the manifest (run, version, totals and the SHA-256 of the file) is kept, people left out are listed with why, and a file is never proof of payment. Select **Publish the payslips** on an approved version to put each person's itemised payslip in their My pay (see [[nemura.my-pay]]; a leaver's final pay: [[nemura.payroll-final-pay]]); a version is published once and the employer's name is the letterhead's. Nothing is posted or paid by approving. (src: docs/user-guide/nemura/payroll-approval.md#what-happens-next)
 
 ## When it looks wrong
 

@@ -363,6 +363,7 @@ ai_proposal_undo | undone_at | timestamp with time zone | not null |
 ai_proposal_undo | reason | text | not null | 
 ai_proposal_undo | reversed | jsonb | not null | 
 ai_proposal_view | organisation_id | uuid | not null | current_org()
+ai_proposal_view | id | uuid | not null | uuidv7()
 ai_proposal_view | proposal_id | uuid | not null | 
 ai_proposal_view | user_id | uuid | not null | 
 ai_proposal_view | first_viewed_at | timestamp with time zone | not null | 
@@ -3424,8 +3425,10 @@ ai_proposal_undo | ai_proposal_undo_undone_at_not_null | NOT NULL undone_at
 ai_proposal_undo | ai_proposal_undo_undone_by_not_null | NOT NULL undone_by
 ai_proposal_undo | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 ai_proposal_view | ai_proposal_view_first_viewed_at_not_null | NOT NULL first_viewed_at
+ai_proposal_view | ai_proposal_view_id_not_null | NOT NULL id
+ai_proposal_view | ai_proposal_view_once | UNIQUE (organisation_id, proposal_id, user_id)
 ai_proposal_view | ai_proposal_view_organisation_id_not_null | NOT NULL organisation_id
-ai_proposal_view | ai_proposal_view_pkey | PRIMARY KEY (organisation_id, proposal_id, user_id)
+ai_proposal_view | ai_proposal_view_pkey | PRIMARY KEY (organisation_id, id)
 ai_proposal_view | ai_proposal_view_proposal_fkey | FOREIGN KEY (organisation_id, proposal_id) REFERENCES ai_proposal(organisation_id, id)
 ai_proposal_view | ai_proposal_view_proposal_id_not_null | NOT NULL proposal_id
 ai_proposal_view | ai_proposal_view_user_id_not_null | NOT NULL user_id
@@ -3459,8 +3462,9 @@ ai_quality_review | ai_quality_review_id_not_null | NOT NULL id
 ai_quality_review | ai_quality_review_month | CHECK ((month = (date_trunc('month'::text, (month)::timestamp with time zone))::date))
 ai_quality_review | ai_quality_review_month_not_null | NOT NULL month
 ai_quality_review | ai_quality_review_note | CHECK ((length(note) <= 1000))
+ai_quality_review | ai_quality_review_once | UNIQUE (organisation_id, month)
 ai_quality_review | ai_quality_review_organisation_id_not_null | NOT NULL organisation_id
-ai_quality_review | ai_quality_review_pkey | PRIMARY KEY (organisation_id, month)
+ai_quality_review | ai_quality_review_pkey | PRIMARY KEY (organisation_id, id)
 ai_quality_review | ai_quality_review_report_not_null | NOT NULL report
 ai_quality_review | ai_quality_review_signed_at_not_null | NOT NULL signed_at
 ai_quality_review | ai_quality_review_signed_by_not_null | NOT NULL signed_by
@@ -7707,9 +7711,11 @@ CREATE UNIQUE INDEX ai_price_waiting ON fyniq.ai_price USING btree (organisation
 CREATE UNIQUE INDEX ai_proposal_pkey ON fyniq.ai_proposal USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_proposal_undo_once ON fyniq.ai_proposal_undo USING btree (organisation_id, proposal_id)
 CREATE UNIQUE INDEX ai_proposal_undo_pkey ON fyniq.ai_proposal_undo USING btree (organisation_id, id)
-CREATE UNIQUE INDEX ai_proposal_view_pkey ON fyniq.ai_proposal_view USING btree (organisation_id, proposal_id, user_id)
+CREATE UNIQUE INDEX ai_proposal_view_once ON fyniq.ai_proposal_view USING btree (organisation_id, proposal_id, user_id)
+CREATE UNIQUE INDEX ai_proposal_view_pkey ON fyniq.ai_proposal_view USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_qualification_pkey ON fyniq.ai_qualification USING btree (organisation_id, id)
-CREATE UNIQUE INDEX ai_quality_review_pkey ON fyniq.ai_quality_review USING btree (organisation_id, month)
+CREATE UNIQUE INDEX ai_quality_review_once ON fyniq.ai_quality_review USING btree (organisation_id, month)
+CREATE UNIQUE INDEX ai_quality_review_pkey ON fyniq.ai_quality_review USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_reservation_pkey ON fyniq.ai_reservation USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_route_pkey ON fyniq.ai_route USING btree (organisation_id, id)
 CREATE UNIQUE INDEX ai_route_step_once ON fyniq.ai_route_step USING btree (organisation_id, route_id, connection_id, model)
