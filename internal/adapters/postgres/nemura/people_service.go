@@ -107,7 +107,11 @@ func (p PeopleService) Get(ctx context.Context, s api.Session, id uuid.UUID, on 
 
 func (p PeopleService) Create(ctx context.Context, s api.Session, id uuid.UUID, per people.Person, j people.Job, c *people.Classification) error {
 	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
-		return addPersonWithID(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, id, per, j, c)
+		if err := addPersonWithID(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, id, per, j, c); err != nil {
+			return err
+		}
+		// A company that invites its people to Fyniq gets a task for each new one (NM-ONB-02).
+		return RaiseJoinTask(ctx, tx, s.Organisation, p.Clock.Now(), s.Member, id)
 	})
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) && pg.Code == "23505" {

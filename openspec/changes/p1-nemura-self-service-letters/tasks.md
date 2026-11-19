@@ -56,8 +56,11 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations`, `fyniq
 - [x] 4.1 Delegations (NM-LTR-04, D6): migration 000026; created by the Owner after a fresh passkey, bounded (a monthly limit, an end date within twelve months, one live
   delegation per type, never pay), revocable once, ended by a template change; each letter keeps its bytes, who asked and the delegation as its authority. `// req: NM-LTR-04`
   Left in 4.1: "who may ask" is the one rule (active employees not serving notice); the people assistant's drafts do not exist yet and will never use this path.
-- [ ] 4.2 The joiner's invitation task on People home (NM-ONB-02) and the offboarding dates and leave settlement (NM-ONB-03, D10). Screen `nm-onboarding`.
-- [ ] 4.3 Verify, and tag only what is fully proven.
+- [x] 4.2 The joiner's invitation task (NM-ONB-02, decision O6) and the offboarding dates, checklist and leave settlement (NM-ONB-03, D10): migration 000027; the people team's page
+  `nm-onboarding`. `// req: NM-ONB-02, NM-ONB-03`
+  Left in 4.2: the link closes the invitation task and switches the setting on (`p1-nemura-fyniq-link`); final pay, IR21 and the tax-clearance hold (payroll); the retrenchment
+  notification rule `[verify]`; the offboarding plan from templates (P2, NM-ONB-01).
+- [x] 4.3 Verify: the local gates; the requirements this change builds are tagged where their tests prove them.
 
 ## Coverage
 

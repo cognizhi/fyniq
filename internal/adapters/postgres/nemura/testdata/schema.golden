@@ -20,6 +20,7 @@ hr_question | nemura_migrator | true | true
 identity_directory | nemura_migrator | false | false
 installation | nemura_migrator | false | false
 invitation | nemura_migrator | true | true
+join_task | nemura_migrator | true | true
 leave_accrual | nemura_migrator | true | true
 leave_head | nemura_migrator | true | true
 leave_ledger | nemura_migrator | true | true
@@ -33,6 +34,8 @@ letter_settings | nemura_migrator | true | true
 letter_template_version | nemura_migrator | true | true
 letter_type | nemura_migrator | true | true
 member | nemura_migrator | true | true
+offboarding | nemura_migrator | true | true
+onboarding_settings | nemura_migrator | true | true
 organisation | nemura_migrator | true | true
 outbox | nemura_migrator | true | true
 overtime_entry | nemura_migrator | true | true
@@ -260,6 +263,15 @@ invitation | created_by | uuid | true |
 invitation | created_at | timestamp with time zone | true | now()
 invitation | expires_at | timestamp with time zone | true | 
 invitation | accepted_at | timestamp with time zone | false | 
+join_task | organisation_id | uuid | true | nemura.current_org()
+join_task | id | uuid | true | uuidv7()
+join_task | person_id | uuid | true | 
+join_task | kind | text | true | 'fyniq_invitation'::text
+join_task | state | text | true | 'open'::text
+join_task | raised_at | timestamp with time zone | true | 
+join_task | decided_by | uuid | false | 
+join_task | decided_at | timestamp with time zone | false | 
+join_task | note | text | false | 
 leave_accrual | organisation_id | uuid | true | nemura.current_org()
 leave_accrual | id | uuid | true | uuidv7()
 leave_accrual | month | date | true | 
@@ -399,6 +411,24 @@ member | id | uuid | true | uuidv7()
 member | display_name | text | true | 
 member | created_at | timestamp with time zone | true | now()
 member | deactivated_at | timestamp with time zone | false | 
+offboarding | organisation_id | uuid | true | nemura.current_org()
+offboarding | id | uuid | true | uuidv7()
+offboarding | person_id | uuid | true | 
+offboarding | kind | text | true | 
+offboarding | notice_given_on | date | false | 
+offboarding | last_day | date | true | 
+offboarding | retrenchment_notified_on | date | false | 
+offboarding | equipment_returned_on | date | false | 
+offboarding | exit_interview_on | date | false | 
+offboarding | fyniq_access_removed_on | date | false | 
+offboarding | state | text | true | 'active'::text
+offboarding | created_by | uuid | true | 
+offboarding | created_at | timestamp with time zone | true | 
+offboarding | updated_at | timestamp with time zone | true | 
+onboarding_settings | organisation_id | uuid | true | nemura.current_org()
+onboarding_settings | invite_to_fyniq | boolean | true | false
+onboarding_settings | updated_by | uuid | true | 
+onboarding_settings | updated_at | timestamp with time zone | true | 
 organisation | organisation_id | uuid | true | nemura.current_org()
 organisation | name | text | true | 
 organisation | created_at | timestamp with time zone | true | now()
@@ -987,6 +1017,21 @@ invitation | invitation_organisation_fkey | FOREIGN KEY (organisation_id) REFERE
 invitation | invitation_organisation_id_not_null | NOT NULL organisation_id
 invitation | invitation_pkey | PRIMARY KEY (organisation_id, id)
 invitation | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+join_task | join_task_decided_by_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
+join_task | join_task_decided_whole | CHECK (((state = 'open'::text) = ((decided_at IS NULL) AND (decided_by IS NULL))))
+join_task | join_task_id_not_null | NOT NULL id
+join_task | join_task_kind_known | CHECK ((kind = 'fyniq_invitation'::text))
+join_task | join_task_kind_not_null | NOT NULL kind
+join_task | join_task_note_length | CHECK (((note IS NULL) OR (length(note) <= 300)))
+join_task | join_task_once | UNIQUE (organisation_id, person_id, kind)
+join_task | join_task_organisation_id_not_null | NOT NULL organisation_id
+join_task | join_task_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+join_task | join_task_person_id_not_null | NOT NULL person_id
+join_task | join_task_pkey | PRIMARY KEY (organisation_id, id)
+join_task | join_task_raised_at_not_null | NOT NULL raised_at
+join_task | join_task_state_known | CHECK ((state = ANY (ARRAY['open'::text, 'done'::text, 'dismissed'::text])))
+join_task | join_task_state_not_null | NOT NULL state
+join_task | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 leave_accrual | leave_accrual_annual_left_not_null | NOT NULL annual_left
 leave_accrual | leave_accrual_approved_by_fkey | FOREIGN KEY (organisation_id, approved_by) REFERENCES nemura.member(organisation_id, id)
 leave_accrual | leave_accrual_approved_whole | CHECK ((((state = 'approved'::text) = (approved_by IS NOT NULL)) AND ((state = 'approved'::text) = (approved_at IS NOT NULL))))
@@ -1209,6 +1254,30 @@ member | member_organisation_fkey | FOREIGN KEY (organisation_id) REFERENCES nem
 member | member_organisation_id_not_null | NOT NULL organisation_id
 member | member_pkey | PRIMARY KEY (organisation_id, id)
 member | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+offboarding | offboarding_by_fkey | FOREIGN KEY (organisation_id, created_by) REFERENCES nemura.member(organisation_id, id)
+offboarding | offboarding_created_at_not_null | NOT NULL created_at
+offboarding | offboarding_created_by_not_null | NOT NULL created_by
+offboarding | offboarding_id_not_null | NOT NULL id
+offboarding | offboarding_kind_known | CHECK ((kind = ANY (ARRAY['resignation'::text, 'termination'::text, 'retrenchment'::text, 'end_of_contract'::text, 'retirement'::text, 'other'::text])))
+offboarding | offboarding_kind_not_null | NOT NULL kind
+offboarding | offboarding_last_day_not_null | NOT NULL last_day
+offboarding | offboarding_notice_before_last_day | CHECK (((notice_given_on IS NULL) OR (notice_given_on <= last_day)))
+offboarding | offboarding_organisation_id_not_null | NOT NULL organisation_id
+offboarding | offboarding_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+offboarding | offboarding_person_id_not_null | NOT NULL person_id
+offboarding | offboarding_pkey | PRIMARY KEY (organisation_id, id)
+offboarding | offboarding_retrenchment_date | CHECK (((kind = 'retrenchment'::text) OR (retrenchment_notified_on IS NULL)))
+offboarding | offboarding_state_known | CHECK ((state = ANY (ARRAY['active'::text, 'cancelled'::text])))
+offboarding | offboarding_state_not_null | NOT NULL state
+offboarding | offboarding_updated_at_not_null | NOT NULL updated_at
+offboarding | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+onboarding_settings | onboarding_settings_by_fkey | FOREIGN KEY (organisation_id, updated_by) REFERENCES nemura.member(organisation_id, id)
+onboarding_settings | onboarding_settings_invite_to_fyniq_not_null | NOT NULL invite_to_fyniq
+onboarding_settings | onboarding_settings_organisation_id_not_null | NOT NULL organisation_id
+onboarding_settings | onboarding_settings_pkey | PRIMARY KEY (organisation_id)
+onboarding_settings | onboarding_settings_updated_at_not_null | NOT NULL updated_at
+onboarding_settings | onboarding_settings_updated_by_not_null | NOT NULL updated_by
+onboarding_settings | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 organisation | organisation_created_at_not_null | NOT NULL created_at
 organisation | organisation_name_length | CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 200)))
 organisation | organisation_name_not_null | NOT NULL name
@@ -1656,6 +1725,9 @@ CREATE UNIQUE INDEX identity_directory_pkey ON nemura.identity_directory USING b
 CREATE UNIQUE INDEX installation_pkey ON nemura.installation USING btree (singleton)
 CREATE UNIQUE INDEX invitation_code_key ON nemura.invitation USING btree (organisation_id, code_hash)
 CREATE UNIQUE INDEX invitation_pkey ON nemura.invitation USING btree (organisation_id, id)
+CREATE UNIQUE INDEX join_task_once ON nemura.join_task USING btree (organisation_id, person_id, kind)
+CREATE INDEX join_task_open_idx ON nemura.join_task USING btree (organisation_id, raised_at) WHERE (state = 'open'::text)
+CREATE UNIQUE INDEX join_task_pkey ON nemura.join_task USING btree (organisation_id, id)
 CREATE UNIQUE INDEX leave_accrual_once ON nemura.leave_accrual USING btree (organisation_id, month, person_id)
 CREATE UNIQUE INDEX leave_accrual_pkey ON nemura.leave_accrual USING btree (organisation_id, id)
 CREATE UNIQUE INDEX leave_head_pkey ON nemura.leave_head USING btree (organisation_id, person_id, type_key, leave_year)
@@ -1682,6 +1754,9 @@ CREATE UNIQUE INDEX letter_template_version_pkey ON nemura.letter_template_versi
 CREATE UNIQUE INDEX letter_type_once ON nemura.letter_type USING btree (organisation_id, type_key)
 CREATE UNIQUE INDEX letter_type_pkey ON nemura.letter_type USING btree (organisation_id, id)
 CREATE UNIQUE INDEX member_pkey ON nemura.member USING btree (organisation_id, id)
+CREATE UNIQUE INDEX offboarding_one_active ON nemura.offboarding USING btree (organisation_id, person_id) WHERE (state = 'active'::text)
+CREATE UNIQUE INDEX offboarding_pkey ON nemura.offboarding USING btree (organisation_id, id)
+CREATE UNIQUE INDEX onboarding_settings_pkey ON nemura.onboarding_settings USING btree (organisation_id)
 CREATE UNIQUE INDEX organisation_pkey ON nemura.organisation USING btree (organisation_id)
 CREATE UNIQUE INDEX outbox_business_key ON nemura.outbox USING btree (organisation_id, kind, business_key)
 CREATE UNIQUE INDEX outbox_pkey ON nemura.outbox USING btree (organisation_id, id)
@@ -1773,6 +1848,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.gov_leave DEFERRA
 CREATE TRIGGER hr_question_guard BEFORE DELETE OR UPDATE ON nemura.hr_question FOR EACH ROW EXECUTE FUNCTION nemura.hr_question_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.hr_question DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('hr_question', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('invitation', 'id')
+CREATE TRIGGER join_task_guard BEFORE DELETE OR UPDATE ON nemura.join_task FOR EACH ROW EXECUTE FUNCTION nemura.join_task_guard()
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.join_task DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('join_task', 'id')
 CREATE TRIGGER leave_accrual_guard BEFORE DELETE OR UPDATE ON nemura.leave_accrual FOR EACH ROW EXECUTE FUNCTION nemura.leave_accrual_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.leave_accrual DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('leave_accrual', 'id')
 CREATE TRIGGER leave_ledger_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.leave_ledger FOR EACH ROW EXECUTE FUNCTION nemura.leave_ledger_guard()
@@ -1796,6 +1873,8 @@ CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.letter_
 CREATE TRIGGER member_deactivated AFTER UPDATE OF deactivated_at ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.member_deactivated()
 CREATE TRIGGER member_no_delete BEFORE DELETE ON nemura.member FOR EACH ROW EXECUTE FUNCTION nemura.members_no_delete()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.member DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('member', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.offboarding DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('offboarding', 'id')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.onboarding_settings DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('onboarding_settings', 'organisation_id')
 CREATE TRIGGER organisation_registered AFTER INSERT ON nemura.organisation FOR EACH ROW EXECUTE FUNCTION nemura.organisation_registered()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.organisation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('organisation', 'organisation_id')
 CREATE TRIGGER outbox_guard BEFORE UPDATE ON nemura.outbox FOR EACH ROW EXECUTE FUNCTION nemura.outbox_guard()
@@ -1866,6 +1945,7 @@ gov_claim_event | tenant_isolation | (organisation_id = nemura.current_org()) | 
 gov_leave | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 hr_question | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 invitation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+join_task | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_accrual | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_head | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_ledger | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -1879,6 +1959,8 @@ letter_settings | tenant_isolation | (organisation_id = nemura.current_org()) | 
 letter_template_version | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 letter_type | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 member | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+offboarding | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+onboarding_settings | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 organisation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 outbox | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 overtime_entry | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -2258,6 +2340,20 @@ BEGIN
   INSERT INTO nemura.owner_recovery (id, member_id, code_hash, operators, created_at, expires_at)
   VALUES (p_id, p_member, p_hash, names, now(), expires);
   RETURN expires;
+END
+$function$
+
+CREATE OR REPLACE FUNCTION nemura.join_task_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' OR NEW.person_id IS DISTINCT FROM OLD.person_id OR NEW.kind IS DISTINCT FROM OLD.kind OR NEW.raised_at IS DISTINCT FROM OLD.raised_at
+     OR OLD.state <> 'open' OR NEW.state = 'open' THEN
+    RAISE EXCEPTION 'A task is done or dismissed once' USING ERRCODE = 'NM170';
+  END IF;
+  RETURN NEW;
 END
 $function$
 

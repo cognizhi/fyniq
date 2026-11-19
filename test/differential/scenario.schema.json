@@ -238,7 +238,7 @@
                                          "bill_payment", "invoice", "credit_note", "customer_receipt", "dispute_settlement", "customer_deposit",
                                          "deposit_refund", "write_off", "expense_claim", "claim_reimbursement",
                                          "cash_advance", "fixed_asset", "asset_disposal", "pre_incorporation_cost",
-                                         "director_fee", "director_waiver", "director_repayment",
+                                         "director_fee", "payroll_run", "director_waiver", "director_repayment",
                                          "director_conversion", "account_merge", "share_issue_cash",
                                          "share_transfer", "instrument", "safe_conversion", "director_safe",
                                          "option_pool", "option_grant", "option_event", "option_exercise"]}},
@@ -260,6 +260,7 @@
         {"if": {"properties": {"type": {"const": "write_off"}}}, "then": {"$ref": "#/$defs/writeOff"}},
         {"if": {"properties": {"type": {"const": "pre_incorporation_cost"}}}, "then": {"$ref": "#/$defs/preIncorporationCost"}},
         {"if": {"properties": {"type": {"const": "director_fee"}}}, "then": {"$ref": "#/$defs/directorFee"}},
+        {"if": {"properties": {"type": {"const": "payroll_run"}}}, "then": {"$ref": "#/$defs/payrollRun"}},
         {"if": {"properties": {"type": {"const": "director_waiver"}}}, "then": {"$ref": "#/$defs/directorWaiver"}},
         {"if": {"properties": {"type": {"const": "director_repayment"}}}, "then": {"$ref": "#/$defs/directorRepayment"}},
         {"if": {"properties": {"type": {"const": "director_conversion"}}}, "then": {"$ref": "#/$defs/directorConversion"}},
@@ -290,6 +291,7 @@
           "type": "object",
           "propertyNames": {"enum": ["receivable", "payable", "gst", "prepayments", "deferred_revenue", "fx", "bank_charges",
                                      "withholding_tax", "customer_deposits", "claims_payable", "advances", "director_loan", "deferred_remuneration",
+                                     "salaries_payable", "cpf_sdl_payable", "employer_cpf", "sdl",
                                      "depreciation", "accumulated_depreciation", "disposal", "disposal_clearing", "unrealised_fx",
                                      "opening_clearing"]},
           "additionalProperties": {"$ref": "#/$defs/accountCode"}
@@ -844,6 +846,37 @@
         "person": {"description": "The director, one of people.", "$ref": "#/$defs/documentId"},
         "account": {"description": "Its cost account, 6050 Directors' fees by default: not a director's account, a money account or GST control.", "type": "string"},
         "amount": {"description": "In the base currency.", "$ref": "#/$defs/money"}
+      }
+    },
+    "payrollRun": {
+      "description": "One version of a pay run's wage month from the people platform (payroll_run@1, FR-PAY-07, FR-PAY-18, FR-PPL-04, FR-PPL-11): its full figures; what posts is the difference from what the run's earlier versions posted.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "date", "run", "wage_month", "departments", "employee_cpf", "employer_cpf", "sdl", "shg"],
+      "properties": {
+        "type": {"const": "payroll_run"},
+        "id": {"$ref": "#/$defs/documentId"},
+        "version": {"$ref": "#/$defs/version"},
+        "date": {"description": "The day the difference posts: in the wage month, or the open month when it is closed; never before the wage month.", "$ref": "#/$defs/date"},
+        "run": {"description": "The run these figures belong to; its versions share it and count up.", "$ref": "#/$defs/documentId"},
+        "wage_month": {"description": "The wage month, YYYY-MM.", "type": "string", "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"},
+        "departments": {
+          "description": "Each department's gross pay and the salary expense account it posts to: no person appears.",
+          "type": "array", "minItems": 1, "maxItems": 50,
+          "items": {"type": "object", "additionalProperties": false, "required": ["account", "gross"],
+                    "properties": {"account": {"type": "string"}, "gross": {"$ref": "#/$defs/money"}}}
+        },
+        "employee_cpf": {"description": "The month's employee CPF, in the base currency.", "$ref": "#/$defs/money"},
+        "employer_cpf": {"description": "The month's employer CPF.", "$ref": "#/$defs/money"},
+        "sdl": {"description": "The month's SDL.", "$ref": "#/$defs/money"},
+        "shg": {"description": "The month's self-help group fund deductions.", "$ref": "#/$defs/money"},
+        "deductions": {
+          "description": "Deductions authorised under FR-PAY-16 taken from net pay, each recovered through an account of its own (an advance recovered clears 1250).",
+          "type": "array", "maxItems": 20,
+          "items": {"type": "object", "additionalProperties": false, "required": ["account", "amount"],
+                    "properties": {"account": {"type": "string"}, "amount": {"$ref": "#/$defs/money"}}}
+        },
+        "reimbursements": {"description": "Claims already booked (2150) that are paid with salary; not wages.", "$ref": "#/$defs/money"}
       }
     },
     "preIncorporationCost": {
