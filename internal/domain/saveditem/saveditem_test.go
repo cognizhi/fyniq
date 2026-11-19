@@ -11,7 +11,7 @@ import (
 // An item holds an address and a name only: a link out, a script or filters that are no query are refused, and every page of
 // the app maps to the right its area needs.
 // req: FR-UX-12
-// asvs: V5.1.3
+// asvs: V2.2.1
 func TestAnItemIsAPageOfTheAppAndItsFilters(t *testing.T) {
 	long := strings.Repeat("x", 81)
 	for _, c := range []struct {

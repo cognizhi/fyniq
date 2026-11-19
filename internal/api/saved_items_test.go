@@ -15,6 +15,7 @@ import (
 // change is the item and its audit event and nothing else.
 // req: FR-UX-12
 // req: SEC-34
+// asvs: V8.2.1, V8.3.1
 func TestFavouritesAndViewsAreTheirOwnersOnly(t *testing.T) {
 	f := newFounders(t)
 	e := f.e
