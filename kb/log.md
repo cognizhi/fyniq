@@ -647,3 +647,7 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-18] compile | docs/user-guide/bills.md, journals.md → purchases.bills, accounting.journals (a HEIC photo is converted where the installation has a converter)
 
 ## [2026-11-18] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the largest evidence file setting)
+
+## [2026-11-18] compile | docs/user-guide/banking.md and payment-batches.md → banking.accounts, banking.add-account, purchases.payment-batches (the money account's Payment file and the download label naming it, FR-BNK-12; the other banking pages re-hashed, unchanged)
+
+## [2026-11-19] compile | docs/user-guide/projects-projects.md → projects.projects (the projects screens, p1-projects slice 1)

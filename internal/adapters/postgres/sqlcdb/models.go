@@ -1903,6 +1903,49 @@ type FyniqJournalLine struct {
 	InstrumentID   *uuid.UUID
 }
 
+type FyniqKbPlatformPage struct {
+	Key        string
+	Type       string
+	Title      string
+	Summary    string
+	Aliases    []string
+	Body       string
+	Sources    []byte
+	DataClass  string
+	Taint      string
+	Status     string
+	CompiledBy string
+	CompiledAt time.Time
+	Digest     string
+	Search     interface{}
+}
+
+type FyniqKbPlatformPageSource struct {
+	PageKey string
+	File    string
+	Sha256  string
+	Roles   []string
+	Draft   bool
+}
+
+type FyniqKbPlatformRelease struct {
+	Singleton bool
+	Version   string
+	Schema    string
+	Digest    string
+	LoadedAt  time.Time
+}
+
+type FyniqKbPlatformSource struct {
+	File   string
+	Key    string
+	Title  string
+	Roles  []string
+	Status string
+	Body   string
+	Search interface{}
+}
+
 type FyniqKpiInput struct {
 	OrganisationID  uuid.UUID
 	ID              uuid.UUID
@@ -2562,6 +2605,45 @@ type FyniqPrivateEndpoint struct {
 	RecordedBy uuid.UUID
 	RecordedAt time.Time
 	ChangeID   *uuid.UUID
+}
+
+type FyniqProject struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	CustomerID     *uuid.UUID
+	Currency       string
+	MinorUnits     int16
+	Status         string
+	BillingMethod  string
+	StartsOn       pgtype.Date
+	EndsOn         pgtype.Date
+	BudgetMinutes  *int32
+	BudgetAmount   *string
+	Version        int32
+	CreatedAt      time.Time
+	ChangedAt      time.Time
+}
+
+type FyniqProjectMember struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	UserID         uuid.UUID
+	IsManager      bool
+	IsActive       bool
+	CreatedAt      time.Time
+}
+
+type FyniqProjectTask struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ProjectID      uuid.UUID
+	Name           string
+	Billable       bool
+	IsActive       bool
+	Version        int32
+	CreatedAt      time.Time
+	ChangedAt      time.Time
 }
 
 type FyniqQuoteOutcome struct {

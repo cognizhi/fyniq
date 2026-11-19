@@ -167,6 +167,25 @@ describe("payment batches", () => {
     expect(screen.queryByRole("button", { name: /Send the remittance advice/ })).toBeNull(); // the releaser does not prepare batches
   });
 
+  // req: FR-BNK-12
+  // req: banking/bank-transactions The file is a setting of the money account (rev 0.157)
+  it.each([
+    ["wise-batch@1", "PB-0003-wise-batch.csv", "Download Wise batch file", "Wise's batch payment file", /Upload it to Wise/],
+    ["dbs-uff@2", "PB-0003-dbs-uff.txt", "Download DBS UFF file", "DBS IDEAL's UFF", /Upload it in DBS IDEAL/],
+    ["payment-list@1", "PB-0003-payment-list.csv", "Download payment list", "The payment list", /Key each payment into your bank's bulk payment screen/],
+  ])("names the file a release wrote, %s, on its download button and in its card", async (writer, name, label, heading, how) => {
+    const release = { released_by: { kind: "user", id: "u2", name: "Mei Lin Tan" }, released_at: "2026-10-31T01:30:00Z", approval_id: "a1", writer, file_name: name, sha256: "ab".repeat(32), payments: [] };
+    page({ ...base, status: "released", number: "PB-0003", release }, releaser, {
+      "GET /v1/payment-batches/b1/file": { status: 200, body: { file_name: name, media_type: "text/csv", sha256: "ab".repeat(32), size_bytes: 3, content_base64: "YWJj" } },
+    });
+    expect(await screen.findByRole("heading", { name: heading })).toBeTruthy();
+    expect(screen.getByText(how)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: label }));
+    expect(await screen.findByText(new RegExp(`Downloaded ${name}`))).toBeTruthy();
+    expect(screen.getAllByText(how)).toHaveLength(2); // the card, and what to do next
+    await noViolations(document.body);
+  });
+
   // req: FR-EQ-05
   // req: equity/founders-money Repay
   it("lists a director's repayment apart from their claims, both to the same person; axe finds nothing", async () => {

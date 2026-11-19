@@ -1,0 +1,162 @@
+# sg-cpf@2026.2: sg-cpf@2026.1 with the first and second years of permanent residence, the graduated range of monthly total
+# wages from $50 to $750, and the Ordinary Wage maximum of each band (PRD-001 §10.6, ENG-30; p1-statutory-packs 4.1).
+# Never edit this version once it is active anywhere: a correction is sg-cpf@2026.3 (fyniq-sg-statutory).
+id = "sg-cpf@2026.2"
+title = "Singapore CPF contributions: the rates by age band for citizens and permanent residents in each year of residence, the graduated range from $50 to $750 a month, and the wage ceilings"
+effective_from = "2026-01-01"
+supersedes = "sg-cpf@2026.1"
+review_date = "2027-01-31"
+verifier = "Claude Code against the CPF Board's rate tables for 1 January 2026 and 1 January 2027 on 18 Nov 2026 (p1-statutory-packs), and the pages of 8 Nov 2026 (p1-planning); the accountant's review is pending (FR-UX-41)"
+conditions = "Wages earned in a month by a Singapore citizen or permanent resident of the private sector. Group sc_spr3: citizens and permanent residents from the third year, and a first- or second-year permanent resident whose employer and who jointly apply, and the CPF Board approves, to contribute at full rates. Groups spr1_gg and spr2_gg: a first- or second-year permanent resident at the graduated rates of the employer and the employee; spr1_fg and spr2_fg: at full employer and graduated employee rates, after the CPF Board approves the joint application. The age band is the employee's age as the CPF Board counts it for the month: new rates apply from the first day of the month after the 55th, 60th, 65th or 70th birthday. Total wages are the Ordinary Wages (capped at the monthly ceiling) and Additional Wages (capped by the annual salary ceiling less the year's Ordinary Wages subject to CPF): wages of $50 or less carry nothing, above $50 to $500 the flat rate of the wages, all of it the employer's, above $500 to $750 the flat rate of the wages plus the slope of the wages above $500, the slope being the employee's share, and above $750 the rates of the rates table. The total contribution rounds to the nearest dollar (50 cents up) and the employee's share down, the employer's being the difference; that is the pay run's, not this pack's"
+
+[[sources]]
+id = "cpf-rates-2026"
+title = "CPF Board: How much CPF contributions to pay"
+url = "https://www.cpf.gov.sg/employer/employer-obligations/how-much-cpf-contributions-to-pay"
+section = "What are the CPF contribution rates? Contribution rates from 1 January 2026 (monthly wages > $750)"
+kind = "official guidance"
+retrieved = "2026-11-08"
+quote = "55 and below 17 20 37 Above 55 to 60 16 18 34 Above 60 to 65 12.5 12.5 25 Above 65 to 70 9 7.5 16.5 Above 70 7.5 5 12.5"
+
+[[sources]]
+id = "cpf-rates-2027"
+title = "CPF Board: CPF Contribution Changes from 1 January 2027"
+url = "https://www.cpf.gov.sg/conrate2023"
+section = "Increase in CPF Contribution Rates from 1 January 2027, for employees earning monthly wages > $750"
+kind = "official guidance"
+retrieved = "2026-11-08"
+quote = "there will be an increase to the CPF contribution rates from 1 January 2027 for employees aged above 55 to 65. The changes apply to wages earned from 1 January 2027: Above 55 to 60 34 35.5 (+1.5) 16.5 (+0.5) 19 (+1) Above 60 to 65 25 26 (+1) 13 (+0.5) 13 (+0.5)"
+
+[[sources]]
+id = "iras-cpf-ceilings"
+title = "IRAS: CPF Relief for Employees"
+url = "https://www.iras.gov.sg/taxes/individual-income-tax/basics-of-individual-income-tax/tax-reliefs-rebates-and-deductions/tax-reliefs/central-provident-fund(cpf)-relief-for-employees"
+section = "Ordinary Wage (OW) ceiling; Additional Wage (AW) ceiling"
+kind = "official guidance"
+retrieved = "2026-11-08"
+quote = "1 Jan to 31 Dec 2025 $7,400 On or after 1 Jan 2026 $8,000 Notwithstanding the increases to the CPF monthly salary ceiling starting from 1 Sep 2023, the CPF annual salary ceiling will remain at $102,000."
+
+[[sources]]
+id = "cpf-table-1-2026"
+title = "CPF Board: CPF Contribution Rate Table from 1 January 2026, Table 1"
+url = "https://www.cpf.gov.sg/content/dam/web/employer/employer-obligations/documents/CPFcontributionratesfrom1Jan2026.pdf"
+section = "Table 1: Singapore Citizens or Singapore Permanent Residents (3rd year onwards)"
+kind = "official guidance"
+retrieved = "2026-11-18"
+quote = "Above 55 - 60: > $500 to $750 16% (TW) + 0.54 (TW - $500), employee's share 0.54 (TW - $500); > $750 [34% (OW)]* + 34% (AW), employee's share [18% (OW)]* + 18% (AW); * Max. of $2,720, * Max. of $1,440"
+
+[[sources]]
+id = "cpf-table-2-2026"
+title = "CPF Board: CPF Contribution Rate Table from 1 January 2026, Table 2"
+url = "https://www.cpf.gov.sg/content/dam/web/employer/employer-obligations/documents/CPFcontributionratesfrom1Jan2026.pdf"
+section = "Table 2: Singapore Permanent Residents (SPR) during 1st year of SPR status under Graduated contribution rates (G/G)"
+kind = "official guidance"
+retrieved = "2026-11-18"
+quote = "55 & below: > $500 to $750 4% (TW) + 0.15 (TW - $500), employee's share 0.15 (TW - $500); > $750 [9% (OW)]* + 9% (AW), employee's share [5% (OW)]* + 5% (AW); * Max. of $720, * Max. of $400. There are no changes to the graduated employer and employee rates since 1 January 2016."
+
+[[sources]]
+id = "cpf-table-3-2026"
+title = "CPF Board: CPF Contribution Rate Table from 1 January 2026, Table 3"
+url = "https://www.cpf.gov.sg/content/dam/web/employer/employer-obligations/documents/CPFcontributionratesfrom1Jan2026.pdf"
+section = "Table 3: Singapore Permanent Residents (SPR) during 2nd year of SPR status under Graduated contribution rates (G/G)"
+kind = "official guidance"
+retrieved = "2026-11-18"
+quote = "55 & below: > $500 to $750 9% (TW) + 0.45 (TW - $500), employee's share 0.45 (TW - $500); > $750 [24% (OW)]* + 24% (AW), employee's share [15% (OW)]* + 15% (AW); * Max. of $1,920, * Max. of $1,200"
+
+[[sources]]
+id = "cpf-table-4-2026"
+title = "CPF Board: CPF Contribution Rate Table from 1 January 2026, Table 4"
+url = "https://www.cpf.gov.sg/content/dam/web/employer/employer-obligations/documents/CPFcontributionratesfrom1Jan2026.pdf"
+section = "Table 4: Singapore Permanent Residents (SPR) during 1st year of SPR status under Full Employer & Graduated Employee contribution rates (F/G)"
+kind = "official guidance"
+retrieved = "2026-11-18"
+quote = "Above 55 - 60: > $500 to $750 16% (TW) + 0.15 (TW - $500), employee's share 0.15 (TW - $500); > $750 [21% (OW)]* + 21% (AW), employee's share [5% (OW)]* + 5% (AW); * Max. of $1,680, * Max. of $400. These rates are applicable after CPF Board approves the joint application by an employer and his 1st year SPR employee to contribute to CPF at higher rates."
+
+[[sources]]
+id = "cpf-table-5-2026"
+title = "CPF Board: CPF Contribution Rate Table from 1 January 2026, Table 5"
+url = "https://www.cpf.gov.sg/content/dam/web/employer/employer-obligations/documents/CPFcontributionratesfrom1Jan2026.pdf"
+section = "Table 5: Singapore Permanent Residents (SPR) during 2nd year of SPR status under Full Employer & Graduated Employee contribution rates (F/G)"
+kind = "official guidance"
+retrieved = "2026-11-18"
+quote = "Above 55 - 60: > $500 to $750 16% (TW) + 0.375 (TW - $500), employee's share 0.375 (TW - $500); > $750 [28.5% (OW)]* + 28.5% (AW), employee's share [12.5% (OW)]* + 12.5% (AW); * Max. of $2,280, * Max. of $1,000. These rates are applicable after CPF Board approves the joint application by an employer and his 2nd year SPR employee to contribute to CPF at higher rates."
+
+[[sources]]
+id = "cpf-table-1-2027"
+title = "CPF Board: CPF Contribution Rate Table from 1 January 2027, Table 1"
+url = "https://www.cpf.gov.sg/content/dam/web/employer/employer-obligations/documents/jan2027cpfcontributionrates.pdf"
+section = "Table 1: Singapore Citizens or Singapore Permanent Residents (3rd year onwards)"
+kind = "official guidance"
+retrieved = "2026-11-18"
+quote = "Above 55 - 60: > $500 to $750 16.5% (TW) + 0.57 (TW - $500), employee's share 0.57 (TW - $500); > $750 [35.5% (OW)]* + 35.5% (AW), employee's share [19% (OW)]* + 19% (AW); * Max. of $2,840, * Max. of $1,520"
+
+[[sources]]
+id = "cpf-table-2-2027"
+title = "CPF Board: CPF Contribution Rate Table from 1 January 2027, Table 2"
+url = "https://www.cpf.gov.sg/content/dam/web/employer/employer-obligations/documents/jan2027cpfcontributionrates.pdf"
+section = "Table 2: Singapore Permanent Residents (SPR) during 1st year of SPR status under Graduated contribution rates (G/G)"
+kind = "official guidance"
+retrieved = "2026-11-18"
+quote = "55 & below: > $500 to $750 4% (TW) + 0.15 (TW - $500), employee's share 0.15 (TW - $500); > $750 [9% (OW)]* + 9% (AW), employee's share [5% (OW)]* + 5% (AW); * Max. of $720, * Max. of $400. There are no changes to the graduated employer and employee rates since 1 January 2016."
+
+[[sources]]
+id = "cpf-table-3-2027"
+title = "CPF Board: CPF Contribution Rate Table from 1 January 2027, Table 3"
+url = "https://www.cpf.gov.sg/content/dam/web/employer/employer-obligations/documents/jan2027cpfcontributionrates.pdf"
+section = "Table 3: Singapore Permanent Residents (SPR) during 2nd year of SPR status under Graduated contribution rates (G/G)"
+kind = "official guidance"
+retrieved = "2026-11-18"
+quote = "55 & below: > $500 to $750 9% (TW) + 0.45 (TW - $500), employee's share 0.45 (TW - $500); > $750 [24% (OW)]* + 24% (AW), employee's share [15% (OW)]* + 15% (AW); * Max. of $1,920, * Max. of $1,200"
+
+[[sources]]
+id = "cpf-table-4-2027"
+title = "CPF Board: CPF Contribution Rate Table from 1 January 2027, Table 4"
+url = "https://www.cpf.gov.sg/content/dam/web/employer/employer-obligations/documents/jan2027cpfcontributionrates.pdf"
+section = "Table 4: Singapore Permanent Residents (SPR) during 1st year of SPR status under Full Employer & Graduated Employee contribution rates (F/G)"
+kind = "official guidance"
+retrieved = "2026-11-18"
+quote = "Above 55 - 60: > $500 to $750 16.5% (TW) + 0.15 (TW - $500), employee's share 0.15 (TW - $500); > $750 [21.5% (OW)]* + 21.5% (AW), employee's share [5% (OW)]* + 5% (AW); * Max. of $1,720, * Max. of $400. These rates are applicable after CPF Board approves the joint application by an employer and his 1st year SPR employee to contribute to CPF at higher rates."
+
+[[sources]]
+id = "cpf-table-5-2027"
+title = "CPF Board: CPF Contribution Rate Table from 1 January 2027, Table 5"
+url = "https://www.cpf.gov.sg/content/dam/web/employer/employer-obligations/documents/jan2027cpfcontributionrates.pdf"
+section = "Table 5: Singapore Permanent Residents (SPR) during 2nd year of SPR status under Full Employer & Graduated Employee contribution rates (F/G)"
+kind = "official guidance"
+retrieved = "2026-11-18"
+quote = "Above 55 - 60: > $500 to $750 16.5% (TW) + 0.375 (TW - $500), employee's share 0.375 (TW - $500); > $750 [29% (OW)]* + 29% (AW), employee's share [12.5% (OW)]* + 12.5% (AW); * Max. of $2,320, * Max. of $1,000. These rates are applicable after CPF Board approves the joint application by an employer and his 2nd year SPR employee to contribute to CPF at higher rates."
+
+[[tables]]
+name = "rates"
+file = "rates.csv"
+description = "The employer's and the employee's rates as fractions of the wage on total monthly wages above wage_above, by residency group (sc_spr3; spr1_gg and spr2_gg; spr1_fg and spr2_fg), for an age above age_above (blank: none) up to age_to (blank: no limit), for wages earned from effective_from to effective_to"
+
+[[tables]]
+name = "low_wages"
+file = "low_wages.csv"
+description = "The graduated range: for total monthly wages up to nil_to nothing; above nil_to up to flat_to the flat_rate of the wages, all the employer's; above flat_to up to graduated_to the flat_rate of the wages plus the slope of the wages above flat_to, the slope being the employee's share; by group and age as the rates table, for wages earned from effective_from to effective_to"
+
+[[tables]]
+name = "ceilings"
+file = "ceilings.csv"
+description = "ow_monthly: the Ordinary Wage ceiling a month; annual_salary: the annual salary ceiling, from which the Additional Wage ceiling is the year's ceiling less its Ordinary Wages subject to CPF"
+
+[[pinned]]
+name = "rates"
+file = "pinned/rates.csv"
+description = "Hand-pinned rates for a month, a group, an age and a wage, worked from the CPF Board's tables, not from rates.csv"
+
+[[pinned]]
+name = "low_wages"
+file = "pinned/low_wages.csv"
+description = "Hand-pinned total and employee contributions in the graduated range, worked from the formulas the CPF Board prints, with the limits' edges, not from low_wages.csv"
+
+[[pinned]]
+name = "maxima"
+file = "pinned/maxima.csv"
+description = "The Max. the CPF Board prints under each band: the most on Ordinary Wages in all and by the employee, which is the band's rates at the ceiling"
+
+[[pinned]]
+name = "ceilings"
+file = "pinned/ceilings.csv"
+description = "Hand-pinned ceilings for a month, worked from IRAS's table, not from ceilings.csv"
