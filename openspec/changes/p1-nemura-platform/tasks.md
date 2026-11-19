@@ -135,6 +135,8 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   Fyniq service stopped**, proven by a new `scripts/local-smoke-people.sh` that CI runs beside QA-LOCAL-01.
   (Built in part, 19 Nov 2026: sessions as opaque hashed tokens, expiry, revocation, deactivation and the step-up window (`TestSessionsAreOpaqueExpireAndEndWithTheMember`). **Left, so unticked:** the `SignIn` port's local adapter and the sign-in page, the Identity Platform adapter [live-verify], the `__Host-` cookie, `scripts/local-smoke-people.sh`, and `// req: NM-ARC-06`'s full proof.)
   (Built in part, 19 Nov 2026, later: `internal/nemura/auth` (`GET /auth/signin`, `GET /auth/callback`, `POST /auth/signout`; state, PKCE and nonce through the shared `SignIn` port; `nemura_session` cookie, `__Host-nemura_session` over https; `SafeReturn`), the local sign-in page wired in the local build, `GET /v1/session` with `Landing`, `nemura-edge` on `NEMURA_HTTP_PORT` and `deploy/local/Caddyfile.people`; `TestAPersonSignsInThroughTheLocalProviderAndSeesTheirSession` signs in with no Fyniq running (`// req: NM-ARC-01`). **Left, so unticked:** the Identity Platform adapter [live-verify], `scripts/local-smoke-people.sh` in CI, Nemura's own Hydra (5.2) and `// req: NM-ARC-06`'s full proof.)
+  (Built in part, 19 Nov 2026, last part: `POST /auth/join` and the join cookie (a setup or invitation code kept in an HttpOnly cookie, never a URL, used once at the callback with the identity the provider proved: `FirstRun` or `AcceptInvitation`), `nm-join` and the sign-in page's explanations of each refusal, `scripts/local-smoke-people.sh` (a compose project of its own, every Fyniq service stopped, a first-run sign-in and sign-out through the edge, a wrong and a used code refused, no code or token in a log), run in the CI images job. `// req: NM-ARC-01` (`TestFirstRunAndAnInvitationTakeAPlaceThroughTheBrowser`), `NM-ARC-06` (the smoke script, `TestAnIPAddressOriginStartsWithoutPasskeys`). **Left:** the Identity Platform adapter per organisation tenant [live-verify]; sign-out and deactivation revoking the tokens of API clients through the worker; the 60-second role-change bound is met by reading roles on every request.)
+  (Built, 19 Nov 2026, Owner recovery: migration 000010, `identity.Operators`, `nemura.IssueOwnerRecovery` and `RecoverOwner`, `nemura owner-recovery` and `make people-owner-recovery`, the join form's recovery code; `TestAnOwnerIsRecoveredByTwoOperatorsWithAOneTimeCode`, `// req: NM-ARC-01`.)
 - [x] 5.4 Passkeys and step-up: WebAuthn with the relying-party ID from `NEMURA_RP_ID` (locally `localhost`), single-use
   server-side challenges, assertions kept for re-verification, step-up for approvals and role changes; and Nemura's
   own API clients, audience-bound, with the scopes of NM-ARC-06's own token issuer (question 11). Tests: a step-up is
@@ -180,18 +182,22 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 7. Nemura's web app and experience (two slices)
 
-- [ ] 7.1 (slice 7a) `apps/nemura-web`: the scaffold on the same stack as `apps/web`, Nemura's tokens
+- [x] 7.1 (slice 7a) `apps/nemura-web`: the scaffold on the same stack as `apps/web`, Nemura's tokens
   (`docs/design-system/nemura/tokens.css`, `make check-tokens` already checks them in four themes), themes, the
   generated client, the typecheck and Vitest with axe in `make test`, the `nemura-web` workspace in
   `pnpm-workspace.yaml`. Tests `// req: NM-UX-01` (tokens only, contrast in four themes, AI content violet with the
   badge, no third-party font request).
+  (Built, 19 Nov 2026: `apps/nemura-web` (React 19, Vite, the same pinned toolchain; the app is small enough for a History-API router and no query library yet), the generated client from `contracts/openapi/nemura/nemura.v1.yaml` (`make openapi` regenerates it, `make api-check` checks it), Nemura's tokens through the generated kit `nemura-ui.css`, `pnpm -r typecheck` and `pnpm -r test` (so `make test`) with axe; `src/source.test.ts` proves tokens only (no colour literal), no request to another origin and the four themes' tokens (`// req: NM-UX-01`); contrast stays `make check-tokens`'s. The Funnel Display, Funnel Sans and Spline Sans Mono fonts are self-hosted from `@fontsource-variable/*` (Latin and Latin Extended, `font-display: swap`). **Left:** AI violet with its badge (no AI content yet).)
 - [ ] 7.2 (slice 7a) The feature registry for Nemura (route, action, mode, help key, guide page; a missing one fails)
   and the modes: one simple mode for employees, more for the people team; WCAG 2.2 AA, 44 px targets, the five device
   frames from 320 px, switchable motion. Tests `// req: NM-UX-02`, `// req: FR-UX-38` for motion in the same
   way as Fyniq's (`e2e/motion.spec.ts`).
+  (Built in part, 19 Nov 2026: `src/registry.ts` (route, action, mode, help key, guide page, review-register screen) and `registry.test.ts`, which fails on a missing tag, help text or guide page and on a route the app serves that it does not list (`// req: NM-UX-02`, `NM-UX-04`); switchable motion follows the system's `prefers-reduced-motion` only. **Left, so unticked:** the people team's own mode (pages arrive with their changes), the 44 px target and five-frame tests, the motion switch and `e2e/motion.spec.ts`.)
 - [ ] 7.3 (slice 7a) `nm-sign-in` built to its fragment: Google, email and password, the company's OpenID Connect
   provider, passkey; states standalone and wrong password (the "linked to Fyniq" state arrives with the link).
   Tests: the page's journeys in Playwright with no Fyniq running; axe; the page never shows the banner.
+  (Built in part, 19 Nov 2026: `GET /v1/sign-in` (the providers on offer and whether setup is done), `nm-sign-in` showing one button per provider the API names, the not-set-up, no-provider and cannot-reach states, axe clean, never the banner (`src/ui.test.tsx`; `// req: NM-ARC-01`); the local stack serves it at the edge and `/api/v1/sign-in` answers. **Left, so unticked:** email and password and the company's OpenID Connect provider (the Identity Platform adapter, [live-verify]), the wrong-password state, a passkey as a way to sign in (passkeys confirm a sensitive change today), and the Playwright journey with no Fyniq running.)
+  (Built, 19 Nov 2026, later: `apps/nemura-web/journeys/sign-in.spec.ts` (`// req: NM-ARC-01, NM-UX-02`) runs a fresh installation through setup with its one-time code, a wrong code refused, sign-in, sign-out and sign-in again, in Chrome, with no Fyniq running: `scripts/test-journeys-people.sh`, in the CI images job. The recovery code and invitation forms are proven by their unit tests and the Go journey. **Left, so unticked:** email and password and the company's OpenID Connect provider (Identity Platform [live-verify]), the wrong-password state, and a passkey as a way to sign in.)
 - [ ] 7.4 (slice 7b) Workspaces and landing by role in the shell (completes NM-ROLE-02 with 6.5); the header's slot
   for the Finance | People switch and the rule that it shows only to people with a finance workspace, proven on a
   stubbed session (**Left:** the switch itself, its last-page memory and the single sign-in across both apps:
@@ -200,20 +206,24 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   `docs/user-guide/nemura/` (sign-in, roles and access, your data, my pay), the first-run tours for employees and the
   people team; compiled into `kb/` in the same commit (`python3 scripts/kb.py hash <src>`, `kb.py log compile`, `make
   kb-index`, `make kb-lint`). Tests `// req: NM-UX-04` and the registry test.
+  (Built in part, 19 Nov 2026: help keys and tooltips in `src/i18n/en-SG.json`, guide pages `nemura/sign-in.md` and `nemura/home.md` compiled into `kb/` (`nemura.sign-in`, `nemura.home`). **Left, so unticked:** the pages for roles and access, your data and my pay, and the first-run tours.)
 - [ ] 7.6 (slice 7b) "Needs additional verification" (NM-UX-06): the banner reads
   `docs/prd/reviews/review-status.json`; the people team's payroll, pay-run approval, leave-policy, country-pack,
   checks, onboarding and settings pages carry it; self-service and sign-in never do. A change to the register
   goes in its own pull request (it never auto-approves). Tests `// req: NM-UX-06`: the banner on each listed page
   and on none of the excluded ones.
+  (Built in part, 19 Nov 2026: `ReviewBanner` and `reviewsFor` read the register, with sign-in and the self-service pages never carrying it (`src/ui.test.tsx`; `// req: NM-UX-06`). **Left, so unticked:** the people team's pages that carry it, with their changes.)
 - [ ] 7.7 (slice 7b) Localisation (NM-NFR-04): every string through the catalogue, `en-SG` dates, numbers and S$ from
   the worksite's locale, a test that fails on a string literal in a component, money as a decimal string and the
   clipboard's ASCII minus. Tests `// req: NM-NFR-04`.
-- [ ] 7.8 (slice 7b) Delivery (D11): the static build embedded in the binary (a committed placeholder so `go build`
+  (Built in part, 19 Nov 2026: every string through `t()` and a test that fails on a literal in a component or an unused or missing key (`src/source.test.ts`; `// req: NM-NFR-04`). **Left, so unticked:** `en-SG` dates, numbers and S$ and the clipboard's ASCII minus, with the first money on a page (My pay).)
+- [x] 7.8 (slice 7b) Delivery (D11): the static build embedded in the binary (a committed placeholder so `go build`
   works), the web stage in the Dockerfile for the `nemura` target, `.dockerignore` for `apps/nemura-web/` and
   `docs/design-system/nemura/tokens.css`, the headers of `security-headers.inc`, a test that a release image
   never serves the placeholder, and the image's size remeasured against the 30 MB budget (raise it by a reviewed
   PRD change if the real build needs it). Tests `// req: NM-ARC-02` (image, database, migrations, local mode and the
   embedded web app, all now proven), `// req: NM-UX-02` for the first-load budget.
+  (Built, 19 Nov 2026: `apps/nemura-web/embed.go` (`//go:embed all:embedded`, a committed placeholder), `cmd/nemura/web.go` serving the build from the `api` role with the same strict policy as `security-headers.inc` and no page for a missing asset or API path, the `nemura-web` stage of `Dockerfile.go-service` (builds only with `NEMURA_WEB=build`, which `make images` and `scripts/images.py` pass for `nemura` alone), `.dockerignore`, the edge's catch-all to the API, and a build that refuses a release `nemura` with the placeholder (`TestAReleaseImageIsNeverBuiltWithThePlaceholder`; tried: it fails). The image is 8.3 MB against the 30 MB budget. `// req: NM-ARC-02`. **Left:** the first-load budget of NM-UX-02, measured with My pay in 9.2.)
 - [ ] 7.9 Verify: `pnpm exec tsc -b --noEmit` and `pnpm exec vitest run` in `apps/nemura-web`, `make images`,
   `make check`, `make test`, `make test-e2e` for the sign-in journey.
 
@@ -256,9 +266,11 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   outbox queueing a hand-off while its consumer is down. Proved on a fake job; the real pay-day jobs and the hand-off
   to Fyniq are payroll's and the link's. Tests: the alert fires within the window on a fake clock; a queued item
   survives a stopped consumer.
+  (Built in part, 19 Nov 2026: `internal/nemura/alert`, `RaisePayDayAlerts` and the sweep's `Raise` hook: a dead job whose kind starts with `payday.` raises one `alert.notify` outbox row per active Payroll administrator and Owner, once, in the sweep; the notice waits in the outbox while its consumer is down and is delivered, marked late past the hour, by the worker's `alert.notify` work (`TestADeadPayDayJobAlertsThePayrollAdministratorAndTheOwnerOnce`, `// req: NM-NFR-05, NM-NFR-03`). The local and default notifier logs a `payday.alert` line with identifiers only. **Left, so unticked:** email and in-app delivery to the person (with notifications and the people records that hold a work email), the scheduler heartbeat's watchdog and the cloud alert policies [live-verify], and the real pay-day jobs and the Fyniq hand-off (payroll's and the link's).)
 - [ ] 9.4 Region and scale to zero (NM-NFR-01): the release flavour refuses a non-Singapore region setting; the
   infra spec (10.1) has no minimum instances; local mode and `make test` pass offline. Tests `// req: NM-NFR-01`
   for the refusal and the offline run; the Cloud Run behaviour is `[live-verify]`.
+  (Built in part, 19 Nov 2026: the release and local flavours refuse a `NEMURA_REGION` outside `asia-southeast1` before any role starts (`TestARegionOutsideSingaporeIsRefused`, `TestTheBinaryDoesNotStartOutsideSingapore`, `// req: NM-NFR-01`), and `make test` passes offline. **Left, so unticked:** the infra spec's absence of minimum instances (10.1), and Cloud Run behaviour [live-verify].)
 - [ ] 9.5 Verify: `make check`, `make test`, `make images`.
 
 ## 10. Cloud code written offline, the threat model, controls and the close (slice 10)
@@ -275,6 +287,7 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   requests that change tenancy, approvals or the audit trail. Tests `// req: NM-SEC-01` (tagged now: tenancy,
   audit, logging, secrets and ASVS are all proven in 2, 3, 5 and here) and `// req: SEC-20`.
   (Built in part, 19 Nov 2026: `docs/security/threat-models/nemura-platform.md`. **Left, so unticked:** the controls in `compliance/controls/` (each must be a PRD-001 Appendix F row), the runbooks, and `// req: NM-SEC-01` once the issuer and sign-in are built.)
+  (Built in part, 19 Nov 2026, later: `docs/runbooks/nemura-first-run.md` (first run, the Owner's deployment recovery and the pay-day alert), the threat model's T16 to T20, and PRD-001 rev 0.307's Appendix F.9 with `compliance/controls/CTL-NM-01…06.yaml` (the owner's decisions O6 and O7). **Left, so unticked:** restoring Nemura alone [live-verify] and `// req: NM-SEC-01` once the issuer and sign-in are fully proven.)
 - [ ] 10.3 The close: every requirement in the coverage table below carries a test tag or a "Left" note naming its
   change; `make roadmap` and `python3 scripts/prdspec.py` report nothing stale; a final `openspec validate
   p1-nemura-platform --strict`; `make check`, `make test`, `make images`, `make image-scan`, `make image-sign`.

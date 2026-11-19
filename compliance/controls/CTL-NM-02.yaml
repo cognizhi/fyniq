@@ -1,0 +1,19 @@
+# CTL-NM-02: PRD-001 Appendix F (F.9). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-NM-02
+section: "F.9"
+control: "Every saved Nemura change has its audit event in the same transaction, and the trail is a verified hash chain nobody can edit or truncate"
+mapping: "ISO 8.15; SOC2 CC7.2"
+automated_check: "Tamper-detection and same-transaction tests (NM-SEC-01)"
+frequency: "CI"
+evidence: "Test report"
+owner: Owner
+checks:
+  - frequency: CI
+    status: running
+    how: "test TestAChangeAndItsAuditEventCommitTogether"
+    evidence: "a change and its audit event commit together or not at all (AUD-01, AUD-08); CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestTheChainDetectsTampering"
+    evidence: "an edited, removed or reordered event fails the chain's verification (AUD-03); CI artefact test-report (90 days)"

@@ -41,6 +41,11 @@ project, the owner's decisions O1 and O2).
 | T13 | Image and local stack | Elevation: a local adapter or the local password in a release image; Nemura's local stack reaching Fyniq's | Local shortcuts in production | Low |
 | T14 | Code | Tampering: Nemura's code reaching Fyniq's ledger, or Fyniq's reaching Nemura's, so one app writes the other's facts | A broken ownership boundary (ADR-N4) | Low |
 | T15 | Cloud code | Elevation: a Nemura identity holding a role on a Fyniq resource, or a person granted directly; a region outside Singapore | A cross-app reach; data out of region | Low |
+| T16 | Sign-in | Spoofing / elevation: a person takes another's place with a stolen, guessed, replayed or another organisation's setup, invitation or recovery code; a code in a URL, a log or the trail | A takeover of a member, an Owner or the first organisation | Medium |
+| T17 | Owner recovery | Elevation: one insider, or an attacker with the api's credential, issues a recovery for an Owner or replaces an Owner's sign-in without a code | An Owner account taken over | Low |
+| T18 | Owner recovery | Elevation: a recovered account keeps the old sign-in, session or passkey alive; an account of another member is bound to the Owner | The old, possibly compromised, access survives; two members share a login | Medium |
+| T19 | API clients | Elevation: someone other than the Owner, or an Owner with a stolen session, registers a client that reads the directory | Data leaving through a client the company did not mean | Medium |
+| T20 | Pay-day path | Denial: a pay-day job dies and nobody who can act hears of it | A late salary payment | Medium |
 
 SOD: nobody approves their own request, change or role; the approver of a privileged grant is an Owner who is neither the one who
 asked, the one who grants nor the one who receives it (NM-ROLE-05, SOD-6). A team of one is handled with the founders' team modes
@@ -66,12 +71,19 @@ functions add the acting person and the day.
 | T13 | The release flavour refuses outside staging and production and with a local adapter linked; the local password is compiled only into the local build; Nemura's compose services are in their own profile and share no volume | `TestBuildFlavoursRefuseTheWrongEnvironment` (the image check in `make images`), `TestNemuraServicesAreInThePeopleProfile` |
 | T14 | An import rule: Nemura's packages use only their own code and a short shared list, and nothing outside imports them | `TestNemuraStaysInItsLane`, `TestNemuraRulesCatchPlantedViolations` |
 | T15 | The module has no person-level grant and no key; its only project-level rights are the Cloud SQL client rights, each narrowed to the shared instance; the queue and the worker's invoker are Nemura's own; a region outside Singapore is refused | `make infra-check`: the module's `people.tftest.hcl` and the repository's rules |
+| T16 | A code travels in an HttpOnly cookie, never a URL, used once with the identity the provider proved; codes are kept as hashes, one answer for every wrong, used or expired code, and a code carries its organisation; a setup for an account that belongs to an organisation is refused | `TestACodeTakesAPlaceWithTheIdentityTheProviderProved`, `TestFirstRunAndAnInvitationTakeAPlaceThroughTheBrowser` |
+| T17 | A recovery is issued only through a SECURITY DEFINER function the migrator alone may call, which needs exactly two different named operators and an active Owner and writes both names to the trail in the same transaction; the api role has no INSERT on the table and may replace sign-ins only in the very transaction that used a recovery code (NM112); the code works once, only if it is the member's newest, and within 24 hours of the database's clock | `TestAnOwnerIsRecoveredByTwoOperatorsWithAOneTimeCode`, `TestFirstRunAndAnInvitationTakeAPlaceThroughTheBrowser` |
+| T18 | The recovery replaces every other sign-in of the member, ends their sessions and revokes their passkeys, each with its audit event; an account that already belongs to another member is refused and the code stays unused | `TestAnOwnerIsRecoveredByTwoOperatorsWithAOneTimeCode` |
+| T19 | Only the Owner, with a passkey confirmation within five minutes; the client is registered with Nemura's Hydra for the API's audience and the scopes given, a private key is refused, a repeat is refused, and revoking removes it from Hydra first; a second approver arrives with the Fyniq link (decided 19 Nov 2026) | `TestOnlyTheOwnerManagesAPIClientsWithAFreshPasskeyConfirmation`, `TestAnAPIClientIsRegisteredWithTheOAuthServerAndRecorded` |
+| T20 | A dead job of the pay-day path raises one notice for each Payroll administrator and Owner in the sweep, kept in the outbox while its consumer is down | `TestADeadPayDayJobAlertsThePayrollAdministratorAndTheOwnerOnce` |
 
 ## 4. What remains
 
-- The sign-in, sessions, passkeys and token issuer (`p1-nemura-platform` slice 5), the web app and its pages, and the API operations
-  for access requests and roles are not built yet: until they are, no person can reach any of this over the network, and this model
-  is reviewed again with each.
+- The sign-in, sessions, passkeys, token issuer, API clients, Owner recovery and the web app's sign-in are built; the web app's
+  other pages and the API operations for access requests and roles are not: until they are, this model is reviewed again with each.
+- The 24-hour cooling-off after a recovery (no approvals, payments, role or sign-in changes; SEC-35) and the notice to every Owner
+  need notifications, as for Fyniq's recovery: until then the operators tell every Owner and review the recovered account's activity
+  in the trail (`docs/runbooks/nemura-first-run.md`).
 - The cloud code is tested offline only: the database on the shared instance, the IAM database users and the group-role
   membership the migrations grant, the queue and the services `[live-verify]`. The reverse of T2 (a Nemura role opening Fyniq's
   database) is Fyniq's database setting and per-database IAM `[live-verify]`.

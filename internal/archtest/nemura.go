@@ -13,7 +13,7 @@ import (
 
 // NemuraPackages are the module's packages that are Nemura's: its entry point, its migrations, everything under
 // internal/nemura and its PostgreSQL adapter (a sub-package of Fyniq's adapter by name, which imports nothing of it).
-var NemuraPackages = []string{"cmd/nemura", "db/nemura", "internal/nemura", "internal/adapters/postgres/nemura"}
+var NemuraPackages = []string{"apps/nemura-web", "cmd/nemura", "db/nemura", "internal/nemura", "internal/adapters/postgres/nemura"}
 
 // NemuraShared is what Nemura's packages may import from the rest of the module: the infrastructure every service
 // uses and the pure libraries that carry the shared rules, the goose runner both migration streams use, and the local substitutes (queue, task credentials) of the local build. An entry names

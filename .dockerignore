@@ -39,8 +39,11 @@
 !pnpm-lock.yaml
 !pnpm-workspace.yaml
 !apps/web/
+!apps/nemura-web/
 !sdk/typescript/
 !docs/design-system/fyniq/tokens.css
+!docs/design-system/nemura/tokens.css
+!docs/design/screens/kit/nemura-ui.css
 !docs/design/screens/kit/ui.css
 !docs/prd/reviews/review-status.json
 !docs/user-guide/
@@ -48,6 +51,8 @@
 !deploy/docker/
 !mise.toml
 apps/web/node_modules
+apps/nemura-web/node_modules
+apps/nemura-web/dist
 apps/web/dist
 apps/web/storybook-static
 apps/web/test-results

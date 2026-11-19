@@ -61,6 +61,6 @@ books** (Expert only) · **Common problems** (each ✖ or ⚠ message and its fi
 
 | Section | Pages |
 |---|---|
-| Me | My home · ✔ [Apply for leave](nemura/leave-apply.md) · ✔ [Tell us you're sick](nemura/leave-sick.md) · My pay and payslips · Request a letter · Update my details · After you leave |
+| Me | ✔ [Sign in to Nemura](nemura/sign-in.md) · ✔ [Your home page](nemura/home.md) · ✔ [Apply for leave](nemura/leave-apply.md) · ✔ [Tell us you're sick](nemura/leave-sick.md) · My pay and payslips · Request a letter · Update my details · After you leave |
 | Managers | Approve leave · The team calendar · Claims (in Fyniq: [Approve your team's claims](claims-approve-team.md)) |
 | People team | People records · Leave policy and the Singapore pack · Government-paid leave claims · Pay runs and approval · Letters and templates · Checks · Access requests · The Fyniq link |

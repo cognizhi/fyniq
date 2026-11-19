@@ -21,7 +21,7 @@ classes:
     retention: "Kept while a member; a deactivated member's identity is switched off and kept for the audit trail"
     protection: "A global table no application role can read, reached only through functions that return the caller's own memberships; tokens and codes kept only as SHA-256"
     transfers: "The identity provider: the flow sign-in, assessed when it is outside Singapore (CMP-PD-06)"
-    columns: [identity_directory.subject, passkey.name]
+    columns: [identity_directory.subject, passkey.name, owner_recovery.operators]
   - key: access-requests
     what: "A person's request for their own data, the decision for each category of record and the written outcome"
     why: "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)"

@@ -659,3 +659,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | docs/user-guide/organisation-settings.md, integrations.md → settings.organisation (lost disputes: the expense limit setting), settings.integrations (a lost dispute's draft journal, resolving a set-aside event; p1-payment-providers, PRD rev 0.305)
 
 ## [2026-11-19] compile | kb/pages/task/settings-change.md re-hashed to the guide's new section (lost disputes); the page's content is unchanged
+## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md, home.md → nemura.sign-in, nemura.home (the sign-in page and the landing, p1-nemura-platform slice 7a)
+
+## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md → nemura.sign-in (joining with an invitation or the setup code)
+
+## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md → nemura.sign-in (the Owner recovery code)

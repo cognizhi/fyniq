@@ -10,6 +10,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -33,6 +34,26 @@ const (
 	CodeNoMembership    = "NM_SIGNIN_05" // the account signs in to no organisation here, and setup is done
 	CodeCrossSite       = "NM_SIGNIN_06" // a sign-out sent from another site
 	CodeNeedsSetup      = "NM_SIGNIN_07" // first-run setup is not done: the web app shows its form
+	CodeJoinRefused     = "NM_SIGNIN_08" // the invitation or setup code is wrong, used or expired, or the form was incomplete
+)
+
+// joinLifetime is how long a code waits in the browser while the person signs in at the provider.
+const joinLifetime = 15 * time.Minute
+
+// Join is what a person brings to the sign-in to take a place in an organisation: the one-time setup code that makes the first
+// organisation with them as its Owner, an invitation's code, or an Owner's deployment-recovery code. It travels in an HttpOnly cookie, never in a URL, and the callback uses
+// it once, whatever happens, with the identity the provider proved.
+type Join struct {
+	Kind         string `json:"k"` // "setup" or "invitation"
+	Code         string `json:"c"`
+	Organisation string `json:"o,omitempty"` // setup: the organisation's name
+	Name         string `json:"n,omitempty"` // setup: the Owner's display name
+}
+
+const (
+	JoinSetup      = "setup"
+	JoinInvitation = "invitation"
+	JoinRecovery   = "recovery" // an Owner's deployment-recovery code: the account signed in with becomes their only sign-in
 )
 
 // startLifetime is how long a sign-in may take at the provider.
@@ -51,6 +72,12 @@ type Store interface {
 	StartSession(ctx context.Context, org, member uuid.UUID, now time.Time) (string, error)
 	// EndSession ends the session a token opens, if any.
 	EndSession(ctx context.Context, token string, now time.Time) error
+	// FirstRun makes the first organisation and its Owner with the setup code's hash; AcceptInvitation links the identity to the invited
+	// member. Either refuses with one answer for every wrong, used or expired code.
+	FirstRun(ctx context.Context, code []byte, at time.Time, organisation, displayName string, who identity.Identity) (org, owner uuid.UUID, err error)
+	AcceptInvitation(ctx context.Context, code string, at time.Time, who identity.Identity) (org, member uuid.UUID, err error)
+	// RecoverOwner uses an Owner's recovery code with the identity just proved: it replaces the member's other sign-ins and ends their sessions.
+	RecoverOwner(ctx context.Context, code string, at time.Time, who identity.Identity) (org, member uuid.UUID, err error)
 }
 
 // Flow is the browser's way in and out.
@@ -71,6 +98,7 @@ func (f Flow) Register(mux interface {
 	HandleFunc(pattern string, h func(http.ResponseWriter, *http.Request))
 }) {
 	mux.HandleFunc("GET /auth/signin", f.start)
+	mux.HandleFunc("POST /auth/join", f.join)
 	mux.HandleFunc("GET /auth/callback", f.callback)
 	mux.HandleFunc("POST /auth/signout", f.signOut)
 }
@@ -84,6 +112,13 @@ func SessionCookie(secure bool) string {
 		return "__Host-nemura_session"
 	}
 	return "nemura_session"
+}
+
+func (f Flow) joinCookie() string {
+	if f.Secure() {
+		return "__Host-nemura_join"
+	}
+	return "nemura_join"
 }
 
 func (f Flow) startCookie() string {
@@ -113,10 +148,59 @@ func (f Flow) start(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, to, http.StatusSeeOther)
 }
 
+// join takes a setup or invitation code from the sign-in form into a cookie and goes on to the provider. A code that is the wrong shape
+// is refused here; whether it is right is only known with the identity, at the callback.
+func (f Flow) join(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "same-origin" && site != "none" {
+		f.fail(w, r, CodeJoinRefused, "join sent from another site", nil)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		f.fail(w, r, CodeJoinRefused, "unreadable form", nil)
+		return
+	}
+	j := Join{Kind: r.PostForm.Get("kind"), Code: strings.TrimSpace(r.PostForm.Get("code")), Organisation: strings.TrimSpace(r.PostForm.Get("organisation")), Name: strings.TrimSpace(r.PostForm.Get("name"))}
+	bad := j.Code == "" || len(j.Code) > 200 || len(j.Organisation) > 200 || len(j.Name) > 200
+	switch j.Kind {
+	case JoinSetup:
+		bad = bad || j.Organisation == "" || j.Name == ""
+	case JoinInvitation, JoinRecovery:
+	default:
+		bad = true
+	}
+	provider := r.PostForm.Get("provider")
+	if bad || !f.known(provider) {
+		f.fail(w, r, CodeJoinRefused, "incomplete join", nil)
+		return
+	}
+	raw, _ := json.Marshal(j)
+	http.SetCookie(w, f.cookie(f.joinCookie(), base64.RawURLEncoding.EncodeToString(raw), joinLifetime))
+	http.Redirect(w, r, f.Base+"/auth/signin?provider="+url.QueryEscape(provider)+"&return_to="+url.QueryEscape(SafeReturn(r.PostForm.Get("return_to"))), http.StatusSeeOther)
+}
+
+// joinOf reads the join cookie, if there is one and it is ours.
+func (f Flow) joinOf(r *http.Request) *Join {
+	c, err := r.Cookie(f.joinCookie())
+	if err != nil {
+		return nil
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(c.Value)
+	var j Join
+	if err != nil || json.Unmarshal(raw, &j) != nil || j.Code == "" || (j.Kind != JoinSetup && j.Kind != JoinInvitation && j.Kind != JoinRecovery) {
+		return nil
+	}
+	return &j
+}
+
 func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	c, err := r.Cookie(f.startCookie())
 	http.SetCookie(w, f.cookie(f.startCookie(), "", -1)) // used once, whatever happens
+	joining := f.joinOf(r)
+	if joining != nil {
+		http.SetCookie(w, f.cookie(f.joinCookie(), "", -1)) // a code is used once, whatever happens
+	}
 	if err != nil {
 		f.fail(w, r, CodeExpired, "no sign-in in this browser", nil)
 		return
@@ -148,6 +232,32 @@ func (f Flow) callback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		f.fail(w, r, CodeFailure, "memberships", err)
 		return
+	}
+	if joining != nil {
+		// Whoever signed in now takes the place the code opens: an invitation's member, or the first organisation's Owner. A wrong, used or
+		// expired code is one answer. The new place comes first in the list, so the session is in it.
+		var org, member uuid.UUID
+		var err error
+		switch {
+		case joining.Kind == JoinInvitation:
+			org, member, err = f.Store.AcceptInvitation(r.Context(), joining.Code, f.Clock.Now(), who)
+		case joining.Kind == JoinRecovery:
+			org, member, err = f.Store.RecoverOwner(r.Context(), joining.Code, f.Clock.Now(), who)
+		case len(memberships) == 0:
+			org, member, err = f.Store.FirstRun(r.Context(), identity.Hash(joining.Code), f.Clock.Now(), joining.Organisation, joining.Name, who)
+		default:
+			err = identity.Refused() // setup makes the first organisation: an account that belongs to one has no use for it
+		}
+		if err != nil {
+			var refusal *identity.Refusal
+			if errors.As(err, &refusal) {
+				f.fail(w, r, CodeJoinRefused, "join refused", err)
+			} else {
+				f.fail(w, r, CodeFailure, "join", err)
+			}
+			return
+		}
+		memberships = append([]Membership{{org, member}}, memberships...)
 	}
 	if len(memberships) == 0 {
 		done, err := f.Store.SetupDone(r.Context())

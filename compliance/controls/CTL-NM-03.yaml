@@ -1,0 +1,19 @@
+# CTL-NM-03: PRD-001 Appendix F (F.9). The fields from section to evidence are the PRD's row,
+# kept equal to it by `make check` (scripts/controls.py sync rewrites them); owner and checks are ours.
+id: CTL-NM-03
+section: "F.9"
+control: "Nemura and Fyniq stay apart: Nemura's code imports only the shared infrastructure list, nothing imports it, and no Nemura identity holds a role on a Fyniq resource"
+mapping: "ISO 8.31; SOC2 CC6.1"
+automated_check: "Import-rule tests; the infrastructure module's tests"
+frequency: "CI"
+evidence: "Test report; the Infrastructure CI job's log"
+owner: Owner
+checks:
+  - frequency: CI
+    status: running
+    how: "test TestNemuraStaysInItsLane"
+    evidence: "Nemura's packages import only the shared infrastructure list and nothing outside imports them; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "make infra-check"
+    evidence: "the people module's test no_nemura_identity_holds_a_role_on_a_fyniq_resource: no Nemura identity holds a role on a Fyniq resource; the Infrastructure CI job's log"

@@ -251,6 +251,23 @@ components:
         - detail
         - code
       type: object
+    Provider:
+      additionalProperties: false
+      properties:
+        id:
+          description: The provider's ID, passed to /auth/signin.
+          examples:
+            - google
+          type: string
+        name:
+          description: As the sign-in page names it.
+          examples:
+            - Google
+          type: string
+      required:
+        - id
+        - name
+      type: object
     RegisterInputBody:
       additionalProperties: false
       properties:
@@ -315,6 +332,25 @@ components:
         - member_id
         - roles
         - landing
+      type: object
+    SignInOutputBody:
+      additionalProperties: false
+      properties:
+        providers:
+          description: The providers people may sign in with, in the order to offer them.
+          items:
+            $ref: "#/components/schemas/Provider"
+          type:
+            - array
+            - "null"
+        setup_done:
+          description: "False until first-run setup has made the first organisation: the sign-in page then says Nemura is not set up."
+          examples:
+            - true
+          type: boolean
+      required:
+        - providers
+        - setup_done
       type: object
 info:
   contact:
@@ -822,6 +858,26 @@ paths:
       summary: Confirm the session with a passkey
       tags:
         - Session
+  /v1/sign-in:
+    get:
+      description: Lists the sign-in providers people may use, in order, and whether first-run setup is done. It needs no sign-in, shows nothing of any organisation and changes nothing; a browser signs in by going to /auth/signin with a provider's ID.
+      operationId: getSignIn
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignInOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Error
+      summary: What the sign-in page shows
+      tags:
+        - Sign-in
 servers:
   - description: Nemura's origin with /api (one origin serves the web app and the API), or the api service itself in make dev.
     url: "{origin}"
@@ -834,5 +890,7 @@ tags:
     name: Platform
   - description: Systems that call Nemura's API on their own, registered by the Owner with a key pair they hold (NM-ARC-06).
     name: API clients
+  - description: "What the sign-in page shows: the providers on offer and whether first-run setup is done."
+    name: Sign-in
   - description: Who is signed in, the roles they hold now and where they land (NM-ROLE-01, NM-ROLE-02).
     name: Session
