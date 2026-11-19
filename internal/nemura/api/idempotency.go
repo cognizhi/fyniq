@@ -98,7 +98,7 @@ func addIdempotencyHeader(_ *huma.OpenAPI, op *huma.Operation) {
 	max := 255
 	op.Parameters = append(op.Parameters, &huma.Param{Name: "Idempotency-Key", In: "header", Required: false, Example: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa",
 		Description: "A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.",
-		Schema:      &huma.Schema{Type: "string", MinLength: new(int), MaxLength: &max}})
+		Schema:      &huma.Schema{Type: "string", MinLength: new(int), MaxLength: &max, Examples: []any{"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa"}}})
 }
 
 func validKey(k string) bool {
