@@ -277,6 +277,8 @@ export const actions = [
   // Home's per-role work and its deadlines (§7.1, FR-UX-40; docs/design/screens Home's upcoming deadlines).
   { kind: "action", id: "home.your-work", mode: "basic", help: "home.your-work", guide: "home.overview#your-work" },
   // The Auditor's engagement on Reports, where they land (§7.1): until when their read-only access lasts.
+  // The Approver's requests waiting for them, with the step each is at (§7.1).
+  { kind: "action", id: "home.approver-work", mode: "basic", help: "home.approver-work", guide: "home.overview#your-work" },
   { kind: "action", id: "home.auditor-access", mode: "basic", help: "home.auditor-access", guide: "home.overview#your-work" },
   { kind: "action", id: "home.deadlines", mode: "basic", help: "home.deadlines", guide: "home.overview#upcoming-deadlines" },
   { kind: "action", id: "home.revenue-vs-budget", mode: "expert", help: "home.revenue-vs-budget", guide: "home.overview#read-the-plans-on-home" },
@@ -332,6 +334,8 @@ export const actions = [
   { kind: "action", id: "time.approve", mode: "basic", help: "time.approve", guide: "projects.time#approve-the-teams-time" },
   { kind: "action", id: "time.correct", mode: "basic", help: "time.correct", guide: "projects.time#correct-approved-time" },
   { kind: "action", id: "time.missing", mode: "basic", help: "time.missing", guide: "projects.time#days-with-no-time" },
+  { kind: "action", id: "project.milestones", mode: "expert", help: "project.milestones", guide: "projects.billing#fixed-fee-and-retainer" },
+  { kind: "action", id: "project.unbilled", mode: "expert", help: "project.unbilled", guide: "projects.billing#what-a-project-can-bill" },
   { kind: "action", id: "project.billable", mode: "expert", help: "project.billable", guide: "projects.costs#bill-a-cost-on-to-the-customer" },
   { kind: "action", id: "rates.cost", mode: "expert", help: "rates.cost", guide: "projects.rates#enter-cost-rates" },
   { kind: "action", id: "rates.billing", mode: "basic", help: "rates.billing", guide: "projects.rates#enter-billing-rates" },

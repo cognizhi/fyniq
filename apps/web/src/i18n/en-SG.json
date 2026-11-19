@@ -1459,6 +1459,14 @@
       "label": "Input tax",
       "tooltip": "What the GST claim rests on: the document, the supplier's registration and whom it is addressed to."
     },
+    "project.milestones": {
+      "label": "Milestones",
+      "tooltip": "The parts of a fixed fee. Record the customer's acceptance of a milestone, then invoice it once. A retainer shows its periods and what time has drawn down."
+    },
+    "project.unbilled": {
+      "label": "Unbilled work",
+      "tooltip": "What this project can bill its customer now: approved billable time at billing rates, and posted billable costs at cost plus markup. Posting an invoice made from it marks the work billed; voiding the invoice releases it."
+    },
     "project.billable": {
       "label": "Bill to the customer",
       "tooltip": "A cost of a project can be billed on to its customer, with a markup on the cost. The project's Unbilled tab then lists it once it is posted, at its cost plus the markup."
@@ -2714,6 +2722,10 @@
     "home.your-work": {
       "label": "Your work",
       "tooltip": "What waits in your areas, by your roles: bank lines to categorise, drafts to finish, overdue invoices and bills, receipts to apply, quotes waiting, payment batches and claims to pay or release, people asking to join, data requests and the like. Each opens its list."
+    },
+    "home.approver-work": {
+      "label": "Waiting for your approval",
+      "tooltip": "The requests that wait for you as an approver, the oldest first, each with its step and who that step needs. Open one to see what approving it posts."
     },
     "home.auditor-access": {
       "label": "Your engagement",

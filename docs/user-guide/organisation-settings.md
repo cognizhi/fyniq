@@ -469,6 +469,16 @@ lists it (missing recommended evidence). **Optional** asks for nothing. Changing
 second approver. Attach files in the record's **Evidence** panel. **Accounting › Evidence** lists the
 records still missing theirs ([Find evidence](evidence-search.md)).
 
+### What each record's panel shows
+
+A record's **Evidence** panel lists **Rules for this activity**: what the record rests on, with a
+cross and **Required** while a required item has no file, a warning and **Recommended** while a
+recommended one has none, and **Attached** once a file meets it. A bill, an expense claim and a
+founder's cost are recommended to carry a business purpose note; a change of a supplier's bank
+details, a call-back note; a manual journal, an explanation; a filing, its working papers. Say what a
+file is when you attach it (for example "business purpose note" or "explanation") and it meets that
+item. Where your organisation made evidence optional, the panel says it asks for none.
+
 ## Variances at the close
 
 Before a month closes, Fyniq compares each income and expense account's total for the month with
