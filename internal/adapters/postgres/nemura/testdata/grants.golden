@@ -384,6 +384,22 @@ nemura_api | column nemura.person_secret.nric_sealed | INSERT
 nemura_api | column nemura.person_secret.nric_sealed | UPDATE
 nemura_api | column nemura.person_secret.person_id | INSERT
 nemura_api | column nemura.person_secret.updated_at | UPDATE
+nemura_api | column nemura.person_terms.basic_salary | INSERT
+nemura_api | column nemura.person_terms.contract_end | INSERT
+nemura_api | column nemura.person_terms.created_at | INSERT
+nemura_api | column nemura.person_terms.created_by | INSERT
+nemura_api | column nemura.person_terms.effective_from | INSERT
+nemura_api | column nemura.person_terms.effective_to | UPDATE
+nemura_api | column nemura.person_terms.fixed_allowances | INSERT
+nemura_api | column nemura.person_terms.fixed_deductions | INSERT
+nemura_api | column nemura.person_terms.id | INSERT
+nemura_api | column nemura.person_terms.main_duties | INSERT
+nemura_api | column nemura.person_terms.medical_benefits | INSERT
+nemura_api | column nemura.person_terms.notice_period | INSERT
+nemura_api | column nemura.person_terms.other_pay | INSERT
+nemura_api | column nemura.person_terms.overtime_period | INSERT
+nemura_api | column nemura.person_terms.person_id | INSERT
+nemura_api | column nemura.person_terms.salary_period | INSERT
 nemura_api | column nemura.reporting_line.effective_from | INSERT
 nemura_api | column nemura.reporting_line.effective_to | UPDATE
 nemura_api | column nemura.reporting_line.id | INSERT
@@ -497,6 +513,7 @@ nemura_api | table nemura.person_dependant | SELECT
 nemura_api | table nemura.person_document | SELECT
 nemura_api | table nemura.person_job | SELECT
 nemura_api | table nemura.person_secret | SELECT
+nemura_api | table nemura.person_terms | SELECT
 nemura_api | table nemura.reporting_line | SELECT
 nemura_api | table nemura.role_assignment | SELECT
 nemura_api | table nemura.session | SELECT
@@ -588,6 +605,7 @@ nemura_readonly | table nemura.person_dependant | SELECT
 nemura_readonly | table nemura.person_document | SELECT
 nemura_readonly | table nemura.person_job | SELECT
 nemura_readonly | table nemura.person_secret | SELECT
+nemura_readonly | table nemura.person_terms | SELECT
 nemura_readonly | table nemura.reporting_line | SELECT
 nemura_readonly | table nemura.role_assignment | SELECT
 nemura_readonly | table nemura.session | SELECT
@@ -686,6 +704,7 @@ nemura_worker | table nemura.person_dependant | SELECT
 nemura_worker | table nemura.person_document | SELECT
 nemura_worker | table nemura.person_job | SELECT
 nemura_worker | table nemura.person_secret | SELECT
+nemura_worker | table nemura.person_terms | SELECT
 nemura_worker | table nemura.reporting_line | SELECT
 nemura_worker | table nemura.role_assignment | SELECT
 nemura_worker | table nemura.session | SELECT

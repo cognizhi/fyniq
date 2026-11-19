@@ -1,0 +1,3 @@
+case,rule,date,want_months,why,source
+reply window in 2026,reply_months,2026-11-20,2,"MOM: 2 months to respond to a request",mom-flexible-work
+before the guidelines,reply_months,2024-11-30,none,"MOM: the guidelines took effect on 1 December 2024",mom-flexible-work

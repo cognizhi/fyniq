@@ -1,0 +1,10 @@
+case,scheme,birth,want,why,source
+maternity first child,maternity_citizen_1st_2nd,2026-05-01,16/8/8,"MOM: 16 weeks; the employer pays the first 8 and the Government the last 8",mom-maternity-leave
+maternity third child,maternity_citizen_3rd_plus,2026-05-01,16/0/16,"MOM: the Government reimburses all 16 weeks",mom-maternity-leave
+maternity under the Act,maternity_employment_act,2026-05-01,12/-1/-1,"MOM: 12 weeks under the Act; the page states no payer split",mom-maternity-leave
+paternity for a birth in May 2026,paternity_citizen,2026-05-01,4/0/4,"MSF: 4 weeks from 1 April 2025",msf-paternity-leave
+paternity before the scheme,paternity_citizen,2025-03-31,none,"MSF: the scheme starts for births from 1 April 2025",msf-paternity-leave
+shared parental for a birth in March 2026,shared_parental_6_weeks,2026-03-31,6/0/6,"MSF: 6 weeks for births from 1 April 2025 to 31 March 2026",msf-shared-parental-leave
+shared parental for a birth in April 2026,shared_parental_10_weeks,2026-04-01,10/0/10,"MSF: 10 weeks from 1 April 2026",msf-shared-parental-leave
+the 6-week scheme ended,shared_parental_6_weeks,2026-04-01,none,"MSF: 6 weeks only to 31 March 2026",msf-shared-parental-leave
+adoption leave,adoption_citizen,2026-05-01,12/12/-1,"MOM: 12 weeks, the employer pays; the Government reimburses part (not stated)",mom-adoption-leave

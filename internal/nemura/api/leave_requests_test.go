@@ -294,6 +294,53 @@ func TestTheAccrualAndAvailabilityAreScopedByRole(t *testing.T) {
 	}
 }
 
+// The key employment terms: the people team and the Owner write the base terms, the Payroll administrator and the Owner write the pay terms, each part only by its own roles; the
+// people team asks for a letter about someone else; nobody else does (NM-LTR-06).
+// req: NM-LTR-06
+func TestKeyEmploymentTermsAreWrittenInPartsByTheirOwnRoles(t *testing.T) {
+	do := func(roles []authz.Role, method, path, body string) int {
+		testRoles = roles
+		defer func() { testRoles = []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"
+	base := `{"effective_from":"2026-09-01","base":{"main_duties":"Keeps the books.","notice_period":"One month"}}`
+	pay := `{"effective_from":"2026-09-01","pay":{"salary_period":"monthly","basic_salary":"4500.00"}}`
+	for _, tc := range []struct {
+		roles                             []authz.Role
+		read, writeBase, writePay, askFor int
+	}{
+		{[]authz.Role{authz.Employee}, 403, 403, 403, 403}, {[]authz.Role{authz.LineManager}, 403, 403, 403, 403},
+		{[]authz.Role{authz.HROfficer}, 200, 201, 403, 201}, {[]authz.Role{authz.HRAdmin}, 200, 201, 403, 201},
+		{[]authz.Role{authz.PayrollAdmin}, 200, 403, 201, 403}, {[]authz.Role{authz.Owner}, 200, 201, 201, 201},
+	} {
+		if got := do(tc.roles, "GET", "/v1/people/"+id+"/terms", ""); got != tc.read {
+			t.Errorf("%v reading: %d, want %d", tc.roles, got, tc.read)
+		}
+		if got := do(tc.roles, "POST", "/v1/people/"+id+"/terms", base); got != tc.writeBase {
+			t.Errorf("%v writing the base terms: %d, want %d", tc.roles, got, tc.writeBase)
+		}
+		if got := do(tc.roles, "POST", "/v1/people/"+id+"/terms", pay); got != tc.writePay {
+			t.Errorf("%v writing the pay terms: %d, want %d", tc.roles, got, tc.writePay)
+		}
+		if got := do(tc.roles, "POST", "/v1/people/"+id+"/letters", `{"type":"kets","purpose":"The key employment terms"}`); got != tc.askFor {
+			t.Errorf("%v asking for a letter about someone: %d, want %d", tc.roles, got, tc.askFor)
+		}
+	}
+	if got := do([]authz.Role{authz.Owner}, "POST", "/v1/people/"+id+"/terms", `{"effective_from":"2026-09-01"}`); got != 422 {
+		t.Errorf("terms with no part: %d", got)
+	}
+	if got := do([]authz.Role{authz.Owner}, "POST", "/v1/people/"+id+"/terms", `{"effective_from":"2026-09-01","pay":{"basic_salary":"4,500"}}`); got != 422 {
+		t.Errorf("a salary that is not a decimal: %d", got)
+	}
+}
+
 // Letters are asked for by the person, checked by the people team (never their own), signed only by the signatory after a fresh passkey confirmation, and read by the person
 // and the people team; the people team writes templates, the HR administrator and the Owner approve them and set the letterhead and the types; a delivery link needs no
 // sign-in (NM-LTR-01, NM-LTR-02, NM-LTR-03).

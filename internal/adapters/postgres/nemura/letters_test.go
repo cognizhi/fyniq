@@ -19,6 +19,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/local"
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
@@ -61,7 +62,7 @@ func TestALetterIsIssuedInTwoStepsAndTheEvidenceCannotChange(t *testing.T) {
 		var due time.Time
 		err := lt.c.do(func(ctx context.Context, tx pgx.Tx) error {
 			var err error
-			id, due, err = nemura.RequestLetter(ctx, tx, lt.c.org, now, by, nemura.LetterAsk{Person: person, Type: "employment_confirmation", Purpose: purpose})
+			id, due, err = nemura.RequestLetter(ctx, tx, lt.c.org, now, by, pack.Version{}, nemura.LetterAsk{Person: person, Type: "employment_confirmation", Purpose: purpose})
 			return err
 		})
 		return id, due, err
@@ -322,7 +323,7 @@ func TestTheLettersServiceAsksChecksSignsAndDelivers(t *testing.T) {
 		t.Fatal(err)
 	}
 	types, err := svc.Types(ctx, ben)
-	if err != nil || len(types) != len(letters.Types) || types[0].Key != "employment_confirmation" || !types[0].Enabled || types[0].Version != 1 || types[len(types)-1].Needs == "" {
+	if err != nil || len(types) != len(letters.Types) || types[0].Key != "employment_confirmation" || !types[0].Enabled || types[0].Version != 1 || typeNeeds(types, "salary_certificate") == "" {
 		t.Fatalf("types: %+v %v", types, err)
 	}
 	if v, err := svc.Templates(ctx, ben, "employment_confirmation"); err != nil || len(v) != 1 || v[0].State != "published" || len(v[0].Blocks) != 3 {
@@ -401,4 +402,13 @@ func TestTheLettersServiceAsksChecksSignsAndDelivers(t *testing.T) {
 	if _, _, err := bare.File(ctx, ben, rid, false); !errors.Is(err, api.ErrUnavailable) {
 		t.Errorf("reading with no store: %v", err)
 	}
+}
+
+func typeNeeds(types []api.LetterType, key string) string {
+	for _, t := range types {
+		if t.Key == key {
+			return t.Needs
+		}
+	}
+	return ""
 }

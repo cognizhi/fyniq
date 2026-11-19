@@ -283,5 +283,9 @@ var letterRenderer letters.Renderer
 
 func lettersService(store *nemura.Store, deps app.Deps, getenv func(string) string) api.Letters {
 	_, blobs := restrictedWiring(getenv)
-	return nemura.LettersService{Store: store, Clock: deps.Clock, Blobs: blobs, Renderer: letterRenderer}
+	p, err := nemura.NewPacksService(store, deps.Clock)
+	if err != nil {
+		panic(err) // a pack that does not validate is a build error: the files are embedded
+	}
+	return nemura.LettersService{Packs: p, Store: store, Clock: deps.Clock, Blobs: blobs, Renderer: letterRenderer}
 }

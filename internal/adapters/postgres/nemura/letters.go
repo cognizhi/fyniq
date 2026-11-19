@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/cognizhi/fyniq/internal/domain/audit"
+	"github.com/cognizhi/fyniq/internal/domain/pack"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
@@ -277,7 +278,7 @@ type LetterAsk struct {
 
 // RequestLetter makes a request: it fills the published template of an enabled type from the person's facts and the letterhead, refusing a fact the record does not hold, and
 // writes the values once. It returns the request and the day it is due.
-func RequestLetter(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by uuid.UUID, a LetterAsk) (uuid.UUID, time.Time, error) {
+func RequestLetter(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by uuid.UUID, v pack.Version, a LetterAsk) (uuid.UUID, time.Time, error) {
 	t, ok := letters.TypeOf(a.Type)
 	if !ok {
 		return uuid.Nil, time.Time{}, &letters.Refusal{Code: letters.CodeNotFound, Message: "There is no such letter type."}
@@ -313,6 +314,15 @@ func RequestLetter(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, 
 	vals, err := letterValues(ctx, tx, a.Person, at, strings.TrimSpace(a.Purpose))
 	if err != nil {
 		return uuid.Nil, time.Time{}, err
+	}
+	if t.Pay {
+		kv, err := ketValues(ctx, tx, v, a.Person, at)
+		if err != nil {
+			return uuid.Nil, time.Time{}, err
+		}
+		for k, x := range kv {
+			vals[k] = x
+		}
 	}
 	probe := maps(vals)
 	probe["letter.reference"] = "—"

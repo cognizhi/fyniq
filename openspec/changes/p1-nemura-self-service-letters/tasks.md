@@ -25,10 +25,16 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations`, `fyniq
 
 ## 2. KETs (slice 2)
 
-- [ ] 2.1 The KETs content from MOM's pages into `sg-people` as a new version, researched, with its source, quote and pinned cases. `// req: NM-PACK-06`
-- [ ] 2.2 `person_terms` (D7), restricted fields sealed, the KETs template and letter type, generation from the terms and the record. `// req: NM-LTR-06`
-- [ ] 2.3 N.1 #1: KETs not issued within 14 days of the start. `// req: NM-LTR-06`
-- [ ] 2.4 Screens, guide and kb pages; verify.
+- [x] 2.1 The 17 KETs items from MOM's tripartite guidelines (read 20 Nov 2026) into `sg-people@2026.6` (`ket_items`, `kets_days_after_start`), researched, with the source,
+  the quote and pinned cases; the earlier versions are kept and do not hold them. `// req: NM-PACK-06`
+- [x] 2.2 Migration 000024 `person_terms` (D7, O3): effective-dated history that is only ended, once; the base terms written by the people team, the pay by payroll and the
+  Owner; the KETs letter type and its standard text; the letter is filled from the terms, the working pattern, the classification and the pack, and the people team asks
+  for it for a person (`POST /v1/people/{id}/letters`). `// req: NM-LTR-06`
+- [x] 2.3 N.1 #1: KETs not issued 14 days after the start are ✖, a reminder in the 3 days before. `// req: NM-LTR-06`
+- [x] 2.4 The terms panel on `nm-person`, guide and kb pages; PRD-002 rev 0.12; verify.
+  Left in slice 2: the sealed form of the pay terms (they are guarded by role and kept out of the audit event, not sealed with the key service: [accountant to confirm] whether
+  sealing is wanted before payroll holds pay); "place of work" and the probation's end as terms of their own (MOM's list has neither: the probation reads from the person's
+  record); re-issuing the KETs when terms change (a new request does it); reading MOM's page rather than the PDF guidelines for any later change `[verify]`.
 
 ## 3. Self-service and the leaver's account (slice 3)
 

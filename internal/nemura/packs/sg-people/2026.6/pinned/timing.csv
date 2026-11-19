@@ -1,0 +1,4 @@
+case,rule,date,want_days,why,source
+salary,salary_days_after_period,2026-11-19,7,"MOM: within 7 days after the end of the salary period",mom-paying-salary
+overtime,overtime_days_after_period,2026-11-19,14,"MOM: overtime within 14 days",mom-paying-salary
+kets,kets_days_after_start,2026-11-20,14,"MOM: no later than 14 days after the start of employment",mom-kets-guidelines
