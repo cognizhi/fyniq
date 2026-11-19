@@ -43,3 +43,4 @@ approval is the platform's proof of who approved, not a signature inside the PDF
 
 - [Ask for a letter](letters-request.md)
 - [Letter templates](letters-templates.md)
+- [Turn on the people assistant and decide its drafts](assistant.md)

@@ -303,17 +303,35 @@ def test_the_last_month_of_employment_trues_up_though_it_is_not_december():  # r
     assert Decimal(got["refund_wages"]) == 0
 
 
-def test_a_true_up_excess_is_a_refund_task_with_the_employees_share_cents_dropped():  # req: FR-PAY-14
-    # Ordinary wages 96,000 actual: 6,000 allowed; 30,000 counted: 24,000 refundable; the employee's share 20% of 24,000 = 4,800.
+def test_a_true_up_excess_is_a_refund_task_with_the_employees_share_in_whole_dollars():  # req: FR-PAY-14
+    # Ordinary wages 96,000 actual: 6,000 allowed; 30,000 counted: 24,000 refundable at 37% is 8,880 contributions;
+    # the employee's share 8,880 / 0.37 x 0.20 = 4,800.
     got = work(month="2026-12-01", person=person(), items=basic("8000.00"), last_month=True, ytd={"ow": "88000", "aw_subject": "30000", "aw_paid": "30000"})
-    assert figures(got, "aw_subject", "refund_wages", "refund_employee") == {"aw_subject": 0, "refund_wages": 24000, "refund_employee": 4800}
+    assert figures(got, "aw_subject", "refund_wages", "refund_total", "refund_employee") == {
+        "aw_subject": 0, "refund_wages": 24000, "refund_total": 8880, "refund_employee": 4800}
 
 
-def test_a_refund_with_a_part_cent_drops_the_cents_for_the_employee():  # req: FR-PAY-14
+def test_a_refund_drops_the_cents_of_the_employees_share():  # req: FR-PAY-14
     # Actual ordinary wages 89,999.93 + 8,000 = 97,999.93: 4,000.07 allowed; 12,100.14 counted: 8,100.07 refundable.
-    # The employee's share 20% of 8,100.07 = 1,620.014: cents dropped, 1,620.01. 
+    # The contributions on it, 37% of 8,100.07 = 2,997.0259, are 2,997 to the nearest dollar; the employee's share 2,997 / 0.37 x 0.20 = 1,620.
     got = work(month="2026-12-01", items=basic("8000.00"), last_month=True, ytd={"ow": "89999.93", "aw_subject": "12100.14", "aw_paid": "12100.14"})
-    assert figures(got, "refund_wages", "refund_employee") == {"refund_wages": Decimal("8100.07"), "refund_employee": Decimal("1620.01")}
+    assert figures(got, "refund_wages", "refund_total", "refund_employee") == {"refund_wages": Decimal("8100.07"), "refund_total": 2997, "refund_employee": 1620}
+
+
+def test_a_refund_in_the_graduated_range_is_worked_out_at_the_full_rates():  # req: FR-PAY-14
+    # 88,000 + 0.10 of ordinary wages leave 13,999.90 for the 14,961.56 counted: 961.66 refundable. 37% of it is 355.8142, so 356 contributions;
+    # the employee's share 356 / 0.37 x 0.20 = 192.43, cents dropped: 192.
+    got = work(month="2026-12-01", items=basic("0.10"), last_month=True, ytd={"ow": "88000", "aw_subject": "14961.56", "aw_paid": "14961.56"})
+    assert figures(got, "refund_wages", "refund_total", "refund_employee") == {"refund_wages": Decimal("961.66"), "refund_total": 356, "refund_employee": 192}
+
+
+def test_the_cpf_boards_own_refund_example_gives_whole_dollars(monkeypatch):  # req: FR-PAY-14
+    # cpf.gov.sg, "Why does the excess CPF from the Additional Wage ceiling calculator differ from the automatic refund and how do I calculate my employee's
+    # share" (checked 20 Nov 2026): $2,260 refunded at a 32.5% total rate and a 17% employee rate: "($2,260 / 32.5%) x 17% = $1,182 (cents should be
+    # dropped)", 1,182.15 before. The pack's 2026 tables have no 32.5% row, so the example's rates are put in place of the pack's.
+    monkeypatch.setattr(em, "_rates", lambda *_: (Decimal("0.155"), Decimal("0.17")))
+    total, employee = em.cpf_refund("sg-cpf@2026.2", "sc_spr3", em.date(1968, 1, 1), em.date(2026, 12, 1), Decimal("6953.85"))
+    assert (total, employee) == (2260, 1182)
 
 
 def test_a_month_that_pays_additional_wages_with_no_year_to_date_is_refused():  # req: FR-PAY-14
@@ -587,3 +605,134 @@ def test_the_packs_pinned_sdl_and_shg_and_ceilings():  # req: RND-SDL, FR-PAY-04
     for r in _rows("sg-cpf", "2026.2", "ceilings.csv"):
         if r["want"] != "none":
             assert em._ceiling("sg-cpf@2026.2", r["ceiling"], em.date.fromisoformat(r["month"] + "-01")) == Decimal(r["want"]), r["case"]
+
+
+def test_a_joint_application_at_full_rates_for_both_is_the_full_table():  # req: FR-PAY-14
+    # The CPF Board's Table 1 note: the full rates "are also applicable to 1st and 2nd year SPR employees ... after CPF Board approves their joint application to
+    # contribute to CPF at full employer - full employee rates" (F/F). A first-year resident aged 36: 5,000 at 37% is 1,850, 20% of it, 1,000, the employee's;
+    # 600 is in the graduated range of Table 1: 17% of 600 + 0.6 x (600 - 500) = 162, the slope, 60, the employee's. F/G keeps the graduated employee rate.
+    ff = person(residency="permanent_resident", pr_start="2026-02-10", joint_election=True, employee_full_rate=True)
+    fg = person(residency="permanent_resident", pr_start="2026-02-10", joint_election=True)
+    month = {"month": "2027-02-01"}
+    assert figures(work(person=ff, items=basic("5000.00"), **month), "cpf_total", "cpf_employee") == {"cpf_total": 1850, "cpf_employee": 1000}
+    assert figures(work(person=ff, items=basic("600.00"), **month), "cpf_total", "cpf_employee") == {"cpf_total": 162, "cpf_employee": 60}
+    # F/G keeps the graduated employee rate, so its employee share is not F/F's 1,000.
+    assert figures(work(person=fg, items=basic("5000.00"), **month), "cpf_employee")["cpf_employee"] != 1000
+    # The full-rates election applies only in the first two years, and only with a joint application.
+    third = person(residency="permanent_resident", pr_start="2024-01-10", joint_election=True, employee_full_rate=True)
+    assert figures(work(person=third, items=basic("5000.00"), **month), "cpf_total") == {"cpf_total": 1850}
+
+
+# --- overrides (FR-PAY-06) ------------------------------------------------------------------------------------------------------------
+
+REASON = "Per the CPF Board's own figure"
+
+
+def over(field, value, reason=REASON):
+    return {"field": field, "value": value, "reason": reason}
+
+
+def test_an_override_replaces_the_figure_and_what_follows_from_it():  # req: FR-PAY-06
+    # A citizen on 5,000: CPF 1,850 (employee 1,000, employer 850), SDL 11.25, net 4,000, cost 5,861.25. The CPF Board's own figure for the employee is 999.50:
+    # the employee's share is that, the CPF total follows its two shares, 999.50 + 850 = 1,849.50, net 5,000 - 999.50 = 4,000.50, the cost is unchanged.
+    got = work(items=basic("5000.00"), overrides=[over("cpf_employee", "999.50")])
+    assert figures(got, "cpf_employee", "cpf_employer", "cpf_total", "net", "disburse", "employer_cost") == {
+        "cpf_employee": Decimal("999.50"), "cpf_employer": 850, "cpf_total": Decimal("1849.50"), "net": Decimal("4000.50"),
+        "disburse": Decimal("4000.50"), "employer_cost": Decimal("5861.25")}
+    # The employer's share replaced by 800: total 1,800; the cost is 5,000 + 800 + 11.25 = 5,811.25; net pay is untouched.
+    got = work(items=basic("5000.00"), overrides=[over("cpf_employer", "800.00")])
+    assert figures(got, "cpf_total", "net", "employer_cost") == {"cpf_total": 1800, "net": 4000, "employer_cost": Decimal("5811.25")}
+
+
+def test_an_override_of_the_sdl_or_the_shg_fund_changes_the_cost_or_net_pay():  # req: FR-PAY-06
+    # SDL 11.25 replaced by 5.00: the cost is 5,000 + 850 + 5.00 = 5,855.00 and net pay does not change.
+    got = work(items=basic("5000.00"), overrides=[over("sdl", "5.00")])
+    assert figures(got, "sdl", "net", "employer_cost") == {"sdl": 5, "net": 4000, "employer_cost": 5855}
+    # A citizen on 3,000 giving to CDAC pays 1.00; replaced by 2.50: net 3,000 - 600 - 2.50 = 2,397.50.
+    got = work(person=person(shg_fund="CDAC"), items=basic("3000.00"), overrides=[over("shg", "2.50")])
+    assert figures(got, "shg", "net") == {"shg": Decimal("2.50"), "net": Decimal("2397.50")}
+
+
+def test_an_override_is_the_figure_given_with_no_dollar_rounding():  # req: FR-PAY-06 [accountant to confirm]
+    # RND-CPF's dollar rounding belongs to the calculation; an override is the person's figure, as the CPF Board or the bank showed it.
+    assert Decimal(work(items=basic("5000.00"), overrides=[over("cpf_employee", "1000.49")])["cpf_employee"]) == Decimal("1000.49")
+
+
+def test_an_override_with_no_reason_or_an_unknown_figure_is_refused():  # req: FR-PAY-06
+    for bad in (over("cpf_employee", "1.00", "too short"), over("cpf_employee", "1.00", "x" * 501), over("gross", "1.00"), over("sdl", "1.005")):
+        with pytest.raises(em.PayrollError):
+            work(overrides=[bad])
+
+
+def test_overridden_sdl_amounts_are_added_then_rounded_down_once_in_a_run():  # req: FR-PAY-06, FR-PAY-03
+    # Two employees whose SDL (11.25 each) is replaced by 5.50 and 7.50: 13.00 in all, 13 payable; the cost carries 13, the entry balances.
+    people = [{"id": n, "person": person(), "items": basic("5000.00"), "overrides": [over("sdl", v)]} for n, v in (("A", "5.50"), ("B", "7.50"))]
+    out = em.payroll_run({"schema": "fyniq-payroll-run@1", "name": "r", "month": "2026-06-01", "people": people})
+    t = {k: Decimal(v) for k, v in out["totals"].items()}
+    assert t["sdl_employees"] == 13 and t["sdl_payable"] == 13 and t["employer_cost"] == 10000 + 1700 + 13
+    assert out["balanced"] is True
+
+
+def test_the_difference_of_a_later_run_counts_an_override_on_either_side():  # req: FR-PAY-06, B.3
+    # Posted with the employee's CPF replaced by 999.50; now the calculated 1,000: the difference of the employee's CPF is +0.50 and net pay -0.50.
+    entry = {"id": "A", "person": person(), "items": basic("5000.00"), "posted": {"items": basic("5000.00"), "overrides": [over("cpf_employee", "999.50")]}}
+    out = em.payroll_run({"schema": "fyniq-payroll-run@1", "name": "later", "month": "2026-06-01", "people": [entry]})
+    d = {k: Decimal(v) for k, v in out["people"][0]["difference"].items()}
+    assert d["cpf_employee"] == Decimal("0.50") and d["net"] == Decimal("-0.50") and d["gross"] == 0
+
+
+# --- amounts worked out by a ratio (NM-PAY-12, RND-PAY-RATIO) -------------------------------------------------------------------------
+
+
+def derived(kind, key="x", name="Item", cpf_wages=True, **fields):
+    return {"key": key, "name": name, "cpf_wages": cpf_wages, "derive": {"kind": kind, **fields}}
+
+
+def test_a_part_month_is_the_calendar_days_over_the_days_of_the_month_rounded_once():  # req: NM-PAY-12
+    # A joiner from the 15th of a 31-day month: 17 days. 3,000.00 x 17 / 31 = 1,645.16129..., so 1,645.16 (nothing rounded before).
+    got = work(items=[derived("part_month", key="basic", base="3000.00", days=17, of=31)])
+    assert figures(got, "gross", "ow_subject") == {"gross": Decimal("1645.16"), "ow_subject": Decimal("1645.16")}
+    # CPF is worked out on the part month's pay, once: 37% of 1,645.16 = 608.7092, 609 in all; the employee's 20% = 329.03, 329.
+    assert figures(got, "cpf_total", "cpf_employee") == {"cpf_total": 609, "cpf_employee": 329}
+
+
+def test_a_ratio_rounds_half_away_from_zero_once():  # req: NM-PAY-12
+    # 0.05 x 1 / 2 = 0.025: 0.03, half away from zero; the unpaid-leave deduction is the same amount, negative.
+    assert Decimal(work(items=[derived("part_month", base="0.05", days=1, of=2)])["gross"]) == Decimal("0.03")
+    assert Decimal(work(items=[derived("unpaid_leave", monthly="0.05", days="1", working_days=2)])["gross"]) == Decimal("-0.03")
+
+
+def test_unpaid_leave_is_the_days_share_of_the_months_working_days_and_a_half_day_counts():  # req: NM-PAY-12, FR-PAY-01
+    # 3,000.00 x 0.5 / 22 working days = 68.1818...: 68.18, taken off the basic salary of 3,000: gross 2,931.82.
+    got = work(items=basic("3000.00") + [derived("unpaid_leave", key="u", monthly="3000.00", days="0.5", working_days=22)])
+    assert Decimal(got["gross"]) == Decimal("2931.82")
+
+
+def test_overtime_is_twelve_months_over_fifty_two_weeks_times_the_multiple_times_the_hours():  # req: NM-PAY-12
+    # 3,000.00 a month, a 44-hour week: the hourly basic rate is 12 x 3,000 / (52 x 44) = 15.734...; 10 hours at 1.5 times:
+    # 36,000 x 1.5 x 10 / 2,288 = 236.0139...: 236.01, rounded once (not 15.73 x 15 = 235.95).
+    got = work(items=basic("3000.00") + [derived("overtime", key="ot", monthly="3000.00", weekly_hours="44", multiple="1.5", hours="10")])
+    assert Decimal(got["gross"]) == Decimal("3236.01")
+
+
+def test_each_pay_records_part_month_is_rounded_on_its_own_and_the_amounts_added():  # req: NM-PAY-12 [accountant to confirm: the PRD says "rounded once"]
+    # A pay change in the month is two pay records, each its calendar days over the days of the month (NM-PAY-12); each record's amount is worked out exactly and rounded
+    # once, and the month's pay is the amounts added. Three records of 0.02 x 1 / 3 = 0.00666...: 0.01 each, 0.03 in all (rounded once over the three it would be 0.02).
+    parts = [derived("part_month", key=f"r{i}", base="0.02", days=1, of=3) for i in range(3)]
+    assert Decimal(work(items=parts)["gross"]) == Decimal("0.03")
+
+
+def test_the_golden_final_pay_advances_by_hand():  # req: FR-PAY-16 [accountant to confirm]
+    # test/differential/payroll-runs/final-pay-advances.json, worked from MOM's rule in the PRD: on termination the 50% limit is lifted and an advance is recovered
+    # from final pay only as far as the employee consented in writing; the 12-instalment and 25% limits are the accountant's question there, so not applied. In an
+    # ordinary month an advance is at most 25% of the salary (1,000 of 4,000) and 12 instalments.
+    doc = json.loads((ROOT / "test" / "differential" / "payroll-runs" / "final-pay-advances.json").read_text())
+    people = {p["id"]: p["violations"] for p in em.payroll_run(doc)["people"]}
+    assert people == {
+        "final-consent": [],
+        "final-no-consent": [{"key": "adv", "rule": "advance-final-consent"}],
+        "final-13th-instalment": [],
+        "final-damage-over-half": [],
+        "ordinary-same-advance": [{"key": "adv", "rule": "advance-quarter"}],
+        "ordinary-quarter": [{"key": "adv2", "rule": "advance-instalments"}, {"key": "adv2", "rule": "advance-quarter"}],
+    }

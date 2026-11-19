@@ -76,7 +76,8 @@ def payroll_run(r: Rules, doc: Source, books: dict[str, Any]) -> Posting:
     for ded in d.get("deductions", []):
         account = r.account(ded["account"])
         if (account.type not in ("asset", "liability") or ded["account"] in r.settings.money_accounts
-                or account.role in ("director-loan", "deferred-remuneration", "gst-control", "salaries-payable")):
+                or account.role in ("director-loan", "deferred-remuneration", "gst-control", "salaries-payable")
+                or ded["account"] == r.system("salaries_payable")):  # the net pay is 2100's, however the chart names the role
             raise Rejected("deduction-account-not-allowed")
         amount = r.amount(ded["amount"], r.base, sign=1)
         deducted += amount

@@ -29,7 +29,6 @@ type Features interface {
 }
 
 func init() {
-	IdempotencyExempt["PUT /v1/features/{feature}"] = "naturally idempotent: the same state leaves the same switch"
 }
 
 type featuresInput struct {

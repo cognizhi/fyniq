@@ -80,12 +80,6 @@ type Time interface {
 }
 
 func init() {
-	IdempotencyExempt["POST /v1/leave/accruals"] = "a month is drafted once: a repeat is refused (NM_LEAVE_CONFLICT)"
-	IdempotencyExempt["POST /v1/leave/accruals/approval"] = "a draft is approved once: a repeat is refused (NM_LEAVE_CONFLICT)"
-	IdempotencyExempt["POST /v1/me/overtime"] = "a repeat is a second record for the same person, day and kind, which the database refuses (NM_LEAVE_CONFLICT)"
-	IdempotencyExempt["POST /v1/overtime/{id}/decision"] = "a decision is made once: a repeat is refused (NM_LEAVE_CONFLICT)"
-	IdempotencyExempt["POST /v1/sick-leave/{id}/unpaid-decision"] = "the days beyond the ceiling are decided once: a repeat is refused (NM_LEAVE_CONFLICT)"
-	IdempotencyExempt["POST /v1/people/{id}/leave/{year}/encashment"] = "each encashment is its own ledger entry and pay input; the balance stops an excess"
 }
 
 type overtimeInput struct {

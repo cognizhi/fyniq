@@ -48,6 +48,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/assistant/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the people assistant
+         * @description Answers a question about the signed-in person's own leave balance, their pay day, a rule of the Singapore pack (cited, with a note to confirm it with HR when it has not been verified a second time) or what a line of their payslip is, as a rule with no figure. The read tools run as the person asking, so the assistant reads what they can and nothing else; no pay figure and no sealed field reaches a model, and every figure of the answer came from a tool in this turn. A question that asks it to approve, change, issue, pay or read another person's records is refused in words. The assistant must be on. The question is not stored; the audit event names the tools that ran. It changes nothing.
+         */
+        post: operations["askAssistant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The drafts attached to a request
+         * @description The approved drafts the executor attached to a letter request or a flexible-work request, for the person who decides it to use. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listAssistantDrafts"];
+        put?: never;
+        /**
+         * Ask the assistant to draft a letter or a reply
+         * @description Makes a proposal: a draft letter for an open letter request (its fields filled from the values the request holds from the person's record, its purpose quoted) or a draft reply to an open flexible-work request (an acknowledgement that states no decision and no reason). The request's own words are data, never instructions. The assistant and the task type must be on. The proposal waits for a person to approve it within 72 hours; nothing is checked, issued, signed or replied to. The HR officer, the HR administrator and the Owner. It is audited.
+         */
+        post: operations["draftWithAssistant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The assistant's proposals
+         * @description The drafts the assistant proposed, newest first, with what it proposed, who it acted for and where each is. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["listAssistantProposals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/proposals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One proposal
+         * @description One draft with its text. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["getAssistantProposal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/proposals/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or reject a proposal
+         * @description A named human approves or rejects a pending proposal; a tier 1 draft may be decided by the person who asked for it. An approval stores the final text the human saw and edited, checked against the task's shape, with its SHA-256; only that text is applied, and only after approval. A proposal that waited more than 72 hours cannot be approved. A rejection needs a reason. It is audited with the hashes, never the text.
+         */
+        post: operations["decideAssistantProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assistant/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The people assistant's settings
+         * @description Whether the assistant is on, its model route, the task types turned on and the catalogue of what it may propose. The assistant is off, with no route and no task type, until the Owner turns it on. Own-pay explanations are always off until a second approver exists. The HR officer, the HR administrator and the Owner. It changes nothing.
+         */
+        get: operations["getAssistantSettings"];
+        /**
+         * Turn the people assistant on or off
+         * @description Saves the settings. Only the Owner, after a passkey confirmation in the last five minutes. A task type outside the catalogue, own-pay explanations (they need a second approver) and a route this build does not have are refused; turning the assistant on needs a route. It is audited.
+         */
+        put: operations["putAssistantSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/bank-account-changes/{id}": {
         parameters: {
             query?: never;
@@ -2195,7 +2323,7 @@ export interface paths {
         put?: never;
         /**
          * Record a permanent resident's joint election
-         * @description Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file. The Payroll administrator and the Owner. It is audited.
+         * @description Records that the CPF Board approved a joint application to contribute at full employer rates in the first two years of permanent residence, from a day, with the approval as a document on the person's file and its kind: fg (graduated employee rates, the default) or ff (full rates for both, so the full table applies). A different kind is a new election from a later day. The Payroll administrator and the Owner. It is audited.
          */
         post: operations["setPersonElection"];
         delete?: never;
@@ -2544,6 +2672,264 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AIAnswer: {
+            /**
+             * Format: int64
+             * @description How many tools the model named that were refused.
+             * @example 0
+             */
+            dropped: number;
+            /**
+             * @description True when the question asks for something the assistant never does: it approves, changes, issues, pays and reads another person's records never.
+             * @example false
+             */
+            refused: boolean;
+            /** @description The answer, sentence by sentence. */
+            segments: components["schemas"]["AISegment"][] | null;
+            /** @description The read tools that ran, all as the person asking. */
+            tools: string[] | null;
+        };
+        AIDecision: {
+            /**
+             * @description Approve the draft, or not.
+             * @example true
+             */
+            approve: boolean;
+            /** @description The text to approve, after editing: it must fit the task's shape. Left out, the assistant's own text is approved. */
+            final_payload?: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description Required to reject.
+             * @example Not needed.
+             */
+            reason?: string;
+        };
+        AIDraft: {
+            /**
+             * Format: date-time
+             * @description When it was attached.
+             * @example 2026-11-20T10:00:00Z
+             */
+            applied_at: string;
+            /**
+             * Format: uuid
+             * @description The draft.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1fa0
+             */
+            id: string;
+            /**
+             * @description A letter's fields or a reply's words.
+             * @example letter
+             * @enum {string}
+             */
+            kind: "letter" | "flex_reply";
+            /** @description The approved text, exactly as approved. */
+            payload: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: uuid
+             * @description The proposal it came from.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80
+             */
+            proposal_id: string;
+        };
+        AIDraftInput: {
+            /**
+             * Format: uuid
+             * @description The request the draft is for: still open.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f90
+             */
+            request_id: string;
+            /**
+             * @description What to draft: a letter for a letter request, or a reply to a flexible-work request.
+             * @example people.draft_letter
+             * @enum {string}
+             */
+            task_type: "people.draft_letter" | "people.draft_fwa_reply";
+        };
+        AIDraftResult: {
+            /**
+             * Format: uuid
+             * @description The proposal, waiting for a person to decide it.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80
+             */
+            proposal_id: string;
+        };
+        AIProposal: {
+            /**
+             * @description The person the assistant acted for.
+             * @example Ana Tan
+             */
+            asker: string;
+            /**
+             * Format: uuid
+             * @description Their login, so a page does not offer them a decision they cannot make.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
+             */
+            asker_id: string;
+            /**
+             * Format: date-time
+             * @description When it was proposed.
+             * @example 2026-11-20T10:00:00Z
+             */
+            created_at: string;
+            /**
+             * @description The human who decided it.
+             * @example Mei Tan
+             */
+            decided_by?: string;
+            /**
+             * @description Their reason.
+             * @example Not needed.
+             */
+            decision_reason?: string;
+            /**
+             * @description True when it waited more than 72 hours without a decision: it cannot be approved.
+             * @example false
+             */
+            expired: boolean;
+            /**
+             * Format: date-time
+             * @description When it expires.
+             * @example 2026-11-23T10:00:00Z
+             */
+            expires_at: string;
+            /** @description What the human approved, after editing. */
+            final_payload?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: uuid
+             * @description The proposal.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80
+             */
+            id: string;
+            /**
+             * @description The route that made it.
+             * @example scripted
+             */
+            model_id: string;
+            /** @description What the assistant proposed. */
+            payload: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description Why, in the assistant's words.
+             * @example Filled from the record.
+             */
+            rationale?: string;
+            /**
+             * @description Where it is.
+             * @example pending
+             * @enum {string}
+             */
+            state: "pending" | "approved" | "rejected" | "applied";
+            /**
+             * @description What kind of draft.
+             * @example people.draft_letter
+             */
+            task_type: string;
+            /**
+             * @description What it proposes.
+             * @example A letter from a template for a request, with the fields filled from the record
+             */
+            what: string;
+        };
+        AISegment: {
+            /** @description Where it comes from: your own record, a pack version and its official source, or a rule. */
+            sources: string[] | null;
+            /**
+             * @description A sentence. Every figure in it came from a tool in this turn; one that did not is replaced by 'an unverified figure'.
+             * @example You have 8.50 days left.
+             */
+            text: string;
+        };
+        AISettings: {
+            /** @description Every task type the assistant may propose. */
+            catalogue: components["schemas"]["AITask"][] | null;
+            /**
+             * @description Whether the assistant is on: off until the Owner turns it on.
+             * @example false
+             */
+            enabled: boolean;
+            /**
+             * @description Whether own-pay explanations are on. They need the Owner and a second approver, which arrives with the Fyniq link: always false until then.
+             * @example false
+             */
+            own_pay: boolean;
+            /**
+             * @description Why own pay is off.
+             * @example Needs the Owner and a second approver.
+             */
+            own_pay_note: string;
+            /**
+             * @description The model route: none, or local mode's scripted model. A real route needs processing evidenced in Singapore.
+             * @example none
+             * @enum {string}
+             */
+            route: "none" | "scripted";
+            /** @description The task types the Owner turned on; each is off until then. */
+            task_types: string[] | null;
+            /**
+             * Format: date-time
+             * @description When the Owner last changed them.
+             * @example 2026-11-20T10:00:00Z
+             */
+            updated_at?: string;
+        };
+        AISettingsInput: {
+            /**
+             * @description Turn the assistant on or off.
+             * @example true
+             */
+            enabled: boolean;
+            /**
+             * @description Refused until a second approver exists.
+             * @example false
+             */
+            own_pay?: boolean;
+            /**
+             * @description The model route.
+             * @example scripted
+             * @enum {string}
+             */
+            route: "none" | "scripted";
+            /**
+             * @description The task types to turn on.
+             * @example [
+             *       "people.draft_letter"
+             *     ]
+             */
+            task_types: string[] | null;
+        };
+        AITask: {
+            /** @description The roles that decide a proposal of it. */
+            approver_roles: string[] | null;
+            /**
+             * Format: int64
+             * @description How long a proposal waits for a human.
+             * @example 72
+             */
+            expiry_hours: number;
+            /**
+             * @description The task type.
+             * @example people.draft_letter
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description Tier 1: routine and reversible.
+             * @example 1
+             */
+            tier: number;
+            /**
+             * @description What it proposes.
+             * @example A letter from a template for a request, with the fields filled from the record
+             */
+            what: string;
+        };
         AccrualCountOutputBody: {
             /**
              * Format: int64
@@ -2695,6 +3081,21 @@ export interface components {
              * @enum {string}
              */
             pass_type: "employment_pass" | "s_pass" | "work_permit" | "dp_work_permit";
+        };
+        AiAskInputBody: {
+            /**
+             * @description What to ask: about your own leave balance, your pay day, a rule of the Singapore pack or a line of your payslip.
+             * @example How much leave do I have left?
+             */
+            question: string;
+        };
+        AiDraftsOutputBody: {
+            /** @description The drafts attached to the request, newest first. */
+            drafts: components["schemas"]["AIDraft"][] | null;
+        };
+        AiProposalsOutputBody: {
+            /** @description Newest first, up to 200. */
+            proposals: components["schemas"]["AIProposal"][] | null;
         };
         AppliedOutputBody: {
             /**
@@ -3461,6 +3862,12 @@ export interface components {
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef9
              */
             evidence_document_id: string;
+            /**
+             * @description What the approval is for: fg (full employer rates, graduated employee rates; the default) or ff (full rates for both: the full table's).
+             * @example ff
+             * @enum {string}
+             */
+            kind?: "fg" | "ff";
         };
         EmergencyContact: {
             /**
@@ -4918,6 +5325,12 @@ export interface components {
             postal_code?: string;
         };
         MyPayslipsOutputBody: {
+            /**
+             * Format: date
+             * @description The next day the person is paid, from their pay group's calendar; left out when they have no pay record in force. No amount.
+             * @example 2026-11-25
+             */
+            next_pay_day?: string;
             /** @description The person's payslips, newest month first. */
             payslips: components["schemas"]["PayslipSummary"][] | null;
         };
@@ -5651,6 +6064,12 @@ export interface components {
              * @example 2026-07-01
              */
             effective_to?: string;
+            /**
+             * @description The kind of the election in force: fg (full employer, graduated employee rates) or ff (full rates for both).
+             * @example ff
+             * @enum {string}
+             */
+            election_kind?: "fg" | "ff";
             /** @description The allowances and fixed deductions. */
             items: components["schemas"]["PayItem"][] | null;
             /**
@@ -7620,6 +8039,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -7692,6 +8116,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The client to revoke. */
@@ -7728,6 +8157,581 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    askAssistant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiAskInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIAnswer"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAssistantDrafts: {
+        parameters: {
+            query?: {
+                /** @description The request. */
+                request_id?: string;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiDraftsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    draftWithAssistant: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIDraftInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIDraftResult"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAssistantProposals: {
+        parameters: {
+            query?: {
+                /** @description Only proposals in this state; all when left out. */
+                state?: "pending" | "approved" | "rejected" | "applied";
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiProposalsOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAssistantProposal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The proposal. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AIProposal"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    decideAssistantProposal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description The proposal. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AIDecision"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAssistantSettings: {
+        parameters: {
+            query?: {
+                /** @description Only requests in this state. */
+                state?: "requested" | "checked" | "refused" | "issued" | "withdrawn";
+                /** @description Only the caller's own. */
+                mine?: boolean;
+            };
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AISettings"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putAssistantSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AISettingsInput"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7823,6 +8827,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The bank account change. */
@@ -7892,6 +8901,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The bank account change. */
@@ -8027,6 +9041,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The request. */
@@ -8247,6 +9266,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The feature's key. */
@@ -8384,6 +9408,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The request. */
@@ -8466,6 +9495,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The request. */
@@ -8535,6 +9569,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The claim. */
@@ -8676,6 +9715,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The block. */
@@ -8977,6 +10021,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The request. */
@@ -9046,6 +10095,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The request. */
@@ -9199,6 +10253,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -9271,6 +10330,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -9343,6 +10407,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -9595,6 +10664,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -9676,6 +10750,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The delegation. */
@@ -9817,6 +10896,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -9878,6 +10962,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The draft. */
@@ -10008,6 +11097,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The letter type's key. */
@@ -10081,6 +11175,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The letter type's key. */
@@ -10227,6 +11326,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The letter request. */
@@ -10485,6 +11589,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The letter request. */
@@ -10556,6 +11665,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The letter request. */
@@ -10638,6 +11752,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The letter request. */
@@ -10731,6 +11850,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The letter request. */
@@ -10940,6 +12064,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -11001,6 +12130,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -11082,6 +12216,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -11143,6 +12282,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -11215,6 +12359,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -11287,6 +12436,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -11430,6 +12584,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -11502,6 +12661,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -11775,6 +12939,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -11897,6 +13066,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The request. */
@@ -11957,6 +13131,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -12147,6 +13326,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -12267,6 +13451,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The task. */
@@ -12404,6 +13593,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The request. */
@@ -12545,6 +13739,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The pack version. */
@@ -12623,6 +13822,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The pack version. */
@@ -12950,6 +14154,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -13084,6 +14293,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The override. */
@@ -13215,6 +14429,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -13358,6 +14577,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The run. */
@@ -13511,6 +14735,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The run. */
@@ -13604,6 +14833,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The run. */
@@ -13759,6 +14993,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The run. */
@@ -13841,6 +15080,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The run. */
@@ -13934,6 +15178,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The run. */
@@ -14071,6 +15320,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -14206,6 +15460,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -14355,6 +15614,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -14430,6 +15694,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -14574,6 +15843,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -14711,6 +15985,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -14948,6 +16227,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -15032,6 +16316,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -15187,6 +16476,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -15269,6 +16563,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -15351,6 +16650,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -15435,6 +16739,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person the letter is about. */
@@ -15519,6 +16828,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -15672,6 +16986,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -15745,6 +17064,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -15897,6 +17221,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -15979,6 +17308,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -16063,6 +17397,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -16145,6 +17484,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -16371,6 +17715,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -16527,6 +17876,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -16680,6 +18034,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -16764,6 +18123,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The person. */
@@ -16908,6 +18272,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -16980,6 +18349,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The question. */
@@ -17357,6 +18731,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The notification. */
@@ -17448,6 +18827,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The sick leave notification. */
@@ -17532,6 +18916,11 @@ export interface operations {
             header?: {
                 /** @description The browser's cookies; the session cookie is read from them. */
                 Cookie?: string;
+                /**
+                 * @description A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat from the same person returns the first answer with `Idempotent-Replayed: true`, the same key with a different request returns 422, and two identical requests at once run once. An operation whose answer may carry pay, a bank account or an NRIC does not store its answer: a repeat of one that returned a body answers 409, and the result is read from the record.
+                 * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1faa
+                 */
+                "Idempotency-Key"?: string;
             };
             path: {
                 /** @description The request. */

@@ -110,11 +110,6 @@ type LeaveRequests interface {
 }
 
 func init() {
-	IdempotencyExempt["POST /v1/leave-requests/{id}/decision"] = "a decision is made once: a repeat is refused (NM_LEAVE_CONFLICT)"
-	IdempotencyExempt["POST /v1/leave-requests/{id}/cancellation"] = "a request is cancelled once: a repeat is refused (NM_LEAVE_CONFLICT)"
-	IdempotencyExempt["POST /v1/leave/settlement"] = "naturally idempotent: a second run finds nothing left to settle"
-	IdempotencyExempt["POST /v1/me/leave-requests/preview"] = "it changes nothing: a preview is a read that takes a body"
-	IdempotencyExempt["POST /v1/me/leave-requests"] = "a repeat overlaps the first request's days, which the database refuses (NM_LEAVE_CONFLICT)"
 }
 
 type askInput struct {

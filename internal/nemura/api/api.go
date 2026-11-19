@@ -26,8 +26,10 @@ const description = `Nemura's public API: the optional people platform of PRD-00
 Conventions (PRD-002 NM-ARC-03, PRD-001 §8.18.1):
 - Errors are RFC 9457 problem details (application/problem+json) with a stable code from the catalogue at GET /v1/errors, what is
   wrong, and how to fix it; validation errors list every invalid field at once.
-- Every POST that creates or changes state accepts an Idempotency-Key header: a repeat returns the original response, and the same
-  key with a different request returns 422.
+- Every write that creates or changes state accepts an Idempotency-Key header, kept 24 hours per person: a repeat returns the first
+  response with Idempotent-Replayed: true, the same key with a different request returns 422, and two identical requests at once run
+  once. A response that may carry pay, a bank account, an NRIC or the text of a question is not stored (only its status is): a repeat
+  of such a write that returned a body answers 409 and the result is read from the record.
 - Versioned records return an ETag; commands that change one require If-Match and return 412 when the record changed since, 428
   without it.
 - Changes inside /v1 are additive: a field, an operation or an enum value may be added, and nothing is removed or changed in meaning.
@@ -55,6 +57,7 @@ func Config(v string) huma.Config {
 		{Name: "Features", Description: "Each optional feature of an organisation: on, off or held by another system (NM-FEAT-01 to 05)."},
 		{Name: "Packs", Description: "Country packs with their sources, the company's policy on top and the people checks (NM-PACK-01 to 08)."},
 		{Name: "Leave", Description: "Working patterns, leave balances and the ledger behind them (NM-LV-01, NM-LV-02, NM-LV-13, NM-TIM-01)."},
+		{Name: "Assistant", Description: "The people assistant's settings and the drafts it proposed for a person to decide (NM-AI-01, NM-AI-04)."},
 		{Name: "Payroll", Description: "Pay groups, a person's pay, the year to date and one-off items: for the Payroll administrator and the Owner alone (NM-PAY-02, NM-PAY-03, FR-EMP-01)."},
 		{Name: "Onboarding", Description: "The task to invite new people to Fyniq, and a leaver's dates, checklist and leave settlement (NM-ONB-02, NM-ONB-03)."},
 		{Name: "Self-service", Description: "A person's own details and requests, and what waits for the people team (NM-ESS-03, NM-ESS-04)."},
@@ -140,8 +143,12 @@ type Deps struct {
 	// LinkAuth and Link are the link's event inbox (PRD-002 NM-INT-10): the bearer token of Fyniq's client, and what receives its events. Nil: the deployment has no link.
 	LinkAuth LinkAuthenticator
 	Link     LinkInbox
-	SignIn   SignInInfo
-	Clock    ports.Clock
+	// Idempotency stores the Idempotency-Keys of writes; nil turns the header off (a deployment with no database for it never runs).
+	Idempotency Idempotency
+	Assistant   AssistantAdmin
+	Asker       Asker
+	SignIn      SignInInfo
+	Clock       ports.Clock
 	// CookieNames are the session cookies the API reads, in order: Nemura's own, with the __Host- prefix over https.
 	CookieNames []string
 }
@@ -154,7 +161,9 @@ type API struct {
 
 // New registers the API on mux (an http.ServeMux, or the service's httpserver.Server).
 func New(mux humago.Mux, d Deps) *API {
-	a := &API{API: humago.New(mux, Config(version.Version)), d: d}
+	a := &API{d: d}
+	a.API = humago.New(idemMux{Mux: mux, a: a}, Config(version.Version))
+	a.OpenAPI().OnAddOperation = append(a.OpenAPI().OnAddOperation, addIdempotencyHeader)
 	a.register()
 	a.registerSession()
 	a.registerPasskeys()
@@ -175,6 +184,7 @@ func New(mux humago.Mux, d Deps) *API {
 	a.registerOnboarding()
 	a.registerPayroll()
 	a.registerLink()
+	a.registerAssistant()
 	a.registerSignIn()
 	return a
 }

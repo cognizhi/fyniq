@@ -99,16 +99,16 @@ func TestPayRecordsAreHistoryThatIsOnlyEndedAndNoAuditEventHoldsAnAmount(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.SetElection(ctx, pay, lt.cy, d("2026-02-10"), uuid.New()); payCode(err) != payroll.CodeInvalid {
+	if err := svc.SetElection(ctx, pay, lt.cy, d("2026-02-10"), uuid.New(), ""); payCode(err) != payroll.CodeInvalid {
 		t.Errorf("an election with no evidence on the file: %v", err)
 	}
-	if err := svc.SetElection(ctx, pay, lt.cy, d("2026-02-10"), doc); err != nil {
+	if err := svc.SetElection(ctx, pay, lt.cy, d("2026-02-10"), doc, ""); err != nil {
 		t.Fatal(err)
 	}
 	if got, _, _ := svc.Pay(ctx, pay, lt.cy, d("2026-06-01")); !got.JointElection {
 		t.Error("the election is not in force")
 	}
-	if err := svc.SetElection(ctx, pay, lt.cy, d("2026-02-10"), doc); payCode(err) != payroll.CodeConflict {
+	if err := svc.SetElection(ctx, pay, lt.cy, d("2026-02-10"), doc, ""); payCode(err) != payroll.CodeConflict {
 		t.Errorf("an election on the current one's start day: %v", err)
 	}
 

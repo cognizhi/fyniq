@@ -1,0 +1,118 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "joint-application-at-full-rates",
+ "why": "A first-year permanent resident at G/G, F/G and F/F on S$5,000 and S$600, and F/F in the third year (FR-PAY-14; the CPF Board's Table 1 note)",
+ "month": "2027-02-01",
+ "people": [
+  {
+   "id": "GG-5000",
+   "person": {
+    "residency": "permanent_resident",
+    "birth_date": "1990-05-20",
+    "pr_start": "2026-02-10"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "FG-5000",
+   "person": {
+    "residency": "permanent_resident",
+    "birth_date": "1990-05-20",
+    "pr_start": "2026-02-10",
+    "joint_election": true
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "FF-5000",
+   "person": {
+    "residency": "permanent_resident",
+    "birth_date": "1990-05-20",
+    "pr_start": "2026-02-10",
+    "joint_election": true,
+    "employee_full_rate": true
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "FF-600",
+   "person": {
+    "residency": "permanent_resident",
+    "birth_date": "1990-05-20",
+    "pr_start": "2026-02-10",
+    "joint_election": true,
+    "employee_full_rate": true
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "600.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "FG-600",
+   "person": {
+    "residency": "permanent_resident",
+    "birth_date": "1990-05-20",
+    "pr_start": "2026-02-10",
+    "joint_election": true
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "600.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "FF-third",
+   "person": {
+    "residency": "permanent_resident",
+    "birth_date": "1990-05-20",
+    "pr_start": "2024-01-10",
+    "joint_election": true,
+    "employee_full_rate": true
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  }
+ ]
+}

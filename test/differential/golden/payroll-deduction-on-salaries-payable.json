@@ -1,0 +1,118 @@
+{
+ "schema": "fyniq-scenario@1",
+ "name": "payroll-deduction-on-salaries-payable",
+ "base_currency": "SGD",
+ "currencies": {
+  "SGD": 2
+ },
+ "as_of": "2026-12-31",
+ "settings": {
+  "accounts": {
+   "claims_payable": "2150",
+   "salaries_payable": "2100",
+   "cpf_sdl_payable": "2110",
+   "employer_cpf": "6020",
+   "sdl": "6030"
+  },
+  "money_accounts": {
+   "1010": "SGD"
+  },
+  "books_start": "2026-01-01"
+ },
+ "accounts": [
+  {
+   "code": "1010",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "1250",
+   "type": "asset",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2100",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2110",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2150",
+   "type": "liability",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "2500",
+   "type": "liability",
+   "group": false,
+   "active": true,
+   "role": "director-loan"
+  },
+  {
+   "code": "6011",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6012",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6013",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6020",
+   "type": "expense",
+   "group": false,
+   "active": true
+  },
+  {
+   "code": "6030",
+   "type": "expense",
+   "group": false,
+   "active": true
+  }
+ ],
+ "documents": [
+  {
+   "type": "payroll_run",
+   "id": "PR-0001",
+   "version": 1,
+   "date": "2026-01-28",
+   "run": "RUN-1",
+   "wage_month": "2026-01",
+   "departments": [
+    {
+     "account": "6011",
+     "gross": "0.01"
+    }
+   ],
+   "employee_cpf": "0.00",
+   "employer_cpf": "0.00",
+   "sdl": "0.00",
+   "shg": "0.00",
+   "deductions": [
+    {
+     "account": "2100",
+     "amount": "0.01"
+    }
+   ]
+  }
+ ],
+ "reversals": []
+}

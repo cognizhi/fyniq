@@ -26,7 +26,10 @@ import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
 import { PayRunApproval } from "./pages/PayRunApproval";
 import { MyPay, Payslip } from "./pages/MyPay";
+import { FlexReplies } from "./components/FlexReplies";
 import { FinalPay } from "./components/FinalPay";
+import { AskAssistant } from "./pages/AskAssistant";
+import { AssistantSettings } from "./pages/AssistantSettings";
 import { PayRuns } from "./components/PayRuns";
 import { PayrollHR } from "./pages/PayrollHR";
 import { PeopleOnboarding } from "./pages/PeopleOnboarding";
@@ -1365,9 +1368,11 @@ describe("my pay", () => {
     overtime_hours: "3", overtime_pay: "106.21" };
 
   it("lists the person's payslips with the net salary, marks a corrected one and has no axe violation", async () => {
-    answer("GET /v1/me/payslips", { status: 200, body: { payslips: [summary, { ...summary, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f51", version: 1, corrected: true }] } });
+    answer("GET /v1/me/payslips", { status: 200, body: { next_pay_day: "2026-11-25", payslips: [summary, { ...summary, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f51", version: 1, corrected: true }] } });
     const { container } = render(<MyPay roles={["employee"]} />);
-    expect((await screen.findAllByText("2026-06: net salary 3878.00, paid 2026-06-25")).length).toBe(2);
+    expect((await screen.findAllByText("2026-06: net salary S$3,878.00, paid 25 Jun 2026")).length).toBe(2);
+    expect(screen.getByText("Your next pay day is 25 Nov 2026.")).toBeTruthy();
+    expect(screen.getByText(/Tax forms: none is ready yet/)).toBeTruthy();
     expect(screen.getByText("Corrected")).toBeTruthy();
     expect(await violations(container)).toEqual([]);
   });
@@ -1433,5 +1438,115 @@ describe("final pay", () => {
     const { container } = render(<FinalPay person={person} docs={[]} onChange={() => undefined} />);
     await new Promise((r) => setTimeout(r, 20));
     expect(container.textContent).toBe("");
+  });
+});
+
+// req: NM-AI-01, NM-AI-04
+describe("the people assistant's settings", () => {
+  const pid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80";
+  const asker = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45";
+  const settings = { enabled: false, route: "none", task_types: [], own_pay: false, own_pay_note: "Own-pay explanations need the Owner and a second approver.", catalogue: [{ id: "people.draft_letter", what: "A letter from a template", tier: 1, approver_roles: ["hr_officer"], expiry_hours: 72 }] };
+  const proposal = (expired: boolean) => ({ id: pid, task_type: "people.draft_letter", what: "A letter from a template", asker: "Ana Tan", asker_id: asker, payload: { request_id: "r", fields: { job_title: "Analyst" } }, model_id: "scripted", state: "pending", expired, created_at: "2026-11-20T10:00:00Z", expires_at: "2026-11-23T10:00:00Z" });
+
+  it("lists what the assistant never does, saves the Owner's choices with a passkey and is off by default", async () => {
+    answer("GET /v1/assistant/settings", { status: 200, body: settings });
+    answer("GET /v1/assistant/proposals", { status: 200, body: { proposals: [] } });
+    answer("PUT /v1/assistant/settings", { status: 204, body: undefined });
+    stepUp.result = undefined;
+    const { container } = render(<AssistantSettings roles={["owner"]} />);
+    expect(await screen.findByText(/It never approves or refuses leave or a request, changes pay, a bank account, a role or a record, issues or signs a letter/)).toBeTruthy();
+    expect(screen.getByText("No draft is waiting.")).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByLabelText(/people.draft_letter: A letter from a template/));
+    fireEvent.click(screen.getByRole("button", { name: "Save with my passkey" }));
+    expect(await screen.findByText("Saved.")).toBeTruthy();
+    expect(bodies.get("PUT /v1/assistant/settings")).toMatchObject({ enabled: false, route: "none", task_types: ["people.draft_letter"] });
+  });
+
+  it("shows the people team a draft to approve or reject", async () => {
+    answer("GET /v1/assistant/settings", { status: 200, body: settings });
+    answer("GET /v1/assistant/proposals", { status: 200, body: { proposals: [proposal(false)] } });
+    answer(`POST /v1/assistant/proposals/${pid}/decision`, { status: 204, body: undefined });
+    render(<AssistantSettings roles={["hr_officer"]} />);
+    expect(await screen.findByText("A letter from a template, for Ana Tan. Waits until 2026-11-23 10:00.")).toBeTruthy();
+    expect(screen.getByText("AI draft")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Save with my passkey" })).toBeNull();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("button", { name: "Approve the draft" }));
+    expect(await screen.findByText("Approved: the draft is kept as you saw it.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/assistant/proposals/${pid}/decision`)).toMatchObject({ approve: true });
+  });
+
+  it("says that only the people team sees it", () => {
+    render(<AssistantSettings roles={["employee"]} />);
+    expect(screen.getByRole("alert").textContent).toContain("Only the HR officer, the HR administrator and the Owner");
+  });
+});
+
+// req: NM-AI-02, NM-AI-06
+describe("asking the assistant", () => {
+  it("shows what it can and cannot do, the answer with its sources and the AI badge, and the way to ask a person", async () => {
+    answer("POST /v1/assistant/ask", { status: 200, body: { segments: [{ text: "Your next pay day is 2026-11-25.", sources: ["the calendar of your pay group"] }], tools: ["my_payday"], refused: false, dropped: 0 } });
+    const { container } = render(<AskAssistant roles={["employee"]} />);
+    expect(screen.getByText(/I never approve, change, issue or pay anything/)).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Your question"), { target: { value: "When is my pay day?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    expect(await screen.findByText(/Your next pay day is 2026-11-25\./)).toBeTruthy();
+    expect(screen.getByText("AI answer")).toBeTruthy();
+    expect(screen.getByText(/Source: the calendar of your pay group/)).toBeTruthy();
+    expect(bodies.get("POST /v1/assistant/ask")).toMatchObject({ question: "When is my pay day?" });
+    expect(screen.getByRole("link", { name: "Ask the people team instead" })).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("says in words when the assistant is off", async () => {
+    answer("POST /v1/assistant/ask", { status: 409, body: { code: "NM_AI_OFF", detail: "The assistant is off: the Owner turns it on in the assistant's settings." } });
+    render(<AskAssistant roles={["employee"]} />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("Your question"), { target: { value: "Hello" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("The assistant is off");
+  });
+});
+
+// req: NM-AI-02
+describe("a draft reply from the assistant", () => {
+  const rid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0";
+  const req = { id: rid, person_id: "p", person_name: "Ben Lim", arrangement: "flexi_time", from: "2027-01-04", reason: "School run", state: "received", reply_due: "2027-01-20" };
+
+  it("asks for a draft, and fills the reply with the approved draft only when the person chooses to, leaving the decision and the sending to them", async () => {
+    answer("GET /v1/flexible-work-requests", { status: 200, body: { requests: [req] } });
+    answer("GET /v1/assistant/drafts", { status: 200, body: { drafts: [{ id: "d", proposal_id: "pr", kind: "flex_reply", payload: { request_id: rid, reply: "Thank you for your request." }, applied_at: "2026-11-20T10:00:00Z" }] } });
+    answer("POST /v1/assistant/drafts", { status: 201, body: { proposal_id: "pr" } });
+    render(<FlexReplies />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(await screen.findByRole("button", { name: "Draft a reply to Ben Lim with the assistant" }));
+    expect(await screen.findByText(/A person approves it under Settings, The people assistant/)).toBeTruthy();
+    expect(bodies.get("POST /v1/assistant/drafts")).toMatchObject({ task_type: "people.draft_fwa_reply", request_id: rid });
+    fireEvent.click(screen.getByRole("button", { name: "Use the approved draft for Ben Lim" }));
+    expect((screen.getByLabelText("Written reply to Ben Lim") as HTMLTextAreaElement).value).toBe("Thank you for your request.");
+  });
+});
+
+// req: FR-PAY-14
+describe("a permanent resident's joint election", () => {
+  it("records the kind the CPF Board approved, F/G by default and F/F when chosen, with a document of the person as evidence", async () => {
+    const person = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61";
+    const doc = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f60";
+    answer("GET /v1/payroll/groups", { status: 200, body: { groups: [] } });
+    answer("GET /v1/people", { status: 200, body: { people: [{ id: person, name: "Ben Lim" }] } });
+    answer(`GET /v1/people/${person}/pay`, { status: 200, body: { recorded: true, pay: { effective_from: "2026-01-05", pay_group_id: "g", pay_group: "Monthly", basic_monthly: "4500.00", shg_opt_out: false, items: [], joint_election: true, election_kind: "ff" } } });
+    answer(`GET /v1/people/${person}/documents`, { status: 200, body: { documents: [{ id: doc, title: "CPF Board approval" }] } });
+    answer("GET /v1/payroll/one-offs", { status: 200, body: { items: [] } });
+    answer(`POST /v1/people/${person}/pr-election`, { status: 201, body: undefined });
+    render(<PayrollHR roles={["payroll_admin"]} />);
+    expect(await screen.findByText("Full rates for both (F/F): the full table applies", { selector: "dd" })).toBeTruthy();
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(screen.getByLabelText("What the approval is for"), { target: { value: "ff" } });
+    fireEvent.submit(screen.getByRole("form", { name: "Record a joint election" }));
+    expect(await screen.findByText("The election is recorded.")).toBeTruthy();
+    expect(bodies.get(`POST /v1/people/${person}/pr-election`)).toMatchObject({ evidence_document_id: doc, kind: "ff" });
   });
 });

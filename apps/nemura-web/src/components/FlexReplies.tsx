@@ -14,13 +14,26 @@ export function FlexReplies() {
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [outcome, setOutcome] = useState<Record<string, (typeof outcomes)[number]>>({});
   const [reply, setReply] = useState<Record<string, string>>({});
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const load = async () => {
     try {
       const { data } = await api.GET("/v1/flexible-work-requests");
-      setWaiting((data?.requests ?? []).filter((r) => r.state === "received"));
+      const open = (data?.requests ?? []).filter((r) => r.state === "received");
+      setWaiting(open);
+      const found: Record<string, string> = {};
+      for (const r of open) {
+        const got = await api.GET("/v1/assistant/drafts", { params: { query: { request_id: r.id } } }).catch(() => undefined);
+        const text = got?.data?.drafts?.[0]?.payload?.reply;
+        if (typeof text === "string") found[r.id] = text;
+      }
+      setDrafts(found);
     } catch {
       setWaiting([]);
     }
+  };
+  const ask = async (r: Flex) => {
+    const { error } = await api.POST("/v1/assistant/drafts", { body: { task_type: "people.draft_fwa_reply", request_id: r.id } });
+    setNote(error ? { ok: false, text: problem(error) } : { ok: true, text: t("flexteam.drafted") });
   };
   useEffect(() => {
     void load();
@@ -55,7 +68,11 @@ export function FlexReplies() {
                 <span>{t("flexteam.replyFor", { name: r.person_name })}</span>
                 <textarea className="fy-input" maxLength={4000} value={reply[r.id] ?? ""} onChange={(e) => setReply({ ...reply, [r.id]: e.target.value })} />
               </label>
-              <button className="fy-btn fy-btn--primary" type="button" onClick={() => send(r)}>{t("flexteam.send")}</button>
+              <div className="fy-row" style={{ gap: "var(--space-3)" }}>
+                <button className="fy-btn fy-btn--secondary" type="button" onClick={() => ask(r)}>{t("flexteam.draft", { name: r.person_name })}</button>
+                {drafts[r.id] !== undefined && <button className="fy-btn fy-btn--secondary" type="button" onClick={() => setReply({ ...reply, [r.id]: drafts[r.id] ?? "" })}>{t("flexteam.useDraft", { name: r.person_name })}</button>}
+                <button className="fy-btn fy-btn--primary" type="button" onClick={() => send(r)}>{t("flexteam.send")}</button>
+              </div>
             </li>
           ))}
         </ul>

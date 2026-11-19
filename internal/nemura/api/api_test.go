@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/nemura/apiclient"
+	"github.com/cognizhi/fyniq/internal/nemura/assistant"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/checks"
 	"github.com/cognizhi/fyniq/internal/nemura/features"
@@ -117,6 +119,10 @@ func (f fakePeople) Get(_ context.Context, _ Session, id uuid.UUID, _ time.Time,
 	return Record{ID: id.String(), LegalName: "Ana Tan", Jobs: []Job{}}, f.err
 }
 func (f fakePeople) Create(context.Context, Session, uuid.UUID, people.Person, people.Job, *people.Classification) error {
+	if testPeopleCreates != nil {
+		testPeopleCreates.Add(1)
+		time.Sleep(testPeopleDelay)
+	}
 	return f.err
 }
 func (f fakePeople) Update(context.Context, Session, uuid.UUID, people.Person) error { return f.err }
@@ -332,6 +338,32 @@ func (f fakeTime) Encash(context.Context, Session, uuid.UUID, int, string, time.
 // fakeLetters answers letters with whatever the test says.
 type fakePayroll struct{ err error }
 
+type fakeAsker struct{ err error }
+
+func (f fakeAsker) Ask(context.Context, Session, string) (AIAnswer, error) {
+	return AIAnswer{Segments: []AISegment{}, Tools: []string{}}, f.err
+}
+
+type fakeAssistant struct{ err error }
+
+func (f fakeAssistant) Settings(context.Context, Session) (AISettings, error) {
+	return AISettings{TaskTypes: []string{}, Catalogue: []AITask{}}, f.err
+}
+func (f fakeAssistant) SetSettings(context.Context, Session, AISettingsInput) error { return f.err }
+func (f fakeAssistant) Proposals(context.Context, Session, string) ([]AIProposal, error) {
+	return nil, f.err
+}
+func (f fakeAssistant) Proposal(context.Context, Session, uuid.UUID) (AIProposal, error) {
+	return AIProposal{}, f.err
+}
+func (f fakeAssistant) Draft(context.Context, Session, AIDraftInput) (AIDraftResult, error) {
+	return AIDraftResult{}, f.err
+}
+func (f fakeAssistant) Drafts(context.Context, Session, uuid.UUID) ([]AIDraft, error) {
+	return nil, f.err
+}
+func (f fakeAssistant) Decide(context.Context, Session, uuid.UUID, AIDecision) error { return f.err }
+
 func (f fakePayroll) Export(context.Context, Session, uuid.UUID, ExportInput) (ExportFile, error) {
 	return ExportFile{Skipped: []ExportSkipped{}}, f.err
 }
@@ -353,6 +385,7 @@ func (f fakePayroll) RecordPayment(context.Context, Session, uuid.UUID, PaymentR
 func (f fakePayroll) PublishPayslips(context.Context, Session, uuid.UUID, int) (int, error) {
 	return 2, f.err
 }
+func (f fakePayroll) MyNextPayDay(context.Context, Session) (string, error) { return "", f.err }
 func (f fakePayroll) MyPayslips(context.Context, Session) ([]PayslipSummary, error) {
 	return nil, f.err
 }
@@ -390,7 +423,7 @@ func (f fakePayroll) Pay(context.Context, Session, uuid.UUID, time.Time) (PayVie
 func (f fakePayroll) SetPay(context.Context, Session, uuid.UUID, time.Time, PersonPayInput) error {
 	return f.err
 }
-func (f fakePayroll) SetElection(context.Context, Session, uuid.UUID, time.Time, uuid.UUID) error {
+func (f fakePayroll) SetElection(context.Context, Session, uuid.UUID, time.Time, uuid.UUID, string) error {
 	return f.err
 }
 func (f fakePayroll) ImportYTD(context.Context, Session, uuid.UUID, YTDInput) error { return f.err }
@@ -529,6 +562,8 @@ const linkEventBody = `{"header":{"event_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e
 
 var (
 	linkAuthErr, linkErr                                                                           error
+	testPeopleCreates                                                                              *atomic.Int32 // counts the runs of POST /v1/people
+	testPeopleDelay                                                                                time.Duration
 	passkeyErr, clientsErr, peopleErr, featuresErr, restrictedErr, packsErr, leaveErr, requestsErr error
 	requestsScope                                                                                  *LeaveScope
 	featuresOff                                                                                    bool
@@ -542,7 +577,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, Assistant: fakeAssistant{err: requestsErr}, Idempotency: idemFor(), Asker: fakeAsker{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -710,12 +745,14 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 	type trigger struct {
 		method, path, body string
 		signedIn           bool
-		err                error // what the passkey or client service answers
-		owner, stepUp      bool  // the person is the Owner, and confirmed with a passkey
-		bearer             bool  // the call carries a bearer token and no cookie: the link's inbox
-		authErr, inboxErr  error // what the link's authenticator and inbox answer
-		featuresOff        bool  // Leave is switched off
-		leaver             bool  // the person has left
+		err                error            // what the passkey or client service answers
+		owner, stepUp      bool             // the person is the Owner, and confirmed with a passkey
+		bearer             bool             // the call carries a bearer token and no cookie: the link's inbox
+		authErr, inboxErr  error            // what the link's authenticator and inbox answer
+		featuresOff        bool             // Leave is switched off
+		leaver             bool             // the person has left
+		seed               func(m *memIdem) // keys already claimed
+		header             map[string]string
 	}
 	triggers := map[string]trigger{ // code -> a request that returns it
 		CodeNotFound:           {method: "GET", path: "/v1/errors/NM_NOPE"},
@@ -742,6 +779,18 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodeLeaveConflict:      {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/working-pattern", body: patternBody, signedIn: true, err: &leave.Refusal{Code: leave.CodeConflict, Message: "Overlaps."}},
 		CodeFeatureOff:         {method: "GET", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026", signedIn: true, featuresOff: true},
 		CodeLeaverAccount:      {method: "GET", path: "/v1/me/details", signedIn: true, leaver: true},
+		CodeIdempotencyMismatch: {method: "POST", path: "/v1/people", body: personBody, signedIn: true, header: map[string]string{"Idempotency-Key": "k-1"},
+			seed: func(m *memIdem) {
+				m.seed("k-1", idemHash("POST", "/v1/people", `{"other":1}`), IdemRecord{Status: 201})
+			}},
+		CodeIdempotencyConflict: {method: "POST", path: "/v1/people", body: personBody, signedIn: true, header: map[string]string{"Idempotency-Key": "k-2"},
+			seed: func(m *memIdem) {
+				m.seed("k-2", idemHash("POST", "/v1/people", personBody), IdemRecord{Status: 201, HadBody: true})
+			}},
+		CodeAINever:            {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeNever, Message: "The assistant never approves."}},
+		CodeAIInvalid:          {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeInvalid, Message: "reply: text of up to 4000 characters."}},
+		CodeAIOff:              {method: "PUT", path: "/v1/assistant/settings", body: `{"enabled":false,"route":"none","task_types":[]}`, signedIn: true, owner: true, stepUp: true, err: &assistant.Refusal{Code: assistant.CodeOff, Message: "The assistant is off."}},
+		CodeAIConflict:         {method: "POST", path: "/v1/assistant/proposals/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f80/decision", body: `{"approve":true}`, signedIn: true, err: &assistant.Refusal{Code: assistant.CodeConflict, Message: "Decided already."}},
 		CodePayrollInvalid:     {method: "POST", path: "/v1/payroll/groups", body: `{"name":"Monthly","pay_day":25,"cutoff_days":7,"approval_days":3}`, signedIn: true, owner: true, err: &payroll.Refusal{Code: payroll.CodeInvalid, Message: "The pay day is wrong."}},
 		CodePayrollConflict:    {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/pay/year-to-date", body: `{"year":2026,"ow":"25000.00","aw_subject":"0.00","aw_paid":"0.00","through_month":"2026-05-01"}`, signedIn: true, owner: true, err: &payroll.Refusal{Code: payroll.CodeConflict, Message: "Held already."}},
 		CodeOnboardingInvalid:  {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/offboarding", body: `{"kind":"resignation","last_day":"2026-11-30"}`, signedIn: true, err: &onboarding.Refusal{Code: onboarding.CodeInvalid, Message: "The last day is required."}},
@@ -767,7 +816,13 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		}
 		testStepUp, featuresOff, testLeaver = tr.stepUp, tr.featuresOff, tr.leaver
 		linkAuthErr, linkErr = tr.authErr, tr.inboxErr
+		testIdem = nil
+		if tr.seed != nil {
+			testIdem = newMemIdem()
+			tr.seed(testIdem)
+		}
 		_, mux := testAPI(t)
+		testIdem = nil
 		linkAuthErr, linkErr = nil, nil
 		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, requestsErr, testRoles, testStepUp, featuresOff, testLeaver = nil, nil, nil, nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false, false, false
 		req := httptest.NewRequest(tr.method, tr.path, strings.NewReader(tr.body))
@@ -779,6 +834,9 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		}
 		if tr.bearer {
 			req.Header.Set("Authorization", "Bearer a-token")
+		}
+		for k, v := range tr.header {
+			req.Header.Set(k, v)
 		}
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
@@ -1184,6 +1242,47 @@ func TestOnlyTheHRAdministratorAndTheOwnerChangePacksAndPolicies(t *testing.T) {
 		}
 		if got := do(tc.roles, "PUT", "/v1/policy", policyBody); got != map[int]int{204: 200, 403: 403}[tc.write] {
 			t.Errorf("%v setting a policy: %d", tc.roles, got)
+		}
+	}
+}
+
+// Nemura holds people data and no company finance: no schema of the contract has a field that names the ledger, a company bank balance, revenue, cash, profit or a trial balance (NM-ROLE-02, FR-PAY-13): a contract
+// scan of every property name.
+// req: NM-ROLE-02, FR-PAY-13
+func TestNoOperationCarriesAFieldOfTheCompanysFinances(t *testing.T) {
+	raw, err := os.ReadFile(contractPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	forbidden := []string{"ledger", "revenue", "cash_balance", "cash_flow", "bank_balance", "profit", "trial_balance", "journal_entry", "company_financial", "gst_", "receivable", "payable_ledger", "general_ledger"}
+	var props []string
+	inProps := false
+	indent := 0
+	for _, line := range strings.Split(string(raw), "\n") {
+		trimmed := strings.TrimLeft(line, " ")
+		if trimmed == "properties:" {
+			inProps, indent = true, len(line)-len(trimmed)
+			continue
+		}
+		if inProps {
+			lead := len(line) - len(trimmed)
+			if trimmed == "" || lead <= indent {
+				inProps = false
+				continue
+			}
+			if lead == indent+2 && strings.HasSuffix(trimmed, ":") {
+				props = append(props, strings.TrimSuffix(trimmed, ":"))
+			}
+		}
+	}
+	if len(props) < 300 {
+		t.Fatalf("the scan found only %d property names: the contract's shape changed", len(props))
+	}
+	for _, p := range props {
+		for _, f := range forbidden {
+			if strings.Contains(strings.ToLower(p), f) {
+				t.Errorf("the property %q names the company's finances (%s)", p, f)
+			}
 		}
 	}
 }

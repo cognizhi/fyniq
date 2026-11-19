@@ -78,6 +78,8 @@ def _person(draw: st.DrawFn, month: date) -> dict[str, Any]:
             out["pr_start"] = draw(_pr_start(month))
         if draw(st.booleans()):
             out["joint_election"] = draw(st.booleans())
+            if out["joint_election"] and draw(st.booleans()):
+                out["employee_full_rate"] = True  # F/F: the full table's rates for the employee too
     if draw(st.integers(0, 19)) == 0:
         out["employee"] = False
     if draw(st.booleans()):
@@ -94,12 +96,24 @@ def _items(draw: st.DrawFn, month: date) -> list[dict[str, Any]]:
     items.append({"key": "basic", "name": "Basic salary", "amount": _text(basic), "cpf_wages": True, "suggested": "ordinary"})
     nxt = date(month.year + (month.month == 12), month.month % 12 + 1, 1)
     for i in range(draw(st.integers(0, 3))):
-        kind = draw(st.sampled_from(["allowance", "unpaid", "bonus", "commission", "late", "nonwage", "overtime", "offcycle"]))
+        kind = draw(st.sampled_from(["allowance", "unpaid", "bonus", "commission", "late", "nonwage", "overtime", "offcycle", "partmonth", "unpaidratio", "overtimeratio"]))
         key = f"{kind}{i}"
         if kind == "allowance" or kind == "overtime" or kind == "offcycle":
             items.append({"key": key, "name": kind, "amount": _text(draw(_cents(300_000))), "cpf_wages": True})
         elif kind == "unpaid":
             items.append({"key": key, "name": "Unpaid leave", "amount": _text(-draw(st.integers(0, max(basic, 0)))), "cpf_wages": True})
+        elif kind == "partmonth":  # a joiner's or a leaver's part month, or one record of a pay change (NM-PAY-12)
+            length = _last(month.year, month.month)
+            items.append({"key": key, "name": "Part month", "cpf_wages": True,
+                          "derive": {"kind": "part_month", "base": _text(draw(_cents())), "days": draw(st.integers(0, length)), "of": length}})
+        elif kind == "unpaidratio":  # unpaid leave as the day's share of the working days, a half day included
+            items.append({"key": key, "name": "Unpaid leave", "cpf_wages": True,
+                          "derive": {"kind": "unpaid_leave", "monthly": _text(draw(_cents())), "days": draw(st.sampled_from(["0.5", "1", "1.5", "2", "3.5"])),
+                                     "working_days": draw(st.integers(17, 23))}})
+        elif kind == "overtimeratio":  # overtime pay: twelve months of basic salary over fifty-two weeks of the normal hours
+            items.append({"key": key, "name": "Overtime", "cpf_wages": True,
+                          "derive": {"kind": "overtime", "monthly": _text(draw(_cents())), "weekly_hours": draw(st.sampled_from(["40", "44", "45", "37.5"])),
+                                     "multiple": draw(st.sampled_from(["1.5", "2", "1"])), "hours": draw(st.sampled_from(["1", "2.5", "10", "16", "72.25"]))}})
         elif kind == "nonwage":
             items.append({"key": key, "name": "Non-CPF allowance", "amount": _text(draw(_cents(200_000))), "cpf_wages": False})
         elif kind == "bonus":
@@ -146,6 +160,14 @@ def _deductions(draw: st.DrawFn) -> list[dict[str, Any]]:
 
 
 @st.composite
+def _overrides(draw: st.DrawFn) -> list[dict[str, str]]:
+    """FR-PAY-06: one to three overrides, each of a different figure, in cents, with a reason of the length the rule asks for."""
+    fields = draw(st.lists(st.sampled_from(["cpf_employee", "cpf_employer", "sdl", "shg"]), min_size=1, max_size=3, unique=True))
+    return [{"field": f, "value": _text(draw(_cents(300_000))), "reason": draw(st.sampled_from(["The CPF Board's figure", "Agreed with the employee", "x" * 10, "y" * 500]))}
+            for f in fields]
+
+
+@st.composite
 def _facts(draw: st.DrawFn, month: date, person: dict[str, Any]) -> dict[str, Any]:
     facts: dict[str, Any] = {"items": draw(_items(month))}
     if draw(st.integers(0, 7)) != 0:  # mostly known; a missing year to date is a refusal when additional wages are paid
@@ -154,12 +176,17 @@ def _facts(draw: st.DrawFn, month: date, person: dict[str, Any]) -> dict[str, An
         facts["last_month"] = True
     if draw(st.integers(0, 3)) == 0:
         facts["reimbursements"] = [_text(draw(st.integers(1, 100_000))) for _ in range(draw(st.integers(1, 2)))]
-    if draw(st.integers(0, 2)) == 0:
-        facts["deductions"] = draw(_deductions())
     if draw(st.integers(0, 9)) == 0:
         facts["final"] = True
+    if draw(st.integers(0, 2)) == 0 or facts.get("final") and draw(st.booleans()):  # final pay is drawn with its advances more often (FR-PAY-16)
+        facts["deductions"] = draw(_deductions())
+        if facts.get("final") and draw(st.booleans()):
+            facts["deductions"].append({"key": "adv", "kind": "recovery", "is_advance": True, "instalment": draw(st.sampled_from([1, 13])),
+                                        "amount": _text(draw(st.integers(1, 800_000))), **({"consent": draw(st.booleans())} if draw(st.booleans()) else {})})
     if draw(st.integers(0, 6)) == 0:
         facts["held"] = _text(draw(st.integers(1, 500_000)))
+    if draw(st.integers(0, 5)) == 0:
+        facts["overrides"] = draw(_overrides())
     return facts
 
 

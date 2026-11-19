@@ -86,3 +86,11 @@ Pinned by hash in each release (PRD-001 AI-61). A change needs the people evals 
 suite (PRD-001 QA-AI-03: never-list, fairness, data leakage between people) and a dual-approved
 change record.
 Statutory changes belong in the country packs, not here.
+
+## In this build (p1-nemura-assistant-external)
+
+Nemura's own runtime (`internal/nemura/assistant`) runs four read tools, each as the asking person, and nothing else: `my_leave_balance`, `my_payday`, `rule_answer` (the pack in force, cited, with the note to confirm
+it with HR) and `slip_line_rule` (a payslip line as a rule, never a figure). A tool is absent while the feature it reads is switched off for the organisation or held by another system. A result that carries pay, an
+NRIC, a bank account or a figure of money is refused before the model sees it, and every figure of an answer must be one a tool returned in the same turn. Drafts are the two P1 task types, `people.draft_letter` and
+`people.draft_fwa_reply`: proposals that a named person approves, which the executor attaches beside the request; a reply draft states no decision and no reason. The suites are `evals/nemura-assistant/golden.json` and
+`redteam.json`; the model route is local mode's scripted model until a real one is evidenced in Singapore.

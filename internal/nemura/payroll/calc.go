@@ -20,13 +20,14 @@ const (
 
 // Person is what the calculation needs to know about the employee for the month.
 type Person struct {
-	Employee      bool       // a contract of service: SDL applies to every employee, CPF to citizens and permanent residents; a contractor has neither
-	Residency     string     // citizen, permanent_resident or foreigner
-	PRStart       *time.Time // the day permanent resident status was obtained (the first-year and second-year rates run from it)
-	BirthDate     time.Time  // for the age band
-	JointElection bool       // a permanent resident in the first two years with the CPF Board's approval of a joint application: full employer and graduated employee rates
-	SHGFund       string     // CDAC, ECF, MBMF or SINDA; empty when none
-	SHGOptOut     bool       // the employee opted out (recorded)
+	Employee         bool       // a contract of service: SDL applies to every employee, CPF to citizens and permanent residents; a contractor has neither
+	Residency        string     // citizen, permanent_resident or foreigner
+	PRStart          *time.Time // the day permanent resident status was obtained (the first-year and second-year rates run from it)
+	BirthDate        time.Time  // for the age band
+	JointElection    bool       // a permanent resident in the first two years with the CPF Board's approval of a joint application: full employer and graduated employee rates (F/G)
+	FullEmployeeRate bool       // with JointElection: the application is for the employee's full rates too (F/F), which are the full table's (sc_spr3)
+	SHGFund          string     // CDAC, ECF, MBMF or SINDA; empty when none
+	SHGOptOut        bool       // the employee opted out (recorded)
 }
 
 // YearToDate is what this employer has already counted for the person in the calendar year, before the month (FR-PAY-14). Known is false when it was never imported or built up,
@@ -69,11 +70,11 @@ type Flag struct {
 }
 
 // Refund is the refund task of a month whose true-up finds additional wages counted beyond the annual ceiling: the employer applies to the CPF Board, and the employee's share is the
-// refund divided by the total rate times the employee rate, cents dropped (FR-PAY-14).
+// refund divided by the total rate times the employee rate, cents dropped: whole dollars (FR-PAY-14).
 type Refund struct {
 	Wages    *apd.Decimal // the excess of additional wages subject to CPF
-	Total    *apd.Decimal // the contributions on it, at the month's total rate
-	Employee *apd.Decimal // the employee's share, cents dropped
+	Total    *apd.Decimal // the contributions on it, at the month's total rate, in whole dollars (RND-CPF)
+	Employee *apd.Decimal // the employee's share, whole dollars
 }
 
 // Result is the whole employee-month.
@@ -145,11 +146,17 @@ func cpfGroup(p Person, month time.Time) string {
 		}
 		switch PRYear(*p.PRStart, month) {
 		case 1:
+			if p.JointElection && p.FullEmployeeRate {
+				return pack.GroupSCSPR3
+			}
 			if p.JointElection {
 				return pack.GroupSPR1FG
 			}
 			return pack.GroupSPR1GG
 		case 2:
+			if p.JointElection && p.FullEmployeeRate {
+				return pack.GroupSCSPR3
+			}
 			if p.JointElection {
 				return pack.GroupSPR2FG
 			}
@@ -284,20 +291,22 @@ func refundTask(r *Result, p Packs, group string, age int, wage *apd.Decimal) er
 		return fmt.Errorf("sg-cpf rates: %w", err)
 	}
 	total := add(rates.Employer, rates.Employee)
-	r.Refund.Total = mul(r.Refund.Wages, total)
-	ee := mul(r.Refund.Wages, rates.Employee)
-	r.Refund.Employee = floorCents(ee)
+	// The refund is contributions, which the CPF Board takes in whole dollars: the total rounds as RND-CPF's does (nearest dollar, 50 cents up) [accountant to confirm: the
+	// calculator rounds monthly and the automatic refund over the year]. The employee's share is the CPF Board's formula, the refund over the total rate times the employee
+	// rate, with the cents dropped: whole dollars (its worked example: $2,260 / 32.5% x 17% = $1,182.15 is $1,182; cpf.gov.sg, checked 20 Nov 2026).
+	r.Refund.Total = rounding.CPF(r.Refund.Wages, rates.Employer, rates.Employee).Total
+	r.Refund.Employee = floorDollars(quo(mul(r.Refund.Total, rates.Employee), total))
 	r.Flags = append(r.Flags, Flag{"CPF_REFUND", false, fmt.Sprintf("Additional wages counted beyond the annual ceiling: %s of wages. Apply to the CPF Board for a refund; the employee's share, %s, is repaid to the employee.",
 		cents(r.Refund.Wages), r.Refund.Employee.Text('f'))})
 	return nil
 }
 
-// floorCents drops the fractions of a cent.
-func floorCents(d *apd.Decimal) *apd.Decimal {
+// floorDollars drops the cents.
+func floorDollars(d *apd.Decimal) *apd.Decimal {
 	out := new(apd.Decimal)
 	c := work
 	c.Rounding = apd.RoundFloor
-	if _, err := c.Quantize(out, d, -2); err != nil {
+	if _, err := c.Quantize(out, d, 0); err != nil {
 		panic("payroll: floor: " + err.Error())
 	}
 	return out

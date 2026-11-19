@@ -37,8 +37,6 @@ var ErrUnavailable = errors.New("API clients are not set up in this deployment")
 
 // IdempotencyExempt names the writes of this file too: a name is unique among live clients, so a repeated registration is refused, and revoking is naturally repeatable.
 func init() {
-	IdempotencyExempt["POST /v1/api-clients"] = "a client's name is unique among live clients, so a repeat is refused (NM_API_CLIENT_EXISTS)"
-	IdempotencyExempt["DELETE /v1/api-clients/{id}"] = "revoking is naturally repeatable: a second revocation finds nothing (NM_NOT_FOUND)"
 }
 
 type clientsInput struct {

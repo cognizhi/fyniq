@@ -67,9 +67,6 @@ type Packs interface {
 }
 
 func init() {
-	IdempotencyExempt["POST /v1/packs/{version}/acceptances"] = "a version is accepted once: a repeat is refused (NM_PERSON_EXISTS)"
-	IdempotencyExempt["POST /v1/packs/{version}/decisions"] = "a decision is recorded once for a value: a repeat is refused (NM_PERSON_EXISTS)"
-	IdempotencyExempt["PUT /v1/policy"] = "a repeat starts a policy on the current policy's own start day, which is refused (NM_PERSON_HISTORY)"
 }
 
 type packsInput struct {

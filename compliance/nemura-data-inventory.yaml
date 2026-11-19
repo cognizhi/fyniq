@@ -112,6 +112,15 @@ classes:
     protection: "Row-level security; a record of terms is history that is only ended, once; every change is audited and the audit event says only that pay was set, never what it was"
     transfers: "None"
     columns: [person_terms.main_duties, person_terms.notice_period, person_terms.medical_benefits, person_terms.salary_period, person_terms.basic_salary, person_terms.fixed_allowances, person_terms.fixed_deductions, person_terms.overtime_period, person_terms.other_pay]
+  - key: people-assistant
+    what: "What the people assistant drafted for a request (the fields of a letter, the words of a reply), the text a person approved, their reason for not using a draft, and the assistant's own reasoning for it"
+    why: "To let the people team edit, approve or refuse a draft and to apply exactly the text that was approved (NM-AI-02, NM-AI-04)"
+    where: "Nemura's database, in Singapore; the model route is none or local mode's scripted model until processing in Singapore is evidenced for a real one"
+    who: "The HR officer, the HR administrator and the Owner decide a draft (Appendix B: Letters and templates); the assistant's own role can only insert a proposal and reads nothing"
+    retention: "Kept with the letter or the reply it became: an approved draft is evidence of what the company stated about the person"
+    protection: "Row-level security; a proposal keeps what the assistant proposed and is decided once, within 72 hours, by someone other than the person it acted for; the audit event holds a fingerprint of the text, never the text"
+    transfers: "None"
+    columns: [ai_proposal.payload, ai_proposal.final_payload, ai_draft.payload, ai_proposal.rationale, ai_proposal.decision_reason]
   - key: letters
     what: "A person's request for a letter and what it is for, the facts filled into it from their record, the issued letter's data, the company's letterhead and the notes on a template"
     why: "To issue letters the person asked for, exactly and attributably, and to keep the issued letter as evidence of what was said and who signed it"

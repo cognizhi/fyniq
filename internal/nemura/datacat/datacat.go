@@ -112,6 +112,13 @@ var Categories = []Category{
 			"person_terms.fixed_deductions", "person_terms.overtime_period", "person_terms.other_pay"},
 	},
 	{
+		Key: "people-assistant", What: "What the people assistant drafted for a request (the fields of a letter, the words of a reply), the text a person approved, their reason for not using a draft, and the assistant's own reasoning for it",
+		Purpose:    "To let the people team edit, approve or refuse a draft and to apply exactly the text that was approved (NM-AI-02, NM-AI-04)",
+		Capability: "Letters and templates",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the letter or the reply it became: an approved draft is evidence of what the company stated about the person"},
+		Columns:    []string{"ai_proposal.payload", "ai_proposal.final_payload", "ai_draft.payload", "ai_proposal.rationale", "ai_proposal.decision_reason"},
+	},
+	{
 		Key: "letters", What: "A person's request for a letter and what it is for, the facts filled into it from their record, the issued letter's data, the company's letterhead and the notes on a template",
 		Purpose:    "To issue letters the person asked for, exactly and attributably, and to keep the issued letter as evidence of what was said and who signed it",
 		Capability: "Letters and templates",
@@ -135,6 +142,14 @@ var Categories = []Category{
 
 // NotPersonal are columns whose names look personal and are not, with why. A column here needs a reason a reviewer can read.
 var NotPersonal = map[string]string{
+	"idempotency_key.body":         "the stored answer of a write that cannot carry pay or restricted data, kept 24 hours; an answer that may is never stored",
+	"idempotency_key.had_body":     "whether the first answer had a body: a flag",
+	"idempotency_key.body_kept":    "whether that body was stored: a flag",
+	"api_client_request.name":      "the name an Owner gives an API client, such as Payroll bridge, not a person",
+	"link_inbox.payload_sha256":    "the SHA-256 of a message from Fyniq, which holds none of it",
+	"link_inbox.outcome":           "the code of what the link did with a message (applied, duplicate or a refusal), not a person's data",
+	"ai_proposal.payload_hash":     "the SHA-256 of a draft's text, which holds none of it",
+	"ai_settings.own_pay":          "whether the Owner turned on explaining a person's own pay: a setting of the company, always off until a second approver exists",
 	"pay_group.name":               "the name of a pay group, such as Monthly, not of a person",
 	"pay_group.pay_day":            "the day of the month a group is paid, not a person's pay",
 	"organisation.name":            "the name of a company, not of a person",
@@ -153,9 +168,6 @@ var NotPersonal = map[string]string{
 	"identity_directory.issuer":    "the identity provider's address, not a person",
 	"identity_directory.tenant":    "the identity provider's tenant for the organisation, not a person",
 	"api_client.name":              "the name of a system that calls the API (a company or product), not a person",
-	"api_client_request.name":      "the name of a system that will call the API (a company or product), not a person",
-	"link_inbox.payload_sha256":    "the SHA-256 of an event's payload: a digest, never the payload or any person's data (design D5)",
-	"link_inbox.outcome":           "whether an event from Fyniq was applied, ignored as older or refused: a state, not a person's data",
 	"person_job.job_title":         "the title of a role, not a person's data on its own",
 	"person_job.department":        "the name of a department",
 	"pack_decision.table_name":     "the name of a table of a statutory pack, not a person",

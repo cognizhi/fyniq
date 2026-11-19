@@ -41,9 +41,6 @@ type Flex interface {
 }
 
 func init() {
-	IdempotencyExempt["POST /v1/me/flexible-work-requests"] = "each request is its own formal record with its own receipt date: a person may make more than one"
-	IdempotencyExempt["POST /v1/flexible-work-requests/{id}/reply"] = "a request is answered once: a repeat is refused (NM_LEAVE_CONFLICT)"
-	IdempotencyExempt["POST /v1/flexible-work-requests/{id}/withdrawal"] = "a request is withdrawn once: a repeat is refused (NM_LEAVE_CONFLICT)"
 }
 
 type flexInput struct {
