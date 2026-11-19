@@ -26,6 +26,7 @@ import { MyDetails } from "./pages/MyDetails";
 import { LeaverHome } from "./pages/LeaverHome";
 import { PayRunApproval } from "./pages/PayRunApproval";
 import { MyPay, Payslip } from "./pages/MyPay";
+import { FlexReplies } from "./components/FlexReplies";
 import { FinalPay } from "./components/FinalPay";
 import { AskAssistant } from "./pages/AskAssistant";
 import { AssistantSettings } from "./pages/AssistantSettings";
@@ -1367,9 +1368,11 @@ describe("my pay", () => {
     overtime_hours: "3", overtime_pay: "106.21" };
 
   it("lists the person's payslips with the net salary, marks a corrected one and has no axe violation", async () => {
-    answer("GET /v1/me/payslips", { status: 200, body: { payslips: [summary, { ...summary, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f51", version: 1, corrected: true }] } });
+    answer("GET /v1/me/payslips", { status: 200, body: { next_pay_day: "2026-11-25", payslips: [summary, { ...summary, id: "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1f51", version: 1, corrected: true }] } });
     const { container } = render(<MyPay roles={["employee"]} />);
-    expect((await screen.findAllByText("2026-06: net salary 3878.00, paid 2026-06-25")).length).toBe(2);
+    expect((await screen.findAllByText("2026-06: net salary S$3,878.00, paid 25 Jun 2026")).length).toBe(2);
+    expect(screen.getByText("Your next pay day is 25 Nov 2026.")).toBeTruthy();
+    expect(screen.getByText(/Tax forms: none is ready yet/)).toBeTruthy();
     expect(screen.getByText("Corrected")).toBeTruthy();
     expect(await violations(container)).toEqual([]);
   });
@@ -1450,7 +1453,7 @@ describe("the people assistant's settings", () => {
     answer("GET /v1/assistant/proposals", { status: 200, body: { proposals: [] } });
     answer("PUT /v1/assistant/settings", { status: 204, body: undefined });
     stepUp.result = undefined;
-    const { container } = render(<AssistantSettings roles={["owner"]} member="m" />);
+    const { container } = render(<AssistantSettings roles={["owner"]} />);
     expect(await screen.findByText(/It never approves or refuses leave or a request, changes pay, a bank account, a role or a record, issues or signs a letter/)).toBeTruthy();
     expect(screen.getByText("No draft is waiting.")).toBeTruthy();
     expect(await violations(container)).toEqual([]);
@@ -1461,11 +1464,11 @@ describe("the people assistant's settings", () => {
     expect(bodies.get("PUT /v1/assistant/settings")).toMatchObject({ enabled: false, route: "none", task_types: ["people.draft_letter"] });
   });
 
-  it("shows the people team a draft to approve or reject, never to the person it was drafted for, and not one that expired", async () => {
+  it("shows the people team a draft to approve or reject", async () => {
     answer("GET /v1/assistant/settings", { status: 200, body: settings });
     answer("GET /v1/assistant/proposals", { status: 200, body: { proposals: [proposal(false)] } });
     answer(`POST /v1/assistant/proposals/${pid}/decision`, { status: 204, body: undefined });
-    const first = render(<AssistantSettings roles={["hr_officer"]} member="someone-else" />);
+    render(<AssistantSettings roles={["hr_officer"]} />);
     expect(await screen.findByText("A letter from a template, for Ana Tan. Waits until 2026-11-23 10:00.")).toBeTruthy();
     expect(screen.getByText("AI draft")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Save with my passkey" })).toBeNull();
@@ -1473,14 +1476,10 @@ describe("the people assistant's settings", () => {
     fireEvent.click(screen.getByRole("button", { name: "Approve the draft" }));
     expect(await screen.findByText("Approved: the draft is kept as you saw it.")).toBeTruthy();
     expect(bodies.get(`POST /v1/assistant/proposals/${pid}/decision`)).toMatchObject({ approve: true });
-    first.unmount();
-    render(<AssistantSettings roles={["hr_officer"]} member={asker} />);
-    expect(await screen.findByText("The assistant drafted this for you: someone else decides it.")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Approve the draft" })).toBeNull();
   });
 
   it("says that only the people team sees it", () => {
-    render(<AssistantSettings roles={["employee"]} member="m" />);
+    render(<AssistantSettings roles={["employee"]} />);
     expect(screen.getByRole("alert").textContent).toContain("Only the HR officer, the HR administrator and the Owner");
   });
 });
@@ -1509,5 +1508,24 @@ describe("asking the assistant", () => {
     fireEvent.change(screen.getByLabelText("Your question"), { target: { value: "Hello" } });
     fireEvent.click(screen.getByRole("button", { name: "Ask" }));
     expect((await screen.findByRole("alert")).textContent).toContain("The assistant is off");
+  });
+});
+
+// req: NM-AI-02
+describe("a draft reply from the assistant", () => {
+  const rid = "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ea0";
+  const req = { id: rid, person_id: "p", person_name: "Ben Lim", arrangement: "flexi_time", from: "2027-01-04", reason: "School run", state: "received", reply_due: "2027-01-20" };
+
+  it("asks for a draft, and fills the reply with the approved draft only when the person chooses to, leaving the decision and the sending to them", async () => {
+    answer("GET /v1/flexible-work-requests", { status: 200, body: { requests: [req] } });
+    answer("GET /v1/assistant/drafts", { status: 200, body: { drafts: [{ id: "d", proposal_id: "pr", kind: "flex_reply", payload: { request_id: rid, reply: "Thank you for your request." }, applied_at: "2026-11-20T10:00:00Z" }] } });
+    answer("POST /v1/assistant/drafts", { status: 201, body: { proposal_id: "pr" } });
+    render(<FlexReplies />);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(await screen.findByRole("button", { name: "Draft a reply to Ben Lim with the assistant" }));
+    expect(await screen.findByText(/A person approves it under Settings, The people assistant/)).toBeTruthy();
+    expect(bodies.get("POST /v1/assistant/drafts")).toMatchObject({ task_type: "people.draft_fwa_reply", request_id: rid });
+    fireEvent.click(screen.getByRole("button", { name: "Use the approved draft for Ben Lim" }));
+    expect((screen.getByLabelText("Written reply to Ben Lim") as HTMLTextAreaElement).value).toBe("Thank you for your request.");
   });
 });

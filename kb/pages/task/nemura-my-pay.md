@@ -4,7 +4,7 @@ type: task
 title: Read your payslips in Nemura
 summary: What My pay shows, the twelve items every payslip holds, how to print or save one, and what a corrected payslip is
 sources:
-  - docs/user-guide/nemura/my-pay.md sha256:7c0344c5b1cf144b94d1590604777e52c2065983bd2f2f70316aa0082fc801c7
+  - docs/user-guide/nemura/my-pay.md sha256:e86fcc7c957abea104a10f633ac8625d0bbdc3010cdb4e4d9ce868438435e190
 data_class: personal
 taint: trusted
 status: published
@@ -24,7 +24,7 @@ aliases:
 
 ## What it is
 
-- **My pay** lists a person's payslips by month, each with the net salary and the day paid. Only the person reads their own.
+- **My pay** shows the next pay day from the pay group's calendar and lists a person's payslips by month, each with the net salary and the day paid. Only the person reads their own.
 - A payslip holds the twelve items MOM requires: the employer's and the employee's full names, the date of payment, the basic salary, the start and end of the salary period, allowances, other additional payments such as a bonus, deductions (CPF, a self-help group fund, no-pay leave and others), overtime hours, overtime pay and overtime payment period when overtime applies, and the net salary. (src: docs/user-guide/nemura/my-pay.md#what-it-is)
 
 ## Steps

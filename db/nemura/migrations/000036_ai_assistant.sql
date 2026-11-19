@@ -1,7 +1,7 @@
 -- The people assistant: its settings and its proposals (PRD-002 NM-AI-01, NM-AI-04, NM-ARC-06, Appendix D; p1-nemura-assistant-external slice 1).
 --
 -- The assistant is off for an organisation until its Owner turns it on. It holds no write credential on people data: its database role (`nemura_assistant`) may only INSERT a proposal and its audit event.
--- A proposal is decided by a named human (never the person who asked, a constraint), applied by the executor's role (`nemura_executor`) only after approval and with the approved text and its hash, and
+-- A proposal is decided by a named human (a tier 1 draft: the person who asked may decide it, as Fyniq's AI-10 allows, and both are in the audit trail), applied by the executor's role (`nemura_executor`) only after approval and with the approved text and its hash, and
 -- expires after 72 hours (a pending proposal past its time cannot be approved). A proposal's text and its audit event never hold a pay figure or a bank account.
 
 -- +goose Up
@@ -64,9 +64,7 @@ CREATE TABLE nemura.ai_proposal (
        (state = 'pending' AND decided_by IS NULL AND decided_at IS NULL AND final_payload IS NULL AND approved_hash IS NULL AND applied_at IS NULL)
     OR (state = 'rejected' AND decided_by IS NOT NULL AND decided_at IS NOT NULL AND decision_reason IS NOT NULL AND length(btrim(decision_reason)) > 0 AND final_payload IS NULL AND applied_at IS NULL)
     OR (state = 'approved' AND decided_by IS NOT NULL AND decided_at IS NOT NULL AND final_payload IS NOT NULL AND approved_hash IS NOT NULL AND applied_at IS NULL)
-    OR (state = 'applied' AND decided_by IS NOT NULL AND decided_at IS NOT NULL AND final_payload IS NOT NULL AND approved_hash IS NOT NULL AND applied_at IS NOT NULL)),
-  -- A named human decides: never the person the assistant acted for.
-  CONSTRAINT ai_proposal_decider_is_another CHECK (decided_by IS NULL OR decided_by <> asker)
+    OR (state = 'applied' AND decided_by IS NOT NULL AND decided_at IS NOT NULL AND final_payload IS NOT NULL AND approved_hash IS NOT NULL AND applied_at IS NOT NULL))
 );
 CREATE INDEX ai_proposal_state_idx ON nemura.ai_proposal (organisation_id, state, created_at);
 

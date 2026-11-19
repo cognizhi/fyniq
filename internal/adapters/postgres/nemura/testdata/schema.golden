@@ -1,6 +1,7 @@
 ## tables (table | owner | rls | forced)
 access_request | nemura_migrator | true | true
 access_request_item | nemura_migrator | true | true
+ai_draft | nemura_migrator | true | true
 ai_proposal | nemura_migrator | true | true
 ai_settings | nemura_migrator | true | true
 api_client | nemura_migrator | true | true
@@ -104,6 +105,14 @@ access_request_item | decision | text | true |
 access_request_item | exception | text | false | 
 access_request_item | decided_by | uuid | true | 
 access_request_item | decided_at | timestamp with time zone | true | now()
+ai_draft | organisation_id | uuid | true | nemura.current_org()
+ai_draft | id | uuid | true | uuidv7()
+ai_draft | proposal_id | uuid | true | 
+ai_draft | kind | text | true | 
+ai_draft | request_id | uuid | true | 
+ai_draft | payload | jsonb | true | 
+ai_draft | approved_hash | bytea | true | 
+ai_draft | applied_at | timestamp with time zone | true | 
 ai_proposal | organisation_id | uuid | true | nemura.current_org()
 ai_proposal | id | uuid | true | uuidv7()
 ai_proposal | task_type | text | true | 
@@ -993,11 +1002,24 @@ access_request_item | access_request_item_organisation_id_not_null | NOT NULL or
 access_request_item | access_request_item_pkey | PRIMARY KEY (organisation_id, request_id, category)
 access_request_item | access_request_item_request_fkey | FOREIGN KEY (organisation_id, request_id) REFERENCES nemura.access_request(organisation_id, id)
 access_request_item | access_request_item_request_id_not_null | NOT NULL request_id
+ai_draft | ai_draft_applied_at_not_null | NOT NULL applied_at
+ai_draft | ai_draft_approved_hash_not_null | NOT NULL approved_hash
+ai_draft | ai_draft_hash | CHECK ((octet_length(approved_hash) = 32))
+ai_draft | ai_draft_id_not_null | NOT NULL id
+ai_draft | ai_draft_kind | CHECK ((kind = ANY (ARRAY['letter'::text, 'flex_reply'::text])))
+ai_draft | ai_draft_kind_not_null | NOT NULL kind
+ai_draft | ai_draft_once | UNIQUE (organisation_id, proposal_id)
+ai_draft | ai_draft_organisation_id_not_null | NOT NULL organisation_id
+ai_draft | ai_draft_payload_not_null | NOT NULL payload
+ai_draft | ai_draft_pkey | PRIMARY KEY (organisation_id, id)
+ai_draft | ai_draft_proposal_fkey | FOREIGN KEY (organisation_id, proposal_id) REFERENCES nemura.ai_proposal(organisation_id, id)
+ai_draft | ai_draft_proposal_id_not_null | NOT NULL proposal_id
+ai_draft | ai_draft_request_id_not_null | NOT NULL request_id
+ai_draft | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 ai_proposal | ai_proposal_asker_fkey | FOREIGN KEY (organisation_id, asker) REFERENCES nemura.member(organisation_id, id)
 ai_proposal | ai_proposal_asker_not_null | NOT NULL asker
 ai_proposal | ai_proposal_created_at_not_null | NOT NULL created_at
 ai_proposal | ai_proposal_decider_fkey | FOREIGN KEY (organisation_id, decided_by) REFERENCES nemura.member(organisation_id, id)
-ai_proposal | ai_proposal_decider_is_another | CHECK (((decided_by IS NULL) OR (decided_by <> asker)))
 ai_proposal | ai_proposal_decision_whole | CHECK ((((state = 'pending'::text) AND (decided_by IS NULL) AND (decided_at IS NULL) AND (final_payload IS NULL) AND (approved_hash IS NULL) AND (applied_at IS NULL)) OR ((state = 'rejected'::text) AND (decided_by IS NOT NULL) AND (decided_at IS NOT NULL) AND (decision_reason IS NOT NULL) AND (length(btrim(decision_reason)) > 0) AND (final_payload IS NULL) AND (applied_at IS NULL)) OR ((state = 'approved'::text) AND (decided_by IS NOT NULL) AND (decided_at IS NOT NULL) AND (final_payload IS NOT NULL) AND (approved_hash IS NOT NULL) AND (applied_at IS NULL)) OR ((state = 'applied'::text) AND (decided_by IS NOT NULL) AND (decided_at IS NOT NULL) AND (final_payload IS NOT NULL) AND (approved_hash IS NOT NULL) AND (applied_at IS NOT NULL))))
 ai_proposal | ai_proposal_expires_at_not_null | NOT NULL expires_at
 ai_proposal | ai_proposal_expiry | CHECK ((expires_at = (created_at + '72:00:00'::interval)))
@@ -2335,6 +2357,9 @@ working_pattern | working_pattern_weekdays_not_null | NOT NULL weekdays
 CREATE INDEX access_request_due_idx ON nemura.access_request USING btree (organisation_id, state, due_on)
 CREATE UNIQUE INDEX access_request_item_pkey ON nemura.access_request_item USING btree (organisation_id, request_id, category)
 CREATE UNIQUE INDEX access_request_pkey ON nemura.access_request USING btree (organisation_id, id)
+CREATE UNIQUE INDEX ai_draft_once ON nemura.ai_draft USING btree (organisation_id, proposal_id)
+CREATE UNIQUE INDEX ai_draft_pkey ON nemura.ai_draft USING btree (organisation_id, id)
+CREATE INDEX ai_draft_request_idx ON nemura.ai_draft USING btree (organisation_id, request_id)
 CREATE UNIQUE INDEX ai_proposal_pkey ON nemura.ai_proposal USING btree (organisation_id, id)
 CREATE INDEX ai_proposal_state_idx ON nemura.ai_proposal USING btree (organisation_id, state, created_at)
 CREATE UNIQUE INDEX ai_settings_pkey ON nemura.ai_settings USING btree (organisation_id)
@@ -2510,6 +2535,8 @@ CREATE UNIQUE INDEX working_pattern_pkey ON nemura.working_pattern USING btree (
 CREATE TRIGGER access_request_guard BEFORE DELETE OR UPDATE ON nemura.access_request FOR EACH ROW EXECUTE FUNCTION nemura.access_request_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.access_request DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('access_request', 'id')
 CREATE TRIGGER access_request_item_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.access_request_item FOR EACH ROW EXECUTE FUNCTION nemura.access_request_item_guard()
+CREATE TRIGGER ai_draft_append_only BEFORE DELETE OR UPDATE ON nemura.ai_draft FOR EACH ROW EXECUTE FUNCTION nemura.append_only_guard('A draft')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.ai_draft DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('ai_draft', 'id')
 CREATE TRIGGER ai_proposal_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.ai_proposal FOR EACH ROW EXECUTE FUNCTION nemura.ai_proposal_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.ai_proposal DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('ai_proposal', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.ai_settings DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('ai_settings', 'organisation_id')
@@ -2654,6 +2681,7 @@ CREATE TRIGGER working_pattern_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura
 ## policies (table | name | using | with check)
 access_request | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 access_request_item | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+ai_draft | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 ai_proposal | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 ai_settings | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 api_client | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())

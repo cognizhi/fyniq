@@ -799,6 +799,7 @@ nemura_api | function nemura.setup_done | EXECUTE
 nemura_api | schema nemura | USAGE
 nemura_api | table nemura.access_request | SELECT
 nemura_api | table nemura.access_request_item | SELECT
+nemura_api | table nemura.ai_draft | SELECT
 nemura_api | table nemura.ai_proposal | SELECT
 nemura_api | table nemura.ai_settings | SELECT
 nemura_api | table nemura.api_client | SELECT
@@ -896,6 +897,13 @@ nemura_assistant | function nemura.has_role | EXECUTE
 nemura_assistant | function nemura.is_manager_of | EXECUTE
 nemura_assistant | schema nemura | USAGE
 nemura_assistant | table nemura.ai_settings | SELECT
+nemura_executor | column nemura.ai_draft.applied_at | INSERT
+nemura_executor | column nemura.ai_draft.approved_hash | INSERT
+nemura_executor | column nemura.ai_draft.id | INSERT
+nemura_executor | column nemura.ai_draft.kind | INSERT
+nemura_executor | column nemura.ai_draft.payload | INSERT
+nemura_executor | column nemura.ai_draft.proposal_id | INSERT
+nemura_executor | column nemura.ai_draft.request_id | INSERT
 nemura_executor | column nemura.ai_proposal.applied_at | UPDATE
 nemura_executor | column nemura.ai_proposal.state | UPDATE
 nemura_executor | column nemura.audit_event.body | INSERT
@@ -923,6 +931,8 @@ nemura_executor | table nemura.ai_proposal | SELECT
 nemura_executor | table nemura.ai_settings | SELECT
 nemura_executor | table nemura.approval_request | SELECT
 nemura_executor | table nemura.feature_state | SELECT
+nemura_executor | table nemura.flex_request | SELECT
+nemura_executor | table nemura.letter_request | SELECT
 nemura_executor | table nemura.member | SELECT
 nemura_executor | table nemura.organisation | SELECT
 nemura_executor | table nemura.outbox | SELECT
@@ -936,6 +946,7 @@ nemura_readonly | function nemura.is_manager_of | EXECUTE
 nemura_readonly | schema nemura | USAGE
 nemura_readonly | table nemura.access_request | SELECT
 nemura_readonly | table nemura.access_request_item | SELECT
+nemura_readonly | table nemura.ai_draft | SELECT
 nemura_readonly | table nemura.ai_proposal | SELECT
 nemura_readonly | table nemura.ai_settings | SELECT
 nemura_readonly | table nemura.api_client | SELECT
@@ -1069,6 +1080,7 @@ nemura_worker | function nemura.is_manager_of | EXECUTE
 nemura_worker | schema nemura | USAGE
 nemura_worker | table nemura.access_request | SELECT
 nemura_worker | table nemura.access_request_item | SELECT
+nemura_worker | table nemura.ai_draft | SELECT
 nemura_worker | table nemura.ai_proposal | SELECT
 nemura_worker | table nemura.ai_settings | SELECT
 nemura_worker | table nemura.api_client | SELECT

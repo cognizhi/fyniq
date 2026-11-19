@@ -104,7 +104,7 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   test that triggers each code with a plain message that names the field and the fix (ENG-23); `Idempotency-Key` on
   every write, stored in Nemura's database; `ETag` and `If-Match` on versioned records; cursor paging; additive-only
   inside `/v1`. Tests: each convention on a sample resource; a planted breaking change fails `oasdiff`.
-  (Built in part, 19 Nov 2026: the RFC 9457 `Problem` with the `NM_*` catalogue (`NM_NOT_FOUND`, `NM_INVALID`), each triggered by `TestEveryCodeInTheCatalogueIsTriggered`; the Idempotency-Key rule is a contract test over every write, vacuous until the first one. **Left:** Idempotency-Key storage, ETag and If-Match and cursor paging arrive with the first write operations and the first versioned list.)
+  (Built in part, 19 Nov 2026: the RFC 9457 `Problem` with the `NM_*` catalogue (`NM_NOT_FOUND`, `NM_INVALID`), each triggered by `TestEveryCodeInTheCatalogueIsTriggered`; the Idempotency-Key rule is a contract test over every write, vacuous until the first one. **Left:** a stored `Idempotency-Key` (no table holds one: every write that is not exempt relies on the exemption list `IdempotencyExempt`, which names each with its reason, and on the domain's own once-only rules), `ETag` and `If-Match` on a versioned record, and cursor paging on the first long list; checked on 20 Nov 2026 and still open.)
 - [x] 4.3 `TestNemuraAuthorisationMatrix` skeleton: every operation in the contract has a row (role, expected status),
   and an operation without one fails the build; unknown routes deny. Tag `// req: NM-ARC-03` for the whole slice here
   and tick it (the later slices add operations under the same rules).
@@ -176,7 +176,7 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 - [ ] 6.5 Landing by role: the session operation returns the person's landing page and effective rights (the table of
   PRD-002 §3). Tests: each role's landing; no ledger, bank, revenue, cash or company-financial field in any
   Nemura operation's schema (a contract scan), `// req: NM-ROLE-02`, completed with the web app in 7.4.
-  (Built in part, 19 Nov 2026: `GET /v1/session` returns the person, organisation, roles and landing (`api.Landing`; `TestEachRoleLandsWhereThePRDSays`, `// req: NM-ROLE-02`). **Left, so unticked:** the contract scan that no operation carries a ledger, bank, revenue, cash or company-financial field, and the web shell's landing (7.4).)
+  (Built in part, 19 Nov 2026: `GET /v1/session` returns the person, organisation, roles and landing (`api.Landing`; `TestEachRoleLandsWhereThePRDSays`, `// req: NM-ROLE-02`). Built, 20 Nov 2026: the contract scan (`TestNoOperationCarriesAFieldOfTheCompanysFinances`, `// req: NM-ROLE-02, FR-PAY-13`). **Left, so unticked:** the web shell's landing (7.4).)
 - [ ] 6.6 Verify: `TestNemuraAuthorisationMatrix` rows for every new operation (`FYNIQ_MATRIX_ONLY=<regex>` while
   working), `make openapi`, `make check`, `make test`.
 
@@ -207,16 +207,16 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   people team; compiled into `kb/` in the same commit (`python3 scripts/kb.py hash <src>`, `kb.py log compile`, `make
   kb-index`, `make kb-lint`). Tests `// req: NM-UX-04` and the registry test.
   (Built in part, 19 Nov 2026: help keys and tooltips in `src/i18n/en-SG.json`, guide pages `nemura/sign-in.md` and `nemura/home.md` compiled into `kb/` (`nemura.sign-in`, `nemura.home`). **Left, so unticked:** the pages for roles and access, your data and my pay, and the first-run tours.)
-- [ ] 7.6 (slice 7b) "Needs additional verification" (NM-UX-06): the banner reads
+- [x] 7.6 (slice 7b) "Needs additional verification" (NM-UX-06): the banner reads
   `docs/prd/reviews/review-status.json`; the people team's payroll, pay-run approval, leave-policy, country-pack,
   checks, onboarding and settings pages carry it; self-service and sign-in never do. A change to the register
   goes in its own pull request (it never auto-approves). Tests `// req: NM-UX-06`: the banner on each listed page
   and on none of the excluded ones.
-  (Built in part, 19 Nov 2026: `ReviewBanner` and `reviewsFor` read the register, with sign-in and the self-service pages never carrying it (`src/ui.test.tsx`; `// req: NM-UX-06`). **Left, so unticked:** the people team's pages that carry it, with their changes.)
-- [ ] 7.7 (slice 7b) Localisation (NM-NFR-04): every string through the catalogue, `en-SG` dates, numbers and S$ from
+  (Built in part, 19 Nov 2026: `ReviewBanner` and `reviewsFor` read the register, with sign-in and the self-service pages never carrying it (`src/ui.test.tsx`; `// req: NM-UX-06`). Built, 20 Nov 2026: every page the register lists that has a route carries the banner and none of the pages the register never lists does (`source.test.ts`, `// req: NM-UX-06`); `nm-fyniq-link` is built with the Fyniq link.)
+- [x] 7.7 (slice 7b) Localisation (NM-NFR-04): every string through the catalogue, `en-SG` dates, numbers and S$ from
   the worksite's locale, a test that fails on a string literal in a component, money as a decimal string and the
   clipboard's ASCII minus. Tests `// req: NM-NFR-04`.
-  (Built in part, 19 Nov 2026: every string through `t()` and a test that fails on a literal in a component or an unused or missing key (`src/source.test.ts`; `// req: NM-NFR-04`). **Left, so unticked:** `en-SG` dates, numbers and S$ and the clipboard's ASCII minus, with the first money on a page (My pay).)
+  (Built, 19 and 20 Nov 2026: every string through `t()` and a test that fails on a literal in a component or an unused or missing key (`src/source.test.ts`); `src/format.ts` draws money as S$ from a decimal string (grouped, ASCII minus, no float), `plainDecimal` gives the clipboard the plain decimal, and `date` draws 25 Jun 2026, used on My pay and the payslip (`src/format.test.ts`, `// req: NM-NFR-04`).)
 - [x] 7.8 (slice 7b) Delivery (D11): the static build embedded in the binary (a committed placeholder so `go build`
   works), the web stage in the Dockerfile for the `nemura` target, `.dockerignore` for `apps/nemura-web/` and
   `docs/design-system/nemura/tokens.css`, the headers of `security-headers.inc`, a test that a release image
@@ -252,11 +252,11 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 9. My pay, performance and the pay-day alert (slice 9)
 
-- [ ] 9.1 `nm-my-pay` built to its fragment on the document frame: the person's own pay only (NM-SEC-02), next pay
+- [x] 9.1 `nm-my-pay` built to its fragment on the document frame: the person's own pay only (NM-SEC-02), next pay
   day, latest payslip and forms with their empty and "form not ready" states, and the print and PDF view readable
   in black and white. Tests: another person's pay is refused (API and row-level), the print stylesheet (black and white,
   letterhead slot), `// req: NM-UX-05` is **not** tagged until payslip and letter content exist (**Left:**
-  `p1-nemura-payroll` and `p1-nemura-self-service-letters`).
+  `p1-nemura-payroll` and `p1-nemura-self-service-letters`). (Built, 20 Nov 2026: My pay shows the next pay day from the pay group's calendar (`GET /v1/me/payslips` `next_pay_day`, no amount), the latest payslips with their empty state and the "no tax form is ready yet" state; another person's payslip is refused as if it did not exist (`TestPayslipsAreMadeOnceFromAnApprovedVersionAndReadOnlyByTheirOwner`); the payslip has a print view and a PDF. **Left:** the print stylesheet's black-and-white proof and `// req: NM-UX-05` tag with the forms, `p2-payroll-outputs`.)
 - [ ] 9.2 Performance (NM-NFR-02): My pay under 1.5 s at the 75th percentile on the throttled mobile profile,
   measured locally against the embedded build; the harness is the one `p1-nemura-self-service-letters` reuses for My
   home, and the pay-run budget is payroll's. Tests: the measured budget in `make test-e2e`; tag nothing until My
@@ -335,3 +335,9 @@ only when its row below says "complete".
 | Screen `nm-my-pay` | 9.1 | page and rules | payslips and forms: `p1-nemura-payroll` |
 
 NM-SEC-06 (grievances) is P2 and sits in `p2-nemura-people`, not here.
+
+## Left (20 Nov 2026, closing pass)
+
+- Ticked now with evidence: 7.6 (the banner on every built page of the register, none on the excluded), 7.7 (`src/format.ts`, `// req: NM-NFR-04`) and 9.1 (My pay's next pay day, payslips and tax-form state); 6.5's contract scan is built.
+- Open and why: 3.2 (anchors in a Nemura-prefixed bucket and the nightly job need the signer and blob ports in the worker); 4.2 (the stored Idempotency-Key, ETag/If-Match, cursor paging); 5.3, 7.3, 9.4 and 10.1 (the Identity Platform adapter, the infra plan and apply: `[live-verify]`); 7.4 (the Finance | People switch: `p1-nemura-fyniq-link`); 7.5 (the roles-and-access and your-data pages and the first-run tours); 8.3 (the access-request API and `nm-access-request`: the lifecycle and its tests exist in `internal/nemura/accessreq`); 9.2 (the My pay timing harness); 9.3 (email and in-app delivery of the pay-day alert); 10.2 (restoring Nemura alone `[live-verify]`); 6.6, 7.9, 9.5 and 10.3 (a full `make test`, `make images` and the image gates on the finished change).
+- The assistant and the executor as their own processes (`NEMURA_ROLE=assistant` and `executor`, one image, no new Dockerfile) are not built: the executor needs the worker's `/tasks` and `/tick` pattern on the executor class, and the assistant needs a service-to-service call from the API with an audience-bound token (the AI-36 pattern), so a cloud identity and queue per role `[live-verify]`; `cmd/nemura/main_test.go` keeps refusing the roles in words until then, and the database roles, grants and code paths are proven by the adapter tests.

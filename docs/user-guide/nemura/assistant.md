@@ -25,7 +25,8 @@ The people assistant drafts letters and replies for the people team to edit and 
 
 ## What happens next
 
-- Approving keeps the draft exactly as you saw it: only that text is used, and only after you approve. The person the assistant acted for cannot decide their own draft.
+- To ask for a draft, open a letter request or a flexible-work request and select **Draft a reply with the assistant**. The assistant writes an acknowledgement or fills a letter's fields from the record, and never states a decision. The words in the request are only quoted, never followed.
+- Approving keeps the draft exactly as you saw it: only that text is used, and only after you approve. An approved draft is attached beside the request, where you select **Use the approved draft**; you still decide, sign and send. The audit trail records who asked for the draft and who decided it.
 - The audit trail says that a draft was proposed and approved, with a fingerprint of the text, never the text itself.
 - Own-pay explanations, which would send a person's own payslip figures to a model, stay off until the Owner and a second approver can turn them on, which arrives when Nemura is linked to Fyniq. Until then the assistant explains a payslip line from its rule and the page shows the figures.
 
@@ -33,7 +34,7 @@ The people assistant drafts letters and replies for the people team to edit and 
 
 - **The assistant is off.** The Owner turns it on, and each kind of draft, in the settings.
 - **A draft cannot be approved.** It waited more than 72 hours: ask the assistant again.
-- **I cannot decide a draft.** It was drafted for you, or you are not the HR officer, the HR administrator or the Owner.
+- **I cannot decide a draft.** You are not the HR officer, the HR administrator or the Owner.
 
 ## Related
 

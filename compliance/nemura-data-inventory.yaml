@@ -120,7 +120,7 @@ classes:
     retention: "Kept with the letter or the reply it became: an approved draft is evidence of what the company stated about the person"
     protection: "Row-level security; a proposal keeps what the assistant proposed and is decided once, within 72 hours, by someone other than the person it acted for; the audit event holds a fingerprint of the text, never the text"
     transfers: "None"
-    columns: [ai_proposal.payload, ai_proposal.final_payload, ai_proposal.rationale, ai_proposal.decision_reason]
+    columns: [ai_proposal.payload, ai_proposal.final_payload, ai_draft.payload, ai_proposal.rationale, ai_proposal.decision_reason]
   - key: letters
     what: "A person's request for a letter and what it is for, the facts filled into it from their record, the issued letter's data, the company's letterhead and the notes on a template"
     why: "To issue letters the person asked for, exactly and attributably, and to keep the issued letter as evidence of what was said and who signed it"

@@ -413,6 +413,7 @@ type Payroll interface {
 	RecordPayment(ctx context.Context, s Session, run uuid.UUID, in PaymentRecord) error
 	PublishPayslips(ctx context.Context, s Session, run uuid.UUID, version int) (int, error)
 	MyPayslips(ctx context.Context, s Session) ([]PayslipSummary, error)
+	MyNextPayDay(ctx context.Context, s Session) (string, error)
 	MyPayslip(ctx context.Context, s Session, id uuid.UUID) (PayslipView, error)
 	MyPayslipFile(ctx context.Context, s Session, id uuid.UUID) (reference string, pdf []byte, err error)
 	Approve(ctx context.Context, s Session, id uuid.UUID, version int, digest string) error
@@ -826,7 +827,8 @@ type payslipsPublishOutput struct {
 
 type myPayslipsOutput struct {
 	Body struct {
-		Payslips []PayslipSummary `json:"payslips" doc:"The person's payslips, newest month first."`
+		NextPayDay string           `json:"next_pay_day,omitempty" format:"date" doc:"The next day the person is paid, from their pay group's calendar; left out when they have no pay record in force. No amount." example:"2026-11-25"`
+		Payslips   []PayslipSummary `json:"payslips" doc:"The person's payslips, newest month first."`
 	}
 }
 
@@ -1121,6 +1123,11 @@ func (a *API) registerPayRuns() {
 			return nil, payrollError(err)
 		}
 		out := &myPayslipsOutput{}
+		next, err := a.d.Payroll.MyNextPayDay(ctx, s)
+		if err != nil {
+			return nil, payrollError(err)
+		}
+		out.Body.NextPayDay = next
 		out.Body.Payslips = list
 		if list == nil {
 			out.Body.Payslips = []PayslipSummary{}

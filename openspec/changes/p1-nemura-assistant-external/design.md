@@ -27,7 +27,7 @@ By default the assistant explains a payslip line from the pay item's rule (what 
 
 ### D5. Proposals, executor, expiry
 
-`nemura.ai_proposal` rows are inserted by `nemura_assistant` (insert-only), decided by a human with the task's approver role (a database constraint: the decider is not the asker), and applied by `nemura_executor` through the letters domain commands (a draft letter request; a reply draft on a flexible-work request) only after approval. A proposal expires after 72 hours and an expired one cannot be approved. The approved text is what the human saw and edited: the executor applies the stored final text and its hash, never a regenerated one.
+`nemura.ai_proposal` rows are inserted by `nemura_assistant` (insert-only), decided by a human with the task's approver role (a tier 1 draft: the asker may decide it, as AI-10 allows; both are audited), and applied by `nemura_executor` through the letters domain commands (a draft letter request; a reply draft on a flexible-work request) only after approval. A proposal expires after 72 hours and an expired one cannot be approved. The approved text is what the human saw and edited: the executor applies the stored final text and its hash, never a regenerated one.
 
 ### D6. External systems stay Fyniq's
 
@@ -51,3 +51,10 @@ NM-EXT-01 to 03 are decided on the Fyniq side (FR-PPL-01, 05; the import is idem
 - **D11 The tool names avoid the never-list's words.** The never-list is checked on a tool's name as on a task's, so `my_payday`, `slip_line_rule` and `rule_answer` are the names, not `my_pay_day`, `payslip_line_rule` and `policy_answer`. Every tool of the allowlist is tested against the list.
 - **D12 The scripted model plans by words and a refusal comes first.** What the assistant never does is matched in the question before any tool is planned (approve, change pay, issue, restricted data, another person's pay, an injected instruction); a match answers in words with no tool run. A model's own tool choices are not trusted: one outside the allowlist or that the never-list names is dropped, and a result that carries pay, an NRIC, a bank account or a figure of money is refused before the model sees it.
 - **D13 Rules are cited, not remembered.** A pack rule is answered from the pack in force today with its version and the official source, and always with the note to confirm it with HR, because every value of the pack is researched and none yet verified a second time (NM-PACK-07). A payslip line is explained from a fixed rule text with no figure; the knowledge base is not read at run time because the people image does not carry `kb/` (left: a KB reader once the knowledge base is shared).
+
+- **D14 The asker may decide a tier 1 draft.** Slice 1 forbade it by a constraint; that would leave a company with one HR officer unable to approve a draft the officer asked for, which Fyniq's own AI-10 allows for tier 1. The constraint is dropped from migration 000036 (not yet deployed anywhere); the asker, the decider and both times stay in the proposal and its audit events.
+
+## Decisions made while building slice 3
+
+- **D15 Applied means attached, not performed.** The executor inserts the approved text into `nemura.ai_draft` beside the request and marks the proposal applied. It does not call `CheckLetter`, `SignLetter` or `ReplyFlex`: those decide, and the assistant never decides. The executor's grants are INSERT on `ai_draft`, UPDATE of two columns of `ai_proposal` and SELECT of the two request tables' rows, with no grant on a request's columns and none on the people tables; a test runs the forbidden updates and sees `permission denied`.
+- **D16 The approved text is re-hashed before it is attached.** `ApplyProposal` refuses when the final text no longer hashes to what was approved, when it no longer fits the task's shape, or when the request is closed; an approved proposal for a closed request stays approved and is reported, never applied.

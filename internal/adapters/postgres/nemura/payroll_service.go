@@ -623,3 +623,20 @@ func (p PayrollService) Export(ctx context.Context, s api.Session, run uuid.UUID
 	})
 	return out, err
 }
+
+// MyNextPayDay is the next day the signed-in person is paid, or "" when they have no pay record in force.
+func (p PayrollService) MyNextPayDay(ctx context.Context, s api.Session) (string, error) {
+	out := ""
+	err := p.in(ctx, s, func(ctx context.Context, tx pgx.Tx) error {
+		person, err := OwnPerson(ctx, tx, s.Member)
+		if err != nil {
+			return nil
+		}
+		next, ok, err := NextPayDay(ctx, tx, person, p.Clock.Now())
+		if ok {
+			out = day(next)
+		}
+		return err
+	})
+	return out, err
+}
