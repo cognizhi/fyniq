@@ -100,7 +100,7 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   operations: the session, the feature registry stub and the error catalogue. Tests `// req: NM-ARC-03`
   (tagged here for the contract's generation and drift only; full in 4.3).
   (Built, 19 Nov 2026: `internal/nemura/api`, `contracts/openapi/nemura/nemura.v1.yaml` and `spectral.yaml`, `make openapi` and `make api-check`, release-please keeps the version. The generated TypeScript client arrives with `apps/nemura-web` (7.1); oasdiff against a release starts once Nemura has one. First operations: `GET /v1/info`, `GET /v1/errors`, `GET /v1/errors/{code}`; the session operation arrives with sign-in.)
-- [x] 4.2 Conventions: RFC 9457 errors with the `NM_*` catalogue in `contracts/openapi/nemura/errors.yaml` and a
+- [ ] 4.2 Conventions: RFC 9457 errors with the `NM_*` catalogue in `contracts/openapi/nemura/errors.yaml` and a
   test that triggers each code with a plain message that names the field and the fix (ENG-23); `Idempotency-Key` on
   every write, stored in Nemura's database; `ETag` and `If-Match` on versioned records; cursor paging; additive-only
   inside `/v1`. Tests: each convention on a sample resource; a planted breaking change fails `oasdiff`.
@@ -140,20 +140,23 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
 
 ## 6. Roles, the permission matrix, approvals and need to know (slice 6)
 
-- [ ] 6.1 Appendix B as data in `internal/nemura/authz` (roles, areas, per-field and per-action rights, scope:
+- [x] 6.1 Appendix B as data in `internal/nemura/authz` (roles, areas, per-field and per-action rights, scope:
   own, reports, assigned, organisation), `TestTheGrantsAreAppendixB` comparing it with the PRD's rows, an unknown
   area denies. Roles are Nemura's own and assigned per organisation; no code reads Fyniq's role table. Tests
   `// req: NM-ROLE-01` and the "Permission matrix" requirement `// req: people/experience Permission matrix`
   (one test per scenario: employee, AI, payroll without medical data, interviewer, administrator).
-- [ ] 6.2 Role assignment, effective-dated and audited, with its history; the role table's `RLS` and grants.
+  (Built, 19 Nov 2026: `internal/nemura/authz` (`matrix.go` is Appendix B, `TestTheMatrixIsAppendixB` compares it with the PRD, `TestTheScenariosOfThePermissionMatrix` reads the five scenarios off it) and `TestTheDatabaseKnowsExactlyNemurasRoles`. Tagged `// req: people/experience Permission matrix` and `// req: NM-ROLE-01`.)
+- [x] 6.2 Role assignment, effective-dated and audited, with its history; the role table's `RLS` and grants.
   Tests: a grant takes effect from its date and an end date removes it; every change emits its event.
-- [ ] 6.3 The approvals primitive (D9): `approval_request`, the rule that the approver is neither the requester nor
+  (Built, 19 Nov 2026: migration 000004 `role_assignment` (effective-dated, history kept, only ended once) and `AddMember`, `GrantRole`, `EndRole`, `ActiveRoles`; `TestRolesAreEffectiveDatedAndHistoryIsKept`.)
+- [x] 6.3 The approvals primitive (D9): `approval_request`, the rule that the approver is neither the requester nor
   the subject, expiry, the passkey assertion, and the version and digest approved. Role grants use it: Payroll
   administrator, signatory and Owner need the Owner and a second approver; in a team of one the Owner is the second
   person. Tests `// req: NM-ROLE-05` (no self-escalation: an HR administrator cannot give themselves pay or
   signing rights) and `// req: NM-ROLE-04` for the generic rule only, with its tag held back until the pay-run
   and bank-account pairs exist (**Left:** `p1-nemura-records-packs` for the bank account, `p1-nemura-payroll` for the
   run, `p1-nemura-fyniq-link` for the run's salary batch in Fyniq).
+  (Built, 19 Nov 2026: `approval_request` with the version and digest, `internal/nemura/roles`, `RequestRoleGrant`, `DecideRoleGrant`; `TestNobodyEscalatesTheirOwnRights` and `TestNobodyApprovesTheirOwnRequestAndSetupRunsOnce` carry `// req: NM-ROLE-05`. **Left:** the passkey assertion on a decision (with passkeys, 5.4), the team-of-one rule (with the founders' team modes, `p1-nemura-fyniq-link`), and NM-ROLE-04's pay-run and bank-account pairs; `NM-ROLE-04` stays untagged.)
 - [ ] 6.4 Need to know (NM-SEC-02): the restricted-field framework (masked by default, released only with the right,
   `nemura.restricted.read` on every release), row-level scope predicates reading `app.person_id` and `app.roles`,
   `reporting_line` (effective-dated) as the source for the manager scope, and the platform's own restricted objects
