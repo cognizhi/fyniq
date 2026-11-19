@@ -68,6 +68,8 @@ var fyCodes = map[string]string{
 	"FY183": storage.CodeCaptureName,
 	"FY184": storage.CodeVersion,
 	"FY185": storage.CodeVersion,
+	"FY620": storage.CodeInvalid,
+	"FY621": storage.CodeVersion,
 	"FY186": storage.CodeVersion,
 	"FY187": storage.CodeVersion,
 	"FY188": storage.CodeVersion,

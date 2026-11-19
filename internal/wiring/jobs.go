@@ -47,6 +47,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/proposal"
+	"github.com/cognizhi/fyniq/internal/pspevents"
 	"github.com/cognizhi/fyniq/internal/remitmail"
 	"github.com/cognizhi/fyniq/internal/render"
 	"github.com/cognizhi/fyniq/internal/reportexport"
@@ -464,6 +465,17 @@ func (k *Kit) Fetcher(clock ports.Clock) email.Fetcher {
 // BankFeeds syncs the organisations' bank-data connectors (FR-BNK-15, FR-BNK-16).
 func (k *Kit) BankFeeds(clock ports.Clock) bankfeed.Syncer {
 	return bankfeed.Syncer{Store: k.Store, Runtime: k.Runtime(clock), Clock: clock}
+}
+
+// PSPEvents works the payment providers' stored events (FR-PSP-01): each fetched from its provider and posted by the rule
+// of its kind.
+func (k *Kit) PSPEvents(clock ports.Clock) pspevents.Processor {
+	return pspevents.Processor{Store: k.Store, Runtime: k.Runtime(clock), Clock: clock, Handlers: k.PSPHandlers(clock)}
+}
+
+// PSPHandlers are the posting rules of each kind of provider object.
+func (k *Kit) PSPHandlers(clock ports.Clock) map[ports.ProviderKind]pspevents.Handler {
+	return map[ports.ProviderKind]pspevents.Handler{}
 }
 
 // BankReports imports the banks' emailed reports accepted at the bank-ingest address (FR-BNK-17).

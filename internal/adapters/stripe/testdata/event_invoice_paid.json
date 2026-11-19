@@ -1,0 +1,1 @@
+{"id":"evt_1","object":"event","api_version":"2025-09-30.clover","created":1795800200,"type":"invoice.paid","data":{"object":{"id":"in_1","object":"invoice","total":4900,"currency":"sgd"}}}

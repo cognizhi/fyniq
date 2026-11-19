@@ -1,0 +1,86 @@
+{
+  "id": "stripe",
+  "name": "Stripe",
+  "publisher": "Fyniq",
+  "version": "1.0.0",
+  "min_platform": "0.1.0",
+  "summary": "Reads a Stripe account into the books, read-only: its balance transactions feed each money account, and its signed webhooks name the invoice, charge, refund, dispute or payout to fetch. Fyniq never charges, refunds, retries or cancels at Stripe.",
+  "scope": "organisation",
+  "capabilities": [
+    {
+      "kind": "payment-provider",
+      "trigger": "system-rule",
+      "trigger_rule": "A verified Stripe webhook, which names an object to fetch, or the daily completeness sweep.",
+      "on_pause": "hold",
+      "on_disable": "hold",
+      "in_flight": "finish",
+      "parser_version": "stripe@1"
+    },
+    {
+      "kind": "bank-data",
+      "trigger": "system-rule",
+      "trigger_rule": "The sync schedule: the tick's hourly bank.sync, or an early sync a verified Stripe webhook prompts.",
+      "on_pause": "hold",
+      "on_disable": "hold",
+      "in_flight": "finish"
+    }
+  ],
+  "configuration": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "history_days": {
+        "type": "integer",
+        "title": "History on the first sync",
+        "description": "How many days before today the first sync reads balance transactions.",
+        "minimum": 1,
+        "maximum": 730,
+        "default": 90
+      }
+    }
+  },
+  "secrets": [
+    {
+      "name": "api_key",
+      "title": "Restricted API key",
+      "description": "A restricted key (rk_live_ or rk_test_) with read permission on Balance, Balance transactions, Charges, Customers, Disputes, Invoices, Credit notes, Payouts, Refunds and Subscriptions, and no write permission (Developers › API keys › Create restricted key). Fyniq only reads with it.",
+      "used_by": [
+        "worker",
+        "api"
+      ],
+      "rotation_overlap_hours": 24
+    },
+    {
+      "name": "webhook_secret",
+      "title": "Webhook signing secret",
+      "description": "The signing secret (whsec_) of the Stripe webhook endpoint that points to /api/webhooks/psp/stripe/<this connector's ID>. Send it invoice.*, credit_note.*, charge, refund, dispute, payout and subscription events.",
+      "used_by": [
+        "api"
+      ],
+      "rotation_overlap_hours": 24
+    }
+  ],
+  "provider_scopes": [
+    "Read on Balance, Balance transactions, Charges, Customers, Disputes, Invoices, Credit notes, Payouts, Refunds, Subscriptions"
+  ],
+  "fyniq_scopes": [],
+  "data_classes": [],
+  "regions": [
+    "US"
+  ],
+  "destinations": [
+    {
+      "host": "api.stripe.com",
+      "port": 443
+    }
+  ],
+  "webhooks": [],
+  "health_check": "Counts Stripe's refusals and failed connections in recent syncs, the webhooks received and parked, each feed's last sync and why it stopped, and the date each money account is complete to.",
+  "test_action": "Lists the account's balance currencies, and reports whether Stripe accepted the key. It reads the balance only.",
+  "local_substitute": "A fake Stripe in tests with recorded fixtures; Prism serves contracts/partners/stripe.yaml in the local partners profile.",
+  "limits": {
+    "requests_per_minute": 100,
+    "breaker_failures": 5,
+    "breaker_cooldown_seconds": 300
+  }
+}

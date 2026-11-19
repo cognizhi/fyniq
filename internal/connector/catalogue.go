@@ -60,12 +60,17 @@ type Binding struct {
 	OutboundEmail func(Config) (ports.Email, error)
 	InboundEmail  func(Config) (ports.InboundMail, error)
 	BankData      func(Config) (ports.BankData, error)
+	// PaymentProvider builds a payment provider's read-only view of its objects (FR-PSP-01): no method of it writes.
+	PaymentProvider func(Config) (ports.PaymentProvider, error)
 	// Model builds a model provider's adapter for one AI connection (AI-71): its configuration and credential are the
 	// connection's, never an installed connector's (p1-ai-providers design D2).
 	Model func(Config) (ports.ModelProvider, error)
 	// VerifyWebhook checks a provider's webhook to an installed organisation connector against its configuration and
 	// secrets, at now; nil: the connector takes no webhook. A verified webhook only prompts work: its body is never data.
 	VerifyWebhook func(c Config, h http.Header, body []byte, now time.Time) error
+	// ParseEvent reads a verified payment-provider webhook: which object it names and whether its type is known
+	// (FR-PSP-01). nil: the connector sends no events Fyniq reads as such.
+	ParseEvent func(h http.Header, body []byte) (ports.ProviderEvent, error)
 }
 
 // kinds are the capabilities the binding has builders for.
@@ -79,6 +84,9 @@ func (b Binding) kinds() []Kind {
 	}
 	if b.BankData != nil {
 		ks = append(ks, BankData)
+	}
+	if b.PaymentProvider != nil {
+		ks = append(ks, PaymentProvider)
 	}
 	if b.Model != nil {
 		ks = append(ks, ModelProvider)

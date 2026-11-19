@@ -1,0 +1,91 @@
+openapi: 3.1.0
+info:
+  title: HitPay API (the read operations the hitpay connector calls)
+  version: v1
+  description: 'The read-only operations the hitpay connector calls, written from HitPay''s API reference (docs.hitpayapp.com, retrieved 19 Nov 2026), which publishes no single OpenAPI file; examples for the mock. [live-verify] every field, above all the fee fields of a charge, against a sandbox account. Amounts are JSON numbers in major units.'
+servers:
+  - { url: 'https://api.hit-pay.com', description: Production }
+  - { url: 'https://api.sandbox.hit-pay.com', description: Sandbox }
+paths:
+  /v1/balances:
+    get:
+      operationId: balanceList
+      security: [{ ApiKey: [] }]
+      responses:
+        '200':
+          description: One entry per currency.
+          content:
+            application/json:
+              example: [{ currency: sgd, wallets: { available: 2036.25, reserve: 0, pending: 600 } }]
+  /v1/charges:
+    get:
+      operationId: chargeList
+      security: [{ ApiKey: [] }]
+      parameters:
+        - { name: date_from, in: query, schema: { type: string } }
+        - { name: date_to, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: per_page, in: query, schema: { type: integer } }
+        - { name: cursor, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: A page of charges.
+          content:
+            application/json:
+              example:
+                data: [{ id: 9e9be893-0000-4000-8000-000000000001, amount: 5450, fixed_fee: 0.3, discount_fee: 35.43, currency: sgd, status: succeeded, order_reference_number: INV-0150, closed_at: '2026-11-10T10:00:00+08:00', customer: { name: Acme Pte Ltd } }]
+                meta: { per_page: '100', next_cursor: null }
+  /v1/charges/{id}:
+    get:
+      operationId: chargeDetail
+      security: [{ ApiKey: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200':
+          description: A charge.
+          content:
+            application/json:
+              example: { id: 9e9be893-0000-4000-8000-000000000001, amount: 5450, currency: sgd, status: succeeded, payment_request_id: pr-9 }
+  /v1/payouts:
+    get:
+      operationId: payoutList
+      security: [{ ApiKey: [] }]
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { name: created_at_from, in: query, schema: { type: string } }
+        - { name: created_at_to, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: A page of payouts.
+          content:
+            application/json:
+              example:
+                data: [{ id: po-0001, amount: 5414.27, currency: sgd, status: paid, arrival_date: '2026-11-11', reference: R-1 }]
+                meta: { per_page: '100', next_cursor: null }
+  /v1/payouts/{id}:
+    get:
+      operationId: payoutDetail
+      security: [{ ApiKey: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200':
+          description: A payout.
+          content:
+            application/json:
+              example: { id: po-0001, amount: 5414.27, currency: sgd, status: paid }
+  /v1/payouts/{id}/charges:
+    get:
+      operationId: payoutCharges
+      security: [{ ApiKey: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200':
+          description: The charges a payout settles.
+          content:
+            application/json:
+              example:
+                data: [{ id: 9e9be893-0000-4000-8000-000000000001 }]
+                meta: { per_page: '25', next_cursor: null }
+components:
+  securitySchemes:
+    ApiKey: { type: apiKey, in: header, name: X-BUSINESS-API-KEY }

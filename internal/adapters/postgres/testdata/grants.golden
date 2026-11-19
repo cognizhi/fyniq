@@ -446,6 +446,9 @@ fyniq_api       UPDATE    project_member (is_active, is_manager)
 fyniq_api       INSERT    project_task (billable, name, project_id)
 fyniq_api       SELECT    project_task
 fyniq_api       UPDATE    project_task (billable, changed_at, is_active, name, version)
+fyniq_api       INSERT    psp_event (api_version, connector_id, event_id, event_type, id, object_id, object_kind, parser_version, payload, payload_sha256, provider, received_at)
+fyniq_api       SELECT    psp_event
+fyniq_api       UPDATE    psp_event (last_error, parked_reason, processed_at, status)
 fyniq_api       EXECUTE   publish_installation_announcement()
 fyniq_api       INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
 fyniq_api       SELECT    quote_outcome
@@ -849,6 +852,7 @@ fyniq_readonly  SELECT    policy_version
 fyniq_readonly  SELECT    project
 fyniq_readonly  SELECT    project_member
 fyniq_readonly  SELECT    project_task
+fyniq_readonly  SELECT    psp_event
 fyniq_readonly  SELECT    quote_outcome
 fyniq_readonly  SELECT    rate_limit_window
 fyniq_readonly  SELECT    recurring_bill
@@ -1158,6 +1162,8 @@ fyniq_worker    EXECUTE   private_endpoints_for()
 fyniq_worker    SELECT    project
 fyniq_worker    SELECT    project_member
 fyniq_worker    SELECT    project_task
+fyniq_worker    SELECT    psp_event
+fyniq_worker    UPDATE    psp_event (last_error, parked_reason, processed_at, status)
 fyniq_worker    EXECUTE   purge_ip_rate_windows()
 fyniq_worker    INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
 fyniq_worker    SELECT    quote_outcome

@@ -2674,6 +2674,26 @@ type FyniqProjectTask struct {
 	ChangedAt      time.Time
 }
 
+type FyniqPspEvent struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	ConnectorID    uuid.UUID
+	Provider       string
+	EventID        string
+	EventType      string
+	ApiVersion     *string
+	ParserVersion  string
+	ObjectKind     *string
+	ObjectID       *string
+	Payload        []byte
+	PayloadSha256  string
+	ReceivedAt     time.Time
+	Status         string
+	ParkedReason   *string
+	ProcessedAt    *time.Time
+	LastError      *string
+}
+
 type FyniqQuoteOutcome struct {
 	OrganisationID uuid.UUID
 	ID             uuid.UUID
