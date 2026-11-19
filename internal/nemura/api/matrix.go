@@ -15,6 +15,7 @@ var Matrix = map[string]string{ // #nosec G101 -- operation names and who may ca
 	"POST /v1/session/step-up":                        "signed in (any role), for themselves",
 	"POST /v1/session/step-up/confirm":                "signed in (any role), for themselves",
 	"POST /v1/api-clients":                            "Owner, with a fresh passkey confirmation",
+	"POST /v1/link/events":                            "Fyniq's link client alone, with a bearer token for the audience nemura-api and the scope link.events.write, for the live link's epoch: no session, no person, no ordinary API client",
 	"GET /v1/api-clients":                             "Owner",
 	"DELETE /v1/api-clients/{id}":                     "Owner, with a fresh passkey confirmation",
 	"GET /v1/features":                                "HR officer, HR administrator, Payroll administrator, Administrator, Owner",

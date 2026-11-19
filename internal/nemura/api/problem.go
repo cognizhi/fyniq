@@ -74,6 +74,9 @@ const (
 	CodeLeaverAccount      = "NM_LEAVER_ACCOUNT" // a leaver's account is for their own documents only
 	CodeUnavailable        = "NM_UNAVAILABLE"    // the service is not configured for this here
 	CodeNoPasskey          = "NM_NO_PASSKEY"     // #nosec G101 -- a problem code's name: no passkey to confirm with
+	CodeLinkNone           = "NM_LINK_NONE"      // there is no active link, or the call is not from the link's client at its epoch
+	CodeLinkClient         = "NM_LINK_CLIENT"    // the token is valid but not the link's client's, or lacks the link scope
+	CodeLinkRefused        = "NM_LINK_REFUSED"   // the signed event was refused: its own code says why
 )
 
 // Catalogue is every stable code the API returns, in order. It is served at GET /v1/errors.
@@ -111,6 +114,9 @@ var Catalogue = []Code{
 	{CodeStepUp, http.StatusForbidden, "Confirm it is you", "Confirm with your passkey (POST /v1/session/step-up), then try again within five minutes."},
 	{CodeClientInvalid, http.StatusUnprocessableEntity, "The API client is not valid", "Correct the name, scopes, algorithm or public key named in the message."},
 	{CodeClientExists, http.StatusConflict, "An API client has that name", "Choose another name, or revoke the first client."},
+	{CodeLinkNone, http.StatusConflict, "Nemura is not linked to Fyniq", "Link the organisation to Fyniq first, or call with the client of the link that is live now."},
+	{CodeLinkClient, http.StatusForbidden, "Not the link's client", "Call with the token the link's own client got for the audience nemura-api and the scope link.events.write."},
+	{CodeLinkRefused, http.StatusUnprocessableEntity, "The event was refused", "Send the event as Fyniq signed it, within five minutes, at the link's epoch, with only the fields PRD-002 Appendix E lists; the field's code says which check failed."},
 }
 
 func lookup(code string) Code {

@@ -880,6 +880,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/link/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receive an event from Fyniq
+         * @description Fyniq's link calls this with its client's bearer token and a signed envelope (PRD-002 NM-INT-10) carrying payroll.run.posted or payroll.payments.status. Nemura checks the token (the audience nemura-api, the scope link.events.write, and that the client is the live link's), then the envelope against the link: both organisations, the epoch, a signing time within five minutes, Fyniq's signature and the payload's digest. A payment's state goes through the one function of the payment events and a run's posting answer is kept for the run to show. Each event is applied once by its ID: a repeat answers duplicate. A refusal after the signature held is kept, by code and never with the payload. Only Fyniq's link client may call it: no session, no person and no ordinary API client; it changes only what the event says. It is on the never-list for the AI and MCP surfaces.
+         */
+        post: operations["receiveLinkEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/details": {
         parameters: {
             query?: never;
@@ -4752,6 +4772,126 @@ export interface components {
             fields: components["schemas"]["LetterField"][] | null;
             /** @description The catalogue with the company's settings. */
             types: components["schemas"]["LetterType"][] | null;
+        };
+        LinkEvent: {
+            header: components["schemas"]["LinkHeader"];
+            /** @description The event's data: only the fields PRD-002 Appendix E lists for its type. */
+            payload: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description Ed25519 over the canonical header, base64url without padding, with Fyniq's link key (contracts/peoplelink).
+             * @example EJ6DPOspy58Ak9Q0e0rNKaX-nWfsuBEvOeZl0Y9qPzE5S1xv2o8mZl7sQd0pTuHk3r9iV6bYw4cG1nXfA2JgQ
+             */
+            signature: string;
+        };
+        LinkHeader: {
+            /**
+             * Format: uuid
+             * @description Ties the event to its cause.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            correlation_id: string;
+            /**
+             * Format: date-time
+             * @description When the change took effect, RFC 3339 in UTC.
+             * @example 2026-11-20T09:00:00Z
+             */
+            effective_at: string;
+            /**
+             * Format: int64
+             * @description The link's epoch; an earlier or a later one is refused.
+             * @example 1
+             */
+            epoch: number;
+            /**
+             * Format: uuid
+             * @description The event's ID: a repeat does nothing.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            event_id: string;
+            /**
+             * @description The object's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            object_id: string;
+            /**
+             * @description The kind of object the event is about.
+             * @example payroll_payment
+             */
+            object_type: string;
+            /**
+             * Format: int64
+             * @description The object's version: an older one than applied is ignored.
+             * @example 2
+             */
+            object_version: number;
+            /**
+             * @description The SHA-256 of the payload's canonical JSON (contracts/peoplelink).
+             * @example 54a65415ad370228851a1da4b31b6fd42dc58b19a50d35cae759325f7388ce64
+             */
+            payload_sha256: string;
+            /**
+             * Format: date-time
+             * @description When the sender recorded it.
+             * @example 2026-11-20T09:00:00Z
+             */
+            recorded_at: string;
+            /**
+             * Format: int64
+             * @description The payload schema's version.
+             * @example 1
+             */
+            schema_version: number;
+            /**
+             * Format: int64
+             * @description The sender's running number on this link.
+             * @example 41
+             */
+            sequence: number;
+            /**
+             * Format: date-time
+             * @description When it was signed: more than 5 minutes from now is refused.
+             * @example 2026-11-20T09:00:01Z
+             */
+            signed_at: string;
+            /**
+             * Format: uuid
+             * @description The Fyniq organisation.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            source_organisation: string;
+            /**
+             * @description The sending system.
+             * @example fyniq
+             * @enum {string}
+             */
+            source_system: "fyniq";
+            /**
+             * Format: uuid
+             * @description The Nemura organisation.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            target_organisation: string;
+            /**
+             * @description The event type: payroll.run.posted or payroll.payments.status.
+             * @example payroll.payments.status
+             */
+            type: string;
+        };
+        LinkReceipt: {
+            /**
+             * Format: uuid
+             * @description The event's ID.
+             * @example 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d77
+             */
+            event_id: string;
+            /**
+             * @description applied; ignored_older: the same answer was kept already; duplicate: the event ID was received before.
+             * @example applied
+             * @enum {string}
+             */
+            outcome: "applied" | "ignored_older" | "duplicate";
         };
         MyDetails: {
             /**
@@ -10645,6 +10785,87 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    receiveLinkEvent: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Bearer, then the access token Fyniq's link client got from Nemura's OAuth server for the audience nemura-api with the scope link.events.write. */
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkEvent"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkReceipt"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

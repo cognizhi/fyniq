@@ -18,10 +18,12 @@ import (
 	"github.com/cognizhi/fyniq/internal/egress"
 	"github.com/cognizhi/fyniq/internal/httpserver"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/apiclient"
 	"github.com/cognizhi/fyniq/internal/nemura/auth"
 	"github.com/cognizhi/fyniq/internal/nemura/authz"
 	"github.com/cognizhi/fyniq/internal/nemura/identity"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
+	"github.com/cognizhi/fyniq/internal/nemura/linkauth"
 	"github.com/cognizhi/fyniq/internal/passkey"
 	"github.com/cognizhi/fyniq/internal/ports"
 )
@@ -39,6 +41,12 @@ var restrictedWiring = func(getenv func(string) string) (ports.Cipher, ports.Blo
 
 var hydraAdmin = func(admin string) ports.OAuthClients {
 	return hydra.New(admin, (&egress.Guard{Propagate: true}).Bounded(0, 10*time.Second).For(egress.HostOf(admin)))
+}
+
+// linkHTTP is the client the worker reaches Fyniq with (the link's token endpoint and API): the platform's egress guard, to those hosts only, with a timeout. The local flavour's guard lets
+// the Docker network through (local.go).
+var linkHTTP = func(hosts ...string) *http.Client {
+	return (&egress.Guard{Propagate: true}).Bounded(0, 15*time.Second).For(hosts...)
 }
 
 // signInInfo is what the sign-in page shows: the providers behind the shared SignIn port, and whether setup is done.
@@ -107,6 +115,11 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 		CookieNames: []string{auth.SessionCookie(true), auth.SessionCookie(false)}}
 	if provider != nil {
 		d.SignIn = signInInfo{provider: provider, store: store}
+	}
+	// The link's inbox takes Fyniq's client's bearer token, checked with Nemura's own OAuth server; without one there is no inbox (the link needs the server for its client anyway).
+	if server, ok := oauth.(ports.OAuthServer); ok {
+		d.LinkAuth = &linkauth.Introspector{OAuth: server, Routes: store, Audience: apiclient.Audience, Clock: deps.Clock, TTL: linkauth.MaxCache}
+		d.Link = nemura.LinkService{Store: store, OAuth: oauth, Clock: deps.Clock}
 	}
 	api.New(s, d)
 	s.Handle("/", webApp(nemuraweb.Files()))

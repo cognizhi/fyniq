@@ -24,6 +24,8 @@ import (
 	"github.com/cognizhi/fyniq/internal/nemura/features"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
 	"github.com/cognizhi/fyniq/internal/nemura/letters"
+	"github.com/cognizhi/fyniq/internal/nemura/link"
+	"github.com/cognizhi/fyniq/internal/nemura/linkauth"
 	"github.com/cognizhi/fyniq/internal/nemura/onboarding"
 	"github.com/cognizhi/fyniq/internal/nemura/payroll"
 	"github.com/cognizhi/fyniq/internal/nemura/people"
@@ -506,7 +508,27 @@ func (f fakeClients) Register(_ context.Context, _ Session, name string, scopes 
 func (f fakeClients) List(context.Context, Session) ([]Client, error)  { return nil, f.err }
 func (f fakeClients) Revoke(context.Context, Session, uuid.UUID) error { return f.err }
 
+// fakeLinkAuth accepts the bearer token it is given as the link's client, or refuses with its error; fakeLink receives an event with its answer.
+type fakeLinkAuth struct{ err error }
+
+func (f fakeLinkAuth) Authenticate(context.Context, string) (linkauth.Caller, error) {
+	return linkauth.Caller{}, f.err
+}
+
+type fakeLink struct{ err error }
+
+func (f fakeLink) Receive(context.Context, linkauth.Caller, []byte) (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return "applied", nil
+}
+
+// linkEventBody is a well-formed envelope: the fakes decide what becomes of it.
+const linkEventBody = `{"header":{"event_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e70","type":"payroll.run.posted","schema_version":1,"source_system":"fyniq","source_organisation":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71","target_organisation":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e72","epoch":1,"sequence":1,"object_type":"payroll_run","object_id":"run-1","object_version":1,"effective_at":"2099-01-01T09:00:00Z","recorded_at":"2099-01-01T09:00:00Z","signed_at":"2099-01-01T09:00:00Z","correlation_id":"0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e73","payload_sha256":"54a65415ad370228851a1da4b31b6fd42dc58b19a50d35cae759325f7388ce64"},"signature":"x","payload":{}}`
+
 var (
+	linkAuthErr, linkErr                                                                           error
 	passkeyErr, clientsErr, peopleErr, featuresErr, restrictedErr, packsErr, leaveErr, requestsErr error
 	requestsScope                                                                                  *LeaveScope
 	featuresOff                                                                                    bool
@@ -520,7 +542,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, Onboarding: fakeOnboarding{err: requestsErr}, Payroll: fakePayroll{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, LinkAuth: fakeLinkAuth{err: linkAuthErr}, Link: fakeLink{err: linkErr}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -690,6 +712,8 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		signedIn           bool
 		err                error // what the passkey or client service answers
 		owner, stepUp      bool  // the person is the Owner, and confirmed with a passkey
+		bearer             bool  // the call carries a bearer token and no cookie: the link's inbox
+		authErr, inboxErr  error // what the link's authenticator and inbox answer
 		featuresOff        bool  // Leave is switched off
 		leaver             bool  // the person has left
 	}
@@ -726,6 +750,9 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodeRequestConflict:    {method: "POST", path: "/v1/questions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/reply", body: `{"reply":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeConflict, Message: "That question is closed."}},
 		CodeLetterInvalid:      {method: "POST", path: "/v1/me/letters", body: `{"type":"employment_confirmation","purpose":"x"}`, signedIn: true, err: &letters.Refusal{Code: letters.CodeInvalid, Message: "Say what the letter is for."}},
 		CodeLetterConflict:     {method: "POST", path: "/v1/letters/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/check", signedIn: true, err: &letters.Refusal{Code: letters.CodeConflict, Message: "That request is checked."}},
+		CodeLinkNone:           {method: "POST", path: "/v1/link/events", body: linkEventBody, bearer: true, inboxErr: &payroll.Refusal{Code: "NM_LINK_NONE", Message: "Nemura is not linked to Fyniq."}},
+		CodeLinkClient:         {method: "POST", path: "/v1/link/events", body: linkEventBody, bearer: true, authErr: linkauth.ErrNotLink},
+		CodeLinkRefused:        {method: "POST", path: "/v1/link/events", body: linkEventBody, bearer: true, inboxErr: &link.Refusal{Code: link.CodeSignature, Message: "the signature does not verify"}},
 		CodeClientExists:       {method: "POST", path: "/v1/api-clients", body: clientBody, signedIn: true, owner: true, stepUp: true, err: &apiclient.Refusal{Code: apiclient.CodeExists, Message: "A client with that name is registered already."}},
 	}
 	for _, c := range Catalogue {
@@ -739,7 +766,9 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 			testRoles = []authz.Role{authz.Owner}
 		}
 		testStepUp, featuresOff, testLeaver = tr.stepUp, tr.featuresOff, tr.leaver
+		linkAuthErr, linkErr = tr.authErr, tr.inboxErr
 		_, mux := testAPI(t)
+		linkAuthErr, linkErr = nil, nil
 		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, requestsErr, testRoles, testStepUp, featuresOff, testLeaver = nil, nil, nil, nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false, false, false
 		req := httptest.NewRequest(tr.method, tr.path, strings.NewReader(tr.body))
 		if tr.body != "" {
@@ -747,6 +776,9 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		}
 		if tr.signedIn {
 			req.Header.Set("Cookie", "nemura_session=good-token")
+		}
+		if tr.bearer {
+			req.Header.Set("Authorization", "Bearer a-token")
 		}
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)

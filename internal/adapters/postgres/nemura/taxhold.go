@@ -72,7 +72,12 @@ func PutTaxHold(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time, by,
 	if _, err := tx.Exec(ctx, `INSERT INTO nemura.tax_hold (id, hold_id, person_id, version, status, effective_from, reason, recorded_by, recorded_at) VALUES ($1, $1, $2, 1, 'held', $3, $4, $5, $6)`, id, person, day(from), rs, by, at); err != nil {
 		return uuid.Nil, holdError(err)
 	}
-	return id, Audit(ctx, tx, org, at, user(by), "nemura.tax_hold.put_on", audit.Object{Type: "tax_hold", ID: id}, map[string]audit.Change{"person": {nil, person.String()}, "version": {nil, 1}, "status": {nil, "held"}}, "")
+	if err := Audit(ctx, tx, org, at, user(by), "nemura.tax_hold.put_on", audit.Object{Type: "tax_hold", ID: id}, map[string]audit.Change{"person": {nil, person.String()}, "version": {nil, 1}, "status": {nil, "held"}}, ""); err != nil {
+		return uuid.Nil, err
+	}
+	// A linked organisation tells Fyniq, in the same transaction, so a hold is never lost between the two (NM-INT-08); none when standalone.
+	_, err := QueueLinkEvent(ctx, tx, org, at, "people.tax_hold.changed", "tax_hold", person.String(), 1)
+	return id, err
 }
 
 // ReleaseTaxHold releases the person's open hold from a day, with a document of the person as evidence (IRAS's clearance).
@@ -93,5 +98,9 @@ func ReleaseTaxHold(ctx context.Context, tx pgx.Tx, org uuid.UUID, at time.Time,
 		id, cur.HoldID, person, cur.Version+1, day(from), evidence, rs, by, at); err != nil {
 		return holdError(err)
 	}
-	return Audit(ctx, tx, org, at, user(by), "nemura.tax_hold.released", audit.Object{Type: "tax_hold", ID: id}, map[string]audit.Change{"person": {nil, person.String()}, "hold": {nil, cur.HoldID.String()}, "version": {nil, cur.Version + 1}, "status": {nil, "released"}}, "")
+	if err := Audit(ctx, tx, org, at, user(by), "nemura.tax_hold.released", audit.Object{Type: "tax_hold", ID: id}, map[string]audit.Change{"person": {nil, person.String()}, "hold": {nil, cur.HoldID.String()}, "version": {nil, cur.Version + 1}, "status": {nil, "released"}}, ""); err != nil {
+		return err
+	}
+	_, err = QueueLinkEvent(ctx, tx, org, at, "people.tax_hold.changed", "tax_hold", person.String(), cur.Version+1)
+	return err
 }

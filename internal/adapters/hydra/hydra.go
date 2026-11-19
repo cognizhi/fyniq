@@ -315,6 +315,9 @@ func (a *Admin) RegisterIntegration(ctx context.Context, c ports.IntegrationRegi
 		"grant_types": []string{"client_credentials"}, "response_types": []string{}, "token_endpoint_auth_method": "private_key_jwt",
 		"token_endpoint_auth_signing_alg": c.Alg, "jwks": map[string]any{"keys": []json.RawMessage{c.Key}},
 		"metadata": map[string]any{"class": c.Class, "organisation": c.Organisation}}
+	if c.ClientID != "" {
+		body["client_id"] = c.ClientID
+	}
 	if c.TokenLifespan > 0 {
 		body["client_credentials_grant_access_token_lifespan"] = c.TokenLifespan.String()
 	}
