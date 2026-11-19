@@ -6,6 +6,8 @@ import type { components } from "../api/schema";
 import { Refusal } from "../components/Refusal";
 import { Button } from "../components/ui/button";
 import { helpText } from "../i18n";
+import { dateTime } from "../format/date";
+import { useSignedIn } from "../session";
 import { useConfirm } from "../stepup";
 import { Icon, problemOf, type ApiProblem } from "../ui";
 
@@ -31,6 +33,7 @@ export function OAuthConsent() {
   const id = useId();
   const queries = useQueryClient();
   const confirm = useConfirm();
+  const { session } = useSignedIn();
   const challenge = new URLSearchParams(window.location.search).get("consent_challenge") ?? "";
   const q = useQuery({ queryKey: ["oauth-consent", challenge], queryFn: () => read(challenge), enabled: challenge !== "", retry: false });
   const [off, setOff] = useState<string[]>([]);
@@ -127,15 +130,23 @@ export function OAuthConsent() {
               </span>
             </div>
           </div>
-          {v.client.redirect_uris && v.client.redirect_uris.length > 0 && (
-            <dl className="fy-dl">
+          <dl className="fy-dl">
+            {session.stepped_up_until && (
+              <div>
+                <dt>You confirmed it's you</dt>
+                <dd>
+                  {{ passkey: "Passkey", sign_in: "Sign-in", recovery: "Recovery code" }[session.step_up_method ?? "sign_in"]}, good until {dateTime(session.stepped_up_until)}
+                </dd>
+              </div>
+            )}
+            {v.client.redirect_uris && v.client.redirect_uris.length > 0 && (
               <div>
                 <dt>Sends you back to</dt>
                 <dd className="fy-mono break-all">{v.client.redirect_uris.join(", ")}</dd>
                 <dd className="fy-help">Check this address: it registered itself, so Fyniq cannot vouch for it.</dd>
               </div>
-            </dl>
-          )}
+            )}
+          </dl>
         </div>
       </section>
 
