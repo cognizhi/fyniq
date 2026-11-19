@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"net/http"
-	"slices"
 	"strings"
 	"time"
 
@@ -23,12 +22,20 @@ const CodeMCPNoUser = "MCP-OPT-01"
 // MCPAccess is whether AI apps may work for the caller over MCP (AI-35): the organisation's switch and allowlist, and the
 // caller's own opt-in. All three must hold, and the first two are the Owner's, under a second approver.
 type MCPAccess struct {
-	OptedIn        bool       `json:"opted_in" doc:"Whether you have opted in to AI apps acting for you over MCP: off until you do." example:"false"`
-	SetAt          *time.Time `json:"set_at,omitempty" doc:"When you last chose, if ever." example:"2026-11-19T09:30:00Z"`
-	OrganisationOn bool       `json:"organisation_on" doc:"Whether an Owner has turned AI apps through MCP on for the organisation (the setting features.mcp, with a second approver)." example:"false"`
-	Apps           []string   `json:"apps" nullable:"false" doc:"The AI apps the organisation allows (the setting mcp.clients): only these can connect." example:"[\"claude-code\"]"`
-	CanConnect     bool       `json:"can_connect" doc:"Whether an AI app can connect as you now: the organisation is on, it allows at least one app, and you opted in." example:"false"`
-	ETag           string     `json:"etag" doc:"The choice's version, for If-Match." example:"\"9f1c2b7a\""`
+	OptedIn        bool         `json:"opted_in" doc:"Whether you have opted in to AI apps acting for you over MCP: off until you do." example:"false"`
+	SetAt          *time.Time   `json:"set_at,omitempty" doc:"When you last chose, if ever." example:"2026-11-19T09:30:00Z"`
+	OrganisationOn bool         `json:"organisation_on" doc:"Whether an Owner has turned AI apps through MCP on for the organisation (the setting features.mcp, with a second approver)." example:"false"`
+	Apps           []MCPAppName `json:"apps" nullable:"false" maxItems:"20" doc:"The AI apps the organisation allows (the setting mcp.clients): only these can connect." example:"[\"claude-code\"]"`
+	CanConnect     bool         `json:"can_connect" doc:"Whether an AI app can connect as you now: the organisation is on, it allows at least one app, and you opted in." example:"false"`
+	ETag           string       `json:"etag" doc:"The choice's version, for If-Match." example:"\"9f1c2b7a\""`
+}
+
+// MCPAppName is an AI app the release has pre-registered, as the allowlist names it.
+type MCPAppName string
+
+// Schema implements huma.SchemaProvider: a string, with an example.
+func (MCPAppName) Schema(huma.Registry) *huma.Schema {
+	return &huma.Schema{Type: "string", Description: "An AI app the release has pre-registered, such as claude-code.", Examples: []any{"claude-code"}}
 }
 
 // MCPChoice is the caller's choice.
@@ -87,7 +94,10 @@ func mcpOrganisation(ctx context.Context, a *API, u storage.UnitOfWork) (on bool
 
 // mcpAccessOf is a person's access as the API shows it.
 func mcpAccessOf(o *storage.MCPOptIn, on bool, apps []string) MCPAccess {
-	out := MCPAccess{OrganisationOn: on, Apps: slices.Clone(apps), ETag: mcpOptInETag(o)}
+	out := MCPAccess{OrganisationOn: on, Apps: []MCPAppName{}, ETag: mcpOptInETag(o)}
+	for _, a := range apps {
+		out.Apps = append(out.Apps, MCPAppName(a))
+	}
 	if o != nil {
 		at := o.SetAt.UTC()
 		out.OptedIn, out.SetAt = o.OptedIn, &at
