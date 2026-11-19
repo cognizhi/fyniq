@@ -81,3 +81,44 @@ func TestTheAssistantsTurnsInTheActivityLog(t *testing.T) {
 	}
 	e.problemIs(e.call(http.MethodGet, "/v1/ai/activity/turns?person="+f.weiling, f.as(f.ahkow, authz.Controller), nil), "listAITurnActivity", 403, CodeForbidden)
 }
+
+// The activity log records, for every read of the knowledge base, which pages and which versions of them an answer used
+// (AI-12, AI-51; p1-knowledge-base design D4): "why did the assistant say that" is answered with the page's exact text, which
+// the release or the organisation keeps per version. Other reads list none.
+// req: AI-12
+// asvs: V16.3.3
+func TestTheActivityLogShowsTheKnowledgePagesAnAnswerUsed(t *testing.T) {
+	e := newEnv(t)
+	f := foundersIn(e)
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		c, err := u.AIConversations().Create(ctx, storage.AIConversation{UserID: uuid.MustParse(f.ahkow), CreatedAt: e.clock.Now()})
+		if err != nil {
+			return err
+		}
+		tu, err := u.AIConversations().Ask(ctx, storage.AITurn{Conversation: c.ID, UserID: c.UserID, Question: "How do I approve a claim?", AskedAt: e.clock.Now()})
+		if err != nil {
+			return err
+		}
+		at := e.clock.Now().Add(time.Second)
+		tu.Status, tu.Answer, tu.Prompt, tu.PromptSHA256, tu.Classes, tu.AnsweredAt = storage.TurnAnswered, "Answered.", "chat@4",
+			"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", []string{"know-how"}, &at
+		return u.AIConversations().Finish(ctx, tu, []storage.AIToolCall{
+			{Tool: "kb.search", Version: 1, Input: json.RawMessage(`{"query":"approve claim"}`), Outcome: "read", OutputSHA256: strings.Repeat("a", 64)},
+			{Tool: "kb.read", Version: 1, Input: json.RawMessage(`{"key":"claims.approve-team-claims"}`), Outcome: "read", OutputSHA256: strings.Repeat("b", 64),
+				KBPages: []storage.KBPageVersion{{Key: "claims.approve-team-claims", Version: "v0.1.0#7c1ea9b4f2d3"}}},
+		})
+	})
+	r := e.call(http.MethodGet, "/v1/ai/activity/turns", f.as(f.ahkow, authz.Owner), nil)
+	if r.Status != http.StatusOK {
+		t.Fatalf("listAITurnActivity: %d %s", r.Status, r.Raw)
+	}
+	calls := r.Body["items"].([]any)[0].(map[string]any)["tool_calls"].([]any)
+	search, read := calls[0].(map[string]any), calls[1].(map[string]any)
+	if pages := search["kb_pages"].([]any); len(pages) != 0 {
+		t.Errorf("a search lists page versions: %v", pages)
+	}
+	pages := read["kb_pages"].([]any)
+	if len(pages) != 1 || pages[0].(map[string]any)["key"] != "claims.approve-team-claims" || pages[0].(map[string]any)["version"] != "v0.1.0#7c1ea9b4f2d3" {
+		t.Errorf("the page version kb.read used: %v", read)
+	}
+}

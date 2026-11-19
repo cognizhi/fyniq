@@ -520,6 +520,7 @@ type FyniqAiToolCall struct {
 	Omitted        int32
 	Withheld       bool
 	DurationMs     int32
+	KbPages        []byte
 }
 
 type FyniqAiTurn struct {
@@ -1918,6 +1919,82 @@ type FyniqJournalLine struct {
 	InstrumentID   *uuid.UUID
 }
 
+type FyniqKbLintFinding struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Kind           string
+	PageKey        *string
+	PageVersion    *int32
+	Detail         string
+	Status         string
+	CreatedAt      time.Time
+	ResolvedBy     *uuid.UUID
+	ResolvedAt     *time.Time
+	Resolution     string
+}
+
+type FyniqKbLivePage struct {
+	OrganisationID uuid.UUID
+	Key            string
+	Number         int32
+	Type           string
+	Title          string
+	Summary        string
+	Aliases        []string
+	Body           string
+	Sources        []byte
+	DataClass      string
+	Taint          string
+	Origin         string
+	HumanEdited    bool
+	BaseKey        *string
+	BaseDigest     *string
+	CreatedAt      time.Time
+	Search         interface{}
+	SnapshotNumber int32
+}
+
+type FyniqKbNote struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Key            string
+	Kind           string
+	Title          string
+	Body           string
+	DataClass      string
+	Version        int32
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+	UpdatedBy      uuid.UUID
+	UpdatedAt      time.Time
+}
+
+type FyniqKbPageVersion struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Key            string
+	Number         int32
+	Type           string
+	Title          string
+	Summary        string
+	Aliases        []string
+	Body           string
+	Sources        []byte
+	DataClass      string
+	Taint          string
+	Origin         string
+	HumanEdited    bool
+	BaseKey        *string
+	BaseDigest     *string
+	Restores       *int32
+	Compiler       string
+	PromptVersion  string
+	AuthorKind     string
+	AuthorUser     *uuid.UUID
+	CreatedAt      time.Time
+	Search         interface{}
+}
+
 type FyniqKbPlatformPage struct {
 	Key        string
 	Type       string
@@ -1959,6 +2036,24 @@ type FyniqKbPlatformSource struct {
 	Status string
 	Body   string
 	Search interface{}
+}
+
+type FyniqKbSnapshot struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	Number         int32
+	ApprovalID     *uuid.UUID
+	CreatedBy      *uuid.UUID
+	Reason         string
+	CreatedAt      time.Time
+}
+
+type FyniqKbSnapshotPage struct {
+	OrganisationID uuid.UUID
+	ID             uuid.UUID
+	SnapshotNumber int32
+	Key            string
+	Version        int32
 }
 
 type FyniqKpiInput struct {

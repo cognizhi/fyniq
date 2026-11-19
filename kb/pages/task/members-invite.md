@@ -17,6 +17,9 @@ aliases:
   - add a user
   - join company
   - external auditor access
+  - add a person
+  - add a new member
+  - add a user
 ---
 
 # Invite someone, or join with an invitation

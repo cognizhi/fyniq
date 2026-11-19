@@ -627,6 +627,18 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/journals/{journal_id}/reverse` (reverseJournal): Reverse a posted journal
 - `POST /v1/journals/{journal_id}/reverse-approval` (requestJournalReversal): Ask for approval to reverse a journal
 - `POST /v1/journals:bulk` (bulkCreateJournals): Save up to 250 draft journals
+- `GET /v1/knowledge-base/findings` (listKBFindings): List the knowledge base's lint findings
+- `POST /v1/knowledge-base/findings/{finding_id}/resolve` (resolveKBFinding): Resolve a knowledge-base finding
+- `GET /v1/knowledge-base/notes` (listKBNotes): List the organisation's knowledge-base notes
+- `POST /v1/knowledge-base/notes` (createKBNote): Write a knowledge-base note
+- `PUT /v1/knowledge-base/notes/{key}` (reviseKBNote): Change a knowledge-base note
+- `GET /v1/knowledge-base/pages` (listKBPages): List the knowledge base's pages
+- `PUT /v1/knowledge-base/pages/{key}` (editKBPage): Edit a knowledge-base page
+- `POST /v1/knowledge-base/pages/{key}/rollback` (rollbackKBPage): Roll a knowledge-base page back to an earlier version
+- `GET /v1/knowledge-base/pages/{key}/versions` (listKBPageVersions): List a knowledge-base page's versions
+- `POST /v1/knowledge-base/publications` (publishKBPages): Publish knowledge-base pages
+- `POST /v1/knowledge-base/publications/approval` (requestKBPublication): Ask for approval to publish knowledge-base pages
+- `GET /v1/knowledge-base/snapshots` (listKBSnapshots): List the knowledge base's snapshots
 - `GET /v1/kpi-inputs` (listKpiInputs): List the KPIs' entered counts
 - `PUT /v1/kpi-inputs/{month}` (setKpiInput): Enter a month's KPI counts
 - `GET /v1/kpis` (getKpis): Get the KPIs of a month

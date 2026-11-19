@@ -64,3 +64,27 @@ every change: the right model passes each case, and the same run missing a plant
 a red-team case, repeating the injection fails it. Then each model recorded in `cassettes/agent/` runs every case from
 its recordings, as the assistant's suites do. `secretary-launch` holds the company secretary assistant's launch cases;
 `p1-company-secretary` adds the corporate ones.
+
+## The knowledge suite
+
+`knowledge/knowledge.json` (QA-AI-06; p1-knowledge-base design D10) holds at least 100 golden help and policy questions, each
+with the page that answers it, in the categories of the requirement: paraphrase, synonym, negation and exception, other
+languages, a stale guide against the pack in force and a reader whose access was revoked. `TestTheKnowledgeSuite...` in the
+API's tests loads the knowledge base the release ships, asks every question through `kb.search` as the person who would ask,
+and gates, offline and with no model:
+
+- **Retrieval recall per category** at the top 5 pages against that category's threshold. A category below its threshold for
+  two releases needs a named owner and a fix plan, which its entry under `owners` carries. A miss is fixed in the compile
+  step (an alias for the users' wording, a sharper summary, a cross-link, pages per language), never with vectors (AI-58).
+- **Citations**: every citation of every page resolves to a guide page the reader can open, and none to a compiled page.
+- **The revoked reader**: a page a role may not open is not in that reader's index, not in their search of pages or of the
+  guide's own text, and a read of it is refused as a page that is not there; its summary and snippets are not there either.
+- **The fallback**: how many misses the guide's own text still leads to, reported.
+
+Report: `.data/evals/knowledge.json`. The thresholds are the measured baseline (18 Nov 2026), not the aim: Chinese and Malay
+questions find a page 1 time in 10, since the pages carry English aliases only.
+
+What it cannot prove is `[live-verify]`: that a model reads the index, then the page, and answers from it with the right
+citations, and that for a stale guide against the pack in force the answer comes from `packs.get` and says the guide may be
+out of date (G4-091). Those need a model's recorded runs in `cassettes/assistant`, so QA-AI-06 as a whole is not met until they
+are recorded.

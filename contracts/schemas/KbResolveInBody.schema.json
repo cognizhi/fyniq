@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "resolution": {
+      "description": "What was done, in a sentence.",
+      "examples": [
+        "Kept the person's version."
+      ],
+      "maxLength": 1000,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "resolution"
+  ],
+  "title": "KbResolveInBody",
+  "type": "object"
+}

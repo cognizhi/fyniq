@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "pages": {
+      "description": "Each page and the version to publish.",
+      "items": {
+        "$ref": "KBPublicationPage.schema.json"
+      },
+      "maxItems": 50,
+      "minItems": 1,
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "reason": {
+      "description": "Why, for the snapshot and the weekly review.",
+      "examples": [
+        "The expense policy changed."
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    }
+  },
+  "required": [
+    "pages"
+  ],
+  "title": "KBPublicationInput",
+  "type": "object"
+}
