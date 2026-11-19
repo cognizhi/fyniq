@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 
 	contracts "github.com/cognizhi/fyniq/contracts/ai"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
+	"github.com/cognizhi/fyniq/internal/mcpsurface"
 	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
@@ -76,6 +78,19 @@ func Clients() ([]Client, error) {
 var DefaultScopes = []string{"openid", "offline_access", "fyniq.read.reports", "fyniq.read.sales", "fyniq.read.purchases",
 	"fyniq.read.banking", "fyniq.read.accounting", "fyniq.read.planning", "fyniq.read.compliance", "fyniq.read.proposals"}
 
+// FirstPartyScopes is what a first-party client may ask for at most: DefaultScopes, and fyniq.propose.<type> for each task type the
+// MCP scope map exposes (AI-16, AI-42). A person consents to each one apart, and a type is proposed only while an Owner has it on
+// (ai.task_types). A client that registers itself never has them: its scopes are the narrowest default (AI-90).
+func FirstPartyScopes() []string {
+	out := slices.Clone(DefaultScopes)
+	if _, s, err := mcpsurface.Load(); err == nil {
+		for _, id := range s.Propose {
+			out = append(out, "fyniq.propose."+id)
+		}
+	}
+	return out
+}
+
 // Register registers the first-party clients with the OAuth server for the MCP audience, as agent-class public clients.
 func Register(ctx context.Context, oauth ports.OAuthClients, audience string) error {
 	clients, err := Clients()
@@ -84,7 +99,7 @@ func Register(ctx context.Context, oauth ports.OAuthClients, audience string) er
 	}
 	for _, c := range clients {
 		if _, err := oauth.RegisterPublicClient(ctx, ports.PublicRegistration{ID: c.ID, Name: c.Name, Class: "agent", Audience: audience,
-			Scopes: DefaultScopes, RedirectURIs: c.RedirectURIs, App: c.ID}); err != nil {
+			Scopes: FirstPartyScopes(), RedirectURIs: c.RedirectURIs, App: c.ID}); err != nil {
 			return fmt.Errorf("registering %s: %w", c.ID, err)
 		}
 	}

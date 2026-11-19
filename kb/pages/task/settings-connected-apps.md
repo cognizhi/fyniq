@@ -4,7 +4,7 @@ type: task
 title: Connect an AI app, and see what it did
 summary: Settings › Connected apps: allow AI apps for yourself, what an Owner allows, verified apps, disconnecting, waiting registrations and what the apps did
 sources:
-  - docs/user-guide/connected-apps.md sha256:cf32c111be8991580a4f32d0893feb0109f2b1406d666cf9c7b2acda78fce22d
+  - docs/user-guide/connected-apps.md sha256:cac2c5bdaca8925427413f6afb88b5b0a59c31e0144f2343d7ea45c61aac2919
 data_class: general
 taint: trusted
 status: draft
@@ -56,6 +56,14 @@ aliases:
 - **What the apps did**: which app read with which tool, and whether it was refused or limited.
 
 (src: docs/user-guide/connected-apps.md#what-you-see)
+
+## Changes an app proposes
+
+- An app can only read, and **propose** the kinds of change the Owner has turned on under Settings, AI; each kind it asks for is a **Suggest: ...** row on the connect page that you tick or not. A proposal waits in Approvals, marked as made by an AI app, with what it would do in Fyniq's words; nothing changes until a person approves it, and an app can never approve, reject, cancel or run one.
+- Another member who may approve that kind of change approves it as for any proposal; you approve one an app made for you only after you confirm it's you again after the app proposed it, and only the simplest kind.
+- An app lists and checks only the changes it proposed for you; the Owner sets how many an app may propose an hour.
+
+(src: docs/user-guide/connected-apps.md#changes-an-app-proposes)
 
 ## If an app is refused
 

@@ -651,3 +651,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-19] compile | connected-apps: the Connected apps guide page (p1-mcp-first-party 9.4)
 
 ## [2026-11-19] compile | connected-apps: when an app asks to connect (p1-mcp-first-party 9.3)
+
+## [2026-11-19] compile | connected-apps: changes an app proposes (p1-mcp-first-party 7.x)

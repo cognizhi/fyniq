@@ -217,6 +217,9 @@ func TestThePlantedToolsThatBreakTheNeverListFailTheBuild(t *testing.T) {
 		t.Errorf("an unmapped tool: %v %v", m.Tools, err)
 	}
 	for _, d := range func() Manifest { m, _ := Default(); return m }().Tools {
+		if IsProposalTool(d.Name) {
+			continue // the proposal tools are checked by proposals_test.go: reads of the person's own, and proposals that wait for a person
+		}
 		if err := aitool.ReadName(d.Name); err != nil {
 			t.Errorf("the shipped manifest holds %s: %v", d.Name, err)
 		}
@@ -281,6 +284,9 @@ func TestAnAlteredDefinitionIsRefused(t *testing.T) {
 func TestDefinitionsHoldOnlyTheContractsText(t *testing.T) {
 	m, _ := Default()
 	for _, d := range m.Tools {
+		if IsProposalTool(d.Name) {
+			continue // the catalogue's text, checked by proposals_test.go
+		}
 		src, ok := aitool.Default().Get(d.Name)
 		if !ok || src.Description != d.Description || src.Title != d.Title || src.Version != d.Version {
 			t.Errorf("%s: its title, description or version is not the registry's", d.Name)

@@ -17,7 +17,7 @@ introspection on every call, shows the tools the token's scopes allow from a has
 5-minute API-audience token for the person (open question 40, option (b), RFC 7523, signed by its own key), and calls the API's
 one MCP operation with its own service token. The API checks the delegated token, the scope each tool and input needs, the
 organisation's switch, the allowlist and the person's opt-in, applies limits, runs the tool as the person (AI exclusions and masking),
-filters and caps the result, and records the call. The only write over MCP is a proposal (task 7.x, not built: see section 6).
+filters and caps the result, and records the call. The only write over MCP is a proposal from the catalogue (section 6), which waits for a person to approve it in Fyniq.
 
 Apps can also register themselves (AI-90): a closed, policy-checked endpoint of Fyniq's own in front of Hydra's admin API.
 
@@ -49,8 +49,12 @@ The test column names the row of `compliance/qa-mcp-01.json`, which `internal/ar
 | M17 | Denial of wallet | Limits per minute, hour and day from the trail | denial-of-wallet |
 | M18 | Repudiation and tampering: the trail is changed | Append-only table; the API's role cannot change it | trail-tampering |
 | M19 | Elevation: the server answers before it is meant to | The deployment switch; the launch shell is the default | opened-by-accident |
+| M20 | Elevation: an app approves its own proposal, or is approved as the person | The delegated token reaches no approval; another member signs, or the person on a step-up taken after the app proposed it (tier 1 only); the database refuses the same signature and a wrong requester method | proposal-self-approval |
+| M21 | Elevation: a proposal outside the catalogue, or a verb that decides | One propose tool per task type a reviewer names, its own scope, the contract's tool names are the manifest's, no approve, reject, execute or withdraw tool, the task type is never an input | proposal-out-of-catalogue |
+| M22 | Denial: an app floods the person's Approvals | A limit of proposals an hour per person and app (mcp.proposals_per_hour), counted in the database; the person's opt-in and the task type must be on | denial-of-wallet |
+| M23 | Information disclosure: an app reads another person's or app's proposals | proposals.list and proposals.get return the person's own proposals of this app only; another's is not found | proposal-self-approval |
 
-SOD and money: nothing here moves money or approves anything; approving is never an MCP operation (AI-42).
+SOD and money: nothing here moves money or approves anything; approving is never an MCP operation (AI-42). A proposal executes only after a person approves it in Fyniq, and then as that person, under the executor's own role (AI-11).
 
 ## 3. Residual risks the reviewer should weigh
 
@@ -81,8 +85,17 @@ the `X-Fyniq-Client-IP` header's trust in the cloud, and a person connecting the
 Decisions of 14 and 19 Nov 2026 (PRD-001 rev 0.277 and 0.294): one image plus a deployment switch; revision 2026-07-28 only; option (b);
 scope consent plus Owner enabling; self-registration built now. Design: `openspec/changes/p1-mcp-first-party/design.md`.
 
-## 6. Not built yet: proposals over MCP
+## 6. Proposals over MCP (built; the owner's decision of 19 Nov 2026, option B)
 
-`propose` and the proposal reads (task 7.x) are not built. The catalogue ships empty, so there is nothing to propose, and a proposal
-made over MCP has no live turn or run to authenticate its requester, which AI-89's rules for who may sign a tier-1 proposal rest on.
-That needs an owner decision (see design.md "Decisions needed") before it is built; until then an MCP client can read and cannot write.
+An app proposes for the person whose delegated token it holds, one tool per task type the scope map names (`propose_<type>`, scope
+`fyniq.propose.<type>`), after the same gates as a read and the Owner having turned the task type on (`ai.task_types`). The proposal is
+checked, screened and dry-run as a turn's is, as the person, so it cannot ask for more than they may do. It has no live turn or run, so
+it is its own course (`ai_proposal.mcp_app`, migration 000587): its request is asked with the method `mcp_token`, which the database
+allows only for a proposal that came from an app, for a person who has opted in. The delegated token never stands for the person at the
+signature: another member who holds the approval right signs it, or the person themselves, for tier 1 only, on a step-up taken after the
+app proposed it. The database enforces that, whatever the API sends. An agent-class token reaches no approval operation at all (AI-34).
+Option A (the token counts as live authentication) and option C (reads only) were not chosen.
+
+Residual: a person who is tricked into confirming it's you and signing their own proposal approves what the app proposed. The approval
+page shows the platform's summary of the dry run and the app's rationale separately, as AI text; the proposal is small by catalogue
+(tier 1 means no money, no filing).

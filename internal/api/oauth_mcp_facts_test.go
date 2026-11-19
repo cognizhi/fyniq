@@ -309,6 +309,11 @@ func TestAClaudeCodeFlowEndsInATokenOnlyThroughTheGates(t *testing.T) {
 	if sc, _ := tok["scope"].(string); sc != "openid fyniq.read.reports" {
 		t.Errorf("the scopes granted: %q", sc)
 	}
+	// A first-party client may ask for the propose scope of a task type the map exposes, which a person allows apart (AI-16, AI-37).
+	_, proposing, _ := flow("claude-code", "openid fyniq.read.reports fyniq.propose.sec.create_task", mcpAudience)
+	if sc, _ := proposing["scope"].(string); !strings.Contains(sc, "fyniq.propose.sec.create_task") {
+		t.Errorf("the scopes granted with a propose scope: %q", sc)
+	}
 	// The client's record is the first-party one: agent class, the MCP audience only, a redirect that is exact.
 
 	refused := func(name, clientID, scope, resource string) {
@@ -327,7 +332,7 @@ func TestAClaudeCodeFlowEndsInATokenOnlyThroughTheGates(t *testing.T) {
 	refused("the API as the resource for an agent client", "claude-code", "openid fyniq.read.reports", apiAudience)
 	// A scope no client may hold (payroll, equity) is refused by the OAuth server before any consent: the client's record
 	// does not hold it.
-	for _, scope := range []string{"openid fyniq.read.payroll", "openid fyniq.read.equity", "openid fyniq.propose.sec.create_task"} {
+	for _, scope := range []string{"openid fyniq.read.payroll", "openid fyniq.read.equity", "openid fyniq.propose.ledger.post_journal"} {
 		q, _ := pkceQuery("claude-code", scope)
 		q.Set("resource", mcpAudience)
 		if l, refused := s.loginRequestOf(q, redirect); l.Challenge != "" || !strings.Contains(refused, "error=invalid_scope") {

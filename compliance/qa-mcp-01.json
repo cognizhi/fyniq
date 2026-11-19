@@ -6,7 +6,7 @@
       "id": "agent-direct-write",
       "threat": "Agent writes directly",
       "requirements": "AI-34, CTL-MCP-01",
-      "control": "An agent-class token's write to the public API is refused; the MCP operation only runs a read tool",
+      "control": "An agent-class token's write to the public API is refused; the MCP operation runs a read tool, or makes a proposal from the catalogue that waits for a person (AI-16)",
       "tests": [
         "TestAnMCPToolCallPassesEveryGateOrIsRefused"
       ]
@@ -177,7 +177,8 @@
       "requirements": "AI-43",
       "control": "Limits per minute, hour and day are counted from the trail and answered with 429 and Retry-After",
       "tests": [
-        "TestEveryMCPCallIsInTheTrailAndTheLimitsAreCountedFromIt"
+        "TestEveryMCPCallIsInTheTrailAndTheLimitsAreCountedFromIt",
+        "TestAnAIAppProposesAndAPersonApproves"
       ]
     },
     {
@@ -206,6 +207,29 @@
       "control": "The MCP binary carries no database adapter or domain command, in both flavours",
       "tests": [
         "TestTheMCPServiceCarriesNoDatabaseCode"
+      ]
+    },
+    {
+      "id": "proposal-self-approval",
+      "threat": "An AI app approves, or is approved as, the person it proposes for",
+      "requirements": "AI-89, AI-10, AI-34, CTL-MCP-01",
+      "control": "The delegated token reaches no approval; another member signs an app's proposal, or the person on a step-up taken after the app proposed it (tier 1 only); the database refuses the same signature and any request authenticated by the wrong method",
+      "tests": [
+        "TestAnAIAppProposesAndAPersonApproves",
+        "TestAttackAnAppsProposalIsSignedOnAFreshStepUpOrByAnotherMember",
+        "TestAttackAnAppsProposalIsForAPersonWhoAllowedAIApps"
+      ]
+    },
+    {
+      "id": "proposal-out-of-catalogue",
+      "threat": "A proposal outside the catalogue, or a verb that decides, through MCP",
+      "requirements": "AI-16, AI-42, AI-40, CTL-MCP-02",
+      "control": "A propose tool exists only for each task type a reviewer names in the scope map, with its own scope; the contract's tool names are the manifest's; approve, reject, execute and withdraw are no tools; the task type is never an input",
+      "tests": [
+        "TestTheOnlyWriteAClientHasIsAProposalThatWaitsForAPerson",
+        "TestAProposalToolNeedsTheScopeOfItsTaskTypeAlone",
+        "TestATaskTypeIsExposedOnlyWhenAReviewerNamesIt",
+        "TestAnAIAppProposesAndAPersonApproves"
       ]
     }
   ]

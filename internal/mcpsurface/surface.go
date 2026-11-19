@@ -28,7 +28,7 @@ import (
 
 // ReadScope is the scope shape of a read tool over MCP: fyniq.read.<area>, for the areas P1 has a tool for. Payroll and
 // equity are never mapped here (AI-02, AI-37); the proposals' read scope belongs to the proposal tools (task 7.2).
-var ReadScope = regexp.MustCompile(`^fyniq\.read\.(reports|sales|purchases|banking|accounting|planning|compliance)$`)
+var ReadScope = regexp.MustCompile(`^fyniq\.read\.(reports|sales|purchases|banking|accounting|planning|compliance|proposals)$`)
 
 // InputRule maps the values of one input of a tool to the scope reading that value needs.
 type InputRule struct {
@@ -50,9 +50,12 @@ type Rule struct {
 
 // Scopes is mcp-scopes.json.
 type Scopes struct {
-	Version   int               `json:"version"`
-	Note      string            `json:"note"`
-	Tools     map[string]Rule   `json:"tools"`
+	Version int             `json:"version"`
+	Note    string          `json:"note"`
+	Tools   map[string]Rule `json:"tools"`
+	// Propose are the task types of the catalogue a client may propose over MCP, each with the scope fyniq.propose.<type> and
+	// a tool of its own (proposals.go); a type not named here is not exposed.
+	Propose   []string          `json:"propose"`
 	Unexposed map[string]string `json:"unexposed"`
 }
 
@@ -66,6 +69,9 @@ func LoadScopes(raw []byte) (Scopes, error) {
 	}
 	if s.Version != 1 {
 		return Scopes{}, fmt.Errorf("mcp-scopes.json: version %d is not one this release reads", s.Version)
+	}
+	if err := checkPropose(s.Propose); err != nil {
+		return Scopes{}, err
 	}
 	for tool, r := range s.Tools {
 		if r.Scope == "" && len(r.Inputs) == 0 {
@@ -92,6 +98,13 @@ func LoadScopes(raw []byte) (Scopes, error) {
 // one the map names, or an input that must be given is not. The error names what to do: a refusal is a refusal to expose,
 // never a guess at a scope.
 func (s Scopes) Needs(tool string, input map[string]any) ([]string, error) {
+	switch {
+	case strings.HasPrefix(tool, proposeToolPrefix):
+		if id := s.TaskTypeOf(tool); id != "" {
+			return []string{"fyniq.propose." + id}, nil
+		}
+		return nil, fmt.Errorf("%s is not a tool this server exposes", tool)
+	}
 	r, ok := s.Tools[tool]
 	if !ok {
 		return nil, fmt.Errorf("%s is not a tool this server exposes", tool)
@@ -192,10 +205,19 @@ func Build(tools []aitool.Tool, s Scopes) (Manifest, error) {
 		m.Tools = append(m.Tools, d)
 	}
 	for name := range s.Tools {
-		if !named[name] {
+		if !named[name] && name != ToolProposalsList && name != ToolProposalsGet {
 			return Manifest{}, fmt.Errorf("mcp-scopes.json names %s, which is not a tool of the registry", name)
 		}
 	}
+	tasks, err := loadTasks()
+	if err != nil {
+		return Manifest{}, err
+	}
+	ps, err := proposalDefinitions(s, tasks)
+	if err != nil {
+		return Manifest{}, err
+	}
+	m.Tools = append(m.Tools, ps...)
 	return m, nil
 }
 

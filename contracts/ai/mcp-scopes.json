@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "Which scope each read tool needs over MCP (AI-37, AI-40), by the tool and by the input that selects what it reads. A tool, or an input value, with no entry here is not exposed and not callable: a new tool is invisible to MCP until a reviewer maps it. Several scopes at once all apply. The scopes are fyniq.read.<area>; payroll and equity are never mapped in P1.",
+  "note": "Which scope each read tool needs over MCP (AI-37, AI-40), by the tool and by the input that selects what it reads. A tool, or an input value, with no entry here is not exposed and not callable: a new tool is invisible to MCP until a reviewer maps it. Several scopes at once all apply. The scopes are fyniq.read.<area>; payroll and equity are never mapped in P1. `propose` lists the catalogue's task types a client may propose over MCP, each needing fyniq.propose.<type>; a proposal waits for a person to approve it in Fyniq, and proposals.list and proposals.get (fyniq.read.proposals) read the person's own.",
   "tools": {
     "metrics.query": {
       "inputs": [
@@ -89,8 +89,11 @@
     },
     "checks.list": { "scope": "fyniq.read.compliance" },
     "checks.explain": { "scope": "fyniq.read.compliance" },
-    "packs.get": { "scope": "fyniq.read.compliance" }
+    "packs.get": { "scope": "fyniq.read.compliance" },
+    "proposals.list": { "scope": "fyniq.read.proposals" },
+    "proposals.get": { "scope": "fyniq.read.proposals" }
   },
+  "propose": ["sec.create_task", "sec.draft_document", "sec.draft_reminder"],
   "unexposed": {
     "calc": "It runs in the AI service on facts of a conversation; an MCP client does its own arithmetic from the facts it is given.",
     "records.get.kind=expense_claim": "A claim names a person and their reimbursement: not exposed over MCP in P1.",

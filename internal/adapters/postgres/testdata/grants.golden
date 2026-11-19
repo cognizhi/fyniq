@@ -57,7 +57,7 @@ fyniq_api       UPDATE    ai_price (decided_at, decided_by, status)
 fyniq_api       SELECT    ai_price_catalogues
 fyniq_api       INSERT    ai_price_rate (above, amount, kind, price_id, unit)
 fyniq_api       SELECT    ai_price_rate
-fyniq_api       INSERT    ai_proposal (agent, evidence, expires_at, item_count, model, payload, payload_sha256, prompt, proposed_at, rationale, requested_by, required_approvals, risk_tier, run_id, task_sha256, task_type, task_version, tools_sha256, turn_id)
+fyniq_api       INSERT    ai_proposal (agent, evidence, expires_at, item_count, mcp_app, model, payload, payload_sha256, prompt, proposed_at, rationale, requested_by, required_approvals, risk_tier, run_id, task_sha256, task_type, task_version, tools_sha256, turn_id)
 fyniq_api       SELECT    ai_proposal
 fyniq_api       UPDATE    ai_proposal (approval_request_id, approved_items, approved_payload, approved_sha256, base_versions, decided_at, decided_by, impact, reason, status, superseded_by, version)
 fyniq_api       INSERT    ai_qualification (agent, cases, connection_id, model, passed, ran_at, ran_by, result, run_id, suite, suite_version, threshold, version)

@@ -702,7 +702,7 @@ components:
           pattern: ^[0-9a-f]{16}$
           type: string
         tool:
-          description: The read tool, by its registry name.
+          description: "The tool, by its name in the MCP manifest: a read tool of the registry, a proposal tool (propose_<task type>), or a read of the person's own proposals."
           enum:
             - calc
             - checks.explain
@@ -712,6 +712,11 @@ components:
             - packs.get
             - records.get
             - records.search
+            - proposals.list
+            - proposals.get
+            - propose_sec_create_task
+            - propose_sec_draft_document
+            - propose_sec_draft_reminder
           examples:
             - records.search
           type: string

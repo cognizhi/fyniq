@@ -122,11 +122,11 @@ func registerProposals(a *API) {
 			if err != nil {
 				return nil, problem(CodeInvalid, "The payload is not a JSON object.", "Send the payload as the task type's input schema describes it")
 			}
-			revises, err := a.revisable(ctx, p, tt, in.Body.Revises)
+			revises, err := a.revisable(ctx, p, tt, in.Body.Revises, nil)
 			if err != nil {
 				return nil, err
 			}
-			made, err := a.draftProposal(ctx, p, tt, in.Body, payload, sum)
+			made, err := a.draftProposal(ctx, p, tt, in.Body, payload, sum, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -148,7 +148,7 @@ func registerProposals(a *API) {
 }
 
 // draftProposal keeps the proposal as a Draft, once the AI is on and the task type is on for the organisation.
-func (a *API) draftProposal(ctx context.Context, p authn.Principal, tt proposal.TaskType, in AIPropose, payload, sum string) (storage.AIProposal, error) {
+func (a *API) draftProposal(ctx context.Context, p authn.Principal, tt proposal.TaskType, in AIPropose, payload, sum string, via *mcpOrigin) (storage.AIProposal, error) {
 	var made storage.AIProposal
 	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		today, err := orgToday(ctx, a, u)
@@ -176,7 +176,9 @@ func (a *API) draftProposal(ctx context.Context, p authn.Principal, tt proposal.
 			PayloadSHA256: sum, ItemCount: batchItems(payload), Rationale: in.Rationale, Evidence: evidence, RiskTier: tt.Tier, RequiredApprovals: 1,
 			Agent: "chat", RequestedBy: p.UserID, Model: in.Model, Prompt: in.Prompt, ToolsSHA256: toolsSHA256(),
 			ProposedAt: now, ExpiresAt: now.Add(tt.Expiry())}
-		if turn, run := p.Turn, p.Run; run != uuid.Nil { // a scheduled agent's, from its run, for the Owner it acts for (AI-63)
+		if via != nil { // an AI app's, over MCP, for the person whose delegated token it holds (AI-16, AI-89 rev 0.298)
+			draft.Agent, draft.MCPApp, draft.ToolsSHA256 = "mcp", via.App, via.ToolSHA256
+		} else if turn, run := p.Turn, p.Run; run != uuid.Nil { // a scheduled agent's, from its run, for the Owner it acts for (AI-63)
 			draft.Agent, draft.Run = p.Agent, &run
 		} else {
 			draft.Turn = &turn
@@ -281,7 +283,7 @@ func (a *API) endProposal(ctx context.Context, p authn.Principal, made storage.A
 
 // revisable is the proposal a revision replaces, or nil when it revises none: one made by a turn for the same person, of
 // the same task type, still waiting (§9.5).
-func (a *API) revisable(ctx context.Context, p authn.Principal, tt proposal.TaskType, revises string) (*uuid.UUID, error) {
+func (a *API) revisable(ctx context.Context, p authn.Principal, tt proposal.TaskType, revises string, via *mcpOrigin) (*uuid.UUID, error) {
 	if revises == "" {
 		return nil, nil
 	}
@@ -293,7 +295,7 @@ func (a *API) revisable(ctx context.Context, p authn.Principal, tt proposal.Task
 	err = a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		earlier, err := u.AIProposals().Get(ctx, id)
 		switch {
-		case errors.Is(err, ports.ErrNotFound) || err == nil && (earlier.RequestedBy != p.UserID || earlier.Turn == nil):
+		case errors.Is(err, ports.ErrNotFound) || err == nil && (earlier.RequestedBy != p.UserID || !sameCourse(earlier, via)):
 			why = "names no proposal made for this person"
 		case err != nil:
 			return err
@@ -409,4 +411,15 @@ func utf8RuneStart(b byte) bool { return b&0xC0 != 0x80 }
 func hashHex(s string) string {
 	sum := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(sum[:])
+}
+
+// mcpOrigin is the AI app a proposal came from over MCP: its name, and the pin of the tool definition it used.
+type mcpOrigin struct{ App, ToolSHA256 string }
+
+// sameCourse reports whether a proposal came the way a new one does: from a turn for the chat, from the same app over MCP.
+func sameCourse(earlier storage.AIProposal, via *mcpOrigin) bool {
+	if via != nil {
+		return earlier.MCPApp == via.App
+	}
+	return earlier.Turn != nil
 }

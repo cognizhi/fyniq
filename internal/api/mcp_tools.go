@@ -51,10 +51,29 @@ const (
 	headerNeedScopes = "X-Fyniq-Needed-Scopes"
 )
 
-// MCPToolCall is a read tool the MCP service asks for on behalf of a client.
+// MCPToolName is a tool of the MCP manifest: the registry's reads the scope map exposes, the proposal tools and the two reads of the
+// person's own proposals. A name that is not in the manifest is not a value.
+type MCPToolName string
+
+// Schema implements huma.SchemaProvider.
+func (MCPToolName) Schema(huma.Registry) *huma.Schema {
+	var names []any
+	for _, t := range aitool.Default().Tools() { // a registry tool the manifest does not expose is refused with its own code, not as an unknown value
+		names = append(names, t.Name)
+	}
+	m, _ := mcpsurface.Default()
+	for _, d := range m.Tools {
+		if mcpsurface.IsProposalTool(d.Name) {
+			names = append(names, d.Name)
+		}
+	}
+	return &huma.Schema{Type: "string", Enum: names, Description: "A tool of the registry, or a proposal tool of the MCP manifest (AI-17, AI-40).", Examples: []any{"metrics.query"}}
+}
+
+// MCPToolCall is a tool the MCP service asks for on behalf of a client.
 type MCPToolCall struct {
 	App   string         `json:"app" minLength:"1" maxLength:"64" doc:"The OAuth client the MCP token was issued to: its name on the organisation's allowlist." example:"claude-code"`
-	Tool  AIToolName     `json:"tool" doc:"The read tool, by its registry name." example:"records.search"`
+	Tool  MCPToolName    `json:"tool" doc:"The tool, by its name in the MCP manifest: a read tool of the registry, a proposal tool (propose_<task type>), or a read of the person's own proposals." example:"records.search"`
 	Input map[string]any `json:"input" doc:"The input the client gave it, checked against the tool's input schema."`
 	// What the MCP service knows of the caller, for the trail (AI-44) and the detection (AI-45): never trusted for a decision.
 	IP         string `json:"ip,omitempty" maxLength:"45" doc:"The client's address, as the MCP service saw it; kept only as its network." example:"203.0.113.7"`
@@ -90,8 +109,12 @@ func registerMCPTools(a *API) {
 func (a *API) runMCPCall(ctx context.Context, p authn.Principal, in *mcpToolCallInput) (*mcpToolCallOutput, error) {
 	{
 		manifest, scopes := mcpsurface.Default()
-		tool, ok := aitool.Default().Get(string(in.Body.Tool))
-		exposed := slices.ContainsFunc(manifest.Tools, func(d mcpsurface.Definition) bool { return d.Name == string(in.Body.Tool) })
+		name := string(in.Body.Tool)
+		exposed := slices.ContainsFunc(manifest.Tools, func(d mcpsurface.Definition) bool { return d.Name == name })
+		if mcpsurface.IsProposalTool(name) && exposed { // a proposal tool, or a read of the person's own (AI-16, AI-42)
+			return a.runMCPProposalTool(ctx, p, in, manifest, scopes)
+		}
+		tool, ok := aitool.Default().Get(name)
 		if !ok || !exposed {
 			return nil, problem(CodeMCPScope, string(in.Body.Tool)+" is not a tool the MCP server exposes.", "List the tools and call one of them")
 		}

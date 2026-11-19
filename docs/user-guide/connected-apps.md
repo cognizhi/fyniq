@@ -3,7 +3,7 @@ key: settings.connected-apps
 title: Connect an AI app, and see what it did
 mode: basic
 roles: [owner, administrator, controller, accountant, bookkeeper, ar_specialist, ap_specialist, payroll_administrator, payment_releaser, approver, tax_agent, dpo]
-requirements: [AI-35, AI-37, AI-44, AI-90]
+requirements: [AI-16, AI-35, AI-37, AI-42, AI-44, AI-89, AI-90]
 status: draft
 ---
 
@@ -43,6 +43,16 @@ change settings, and it never sees an NRIC, a full bank account number or a secr
 - **Waiting for an Owner**: apps that registered themselves, where each sends you to sign in. Check that address before you allow one. An Owner
   approves an app by adding its ID to the apps that may connect, or **Deny**s it.
 - **What the apps did**: which app read with which tool, and whether it was refused or limited.
+
+## Changes an app proposes
+
+- An app can only read, and **propose** the kinds of change the Owner has turned on under Settings, AI. Each kind it asks for is a row on
+  the connect page, **Suggest: ...**, which you tick or not. A proposal waits in Approvals, marked as made by an AI app, with what it
+  would do in Fyniq's own words. Nothing changes until a person approves it, and an app can never approve, reject, cancel or run one.
+- Another member who may approve that kind of change approves it as for any proposal. You can approve one an app made for you only
+  after you confirm it's you again **after** the app proposed it, and only the simplest kind; an earlier confirmation does not count.
+- An app can list and check the status of the changes it proposed for you, and no one else's.
+- The Owner sets how many changes an app may propose an hour (Settings, AI apps); over it, the app is told to wait.
 
 ## If an app is refused
 

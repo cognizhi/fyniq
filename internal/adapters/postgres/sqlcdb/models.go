@@ -441,6 +441,7 @@ type FyniqAiProposal struct {
 	ProposedAt        time.Time
 	ExpiresAt         time.Time
 	Version           int32
+	McpApp            *string
 }
 
 type FyniqAiQualification struct {

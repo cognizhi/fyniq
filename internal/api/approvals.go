@@ -1194,6 +1194,18 @@ func mayDecide(p authn.Principal, r storage.ApprovalRequest, sigs []storage.Appr
 	return step > 0 && approval.Eligible(steps[step-1], p.UserID, rolesOf(p.Roles)) && (approver || approval.Reviews(steps[step-1]))
 }
 
+// freshAfterTheApp refuses the person an AI app proposed for, when they sign it on a step-up taken before the app proposed it: the
+// delegated token, or a step-up from earlier, never stands for them (AI-16, AI-89 rev 0.298). Another member's signature, and
+// one made with a passkey over this request's own challenge, are fresh by themselves. The database refuses the same signature.
+func freshAfterTheApp(p authn.Principal, r storage.ApprovalRequest, passkey bool) error {
+	rule, ok := proposalRuleOf(r)
+	if !ok || rule.App == "" || p.UserID != r.RequestedBy || passkey || p.StepUpAt.After(r.RequestedAt) {
+		return nil
+	}
+	return problem(CodeStepUpRequired, "An AI app proposed this for you, so you confirm it's you again now, after it was proposed, before you sign it.",
+		"Confirm it's you with your passkey or authenticator app, then sign it; or ask another member who holds the approval right")
+}
+
 // accountantReviewer reports whether p holds A on "Accountant review": they sign a step that names the accountant's
 // review (FM-9), and no other (rev 0.205).
 func accountantReviewer(p authn.Principal) bool {
@@ -2343,6 +2355,9 @@ func registerApprovals(a *API) {
 				if err != nil {
 					return decided{}, err
 				}
+				if err := freshAfterTheApp(p, r, in.Body.Passkey != nil); err != nil {
+					return decided{}, err
+				}
 				s, err := storedOf(r)
 				if err != nil {
 					return decided{}, err
@@ -2456,6 +2471,9 @@ func registerApprovals(a *API) {
 			w, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (decided, error) {
 				r, step, err := a.sign(ctx, u, p, id, in.IfMatch, in.Body.EnvelopeHash)
 				if err != nil {
+					return decided{}, err
+				}
+				if err := freshAfterTheApp(p, r, in.Body.Passkey != nil); err != nil {
 					return decided{}, err
 				}
 				now := a.deps.Clock.Now()

@@ -25,6 +25,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/ports"
+	"github.com/cognizhi/fyniq/internal/proposal"
 )
 
 // The stable codes of the flow's refusals (ENG-23).
@@ -303,7 +304,7 @@ func (f Flow) view(ctx context.Context, c ports.OAuthConsent, p authn.Principal)
 		}
 		cats := []map[string]string{}
 		for _, s := range d.Scopes {
-			if what, ok := scopeWords[s]; ok {
+			if what := scopeWord(s); what != "" {
 				cats = append(cats, map[string]string{"scope": s, "reaches": what})
 			}
 		}
@@ -402,6 +403,20 @@ var scopeWords = map[string]string{
 	"fyniq.read.proposals":  "The status of changes the app proposed for you",
 	"openid":                "Who you are, so the app acts as you",
 	"offline_access":        "Staying connected for up to 90 days without asking again",
+}
+
+// scopeWord is what a scope reaches in plain words: the fixed ones, and for fyniq.propose.<task type> the catalogue's name of the task
+// type, which a person approves in Fyniq before anything changes (AI-16, AI-37). "" for a scope it has no words for.
+func scopeWord(scope string) string {
+	if what, ok := scopeWords[scope]; ok {
+		return what
+	}
+	if id, ok := cutPrefix(scope, "fyniq.propose."); ok {
+		if tt, ok := proposal.Default().Get(id); ok {
+			return "Suggest: " + tt.Name + ". A person approves it in Fyniq before anything changes"
+		}
+	}
+	return ""
 }
 
 // pkceS256 reports whether an authorisation request carries a PKCE challenge with S256 (AI-36).

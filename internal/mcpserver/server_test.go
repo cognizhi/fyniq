@@ -398,15 +398,29 @@ func TestAPersonSeesOnlyTheToolsTheirScopesAllow(t *testing.T) {
 	if got := names(newRig(t, "fyniq.read.payroll", "fyniq.read.equity")); len(got) != 0 {
 		t.Errorf("payroll and equity: %v", got)
 	}
-	all := names(newRig(t, "fyniq.read.reports", "fyniq.read.sales", "fyniq.read.purchases", "fyniq.read.accounting", "fyniq.read.compliance"))
+	all := names(newRig(t, "fyniq.read.reports", "fyniq.read.sales", "fyniq.read.purchases", "fyniq.read.accounting", "fyniq.read.compliance", "fyniq.read.proposals"))
 	m, _ := mcpsurface.Default()
-	if len(all) != len(m.Tools) {
-		t.Errorf("every scope: %v of %d tools", all, len(m.Tools))
+	proposes := 0
+	for _, d := range m.Tools {
+		if strings.HasPrefix(d.Name, "propose_") {
+			proposes++
+		}
+	}
+	if proposes == 0 || len(all) != len(m.Tools)-proposes {
+		t.Errorf("every read scope: %v of %d tools, %d of them proposals", all, len(m.Tools), proposes)
 	}
 	for _, n := range all {
-		if err := aitool.ReadName(n); err != nil {
-			t.Errorf("%s is listed: %v", n, err)
+		if strings.HasPrefix(n, "propose_") {
+			t.Errorf("%s is listed to a token with no propose scope", n)
+		} else if !mcpsurface.IsProposalTool(n) {
+			if err := aitool.ReadName(n); err != nil {
+				t.Errorf("%s is listed: %v", n, err)
+			}
 		}
+	}
+	// A propose scope lists the tool of its task type and no other (AI-16, AI-37).
+	if got := names(newRig(t, "fyniq.propose.sec.create_task")); !slices.Equal(got, []string{"propose_sec_create_task"}) {
+		t.Errorf("a propose scope: %v", got)
 	}
 	// What is shown is what the manifest pins, word for word.
 	r := newRig(t, "fyniq.read.reports")

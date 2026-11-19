@@ -32,6 +32,9 @@ import (
 const (
 	turnMFA = "ai_turn"
 	runMFA  = "ai_run"
+	// mcpMFA is an AI app's: the delegated token of the person it acts for. It is no step-up and no live turn, so a proposal it made
+	// is signed by another member, or by the person on a step-up taken after the app proposed it (AI-89 rev 0.298).
+	mcpMFA = "mcp_token"
 )
 
 // proposalRule is who signs an AI proposal's request, as its change holds it, signed in its envelope: its task type, the
@@ -40,6 +43,8 @@ type proposalRule struct {
 	TaskType string
 	Command  authz.Policy
 	SelfSign bool
+	// App is the AI app that proposed it over MCP, "" for a turn's or a run's: its requester signs only on a step-up taken after it was proposed.
+	App string
 }
 
 // proposalRuleOf is r's rule, when r is an AI proposal's request.
@@ -54,7 +59,8 @@ func proposalRuleOf(r storage.ApprovalRequest) (proposalRule, bool) {
 	op, _ := st.Execute["command"].(string)
 	taskType, _ := st.Execute["task_type"].(string)
 	tier, _ := st.Execute["tier"].(float64)
-	return proposalRule{TaskType: taskType, Command: proposal.CommandPolicy(op), SelfSign: tier == proposal.Tier1}, true
+	app, _ := st.Execute["mcp_app"].(string)
+	return proposalRule{TaskType: taskType, Command: proposal.CommandPolicy(op), SelfSign: tier == proposal.Tier1, App: app}, true
 }
 
 // approverOf reports whether p holds the right to sign r: A on its object's row, or for an AI proposal the right its
@@ -105,6 +111,9 @@ func (a *API) requestProposal(ctx context.Context, u storage.UnitOfWork, p authn
 		Summary: cut(impact.Summary, 200), Execute: map[string]any{"proposal": made.ID.String(), "task_type": tt.ID, "task_version": tt.Version,
 			"payload_sha256": made.PayloadSHA256, "tier": tt.Tier, "items": made.ItemCount, "command": cmd.Policy().Operation},
 		Diff: []ApprovalDiff{{Field: "proposal", After: impact.Summary}}}
+	if made.MCPApp != "" { // signed in the envelope: the app it came from
+		c.Execute["mcp_app"] = made.MCPApp
+	}
 	if c.Summary == "" {
 		c.Summary = "An AI proposal of " + tt.ID
 	}
@@ -117,7 +126,10 @@ func (a *API) requestProposal(ctx context.Context, u storage.UnitOfWork, p authn
 		return storage.ApprovalRequest{}, err
 	}
 	now, method := a.deps.Clock.Now(), turnMFA
-	if p.Run != uuid.Nil {
+	switch {
+	case made.MCPApp != "":
+		method = mcpMFA
+	case p.Run != uuid.Nil:
 		method = runMFA
 	}
 	steps := []approval.Step{{Quorum: 1, Roles: roles}}

@@ -173,20 +173,22 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 
 ## 7. Propose and nothing else (AI-16, AI-42)
 
-> **Blocked on an owner decision (19 Nov 2026):** the catalogue ships empty, and a proposal made over MCP has no live turn or run to
-> authenticate its requester, which AI-89's rules (the requester is "authenticated by their live turn instead of a fresh step-up" and may
-> sign their own tier-1 proposal) rest on; the proposal table's course also requires a turn or a run. Options: (A) treat the delegated token
-> as the requester's live authentication, as a turn is, and allow a tier-1 self-signature (fastest, widest); (B) require another approver or
-> a fresh step-up for every MCP proposal, with no self-signature exception (recommended: the app is not in the room); (C) no proposal over MCP
-> in P1, reads only, until the first task type exists. (A) and (B) change AI-89 and the proposal table (a migration).
+> **Decided (the owner, 19 Nov 2026, option B; PRD-001 rev 0.300):** a proposal made over MCP has no live turn or run, so it is a course
+> of its own: its request is asked with the method `mcp_token` (the app's delegated token), and the delegated token never signs: another
+> member who holds the approval right signs it, or the person themselves, for tier 1 only, on a step-up taken after the app proposed it.
+> Agent class stays proposal-only and the never-list is unchanged. Not chosen: (A) the token as live authentication, and (C) reads only.
 
-- [ ] 7.1 `propose_<type>` tools for the types on (`ai.task_types`) that the person's `fyniq.propose.<type>` scopes and role
+- [x] 7.1 `propose_<type>` tools for the types on (`ai.task_types`) that the person's `fyniq.propose.<type>` scopes and role
   allow, relayed to the proposal service with the client recorded; proven with the test-only command, since the catalogue ships
-  empty. Tests `// req: AI-16`, `// req: AI-42`, `// req: AI-34`.
-- [ ] 7.2 `proposal.get` and `proposal.list` (scope `fyniq.read.proposals`), the person's own only. Tests `// req: AI-42`.
-- [ ] 7.3 Approvals stay in Fyniq: an agent token cannot approve, reject, execute or reach any never-list operation, through
+  empty. Tests `// req: AI-16`, `// req: AI-42`, `// req: AI-34`. Built: one tool per task type the scope map names (`propose_<type>`, scope
+  `fyniq.propose.<type>`, generated from the catalogue and pinned in the manifest), through the same gates and limits as a read and
+  `mcp.proposals_per_hour`; checked, screened and dry-run as the person as a turn's is; migration 000587 (`ai_proposal.mcp_app`, the
+  `mcp_token` method, the freshness rule at the signature). Tested with the release's own `sec.create_task`.
+- [x] 7.2 `proposals.get` and `proposals.list` (scope `fyniq.read.proposals`), the person's own proposals of the app only. Tests `// req: AI-42`.
+- [x] 7.3 Approvals stay in Fyniq: an agent token cannot approve, reject, execute or reach any never-list operation, through
   MCP or the API, whatever scopes it holds. Tests `// req: AI-42`, `// req: CTL-MCP-01`, `// req: ai/guardrails External agents
-  and MCP clients cannot abuse identity or tools`; the red-team corpus (QA-AI-03) through MCP: zero out-of-catalogue proposals.
+  and MCP clients cannot abuse identity or tools`; the red-team corpus (QA-AI-03) through MCP: zero out-of-catalogue proposals. Built: QA-MCP-01
+  rows `proposal-self-approval` and `proposal-out-of-catalogue`; the real-model red-team corpus stays with the evals (QA-AI-03).
 
 ## 8. Limits, audit, detection (AI-43, AI-44, AI-45)
 
