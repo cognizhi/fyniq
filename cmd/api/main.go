@@ -45,7 +45,7 @@ var (
 	// webOrigin is the web app's origin as the browser sees it, "" when the flavour has none configured: the passkey
 	// ceremonies are bound to it (FR-ADM-02).
 	webOrigin     func() string
-	registerOAuth func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions)
+	registerOAuth func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, store storage.Store)
 	// oauthAudience is the API's audience at the OAuth server: the audience of every integration client's tokens.
 	oauthAudience = func() string { return os.Getenv("FYNIQ_API_AUDIENCE") }
 )
@@ -61,8 +61,9 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		Release: compliance.Release{Tag: version.Release, Repository: version.Repository}}
 	kit, err := wiring.Build(context.Background(), "api", deps.Clock)
 	var sessions storage.Sessions
+	var store storage.Store
 	if err == nil {
-		sessions = kit.Store
+		sessions, store = kit.Store, kit.Store
 	}
 	if newAuthenticator != nil {
 		d.Auth = newAuthenticator(deps.Clock, sessions)
@@ -82,7 +83,7 @@ func routes(s *httpserver.Server, deps app.Deps) error {
 		d.SignIn = registerSignIn(s, deps.Clock, sessions, hooks)
 	}
 	if registerOAuth != nil {
-		registerOAuth(s, deps.Clock, sessions)
+		registerOAuth(s, deps.Clock, sessions, store)
 	}
 	if webOrigin != nil {
 		d.Origin = webOrigin()

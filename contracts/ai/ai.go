@@ -36,3 +36,8 @@ var MCPScopes []byte
 //
 //go:embed mcp-manifest.json
 var MCPManifest []byte
+
+// MCPClients are the first-party MCP clients, pre-registered at the OAuth server (mcp-clients.json; AI-35).
+//
+//go:embed mcp-clients.json
+var MCPClients []byte

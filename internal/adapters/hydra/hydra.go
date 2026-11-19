@@ -145,7 +145,7 @@ func (a *Admin) ConsentRequest(ctx context.Context, challenge string) (ports.OAu
 	var r request
 	err := a.do(ctx, http.MethodGet, "/admin/oauth2/auth/requests/consent", url.Values{"consent_challenge": {challenge}}, nil, nil, &r)
 	return ports.OAuthConsent{Challenge: r.Challenge, Subject: r.Subject, Skip: r.Skip, Client: r.Client.port(),
-		RequestedScopes: r.RequestedScope, RequestedAudiences: r.RequestedAudiences, Context: r.Context}, err
+		RequestedScopes: r.RequestedScope, RequestedAudiences: r.RequestedAudiences, Context: r.Context, RequestURL: r.RequestURL}, err
 }
 
 // AcceptConsent implements ports.OAuthServer. Consent is never remembered: every grant is asked for.
@@ -320,4 +320,37 @@ func (a *Admin) RemoveClient(ctx context.Context, clientID string) error {
 		return nil // gone already
 	}
 	return err
+}
+
+// RegisterPublicClient implements ports.OAuthClients: a public client that must use the authorisation code with PKCE, for one
+// audience, with exact redirect URIs; with a fixed ID it replaces what the server holds under that ID, so registering again
+// is how a change to the first-party clients reaches a running server.
+func (a *Admin) RegisterPublicClient(ctx context.Context, c ports.PublicRegistration) (string, error) {
+	if c.Name == "" || c.Audience == "" || len(c.RedirectURIs) == 0 || c.Class == "" {
+		return "", errors.New("hydra: a public client needs a name, a class, an audience and redirect URIs")
+	}
+	meta := map[string]any{"class": c.Class}
+	if c.App != "" {
+		meta["app"] = c.App
+	}
+	body := map[string]any{"client_name": c.Name, "audience": []string{c.Audience}, "redirect_uris": c.RedirectURIs,
+		"grant_types": []string{"authorization_code", "refresh_token"}, "response_types": []string{"code"},
+		"token_endpoint_auth_method": "none", "scope": strings.Join(c.Scopes, " "), "metadata": meta}
+	method, path := http.MethodPost, "/admin/clients"
+	if c.ID != "" {
+		body["client_id"] = c.ID
+		method, path = http.MethodPut, "/admin/clients/"+url.PathEscape(c.ID)
+	}
+	var out client
+	err := a.do(ctx, method, path, nil, body, nil, &out)
+	if err != nil && c.ID != "" && errors.Is(err, ports.ErrNoChallenge) { // not there yet: create it with its ID
+		err = a.do(ctx, http.MethodPost, "/admin/clients", nil, body, nil, &out)
+	}
+	if err != nil {
+		return "", err
+	}
+	if out.ClientID == "" {
+		return "", errors.New("hydra: the client was registered without an ID")
+	}
+	return out.ClientID, nil
 }

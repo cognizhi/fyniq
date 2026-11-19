@@ -67,14 +67,15 @@ func init() {
 		return dev
 	}
 	// Hydra's login and consent pages: who is signed in comes from the session cookie, or a dev token.
-	registerOAuth = func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions) {
+	registerOAuth = func(s *httpserver.Server, clock ports.Clock, sessions storage.Sessions, store storage.Store) {
 		admin := os.Getenv("FYNIQ_OAUTH_ADMIN_URL")
 		if admin == "" {
 			return
 		}
-		oauthflow.Flow{OAuth: wiring.Hydra(admin), SignedIn: firstParty(clock, sessions), Clock: clock, APIAudience: apiAudience(),
-			MCPAudience: cmp.Or(os.Getenv("FYNIQ_MCP_AUDIENCE"), "http://localhost:8080/mcp"),
-			Log:         logging.New(os.Stderr, slog.LevelInfo), SignInPage: "/", Base: base}.Register(s)
+		log, mcpAudience, oauth := logging.New(os.Stderr, slog.LevelInfo), cmp.Or(os.Getenv("FYNIQ_MCP_AUDIENCE"), "http://localhost:8080/mcp"), wiring.Hydra(admin)
+		gate, publishers := mcpConsent(oauth, mcpAudience, store, clock, log)
+		oauthflow.Flow{OAuth: oauth, SignedIn: firstParty(clock, sessions), Clock: clock, APIAudience: apiAudience(), MCPAudience: mcpAudience,
+			MCP: gate, Publishers: publishers, Log: log, SignInPage: "/", Base: base}.Register(s)
 	}
 	webOrigin = origin
 	oauthAudience = apiAudience

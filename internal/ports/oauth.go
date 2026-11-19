@@ -67,6 +67,9 @@ type OAuthConsent struct {
 	RequestedScopes    []string
 	RequestedAudiences []string
 	Context            map[string]any
+	// RequestURL is the authorisation request as the client sent it: it carries the RFC 8707 resource parameter, which the
+	// OAuth server does not turn into an audience (p1-mcp-first-party task 1.1).
+	RequestURL string
 }
 
 // ConsentAcceptance is what consent grants.
@@ -101,6 +104,11 @@ type OAuthClients interface {
 	// client-credentials grant only, authenticating with private_key_jwt (RFC 7523) signed by the key it names. It
 	// returns the server's client ID.
 	RegisterIntegration(ctx context.Context, c IntegrationRegistration) (string, error)
+	// RegisterPublicClient registers, or replaces, a public client with a fixed ID: the authorisation code with PKCE and refresh
+	// tokens only, for the audience it names, with exact redirect URIs (a loopback one matches on any port, RFC 8252). It
+	// returns the client's ID. Used for the first-party MCP clients (AI-35); a client that registers itself goes through the
+	// API's registration endpoint (AI-90), which calls this.
+	RegisterPublicClient(ctx context.Context, c PublicRegistration) (string, error)
 	// RemoveClient deletes a client and every token issued to it; a client the server does not know is gone already.
 	RemoveClient(ctx context.Context, clientID string) error
 }
@@ -117,4 +125,17 @@ type IntegrationRegistration struct {
 	// TokenLifespan is how long each access token lives (AI-38: at most 60 minutes).
 	TokenLifespan time.Duration
 	Organisation  string // kept in the client's metadata, for the operator; never trusted from it
+}
+
+// PublicRegistration is a public client as the OAuth server registers it.
+type PublicRegistration struct {
+	ID           string // the client's ID: fixed for a first-party client, chosen by the server otherwise when empty
+	Name         string
+	Class        string // AI-34: agent for an MCP client
+	Audience     string
+	Scopes       []string
+	RedirectURIs []string
+	// App is the first-party app's name on the organisation's allowlist (mcp.clients), kept in the client's metadata; empty for
+	// a client that registered itself.
+	App string
 }

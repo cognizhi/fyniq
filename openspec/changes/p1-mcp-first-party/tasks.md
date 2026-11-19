@@ -11,7 +11,7 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   `// req: AI-35`, `// asvs: V10.4.1`) and a line in design.md "Open questions". If Hydra cannot emit `iss` or accept the
   redirect, the gap and the options go to the owner.
   Built: `TestHydraAndTheParametersAnMCPClientSends` (`internal/api/oauth_mcp_facts_test.go`). `resource` is not an audience;
-  loopback redirects match on any port for `127.0.0.1` and `localhost`; dynamic registration answers 404; Hydra emits no `iss`
+  loopback redirects match on any port for `127.0.0.1` and `[::1]` but not for `localhost` (corrected: a `localhost` redirect is registered with its port); dynamic registration answers 404; Hydra emits no `iss`
   (a SHOULD in the revision in force; recorded in design D7 and left for the review pack).
 - [x] 1.2 What the installed clients send: Claude Code and Claude Desktop pointed at a recording stub on the local stack,
   capturing `MCP-Protocol-Version`, the methods, whether `initialize` and `Mcp-Session-Id` appear, and how each obtains a
@@ -54,17 +54,28 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 
 ## 3. OAuth for MCP (AI-36, AI-37, AI-38)
 
-- [ ] 3.1 The first-party clients: `contracts/ai/mcp-clients.json` (Claude Desktop and Claude Code: publisher, redirect
+- [x] 3.1 The first-party clients: `contracts/ai/mcp-clients.json` (Claude Desktop and Claude Code: publisher, redirect
   patterns, class `agent`), `ports.OAuthClients.RegisterPublicClient` and the Hydra adapter, registration at local start-up,
   Hydra's configuration (no dynamic registration, token lifetimes, rotation with reuse detection, absolute 90 days, `iss` as
   task 1.1 found). Tests `// req: AI-35` (no DCR, a fixed redirect), `// req: AI-36` (no implicit, no password grant, no
   PKCE-less code), `// req: AI-38` (lifetimes, rotation, reuse revokes the family, idle and absolute expiry).
-- [ ] 3.2 The consent gates (design D7): `oauthflow.Decide` for the MCP audience refuses unless the organisation's switch is
+- [x] 3.2 The consent gates (design D7): `oauthflow.Decide` for the MCP audience refuses unless the organisation's switch is
   on, the person opted in, the client is allowlisted and `agent`-class, a second factor is fresh, the scopes are within the
   default plus the person's ask, payroll needs `ai.payroll_access` and a payroll role, equity is not offered; `resource`
   becomes the audience and must equal the MCP URL; the consent JSON gains the publisher, the data categories per scope and the
   expiry. Tests `// req: AI-37`, `// req: AI-36` (G4-081, G4-082), `// req: AI-02`, `// req: AI-35`; red-team rows for an unknown
   client ID, an unregistered redirect URI and consent phishing.
+  Built (3.1 and 3.2, together): `contracts/ai/mcp-clients.json` (Claude Code at `http://localhost:3118/callback`, exact, the port
+  Claude Code is told with `--callback-port`; Claude Desktop at Anthropic's hosted callback, `[live-verify]`),
+  `RegisterPublicClient` (a fixed ID, replacing on a second registration), `mcpgate.Register` at API start-up, and
+  `oauthflow.Admit`: the `resource` becomes the audience and must be exactly the MCP resource, once (G4-082); a token for the
+  MCP server is for it alone and for an agent-class client; the person passed a second factor within the step-up window
+  (`AUTH-FLOW-08`); and `mcpgate.Gate` asks the organisation's switch, the allowlist and the opt-in (`MCP-GATE-01..03`), failing
+  closed. The consent screen's JSON gains the verified publisher (first-party only), what each scope reaches and the 90-day and
+  60-minute lifetimes. Tests against the pinned Hydra: `TestAClaudeCodeFlowEndsInATokenOnlyThroughTheGates` (a payroll, equity
+  or propose scope is refused by the server before consent). **Left:** token lifetimes and refresh rotation are Hydra's (P0's
+  `TestTokenLifecycle` proves them; the 90-day absolute limit is the consent age the verifier checks); `fyniq.propose.<type>`
+  scopes join a client's record with task 7.1; a registered (non-first-party) client with task 11.1.
 - [ ] 3.3 Revocation (AI-38): `ports.OAuthServer` lists a subject's consent sessions and revokes one client's; a role change,
   deactivation, client removal from `mcp.clients`, the organisation switch off and the person's opt-out each revoke the
   person's MCP tokens (`RevokeSubject` or the one client). Tests `// req: AI-38` (every token within 60 seconds),

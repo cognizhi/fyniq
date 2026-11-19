@@ -10,8 +10,13 @@
         ]
       ],
       "items": {
+        "description": "An AI app the release has pre-registered, such as claude-code.",
+        "examples": [
+          "claude-code"
+        ],
         "type": "string"
       },
+      "maxItems": 20,
       "type": "array"
     },
     "can_connect": {

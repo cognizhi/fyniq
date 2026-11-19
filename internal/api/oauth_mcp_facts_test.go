@@ -15,12 +15,14 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/cognizhi/fyniq/internal/adapters/hydra"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/mcpgate"
 	"github.com/cognizhi/fyniq/internal/mcpserver"
 	"github.com/cognizhi/fyniq/internal/mcpsurface"
 	"github.com/cognizhi/fyniq/internal/ports"
@@ -157,20 +159,21 @@ func TestHydraAndTheParametersAnMCPClientSends(t *testing.T) {
 		t.Errorf("the token's audiences %v (active %v), want the MCP resource alone", in.Audiences, in.Active)
 	}
 
-	// A loopback redirect matches the registered one on any port (RFC 8252 section 7.3); another host does not.
+	// A loopback IP redirect matches the registered one on any port (RFC 8252 section 7.3); another host does not.
 	q, _ = pkceQuery(c.ID, "openid fyniq.read.reports")
-	if _, refused := s.loginRequestOf(q, "http://127.0.0.1:53124/callback"); refused != "" {
-		t.Errorf("a loopback redirect on another port: %s", refused)
+	if l, _ := s.loginRequestOf(q, "http://127.0.0.1:53124/callback"); l.Challenge == "" {
+		t.Error("a loopback IP redirect on another port was refused")
 	}
 
-	// Claude Code asks for http://localhost:<port>/callback (the capture in design.md, task 1.2), so the host name localhost
-	// matches too; a different path does not.
+	// Claude Code asks for http://localhost:<port>/callback (the capture in design.md, task 1.2). Hydra does NOT match the host
+	// name localhost on another port, only the IP loopback addresses, so a localhost redirect is registered with its port; and a
+	// different path never matches.
 	q, _ = pkceQuery(c.ID, "openid fyniq.read.reports")
-	if _, refused := s.loginRequestOf(q, "http://localhost:3118/callback"); refused != "" {
-		t.Errorf("a localhost redirect on another port: %s", refused)
+	if l, _ := s.loginRequestOf(q, "http://localhost:3118/callback"); l.Challenge != "" {
+		t.Error("a localhost redirect on another port was accepted: record it, the registration may then be portless")
 	}
 	q, _ = pkceQuery(c.ID, "openid fyniq.read.reports")
-	if l, _ := s.loginRequestOf(q, "http://localhost:3118/elsewhere"); l.Challenge != "" {
+	if l, _ := s.loginRequestOf(q, "http://127.0.0.1:53124/elsewhere"); l.Challenge != "" {
 		t.Error("a loopback redirect on another path was accepted")
 	}
 
@@ -248,15 +251,13 @@ func TestTheMCPServerChecksATokenHydraIssued(t *testing.T) {
 	if status, _ := list(api["access_token"].(string)); status != http.StatusUnauthorized {
 		t.Errorf("an API-audience token at the MCP server: %d", status)
 	}
-	// A token for both audiences could be passed through to the API: the verifier refuses it, whatever consent granted.
-	if both, refused := s.authorize(agent, mcpAudience+" "+apiAudience, "openid fyniq.read.reports", true, "accept"); refused != "" {
-		t.Logf("a request for both audiences is refused at consent: %s", refused)
-	} else if status, _ := list(both["access_token"].(string)); status != http.StatusUnauthorized {
-		t.Errorf("a token for the MCP server and the API: %d", status)
+	// Consent refuses what the verifier would: a token for both audiences (it could be passed through to the API) and an MCP
+	// token for a client that is not an agent.
+	if _, refused := s.authorize(agent, mcpAudience+" "+apiAudience, "openid fyniq.read.reports", true, "accept"); refused == "" {
+		t.Error("a token for the MCP server and the API was granted")
 	}
-	user, _ := s.authorize(integration, mcpAudience, "openid fyniq.read.reports", true, "accept")
-	if status, _ := list(user["access_token"].(string)); status != http.StatusUnauthorized {
-		t.Errorf("an integration-class client's MCP token: %d", status)
+	if _, refused := s.authorize(integration, mcpAudience, "openid fyniq.read.reports", true, "accept"); refused == "" {
+		t.Error("an integration-class client was given an MCP token")
 	}
 	resp, err := s.browser().PostForm("http://hydra.test/oauth2/revoke", url.Values{"token": {mcpToken}, "client_id": {agent}})
 	if err != nil || resp.StatusCode != http.StatusOK {
@@ -265,5 +266,80 @@ func TestTheMCPServerChecksATokenHydraIssued(t *testing.T) {
 	_ = resp.Body.Close()
 	if status, _ := list(mcpToken); status != http.StatusUnauthorized {
 		t.Errorf("a revoked token: %d", status)
+	}
+}
+
+// The first-party MCP clients register with the OAuth server under fixed IDs, and an MCP client's own flow, as Claude Code
+// runs it (the resource parameter and no audience, a localhost redirect on a port it picks, PKCE), ends in a token for the MCP
+// server alone, but only through the gates: the organisation's switch, the allowlist and the person's opt-in (the gate's
+// refusals), a fresh second factor and the consent itself (task 3.1 and 3.2 of p1-mcp-first-party).
+// req: AI-35
+// req: AI-36
+// req: AI-37
+// req: CTL-MCP-03
+// asvs: V10.4.1, V10.4.4, V10.3.1
+func TestAClaudeCodeFlowEndsInATokenOnlyThroughTheGates(t *testing.T) {
+	s := startOAuth(t, 0)
+	ctx := context.Background()
+	if err := mcpgate.Register(ctx, s.admin, mcpAudience); err != nil {
+		t.Fatal(err)
+	}
+	if err := mcpgate.Register(ctx, s.admin, mcpAudience); err != nil { // registering again replaces: a changed contract reaches a running server
+		t.Fatalf("registering again: %v", err)
+	}
+	const redirect = "http://localhost:3118/callback"
+	flow := func(clientID, scope string, resource string) (url.Values, map[string]any, ports.Introspection) {
+		q, verifier := pkceQuery(clientID, scope)
+		q.Set("resource", resource)
+		return s.walk(q, verifier, redirect, url.Values{"resource": {resource}})
+	}
+
+	back, tok, in := flow("claude-code", "openid fyniq.read.reports", mcpAudience)
+	if back.Get("error") != "" || tok["access_token"] == nil {
+		t.Fatalf("the open gates: %v %v", back, tok)
+	}
+	if !in.Active || len(in.Audiences) != 1 || in.Audiences[0] != mcpAudience || in.Claims["class"] != "agent" || in.Claims["granted_at"] == nil {
+		t.Errorf("the token: %+v", in)
+	}
+	if sc, _ := tok["scope"].(string); sc != "openid fyniq.read.reports" {
+		t.Errorf("the scopes granted: %q", sc)
+	}
+	// The client's record is the first-party one: agent class, the MCP audience only, a redirect that is exact.
+
+	refused := func(name, clientID, scope, resource string) {
+		t.Helper()
+		back, tok, _ := flow(clientID, scope, resource)
+		if back.Get("error") == "" || tok["access_token"] != nil {
+			t.Errorf("%s: a token was issued: %v %v", name, back, tok)
+		}
+	}
+	for _, g := range [][2]string{{"MCP-GATE-01", "organisation off"}, {"MCP-GATE-02", "not allowed"}, {"MCP-GATE-03", "not opted in"}} {
+		s.gate.code, s.gate.why = g[0], g[1]
+		refused("the gate says "+g[1], "claude-code", "openid fyniq.read.reports", mcpAudience)
+	}
+	s.gate.code, s.gate.why = "", ""
+	refused("a resource that is not this server's", "claude-code", "openid fyniq.read.reports", "http://evil.test/mcp")
+	refused("the API as the resource for an agent client", "claude-code", "openid fyniq.read.reports", apiAudience)
+	// A scope no client may hold (payroll, equity) is refused by the OAuth server before any consent: the client's record
+	// does not hold it.
+	for _, scope := range []string{"openid fyniq.read.payroll", "openid fyniq.read.equity", "openid fyniq.propose.sec.create_task"} {
+		q, _ := pkceQuery("claude-code", scope)
+		q.Set("resource", mcpAudience)
+		if l, refused := s.loginRequestOf(q, redirect); l.Challenge != "" || !strings.Contains(refused, "error=invalid_scope") {
+			t.Errorf("%s: %q %q", scope, l.Challenge, refused)
+		}
+	}
+	// Without a fresh second factor nothing is granted.
+	s.e.tokens.mu.Lock()
+	p := s.e.tokens.m[s.user]
+	p.StepUpAt = clock.System{}.Now().Add(-time.Hour)
+	s.e.tokens.m[s.user] = p
+	s.e.tokens.mu.Unlock()
+	refused("a stale second factor", "claude-code", "openid fyniq.read.reports", mcpAudience)
+	// Another redirect than the registered loopback is refused by the OAuth server before any consent.
+	q, _ := pkceQuery("claude-code", "openid fyniq.read.reports")
+	q.Set("resource", mcpAudience)
+	if l, _ := s.loginRequestOf(q, "http://evil.test/callback"); l.Challenge != "" {
+		t.Error("an unregistered redirect reached the login")
 	}
 }

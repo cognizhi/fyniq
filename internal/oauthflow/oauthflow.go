@@ -12,6 +12,7 @@
 package oauthflow
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -35,7 +36,15 @@ const (
 	CodeFailure     = "AUTH-FLOW-05" // the OAuth server failed
 	CodeNoAccount   = "AUTH-FLOW-06" // the signed-in identity has no Fyniq user yet
 	CodeCrossSite   = "AUTH-FLOW-07" // a consent sent from another site with the session cookie
+	CodeStepUp      = "AUTH-FLOW-08" // an MCP consent needs a second factor passed just now (AI-37)
+	CodeMCPOff      = "AUTH-FLOW-09" // MCP consent is not available in this deployment
 )
+
+// MCPGate says whether an AI app may act for a person over MCP in their organisation now (AI-35): the organisation's switch,
+// the allowlist and the person's opt-in (internal/mcpgate). Without one, no MCP consent is granted.
+type MCPGate interface {
+	Admit(ctx context.Context, org, user uuid.UUID, app string) (code, why string, err error)
+}
 
 // Flow is the login and consent app.
 type Flow struct {
@@ -44,7 +53,11 @@ type Flow struct {
 	Clock       ports.Clock
 	APIAudience string
 	MCPAudience string
-	Log         *slog.Logger
+	// MCP is the gate an MCP consent passes; nil refuses every MCP consent (closed by default).
+	MCP MCPGate
+	// Publishers names a first-party client's verified publisher by its client ID: a client absent from it is unverified.
+	Publishers map[string]string
+	Log        *slog.Logger
 	// SignInPage is where a browser without a session signs in (the web app, "/"), and Base where the
 	// API is mounted for the browser ("/api"), so the browser comes back to the login. Without a page, a
 	// request without a session is refused with 401.
@@ -97,6 +110,7 @@ type Decision struct {
 	RefusedScopes []string `json:"refused_scopes"`
 	Audiences     []string `json:"audiences"`
 	Problem       string   `json:"problem,omitempty"` // when set, consent is refused whatever the user says
+	Code          string   `json:"code,omitempty"`    // the stable code of the problem, when it has one
 }
 
 // Decide applies the consent rules: only grantable scopes; audiences only the API's or the MCP
@@ -111,7 +125,12 @@ func (f Flow) Decide(c ports.OAuthConsent, p authn.Principal) Decision {
 			d.RefusedScopes = append(d.RefusedScopes, s)
 		}
 	}
-	for _, a := range c.RequestedAudiences {
+	audiences, problem := f.audiences(c)
+	if problem != "" {
+		d.Problem = problem
+		return d
+	}
+	for _, a := range audiences {
 		if (a != f.APIAudience && a != f.MCPAudience) || !slices.Contains(c.Client.Audiences, a) {
 			d.Problem = "The client asked for an audience it may not use: " + a
 			return d
@@ -123,8 +142,66 @@ func (f Flow) Decide(c ports.OAuthConsent, p authn.Principal) Decision {
 		d.Problem = "The client has no class (AI-34): register it again"
 	case len(d.Audiences) == 0:
 		d.Problem = "The client asked for no audience: it must name the API or the MCP server"
+	case slices.Contains(d.Audiences, f.MCPAudience) && len(d.Audiences) > 1:
+		d.Problem = "A token for the MCP server is for it alone: the client asked for another audience too (AI-36, no token passthrough)"
+	case slices.Contains(d.Audiences, f.MCPAudience) && c.Client.Class != authn.ClassAgent:
+		d.Problem = "Only an AI app may be given a token for the MCP server (AI-34)"
 	case p.Organisation == uuid.Nil:
 		d.Problem = "You are not signed in to an organisation"
+	}
+	return d
+}
+
+// audiences are the audiences a request asks for: those it names, or, as an MCP client sends it, the resource of RFC 8707,
+// which the OAuth server does not turn into an audience (G4-082). A resource must be this deployment's API or MCP server
+// exactly, there may be one, and it must agree with any audience the request names.
+func (f Flow) audiences(c ports.OAuthConsent) ([]string, string) {
+	var resources []string
+	if u, err := url.Parse(c.RequestURL); err == nil {
+		resources = u.Query()["resource"]
+	}
+	switch {
+	case len(resources) == 0:
+		return c.RequestedAudiences, ""
+	case len(resources) > 1:
+		return nil, "The client named more than one resource: ask for the MCP server alone (RFC 8707)"
+	case resources[0] != f.MCPAudience && resources[0] != f.APIAudience:
+		return nil, "The client asked for a resource this server does not serve"
+	case len(c.RequestedAudiences) > 0 && (len(c.RequestedAudiences) != 1 || c.RequestedAudiences[0] != resources[0]):
+		return nil, "The client's resource and its audience differ"
+	}
+	return []string{resources[0]}, ""
+}
+
+// Admit is Decide, and for the MCP server the gates that need more than the request (AI-35, AI-37): the deployment has a
+// gate at all, the person passed a second factor just now, and the organisation, the allowlist and the person's opt-in allow
+// the app. Any failure to ask refuses (fail closed).
+func (f Flow) Admit(ctx context.Context, c ports.OAuthConsent, p authn.Principal) Decision {
+	d := f.Decide(c, p)
+	if d.Problem != "" || !slices.Contains(d.Audiences, f.MCPAudience) {
+		return d
+	}
+	refuse := func(code, why string) Decision {
+		d.Problem, d.Code = why, code
+		return d
+	}
+	switch {
+	case f.MCP == nil:
+		return refuse(CodeMCPOff, "AI apps cannot connect to this deployment yet.")
+	case !p.SteppedUp(f.Clock.Now()):
+		return refuse(CodeStepUp, "Confirm it is you with your second factor, then allow the app (AI-37).")
+	case p.UserID == uuid.Nil:
+		return refuse(CodeNoAccount, "AI apps act for a person with a Fyniq account.")
+	}
+	code, why, err := f.MCP.Admit(ctx, p.Organisation, p.UserID, c.Client.ID)
+	if err != nil {
+		if f.Log != nil {
+			f.Log.Error("oauth.flow.mcp_gate_failure", "error", err.Error())
+		}
+		return refuse(CodeFailure, "Fyniq could not check whether AI apps may connect. Try again in a moment.")
+	}
+	if code != "" {
+		return refuse(code, why)
 	}
 	return d
 }
@@ -208,10 +285,24 @@ func (f Flow) showConsent(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	_ = json.NewEncoder(w).Encode(map[string]any{
-		"client":           map[string]any{"id": c.Client.ID, "name": c.Client.Name, "class": c.Client.Class},
-		"requested_scopes": c.RequestedScopes, "decision": f.Decide(c, p),
-	})
+	d := f.Admit(r.Context(), c, p)
+	client := map[string]any{"id": c.Client.ID, "name": c.Client.Name, "class": c.Client.Class}
+	out := map[string]any{"client": client, "requested_scopes": c.RequestedScopes, "decision": d}
+	if slices.Contains(d.Audiences, f.MCPAudience) {
+		// What an MCP consent shows (AI-37): who, whether Fyniq has verified them, what each scope reaches, and how long it lasts.
+		publisher := f.Publishers[c.Client.ID]
+		client["publisher"], client["verified"] = publisher, publisher != ""
+		client["proposal_only"] = c.Client.Class == authn.ClassAgent
+		cats := []map[string]string{}
+		for _, s := range d.Scopes {
+			if what, ok := scopeWords[s]; ok {
+				cats = append(cats, map[string]string{"scope": s, "reaches": what})
+			}
+		}
+		out["data_categories"] = cats
+		out["expiry"] = map[string]any{"consent_valid_days": int(ConsentDays), "access_token_minutes": 60}
+	}
+	_ = json.NewEncoder(w).Encode(out)
 }
 
 func (f Flow) recordConsent(w http.ResponseWriter, r *http.Request) {
@@ -224,7 +315,7 @@ func (f Flow) recordConsent(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	d := f.Decide(c, p)
+	d := f.Admit(r.Context(), c, p)
 	switch {
 	case r.PostForm.Get("decision") != "accept":
 		f.redirect(w, r, func() (string, error) {
@@ -246,6 +337,23 @@ func (f Flow) recordConsent(w http.ResponseWriter, r *http.Request) {
 			return f.OAuth.AcceptConsent(r.Context(), challenge, ports.ConsentAcceptance{Scopes: d.Scopes, Audiences: d.Audiences, AccessTokenClaims: claims})
 		})
 	}
+}
+
+// ConsentDays is how long a consent lasts before it must be renewed (AI-37).
+const ConsentDays = 90
+
+// scopeWords say in plain words what each scope reaches, for the consent screen (AI-37).
+var scopeWords = map[string]string{
+	"fyniq.read.reports":    "Reports and key figures: profit and loss, balance sheet, cash, runway and KPIs",
+	"fyniq.read.sales":      "Invoices, quotes, credit notes and items",
+	"fyniq.read.purchases":  "Bills, vendor credits and purchase orders",
+	"fyniq.read.banking":    "Bank accounts and transactions",
+	"fyniq.read.accounting": "Journals, accounts and the books' balances",
+	"fyniq.read.planning":   "Budgets, forecasts and scenarios",
+	"fyniq.read.compliance": "Checks, deadlines and statutory values",
+	"fyniq.read.proposals":  "The status of changes the app proposed for you",
+	"openid":                "Who you are, so the app acts as you",
+	"offline_access":        "Staying connected for up to 90 days without asking again",
 }
 
 // pkceS256 reports whether an authorisation request carries a PKCE challenge with S256 (AI-36).

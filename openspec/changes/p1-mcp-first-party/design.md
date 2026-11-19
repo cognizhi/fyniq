@@ -186,8 +186,10 @@ What the repository holds today (read on 19 Nov 2026, main at `5823cbf4`):
   - `resource` is **not** turned into an audience: the login and consent requests have empty requested audiences and the
     request URL carries `resource`. The consent app reads it and sets the audience itself (G4-082); the token request may
     repeat `resource` and is accepted; the issued token's audience is exactly what consent granted.
-  - A loopback redirect registered without a port matches on any port, for `127.0.0.1` and for `localhost` (Claude Code asks
-    for `http://localhost:<port>/callback`), and a different path does not match.
+  - A loopback redirect registered without a port matches on any port for the IP addresses `127.0.0.1` and `[::1]` only
+    (RFC 8252), **not for `localhost`**, which Claude Code asks for (`http://localhost:<port>/callback`): a `localhost`
+    redirect is registered with its port (corrected 19 Nov 2026; the first assertion proved nothing). A different path never
+    matches.
   - Dynamic client registration is off (`POST /oauth2/register` answers 404).
   - Hydra emits **no `iss`** in the authorisation response and its metadata does not set
     `authorization_response_iss_parameter_supported`. The revision in force makes `iss` a SHOULD for the authorisation server
@@ -276,7 +278,7 @@ What the repository holds today (read on 19 Nov 2026, main at `5823cbf4`):
 the delegation key, serves `/mcp` and the well-known path behind Caddy, and the sample company has `features.mcp` on in a
 local profile with the second approver pre-satisfied, as the skill describes. A script drives the whole OAuth flow in a test
 without a browser (the existing `oauth_test` helpers), and a `docs/runbooks/` page says how to connect Claude Code
-(`claude mcp add --transport http fyniq-local http://localhost:8080/mcp`). Nothing local reaches staging or production.
+(`claude mcp add --transport http --client-id claude-code --callback-port 3118 fyniq-local http://localhost:8080/mcp`; the first-party client's redirect is `http://localhost:3118/callback`, exact). Nothing local reaches staging or production.
 
 ## Migration plan
 

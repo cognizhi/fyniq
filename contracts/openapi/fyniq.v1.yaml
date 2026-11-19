@@ -33012,7 +33012,11 @@ components:
           examples:
             - - claude-code
           items:
+            description: An AI app the release has pre-registered, such as claude-code.
+            examples:
+              - claude-code
             type: string
+          maxItems: 20
           type: array
         can_connect:
           description: "Whether an AI app can connect as you now: the organisation is on, it allows at least one app, and you opted in."
