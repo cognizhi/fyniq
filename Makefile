@@ -125,8 +125,8 @@ test: ## Run every merge gate offline (Docker needed for the database suites): m
 	@$(MAKE) --no-print-directory oracle-test
 	@$(MAKE) --no-print-directory check
 
-db-lint: ## Lint the migrations (squawk) and check the adapter's generated queries match them (sqlc)
-	@$(MISE) squawk db/migrations/*.sql
+db-lint: ## Lint Fyniq's and Nemura's migrations (squawk) and check the adapter's generated queries match them (sqlc)
+	@$(MISE) squawk db/migrations/*.sql db/nemura/migrations/*.sql
 	@cd internal/adapters/postgres && $(MISE) sqlc diff || { echo "✖ internal/adapters/postgres/sqlcdb is stale: run make sqlc"; exit 1; }
 	@echo "✔ migrations lint clean; generated queries up to date"
 

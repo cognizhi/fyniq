@@ -76,6 +76,9 @@ type Draft struct {
 	Currency   money.Currency
 	Lines      []Line
 	Notes      string
+	// ProjectID is the project the order is for, uuid.Nil for none (FR-PRJ-08; rev 0.297): a bill made from the order carries it as a
+	// project value on each line.
+	ProjectID uuid.UUID
 }
 
 type payload struct {
@@ -86,6 +89,7 @@ type payload struct {
 	Currency   string        `json:"currency"`
 	Lines      []payloadLine `json:"lines"`
 	Notes      string        `json:"notes,omitempty"`
+	ProjectID  *uuid.UUID    `json:"project_id,omitempty"`
 }
 
 type payloadLine struct {
@@ -113,6 +117,10 @@ func Encode(d Draft) ([]byte, error) {
 	}
 	p := payload{SupplierID: d.SupplierID, Reference: d.Reference, Date: day(d.Date), ExpectedOn: day(d.ExpectedOn), Currency: d.Currency.Code,
 		Notes: d.Notes, Lines: []payloadLine{}}
+	if d.ProjectID != uuid.Nil {
+		id := d.ProjectID
+		p.ProjectID = &id
+	}
 	for _, l := range d.Lines {
 		p.Lines = append(p.Lines, payloadLine{AccountID: l.AccountID, Description: l.Description, Quantity: l.Quantity.String(),
 			UnitPrice: l.UnitPrice.String(), GSTCode: l.GSTCode})
@@ -137,6 +145,9 @@ func Read(doc storage.Document) (Draft, error) {
 		return Draft{}, bad(err.Error())
 	}
 	d := Draft{SupplierID: p.SupplierID, Reference: p.Reference, Currency: cur, Notes: p.Notes}
+	if p.ProjectID != nil {
+		d.ProjectID = *p.ProjectID
+	}
 	for _, x := range []struct {
 		text string
 		to   *time.Time

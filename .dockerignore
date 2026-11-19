@@ -6,6 +6,8 @@
 !internal/
 !db/embed.go
 !db/migrations/
+!db/nemura/embed.go
+!db/nemura/migrations/
 !compliance/registry.go
 !compliance/evidence.go
 !compliance/control.schema.json

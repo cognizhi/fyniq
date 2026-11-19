@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "CostRate.schema.json"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "description": "Pass it as cursor for the next page; absent on the last page.",
+      "examples": [
+        "eyJhZnRlciI6IjEwMCJ9"
+      ],
+      "type": "string"
+    },
+    "people": {
+      "description": "The active members a rate can be entered for, by name: the Payroll administrator may not read the members list, so it comes with the rates.",
+      "items": {
+        "$ref": "ProjectPerson.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "items",
+    "people"
+  ],
+  "title": "CostRatePage",
+  "type": "object"
+}

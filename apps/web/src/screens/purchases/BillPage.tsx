@@ -20,6 +20,7 @@ import { billAttachers, EvidencePanel } from "../accounting/JournalEvidence";
 import { who } from "../accounting/Journals";
 import { preparers, StateChips, total, type Bill } from "./Bills";
 import { BillLines, lineKey, newLine, type Errors, type Line } from "./BillLines";
+import { markupError } from "../projects/BillableFields";
 import { factsOf, InputTaxCard, taxOf, usualTax, type Tax } from "./InputTax";
 import { ApplyCredit, Payments, RecordPayment } from "./Payments";
 import { PaymentPlanCard } from "./BillsBoard";
@@ -80,6 +81,8 @@ function formOf(b: Bill): Form {
       order: l.order,
       business_share: l.business_share ?? "",
       dimension_value_ids: [...(l.dimension_value_ids ?? [])],
+      billable: l.billable ?? false,
+      markup_percent: l.markup_percent ?? "",
     })),
   };
 }
@@ -111,6 +114,8 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
     if (from && !/^\d{4}-(0[1-9]|1[0-2])$/.test(from)) errors[`${l.key}.spread_from`] = "Enter the month the service starts, such as 2026-10, or leave it blank for the invoice's month.";
     const share = (l.business_share ?? "").trim().replace(/%$/, "").trim();
     if (share && !/^(100(\.0{1,2})?|\d{1,2}(\.\d{1,2})?)$/.test(share)) errors[`${l.key}.business_share`] = "Enter the share used for the business, 0 to 100, such as 60, or leave it blank for all of it.";
+    const markupProblem = markupError(l.billable, l.markup_percent);
+    if (markupProblem) errors[`${l.key}.markup_percent`] = markupProblem;
     lines.push({
       account_id: l.account_id,
       description: l.description.trim() || undefined,
@@ -123,6 +128,8 @@ export function check(f: Form, base: string): { draft?: Draft; errors: Errors } 
       order: l.order,
       business_share: share && !/^100(\.0{1,2})?$/.test(share) ? share : undefined,
       dimension_value_ids: l.dimension_value_ids.length ? [...l.dimension_value_ids] : undefined,
+      billable: l.billable ? true : undefined,
+      markup_percent: l.billable && l.markup_percent?.trim() ? l.markup_percent.trim() : undefined,
     });
   }
   if (lines.length === 0) errors.lines = "Add a line for what the bill is for.";

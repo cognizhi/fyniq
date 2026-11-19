@@ -33,6 +33,8 @@ const (
 	GSTInclName      = "RND-GST-INCL"
 	DepositName      = "RND-DEPOSIT"
 	MileageName      = "RND-MILEAGE"
+	TimeName         = "RND-TIME"
+	MarkupName       = "RND-MARKUP"
 	ShareName        = "RND-SHARE"
 	OwnershipName    = "RND-DISPLAY"
 	PlanName         = "RND-PLAN"
@@ -671,6 +673,51 @@ func Mileage(distance money.Quantity, rate money.Money) (money.Quantity, money.M
 	}
 	amount, err := money.FromRounded(halfAwayFromZero(&product, rate.Currency().MinorUnits), rate.Currency())
 	return km, amount, err
+}
+
+// Time is RND-TIME (PRD-001 §10.4; FR-PRJ-02, FR-PRJ-06): the cost or value of a time entry = round(minutes × the hourly rate
+// ÷ 60, the rate currency's minor units), half away from zero, per entry, computed exactly before its one rounding. A
+// reversing entry has the opposite minutes, so it costs exactly the negative of what it reverses and the pair sums to zero.
+// Time is a management view and posts nothing.
+func Time(minutes int, rate money.UnitPrice) (money.Money, error) {
+	if rate.Sign() < 0 {
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "rate", Message: fmt.Sprintf("the hourly rate is %s %s", rate, rate.Currency()), Fix: "An hourly rate is zero or more"}
+	}
+	var product, hourly apd.Decimal
+	if _, err := work.Mul(&product, apd.New(int64(minutes), 0), rate.Decimal()); err != nil {
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "minutes", Message: err.Error()}
+	}
+	if _, err := work.Quo(&hourly, &product, apd.New(60, 0)); err != nil {
+		return money.Money{}, &money.Error{Code: money.CodeRange, Field: "minutes", Message: err.Error()}
+	}
+	return money.FromRounded(halfAwayFromZero(&hourly, rate.Currency().MinorUnits), rate.Currency())
+}
+
+// markupPattern reads a markup strictly: a percentage from 0 to 999.99 with at most two decimals ("10", "12.5", "250").
+var markupPattern = regexp.MustCompile(`^[0-9]{1,3}(\.[0-9]{1,2})?$`)
+
+// IsMarkup reports whether s is a markup Markup takes.
+func IsMarkup(s string) bool { return markupPattern.MatchString(s) }
+
+// Markup is RND-MARKUP (PRD-001 §10.4; FR-PRJ-08): the markup on a billable expense = round(cost × percent ÷ 100, the currency's minor
+// units), half away from zero, computed exactly before its one rounding. What is billed is the cost plus this, in the cost's
+// currency; it is a reading of posted lines and posts nothing.
+func Markup(cost money.Money, percent string) (money.Money, error) {
+	if !markupPattern.MatchString(percent) {
+		return money.Money{}, fmt.Errorf("%s: %q is not a percentage from 0 to 999.99 with at most two decimals", MarkupName, percent)
+	}
+	d, _, err := apd.NewFromString(percent)
+	if err != nil {
+		return money.Money{}, fmt.Errorf("%s: %q: %w", MarkupName, percent, err)
+	}
+	var product apd.Decimal
+	if _, err := work.Mul(&product, cost.Decimal(), d); err != nil {
+		return money.Money{}, err
+	}
+	if _, err := work.Quo(&product, &product, apd.New(100, 0)); err != nil {
+		return money.Money{}, err
+	}
+	return money.FromRounded(halfAwayFromZero(&product, cost.Currency().MinorUnits), cost.Currency())
 }
 
 // Shares are what RND-SHARE allots for an amount at a price per share: a whole number of shares, the amount they
