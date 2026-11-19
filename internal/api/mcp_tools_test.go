@@ -262,3 +262,37 @@ func TestEveryMCPCallIsInTheTrailAndTheLimitsAreCountedFromIt(t *testing.T) {
 		t.Errorf("the trail: %v", outcomes)
 	}
 }
+
+// A result larger than the organisation's ceiling (here as low as the setting is ever put, a few bytes in effect) is refused with the way to ask for less, never cut silently (AI-41, AI-43).
+// req: AI-41
+// req: AI-43
+// asvs: V16.3.2
+func TestAnOversizedResultIsRefusedNotCut(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	ahkow := f.as(f.ahkow, authz.Owner, authz.Controller)
+	service, _ := e.services.Token(ServiceMCP)
+	user := uuid.MustParse(f.ahkow)
+	reports := e.principal(authn.Principal{Via: authn.ViaToken, Subject: user.String(), UserID: user, Client: "mcp-delegation", Class: authn.ClassAgent,
+		Organisation: e.books.Org, Roles: []authz.Role{authz.Owner, authz.Controller}, Scopes: []string{"fyniq.read.reports"}})
+	y, m, d := e.clock.Now().In(appclock.Singapore).Date()
+	from := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		for key, v := range map[string][2]string{"features.mcp": {"false", "true"}, "mcp.clients": {"", "claude-code"}, "mcp.result_kb": {"256", "0"}} {
+			if _, err := u.Settings().Record(ctx, key, v[0], v[1], from, 1); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	got := e.call(http.MethodGet, "/v1/me/mcp", ahkow, nil)
+	e.call(http.MethodPut, "/v1/me/mcp", ahkow, map[string]any{"opted_in": true}, "If-Match", got.str("etag"))
+	r := e.call(http.MethodPost, "/internal/v1/mcp/tool-calls", reports, map[string]any{"app": "claude-code", "tool": "metrics.query",
+		"input": map[string]any{"measure": "revenue", "from": "2026-10", "to": "2026-10"}}, ServiceTokenHeader, service)
+	if r.Status != 422 || r.str("code") != CodeMCPTooLarge || r.str("fix") == "" {
+		t.Fatalf("a result over a ceiling of nothing: %d %s", r.Status, r.Raw)
+	}
+	if strings.Contains(r.Raw, `"facts"`) {
+		t.Error("a refused result carried the result")
+	}
+}

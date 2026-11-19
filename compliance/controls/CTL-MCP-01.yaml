@@ -10,8 +10,13 @@ evidence: "Test report"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-mcp-first-party"
+    status: running
+    how: "test TestAnMCPToolCallPassesEveryGateOrIsRefused"
+    evidence: "an agent-class token's write to the public API is refused (403), and the MCP service's one operation runs a read tool only, for the MCP service's own service token and a delegated agent token, with every other caller refused; QA-MCP-01; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestTheMCPServiceCarriesNoDatabaseCode"
+    evidence: "the MCP service's binary carries no database adapter, no domain command and no write path, in both flavours, whichever of the shell and the server runs; CI artefact test-report (90 days)"
   - frequency: N
     status: planned
-    arrives: "p1-mcp-first-party"
+    arrives: "p1-mcp-first-party task 10.2: the nightly sample of agent-class writes needs the mcp_call trail's own verification (the trail exists: migration 000583)"

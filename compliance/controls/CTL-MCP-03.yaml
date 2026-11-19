@@ -10,8 +10,13 @@ evidence: "Approval records"
 owner: Owner
 checks:
   - frequency: CI
-    status: planned
-    arrives: "p1-mcp-first-party"
+    status: running
+    how: "test TestMCPAccessIsClosedByDefaultAndAppsNarrowAtOnce"
+    evidence: "features.mcp, the allowlist and registration start off, enabling or adding an app needs a second approver, and turning off or removing an app takes effect at once; CI artefact test-report (90 days)"
+  - frequency: CI
+    status: running
+    how: "test TestTheMCPGateAdmitsOnlyWhenTheOrganisationTheAppAndThePersonAllow"
+    evidence: "the gate admits an app only when the organisation's switch, the allowlist and the person's opt-in all allow it, each refusing with its own code, asked on every call; CI artefact test-report (90 days)"
   - frequency: E
     status: planned
-    arrives: "p1-mcp-first-party"
+    arrives: "p1-mcp-first-party task 10.2: the audit of enablement events needs the approval records of the settings' changes read by a verification; the changes are approval objects already"

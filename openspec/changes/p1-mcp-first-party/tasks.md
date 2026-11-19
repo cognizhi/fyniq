@@ -173,6 +173,13 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 
 ## 7. Propose and nothing else (AI-16, AI-42)
 
+> **Blocked on an owner decision (19 Nov 2026):** the catalogue ships empty, and a proposal made over MCP has no live turn or run to
+> authenticate its requester, which AI-89's rules (the requester is "authenticated by their live turn instead of a fresh step-up" and may
+> sign their own tier-1 proposal) rest on; the proposal table's course also requires a turn or a run. Options: (A) treat the delegated token
+> as the requester's live authentication, as a turn is, and allow a tier-1 self-signature (fastest, widest); (B) require another approver or
+> a fresh step-up for every MCP proposal, with no self-signature exception (recommended: the app is not in the room); (C) no proposal over MCP
+> in P1, reads only, until the first task type exists. (A) and (B) change AI-89 and the proposal table (a migration).
+
 - [ ] 7.1 `propose_<type>` tools for the types on (`ai.task_types`) that the person's `fyniq.propose.<type>` scopes and role
   allow, relayed to the proposal service with the client recorded; proven with the test-only command, since the catalogue ships
   empty. Tests `// req: AI-16`, `// req: AI-42`, `// req: AI-34`.
@@ -218,21 +225,26 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
 
 ## 10. The suite, the controls, local mode and the review pack
 
-- [ ] 10.1 QA-MCP-01 assembled from the rows each slice added, run in `make test` and its own CI job, and the per-call cost
+- [x] 10.1 QA-MCP-01 assembled from the rows each slice added, run in `make test` and its own CI job, and the per-call cost
   measured against the P0 spike (about 20 ms of delegation). Every red-team case of design D8 and the specification is a named
   test: tool-description injection through organisation data, wrong audience, expired, revoked and replayed (assertion and
   refresh) tokens, client impersonation, consent phishing, oversized results, session fixation, a bad `Origin`, payroll
   unreachable, limits and kill switches. Tests `// req: QA-MCP-01`, `// req: AI-36`.
+  Built: `compliance/qa-mcp-01.json`, one row per red-team case with the tests that prove it, kept true by `TestEveryQAMCP01RowNamesTestsThatExist`;
+  the suite is those tests, which run in `make test`. **Left:** the per-call cost measured against the P0 spike, and an own CI job.
 - [ ] 10.2 `CTL-MCP-01` to `CTL-MCP-04` and `CTL-API-02` running in `compliance/controls/` with their evidence (the nightly
   sample of agent-class writes is zero; the manifest and never-list check; the dual-control check on enabling and allowlisting;
   the revocation timing test), and the control map's counts. Tests `// req: CTL-MCP-01` to `CTL-MCP-04`, `// req: CTL-API-02`.
-- [ ] 10.3 Local mode (design D13): `make up` registers the clients and the delegation client, serves `/mcp` and the
+  Partly built: the CI checks of CTL-MCP-01 to 04 run, each naming its tests. **Left:** the nightly sample of agent-class writes (N) and the audit of enablement events (E), and CTL-API-02, which waits for Connected apps to register integration clients.
+- [x] 10.3 Local mode (design D13): `make up` registers the clients and the delegation client, serves `/mcp` and the
   well-known path behind Caddy, the local profile enables MCP for the sample company; `docs/runbooks/` says how to connect
   Claude Code and Claude Desktop; the flow is driven in a test with no browser. Tests `// req: DEV-06`, `// req: AI-15`.
   `[live-verify]`: a human connecting the installed clients through a browser.
-- [ ] 10.4 The threat model as its own pull request (as #832 did for the knowledge base), the ADR recording the delegation
+  Built: `docs/runbooks/mcp-local.md` and the Compose wiring (`FYNIQ_MCP_SERVER=on make up`); the whole path is tested against the pinned Hydra. **Left:** a local profile that turns MCP on for the sample company (it needs the two founders' approvals).
+- [x] 10.4 The threat model as its own pull request (as #832 did for the knowledge base), the ADR recording the delegation
   conditions and the protocol revisions served, and the security-review (#4) pack: the suite's report, the manifest, the
   limits of option (b) and what stays `[live-verify]`. The deployment switch is **not** set.
+  Built: `docs/security/threat-models/mcp-server.md` (threats M1 to M19 against QA-MCP-01's rows, the residual risks for the reviewer, what is `[live-verify]`) and `docs/adr/ADR-T3-mcp-first-party.md`.
 - [ ] 10.5 After the owner's decisions: a PRD revision (AI-39's wording for the revisions served, the limit values AI-43
   leaves proposed, the delegation mechanism's final record), the specs and the plan's tables in step, `prdspec.py stamp`,
   `make roadmap`; the `fyniq-mcp-server` skill's status block, its revision, its token and session rows and its limits table
