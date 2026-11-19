@@ -401,8 +401,6 @@ var (
 	DenyMCPRegistration        = Policy{Operation: "denyMCPRegistration", Capability: ConnectedApps, Need: Approve}               // an Owner denies one, at once
 	GetMyMCP                   = Policy{Operation: "getMyMCP", Capability: OwnMCPConnection, Need: View}                          // a person's opt-in to AI apps over MCP (AI-35)
 	SetMyMCP                   = Policy{Operation: "setMyMCP", Capability: OwnMCPConnection, Need: Create}                        // never an AI's, a client's or an Employee's
-	SaveSavedItem              = Policy{Operation: "saveSavedItem", Capability: OwnNotifications, Need: Create}
-	TakeAwaySavedItem          = Policy{Operation: "takeAwaySavedItem", Capability: OwnNotifications, Need: Create}
 	ListEmailMessages          = Policy{Operation: "listEmailMessages", Capability: Integrations, Need: View}
 	ListBanners                = Policy{Operation: "listBanners", Capability: OwnNotifications, Need: View}
 	DismissBanner              = Policy{Operation: "dismissBanner", Capability: OwnNotifications, Need: Create}
