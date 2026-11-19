@@ -12,6 +12,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	"github.com/cognizhi/fyniq/internal/domain/project"
+	"github.com/cognizhi/fyniq/internal/domain/projectbilling"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -269,6 +270,8 @@ func TestProjectTasks(t *testing.T) {
 // which they are not on: Appendix D allows the read, and the record decides what they see (design D4).
 func init() {
 	pastPolicy["getProject"], pastPolicy["listProjectTasks"] = CodeNotFound, CodeNotFound
+	pastPolicy["createProjectMilestone"], pastPolicy["acceptProjectMilestone"] = projectbilling.CodeMilestone, CodeNotFound
+	pastPolicy["draftProjectInvoice"] = projectbilling.CodeNothing // the matrix project has no customer to bill
 }
 
 var matrixProjects = map[string]func(e *env, tok string) (response, func() bool){

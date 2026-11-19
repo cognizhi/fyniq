@@ -52,6 +52,7 @@ var ScheduledJobs = map[string]string{
 	"notify.bills_due":       "Bills-due reminders",
 	"notify.deadlines":       "Statutory deadline reminders",
 	"notify.cash_buffer":     "Cash buffer alerts",
+	"notify.timesheets":      "Missing-time reminders on Fridays",
 	"audit.erase":            "Security events' details erased after their retention",
 	"retention.purge":        "The purge after retention, where it is switched on",
 	"pdpa.shred":             "Personal data's keys shredded after their retention",

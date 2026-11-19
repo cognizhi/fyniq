@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billable": {
+      "$ref": "Money.schema.json",
+      "description": "The cost plus the markup: what is billed."
+    },
+    "cost": {
+      "$ref": "Money.schema.json",
+      "description": "The cost before GST, in the document's currency."
+    },
+    "date": {
+      "description": "The cost's date.",
+      "examples": [
+        "2026-10-14"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "document_id": {
+      "description": "The posted bill or claim.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e81"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "label": {
+      "description": "What it is.",
+      "examples": [
+        "Venue hire"
+      ],
+      "type": "string"
+    },
+    "line": {
+      "description": "The line's place in its document, from 0.",
+      "examples": [
+        0
+      ],
+      "format": "int64",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "markup": {
+      "$ref": "Money.schema.json",
+      "description": "RND-MARKUP of the cost at the markup percentage."
+    },
+    "markup_percent": {
+      "description": "The markup on it.",
+      "examples": [
+        "10"
+      ],
+      "type": "string"
+    },
+    "number": {
+      "description": "The document's number.",
+      "examples": [
+        "BILL-0007"
+      ],
+      "type": "string"
+    },
+    "source": {
+      "description": "What the cost is on.",
+      "enum": [
+        "bill",
+        "claim"
+      ],
+      "examples": [
+        "bill"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "document_id",
+    "line",
+    "source",
+    "cost",
+    "markup",
+    "billable"
+  ],
+  "title": "UnbilledExpense",
+  "type": "object"
+}

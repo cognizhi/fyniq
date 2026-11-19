@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accepted_on": {
+      "description": "The day the customer accepted it, not in the future.",
+      "examples": [
+        "2026-12-10"
+      ],
+      "format": "date",
+      "type": "string"
+    }
+  },
+  "required": [
+    "accepted_on"
+  ],
+  "title": "ProjectMilestoneAcceptance",
+  "type": "object"
+}

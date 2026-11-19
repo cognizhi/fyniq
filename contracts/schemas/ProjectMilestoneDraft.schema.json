@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "amount": {
+      "description": "What it bills, as a decimal in the project's currency, above zero.",
+      "examples": [
+        "15000.00"
+      ],
+      "pattern": "^(0|[1-9][0-9]{0,15})(\\.[0-9]{1,4})?$",
+      "type": "string"
+    },
+    "due_on": {
+      "description": "When it is due.",
+      "examples": [
+        "2026-12-15"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "name": {
+      "description": "What it is, such as Design sign-off, or the retainer's month.",
+      "examples": [
+        "Design sign-off"
+      ],
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "project_id": {
+      "description": "The fixed-fee project, or the retainer.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "name",
+    "amount"
+  ],
+  "title": "ProjectMilestoneDraft",
+  "type": "object"
+}

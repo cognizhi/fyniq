@@ -440,9 +440,13 @@ fyniq_api       EXECUTE   private_endpoints_for()
 fyniq_api       INSERT    project (billing_method, budget_amount, budget_minutes, currency, customer_id, ends_on, id, minor_units, starts_on, status)
 fyniq_api       SELECT    project
 fyniq_api       UPDATE    project (billing_method, budget_amount, budget_minutes, changed_at, customer_id, ends_on, starts_on, status, version)
+fyniq_api       SELECT    project_billed_item
 fyniq_api       INSERT    project_member (is_manager, project_id, user_id)
 fyniq_api       SELECT    project_member
 fyniq_api       UPDATE    project_member (is_active, is_manager)
+fyniq_api       INSERT    project_milestone (amount, due_on, kind, name, project_id)
+fyniq_api       SELECT    project_milestone
+fyniq_api       UPDATE    project_milestone (accepted_on, changed_at, version)
 fyniq_api       INSERT    project_task (billable, name, project_id)
 fyniq_api       SELECT    project_task
 fyniq_api       UPDATE    project_task (billable, changed_at, is_active, name, version)
@@ -652,7 +656,9 @@ fyniq_executor  SELECT    person_cost_rate
 fyniq_executor  INSERT    person_key (cohort, person, wrapped)
 fyniq_executor  SELECT    person_key
 fyniq_executor  SELECT    project
+fyniq_executor  SELECT    project_billed_item
 fyniq_executor  SELECT    project_member
+fyniq_executor  SELECT    project_milestone
 fyniq_executor  SELECT    project_task
 fyniq_executor  SELECT    quote_outcome
 fyniq_executor  SELECT    recurring_bill
@@ -847,7 +853,9 @@ fyniq_readonly  SELECT    policy_acknowledgement
 fyniq_readonly  SELECT    policy_draft
 fyniq_readonly  SELECT    policy_version
 fyniq_readonly  SELECT    project
+fyniq_readonly  SELECT    project_billed_item
 fyniq_readonly  SELECT    project_member
+fyniq_readonly  SELECT    project_milestone
 fyniq_readonly  SELECT    project_task
 fyniq_readonly  SELECT    quote_outcome
 fyniq_readonly  SELECT    rate_limit_window
@@ -1156,7 +1164,9 @@ fyniq_worker    SELECT    policy_draft
 fyniq_worker    SELECT    policy_version
 fyniq_worker    EXECUTE   private_endpoints_for()
 fyniq_worker    SELECT    project
+fyniq_worker    SELECT    project_billed_item
 fyniq_worker    SELECT    project_member
+fyniq_worker    SELECT    project_milestone
 fyniq_worker    SELECT    project_task
 fyniq_worker    EXECUTE   purge_ip_rate_windows()
 fyniq_worker    INSERT    quote_outcome (document_id, name, note, on_date, outcome, recorded_by)
