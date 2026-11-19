@@ -1,4 +1,5 @@
 import type { Session } from "../api/client";
+import { PeopleTiles } from "../components/PeopleTiles";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { Shell, admin, team } from "./Shell";
 import { helpText, t, textKeys } from "../i18n";
@@ -16,6 +17,7 @@ export function Home({ session, screen }: { session: Session; screen: "me" | "pe
         <ReviewBanner screen={screen === "people" ? "nm-people-home" : "nm-my-home"} />
         <h1 className="fy-h1" title={helpText(key).tooltip}>{t(key)}</h1>
         <p className="fy-secondary">{t("home.hello")}</p>
+        {screen === "people" && <PeopleTiles />}
         <section className="fy-stack fy-stack--2" aria-labelledby="roles-h">
           <h2 className="fy-h2" id="roles-h">{t("home.roles")}</h2>
           {roles.length === 0 ? (

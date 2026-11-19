@@ -39,6 +39,7 @@ type SickNotification struct {
 	Certificate bool   `json:"has_certificate" doc:"Whether a certificate was given." example:"true"`
 	Issuer      string `json:"issuer,omitempty" doc:"Who issued the certificate." example:"Raffles Medical Clinic"`
 	Verified    bool   `json:"verified" doc:"Whether the people team verified the certificate." example:"false"`
+	Treatment   string `json:"unpaid_decision,omitempty" enum:"unpaid,annual" doc:"How the days beyond the ceiling were decided, once the people team has decided." example:"unpaid"`
 }
 
 // Sick is sick leave behind the API: the API decides who may call, the service reads and writes in one transaction, keeps the certificate as a restricted document

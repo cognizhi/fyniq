@@ -7,10 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
+	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
+	"github.com/cognizhi/fyniq/internal/nemura/outbox"
 )
 
 // The month-end accrual is drafted once from the carried-forward annual leave still untaken, approved once by someone other than the drafter, and never edited or deleted; its
@@ -159,5 +162,82 @@ func TestAvailableHoursAreTheWorkingDaysLessHolidaysAndLeave(t *testing.T) {
 	}
 	if _, err := avail("", "2028-04-01", "2028-04-30"); leaveCode(err) != leave.CodeInvalid {
 		t.Errorf("no holidays published: %v", err)
+	}
+}
+
+// The worker drafts the previous month's accrual by itself once a month while Leave is on: the row is enqueued once whatever the sweeps, drafting it twice is done and
+// not an error, the draft says no member made it, a person approves it, and the worker's role holds no other write on leave (NM-LV-09).
+// req: NM-LV-09
+// asvs: V8.2.1, V8.3.1
+func TestTheWorkerDraftsTheAccrualOnceAMonthWhileLeaveIsOn(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := d("2026-04-02").Add(3 * time.Hour)
+	worker := store(t, "nemura_worker")
+	// Carried-forward days for Ben, so the March draft has a line.
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		if _, err := nemura.AppendLeave(ctx, tx, lt.c.org, now, lt.c.owner, lt.ben, nemura.AnnualLeave, 2025, nil, leave.Entry{Kind: leave.Grant, Amount: leave.Whole(7), Source: "test"}, ""); err != nil {
+			return err
+		}
+		_, err := nemura.CarryForwardLeave(ctx, tx, lt.c.org, now, lt.c.owner, lt.ben, 2025, 12)
+		return err
+	})
+	// Leave is off: nothing is enqueued.
+	if n, err := worker.RaiseLeaveAccrual(ctx, lt.c.org, now); err != nil || n != 0 {
+		t.Fatalf("with Leave off: %d %v", n, err)
+	}
+	if err := store(t, "nemura_api").InOrg(ctx, lt.c.org, func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.SetFeature(ctx, tx, lt.c.org, now, lt.c.owner, "leave", "on", "", nil, nil)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := worker.RaiseLeaveAccrual(ctx, lt.c.org, now); err != nil || n != 1 {
+		t.Fatalf("with Leave on: %d %v", n, err)
+	}
+	if n, err := worker.RaiseLeaveAccrual(ctx, lt.c.org, now.Add(24*time.Hour)); err != nil || n != 0 {
+		t.Errorf("the same month enqueued twice: %d %v", n, err)
+	}
+	var payload []byte
+	if err := connect(t, db.SuperURL()).QueryRow(ctx, "SELECT payload FROM nemura.outbox WHERE organisation_id = $1 AND kind = $2", lt.c.org, nemura.KindLeaveAccrual).Scan(&payload); err != nil {
+		t.Fatal(err)
+	}
+	work := worker.LeaveAccrualWork(clock.NewFrozen(now))
+	row := outbox.Row{ID: uuid.New(), Kind: nemura.KindLeaveAccrual, Payload: payload}
+	if err := work(ctx, lt.c.org, row); err != nil {
+		t.Fatal(err)
+	}
+	if err := work(ctx, lt.c.org, row); err != nil {
+		t.Errorf("a second delivery: %v", err)
+	}
+	var rows []nemura.AccrualRow
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		rows, err = nemura.LeaveAccruals(ctx, tx, d("2026-03-01"))
+		return err
+	})
+	if len(rows) != 1 || rows[0].Carried != leave.Whole(7) || rows[0].State != "draft" {
+		t.Fatalf("the worker's draft: %+v", rows)
+	}
+	var system bool
+	var by *uuid.UUID
+	if err := connect(t, db.SuperURL()).QueryRow(ctx, "SELECT system_drafted, drafted_by FROM nemura.leave_accrual WHERE organisation_id = $1", lt.c.org).Scan(&system, &by); err != nil || !system || by != nil {
+		t.Errorf("who drafted it: %v %v (%v)", system, by, err)
+	}
+	// A person approves it; the worker cannot, and cannot touch the ledger or a request.
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		n, err := nemura.ApproveLeaveAccrual(ctx, tx, lt.c.org, now.Add(time.Hour), lt.c.owner, d("2026-03-01"))
+		if err != nil || n != 1 {
+			t.Errorf("approving the system draft: %d %v", n, err)
+		}
+		return nil
+	})
+	for _, q := range []string{"UPDATE nemura.leave_accrual SET state = 'approved'", "INSERT INTO nemura.leave_ledger (person_id, type_key, leave_year, kind, amount, source, created_by) SELECT person_id, 'annual', 2026, 'grant', 1, 'x', created_by FROM nemura.leave_ledger LIMIT 1", "UPDATE nemura.leave_request SET state = 'cancelled'"} {
+		err := worker.InOrg(ctx, lt.c.org, func(ctx context.Context, tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, q)
+			return err
+		})
+		if err == nil {
+			t.Errorf("the worker ran %s", q)
+		}
 	}
 }

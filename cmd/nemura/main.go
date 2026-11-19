@@ -130,9 +130,17 @@ func workerRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) strin
 	}
 	// The pay-day path's failure alert (NM-NFR-05): the sweep raises a notice for each person to tell about a dead pay-day job, and the worker
 	// delivers it. The local build and a deployment with no channel yet log it; email and in-app delivery arrive with notifications.
-	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock, Raise: store.RaisePayDayAlerts}
+	raise := func(ctx context.Context, org uuid.UUID, now time.Time) (int, error) {
+		a, err := store.RaisePayDayAlerts(ctx, org, now)
+		if err != nil {
+			return a, err
+		}
+		b, err := store.RaiseLeaveAccrual(ctx, org, now) // the month-end leave accrual draft (NM-LV-09)
+		return a + b, err
+	}
+	disp := outbox.Dispatcher{Store: store, Queue: queue, Clock: deps.Clock, Raise: raise}
 	s.Handle("POST /tasks", &outbox.Handler{Class: outbox.ClassWorker, Store: store, Tokens: tokens, Clock: deps.Clock,
-		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: map[string]outbox.Work{alert.KindNotify: alert.Work(alert.LogNotifier{}, deps.Clock), "people.notice": logNotice}})
+		Holder: app.Holder("nemura-worker"), Lease: 10 * time.Minute, Kinds: map[string]outbox.Work{alert.KindNotify: alert.Work(alert.LogNotifier{}, deps.Clock), "people.notice": logNotice, nemura.KindLeaveAccrual: store.LeaveAccrualWork(deps.Clock)}})
 	s.Handle("POST /tick", outbox.Tick{Dispatcher: disp, Tokens: tokens, Class: outbox.ClassWorker})
 	return nil
 }

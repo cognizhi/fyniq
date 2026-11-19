@@ -12,6 +12,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/domain/audit"
 	"github.com/cognizhi/fyniq/internal/domain/pack"
+	"github.com/cognizhi/fyniq/internal/nemura/checks"
 	"github.com/cognizhi/fyniq/internal/nemura/leave"
 )
 
@@ -271,6 +272,25 @@ ORDER BY 7, 2, 1`, day(to))
 			return nil, err
 		}
 		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+// OvertimeMonths are the overtime hours recorded for each person and month that are not refused, for N.1 #16.
+func OvertimeMonths(ctx context.Context, tx pgx.Tx) ([]checks.OvertimeMonth, error) {
+	rows, err := tx.Query(ctx, `SELECT person_id::text, date_trunc('month', work_date)::date, (sum(hours) * 100)::int FROM nemura.overtime_entry
+WHERE kind = 'overtime' AND state <> 'refused' GROUP BY 1, 2 ORDER BY 2, 1`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []checks.OvertimeMonth
+	for rows.Next() {
+		var m checks.OvertimeMonth
+		if err := rows.Scan(&m.Person, &m.Month, &m.Hours); err != nil {
+			return nil, err
+		}
+		out = append(out, m)
 	}
 	return out, rows.Err()
 }

@@ -11,9 +11,9 @@ behind the specs or the screens.
 
 <!-- roadmap:summary -->
 
-That is all 1,400 requirements:
+That is all 1,401 requirements:
 - 117 belong to the P0 changes, which built them or hold them for the cloud gate;
-- the other 1,283 are spread over 66 changes below;
+- the other 1,284 are spread over 66 changes below;
 - all 202 designed screens after P0 sit with the change that owns most of their requirements.
 
 <!-- /roadmap -->
@@ -663,7 +663,7 @@ not a Fyniq wave.
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | `p1-nemura-platform` | Nemura's own image, database, web app and token issuer (ADR-N1), its non-functional rules, inherited controls, need to know, PDPA and records, roles, the permission matrix, and the experience | 30 | 3 | P0 | Local sign-in page; one Identity Platform tenant per organisation at the cloud gate | — | Security (#4) | After go-live (Nemura Q12) |
-| 2 | `p1-nemura-records-packs` | People records, the Singapore pack with verified values, feature switches and the people checks (N.1) | 37 | 5 | `p1-nemura-platform`, `p1-statutory-packs` | — | — | HR, accountant | After go-live (Nemura Q12) |
+| 2 | `p1-nemura-records-packs` | People records, the Singapore pack with verified values, feature switches and the people checks (N.1) | 38 | 5 | `p1-nemura-platform`, `p1-statutory-packs` | — | — | HR, accountant | After go-live (Nemura Q12) |
 | 3 | `p1-nemura-leave-time` | Leave types, entitlements, the leave ledger, applying and approving, calendars, medical certificates, government-paid leave, flexible-work requests; working patterns, Part IV overtime and hours worked; the month-end leave liability accrual (Nemura Q4) | 17 | 6 | `p1-nemura-records-packs` | — | The statutory leave minimum verified in the Singapore pack (Nemura Q3) | HR | After go-live (Nemura Q12) |
 | 3 | `p1-nemura-self-service-letters` | Self-service, letters, templates and KETs issued in two steps, what an issued letter proves, accounts for joiners and offboarding with final pay and IR21 | 14 | 7 | `p1-nemura-records-packs` | — | — | HR | After go-live (Nemura Q12) |
 | 4 | `p1-nemura-payroll` | Pay runs with the full CPF, SDL, SHG and FWL rules (PRD-001 §8.7 in Nemura, ADR-N2), overrides, year to date, approval, salary deduction limits, wage classes, payslips in Nemura, run and payment states and corrections; employee records; the oracle's half by the oracle session | 30 | 5 | `p1-nemura-leave-time`, `p1-nemura-self-service-letters` | — | Counsel on retention (Q39); two months of parallel comparison (Nemura Q13) | Accountant, payroll administrator (#5) | After go-live (Q4, Nemura Q12) |
@@ -814,7 +814,7 @@ as a posting rule or a use case; `openspec show <capability> --type spec` lists 
 | `cloud-first-deployment` | — |
 | `p1-go-live` | `data/migration`: 2 unnumbered |
 | `p1-nemura-platform` | `people/experience`: NM-ROLE-01, NM-ROLE-02, NM-ROLE-03, NM-ROLE-04, NM-ROLE-05, NM-UX-01, NM-UX-02, NM-UX-03, NM-UX-04, NM-UX-05, NM-UX-06, 1 unnumbered; `people/platform`: NM-ARC-01, NM-ARC-02, NM-ARC-03, NM-ARC-04, NM-ARC-05, NM-ARC-06, NM-NFR-01, NM-NFR-02, NM-NFR-03, NM-NFR-04, NM-NFR-05, 1 unnumbered; `people/security`: NM-SEC-01, NM-SEC-02, NM-SEC-03, NM-SEC-04, NM-SEC-05, NM-SEC-07<br>Screens: nm-access-request, nm-my-pay, nm-sign-in |
-| `p1-nemura-records-packs` | `people/checks`: N.1 #1, N.1 #2, N.1 #3, N.1 #4, N.1 #5, N.1 #6, N.1 #7, N.1 #8, N.1 #9, N.1 #10, N.1 #11, N.1 #12, N.1 #13, N.1 #14, N.1 #15; `people/features-and-packs`: NM-FEAT-01, NM-FEAT-02, NM-FEAT-03, NM-FEAT-04, NM-FEAT-05, NM-PACK-01, NM-PACK-02, NM-PACK-03, NM-PACK-04, NM-PACK-05, NM-PACK-06, NM-PACK-07, NM-PACK-08, 1 unnumbered; `people/records`: NM-PPL-01, NM-PPL-02, NM-PPL-03, NM-PPL-04, NM-PPL-05, NM-PPL-06, NM-PPL-07, NM-PPL-08<br>Screens: nm-country-pack, nm-features, nm-leave-policy, nm-people, nm-person |
+| `p1-nemura-records-packs` | `people/checks`: N.1 #1, N.1 #2, N.1 #3, N.1 #4, N.1 #5, N.1 #6, N.1 #7, N.1 #8, N.1 #9, N.1 #10, N.1 #11, N.1 #12, N.1 #13, N.1 #14, N.1 #15, N.1 #16; `people/features-and-packs`: NM-FEAT-01, NM-FEAT-02, NM-FEAT-03, NM-FEAT-04, NM-FEAT-05, NM-PACK-01, NM-PACK-02, NM-PACK-03, NM-PACK-04, NM-PACK-05, NM-PACK-06, NM-PACK-07, NM-PACK-08, 1 unnumbered; `people/records`: NM-PPL-01, NM-PPL-02, NM-PPL-03, NM-PPL-04, NM-PPL-05, NM-PPL-06, NM-PPL-07, NM-PPL-08<br>Screens: nm-country-pack, nm-features, nm-leave-policy, nm-people, nm-person |
 | `p1-nemura-leave-time` | `people/leave`: NM-LV-01, NM-LV-02, NM-LV-03, NM-LV-04, NM-LV-05, NM-LV-06, NM-LV-07, NM-LV-08, NM-LV-09, NM-LV-10, NM-LV-11, NM-LV-12, NM-LV-13, NM-LV-14; `people/time`: NM-TIM-01, NM-TIM-02, NM-TIM-04<br>Screens: nm-apply-leave, nm-govt-claims, nm-my-leave, nm-people-home, nm-report-sick, nm-team-leave |
 | `p1-nemura-self-service-letters` | `people/letters`: NM-LTR-01, NM-LTR-02, NM-LTR-03, NM-LTR-04, NM-LTR-06, NM-LTR-07; `people/onboarding`: NM-ONB-02, NM-ONB-03; `people/self-service`: NM-ESS-01, NM-ESS-02, NM-ESS-03, NM-ESS-04, NM-ESS-05, NM-ESS-06<br>Screens: nm-leaver-home, nm-letter-template, nm-letters, nm-my-home, nm-my-requests, nm-onboarding, nm-request-letter |
 | `p1-nemura-payroll` | `ledger/money-and-rounding`: RND-CPF, RND-CPF-GRAD, RND-SDL; `ledger/posting-rules`: 2 unnumbered; `payroll/employees`: FR-EMP-01, FR-EMP-02; `payroll/pay-runs`: FR-PAY-01, FR-PAY-02, FR-PAY-03, FR-PAY-04, FR-PAY-05, FR-PAY-06, FR-PAY-14, FR-PAY-16, FR-PAY-17, FR-PAY-18, FR-PAY-13, 1 unnumbered; `people/payroll`: NM-PAY-01, NM-PAY-02, NM-PAY-03, NM-PAY-04, NM-PAY-05, NM-PAY-06, NM-PAY-07, NM-PAY-08, NM-PAY-09, NM-PAY-10, NM-PAY-11<br>Screens: employees, nm-checks, nm-payroll-hr, nm-payrun-approval, nm-payslip |

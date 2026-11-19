@@ -1,0 +1,15 @@
+case,rule,date,want,why,source
+overtime rate,overtime_rate_hundredths,2026-11-20,150,"MOM: at least 1.5 times the hourly basic rate",mom-hours-overtime
+monthly limit,overtime_hours_per_month,2026-11-20,72,"MOM: up to 72 overtime hours in a month",mom-hours-overtime
+non-workman threshold,non_workman_basic_cap,2026-11-20,2600,"MOM: a non-workman earning $2,600 or less",mom-hours-overtime
+workman threshold,workman_basic_cap,2026-11-20,4500,"MOM: a workman earning $4,500 or less",mom-hours-overtime
+no such rule,nothing,2026-11-20,none,"Not a rule of the pack",mom-hours-overtime
+normal hours per week,normal_hours_per_week,2026-11-20,44,"MOM: the page's table of hours and rest-day pay",mom-hours-rest-day
+normal hours per day 5 days or less,normal_hours_per_day_5_days_or_less,2026-11-20,9,"MOM: the page's table of hours and rest-day pay",mom-hours-rest-day
+normal hours per day over 5 days,normal_hours_per_day_over_5_days,2026-11-20,8,"MOM: the page's table of hours and rest-day pay",mom-hours-rest-day
+rest day employer up to half,rest_day_employer_up_to_half_hundredths,2026-11-20,100,"MOM: the page's table of hours and rest-day pay",mom-hours-rest-day
+rest day employer more than half,rest_day_employer_more_than_half_hundredths,2026-11-20,200,"MOM: the page's table of hours and rest-day pay",mom-hours-rest-day
+rest day employer beyond normal,rest_day_employer_beyond_normal_hundredths,2026-11-20,200,"MOM: the page's table of hours and rest-day pay",mom-hours-rest-day
+rest day employee up to half,rest_day_employee_up_to_half_hundredths,2026-11-20,50,"MOM: the page's table of hours and rest-day pay",mom-hours-rest-day
+rest day employee more than half,rest_day_employee_more_than_half_hundredths,2026-11-20,100,"MOM: the page's table of hours and rest-day pay",mom-hours-rest-day
+rest day employee beyond normal,rest_day_employee_beyond_normal_hundredths,2026-11-20,100,"MOM: the page's table of hours and rest-day pay",mom-hours-rest-day

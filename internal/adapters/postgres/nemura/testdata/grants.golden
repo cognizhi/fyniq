@@ -532,6 +532,13 @@ nemura_worker | column nemura.deletion_report.review_by | INSERT
 nemura_worker | column nemura.deletion_report.reviewed_by | UPDATE
 nemura_worker | column nemura.deletion_report.reviewed_on | UPDATE
 nemura_worker | column nemura.deletion_report.state | UPDATE
+nemura_worker | column nemura.leave_accrual.annual_left | INSERT
+nemura_worker | column nemura.leave_accrual.carried_days | INSERT
+nemura_worker | column nemura.leave_accrual.drafted_at | INSERT
+nemura_worker | column nemura.leave_accrual.id | INSERT
+nemura_worker | column nemura.leave_accrual.month | INSERT
+nemura_worker | column nemura.leave_accrual.person_id | INSERT
+nemura_worker | column nemura.leave_accrual.system_drafted | INSERT
 nemura_worker | column nemura.outbox.attempts | UPDATE
 nemura_worker | column nemura.outbox.business_key | INSERT
 nemura_worker | column nemura.outbox.deadline_at | UPDATE
