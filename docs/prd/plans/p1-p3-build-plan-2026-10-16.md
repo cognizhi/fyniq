@@ -600,6 +600,23 @@ Several things wait beyond it:
 - the accountant's review of the pack and the checks, and a lawyer's of the templates (the review register, #734);
 - the annual return pack (FR-CS-07) in P2.
 
+`p1-launch-readiness` is built in part, from 17 Nov 2026. What was built (tasks 1 to 7.2):
+- the quality gates as requirements, and the launch subset frozen in the repository with the trace gate checking it
+  (`make trace-gate`, which `release.yml`'s first job runs; `docs/quality/launch-gaps.md` lists what still blocks);
+- the browser journeys (`make test-journeys`, `apps/web/journeys/`): set-up, record, sell, buy, pay, reconcile, close, the GST
+  monitor and calendar, and the two AI journeys on the scripted local model, plus a walkthrough per role of §7.1;
+- the visual snapshots (`make test-visual`, QA-UI-07, QA-RPT-04), nightly and in the release, and the motion and
+  device-class journeys of `p1-app-shell`;
+- the UAT scripts and the per-role API check of the Inbox's requests (`TestEachRoleSeesTheInboxItemsItsRightsGive`).
+
+What waits:
+- the first visual baselines, which are approved once from the final run (`scripts/visual.py approve`);
+- the per-role Inbox items in the browser walkthroughs beyond the requests a role may decide (each needs a second person's
+  records), and the Approver's department figures, which wait for the people projection;
+- payroll's and the GST F5's journeys, `after-go-live` by the owner's decisions;
+- the `[live-verify]` parts, which `cloud-first-deployment` lists;
+- task 7.3's last step, `make test`, `make test-e2e` and `make test-journeys` on the final head, which run once when every slice is integrated.
+
 <!-- roadmap:track P1 Fyniq -->
 
 | # | Change | Builds | Reqs | Screens | After | Local first | Outside dependency | Reviewer | Launch |
