@@ -102,6 +102,17 @@ form is read-only for a person it holds.
 **Decided: A.** Due days: a change is decided within 5 working days and a question answered within 3 (code constants; letters keep their type's days and flexible work the
 pack's months). The audit event of a direct change names the fields that changed and never their values (data minimisation, PDPA); a request's words stay in its row.
 
+### O5. How a leaver's narrow account is made
+
+| Option | Pros | Cons |
+|---|---|---|
+| **A. Derived from the record: after the last day the same login holds no role and keeps a short list of operations; it ends 12 months after the last day** | No new identity, no second sign-in, nothing to forget to switch off; the role cut is in the one place roles are read (`ActiveRoles`), so a leaver who was the HR administrator keeps nothing | A person whose last day is entered wrongly is narrowed at once (correct the date); the last Owner who leaves is locked out (the recovery runbook covers it) |
+| B. Deactivate the member and give a separate `leaver` identity | A clean break | A second identity, sign-in and session path to build and secure; two logins for one person |
+| C. Deactivate and mail documents | Nothing to maintain | Email links are only to deliver a document; a lost one has no way back |
+
+**Decided: A.** The retention months are the data inventory's 12 (MOM: employment records for 1 year after the person leaves). The API refuses every operation a leaver does not
+keep with `NM_LEAVER_ACCOUNT`; the list is the person's own documents, their own letters (read, link), asking a question and their own requests.
+
 ## Risks / Trade-offs
 
 - [A letter is edited after issue] -> the hash of the exact bytes is kept in a row nothing can change; a replacement is a new row.

@@ -79,7 +79,7 @@ func (s sessions) EndSession(ctx context.Context, token string, now time.Time) e
 
 func (s sessions) Authenticate(ctx context.Context, token string, now time.Time) (api.Session, error) {
 	got, err := s.Store.Authenticate(ctx, token, now)
-	return api.Session{ID: got.ID, Organisation: got.Organisation, Member: got.Member, StepUpAt: got.StepUpAt}, err
+	return api.Session{ID: got.ID, Organisation: got.Organisation, Member: got.Member, StepUpAt: got.StepUpAt, Leaver: got.Leaver, LeaverUntil: got.LeaverUntil, Person: got.Person}, err
 }
 
 func (s sessions) RolesAt(ctx context.Context, org, member uuid.UUID, on time.Time) ([]authz.Role, error) {

@@ -1,4 +1,5 @@
 import type { Session } from "../api/client";
+import { MyHomePanels } from "../components/MyHomePanels";
 import { PeopleTiles } from "../components/PeopleTiles";
 import { ReviewBanner } from "../components/ReviewBanner";
 import { Shell, admin, team } from "./Shell";
@@ -18,6 +19,7 @@ export function Home({ session, screen }: { session: Session; screen: "me" | "pe
         <h1 className="fy-h1" title={helpText(key).tooltip}>{t(key)}</h1>
         <p className="fy-secondary">{t("home.hello")}</p>
         {screen === "people" && <PeopleTiles />}
+        {screen === "me" && <MyHomePanels />}
         <section className="fy-stack fy-stack--2" aria-labelledby="roles-h">
           <h2 className="fy-h2" id="roles-h">{t("home.roles")}</h2>
           {roles.length === 0 ? (

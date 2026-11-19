@@ -7,6 +7,7 @@ import { Features } from "./pages/Features";
 import { Directory } from "./pages/Directory";
 import { Home } from "./pages/Home";
 import { Join } from "./pages/Join";
+import { LeaverHome } from "./pages/LeaverHome";
 import { RequestLetter } from "./pages/RequestLetter";
 import { Letters } from "./pages/Letters";
 import { MyDetails } from "./pages/MyDetails";
@@ -62,6 +63,7 @@ export function App() {
     if (state.status === "loading") return <p role="status" className="fy-secondary">{t("session.loading")}</p>;
     if (path === "/join") return <Join kind={joinKind()} />;
     if (path === "/sign-in") return <SignIn returnTo={landing === "/sign-in" ? "/" : landing} />;
+    if (state.status === "in" && state.session.leaver) return <LeaverHome session={state.session} />;
     if (!route) return <NotFound home={landing} />;
     if (state.status === "in" && route.id === "people-directory") return <Directory roles={state.session.roles ?? []} />;
     if (state.status === "in" && route.id === "person-new") return <NewPerson roles={state.session.roles ?? []} />;

@@ -447,7 +447,7 @@ func (a *API) registerLetters() {
 		OperationID: "listLetters", Method: "GET", Path: "/v1/letters", Tags: []string{"Letters"}, Summary: "Letter requests the caller may read",
 		Description: "The caller's own requests; the HR officer, the HR administrator and the Owner read everyone's, those still open first by due day. It changes nothing.", Errors: []int{401},
 	}, func(ctx context.Context, in *letterListInput) (*letterListOutput, error) {
-		s, err := a.signedIn(ctx, in.Cookie)
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}
@@ -558,7 +558,7 @@ func (a *API) registerLetters() {
 		OperationID: "getLetterFile", Method: "GET", Path: "/v1/letters/{id}/file", Tags: []string{"Letters"}, Summary: "An issued letter",
 		Description: "The issued PDF, after its bytes are checked against the hash kept as evidence: a changed byte is never served. The person the letter is about, the people team and the Owner. It changes nothing.", Errors: []int{401, 404, 409, 503},
 	}, func(ctx context.Context, in *letterIDInput) (*letterFileOutput, error) {
-		s, err := a.signedIn(ctx, in.Cookie)
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}
@@ -581,7 +581,7 @@ func (a *API) registerLetters() {
 		Description: "Makes a link that delivers the one letter for seven days: its token is shown once and only its hash is kept. The person the letter is about, the people team and the Owner. It is audited.", Errors: []int{401, 404, 409},
 		DefaultStatus: 201,
 	}, func(ctx context.Context, in *letterIDInput) (*letterLinkOutput, error) {
-		s, err := a.signedIn(ctx, in.Cookie)
+		s, err := a.signedInOrLeaver(ctx, in.Cookie)
 		if err != nil {
 			return nil, err
 		}

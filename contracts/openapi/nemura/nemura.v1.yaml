@@ -3931,6 +3931,17 @@ components:
           examples:
             - /people
           type: string
+        leaver:
+          description: "True after the person's last day: the account is for their own documents only."
+          examples:
+            - false
+          type: boolean
+        leaver_until:
+          description: The day the leaver's account ends, when it is one.
+          examples:
+            - "2027-12-01"
+          format: date
+          type: string
         member_id:
           description: The person who is signed in.
           examples:
@@ -3941,6 +3952,12 @@ components:
           description: The organisation the session is in.
           examples:
             - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
+          format: uuid
+          type: string
+        person_id:
+          description: The person record the login is linked to, when there is one.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
           format: uuid
           type: string
         roles:
@@ -3957,6 +3974,7 @@ components:
         - member_id
         - roles
         - landing
+        - leaver
       type: object
     SetClassificationInputBody:
       additionalProperties: false

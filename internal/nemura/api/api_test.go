@@ -43,10 +43,13 @@ const contractHeader = `# The contract of Nemura's public API (PRD-002 NM-ARC-03
 var versionLine = regexp.MustCompile(`(?m)^  version: .*$`)
 
 // fakeSessions knows one session token and the roles of its member.
+var testLeaver bool
+
 type fakeSessions struct {
 	token  string
 	roles  []authz.Role
 	stepUp bool
+	leaver bool
 }
 
 func (f fakeSessions) Authenticate(_ context.Context, token string, _ time.Time) (Session, error) {
@@ -57,6 +60,10 @@ func (f fakeSessions) Authenticate(_ context.Context, token string, _ time.Time)
 	if f.stepUp {
 		at := testNow
 		s.StepUpAt = &at
+	}
+	if f.leaver {
+		until := testNow.AddDate(0, 6, 0)
+		s.Leaver, s.LeaverUntil = true, &until
 	}
 	return s, nil
 }
@@ -416,7 +423,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp, leaver: testLeaver}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, Flex: fakeFlex{err: requestsErr}, Time: fakeTime{err: requestsErr}, Letters: fakeLetters{err: requestsErr}, SelfService: fakeSelf{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }
@@ -587,6 +594,7 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		err                error // what the passkey or client service answers
 		owner, stepUp      bool  // the person is the Owner, and confirmed with a passkey
 		featuresOff        bool  // Leave is switched off
+		leaver             bool  // the person has left
 	}
 	triggers := map[string]trigger{ // code -> a request that returns it
 		CodeNotFound:           {method: "GET", path: "/v1/errors/NM_NOPE"},
@@ -612,6 +620,7 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		CodeLeaveBalance:       {method: "POST", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026/carry-forward", signedIn: true, err: &leave.Refusal{Code: leave.CodeBalance, Message: "That is more than the balance."}},
 		CodeLeaveConflict:      {method: "PUT", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/working-pattern", body: patternBody, signedIn: true, err: &leave.Refusal{Code: leave.CodeConflict, Message: "Overlaps."}},
 		CodeFeatureOff:         {method: "GET", path: "/v1/people/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61/leave/2026", signedIn: true, featuresOff: true},
+		CodeLeaverAccount:      {method: "GET", path: "/v1/me/details", signedIn: true, leaver: true},
 		CodeRequestInvalid:     {method: "POST", path: "/v1/me/questions", body: `{"question":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeInvalid, Message: "Write your question."}},
 		CodeRequestConflict:    {method: "POST", path: "/v1/questions/0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0/reply", body: `{"reply":"x"}`, signedIn: true, err: &selfservice.Refusal{Code: selfservice.CodeConflict, Message: "That question is closed."}},
 		CodeLetterInvalid:      {method: "POST", path: "/v1/me/letters", body: `{"type":"employment_confirmation","purpose":"x"}`, signedIn: true, err: &letters.Refusal{Code: letters.CodeInvalid, Message: "Say what the letter is for."}},
@@ -628,9 +637,9 @@ func TestEveryCodeInTheCatalogueIsTriggered(t *testing.T) {
 		if tr.owner {
 			testRoles = []authz.Role{authz.Owner}
 		}
-		testStepUp, featuresOff = tr.stepUp, tr.featuresOff
+		testStepUp, featuresOff, testLeaver = tr.stepUp, tr.featuresOff, tr.leaver
 		_, mux := testAPI(t)
-		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, requestsErr, testRoles, testStepUp, featuresOff = nil, nil, nil, nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false, false
+		passkeyErr, clientsErr, peopleErr, featuresErr, packsErr, leaveErr, requestsErr, testRoles, testStepUp, featuresOff, testLeaver = nil, nil, nil, nil, nil, nil, nil, []authz.Role{authz.HRAdmin}, false, false, false
 		req := httptest.NewRequest(tr.method, tr.path, strings.NewReader(tr.body))
 		if tr.body != "" {
 			req.Header.Set("Content-Type", "application/json")

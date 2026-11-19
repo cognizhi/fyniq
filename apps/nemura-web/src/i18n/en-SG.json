@@ -594,6 +594,27 @@
     "nav.details": "My details",
     "nav.ask": "Ask a question",
     "nav.queue": "Requests",
+    "mytiles.title": "What do you want to do?",
+    "mytiles.apply": "Apply for leave",
+    "mytiles.letter": "Ask for a letter",
+    "mytiles.details": "Update my details",
+    "mytiles.ask": "Ask a question",
+    "mytiles.leave": "My leave",
+    "mytiles.requests": "My requests",
+    "glance.title": "At a glance",
+    "glance.left": "Annual leave left",
+    "glance.days": "{days} days",
+    "glance.holiday": "Next public holiday",
+    "glance.holidayOn": "{name}, {date}",
+    "glance.open": "Open requests",
+    "glance.count": "{n}",
+    "leaver.title": "My documents",
+    "leaver.lead": "You have left, so this account keeps your own documents and letters until {until}. Nothing else is open to you.",
+    "leaver.documents": "Documents on my file",
+    "leaver.noDocuments": "No documents are shared with you.",
+    "leaver.ask": "Ask for a copy of a lost document",
+    "leaver.askLead": "Tell the people team which document you need, such as a letter or your key employment terms. They reissue it as a new copy.",
+    "leaver.sent": "Sent. The people team answers by {due}.",
     "letters.failed": "We could not show the letters. Check your connection and try again.",
     "letters.line": "{name}: {type}, for {purpose}. Due {due}.",
     "letters.state.requested": "Waiting for HR",
@@ -760,6 +781,10 @@
     "queue.page": {
       "label": "Requests",
       "tooltip": "What waits for the people team: changes of details to approve with their evidence, and questions to answer. Nobody decides their own."
+    },
+    "leaver.page": {
+      "label": "My documents",
+      "tooltip": "After your last day this account keeps your own documents and letters until the record-keeping period ends. You can ask the people team for a copy of one you lost."
     },
     "tpl.page": {
       "label": "Letter templates",

@@ -15,6 +15,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/adapters/postgres/nemura"
 	"github.com/cognizhi/fyniq/internal/clock"
 	"github.com/cognizhi/fyniq/internal/nemura/api"
+	"github.com/cognizhi/fyniq/internal/nemura/people"
 	"github.com/cognizhi/fyniq/internal/nemura/selfservice"
 )
 
@@ -209,5 +210,65 @@ func TestAPersonChangesTheirOwnDetailsAndFollowsTheirRequests(t *testing.T) {
 	}
 	if q, _ := svc.Queue(ctx, ana); len(q) != 0 {
 		t.Errorf("the queue still holds %d", len(q))
+	}
+}
+
+// After a person's last day their account is a leaver's: it holds no role whatever it held, it is marked as a leaver's with the day it ends, and it ends with the record-keeping
+// period (NM-ESS-06, NM-SEC-04).
+// req: NM-ESS-06
+// asvs: V8.2.1, V8.3.1
+func TestALeaversAccountHoldsNoRoleAndEndsWithTheRecordKeepingPeriod(t *testing.T) {
+	ctx := context.Background()
+	lt := newLeaveTeam(t)
+	now := d("2026-11-20").Add(10 * time.Hour)
+	api := store(t, "nemura_api")
+	var p nemura.PersonRow
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		p, err = nemura.PersonOn(ctx, tx, lt.ben, now)
+		return err
+	})
+	last := d("2099-12-15")
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		return nemura.UpdatePerson(ctx, tx, lt.c.org, now, lt.c.owner, lt.ben, people.Person{LegalName: p.LegalName, EmploymentStart: p.Start, LeavingDate: &last, LeavingReason: "resigned"})
+	})
+	at := func(day string) (nemura.Session, []string, error) {
+		moment := d(day).Add(9 * time.Hour)
+		var token string
+		lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+			var err error
+			token, err = nemura.StartSession(ctx, tx, lt.c.org, moment, lt.c.hr)
+			return err
+		})
+		s, err := api.Authenticate(ctx, token, moment)
+		roles, _ := api.RolesAt(ctx, lt.c.org, lt.c.hr, moment)
+		out := make([]string, len(roles))
+		for i, r := range roles {
+			out[i] = string(r)
+		}
+		return s, out, err
+	}
+	if s, roles, err := at("2099-12-15"); err != nil || s.Leaver || len(roles) == 0 {
+		t.Errorf("on the last day: %+v %v %v", s, roles, err)
+	}
+	s, roles, err := at("2099-12-16")
+	if err != nil || !s.Leaver || len(roles) != 0 || s.LeaverUntil == nil || s.LeaverUntil.Format(time.DateOnly) != "2100-12-15" {
+		t.Errorf("the day after: %+v %v %v", s, roles, err)
+	}
+	if s, _, err := at("2100-12-14"); err != nil || !s.Leaver {
+		t.Errorf("the day before it ends: %+v %v", s, err)
+	}
+	if _, _, err := at("2100-12-15"); err == nil {
+		t.Error("the account still opens when the record-keeping period has ended")
+	}
+	// A person who stays holds their roles whatever happens to a leaver.
+	var token string
+	lt.c.must(func(ctx context.Context, tx pgx.Tx) error {
+		var err error
+		token, err = nemura.StartSession(ctx, tx, lt.c.org, d("2099-12-16").Add(9*time.Hour), lt.c.owner)
+		return err
+	})
+	if s, err := api.Authenticate(ctx, token, d("2099-12-16").Add(9*time.Hour)); err != nil || s.Leaver {
+		t.Errorf("the owner: %+v %v", s, err)
 	}
 }

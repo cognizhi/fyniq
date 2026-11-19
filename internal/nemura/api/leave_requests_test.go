@@ -390,6 +390,42 @@ func TestOwnDetailsAreEveryonesAndTheQueueIsThePeopleTeams(t *testing.T) {
 	}
 }
 
+// A leaver's account is narrow: it reads their own documents and letters and asks the people team a question, and every other operation answers NM_LEAVER_ACCOUNT, whatever
+// roles the leaver once held; the session says it is a leaver's and until when (NM-ESS-06).
+// req: NM-ESS-06
+// asvs: V8.2.1, V8.3.1
+func TestALeaversAccountKeepsOnlyTheirOwnDocumentsAndAQuestion(t *testing.T) {
+	do := func(method, path, body string) (int, string) {
+		testLeaver, testRoles = true, []authz.Role{authz.Owner}
+		defer func() { testLeaver, testRoles = false, []authz.Role{authz.HRAdmin} }()
+		_, mux := testAPI(t)
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", "nemura_session=good-token")
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec.Code, rec.Body.String()
+	}
+	id := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1ef0"
+	person := "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61"
+	for _, c := range []struct{ method, path, body string }{{"GET", "/v1/letters?mine=true", ""}, {"GET", "/v1/letters/" + id + "/file", ""}, {"POST", "/v1/letters/" + id + "/link", ""},
+		{"GET", "/v1/people/" + person + "/documents", ""}, {"POST", "/v1/me/questions", `{"question":"Please send me my letter again."}`}, {"GET", "/v1/me/requests", ""}} {
+		if code, _ := do(c.method, c.path, c.body); code >= 300 {
+			t.Errorf("a leaver could not %s %s: %d", c.method, c.path, code)
+		}
+	}
+	for _, c := range []struct{ method, path, body string }{{"GET", "/v1/me/details", ""}, {"GET", "/v1/me/leave/2026", ""}, {"GET", "/v1/people", ""}, {"GET", "/v1/people/" + person, ""},
+		{"POST", "/v1/me/letters", `{"type":"employment_confirmation","purpose":"x"}`}, {"GET", "/v1/requests/queue", ""}, {"PUT", "/v1/me/details", `{"phone":"+65 9123 4567"}`},
+		{"GET", "/v1/people/" + person + "/dependants", ""}, {"POST", "/v1/letters/" + id + "/check", ""}} {
+		if code, body := do(c.method, c.path, c.body); code != 403 || !strings.Contains(body, "NM_LEAVER_ACCOUNT") {
+			t.Errorf("a leaver %s %s: %d %s", c.method, c.path, code, body)
+		}
+	}
+	if code, body := do("GET", "/v1/session", ""); code != 200 || !strings.Contains(body, `"leaver":true`) || !strings.Contains(body, `"leaver_until"`) {
+		t.Errorf("the session: %d %s", code, body)
+	}
+}
+
 // Letters are asked for by the person, checked by the people team (never their own), signed only by the signatory after a fresh passkey confirmation, and read by the person
 // and the people team; the people team writes templates, the HR administrator and the Owner approve them and set the letterhead and the types; a delivery link needs no
 // sign-in (NM-LTR-01, NM-LTR-02, NM-LTR-03).

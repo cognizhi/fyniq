@@ -4579,6 +4579,17 @@ export interface components {
              */
             landing: string;
             /**
+             * @description True after the person's last day: the account is for their own documents only.
+             * @example false
+             */
+            leaver: boolean;
+            /**
+             * Format: date
+             * @description The day the leaver's account ends, when it is one.
+             * @example 2027-12-01
+             */
+            leaver_until?: string;
+            /**
              * Format: uuid
              * @description The person who is signed in.
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e45
@@ -4590,6 +4601,12 @@ export interface components {
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e44
              */
             organisation_id: string;
+            /**
+             * Format: uuid
+             * @description The person record the login is linked to, when there is one.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id?: string;
             /**
              * @description The roles the person holds today, from PRD-002 Appendix B.
              * @example [

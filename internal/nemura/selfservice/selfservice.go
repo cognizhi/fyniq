@@ -33,6 +33,13 @@ const (
 	QuestionDueDays = 3
 )
 
+// LeaverMonths is how long a leaver's narrow account lasts after their last day: the record-keeping period for employment records of a former employee (MOM: 1 year after they
+// leave; the data inventory's "Kept with the employment record"). It then ends (NM-ESS-06, NM-SEC-04).
+const LeaverMonths = 12
+
+// LeaverUntil is the day a leaver's account ends, given their last day.
+func LeaverUntil(last time.Time) time.Time { return last.AddDate(0, LeaverMonths, 0) }
+
 // Kinds of a change of details that need evidence and approval (NM-ESS-03).
 const (
 	LegalName = "legal_name"
