@@ -41,3 +41,9 @@ var MCPManifest []byte
 //
 //go:embed mcp-clients.json
 var MCPClients []byte
+
+// MCPRegistrationPolicy is what a client that registers itself may ask for, and the deny lists
+// (mcp-registration-policy.json; AI-90, p1-mcp-first-party design D14).
+//
+//go:embed mcp-registration-policy.json
+var MCPRegistrationPolicy []byte
