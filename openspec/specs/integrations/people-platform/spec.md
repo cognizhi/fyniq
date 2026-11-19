@@ -59,6 +59,11 @@ Source: PRD-001 §8.26 · Priority M · Phase P1
 - **WHEN** a person uses both apps
 - **THEN** their sessions and identity follow FR-PPL-18
 
+#### Scenario: Two credentials
+- **WHEN** Nemura calls Fyniq
+- **THEN** the call carries the link client's audience-bound token with the Appendix E scopes and the link key's signature on its envelope
+- **AND** no personal access token, ordinary integration client, agent-class client or MCP token can hold one of those scopes
+
 ### Requirement: FR-PPL-04 Pay runs from Nemura
 Fyniq SHALL post an approved Nemura pay run as FR-PAY-07's posting only after verifying its approval and segregation (FR-PPL-09, FR-PPL-10), attributed to its approver via Nemura, under the same period locks, checks and balance rules as any posting, and SHALL receive its salary payment lines as a batch approved and released in Fyniq.
 
@@ -192,6 +197,11 @@ Source: PRD-001 §8.26 · Priority M · Phase P1
 - **WHEN** an external system's run is imported
 - **THEN** it follows FR-PPL-05's draft path
 
+#### Scenario: Whose passkey verifies the approval
+- **WHEN** Fyniq verifies the approver's signed record
+- **THEN** it uses a public key Fyniq already holds for the person, matched by issuer and subject, from their own enrolment in Fyniq, and the challenge is the approval envelope's SHA-256
+- **AND** a key supplied by the submission or by a Nemura event is never used
+
 ### Requirement: FR-PPL-10 Segregation across both apps
 The preparer of a Nemura run SHALL NOT approve or release its salary batch in Fyniq under any account, the batch's approvers and releaser SHALL be checked against the run as one chain, and no emergency path SHALL change a salary account, lift a hold or pay the person using it.
 
@@ -309,6 +319,11 @@ Source: PRD-001 §8.26 · Priority M · Phase P1
 #### Scenario: Replay
 - **WHEN** a webhook's signature fails, or its timestamp is more than 5 minutes off
 - **THEN** it is refused
+
+#### Scenario: Canonical bytes
+- **WHEN** an envelope is signed or checked
+- **THEN** the payload's SHA-256 is taken over canonical JSON (sorted keys, no insignificant whitespace, decimal strings for money) and the signature is Ed25519 over the canonical header
+- **AND** both apps pass the same fixtures in `contracts/peoplelink/`
 
 ### Requirement: FR-PPL-16 Link lifecycle and source changes
 The link SHALL have states and an epoch every event carries, refusing earlier epochs; unlinking SHALL settle work in flight before revoking credentials; and a change of payroll source SHALL carry year-to-date state and cancel the old source's queued work.
