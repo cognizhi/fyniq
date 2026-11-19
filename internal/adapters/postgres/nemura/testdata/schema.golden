@@ -10,6 +10,9 @@ company_policy | nemura_migrator | true | true
 deletion_proof | nemura_migrator | true | true
 deletion_report | nemura_migrator | true | true
 feature_state | nemura_migrator | true | true
+gov_claim | nemura_migrator | true | true
+gov_claim_event | nemura_migrator | true | true
+gov_leave | nemura_migrator | true | true
 identity_directory | nemura_migrator | false | false
 installation | nemura_migrator | false | false
 invitation | nemura_migrator | true | true
@@ -138,6 +141,38 @@ feature_state | state | text | true |
 feature_state | external_system | text | false | 
 feature_state | changed_by | uuid | true | 
 feature_state | changed_at | timestamp with time zone | true | now()
+gov_claim | organisation_id | uuid | true | nemura.current_org()
+gov_claim | id | uuid | true | uuidv7()
+gov_claim | gov_leave_id | uuid | true | 
+gov_claim | amount | numeric(20,4) | true | 
+gov_claim | filed_on | date | true | 
+gov_claim | reference | text | false | 
+gov_claim | over_guide | boolean | true | 
+gov_claim | filed_by | uuid | true | 
+gov_claim | created_at | timestamp with time zone | true | 
+gov_claim_event | organisation_id | uuid | true | nemura.current_org()
+gov_claim_event | id | uuid | true | uuidv7()
+gov_claim_event | claim_id | uuid | true | 
+gov_claim_event | kind | text | true | 
+gov_claim_event | amount | numeric(20,4) | true | 0
+gov_claim_event | happened_on | date | true | 
+gov_claim_event | note | text | false | 
+gov_claim_event | recorded_by | uuid | true | 
+gov_claim_event | created_at | timestamp with time zone | true | 
+gov_leave | organisation_id | uuid | true | nemura.current_org()
+gov_leave | id | uuid | true | uuidv7()
+gov_leave | person_id | uuid | true | 
+gov_leave | scheme | text | true | 
+gov_leave | scheme_key | text | true | 
+gov_leave | pack_version | text | true | 
+gov_leave | dependant_id | uuid | true | 
+gov_leave | child_order | smallint | true | 
+gov_leave | start_date | date | true | 
+gov_leave | end_date | date | true | 
+gov_leave | days | integer | true | 
+gov_leave | claim_deadline | date | true | 
+gov_leave | recorded_by | uuid | true | 
+gov_leave | recorded_at | timestamp with time zone | true | 
 identity_directory | issuer | text | true | 
 identity_directory | subject | text | true | 
 identity_directory | tenant | text | true | 
@@ -574,6 +609,58 @@ feature_state | feature_state_pkey | PRIMARY KEY (organisation_id, id)
 feature_state | feature_state_state_known | CHECK ((state = ANY (ARRAY['on'::text, 'off'::text, 'external'::text])))
 feature_state | feature_state_state_not_null | NOT NULL state
 feature_state | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+gov_claim | gov_claim_amount | CHECK (((amount > (0)::numeric) AND (amount = round(amount, 2))))
+gov_claim | gov_claim_amount_not_null | NOT NULL amount
+gov_claim | gov_claim_by_fkey | FOREIGN KEY (organisation_id, filed_by) REFERENCES nemura.member(organisation_id, id)
+gov_claim | gov_claim_created_at_not_null | NOT NULL created_at
+gov_claim | gov_claim_filed_by_not_null | NOT NULL filed_by
+gov_claim | gov_claim_filed_on_not_null | NOT NULL filed_on
+gov_claim | gov_claim_gov_leave_id_not_null | NOT NULL gov_leave_id
+gov_claim | gov_claim_id_not_null | NOT NULL id
+gov_claim | gov_claim_leave_fkey | FOREIGN KEY (organisation_id, gov_leave_id) REFERENCES nemura.gov_leave(organisation_id, id)
+gov_claim | gov_claim_organisation_id_not_null | NOT NULL organisation_id
+gov_claim | gov_claim_over_guide_not_null | NOT NULL over_guide
+gov_claim | gov_claim_pkey | PRIMARY KEY (organisation_id, id)
+gov_claim | gov_claim_reference_length | CHECK (((reference IS NULL) OR ((length(btrim(reference)) >= 1) AND (length(btrim(reference)) <= 100))))
+gov_claim | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+gov_claim_event | gov_claim_event_amount | CHECK ((((kind = 'receipt'::text) AND (amount > (0)::numeric) AND (amount = round(amount, 2))) OR ((kind = 'rejection'::text) AND (amount = (0)::numeric))))
+gov_claim_event | gov_claim_event_amount_not_null | NOT NULL amount
+gov_claim_event | gov_claim_event_by_fkey | FOREIGN KEY (organisation_id, recorded_by) REFERENCES nemura.member(organisation_id, id)
+gov_claim_event | gov_claim_event_claim_fkey | FOREIGN KEY (organisation_id, claim_id) REFERENCES nemura.gov_claim(organisation_id, id)
+gov_claim_event | gov_claim_event_claim_id_not_null | NOT NULL claim_id
+gov_claim_event | gov_claim_event_created_at_not_null | NOT NULL created_at
+gov_claim_event | gov_claim_event_happened_on_not_null | NOT NULL happened_on
+gov_claim_event | gov_claim_event_id_not_null | NOT NULL id
+gov_claim_event | gov_claim_event_kind | CHECK ((kind = ANY (ARRAY['receipt'::text, 'rejection'::text])))
+gov_claim_event | gov_claim_event_kind_not_null | NOT NULL kind
+gov_claim_event | gov_claim_event_note_length | CHECK (((note IS NULL) OR (length(note) <= 500)))
+gov_claim_event | gov_claim_event_organisation_id_not_null | NOT NULL organisation_id
+gov_claim_event | gov_claim_event_pkey | PRIMARY KEY (organisation_id, id)
+gov_claim_event | gov_claim_event_recorded_by_not_null | NOT NULL recorded_by
+gov_claim_event | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
+gov_leave | gov_leave_by_fkey | FOREIGN KEY (organisation_id, recorded_by) REFERENCES nemura.member(organisation_id, id)
+gov_leave | gov_leave_child_order | CHECK (((child_order >= 1) AND (child_order <= 20)))
+gov_leave | gov_leave_child_order_not_null | NOT NULL child_order
+gov_leave | gov_leave_claim_deadline_not_null | NOT NULL claim_deadline
+gov_leave | gov_leave_dates | CHECK (((end_date >= start_date) AND (days = ((end_date - start_date) + 1))))
+gov_leave | gov_leave_days_not_null | NOT NULL days
+gov_leave | gov_leave_deadline | CHECK ((claim_deadline > end_date))
+gov_leave | gov_leave_dependant_fkey | FOREIGN KEY (organisation_id, dependant_id) REFERENCES nemura.person_dependant(organisation_id, id)
+gov_leave | gov_leave_dependant_id_not_null | NOT NULL dependant_id
+gov_leave | gov_leave_end_date_not_null | NOT NULL end_date
+gov_leave | gov_leave_id_not_null | NOT NULL id
+gov_leave | gov_leave_organisation_id_not_null | NOT NULL organisation_id
+gov_leave | gov_leave_pack_version_not_null | NOT NULL pack_version
+gov_leave | gov_leave_person_fkey | FOREIGN KEY (organisation_id, person_id) REFERENCES nemura.person(organisation_id, id)
+gov_leave | gov_leave_person_id_not_null | NOT NULL person_id
+gov_leave | gov_leave_pkey | PRIMARY KEY (organisation_id, id)
+gov_leave | gov_leave_recorded_at_not_null | NOT NULL recorded_at
+gov_leave | gov_leave_recorded_by_not_null | NOT NULL recorded_by
+gov_leave | gov_leave_scheme_key_not_null | NOT NULL scheme_key
+gov_leave | gov_leave_scheme_known | CHECK ((scheme = ANY (ARRAY['maternity'::text, 'paternity'::text, 'shared_parental'::text])))
+gov_leave | gov_leave_scheme_not_null | NOT NULL scheme
+gov_leave | gov_leave_start_date_not_null | NOT NULL start_date
+gov_leave | require_audit | TRIGGER DEFERRABLE INITIALLY DEFERRED
 identity_directory | identity_directory_active_not_null | NOT NULL active
 identity_directory | identity_directory_issuer_length | CHECK (((length(issuer) >= 1) AND (length(issuer) <= 500)))
 identity_directory | identity_directory_issuer_not_null | NOT NULL issuer
@@ -1028,6 +1115,12 @@ CREATE UNIQUE INDEX deletion_proof_pkey ON nemura.deletion_proof USING btree (or
 CREATE UNIQUE INDEX deletion_report_pkey ON nemura.deletion_report USING btree (organisation_id, id)
 CREATE UNIQUE INDEX feature_state_feature_key ON nemura.feature_state USING btree (organisation_id, feature)
 CREATE UNIQUE INDEX feature_state_pkey ON nemura.feature_state USING btree (organisation_id, id)
+CREATE INDEX gov_claim_event_claim_idx ON nemura.gov_claim_event USING btree (organisation_id, claim_id, happened_on)
+CREATE UNIQUE INDEX gov_claim_event_pkey ON nemura.gov_claim_event USING btree (organisation_id, id)
+CREATE INDEX gov_claim_leave_idx ON nemura.gov_claim USING btree (organisation_id, gov_leave_id)
+CREATE UNIQUE INDEX gov_claim_pkey ON nemura.gov_claim USING btree (organisation_id, id)
+CREATE INDEX gov_leave_person_idx ON nemura.gov_leave USING btree (organisation_id, person_id, start_date)
+CREATE UNIQUE INDEX gov_leave_pkey ON nemura.gov_leave USING btree (organisation_id, id)
 CREATE UNIQUE INDEX identity_directory_member_key ON nemura.identity_directory USING btree (organisation_id, member_id, issuer, tenant)
 CREATE UNIQUE INDEX identity_directory_pkey ON nemura.identity_directory USING btree (issuer, subject, tenant, organisation_id)
 CREATE UNIQUE INDEX installation_pkey ON nemura.installation USING btree (singleton)
@@ -1108,6 +1201,12 @@ CREATE TRIGGER deletion_proof_append_only BEFORE DELETE OR UPDATE ON nemura.dele
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.deletion_report DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('deletion_report', 'id')
 CREATE TRIGGER feature_state_guard BEFORE DELETE OR UPDATE ON nemura.feature_state FOR EACH ROW EXECUTE FUNCTION nemura.feature_state_guard()
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.feature_state DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('feature_state', 'id')
+CREATE TRIGGER gov_claim_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.gov_claim FOR EACH ROW EXECUTE FUNCTION nemura.gov_leave_guard('A claim')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.gov_claim DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('gov_claim', 'id')
+CREATE TRIGGER gov_claim_event_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.gov_claim_event FOR EACH ROW EXECUTE FUNCTION nemura.gov_leave_guard('A claim event')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.gov_claim_event DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('gov_claim_event', 'id')
+CREATE TRIGGER gov_leave_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.gov_leave FOR EACH ROW EXECUTE FUNCTION nemura.gov_leave_guard('A government-paid leave record')
+CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT ON nemura.gov_leave DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('gov_leave', 'id')
 CREATE CONSTRAINT TRIGGER require_audit AFTER INSERT OR UPDATE ON nemura.invitation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION nemura.require_audit('invitation', 'id')
 CREATE TRIGGER leave_ledger_guard BEFORE INSERT OR DELETE OR UPDATE ON nemura.leave_ledger FOR EACH ROW EXECUTE FUNCTION nemura.leave_ledger_guard()
 CREATE TRIGGER leave_ledger_no_truncate BEFORE TRUNCATE ON nemura.leave_ledger FOR EACH STATEMENT EXECUTE FUNCTION nemura.leave_ledger_guard()
@@ -1171,6 +1270,9 @@ company_policy | tenant_isolation | (organisation_id = nemura.current_org()) | (
 deletion_proof | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 deletion_report | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 feature_state | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+gov_claim | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+gov_claim_event | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
+gov_leave | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 invitation | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_head | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
 leave_ledger | tenant_isolation | (organisation_id = nemura.current_org()) | (organisation_id = nemura.current_org())
@@ -1403,6 +1505,25 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.gov_leave_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+BEGIN
+  IF TG_OP <> 'INSERT' THEN
+    RAISE EXCEPTION '% is evidence: a correction is a new record', TG_ARGV[0] USING ERRCODE = 'NM149';
+  END IF;
+  IF TG_TABLE_NAME = 'gov_leave' THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended(NEW.organisation_id::text || NEW.person_id::text, 0));
+    IF nemura.person_has_leave(NEW.organisation_id, NEW.person_id, NEW.start_date, NEW.end_date) THEN
+      RAISE EXCEPTION 'The person has leave, sick leave or government-paid leave on some of those days' USING ERRCODE = 'NM150';
+    END IF;
+  END IF;
+  RETURN NEW;
+END
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.has_role(wanted text)
  RETURNS boolean
  LANGUAGE sql
@@ -1494,11 +1615,8 @@ BEGIN
       RAISE EXCEPTION 'A leave request starts pending' USING ERRCODE = 'NM144';
     END IF;
     PERFORM pg_advisory_xact_lock(hashtextextended(NEW.organisation_id::text || NEW.person_id::text, 0));
-    IF EXISTS (SELECT 1 FROM nemura.leave_request r WHERE r.organisation_id = NEW.organisation_id AND r.person_id = NEW.person_id AND r.state IN ('pending', 'approved')
-                 AND daterange(r.start_date, r.end_date, '[]') && daterange(NEW.start_date, NEW.end_date, '[]'))
-       OR EXISTS (SELECT 1 FROM nemura.sick_notification s WHERE s.organisation_id = NEW.organisation_id AND s.person_id = NEW.person_id
-                 AND daterange(s.start_date, s.end_date, '[]') && daterange(NEW.start_date, NEW.end_date, '[]')) THEN
-      RAISE EXCEPTION 'The person has leave requested, approved or sick on some of those days' USING ERRCODE = 'NM145';
+    IF nemura.person_has_leave(NEW.organisation_id, NEW.person_id, NEW.start_date, NEW.end_date) THEN
+      RAISE EXCEPTION 'The person has leave requested, approved, sick or government-paid on some of those days' USING ERRCODE = 'NM145';
     END IF;
     RETURN NEW;
   END IF;
@@ -1741,6 +1859,20 @@ BEGIN
 END
 $function$
 
+CREATE OR REPLACE FUNCTION nemura.person_has_leave(p_org uuid, p_person uuid, p_from date, p_to date)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'pg_catalog', 'nemura', 'pg_temp'
+AS $function$
+  SELECT EXISTS (SELECT 1 FROM nemura.leave_request r WHERE r.organisation_id = p_org AND r.person_id = p_person AND r.state IN ('pending', 'approved')
+                   AND daterange(r.start_date, r.end_date, '[]') && daterange(p_from, p_to, '[]'))
+      OR EXISTS (SELECT 1 FROM nemura.sick_notification s WHERE s.organisation_id = p_org AND s.person_id = p_person
+                   AND daterange(s.start_date, s.end_date, '[]') && daterange(p_from, p_to, '[]'))
+      OR EXISTS (SELECT 1 FROM nemura.gov_leave g WHERE g.organisation_id = p_org AND g.person_id = p_person
+                   AND daterange(g.start_date, g.end_date, '[]') && daterange(p_from, p_to, '[]'))
+$function$
+
 CREATE OR REPLACE FUNCTION nemura.person_job_guard()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1937,10 +2069,7 @@ BEGIN
   END IF;
   IF TG_OP = 'INSERT' THEN
     PERFORM pg_advisory_xact_lock(hashtextextended(NEW.organisation_id::text || NEW.person_id::text, 0));
-    IF EXISTS (SELECT 1 FROM nemura.sick_notification s WHERE s.organisation_id = NEW.organisation_id AND s.person_id = NEW.person_id
-                 AND daterange(s.start_date, s.end_date, '[]') && daterange(NEW.start_date, NEW.end_date, '[]'))
-       OR EXISTS (SELECT 1 FROM nemura.leave_request r WHERE r.organisation_id = NEW.organisation_id AND r.person_id = NEW.person_id AND r.state IN ('pending', 'approved')
-                 AND daterange(r.start_date, r.end_date, '[]') && daterange(NEW.start_date, NEW.end_date, '[]')) THEN
+    IF nemura.person_has_leave(NEW.organisation_id, NEW.person_id, NEW.start_date, NEW.end_date) THEN
       RAISE EXCEPTION 'The person has sick leave or other leave on some of those days' USING ERRCODE = 'NM147';
     END IF;
     RETURN NEW;

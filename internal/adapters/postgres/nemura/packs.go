@@ -292,7 +292,17 @@ func (p *PacksService) Checks(ctx context.Context, s api.Session, on time.Time) 
 		out = append(out, checks.WorkPasses(passes, on)...)
 		if v, ok := p.inForce("sg-people", on); ok {
 			out = append(out, checks.Calendar(v, on)...)
+			waiting, negative, err := LeaveFacts(ctx, tx)
+			if err != nil {
+				return err
+			}
+			out = append(out, checks.LeaveWaiting(v, waiting, negative, on)...)
 		}
+		claims, err := GovClaimFacts(ctx, tx)
+		if err != nil {
+			return err
+		}
+		out = append(out, checks.GovClaims(claims, on)...)
 		rules, version, from, found, err := PolicyOn(ctx, tx, on)
 		if err != nil || !found {
 			return err

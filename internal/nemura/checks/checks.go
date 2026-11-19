@@ -85,3 +85,74 @@ func UnverifiedInUse(version string, used []pack.Ref, decided []Decision) []Find
 	}
 	return out
 }
+
+// GovClaim is a block of government-paid leave with whether any claim for it has been filed.
+type GovClaim struct {
+	Person   string
+	Scheme   string
+	Deadline time.Time
+	Filed    bool
+}
+
+// GovClaims is N.1 #10 (NM-LV-07): a reimbursement claim not filed 30 days before its deadline is ⏰, and once the deadline has passed the message says so.
+func GovClaims(claims []GovClaim, on time.Time) []Finding {
+	var out []Finding
+	for _, c := range claims {
+		if c.Filed {
+			continue
+		}
+		days := int(c.Deadline.Sub(on).Hours() / 24)
+		switch {
+		case days < 0:
+			out = append(out, Finding{10, "Leave", Due, c.Person, fmt.Sprintf("The reimbursement claim for %s leave had to be filed by %s and none is recorded: file it on the Government-Paid Leave portal if it is still open, or record why it was not.", c.Scheme, c.Deadline.Format(time.DateOnly))})
+		case days <= 30:
+			out = append(out, Finding{10, "Leave", Due, c.Person, fmt.Sprintf("The reimbursement claim for %s leave must be filed by %s, in %d days: file it on the Government-Paid Leave portal and record it here.", c.Scheme, c.Deadline.Format(time.DateOnly), days)})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
+	return out
+}
+
+// Waiting is a leave request that has not been decided.
+type Waiting struct {
+	Person    string
+	Requested time.Time
+}
+
+// workingDaysSince counts the working days after a day up to and including another, leaving out weekends and the public holidays of the pack.
+func workingDaysSince(v pack.Version, from, to time.Time) int {
+	n := 0
+	for d := from.AddDate(0, 0, 1); !d.After(to); d = d.AddDate(0, 0, 1) {
+		if d.Weekday() == time.Saturday || d.Weekday() == time.Sunday {
+			continue
+		}
+		if _, holiday := pack.PublicHoliday(v, d); holiday {
+			continue
+		}
+		n++
+	}
+	return n
+}
+
+// Negative is a balance below zero in a leave type that does not allow it.
+type Negative struct {
+	Person, Type string
+	Year         int
+	Left         string
+}
+
+// LeaveWaiting is N.1 #4 (NM-LV-02, NM-LV-04): a balance below zero for a type that does not allow it, or a leave request that has waited more than 3 working days
+// for its approver, is ⚠.
+func LeaveWaiting(v pack.Version, waiting []Waiting, negative []Negative, on time.Time) []Finding {
+	var out []Finding
+	for _, n := range negative {
+		out = append(out, Finding{4, "Leave", Warn, n.Person, fmt.Sprintf("The %s balance for %d is %s days, below zero, and that leave type does not allow it: correct the ledger with a correcting entry.", n.Type, n.Year, n.Left)})
+	}
+	for _, w := range waiting {
+		if days := workingDaysSince(v, w.Requested, on); days > 3 {
+			out = append(out, Finding{4, "Leave", Warn, w.Person, fmt.Sprintf("A leave request has waited %d working days for its approver: ask the person's manager to decide it, or decide it as the people team.", days)})
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Subject < out[j].Subject })
+	return out
+}

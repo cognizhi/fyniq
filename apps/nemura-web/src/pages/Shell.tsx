@@ -17,6 +17,7 @@ export function Shell({ children, directory, features, roles }: { children: Reac
             <a href="/me/leave">{t("nav.leave")}</a>
             <a href="/me/leave/new">{t("nav.apply")}</a>
             {approver(roles ?? []) && <a href="/people/leave">{t("nav.teamLeave")}</a>}
+            {directory && <a href="/people/leave/government-paid">{t("nav.gov")}</a>}
             {directory && <a href="/people/directory">{t("nav.directory")}</a>}
             {features && <a href="/settings/features">{t("nav.features")}</a>}
             {directory && <a href="/settings/packs">{t("nav.packs")}</a>}

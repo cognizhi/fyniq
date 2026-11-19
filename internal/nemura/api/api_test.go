@@ -258,6 +258,22 @@ func (f fakeSick) Certificate(context.Context, Session, uuid.UUID, bool, string,
 }
 func (f fakeSick) Verify(context.Context, Session, uuid.UUID) error { return f.err }
 
+// fakeGovernment answers government-paid leave with whatever the test says.
+type fakeGovernment struct{ err error }
+
+func (f fakeGovernment) Record(context.Context, Session, uuid.UUID, GovAsk) (string, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e94", f.err
+}
+func (f fakeGovernment) List(context.Context, Session) ([]GovBlock, error) {
+	return []GovBlock{}, f.err
+}
+func (f fakeGovernment) File(context.Context, Session, uuid.UUID, string, time.Time, string) (string, bool, error) {
+	return "0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e95", false, f.err
+}
+func (f fakeGovernment) Event(context.Context, Session, uuid.UUID, string, string, time.Time, string) error {
+	return f.err
+}
+
 // fakeClients registers whatever it is told and answers with clientsErr.
 type fakeClients struct{ err error }
 
@@ -281,7 +297,7 @@ var (
 func testAPI(t *testing.T) (*API, *http.ServeMux) {
 	t.Helper()
 	mux := http.NewServeMux()
-	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
+	d := Deps{Sessions: fakeSessions{token: "good-token", roles: testRoles, stepUp: testStepUp}, Passkeys: fakePasskeys{err: passkeyErr}, Clients: fakeClients{err: clientsErr}, SignIn: fakeSignIn{done: true}, Features: fakeFeatures{err: featuresErr, off: featuresOff}, Restricted: fakeRestricted{err: restrictedErr}, Packs: fakePacks{err: packsErr}, Leave: fakeLeave{err: leaveErr}, Requests: fakeRequests{err: requestsErr, scope: requestsScope}, Sick: fakeSick{err: requestsErr}, Government: fakeGovernment{err: requestsErr}, People: fakePeople{err: peopleErr, own: peopleOwn, report: peopleReport, classified: peopleClassified}, Clock: clock.NewFrozen(testNow),
 		CookieNames: []string{"__Host-nemura_session", "nemura_session"}}
 	return New(mux, d), mux
 }

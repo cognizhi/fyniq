@@ -361,6 +361,80 @@ components:
       required:
         - findings
       type: object
+    ClaimEventInputBody:
+      additionalProperties: false
+      properties:
+        amount:
+          description: SGD received, for a receipt; none for a rejection.
+          examples:
+            - "2500.00"
+          type: string
+        kind:
+          description: A receipt of some or all of the amount, or a rejection.
+          enum:
+            - receipt
+            - rejection
+          examples:
+            - receipt
+          type: string
+        note:
+          description: What the portal said.
+          examples:
+            - Paid in two parts.
+          maxLength: 500
+          type: string
+        "on":
+          description: The day it happened.
+          examples:
+            - "2026-08-10"
+          format: date
+          type: string
+      required:
+        - kind
+        - "on"
+      type: object
+    ClaimInputBody:
+      additionalProperties: false
+      properties:
+        amount:
+          description: SGD claimed, as a decimal string with at most two places.
+          examples:
+            - "6000.00"
+          type: string
+        filed_on:
+          description: The day it was filed on the portal.
+          examples:
+            - "2026-07-20"
+          format: date
+          type: string
+        reference:
+          description: The portal's reference.
+          examples:
+            - GPL-001
+          maxLength: 100
+          type: string
+      required:
+        - amount
+        - filed_on
+      type: object
+    ClaimOutputBody:
+      additionalProperties: false
+      properties:
+        id:
+          description: The new claim.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e95
+          format: uuid
+          type: string
+        over_guide:
+          description: The amount is above what the scheme's cap suggests.
+          examples:
+            - false
+          type: boolean
+      required:
+        - id
+        - over_guide
+      type: object
     Classification:
       additionalProperties: false
       properties:
@@ -1008,7 +1082,7 @@ components:
       additionalProperties: false
       properties:
         area:
-          description: People or Packs.
+          description: People, Packs or Leave.
           examples:
             - People
           type: string
@@ -1043,6 +1117,193 @@ components:
         - status
         - subject
         - message
+      type: object
+    GovAsk:
+      additionalProperties: false
+      properties:
+        child_order:
+          description: 1 for a first child, 2 for a second and so on; maternity leave's payer split depends on it.
+          examples:
+            - 1
+          format: int64
+          maximum: 20
+          minimum: 1
+          type: integer
+        dependant_id:
+          description: The child, as declared among the person's dependants.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71
+          format: uuid
+          type: string
+        from:
+          description: The first day of the block.
+          examples:
+            - "2026-06-10"
+          format: date
+          type: string
+        scheme:
+          description: "The scheme: maternity, paternity or shared parental leave."
+          enum:
+            - maternity
+            - paternity
+            - shared_parental
+          examples:
+            - paternity
+          type: string
+        to:
+          description: The last day of the block.
+          examples:
+            - "2026-07-07"
+          format: date
+          type: string
+      required:
+        - scheme
+        - dependant_id
+        - child_order
+        - from
+        - to
+      type: object
+    GovBlock:
+      additionalProperties: false
+      properties:
+        claim_deadline:
+          description: The last day to file the employer's claim.
+          examples:
+            - "2026-10-07"
+          format: date
+          type: string
+        claims:
+          description: The claims filed for it.
+          items:
+            $ref: "#/components/schemas/GovClaim"
+          type:
+            - array
+            - "null"
+        days:
+          description: "Calendar days: a continuous block counts every day."
+          examples:
+            - 28
+          format: int64
+          type: integer
+        from:
+          description: The first day.
+          examples:
+            - "2026-06-10"
+          format: date
+          type: string
+        guide_maximum:
+          description: The most the scheme's cap suggests the Government reimburses for these days; the portal decides.
+          examples:
+            - "10000.00"
+          type: string
+        id:
+          description: The block.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e94
+          format: uuid
+          type: string
+        person_id:
+          description: The person on leave.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+          format: uuid
+          type: string
+        person_name:
+          description: Their name.
+          examples:
+            - Ben Lim
+          type: string
+        scheme:
+          description: The scheme.
+          enum:
+            - maternity
+            - paternity
+            - shared_parental
+          examples:
+            - paternity
+          type: string
+        to:
+          description: The last day.
+          examples:
+            - "2026-07-07"
+          format: date
+          type: string
+      required:
+        - id
+        - person_id
+        - person_name
+        - scheme
+        - from
+        - to
+        - days
+        - claim_deadline
+        - claims
+      type: object
+    GovClaim:
+      additionalProperties: false
+      properties:
+        amount:
+          description: SGD claimed, to the cent.
+          examples:
+            - "6000.00"
+          type: string
+        filed_on:
+          description: The day it was filed on the portal.
+          examples:
+            - "2026-07-20"
+          format: date
+          type: string
+        id:
+          description: The claim.
+          examples:
+            - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e95
+          format: uuid
+          type: string
+        over_guide:
+          description: "The amount was above what the scheme's cap suggests: recorded and flagged, never refused."
+          examples:
+            - false
+          type: boolean
+        received:
+          description: SGD received so far.
+          examples:
+            - "2500.00"
+          type: string
+        reference:
+          description: The portal's reference.
+          examples:
+            - GPL-001
+          type: string
+        state:
+          description: "Where it is: filed and waiting, part paid, paid in full or rejected."
+          enum:
+            - filed
+            - part_paid
+            - paid
+            - rejected
+          examples:
+            - part_paid
+          type: string
+      required:
+        - id
+        - amount
+        - received
+        - filed_on
+        - state
+        - over_guide
+      type: object
+    GovListOutputBody:
+      additionalProperties: false
+      properties:
+        blocks:
+          description: Every block of government-paid leave, soonest claim deadline first.
+          items:
+            $ref: "#/components/schemas/GovBlock"
+          type:
+            - array
+            - "null"
+      required:
+        - blocks
       type: object
     InfoOutputBody:
       additionalProperties: false
@@ -3082,6 +3343,193 @@ paths:
       summary: Switch a feature
       tags:
         - Features
+  /v1/government-paid-claims/{id}/events:
+    post:
+      description: "Records what the portal answered: a receipt of some or all of the amount, or a rejection. A claim's state is worked out from its events. The HR officer and the HR administrator. It is audited."
+      operationId: recordGovernmentPaidClaimEvent
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The claim.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The claim.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e95
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimEventInputBody"
+        required: true
+      responses:
+        "201":
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Record a receipt or a rejection of a claim
+      tags:
+        - Leave
+  /v1/government-paid-leave:
+    get:
+      description: Lists each block with its claim deadline, the most the scheme's cap suggests the Government reimburses, and the claims filed with what has been received. The people team, the Owner and the Payroll administrator. It changes nothing.
+      operationId: listGovernmentPaidLeave
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GovListOutputBody"
+          description: OK
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Government-paid leave and its claims
+      tags:
+        - Leave
+  /v1/government-paid-leave/{id}/claims:
+    post:
+      description: "Records the employer's claim a person filed on the Government-Paid Leave portal: the amount in SGD, the day and the portal's reference. A claim above what the scheme's cap suggests is recorded and flagged, never refused; partial and repeated claims are allowed. Nemura moves no money. The HR officer and the HR administrator. It is audited."
+      operationId: fileGovernmentPaidClaim
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The block.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The block.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e94
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Record a claim filed on the portal
+      tags:
+        - Leave
   /v1/info:
     get:
       description: "Names the service and its build. It needs no sign-in and changes nothing: a client uses it to check that it is talking to Nemura's API and which version."
@@ -4701,6 +5149,81 @@ paths:
       summary: A document's content
       tags:
         - People
+  /v1/people/{id}/government-paid-leave:
+    post:
+      description: "Records maternity, paternity or shared parental leave for a child the person declared, under the country pack's rule for the child's birth date: a Singapore Citizen child, the months of service the scheme asks for, its window and weeks. A block never overlaps other leave. The claim deadline is worked out. The HR officer and the HR administrator. It is audited; the child's date of birth is not in the audit event."
+      operationId: recordGovernmentPaidLeave
+      parameters:
+        - description: The browser's cookies; the session cookie is read from them.
+          in: header
+          name: Cookie
+          schema:
+            description: The browser's cookies; the session cookie is read from them.
+            examples:
+              - nemura_session=…
+            type: string
+        - description: The person.
+          in: path
+          name: id
+          required: true
+          schema:
+            description: The person.
+            examples:
+              - 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+            format: uuid
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GovAsk"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedOutputBody"
+          description: Created
+        "401":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unauthorized
+        "403":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Forbidden
+        "404":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Not Found
+        "409":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Conflict
+        "422":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Unprocessable Entity
+        "500":
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+          description: Internal Server Error
+      summary: Record a block of government-paid leave
+      tags:
+        - Leave
   /v1/people/{id}/job:
     post:
       description: Ends the person's current job record the day the new one starts and starts it, so job title, department, worksite, employment type and line manager are history, never edited. A day on or before the current record's start is refused (NM_PERSON_HISTORY). The HR officer and the HR administrator. It is audited.

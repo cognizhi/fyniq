@@ -208,6 +208,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/government-paid-claims/{id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a receipt or a rejection of a claim
+         * @description Records what the portal answered: a receipt of some or all of the amount, or a rejection. A claim's state is worked out from its events. The HR officer and the HR administrator. It is audited.
+         */
+        post: operations["recordGovernmentPaidClaimEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/government-paid-leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Government-paid leave and its claims
+         * @description Lists each block with its claim deadline, the most the scheme's cap suggests the Government reimburses, and the claims filed with what has been received. The people team, the Owner and the Payroll administrator. It changes nothing.
+         */
+        get: operations["listGovernmentPaidLeave"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/government-paid-leave/{id}/claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a claim filed on the portal
+         * @description Records the employer's claim a person filed on the Government-Paid Leave portal: the amount in SGD, the day and the portal's reference. A claim above what the scheme's cap suggests is recorded and flagged, never refused; partial and repeated claims are allowed. Nemura moves no money. The HR officer and the HR administrator. It is audited.
+         */
+        post: operations["fileGovernmentPaidClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/info": {
         parameters: {
             query?: never;
@@ -678,6 +738,26 @@ export interface paths {
         get: operations["getPersonDocument"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/people/{id}/government-paid-leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a block of government-paid leave
+         * @description Records maternity, paternity or shared parental leave for a child the person declared, under the country pack's rule for the child's birth date: a Singapore Citizen child, the months of service the scheme asks for, its window and weeks. A block never overlaps other leave. The claim deadline is worked out. The HR officer and the HR administrator. It is audited; the child's date of birth is not in the audit event.
+         */
+        post: operations["recordGovernmentPaidLeave"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1254,6 +1334,61 @@ export interface components {
             /** @description What the people checks found, ✖ first. */
             findings: components["schemas"]["Finding"][] | null;
         };
+        ClaimEventInputBody: {
+            /**
+             * @description SGD received, for a receipt; none for a rejection.
+             * @example 2500.00
+             */
+            amount?: string;
+            /**
+             * @description A receipt of some or all of the amount, or a rejection.
+             * @example receipt
+             * @enum {string}
+             */
+            kind: "receipt" | "rejection";
+            /**
+             * @description What the portal said.
+             * @example Paid in two parts.
+             */
+            note?: string;
+            /**
+             * Format: date
+             * @description The day it happened.
+             * @example 2026-08-10
+             */
+            on: string;
+        };
+        ClaimInputBody: {
+            /**
+             * @description SGD claimed, as a decimal string with at most two places.
+             * @example 6000.00
+             */
+            amount: string;
+            /**
+             * Format: date
+             * @description The day it was filed on the portal.
+             * @example 2026-07-20
+             */
+            filed_on: string;
+            /**
+             * @description The portal's reference.
+             * @example GPL-001
+             */
+            reference?: string;
+        };
+        ClaimOutputBody: {
+            /**
+             * Format: uuid
+             * @description The new claim.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e95
+             */
+            id: string;
+            /**
+             * @description The amount is above what the scheme's cap suggests.
+             * @example false
+             */
+            over_guide: boolean;
+        };
         Classification: {
             /**
              * Format: date
@@ -1683,7 +1818,7 @@ export interface components {
         };
         Finding: {
             /**
-             * @description People or Packs.
+             * @description People, Packs or Leave.
              * @example People
              */
             area: string;
@@ -1709,6 +1844,138 @@ export interface components {
              * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
              */
             subject: string;
+        };
+        GovAsk: {
+            /**
+             * Format: int64
+             * @description 1 for a first child, 2 for a second and so on; maternity leave's payer split depends on it.
+             * @example 1
+             */
+            child_order: number;
+            /**
+             * Format: uuid
+             * @description The child, as declared among the person's dependants.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e71
+             */
+            dependant_id: string;
+            /**
+             * Format: date
+             * @description The first day of the block.
+             * @example 2026-06-10
+             */
+            from: string;
+            /**
+             * @description The scheme: maternity, paternity or shared parental leave.
+             * @example paternity
+             * @enum {string}
+             */
+            scheme: "maternity" | "paternity" | "shared_parental";
+            /**
+             * Format: date
+             * @description The last day of the block.
+             * @example 2026-07-07
+             */
+            to: string;
+        };
+        GovBlock: {
+            /**
+             * Format: date
+             * @description The last day to file the employer's claim.
+             * @example 2026-10-07
+             */
+            claim_deadline: string;
+            /** @description The claims filed for it. */
+            claims: components["schemas"]["GovClaim"][] | null;
+            /**
+             * Format: int64
+             * @description Calendar days: a continuous block counts every day.
+             * @example 28
+             */
+            days: number;
+            /**
+             * Format: date
+             * @description The first day.
+             * @example 2026-06-10
+             */
+            from: string;
+            /**
+             * @description The most the scheme's cap suggests the Government reimburses for these days; the portal decides.
+             * @example 10000.00
+             */
+            guide_maximum?: string;
+            /**
+             * Format: uuid
+             * @description The block.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e94
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description The person on leave.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e61
+             */
+            person_id: string;
+            /**
+             * @description Their name.
+             * @example Ben Lim
+             */
+            person_name: string;
+            /**
+             * @description The scheme.
+             * @example paternity
+             * @enum {string}
+             */
+            scheme: "maternity" | "paternity" | "shared_parental";
+            /**
+             * Format: date
+             * @description The last day.
+             * @example 2026-07-07
+             */
+            to: string;
+        };
+        GovClaim: {
+            /**
+             * @description SGD claimed, to the cent.
+             * @example 6000.00
+             */
+            amount: string;
+            /**
+             * Format: date
+             * @description The day it was filed on the portal.
+             * @example 2026-07-20
+             */
+            filed_on: string;
+            /**
+             * Format: uuid
+             * @description The claim.
+             * @example 0194f5a0-7c3e-7d11-8b3e-3f5c2a9d1e95
+             */
+            id: string;
+            /**
+             * @description The amount was above what the scheme's cap suggests: recorded and flagged, never refused.
+             * @example false
+             */
+            over_guide: boolean;
+            /**
+             * @description SGD received so far.
+             * @example 2500.00
+             */
+            received: string;
+            /**
+             * @description The portal's reference.
+             * @example GPL-001
+             */
+            reference?: string;
+            /**
+             * @description Where it is: filed and waiting, part paid, paid in full or rejected.
+             * @example part_paid
+             * @enum {string}
+             */
+            state: "filed" | "part_paid" | "paid" | "rejected";
+        };
+        GovListOutputBody: {
+            /** @description Every block of government-paid leave, soonest claim deadline first. */
+            blocks: components["schemas"]["GovBlock"][] | null;
         };
         InfoOutputBody: {
             /**
@@ -3365,6 +3632,222 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordGovernmentPaidClaimEvent: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The claim. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimEventInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listGovernmentPaidLeave: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovListOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    fileGovernmentPaidClaim: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The block. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5234,6 +5717,90 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordGovernmentPaidLeave: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The browser's cookies; the session cookie is read from them. */
+                Cookie?: string;
+            };
+            path: {
+                /** @description The person. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GovAsk"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedOutputBody"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

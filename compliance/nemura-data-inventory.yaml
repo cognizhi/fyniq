@@ -59,14 +59,14 @@ classes:
     transfers: "None"
     columns: [person_dependant.birth_date]
   - key: leave-records
-    what: "A person's working pattern, their leave ledger (each grant, use, reservation and correction by type and year, with its note) and their leave requests, with the person's note and the approver's reason"
+    what: "A person's working pattern, their leave ledger (each grant, use, reservation and correction by type and year, with its note) their leave requests, with the person's note and the approver's reason, and their government-paid leave with the claims filed for it and what the portal answered"
     why: "To keep an exact balance of leave, to show how it was worked out, and to meet the employer's record-keeping duties for leave (Employment Act)"
     where: "Nemura's database, in Singapore"
     who: "The person their own; the line manager their reports'; HR (Appendix B's leave records)"
     retention: "MOM: employment records, leave included, of a former employee are kept for 1 year after they leave"
     protection: "Row-level security; the ledger is append-only and every entry is audited; the notes are never in the audit event, and the approver's reason is its reason (never a diagnosis: leave requests carry no medical detail)"
     transfers: "None"
-    columns: [leave_ledger.note, leave_request.note, leave_request.decision_reason]
+    columns: [leave_ledger.note, leave_request.note, leave_request.decision_reason, gov_claim_event.note]
   - key: sick-leave
     what: "A person's notice that they were sick: the days, whether outpatient or hospitalisation, their note, and a pointer to the medical certificate (a restricted document) with who issued it and who verified it"
     why: "To record sick leave against the statutory ceiling, to check the certificate (Employment Act) and to pay what is due"
