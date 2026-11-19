@@ -95,6 +95,14 @@ var Categories = []Category{
 			"details_change.new_legal_name", "details_change.note", "details_change.decision_reason", "hr_question.question", "hr_question.reply"},
 	},
 	{
+		Key: "pay-records", What: "A person's pay: their pay group, basic monthly salary, self-help group fund, allowances and fixed deductions, the one-off items of a month (bonuses, commissions), a permanent resident's joint election, and the year to date of CPF wages",
+		Purpose:    "To work out each person's pay, CPF, SDL and self-help group fund exactly and to show where every figure came from (Employment Act; CPF Act)",
+		Capability: "Pay, pay history, pay runs",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: MOM requires employment records for 1 year after the person leaves"},
+		Columns: []string{"person_pay.basic_monthly", "person_pay.shg_fund", "person_pay.pay_group_id", "person_pay_item.pay_id", "person_pay_item.name", "person_pay_item.amount", "pay_one_off.name", "pay_one_off.amount", "pay_one_off.note",
+			"cpf_ytd.ow", "cpf_ytd.aw_subject", "cpf_ytd.aw_paid"},
+	},
+	{
 		Key: "key-employment-terms", What: "A person's key employment terms: main duties, notice period, medical benefits and a fixed-term contract's end, and the pay terms (salary period, basic salary, fixed allowances and deductions, overtime period, other pay)",
 		Purpose:    "To give the person the key employment terms in writing (Employment Act) and to fill the letter from the record, not from memory",
 		Capability: "Pay, pay history, pay runs",
@@ -126,6 +134,8 @@ var Categories = []Category{
 
 // NotPersonal are columns whose names look personal and are not, with why. A column here needs a reason a reviewer can read.
 var NotPersonal = map[string]string{
+	"pay_group.name":               "the name of a pay group, such as Monthly, not of a person",
+	"pay_group.pay_day":            "the day of the month a group is paid, not a person's pay",
 	"organisation.name":            "the name of a company, not of a person",
 	"letter_settings.company_name": "the name of the company on its letterhead, not of a person",
 	"letter_settings.address":      "the company's registered address on its letterhead, not a person's",

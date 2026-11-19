@@ -747,3 +747,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/nemura/onboarding.md, leaver-account.md -> nemura.onboarding, nemura.leaver-account (p1-nemura-self-service-letters 4.2)
 
 ## [2026-11-20] compile | ai.proposals: the guide's section on ap.draft_bill and exp.draft_claim
+
+## [2026-11-20] compile | docs/user-guide/nemura/payroll-records.md -> nemura.payroll-records (p1-nemura-payroll 2.1, 2.3)

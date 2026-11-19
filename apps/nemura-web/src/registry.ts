@@ -37,6 +37,7 @@ export const registry: Entry[] = [
   { kind: "route", id: "ask", path: "/me/ask/hr", signedIn: true, screen: "nm-ask", mode: "basic", help: "ask.page", guide: "nemura.ask-hr" },
   { kind: "route", id: "people-requests", path: "/people/requests", signedIn: true, screen: "nm-people-requests", mode: "basic", help: "queue.page", guide: "nemura.requests-queue" },
   { kind: "route", id: "onboarding", path: "/people/onboarding", signedIn: true, screen: "nm-onboarding", mode: "expert", help: "onb.page", guide: "nemura.onboarding" },
+  { kind: "route", id: "payroll-hr", path: "/people/payroll", signedIn: true, screen: "nm-payroll-hr", mode: "expert", help: "payroll.page", guide: "nemura.payroll-records" },
   { kind: "route", id: "request-letter", path: "/me/letters/new", signedIn: true, screen: "nm-request-letter", mode: "basic", help: "request.page", guide: "nemura.letters.request" },
   { kind: "route", id: "letters", path: "/people/letters", signedIn: true, screen: "nm-letters", mode: "expert", help: "letters.page", guide: "nemura.letters.issue" },
   { kind: "route", id: "letter-templates", path: "/settings/letters", signedIn: true, screen: "nm-letter-template", mode: "expert", help: "tpl.page", guide: "nemura.letters.templates" },
