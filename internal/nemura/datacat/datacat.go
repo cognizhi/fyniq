@@ -87,6 +87,13 @@ var Categories = []Category{
 		Columns:    []string{"flex_request.reason", "flex_request.outcome", "flex_request.written_reply"},
 	},
 	{
+		Key: "letters", What: "A person's request for a letter and what it is for, the facts filled into it from their record, the issued letter's data, the company's letterhead and the notes on a template",
+		Purpose:    "To issue letters the person asked for, exactly and attributably, and to keep the issued letter as evidence of what was said and who signed it",
+		Capability: "Letters and templates",
+		Retention:  Rule{MinMonths: 12, After: "leaving", Reason: "Kept with the employment record: an issued letter is evidence of what the company stated about the person"},
+		Columns:    []string{"letter_request.purpose", "letter_request.data", "letter_request.decision_reason", "letter_issued.data", "letter_template_version.note"},
+	},
+	{
 		Key: "access-requests", What: "A person's request for their own data, the decision for each category of record and the written outcome",
 		Purpose:    "To answer a request for access to personal data within 30 days and to show how it was answered (PDPA)",
 		Capability: "Own file beyond routine release (NM-SEC-07)",
@@ -104,6 +111,8 @@ var Categories = []Category{
 // NotPersonal are columns whose names look personal and are not, with why. A column here needs a reason a reviewer can read.
 var NotPersonal = map[string]string{
 	"organisation.name":            "the name of a company, not of a person",
+	"letter_settings.company_name": "the name of the company on its letterhead, not of a person",
+	"letter_settings.address":      "the company's registered address on its letterhead, not a person's",
 	"deletion_report.record_type":  "the name of a kind of record",
 	"deletion_proof.record_type":   "the name of a kind of record",
 	"legal_hold.record_type":       "the name of a kind of record",

@@ -9,16 +9,19 @@ Load before each slice: `fyniq-feature-change`, `fyniq-api-integrations`, `fyniq
 
 ## 1. Letter types, templates and issue in two steps (slice 1)
 
-- [ ] 1.1 PRD-002 revision for D2's departure from NM-LTR-02 (Nemura's own text templates in P1), with the revision-history row and the specs stamped.
-- [ ] 1.2 The catalogue of letter types and merge fields (pure, tested): each type's default fields, signer and due days; the field catalogue with formats; a field
+- [x] 1.1 PRD-002 revision 0.11 for D2's departure from NM-LTR-02 (Nemura's own text templates in P1), with the revision-history row and the specs stamped.
+- [x] 1.2 The catalogue of letter types and merge fields (pure, tested): each type's default fields, signer and due days; the field catalogue with formats; a field
   outside a type's list is refused. `// req: NM-LTR-01`
-- [ ] 1.3 Migration: `letter_type`, `letter_template` and `letter_template_version` (draft, published immutable, numbered, approval), `letter_request`,
+- [x] 1.3 Migration 000023: `letter_settings` (the letterhead), `letter_type`, `letter_template_version` (draft, published immutable, numbered, approval), `letter_request`,
   `letter_issued` (append-only evidence); forced RLS, audit, goldens. `// req: NM-LTR-01, NM-LTR-02`
-- [ ] 1.4 The renderer port and its local adapter (D3), with a contract test both adapters pass.
-- [ ] 1.5 Request, HR check, signatory's passkey signing over the hash, issue with the evidence (D4), the expiring link and the employee's copy (D5); the attack
+- [x] 1.4 The renderer port and its local adapter (D3), with a contract test both adapters pass.
+- [x] 1.5 Request, HR check, signatory's passkey signing over the hash, issue with the evidence (D4), the expiring link and the employee's copy (D5); the attack
   tests (a letter changed after issue, signing without a fresh passkey, a field outside the type, an unauthorised signatory). `// req: NM-LTR-03, NM-LTR-07`
-- [ ] 1.6 API, screens `nm-letters`, `nm-letter-template`, `nm-request-letter`, guide and kb pages; the data inventory and retention rows.
-- [ ] 1.7 Verify.
+- [x] 1.6 API, screens `nm-letters`, `nm-letter-template`, `nm-request-letter`, guide and kb pages; the data inventory and retention rows.
+- [x] 1.7 Verify: the local gates.
+  Left in slice 1: the production renderer (the platform's render service, `[live-verify]`: the release build has none, so a letter is not checked there); the email that carries the
+  link (notices are queued and logged until notifications deliver them; a person makes a link on demand); replacement and withdrawal of an issued letter as a new row; the
+  contract test that both renderers pass; narrowing who may request a type; the retention lock on the letter blobs.
 
 ## 2. KETs (slice 2)
 
