@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billable": {
+      "description": "Whether time on it is billable by default.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "id": {
+      "description": "The task's ID.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e51"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "name": {
+      "description": "Its name.",
+      "examples": [
+        "Data migration"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "billable"
+  ],
+  "title": "TimesheetTask",
+  "type": "object"
+}

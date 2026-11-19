@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "comment": {
+      "description": "What to fix: required when returning a week, optional when approving.",
+      "examples": [
+        "Add what was done on Wednesday."
+      ],
+      "maxLength": 1000,
+      "type": "string"
+    }
+  },
+  "title": "TimesheetDecision",
+  "type": "object"
+}

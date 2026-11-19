@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "costs_visible": {
+      "description": "false when the caller may see hours only.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "currency": {
+      "description": "The base currency.",
+      "examples": [
+        "SGD"
+      ],
+      "type": "string"
+    },
+    "from": {
+      "description": "The first month's first day.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "people": {
+      "description": "Each person's utilisation.",
+      "items": {
+        "$ref": "ProjectReportPerson.schema.json"
+      },
+      "type": "array"
+    },
+    "projects": {
+      "description": "Each project the caller may see.",
+      "items": {
+        "$ref": "ProjectReportRow.schema.json"
+      },
+      "type": "array"
+    },
+    "to": {
+      "description": "The last month's first day.",
+      "examples": [
+        "2026-11-01"
+      ],
+      "format": "date",
+      "type": "string"
+    },
+    "untagged": {
+      "$ref": "ProjectReportRow.schema.json",
+      "description": "Revenue and costs of lines tagged with no project: every project plus these equal the revenue and expense accounts' totals (QA-RPT-01). Only for those who see every project, as it is company-wide."
+    }
+  },
+  "required": [
+    "from",
+    "to",
+    "currency",
+    "projects",
+    "people",
+    "costs_visible"
+  ],
+  "title": "ProjectReport",
+  "type": "object"
+}
