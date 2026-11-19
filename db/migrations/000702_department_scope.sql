@@ -8,8 +8,10 @@
 -- Approver role and no role besides Employee: every other role has its own unqualified or differently qualified cells, which
 -- the API's policy table decides. A restricted person reaches the journal lines and balances whose dimension set holds one of
 -- their scope's values, and, with no scope row, none. The restriction binds the API's role only, for requests that name
--- their person (app.user_id, set by the unit of work from the request): the worker and the executor, which act on their own
--- fenced grants (golden rule 5), and migrations and the read-only role stay unfiltered.
+-- their person (app.user_id) and are reading (app.dept_reads, set only for an operation that needs the View right, and for the AI,
+-- which never writes): a write, an approval or a posting runs the engine on the whole books, since a posting trigger or an
+-- approval's envelope that read a filtered cache would corrupt it. The worker and the executor, which act on their own fenced
+-- grants (golden rule 5), and migrations and the read-only role stay unfiltered.
 
 -- +goose Up
 -- Fail fast instead of queueing behind live traffic (squawk: require-lock-timeout).
@@ -72,7 +74,7 @@ GRANT SELECT ON fyniq.role_assignment_scope TO fyniq_api, fyniq_worker, fyniq_re
 GRANT INSERT (assignment_id, dimension_value_id) ON fyniq.role_assignment_scope TO fyniq_api;
 
 -- The department values a person is restricted to, or NULL when no department restriction applies to them: the request names
--- no person, or they hold a role besides Approver and Employee, or none of them is Approver. Restricted with no scope row is
+-- no person or is no read, or they hold a role besides Approver and Employee, or none of them is Approver. Restricted with no scope row is
 -- the empty array: no scope reaches none (the owner's decision of 12 Nov 2026).
 -- +goose StatementBegin
 CREATE FUNCTION fyniq.dept_scope() RETURNS uuid[]
@@ -84,7 +86,7 @@ DECLARE
   roles text[];
   vals  uuid[];
 BEGIN
-  IF who IS NULL THEN
+  IF who IS NULL OR current_setting('app.dept_reads', true) IS DISTINCT FROM 'on' THEN
     RETURN NULL;
   END IF;
   SELECT coalesce(array_agg(DISTINCT ra.role), '{}') INTO roles

@@ -194,13 +194,18 @@ func (q *Queries) NewOrganisationID(ctx context.Context) (uuid.UUID, error) {
 }
 
 const setPerson = `-- name: SetPerson :exec
-SELECT set_config('app.user_id', $1::text, true)
+SELECT set_config('app.user_id', $1::text, true), set_config('app.dept_reads', $2::text, true)
 `
+
+type SetPersonParams struct {
+	UserID    string
+	DeptReads string
+}
 
 // The person a request acts for (FR-ADM-01, department scopes): transaction-scoped like the tenant. The database reads their
 // department restriction from their live role assignments; no person named, no restriction (jobs, tests, bootstrap).
-func (q *Queries) SetPerson(ctx context.Context, userID string) error {
-	_, err := q.db.Exec(ctx, setPerson, userID)
+func (q *Queries) SetPerson(ctx context.Context, arg SetPersonParams) error {
+	_, err := q.db.Exec(ctx, setPerson, arg.UserID, arg.DeptReads)
 	return err
 }
 

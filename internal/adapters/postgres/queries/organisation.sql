@@ -37,4 +37,4 @@ RETURNING organisation_id, name, base_currency, base_minor_units, version, legal
 -- name: SetPerson :exec
 -- The person a request acts for (FR-ADM-01, department scopes): transaction-scoped like the tenant. The database reads their
 -- department restriction from their live role assignments; no person named, no restriction (jobs, tests, bootstrap).
-SELECT set_config('app.user_id', sqlc.arg(user_id)::text, true);
+SELECT set_config('app.user_id', sqlc.arg(user_id)::text, true), set_config('app.dept_reads', sqlc.arg(dept_reads)::text, true);
