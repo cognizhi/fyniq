@@ -30,7 +30,14 @@ function Step({ n, title, done, optional, children }: { n: number; title: string
           Step {n}: {title}
           {optional && <span className="fy-small fy-secondary">Recommended</span>}
         </h2>
-        <span className={done ? "fy-chip fy-chip--good" : "fy-chip fy-chip--neutral"}>{done ? "Done" : "To do"}</span>
+        {done ? (
+          <span className="fy-chip fy-chip--good">
+            <Icon of={CircleCheck} />
+            Done
+          </span>
+        ) : (
+          <span className="fy-chip fy-chip--neutral">To do</span>
+        )}
       </div>
       <div className="fy-card__body fy-stack fy-stack--2">{children}</div>
     </li>
