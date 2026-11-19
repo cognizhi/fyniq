@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "billable": {
+      "description": "Left out, as the task is.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "note": {
+      "description": "What is being done.",
+      "examples": [
+        "Data migration"
+      ],
+      "maxLength": 500,
+      "type": "string"
+    },
+    "project_id": {
+      "description": "A project the person is on.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e31"
+      ],
+      "format": "uuid",
+      "type": "string"
+    },
+    "task_id": {
+      "description": "One of its tasks in use.",
+      "examples": [
+        "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e51"
+      ],
+      "format": "uuid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "task_id"
+  ],
+  "title": "TimerStart",
+  "type": "object"
+}

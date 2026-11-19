@@ -11,18 +11,18 @@ import (
 // rounding and audit-event libraries, and never Fyniq's ledger, API, storage port or domain packages. Neither app writes
 // the other's tables or calls its private code. These rules keep that true at the import.
 
-// NemuraPackages are the module's packages that are Nemura's: its entry point and everything under internal/nemura, and
-// its adapters, which are sub-packages of the same name under internal/adapters.
-var NemuraPackages = []string{"cmd/nemura", "internal/nemura", "internal/adapters/postgres/nemura"}
+// NemuraPackages are the module's packages that are Nemura's: its entry point, its migrations, everything under
+// internal/nemura and its PostgreSQL adapter (a sub-package of Fyniq's adapter by name, which imports nothing of it).
+var NemuraPackages = []string{"cmd/nemura", "db/nemura", "internal/nemura", "internal/adapters/postgres/nemura"}
 
 // NemuraShared is what Nemura's packages may import from the rest of the module: the infrastructure every service
-// uses and the pure libraries that carry the shared rules. An entry names one package, not its sub-packages (the storage
-// port and the migration runner are sub-packages and are not shared by accident). The list is the one a separate Nemura
+// uses and the pure libraries that carry the shared rules, and the goose runner both migration streams use. An entry names
+// one package, not its sub-packages (Fyniq's storage port is a sub-package of ports and is not shared by accident). The list is the one a separate Nemura
 // repository would take as its shared module (ADR-N1). Widening it is a reviewed change to this file.
 var NemuraShared = []string{
 	"internal/app", "internal/httpserver", "internal/runtime", "internal/clock", "internal/telemetry", "internal/logging",
 	"internal/egress", "internal/version", "internal/ports", "internal/domain/money", "internal/domain/rounding",
-	"internal/domain/audit",
+	"internal/domain/audit", "internal/adapters/postgres/gooserun",
 }
 
 func inNemura(importPath string) bool {

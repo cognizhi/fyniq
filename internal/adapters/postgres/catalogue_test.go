@@ -210,6 +210,8 @@ SELECT con.conname, src.relname, dst.relname,
 // data, through its own functions (FR-UX-14, §11.9).
 var deletable = map[string]string{
 	"fyniq_api item_price":           "an item's price list, replaced with the item's audited version",
+	"fyniq_api time_entry":           "a draft or returned entry a person removes from their own week before submitting it, which the week's audit event keeps; never a submitted or approved one (FY603)",
+	"fyniq_api time_timer":           "a running timer, ended into a draft entry or dropped: transient state, its start and stop audited",
 	"fyniq_worker authz_refusal":     "refusals kept for their security-log retention, then swept",
 	"fyniq_worker check_run":         "the checks' superseded runs; each check keeps its latest state",
 	"fyniq_worker idempotency_key":   "idempotency records past their window",

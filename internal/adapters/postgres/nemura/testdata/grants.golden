@@ -1,0 +1,21 @@
+nemura_api | column nemura.organisation.name | INSERT
+nemura_api | database | CONNECT
+nemura_api | function nemura.current_org | EXECUTE
+nemura_api | schema nemura | USAGE
+nemura_api | table nemura.organisation | SELECT
+nemura_assistant | database | CONNECT
+nemura_assistant | function nemura.current_org | EXECUTE
+nemura_assistant | schema nemura | USAGE
+nemura_executor | database | CONNECT
+nemura_executor | function nemura.current_org | EXECUTE
+nemura_executor | schema nemura | USAGE
+nemura_executor | table nemura.organisation | SELECT
+nemura_readonly | database | CONNECT
+nemura_readonly | function nemura.current_org | EXECUTE
+nemura_readonly | schema nemura | USAGE
+nemura_readonly | table nemura.organisation | SELECT
+nemura_worker | database | CONNECT
+nemura_worker | function nemura.current_org | EXECUTE
+nemura_worker | schema nemura | USAGE
+nemura_worker | table nemura.organisation | SELECT
+nemura_worker | table nemura.tenants | SELECT
