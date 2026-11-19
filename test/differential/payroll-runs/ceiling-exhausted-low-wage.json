@@ -1,0 +1,38 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "ceiling-exhausted-low-wage",
+ "why": "Additional wages above the annual ceiling do not move a low-wage month's graduated contribution (FR-PAY-02, FR-PAY-14)",
+ "month": "2026-08-01",
+ "people": [
+  {
+   "id": "A",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "245.43",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    },
+    {
+     "key": "c",
+     "name": "Commission",
+     "amount": "191.72",
+     "cpf_wages": true,
+     "for_month": "2026-08-01",
+     "payable_on": "2026-09-28",
+     "suggested": "additional"
+    }
+   ],
+   "ytd": {
+    "ow": "96000",
+    "aw_subject": "5661.54",
+    "aw_paid": "5661.54"
+   }
+  }
+ ]
+}

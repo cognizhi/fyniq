@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fyniq.example/schemas/payroll-run@1.json",
+  "title": "fyniq-payroll-run@1",
+  "description": "A pay run of one wage month: each person's facts for the month (every run and correction of it together, PRD-001 Appendix B.3) and, for a later run or correction, the facts as last posted. Both the Go engine (internal/nemura/payroll) and the independent oracle work out each person's employee-month, the run's totals (FR-PAY-18) and the entry that posts them, from the same facts and pack versions (QA-ENG-02). Money is a decimal string.",
+  "type": "object",
+  "required": ["schema", "name", "month", "people"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"const": "fyniq-payroll-run@1"},
+    "name": {"type": "string", "minLength": 1},
+    "why": {"type": "string"},
+    "month": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-01$"},
+    "pay_day": {"type": "string", "format": "date", "description": "The pay day of the month, for an item that names no payable_on; the last day of the month when absent"},
+    "packs": {"type": "object", "description": "Pack versions read: cpf, sdl and shg; the defaults are sg-cpf@2026.2, sg-sdl@2026.1 and sg-shg@2026.1"},
+    "people": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "person", "items"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "person": {
+            "type": "object",
+            "required": ["residency", "birth_date"],
+            "additionalProperties": false,
+            "properties": {
+              "employee": {"type": "boolean", "default": true},
+              "residency": {"enum": ["citizen", "permanent_resident", "foreigner"]},
+              "pr_start": {"type": "string", "format": "date"},
+              "birth_date": {"type": "string", "format": "date"},
+              "joint_election": {"type": "boolean"},
+              "shg_fund": {"enum": ["", "CDAC", "ECF", "MBMF", "SINDA"]},
+              "shg_opt_out": {"type": "boolean"}
+            }
+          },
+          "items": {"$ref": "#/$defs/items"},
+          "ytd": {"$ref": "#/$defs/ytd"},
+          "last_month": {"type": "boolean"},
+          "reimbursements": {"$ref": "#/$defs/reimbursements"},
+          "deductions": {"$ref": "#/$defs/deductions"},
+          "final": {"type": "boolean"},
+          "held": {"$ref": "#/$defs/money"},
+          "posted": {
+            "type": "object",
+            "description": "The same person's facts as last posted; the difference from them is what the later run posts",
+            "required": ["items"],
+            "additionalProperties": false,
+            "properties": {
+              "items": {"$ref": "#/$defs/items"},
+              "ytd": {"$ref": "#/$defs/ytd"},
+              "last_month": {"type": "boolean"},
+              "reimbursements": {"$ref": "#/$defs/reimbursements"},
+              "deductions": {"$ref": "#/$defs/deductions"},
+              "final": {"type": "boolean"},
+              "held": {"$ref": "#/$defs/money"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "money": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,2})?$"},
+    "reimbursements": {"type": "array", "items": {"$ref": "#/$defs/money"}},
+    "ytd": {
+      "type": "object",
+      "required": ["ow", "aw_subject", "aw_paid"],
+      "additionalProperties": false,
+      "properties": {"ow": {"type": "string"}, "aw_subject": {"type": "string"}, "aw_paid": {"type": "string"}}
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "name", "amount", "cpf_wages"],
+        "additionalProperties": false,
+        "properties": {
+          "key": {"type": "string"},
+          "name": {"type": "string"},
+          "amount": {"type": "string", "pattern": "^-?[0-9]+(\\.[0-9]{1,2})?$"},
+          "cpf_wages": {"type": "boolean"},
+          "for_month": {"type": "string", "format": "date"},
+          "payable_on": {"type": "string", "format": "date"},
+          "suggested": {"enum": ["", "ordinary", "additional"]}
+        }
+      }
+    },
+    "deductions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "kind", "amount"],
+        "additionalProperties": false,
+        "properties": {
+          "key": {"type": "string"},
+          "kind": {"enum": ["absence", "damage_or_loss", "accommodation", "recovery", "cpf", "income_tax", "court_order", "cooperative", "other"]},
+          "amount": {"$ref": "#/$defs/money"},
+          "consent": {"type": "boolean"},
+          "instalment": {"type": "integer", "minimum": 0},
+          "is_advance": {"type": "boolean"}
+        }
+      }
+    }
+  }
+}

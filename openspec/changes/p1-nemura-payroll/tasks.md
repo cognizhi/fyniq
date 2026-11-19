@@ -22,11 +22,16 @@ Load before each slice: `fyniq-accounting-domain` (money, rounding, postings), `
   reimbursements and held monies; the amount to disburse and the totals of B.3's postings balancing (gross + employer CPF + SDL + reimbursements = advances + other deductions + 2100 + 2110).
   `// req: FR-PAY-16, FR-PAY-18`
 - [x] 1.5 The scenario schema and the golden employee-months (`test/differential/`) the oracle reads; a property test that nothing rounds outside a named policy and that the totals balance
-  for generated months. `[oracle]` for the agreement run. `// req: QA-ENG-02`
+  for generated months. The agreement run: the oracle's half (`oracle/src/oracle/employee_month.py`, written from the rules) and the differential gate (`internal/nemura/payroll/differential`,
+  `make differential` with `payroll-month`). `// req: QA-ENG-02`
+  Built (oracle session, 20 Nov 2026): the employee-month and run in exact decimals; `fyniq-payroll-run@1`; 9 golden runs; the gate and the Hypothesis search agree to the cent on every figure of the month,
+  the run's totals and B.3's entry. It found three engine defects (the wage band on wages paid, advances not kept apart for 1250, no refund in the graduated range), fixed. **Left:** the rules the sources leave
+  open, decided in the oracle and marked `[verify]` in `test/differential/README.md` (the year's estimated ordinary wages, the joint election as F/G, SHG and SDL on the gross, final-pay advances `[accountant to confirm]`);
+  overrides (FR-PAY-06) are not in the differential.
 - [x] 1.6 Verify: the local gates; the foreign worker levy is an expense input (O2), not a calculation.
   Built in slice 1: `internal/domain/rounding/payroll.go`; `internal/nemura/payroll` (`Classify`, `Calculate`, `CheckDeductions`, `Total`, `Postings`, `Diff`); Nemura's copies of `sg-cpf`, `sg-sdl` and
   `sg-shg` (`internal/nemura/packs.StatutoryFiles`, kept equal to Fyniq's by an archtest); `test/differential/payroll.schema.json` and 16 hand-worked golden months, with a property test of a thousand
-  generated months. Left in slice 1: the oracle's half `[oracle]`; the CPF Board's treatment of a birthday on the first of a month `[verify]`; the SPR joint election is read from the person (its
+  generated months. Left in slice 1: the CPF Board's treatment of a birthday on the first of a month `[verify]`; the SPR joint election is read from the person (its
   evidence is slice 2); the engine does not yet read the salary of a part month (joiners and leavers are inputs prorated in slice 2).
 
 ## 2. Pay records, inputs and the calendar (slice 2)
@@ -75,7 +80,8 @@ Load before each slice: `fyniq-accounting-domain` (money, rounding, postings), `
 ## 6. Hand-off files (slice 6)
 
 - [x] 6.1 The standalone journal file and salary payment file with a manifest and a digest (O3), built from the approved run and the sealed bank details; never proof of payment. `// req: NM-PAY-05`
-- [ ] 6.2 Verify the whole change: `make check`, `make test` offline, the differential run once the oracle's half exists `[oracle]`, the performance of a 100-person run, and the second reviewer's list.
+- [x] 6.2 Verify the whole change: `make check`, the Nemura suites offline (the adapter's database tests in Testcontainers, the engine, the pack and the web tests), a pay run of 100 people calculates in 1.2 s on the laptop (NM-NFR-02 asks 5 s for 50; `TestAPayRunOfAHundredPeopleCalculatesInUnderTenSeconds`). **Left:** the Python oracle's half of the differential run `[oracle]` (another agent is writing it from the PRD without reading the engine; a disagreement is fixed in the engine with a failing test first); a bank's own file format and the production renderer `[live-verify]`; the DPIA of Nemura's pay processing is for the DPO (`fyniq-security-compliance`; `compliance/nemura-data-inventory.yaml` has the row); CPF class of leave pay and pay in lieu of notice, a retrenchment's deadline and the contract's notice period `[accountant to confirm]`/`[verify]`.
+  **For the second human reviewer** (money movement, approvals, the audit trail, tenancy; AGENTS.md "Safety"): (1) approval segregation and the 5-minute passkey (`pay_run_version_segregation`, `Session.Fresh`); (2) the payment-state trigger's legal moves and the evidence rule (migration 000031); (3) the tax-clearance hold as written-once versions and its release evidence (000032); (4) the bank-account opening for the payment file: audited read, fresh passkey, no account or amount in any audit event or log (000033, `exports.go`); (5) the payslip's append-only hash and the refusal to serve changed bytes (000030); (6) the grants and schema goldens (`go test -tags local -run 'TestEachRoleHoldsExactlyItsGrants|TestSchemaSnapshot' ./internal/adapters/postgres/nemura`) show no write role beyond `nemura_api` INSERT of the new tables; (7) the statutory facts and their `[verify]` tags in `sg-people@2026.7` to `2026.9`.
 
 ## Coverage
 

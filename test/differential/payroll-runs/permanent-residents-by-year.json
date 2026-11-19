@@ -1,0 +1,111 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "permanent-residents-by-year",
+ "why": "First and second year permanent residents at G/G and F/G, the third year at full rates, no start date (FR-PAY-02, FR-PAY-14)",
+ "month": "2027-02-01",
+ "people": [
+  {
+   "id": "A",
+   "person": {
+    "residency": "permanent_resident",
+    "birth_date": "1990-05-20",
+    "pr_start": "2026-02-10"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "B",
+   "person": {
+    "residency": "permanent_resident",
+    "birth_date": "1990-05-20",
+    "pr_start": "2026-02-10",
+    "joint_election": true
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "C",
+   "person": {
+    "residency": "permanent_resident",
+    "birth_date": "1990-05-20",
+    "pr_start": "2025-02-10"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "D",
+   "person": {
+    "residency": "permanent_resident",
+    "birth_date": "1990-05-20",
+    "pr_start": "2025-02-10",
+    "joint_election": true
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "700.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "E",
+   "person": {
+    "residency": "permanent_resident",
+    "birth_date": "1990-05-20",
+    "pr_start": "2024-01-31"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  },
+  {
+   "id": "F",
+   "person": {
+    "residency": "permanent_resident",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "5000.00",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ]
+  }
+ ]
+}

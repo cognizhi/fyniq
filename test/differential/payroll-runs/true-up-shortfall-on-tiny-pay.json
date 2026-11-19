@@ -1,0 +1,30 @@
+{
+ "schema": "fyniq-payroll-run@1",
+ "name": "true-up-shortfall-on-tiny-pay",
+ "why": "The last month's true-up adds 13,993.43 of shortfall to S$6.57 of pay: the month's wages subject to CPF are S$14,000 (FR-PAY-14)",
+ "month": "2026-12-01",
+ "people": [
+  {
+   "id": "A",
+   "person": {
+    "residency": "citizen",
+    "birth_date": "1990-05-20"
+   },
+   "items": [
+    {
+     "key": "basic",
+     "name": "Basic salary",
+     "amount": "6.57",
+     "cpf_wages": true,
+     "suggested": "ordinary"
+    }
+   ],
+   "ytd": {
+    "ow": "88000",
+    "aw_subject": "0",
+    "aw_paid": "96995.80"
+   },
+   "last_month": true
+  }
+ ]
+}

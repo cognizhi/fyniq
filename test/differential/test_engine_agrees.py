@@ -38,7 +38,7 @@ SOURCES = tuple(s.strip() for s in os.environ.get("FYNIQ_DIFFERENTIAL_SOURCES", 
 
 
 def strategy() -> st.SearchStrategy[dict]:
-    p1 = tuple(s for s in SOURCES if s not in ("statements", "kpis", "forecast", "feasibility", "purge", "payroll"))
+    p1 = tuple(s for s in SOURCES if s not in ("statements", "kpis", "forecast", "feasibility", "purge", "payroll", "payroll-month"))
     base = scenarios("differential")
     if p1:
         base = st.one_of(base, p1_scenarios(p1, "differential"))
@@ -306,3 +306,71 @@ def test_the_purge_and_the_oracle_agree() -> None:  # req: QA-ENG-02, AUD-10
     raise AssertionError(f"the purge and the oracle disagree, or the purge changes a position: "
                          f"{forecast_difference(e, o) or (e.get('unchanged'), o.get('unchanged'))}\n"
                          f"the smallest such ledger is saved as {path}; commit it as a golden case")
+
+
+PAYROLL_RUNS = Path(__file__).parent / "payroll-runs"
+
+
+def payroll_engine(doc: dict) -> dict:
+    """The Go engine of Nemura's payroll (cmd/nemura/payrollrun, built by the Makefile into $FYNIQ_PAYROLL_RUN)."""
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump(doc, f)
+    try:
+        run = subprocess.run([os.environ["FYNIQ_PAYROLL_RUN"], f.name], capture_output=True, text=True, check=False)
+    finally:
+        os.unlink(f.name)
+    if run.returncode == 2:
+        return {"invalid": run.stderr.strip()}
+    if run.returncode != 0:
+        raise RuntimeError(f"payrollrun failed: {run.stderr}")
+    return json.loads(run.stdout)
+
+
+def payroll_oracle(doc: dict) -> dict:
+    from oracle.employee_month import payroll_run
+
+    try:
+        return payroll_run(doc)
+    except ScenarioError as exc:
+        return {"invalid": str(exc)}
+
+
+def payroll_view(result: dict) -> dict:
+    """A result as both sides are compared: each person's broken deduction rules are reduced to the deductions they are broken by (the
+    key of each, and "" for the month's 50% limit), since the two sides name the rules in their own words (README, "Payroll months and runs")."""
+    if "invalid" in result:
+        return result
+    people = [{**p, "violations": sorted(v["key"] for v in p["violations"])} if "violations" in p else p for p in result["people"]]
+    # "lines": the engine's entry as written, for a reader; "refund_total": no named policy rounds the contributions refunded (README)
+    people = [{k: v for k, v in p.items() if k != "refund_total"} for p in people]
+    return {k: v for k, v in {**result, "people": people}.items() if k != "lines"}
+
+
+def payroll_difference(e: dict, o: dict) -> str | None:
+    if ("invalid" in e) != ("invalid" in o):
+        return f"one side found the run invalid: engine {e.get('invalid')!r}, oracle {o.get('invalid')!r}"
+    if "invalid" in e:
+        return None
+    return forecast_difference(payroll_view(e), payroll_view(o))
+
+
+def test_the_payroll_engine_and_the_oracle_agree() -> None:  # req: QA-ENG-02, FR-PAY-01, FR-PAY-02, FR-PAY-14, FR-PAY-18
+    if "payroll-month" not in SOURCES:
+        return
+    from oracle.strategies_payroll_month import payroll_runs
+
+    def differs(doc: dict) -> bool:
+        return payroll_difference(payroll_engine(doc), payroll_oracle(doc)) is not None
+
+    try:
+        bad = find(payroll_runs(), differs, settings=settings(max_examples=EXAMPLES, deadline=None, database=None,
+                                                              suppress_health_check=list(HealthCheck)))
+    except NoSuchExample:
+        return
+    digest = hashlib.sha256(json.dumps(bad, sort_keys=True).encode()).hexdigest()[:10]
+    bad["name"] = f"shrunk-{digest}"
+    path = PAYROLL_RUNS / f"{bad['name']}.json"
+    PAYROLL_RUNS.mkdir(exist_ok=True)
+    path.write_text(json.dumps(bad, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    raise AssertionError(f"the payroll engine and the oracle disagree: {payroll_difference(payroll_engine(bad), payroll_oracle(bad))}\n"
+                         f"the smallest such run is saved as {path}; commit it as a golden case once the cause is fixed")

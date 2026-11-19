@@ -18,6 +18,11 @@
     python -m oracle generate-purges --seed <n> --count <n> --out <dir>
         Write <count> generated purge documents to <dir>/<name>.json.
 
+    python -m oracle payroll <run.json>
+        Work a fyniq-payroll-run@1 pay run out (or a fyniq-payroll-month@1 employee-month) and write its result JSON to stdout (p1-nemura-payroll 1.5).
+    python -m oracle generate-payrolls --seed <n> --count <n> --out <dir>
+        Write <count> generated pay runs to <dir>/<name>.json.
+
 Exit status: 0 on success, 2 when the scenario is not valid input (the reason is on stderr).
 """
 
@@ -144,6 +149,33 @@ def _generate_purges(args: argparse.Namespace) -> int:
     return 0
 
 
+def _payroll(args: argparse.Namespace) -> int:
+    from oracle.employee_month import employee_month_doc, payroll_run
+    from oracle.scenario import parse_json
+
+    try:
+        doc = parse_json(Path(args.run).read_text(encoding="utf-8"))
+        result = employee_month_doc(doc) if doc.get("schema") == "fyniq-payroll-month@1" else payroll_run(doc)
+    except (ScenarioError, OSError) as exc:
+        print(f"oracle: {args.run}: {exc}", file=sys.stderr)
+        return 2
+    sys.stdout.write(_dump(result))
+    return 0
+
+
+def _generate_payrolls(args: argparse.Namespace) -> int:
+    from oracle.employee_month import payroll_run
+    from oracle.strategies_payroll_month import generate  # Hypothesis is needed only here
+
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    for doc in generate(args.seed, args.count):
+        payroll_run(doc)  # every generated run is valid input
+        (out / f"{doc['name']}.json").write_text(_dump(doc), encoding="utf-8")
+    print(f"oracle: wrote {args.count} pay runs to {out}", file=sys.stderr)
+    return 0
+
+
 def _positive(text: str) -> int:
     value = int(text)
     if value < 1:
@@ -195,6 +227,16 @@ def main(argv: list[str] | None = None) -> int:
     genpu.add_argument("--count", type=_positive, required=True)
     genpu.add_argument("--out", required=True, help="the directory to write <name>.json files to")
     genpu.set_defaults(handler=_generate_purges)
+
+    pr = commands.add_parser("payroll", help="work a pay run out and write its result JSON to stdout")
+    pr.add_argument("run", help="a fyniq-payroll-run@1 or fyniq-payroll-month@1 JSON file")
+    pr.set_defaults(handler=_payroll)
+
+    genpr = commands.add_parser("generate-payrolls", help="write generated pay runs to a directory")
+    genpr.add_argument("--seed", type=int, required=True)
+    genpr.add_argument("--count", type=_positive, required=True)
+    genpr.add_argument("--out", required=True, help="the directory to write <name>.json files to")
+    genpr.set_defaults(handler=_generate_payrolls)
 
     args = parser.parse_args(argv)
     return args.handler(args)
