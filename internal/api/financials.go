@@ -281,6 +281,15 @@ func yearStart(ctx context.Context, u storage.UnitOfWork, to string) (string, er
 // financialStatement reads and lays out a statement in u (FR-RPT-01, FR-RPT-02, FR-RPT-08): the run of months, the
 // revision, and the year's title.
 func (a *API) financialStatement(ctx context.Context, u storage.UnitOfWork, in *financialStatementInput) (out FinancialStatement, err error) {
+	// A person whose view of the reports is their department's reads the P&L, and the database adds up only the lines of their
+	// scope's department values (FR-ADM-01); a balance sheet, a cash flow and a trial balance are the whole company's, and a
+	// budget or forecast comparative is not filtered by department.
+	if p, ok := authn.From(ctx); ok && authz.DeptOnly(p.Roles, authz.Reports) {
+		if in.Kind != string(financials.ProfitAndLoss) || in.Compare == string(financials.Budget) || in.Compare == "forecast" {
+			return out, problem(CodeForbidden, "Your view of the reports is your department's: it reads the profit and loss, compared only with an earlier period.",
+				"Ask for the P&L (kind pl), or ask an Owner or Controller for a role with a wider view")
+		}
+	}
 	org, err := u.Organisation(ctx)
 	if err != nil {
 		return out, err

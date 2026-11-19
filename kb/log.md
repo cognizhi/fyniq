@@ -765,3 +765,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | docs/user-guide/nemura/payroll-approval.md, payroll-records.md -> nemura.payroll-approval, nemura.payroll-records (p1-nemura-payroll 3.3, 3.4)
 
 ## [2026-11-20] compile | docs/user-guide/nemura/my-pay.md, payroll-approval.md -> nemura.my-pay, nemura.payroll-approval (p1-nemura-payroll 4.1, 4.2)
+
+## [2026-11-20] compile | members-and-roles.md -> settings.members (the department-scoped P&L)

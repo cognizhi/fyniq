@@ -71,7 +71,8 @@ func TestEveryOutputFollowsTheRolesHeldNow(t *testing.T) {
 
 	// G4-064: each scope its own answer, none cached.
 	const pl = "/v1/reports/statements/pl?from=2026-10&to=2026-10"
-	dept := e.call(http.MethodGet, pl, e.as(authz.Approver), nil)
+	// A department's Approver reads the P&L as their department's totals (FR-ADM-01), but the balance sheet is the company's.
+	dept := e.call(http.MethodGet, "/v1/reports/statements/bs?to=2026-10", e.as(authz.Approver), nil)
 	full := e.call(http.MethodGet, pl, e.as(authz.Accountant), nil)
 	if dept.Status != http.StatusForbidden || full.Status != 200 {
 		t.Fatalf("a department's view and the Accountant's: %d, %d %s", dept.Status, full.Status, full.Raw)

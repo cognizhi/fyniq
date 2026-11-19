@@ -4,7 +4,7 @@ type: concept
 title: Members, roles and the first founder's setup
 summary: What roles do, why the Owner sets up members alone until a second person joins, and why role changes then need a second approver
 sources:
-  - docs/user-guide/members-and-roles.md sha256:3c5eba89c7d2d617783b7d37b95377c304cd024e6d36f42374f8cad5c94744e6
+  - docs/user-guide/members-and-roles.md sha256:b5b345dfad89716bcc0efe851b882f253eca8f16468106a0b99d3f97d684ccd4
 data_class: general
 taint: trusted
 status: published
@@ -60,7 +60,7 @@ aliases:
 ## Narrow an Approver to departments
 
 - When giving the **Approver** role, **Departments this Approver acts for** lists the organisation's department values: tick the ones the role reaches.
-- Their views and approvals that Fyniq limits by department then reach only those departments' records, lines and budgets; a report's totals count only those lines.
+- Their views and approvals that Fyniq limits by department then reach only those departments' records, lines and budgets; the profit and loss they open counts only those lines (the balance sheet, cash flow, trial balance, budget comparatives and exports are the whole company's, so they are not shown to them).
 - An Approver role given with no department reaches none of them, so tick at least one; the choice is fixed when the role is given, so to change it end the role and give it again.
 - The people's list shows it beside the role, such as "Approver for Engineering"; the assistant and connected apps acting for that person are limited the same way.
 - A person who holds any other role besides Employee is not narrowed by this: that role's own rights decide.
