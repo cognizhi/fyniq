@@ -260,12 +260,14 @@ Load before each slice: `fyniq-local-dev` (images, compose), `fyniq-feature-chan
   roles in the platform spec, the queues and tick, the database and identity tenants per O1 (the database on Fyniq's instance, with its own roles) and O3 (the hostname as configuration), the cost label of
   O2 and its test that no identity of either app holds a role on the other's resources, with the module tests and `make infra-check` proving the rules offline (region, no keys, no authoritative IAM,
   no cross-app role). Plan and apply: `[live-verify]` at the cloud gate. Tests `// req: NM-NFR-01`.
+  (Built in part, 19 Nov 2026: `infra/gcp/modules/people` and its tests, checked by `make infra-check` and Checkov. **Left, so unticked:** wiring it into the environment module and the executor and issuer services when they exist; the plan and apply are `[live-verify]`.)
 - [ ] 10.2 The threat model `docs/security/threat-models/nemura-platform.md` (tenancy, the shared relying-party ID,
   restricted data, the approvals, the token issuer, the embedded web app), the controls in `compliance/controls/`,
   ASVS L2 with L3 on sign-in, authorisation and logging for pay and approval flows, the runbooks (first run, role
   recovery, restoring Nemura alone, `[live-verify]` for the drill), and the second-reviewer label on the pull
   requests that change tenancy, approvals or the audit trail. Tests `// req: NM-SEC-01` (tagged now: tenancy,
   audit, logging, secrets and ASVS are all proven in 2, 3, 5 and here) and `// req: SEC-20`.
+  (Built in part, 19 Nov 2026: `docs/security/threat-models/nemura-platform.md`. **Left, so unticked:** the controls in `compliance/controls/` (each must be a PRD-001 Appendix F row), the runbooks, and `// req: NM-SEC-01` once the issuer and sign-in are built.)
 - [ ] 10.3 The close: every requirement in the coverage table below carries a test tag or a "Left" note naming its
   change; `make roadmap` and `python3 scripts/prdspec.py` report nothing stale; a final `openspec validate
   p1-nemura-platform --strict`; `make check`, `make test`, `make images`, `make image-scan`, `make image-sign`.
