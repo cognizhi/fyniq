@@ -18,5 +18,6 @@ checks:
     how: "test TestTheMCPServiceCarriesNoDatabaseCode"
     evidence: "the MCP service's binary carries no database adapter, no domain command and no write path, in both flavours, whichever of the shell and the server runs; CI artefact test-report (90 days)"
   - frequency: N
-    status: planned
-    arrives: "p1-mcp-first-party task 10.2: the nightly sample of agent-class writes needs the mcp_call trail's own verification (the trail exists: migration 000583)"
+    status: running
+    how: "verify mcp.agent-writes"
+    evidence: "the latest run in each organisation (fyniq.control_run), nightly: every audit event of the last day made by an AI app's delegated token (actor mcp:<client>) is a proposal's (ai_proposal.*) or its own approval request, the one write an agent-class token has; each other is listed by event (target 0)"

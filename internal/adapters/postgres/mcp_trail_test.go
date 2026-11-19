@@ -103,3 +103,78 @@ func TestAttackTheMCPTrailGoesOnlyForward(t *testing.T) {
 		}
 	}
 }
+
+// The trail of calls is purged after its retention, by the worker alone, only the calls made before the time asked, only in its
+// organisation: the API's role cannot run the purge, the guard still refuses a delete or an update from anyone else, and the purge
+// leaves the setting of the flag off (AI-44, §11.9).
+// req: AI-44
+// req: QA-ENG-05
+// asvs: V8.1.1, V16.4.1
+func TestTheMCPTrailIsPurgedAfterItsRetentionByTheWorkerAlone(t *testing.T) {
+	ctx := context.Background()
+	a, b := books(t, "Purge A Pte Ltd"), books(t, "Purge B Pte Ltd")
+	api, worker := store(t, "fyniq_api"), store(t, "fyniq_worker")
+	now := clock.System{}.Now().UTC().Truncate(time.Microsecond)
+	person, other := founder(t, api, a.Org, 1, now), founder(t, api, b.Org, 2, now)
+	record := func(org uuid.UUID, who uuid.UUID, at time.Time) {
+		t.Helper()
+		if err := api.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			_, err := u.MCPCalls().Record(ctx, storage.MCPCall{UserID: who, App: "claude-code", Tool: "metrics.query", Outcome: storage.MCPRead, At: at})
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	old, recent := now.AddDate(0, 0, -400), now.AddDate(0, 0, -10)
+	record(a.Org, person, old)
+	record(a.Org, person, old.Add(time.Hour))
+	record(a.Org, person, recent)
+	record(b.Org, other, old)
+	count := func(org uuid.UUID) (n int) {
+		t.Helper()
+		if err := api.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
+			rows, err := u.MCPCalls().List(ctx, uuid.Nil, 100)
+			n = len(rows)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	// The API's role cannot run it.
+	err := api.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) error {
+		_, err := u.MCPCalls().Purge(ctx, now.AddDate(0, 0, -365))
+		return err
+	})
+	if err == nil {
+		t.Error("the API's role ran the purge")
+	}
+	if count(a.Org) != 3 {
+		t.Fatalf("the trail after a refused purge: %d", count(a.Org))
+	}
+	// The worker's purge removes the old calls of its organisation and leaves the recent ones and the other organisation's.
+	var purged int
+	if err := worker.Do(ctx, a.Org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		purged, err = u.MCPCalls().Purge(ctx, now.AddDate(0, 0, -365))
+		return err
+	}); err != nil || purged != 2 {
+		t.Fatalf("the purge: %d, %v", purged, err)
+	}
+	if count(a.Org) != 1 || count(b.Org) != 1 {
+		t.Errorf("after the purge: %d and %d calls, want 1 and 1", count(a.Org), count(b.Org))
+	}
+	// A delete outside the purge is refused as before, from the worker's role too, which holds no DELETE.
+	for _, role := range []string{"fyniq_api", "fyniq_worker"} {
+		c, err := pgx.Connect(ctx, db.URL(role))
+		if err != nil {
+			t.Fatal(err)
+		}
+		tx, _ := c.Begin(ctx)
+		_, _ = tx.Exec(ctx, "SELECT set_config('app.org_id', $1, true)", a.Org.String())
+		if _, err := tx.Exec(ctx, "DELETE FROM fyniq.mcp_call"); err == nil {
+			t.Errorf("%s deleted the trail", role)
+		}
+		_ = tx.Rollback(ctx)
+		c.Close(ctx)
+	}
+}

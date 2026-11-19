@@ -31,10 +31,13 @@ type Kit struct {
 	// it from version.Version and version.Commit. Empty: a development build.
 	Stamp  string
 	Tokens ports.TaskTokens
-	Queue  ports.Queue
-	Jobs   ports.JobRunner
-	Blobs  ports.BlobStore
-	Signer ports.Signer
+	// OAuthClients is the OAuth server's client registry, for the job that removes the AI apps' registrations that lapsed (AI-90). Nil:
+	// they are marked expired and the OAuth server is left as it is.
+	OAuthClients ports.OAuthClients
+	Queue        ports.Queue
+	Jobs         ports.JobRunner
+	Blobs        ports.BlobStore
+	Signer       ports.Signer
 	// Fields seals the most sensitive fields (SEC-11): vendor bank account numbers. Nil: none can be kept.
 	Fields ports.Cipher
 	// Staging keeps uploads until their record is final; Evidence is the retention-locked store they are

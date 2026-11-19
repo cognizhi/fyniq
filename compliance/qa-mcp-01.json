@@ -8,7 +8,8 @@
       "requirements": "AI-34, CTL-MCP-01",
       "control": "An agent-class token's write to the public API is refused; the MCP operation runs a read tool, or makes a proposal from the catalogue that waits for a person (AI-16)",
       "tests": [
-        "TestAnMCPToolCallPassesEveryGateOrIsRefused"
+        "TestAnMCPToolCallPassesEveryGateOrIsRefused",
+        "TestTheNightlyChecksOfTheMCPControlsFindNothingAndCatchWhatBreaksThem"
       ]
     },
     {
@@ -159,7 +160,8 @@
         "TestEveryRedirectIsExactOrRefused",
         "TestANameCannotImpersonate",
         "TestNothingTheClientNamesIsFetchedOrTrusted",
-        "TestARegisteredAppIsUsableOnlyOnceAnOwnerAllowsIt"
+        "TestARegisteredAppIsUsableOnlyOnceAnOwnerAllowsIt",
+        "TestTheExpiryJobEndsLapsedRegistrationsAndRemovesTheirClients"
       ]
     },
     {
@@ -187,7 +189,8 @@
       "requirements": "AI-44",
       "control": "The trail is append-only; the API's role cannot change it; the AI's role cannot read it",
       "tests": [
-        "TestAttackTheMCPTrailGoesOnlyForward"
+        "TestAttackTheMCPTrailGoesOnlyForward",
+        "TestTheMCPTrailIsPurgedAfterItsRetentionByTheWorkerAlone"
       ]
     },
     {
@@ -230,6 +233,15 @@
         "TestAProposalToolNeedsTheScopeOfItsTaskTypeAlone",
         "TestATaskTypeIsExposedOnlyWhenAReviewerNamesIt",
         "TestAnAIAppProposesAndAPersonApproves"
+      ]
+    },
+    {
+      "id": "unusual-use",
+      "threat": "An app, a network, a volume or a run of denied scopes that is unusual for a person goes unnoticed",
+      "requirements": "AI-45, SEC-31",
+      "control": "Each is an alert to the Owners and the DPO, once per rule and person in the window, an audit event and the log entry Cloud Monitoring alerts on; no token, argument or result in it",
+      "tests": [
+        "TestAnAIAppsUnusualUseRaisesAnAlertOncePerWindow"
       ]
     }
   ]

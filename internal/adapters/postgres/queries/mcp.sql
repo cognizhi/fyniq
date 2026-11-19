@@ -30,3 +30,7 @@ WITH ins AS (
   INSERT INTO fyniq.mcp_seen (user_id, kind, value, first_seen) VALUES (sqlc.arg(user_id), sqlc.arg(kind), sqlc.arg(value), sqlc.arg(first_seen))
   ON CONFLICT DO NOTHING RETURNING 1
 ) SELECT count(*) > 0 AS first FROM ins;
+
+-- name: PurgeMCPCalls :one
+-- The calls made before a time, removed by the purge after retention (the worker's alone).
+SELECT fyniq.mcp_purge_calls(sqlc.arg(before)::timestamptz)::int AS purged;

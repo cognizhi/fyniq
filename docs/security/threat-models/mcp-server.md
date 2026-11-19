@@ -45,14 +45,15 @@ The test column names the row of `compliance/qa-mcp-01.json`, which `internal/ar
 | M13 | Tampering: a header disagrees with the body | The revision's validation (-32020) | header-mismatch |
 | M14 | Spoofing: session fixation | No sessions in the revision served; an ID is ignored | session-fixation |
 | M15 | Spoofing: consent phishing, an unknown client or redirect | Registered clients, exact redirects, a fresh second factor, every gate | consent-phishing |
-| M16 | Elevation and denial: self-registration abuse | Closed by default; policy; limits by network; pending until an Owner approves; expiry | registration-abuse, no-dynamic-registration-at-hydra |
+| M16 | Elevation and denial: self-registration abuse | Closed by default; policy; limits by network; pending until an Owner approves; expiry, ended hourly by a platform job as well | registration-abuse, no-dynamic-registration-at-hydra |
 | M17 | Denial of wallet | Limits per minute, hour and day from the trail | denial-of-wallet |
-| M18 | Repudiation and tampering: the trail is changed | Append-only table; the API's role cannot change it | trail-tampering |
+| M18 | Repudiation and tampering: the trail is changed | Append-only table; the API's role cannot change it; only the worker's purge after retention (the assistant's retention) removes old calls | trail-tampering |
 | M19 | Elevation: the server answers before it is meant to | The deployment switch; the launch shell is the default | opened-by-accident |
 | M20 | Elevation: an app approves its own proposal, or is approved as the person | The delegated token reaches no approval; another member signs, or the person on a step-up taken after the app proposed it (tier 1 only); the database refuses the same signature and a wrong requester method | proposal-self-approval |
 | M21 | Elevation: a proposal outside the catalogue, or a verb that decides | One propose tool per task type a reviewer names, its own scope, the contract's tool names are the manifest's, no approve, reject, execute or withdraw tool, the task type is never an input | proposal-out-of-catalogue |
 | M22 | Denial: an app floods the person's Approvals | A limit of proposals an hour per person and app (mcp.proposals_per_hour), counted in the database; the person's opt-in and the task type must be on | denial-of-wallet |
 | M23 | Information disclosure: an app reads another person's or app's proposals | proposals.list and proposals.get return the person's own proposals of this app only; another's is not found | proposal-self-approval |
+| M24 | Repudiation: an unusual use goes unnoticed | An alert to the Owners and the DPO for a new app, a new network, repeated denied scopes and a volume spike, once per rule and person in the window; the nightly checks of CTL-MCP-01 (every change by an app's token is a proposal's) and CTL-MCP-03 (every opening of MCP had a second approver) | unusual-use, agent-direct-write |
 
 SOD and money: nothing here moves money or approves anything; approving is never an MCP operation (AI-42). A proposal executes only after a person approves it in Fyniq, and then as that person, under the executor's own role (AI-11).
 

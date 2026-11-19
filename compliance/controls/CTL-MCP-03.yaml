@@ -18,5 +18,6 @@ checks:
     how: "test TestTheMCPGateAdmitsOnlyWhenTheOrganisationTheAppAndThePersonAllow"
     evidence: "the gate admits an app only when the organisation's switch, the allowlist and the person's opt-in all allow it, each refusing with its own code, asked on every call; CI artefact test-report (90 days)"
   - frequency: E
-    status: planned
-    arrives: "p1-mcp-first-party task 10.2: the audit of enablement events needs the approval records of the settings' changes read by a verification; the changes are approval objects already"
+    status: running
+    how: "verify mcp.enablement"
+    evidence: "the latest run in each organisation (fyniq.control_run), nightly, more often than the event-driven check the PRD asks: every change of the last day that opened MCP (the switch or the registration on, an app added to the allowlist) was carried out by an approval that is approved and signed by someone other than whoever asked for it; each exception is listed by change (target 0)"

@@ -207,8 +207,10 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   recorded, refusals and limits included, in a unit of work of its own; the limits (per minute, hour, day, from the organisation's
   settings) are counted from it and answered with 429 and `Retry-After`; the switch, the allowlist, the opt-in and a role change
   stop the next call because each is asked on every call (no cache beyond the introspection's 30 seconds); a new app, a new
-  network and denied scopes repeating are security events in the log. **Left:** the proposals-an-hour limit (with 7.x), the Owner's
-  notice for each event, the spike alert, listing the trail in the AI activity log (9.x), and the purge after retention.
+  network and denied scopes repeating are security events in the log. Later: the proposals-an-hour limit (7.x), an alert
+  for each event and for a volume spike to the Owners and the DPO (once per rule and person in the window), the purge of the trail
+  after retention (migration 000589; with the assistant's conversations, by the worker), and registration expiry as an hourly platform
+  job (`mcp.registrations.expire`). **Left:** listing the trail in the AI activity log (the Connected apps page lists it).
 
 ## 9. Screens and help (AI-44, AI-37)
 
@@ -241,10 +243,12 @@ leaves the launch shell's test (`TestTheShellExposesNoToolAndRefusesEveryCall`) 
   unreachable, limits and kill switches. Tests `// req: QA-MCP-01`, `// req: AI-36`.
   Built: `compliance/qa-mcp-01.json`, one row per red-team case with the tests that prove it, kept true by `TestEveryQAMCP01RowNamesTestsThatExist`;
   the suite is those tests, which run in `make test`. **Left:** the per-call cost measured against the P0 spike, and an own CI job.
-- [ ] 10.2 `CTL-MCP-01` to `CTL-MCP-04` and `CTL-API-02` running in `compliance/controls/` with their evidence (the nightly
+- [~] 10.2 `CTL-MCP-01` to `CTL-MCP-04` and `CTL-API-02` running in `compliance/controls/` with their evidence (the nightly
   sample of agent-class writes is zero; the manifest and never-list check; the dual-control check on enabling and allowlisting;
   the revocation timing test), and the control map's counts. Tests `// req: CTL-MCP-01` to `CTL-MCP-04`, `// req: CTL-API-02`.
-  Partly built: the CI checks of CTL-MCP-01 to 04 run, each naming its tests. **Left:** the nightly sample of agent-class writes (N) and the audit of enablement events (E), and CTL-API-02, which waits for Connected apps to register integration clients.
+  Built: the CI checks of CTL-MCP-01 to 04 run, each naming its tests, and the nightly checks `verify mcp.agent-writes` (every change an
+  app's token made, actor `mcp:<client>`, is a proposal's or its approval request) and `verify mcp.enablement` (every opening of MCP had
+  an approval signed by a second person). **Left:** CTL-API-02, which waits for Connected apps to register integration clients.
 - [x] 10.3 Local mode (design D13): `make up` registers the clients and the delegation client, serves `/mcp` and the
   well-known path behind Caddy, the local profile enables MCP for the sample company; `docs/runbooks/` says how to connect
   Claude Code and Claude Desktop; the flow is driven in a test with no browser. Tests `// req: DEV-06`, `// req: AI-15`.

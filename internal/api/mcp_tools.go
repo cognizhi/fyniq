@@ -21,6 +21,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/aitool"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/domain/aiexclusion"
+	"github.com/cognizhi/fyniq/internal/domain/security"
 	"github.com/cognizhi/fyniq/internal/domain/settings"
 	"github.com/cognizhi/fyniq/internal/mcpgate"
 	"github.com/cognizhi/fyniq/internal/mcpsurface"
@@ -38,6 +39,10 @@ import (
 // operation as the person, so the roles, masking and the AI exclusions apply, exactly as for the assistant. Its result is cut
 // to the tool's limits and to the organisation's size ceiling, its free text is quoted as untrusted and screened, and an NRIC
 // or a bank number in it is masked before it leaves.
+
+// mcpActorPrefix starts the audit actor of what an AI app's delegated token does: CTL-MCP-01's nightly check finds every such change
+// by it (compliance.MCPActorPrefix).
+const mcpActorPrefix = "mcp:"
 
 // ServiceMCP is the class of the MCP service's service tokens: for the MCP operations alone.
 const ServiceMCP = "mcp"
@@ -251,7 +256,7 @@ func (a *API) mcpAuthenticate(ctx huma.Context, next func(huma.Context), refuse 
 	}
 	c := context.WithValue(authn.WithPrincipal(ctx.Context(), p), turnTokenKey{}, ctx.Header("Authorization"))
 	audit := storage.AuditFrom(c)
-	audit.Actor, audit.OnBehalfOf = &storage.Actor{Type: "ai", ID: p.Client}, &storage.Actor{Type: "user", ID: p.UserID.String()}
+	audit.Actor, audit.OnBehalfOf = &storage.Actor{Type: "ai", ID: mcpActorPrefix + p.Client}, &storage.Actor{Type: "user", ID: p.UserID.String()}
 	audit.Request.Session = p.Client
 	next(huma.WithContext(ctx, storage.WithAudit(c, audit)))
 }
@@ -345,7 +350,8 @@ func (a *API) recordMCPCall(ctx context.Context, p authn.Principal, call MCPTool
 	if !toolName.MatchString(c.Tool) {
 		return // the tool was not one the registry has: nothing to keep, and the record would be refused
 	}
-	var newApp, newNetwork, deniedRepeatedly bool
+	var newApp, newNetwork, deniedRepeatedly, spike bool
+	r, canAlert := a.raiser()
 	err := a.deps.Store.Do(context.WithoutCancel(ctx), p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
 		if _, err := u.MCPCalls().Record(ctx, c); err != nil {
 			return err
@@ -359,9 +365,22 @@ func (a *API) recordMCPCall(ctx context.Context, p authn.Principal, call MCPTool
 				return err
 			}
 		}
-		if c.Code == CodeMCPScope {
-			n, _, err := u.MCPCalls().Count(ctx, p.UserID, c.App, start.Add(-10*time.Minute), start)
-			deniedRepeatedly = err == nil && n >= 3
+		if c.Code == CodeMCPScope { // denied again and again: three of this person's app's calls in ten minutes were refused a scope
+			recent, err := u.MCPCalls().List(ctx, p.UserID, 20)
+			if err != nil {
+				return err
+			}
+			n := 0
+			for _, m := range recent {
+				if m.App == c.App && m.Code == CodeMCPScope && !m.At.Before(start.Add(-10*time.Minute)) {
+					n++
+				}
+			}
+			deniedRepeatedly = n >= 3
+		}
+		if canAlert && r.Thresholds.MCPCallsPer5 > 0 {
+			n, _, err := u.MCPCalls().Count(ctx, p.UserID, c.App, start.Add(-5*time.Minute), start)
+			spike = err == nil && n > r.Thresholds.MCPCallsPer5
 		}
 		return nil
 	})
@@ -369,10 +388,38 @@ func (a *API) recordMCPCall(ctx context.Context, p authn.Principal, call MCPTool
 		a.deps.Log.ErrorContext(ctx, "mcp.call_not_recorded", "error", err.Error())
 		return
 	}
-	for event, on := range map[string]bool{"mcp.new_app": newApp, "mcp.new_network": newNetwork, "mcp.scopes_denied_repeatedly": deniedRepeatedly} {
-		if on { // SEC-31: a security event for the Owner's monitoring
-			a.deps.Log.WarnContext(ctx, "AI app activity worth a look", "event", event, "user", p.UserID.String(), "organisation", p.Organisation.String(),
-				"app", c.App, "network", c.Network, "tool", c.Tool)
+	// SEC-31, AI-45: each detection is an alert to the Owners and the DPO (once per rule and person in the window), and a log entry.
+	for _, d := range []struct {
+		on   bool
+		rule string
+		what string
+	}{{newApp, security.RuleMCPNewApp, "used the AI app " + c.App + " for the first time"},
+		{newNetwork, security.RuleMCPNewNetwork, "used the AI app " + c.App + " from a network they have not used before"},
+		{deniedRepeatedly, security.RuleMCPDenied, "'s AI app " + c.App + " was refused access it was not granted, again and again"},
+		{spike, security.RuleMCPSpike, "'s AI app " + c.App + " made an unusual number of calls in 5 minutes"}} {
+		if !d.on {
+			continue
+		}
+		a.deps.Log.WarnContext(ctx, "AI app activity worth a look", "event", "mcp."+d.rule, "user", p.UserID.String(), "organisation", p.Organisation.String(),
+			"app", c.App, "network", c.Network, "tool", c.Tool)
+		if !canAlert {
+			continue
+		}
+		err := a.deps.Store.Do(context.WithoutCancel(ctx), p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			name, err := security.MemberName(ctx, u, p.UserID, a.deps.Clock.Now())
+			if err != nil {
+				return err
+			}
+			title := name + " " + d.what
+			if strings.HasPrefix(d.what, "'s") {
+				title = name + d.what
+			}
+			_, err = r.Raise(ctx, u, p.Organisation, security.Alert{Rule: d.rule, Subject: p.UserID, Title: title, Link: "/settings/connected-apps",
+				Facts: map[string]any{"app": c.App, "network": c.Network, "tool": c.Tool}})
+			return err
+		})
+		if err != nil {
+			a.deps.Log.WarnContext(ctx, "mcp.alert_not_raised", "rule", d.rule, "error", err.Error())
 		}
 	}
 }

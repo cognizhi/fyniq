@@ -27,6 +27,12 @@ const (
 	RuleAuditChain       = "audit_chain"
 	RuleAI               = "ai_pattern"
 	RuleLogLeak          = "log_leak" // the weekly log scan found what SEC-15 keeps out of the logs (CTL-DP-03)
+	// The detection over AI apps' calls over MCP (AI-45): an app or a network a person has not used before, scopes denied again and
+	// again, and a volume spike.
+	RuleMCPNewApp     = "mcp_new_app"
+	RuleMCPNewNetwork = "mcp_new_network"
+	RuleMCPDenied     = "mcp_scopes_denied"
+	RuleMCPSpike      = "mcp_spike"
 )
 
 // Thresholds are the rules' settings (FYNIQ_ALERT_THRESHOLDS).
@@ -36,11 +42,12 @@ type Thresholds struct {
 	TravelFarHours  float64 `json:"travel_far_hours"`  // another world region sooner than this is
 	ExportsPerHour  int     `json:"exports_per_hour"`  // more exports or reveals than this by one person in an hour is a mass export
 	RefusalsPer10   int     `json:"refusals_per_10_minutes"`
-	AlertWindowMins int     `json:"alert_window_minutes"` // one alert per rule and person in this many minutes
+	AlertWindowMins int     `json:"alert_window_minutes"`    // one alert per rule and person in this many minutes
+	MCPCallsPer5    int     `json:"mcp_calls_per_5_minutes"` // more calls than this by one person's AI app in 5 minutes is a spike (AI-45)
 }
 
 // Defaults are the thresholds when the deployment sets none: coarse on purpose (design D7).
-var Defaults = Thresholds{DeviceDays: 90, TravelNearHours: 2, TravelFarHours: 6, ExportsPerHour: 20, RefusalsPer10: 20, AlertWindowMins: 60}
+var Defaults = Thresholds{DeviceDays: 90, TravelNearHours: 2, TravelFarHours: 6, ExportsPerHour: 20, RefusalsPer10: 20, AlertWindowMins: 60, MCPCallsPer5: 150}
 
 // ReadThresholds reads FYNIQ_ALERT_THRESHOLDS, JSON of the settings to change; the rest keep their defaults.
 func ReadThresholds(env func(string) string) (Thresholds, error) {
@@ -55,7 +62,7 @@ func ReadThresholds(env func(string) string) (Thresholds, error) {
 		return Defaults, fmt.Errorf("FYNIQ_ALERT_THRESHOLDS is not JSON of the alert settings, such as {\"exports_per_hour\":30}: %w", err)
 	}
 	if t.DeviceDays < 1 || t.TravelNearHours <= 0 || t.TravelFarHours < t.TravelNearHours || t.ExportsPerHour < 1 || t.RefusalsPer10 < 1 ||
-		t.AlertWindowMins < 1 {
+		t.AlertWindowMins < 1 || t.MCPCallsPer5 < 1 {
 		return Defaults, fmt.Errorf("FYNIQ_ALERT_THRESHOLDS: every setting is positive, and travel_far_hours is at least travel_near_hours: %+v", t)
 	}
 	return t, nil

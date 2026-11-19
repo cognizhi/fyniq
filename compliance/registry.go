@@ -118,6 +118,8 @@ var Verifications = map[string]string{
 	"ai.traces":                "None of the last day's turns of the assistant keeps an NRIC or FIN number or a bank account number in what the model wrote or read, and none read payroll while AI payroll access was off",
 	"ai.proposals-approved":    "Every proposal of the AI executed in the last day ran under its own approval request, approved by a person, whose envelope signs the proposal's payload hash, as one of the people who approved it, and with no approval given by the AI",
 	"ai.agent-runs":            "Every scheduled agent's run that ended in the last day called only the read tools its pinned skill names, and proposed only the task types its skill outputs, under its own agent",
+	"mcp.agent-writes":         "Every change an AI app's delegated token made in the last day is a proposal's: the one write an agent-class token has",
+	"mcp.enablement":           "Every change in the last day that opened MCP (the switch or the registration on, an app added to the allowlist) was carried out by an approval signed by someone other than whoever asked for it",
 	"posture.findings":         "No Security Command Center finding of high or critical severity is open past its SLA (the installation's)",
 	"logs.scan":                "None of a sample of the last day's platform logs holds an NRIC or FIN number, a token or an API key (the installation's)",
 	"scheduler.configured":     "The tick's Scheduler job runs, and the heartbeat's alert policies are on and tell someone (the installation's)",

@@ -98,3 +98,11 @@ func (r mcpCalls) FirstSeen(ctx context.Context, user uuid.UUID, kind, value str
 	first, err := r.u.q.MarkMCPSeen(ctx, sqlcdb.MarkMCPSeenParams{UserID: user, Kind: kind, Value: value, FirstSeen: at})
 	return first, mapError(err)
 }
+
+func (r mcpCalls) Purge(ctx context.Context, before time.Time) (int, error) {
+	if err := r.u.check(); err != nil {
+		return 0, err
+	}
+	n, err := r.u.q.PurgeMCPCalls(ctx, before)
+	return int(n), mapError(err)
+}

@@ -6,15 +6,18 @@ import (
 	"context"
 	"encoding/hex"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 
+	registry "github.com/cognizhi/fyniq/compliance"
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
 	appclock "github.com/cognizhi/fyniq/internal/clock"
+	"github.com/cognizhi/fyniq/internal/domain/compliance"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -192,4 +195,82 @@ func TestAnAIAppProposesAndAPersonApproves(t *testing.T) {
 	// A switch off stops the next proposal at once, as it does a read.
 	set("features.mcp", "true", "false")
 	code(call(proposes, "claude-code", tool, input("agent:agm-agenda-2027")), 403, "MCP-GATE-01")
+}
+
+// The nightly checks of CTL-MCP-01 and CTL-MCP-03 (AI-34, AI-35, AI-16): after an app proposed and a person approved, and the
+// organisation turned MCP on with a second approver, both find nothing; a change an AI app's token made that is not a proposal's,
+// and an opening of MCP with no second person's approval, are each a finding (target 0).
+// req: CTL-MCP-01
+// req: CTL-MCP-03
+// req: AI-34
+// req: AI-35
+// asvs: V16.3.1, V8.2.2
+func TestTheNightlyChecksOfTheMCPControlsFindNothingAndCatchWhatBreaksThem(t *testing.T) {
+	f := newFounders(t)
+	e := f.e
+	ctx := context.Background()
+	aiSwitchedOn(e)
+	enableTaskTypes(e, "sec.create_task", 1)
+	// MCP opened the way a person opens it: the switch and an app, each a setting under dual control, approved by the other founder.
+	for _, kv := range [][2]string{{"features.mcp", "true"}, {"mcp.clients", "claude-code"}} {
+		r := e.call(http.MethodPatch, "/v1/organisation/settings/"+kv[0], f.as(f.ahkow), map[string]any{"value": kv[1]}, "If-Match", `"0"`)
+		if r.Status != http.StatusAccepted {
+			t.Fatalf("asking for %s: %d %s", kv[0], r.Status, r.Raw)
+		}
+		if d := f.decide(f.as(f.weiling), r.str("id"), "approve", hashOf(r)); d.Status != http.StatusOK {
+			t.Fatalf("approving %s: %d %s", kv[0], d.Status, d.Raw)
+		}
+	}
+	service, err := e.services.Token(ServiceMCP)
+	if err != nil {
+		t.Fatal(err)
+	}
+	user := uuid.MustParse(f.ahkow)
+	token := e.principal(authn.Principal{Via: authn.ViaToken, Subject: user.String(), UserID: user, Client: "mcp-delegation", Class: authn.ClassAgent,
+		Organisation: e.books.Org, Roles: []authz.Role{authz.Owner}, Scopes: []string{"fyniq.propose.sec.create_task"}})
+	got := e.call(http.MethodGet, "/v1/me/mcp", f.as(f.ahkow), nil)
+	if r := e.call(http.MethodPut, "/v1/me/mcp", f.as(f.ahkow), map[string]any{"opted_in": true}, "If-Match", got.str("etag")); r.Status != 200 {
+		t.Fatalf("opting in: %d %s", r.Status, r.Raw)
+	}
+	if r := e.call(http.MethodPost, "/internal/v1/mcp/tool-calls", token, map[string]any{"app": "claude-code", "tool": "propose_sec_create_task", "input": map[string]any{
+		"payload":   map[string]any{"finding_key": "agent:night-check", "title": "Hold the AGM", "owner_role": "company_secretary", "due_on": "2027-06-30"},
+		"rationale": "The AGM is due."}}, ServiceTokenHeader, service); r.Status != 200 {
+		t.Fatalf("the proposal: %d %s", r.Status, r.Raw)
+	}
+	controls, err := registry.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	verify := func(name string) storage.ControlRun {
+		t.Helper()
+		rep, err := compliance.Runner{Store: workerStore(t), Clock: e.clock, Controls: controls}.Verify(ctx, e.books.Org)
+		i := slices.IndexFunc(rep.Runs, func(r storage.ControlRun) bool { return r.Check == "verify "+name })
+		if err != nil || i < 0 {
+			t.Fatalf("the nightly check %s: %v %+v", name, err, rep.Runs)
+		}
+		return rep.Runs[i]
+	}
+	if r := verify("mcp.agent-writes"); !r.OK || !strings.Contains(r.Detail, "change(s) made by AI apps' tokens") || strings.HasPrefix(r.Detail, "0 ") {
+		t.Errorf("the agent writes, when the app only proposed: %+v", r)
+	}
+	if r := verify("mcp.enablement"); !r.OK || strings.HasPrefix(r.Detail, "0 ") {
+		t.Errorf("the enablement, when a second person approved: %+v", r)
+	}
+	// A change an app's token made that is no proposal, and an opening with no second approver, are each a finding.
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		a := storage.AuditFrom(ctx)
+		a.Actor = &storage.Actor{Type: "ai", ID: "mcp:mcp-delegation"}
+		return u.Audit().Record(storage.WithAudit(ctx, a), storage.AuditRecord{Action: "journal.posted", ObjectType: "journal", ObjectID: uuid.New(),
+			Changes: map[string][2]any{"status": {nil, "posted"}}})
+	})
+	if r := verify("mcp.agent-writes"); r.OK {
+		t.Errorf("a journal posted by an app's token was not found: %+v", r)
+	}
+	e.do(func(ctx context.Context, u storage.UnitOfWork) error {
+		return u.Audit().Record(ctx, storage.AuditRecord{Action: "organisation_setting.changed", ObjectType: "organisation_setting", ObjectID: uuid.New(),
+			Changes: map[string][2]any{"key": {nil, "mcp.registration"}, "value": {"false", "true"}}})
+	})
+	if r := verify("mcp.enablement"); r.OK {
+		t.Errorf("an opening with no approval was not found: %+v", r)
+	}
 }

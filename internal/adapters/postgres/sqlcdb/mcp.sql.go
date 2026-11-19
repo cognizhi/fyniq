@@ -244,3 +244,15 @@ func (q *Queries) MarkMCPSeen(ctx context.Context, arg MarkMCPSeenParams) (bool,
 	err := row.Scan(&first)
 	return first, err
 }
+
+const purgeMCPCalls = `-- name: PurgeMCPCalls :one
+SELECT fyniq.mcp_purge_calls($1::timestamptz)::int AS purged
+`
+
+// The calls made before a time, removed by the purge after retention (the worker's alone).
+func (q *Queries) PurgeMCPCalls(ctx context.Context, before time.Time) (int32, error) {
+	row := q.db.QueryRow(ctx, purgeMCPCalls, before)
+	var purged int32
+	err := row.Scan(&purged)
+	return purged, err
+}

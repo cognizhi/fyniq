@@ -57,4 +57,6 @@ type MCPCalls interface {
 	List(ctx context.Context, user uuid.UUID, limit int) ([]MCPCall, error)
 	// FirstSeen records that the person used the app, or came from the network, and says whether it was the first time (AI-45).
 	FirstSeen(ctx context.Context, user uuid.UUID, kind, value string, at time.Time) (bool, error)
+	// Purge removes the calls made before a time, for the purge after retention (the worker's alone), and gives how many.
+	Purge(ctx context.Context, before time.Time) (int, error)
 }

@@ -188,29 +188,15 @@ func regPolicy(ps []mcpregister.Problem) *Problem {
 	return p
 }
 
-// The periods after which a registration lapses (design D14): one nobody approves within 7 days, one approved and never used within 30.
-const (
-	regPendingFor = 7 * 24 * time.Hour
-	regUnusedFor  = 30 * 24 * time.Hour
-)
-
 // expireMCPClients marks the registrations that lapsed as expired and removes their clients from the OAuth server, so a lapsed
-// registration cannot sign anyone in. It runs as registrations come in and when an Owner looks at the pending ones; a failure is
-// logged and never stops the request: the next run removes what is left (the clients are expired already, so none is usable).
+// registration cannot sign anyone in. It runs as registrations come in and when an Owner looks at the pending ones, and hourly as
+// the platform job mcp.registrations.expire; a failure is logged and never stops the request: the next run takes what is left.
 func (a *API) expireMCPClients(ctx context.Context, now time.Time) {
 	if a.deps.MCPClients == nil || a.deps.OAuthClients == nil {
 		return
 	}
-	ids, err := a.deps.MCPClients.ExpireClients(ctx, now, regPendingFor, regUnusedFor)
-	if err != nil {
+	if _, err := mcpregister.Expire(ctx, a.deps.MCPClients, a.deps.OAuthClients, now, a.deps.Log); err != nil {
 		a.deps.Log.WarnContext(ctx, "mcp.registrations_not_expired", "error", err.Error())
-		return
-	}
-	for _, id := range ids {
-		a.deps.Log.InfoContext(ctx, "AI app registration expired", "event", "mcp.registration_expired", "client", id)
-		if err := a.deps.OAuthClients.RemoveClient(ctx, id); err != nil {
-			a.deps.Log.WarnContext(ctx, "mcp.expired_client_not_removed", "client", id, "error", err.Error())
-		}
 	}
 }
 

@@ -1057,6 +1057,7 @@ fyniq_worker    SELECT    ledger_revision
 fyniq_worker    EXECUTE   lock_ledger()
 fyniq_worker    SELECT    mcp_call
 fyniq_worker    EXECUTE   mcp_clients_expire()
+fyniq_worker    EXECUTE   mcp_purge_calls()
 fyniq_worker    SELECT    mcp_seen
 fyniq_worker    SELECT    mcp_user_optin
 fyniq_worker    EXECUTE   member_emails()
