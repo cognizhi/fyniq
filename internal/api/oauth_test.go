@@ -48,6 +48,18 @@ type oauthStack struct {
 	public *url.URL // Hydra's public port as the host sees it; its issuer is http://hydra.test/
 	srv    *httptest.Server
 	user   string // the signed-in user's dev token
+	userID uuid.UUID
+	gate   *testGate           // what the MCP gate says: admits unless a test sets why
+	in     *authn.Introspector // the API's own, to which a test may add the delegation
+	api    *API                // the API on srv
+	flow   oauthflow.Flow      // the consent app's flow on srv
+}
+
+// testGate stands in for internal/mcpgate, whose settings and opt-in tests live with it: here it says yes, or the refusal a test sets.
+type testGate struct{ code, why string }
+
+func (g *testGate) Admit(context.Context, uuid.UUID, uuid.UUID, string) (string, string, error) {
+	return g.code, g.why, nil
 }
 
 // startOAuth starts the stack; ttl is how long the API caches an introspection.
@@ -76,13 +88,18 @@ func startOAuth(t *testing.T, ttl time.Duration) *oauthStack {
 	s := &oauthStack{t: t, e: e, admin: hydra.New(adm, http.DefaultClient), srv: srv, clock: clock.NewFrozen(clock.System{}.Now())}
 	s.public, _ = url.Parse(pub)
 	dev := e.tokens // the first-party session, until the SignIn port: dev tokens
-	auth := authn.Local{Dev: dev, OAuth: &authn.Introspector{OAuth: s.admin, Audience: apiAudience, Clock: s.clock, TTL: ttl}}
-	New(mux, Deps{Store: e.store, Clock: s.clock, Auth: auth, Log: slog.New(slog.DiscardHandler), Version: "0.0.0-test"})
-	oauthflow.Flow{OAuth: s.admin, SignedIn: dev, Clock: clock.System{}, APIAudience: apiAudience, MCPAudience: mcpAudience}.Register(mux)
-	s.user = authn.DevPrefix + uuid.NewString()
+	s.in = &authn.Introspector{OAuth: s.admin, Audience: apiAudience, Clock: s.clock, TTL: ttl}
+	auth := authn.Local{Dev: dev, OAuth: s.in}
+	s.api = New(mux, Deps{Store: e.store, Clock: s.clock, Auth: auth, Log: slog.New(slog.DiscardHandler), Version: "0.0.0-test", Services: e.services, Screening: local.Screen{}, MCPClients: e.store, OAuthClients: s.admin, MCPAudience: mcpAudience, MCPServerOn: true})
+	s.gate = &testGate{}
+	flow := oauthflow.Flow{OAuth: s.admin, SignedIn: dev, Clock: clock.System{}, APIAudience: apiAudience, MCPAudience: mcpAudience, MCP: s.gate}
+	flow.Register(mux)
+	s.flow, s.api.deps.Consent = flow, flow
+	s.user, s.userID = authn.DevPrefix+uuid.NewString(), uuid.New()
 	dev.mu.Lock()
-	dev.m[s.user] = authn.Principal{Subject: "user-oauth-1", Client: "web", Class: authn.ClassUser, Organisation: e.books.Org,
-		Roles: []authz.Role{authz.Accountant}}
+	// A person who signed in with a second factor just now, as an MCP consent needs (AI-37).
+	dev.m[s.user] = authn.Principal{Via: authn.ViaSession, Subject: "user-oauth-1", UserID: s.userID, Client: "web", Class: authn.ClassUser,
+		Organisation: e.books.Org, Roles: []authz.Role{authz.Accountant}, StepUpAt: clock.System{}.Now()}
 	dev.mu.Unlock()
 	return s
 }
@@ -319,7 +336,7 @@ func TestTokenLifecycle(t *testing.T) {
 	var row storage.OutboxRow
 	if err := s.e.store.Do(ctx, s.e.books.Org, func(ctx context.Context, u storage.UnitOfWork) error {
 		if err := revoke.RevokeAll(ctx, outbox.Dispatcher{Store: s.e.store, Queue: queue, Clock: s.clock}, u, s.e.books.Org,
-			"user-oauth-1", "roles changed"); err != nil {
+			s.userID.String(), "roles changed"); err != nil {
 			return err
 		}
 		rows, err := u.Sweeping().Due(ctx, s.clock.Now().Add(time.Hour), s.clock.Now().Add(time.Hour))

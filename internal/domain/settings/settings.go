@@ -46,6 +46,9 @@ const (
 	// TaskTypes is a list of the proposal catalogue's task types, such as "sec.create_task,sec.draft_reminder":
 	// comma-separated IDs; the API checks each is in the release's catalogue (AI-32).
 	TaskTypes Kind = "task_types"
+	// Apps is a list of the AI apps that may connect (AI-35, AI-90): the first-party apps the release pre-registers, by name, and
+	// the apps that registered themselves, by their client ID. The API checks an ID against the registrations it holds.
+	Apps Kind = "apps"
 	// Cron is a schedule's entry: five cron fields in Singapore time, such as "0 7 * * *", or "off" (AI-62).
 	Cron Kind = "cron"
 	// TimeRange is a daily range in Singapore time, such as "22:00-07:00", or "off" (AI-62).
@@ -71,6 +74,7 @@ type Definition struct {
 	Fixed        bool     // set by the platform: shown, never changed
 	LengthenOnly bool     // a change may only lengthen it
 	Min, Max     string   // the range of a number, inclusive
+	Unit         string   // the word a whole number counts, in messages, when it is not minutes, hours, days, times and so on
 	Choices      []string // a Choice's values
 }
 
@@ -302,6 +306,9 @@ var Catalogue = []Definition{
 	{Key: "features.ai_assistant", Group: "Features", Label: "AI assistant", Kind: Switch, Recommended: "false",
 		Reason: "AI is off until an Owner turns it on with a second approver (closed by default); turning it off takes effect at once",
 		Guide:  guide + "features", Requirement: "FR-ORG-06", DualControl: true, OffAtOnce: true},
+	{Key: "features.mcp", Group: "Features", Label: "AI apps through MCP", Kind: Switch, Recommended: "false",
+		Reason: "No AI app, such as Claude Desktop or Claude Code, reaches your books until an Owner turns this on with a second approver, and then only for the apps you allow and the people who opt in; turning it off takes effect at once",
+		Guide:  guide + "ai-apps-through-mcp", Requirement: "AI-35", DualControl: true, OffAtOnce: true},
 	{Key: "features.multi_currency", Group: "Features", Label: "Multi-currency", Kind: Switch, Recommended: "true",
 		Reason: "Start-ups usually pay some bills in other currencies, such as cloud and software subscriptions in US dollars",
 		Guide:  guide + "features", Requirement: "FR-ORG-06"},
@@ -329,6 +336,37 @@ var Catalogue = []Definition{
 	{Key: "gst.threshold_warning_percent", Group: "GST registration", Label: "Warn when the year's taxable supplies reach", Kind: Percent, Recommended: "80",
 		Reason: "Months of notice before the S$1 million test is met: IRAS gives 30 days to apply once a forecast exceeds it [accountant to confirm]",
 		Guide:  guide + "gst-registration-monitor", Requirement: "FR-TAX-05", Min: "50", Max: "99"},
+	{Key: "mcp.clients", Group: "AI apps (MCP)", Label: "AI apps that may connect", Kind: Apps, Recommended: "",
+		Choices: []string{"claude-code", "claude-desktop"},
+		Reason:  "Only an app you list here can connect: one the release has pre-registered, or one that registered itself and you approve; adding one needs a second approver, taking one off takes effect at once and cuts it off",
+		Guide:   guide + "ai-apps-through-mcp", Requirement: "AI-35", DualControl: true, OffAtOnce: true},
+	{Key: "mcp.proposals_per_hour", Group: "AI apps (MCP)", Label: "Proposals an AI app may make for a person in an hour", Kind: Count, Recommended: "30",
+		Min: "1", Max: "1000", Unit: "proposals",
+		Reason: "A person reviews each proposal before anything changes, so thirty an hour is more than anyone approves; more is a runaway app",
+		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
+	{Key: "mcp.registration", Group: "AI apps (MCP)", Label: "AI apps may register themselves", Kind: Switch, Recommended: "false",
+		Reason: "No AI app can ask to be registered until an Owner turns this on with a second approver; a registered app is still unusable until an Owner adds it to the apps that may connect; turning it off takes effect at once",
+		Guide:  guide + "ai-apps-through-mcp", Requirement: "AI-90", DualControl: true, OffAtOnce: true},
+	{Key: "mcp.requests_per_minute", Group: "AI apps (MCP)", Label: "Requests a person's AI app may make a minute", Kind: Count, Recommended: "60",
+		Min: "1", Max: "600", Unit: "requests",
+		Reason: "One request a second is brisk for an app reading on a person's behalf; more is a script, which this stops before it loads the books",
+		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
+	{Key: "mcp.result_kb", Group: "AI apps (MCP)", Label: "The most one answer to an AI app may hold, in kilobytes", Kind: Count, Recommended: "256",
+		Min: "16", Max: "1024", Unit: "kilobytes",
+		Reason: "A tool's own limits are lower; this is the ceiling no answer to an AI app passes, so a large result is summarised and never sent whole",
+		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
+	{Key: "mcp.result_rows", Group: "AI apps (MCP)", Label: "The most rows one answer to an AI app may hold", Kind: Count, Recommended: "500",
+		Min: "1", Max: "5000", Unit: "rows",
+		Reason: "A tool's own limits are lower; this is the ceiling no answer to an AI app passes, and what is left out is counted and said",
+		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
+	{Key: "mcp.tool_calls_per_day", Group: "AI apps (MCP)", Label: "Reads and proposals a person's AI app may make a day", Kind: Count, Recommended: "5000",
+		Min: "1", Max: "100000", Unit: "calls",
+		Reason: "Enough for a working day of questions put through an AI app; more in 24 hours is a runaway script or a misuse",
+		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
+	{Key: "mcp.tool_calls_per_hour", Group: "AI apps (MCP)", Label: "Reads and proposals a person's AI app may make an hour", Kind: Count, Recommended: "600",
+		Min: "1", Max: "10000", Unit: "calls",
+		Reason: "Ten a minute for an hour covers a long working session; more is a script",
+		Guide:  guide + "ai-app-limits", Requirement: "AI-43", DualControl: true},
 	{Key: "notify.email_details", Group: "Notifications", Label: "Details in notification email", Kind: Switch, Recommended: "false",
 		Reason: "Notification email says what kind of thing happened and links to Fyniq; amounts, names and reasons stay in the app, since the email provider keeps mail outside Singapore",
 		Guide:  guide + "notifications", Requirement: "FR-NTF-02", DualControl: true},
@@ -405,7 +443,9 @@ var (
 	fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]{0,40}$`)
 	// taskTypeID is a proposal catalogue's task type, as internal/proposal names it.
 	taskTypeID = regexp.MustCompile(`^[a-z]+\.[a-z]+(_[a-z]+)*$`)
-	sgd        = money.MustLookup("SGD")
+	// registeredApp is the client ID of an app that registered itself (AI-90).
+	registeredApp = regexp.MustCompile(`^mcp-[0-9a-f]{20}$`)
+	sgd           = money.MustLookup("SGD")
 )
 
 // Normalise reads raw as a value of d, and returns it as stored: "true", "30", "50.00" or "2.5". It refuses
@@ -418,7 +458,7 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 	if raw == "" && d.Recommended == "" && !d.Fixed {
 		return "", nil
 	}
-	if list := d.Kind == Fields || d.Kind == TaskTypes; (!list && len(raw) > 200) || len(raw) > 4000 {
+	if list := d.Kind == Fields || d.Kind == TaskTypes || d.Kind == Apps; (!list && len(raw) > 200) || len(raw) > 4000 {
 		return bad("Send at most 200 characters, or 4,000 for a list")
 	}
 	switch d.Kind {
@@ -431,6 +471,9 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 		unit := string(d.Kind)
 		if d.Kind == Count {
 			unit = "times"
+		}
+		if d.Unit != "" {
+			unit = d.Unit
 		}
 		if !whole.MatchString(raw) {
 			return bad(fmt.Sprintf("Send a whole number of %s, from %s to %s", unit, d.Min, d.Max))
@@ -474,6 +517,22 @@ func Normalise(d Definition, raw string) (string, *Problem) {
 		}
 		slices.Sort(names)
 		return strings.Join(names, ","), nil
+	case Apps:
+		var apps []string
+		for _, n := range strings.Split(raw, ",") {
+			n = strings.TrimSpace(n)
+			if !slices.Contains(d.Choices, n) && !registeredApp.MatchString(n) {
+				return bad("Send apps separated by commas: " + strings.Join(d.Choices, ", ") + ", or the ID of an app that registered itself, such as mcp-0123456789abcdef0123")
+			}
+			if !slices.Contains(apps, n) {
+				apps = append(apps, n)
+			}
+		}
+		if len(apps) > 50 {
+			return bad("Send at most 50 apps")
+		}
+		slices.Sort(apps)
+		return strings.Join(apps, ","), nil
 	case TaskTypes:
 		var ids []string
 		for _, n := range strings.Split(raw, ",") {
@@ -606,12 +665,12 @@ func Check(d Definition, value string, from, today time.Time, changes []storage.
 }
 
 // Narrows is whether a change from was to value only takes away, so a kill switch applies it at once (AI-13, AI-32): a
-// switch turned off, or task types removed and none added.
+// switch turned off, or task types or allowed apps removed and none added.
 func Narrows(d Definition, was, value string) bool {
 	switch d.Kind {
 	case Switch:
 		return value == "false"
-	case TaskTypes:
+	case TaskTypes, Choices, Apps:
 		before := strings.Split(was, ",")
 		for _, id := range strings.Split(value, ",") {
 			if id != "" && !slices.Contains(before, id) {

@@ -31,6 +31,10 @@
 !kb/schema.md
 !kb/pages/
 !contracts/ai/ai.go
+!contracts/ai/mcp-scopes.json
+!contracts/ai/mcp-clients.json
+!contracts/ai/mcp-registration-policy.json
+!contracts/ai/mcp-manifest.json
 !contracts/ai/tools/
 !contracts/ai/prompts/
 !contracts/ai/tasks/

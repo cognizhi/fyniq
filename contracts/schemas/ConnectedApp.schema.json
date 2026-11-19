@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allowed": {
+      "description": "Whether the organisation's allowlist names it now.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    },
+    "id": {
+      "description": "The app's client ID: its name on the allowlist for a first-party app, mcp-… for one that registered itself.",
+      "examples": [
+        "claude-code"
+      ],
+      "type": "string"
+    },
+    "name": {
+      "description": "The app's name.",
+      "examples": [
+        "Claude Code"
+      ],
+      "type": "string"
+    },
+    "publisher": {
+      "description": "The publisher Fyniq has verified; absent for an app that registered itself, which Fyniq has not verified.",
+      "examples": [
+        "Anthropic"
+      ],
+      "type": "string"
+    },
+    "status": {
+      "description": "first_party: pre-registered by the release; the others are a self-registered app's course.",
+      "enum": [
+        "first_party",
+        "pending",
+        "approved",
+        "denied",
+        "expired"
+      ],
+      "examples": [
+        "first_party"
+      ],
+      "type": "string"
+    },
+    "verified": {
+      "description": "Whether Fyniq verified who publishes it: only the apps the release pre-registered.",
+      "examples": [
+        true
+      ],
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "verified",
+    "allowed",
+    "status"
+  ],
+  "title": "ConnectedApp",
+  "type": "object"
+}

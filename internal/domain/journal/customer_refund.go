@@ -29,59 +29,66 @@ type CustomerRefunds struct {
 // gap-free), its entry, the allocation that settles the credit, and the document's change to posted. A refund the
 // rules refuse writes nothing and answers every problem.
 func (s CustomerRefunds) Record(ctx context.Context, org uuid.UUID, d customercredit.RefundDraft) (Refunded, error) {
+	var out Refunded
+	err := s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) (err error) {
+		out, err = s.RecordIn(ctx, u, d)
+		return err
+	})
+	return out, err
+}
+
+// RecordIn records a refund in a unit of work that does more, so that the refund and what records it commit together.
+func (s CustomerRefunds) RecordIn(ctx context.Context, u storage.UnitOfWork, d customercredit.RefundDraft) (Refunded, error) {
 	b, err := customercredit.EncodeRefund(d)
 	if err != nil {
 		return Refunded{}, err
 	}
 	var out Refunded
-	err = s.Store.Do(ctx, org, func(ctx context.Context, u storage.UnitOfWork) error {
-		if err := lockBills(ctx, u, []uuid.UUID{d.CreditID}); err != nil {
-			return err
+	if err := lockBills(ctx, u, []uuid.UUID{d.CreditID}); err != nil {
+		return out, err
+	}
+	doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentCustomerRefund, Payload: b})
+	if err != nil {
+		return out, err
+	}
+	settings, err := loadSettings(ctx, u)
+	if err != nil {
+		return out, err
+	}
+	p, probs, err := customercredit.PrepareRefund(ctx, u, doc, settings)
+	if err != nil {
+		return out, err
+	}
+	entry, settled := ledger.Entry{}, ledger.Settlement{}
+	if len(probs) == 0 || (p.Credit.Doc.ID != uuid.Nil && p.Deposit == nil) {
+		var perr error
+		entry, settled, perr = ledger.CustomerRefundRules[p.Rule()](p.Refund, settings)
+		if ps, ok := perr.(ledger.Problems); ok {
+			probs = append(probs, ps...)
+		} else if perr != nil {
+			return out, perr
 		}
-		doc, err := u.Documents().Create(ctx, storage.NewDocument{Type: storage.DocumentCustomerRefund, Payload: b})
-		if err != nil {
-			return err
-		}
-		settings, err := loadSettings(ctx, u)
-		if err != nil {
-			return err
-		}
-		p, probs, err := customercredit.PrepareRefund(ctx, u, doc, settings)
-		if err != nil {
-			return err
-		}
-		entry, settled := ledger.Entry{}, ledger.Settlement{}
-		if len(probs) == 0 || (p.Credit.Doc.ID != uuid.Nil && p.Deposit == nil) {
-			var perr error
-			entry, settled, perr = ledger.CustomerRefundRules[p.Rule()](p.Refund, settings)
-			if ps, ok := perr.(ledger.Problems); ok {
-				probs = append(probs, ps...)
-			} else if perr != nil {
-				return perr
-			}
-		}
-		if len(probs) > 0 {
-			return probs
-		}
-		if doc.Number, err = u.Sequences().Number(ctx, doc.ID, storage.DocumentCustomerRefund); err != nil {
-			return err
-		}
-		if out.Entry, err = u.Ledger().Append(ctx, toStorage(entry, nil)); err != nil {
-			return err
-		}
-		if out.Allocation, err = u.Allocations().Add(ctx, storage.NewAllocation{SourceID: doc.ID, SourceVersion: doc.Version, DocumentID: d.CreditID,
-			On: d.Date, Currency: settled.Amount.Currency().Code, Amount: storage.Decimal(settled.Amount.String()), BaseCurrency: settings.Base.Code,
-			BaseAmount: storage.Decimal(settled.Base.String()), RealisedFX: storage.Decimal(settled.RealisedFX.String()), Tax: depositTax(p.Refund)}); err != nil {
-			return err
-		}
-		if err := u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted); err != nil {
-			return err
-		}
-		doc.Status = storage.DocumentPosted
-		out.Refund = doc
-		return s.after(ctx, u, doc, out.Entry)
-	})
-	return out, err
+	}
+	if len(probs) > 0 {
+		return out, probs
+	}
+	if doc.Number, err = u.Sequences().Number(ctx, doc.ID, storage.DocumentCustomerRefund); err != nil {
+		return out, err
+	}
+	if out.Entry, err = u.Ledger().Append(ctx, toStorage(entry, nil)); err != nil {
+		return out, err
+	}
+	if out.Allocation, err = u.Allocations().Add(ctx, storage.NewAllocation{SourceID: doc.ID, SourceVersion: doc.Version, DocumentID: d.CreditID,
+		On: d.Date, Currency: settled.Amount.Currency().Code, Amount: storage.Decimal(settled.Amount.String()), BaseCurrency: settings.Base.Code,
+		BaseAmount: storage.Decimal(settled.Base.String()), RealisedFX: storage.Decimal(settled.RealisedFX.String()), Tax: depositTax(p.Refund)}); err != nil {
+		return out, err
+	}
+	if err := u.Documents().SetStatus(ctx, doc.ID, storage.DocumentPosted); err != nil {
+		return out, err
+	}
+	doc.Status = storage.DocumentPosted
+	out.Refund = doc
+	return out, s.after(ctx, u, doc, out.Entry)
 }
 
 // Void undoes a posted refund on date, with a reason: a reversing entry and a reversing allocation, which reopens the

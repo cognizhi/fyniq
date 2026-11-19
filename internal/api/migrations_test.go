@@ -349,7 +349,7 @@ var pastPolicy = map[string]string{"createPersonalAccessToken": apiclient.CodeDi
 	"uploadMigrationParallelWorkbook": migration.CodeCommit, "decideMigrationParallelDifference": migration.CodeCommit,
 	"signMigrationParallel": migration.CodeCommit, "getMigrationParallelReport": CodeNotFound,
 	"uploadMigrationArchivePDF": migration.CodeCommit, "archiveMigration": migration.CodeParallel,
-	"prepareDisputeLoss": CodePSPDisputeState, "resolvePaymentProviderEvent": CodePSPEventState,
+	"prepareDisputeLoss": CodePSPDisputeState, "settleDisputeCredit": CodePSPDisputeState, "resolvePaymentProviderEvent": CodePSPEventState,
 	"addExpenseClaimEvidenceFromMessage": CodeMessageFile} // the matrix member has no mail at an address of their own
 
 // matrixMigrations are the authorisation matrix's rows for the workbook migration (FR-MIG-01, Appendix D "Workbook

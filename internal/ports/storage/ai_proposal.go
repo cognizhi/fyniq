@@ -57,6 +57,9 @@ type AIProposal struct {
 	RequestedBy uuid.UUID
 	Turn        *uuid.UUID
 	Run         *uuid.UUID
+	// MCPApp is the AI app that proposed it over MCP, for the person RequestedBy: the course of a proposal that came from neither
+	// a turn nor a run (AI-16, AI-89 rev 0.298).
+	MCPApp      string
 	Model       string
 	Prompt      string
 	ToolsSHA256 string
@@ -85,6 +88,7 @@ type AIProposalQuery struct {
 	RequestedBy *uuid.UUID
 	Turn        *uuid.UUID
 	Run         *uuid.UUID // a scheduled agent's run's
+	Since       *time.Time // proposed at or after this time
 	Agent       string     // the AI that proposed them, such as company_secretary
 	After       uuid.UUID
 	Limit       int
