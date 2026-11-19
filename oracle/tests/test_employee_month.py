@@ -303,17 +303,35 @@ def test_the_last_month_of_employment_trues_up_though_it_is_not_december():  # r
     assert Decimal(got["refund_wages"]) == 0
 
 
-def test_a_true_up_excess_is_a_refund_task_with_the_employees_share_cents_dropped():  # req: FR-PAY-14
-    # Ordinary wages 96,000 actual: 6,000 allowed; 30,000 counted: 24,000 refundable; the employee's share 20% of 24,000 = 4,800.
+def test_a_true_up_excess_is_a_refund_task_with_the_employees_share_in_whole_dollars():  # req: FR-PAY-14
+    # Ordinary wages 96,000 actual: 6,000 allowed; 30,000 counted: 24,000 refundable at 37% is 8,880 contributions;
+    # the employee's share 8,880 / 0.37 x 0.20 = 4,800.
     got = work(month="2026-12-01", person=person(), items=basic("8000.00"), last_month=True, ytd={"ow": "88000", "aw_subject": "30000", "aw_paid": "30000"})
-    assert figures(got, "aw_subject", "refund_wages", "refund_employee") == {"aw_subject": 0, "refund_wages": 24000, "refund_employee": 4800}
+    assert figures(got, "aw_subject", "refund_wages", "refund_total", "refund_employee") == {
+        "aw_subject": 0, "refund_wages": 24000, "refund_total": 8880, "refund_employee": 4800}
 
 
-def test_a_refund_with_a_part_cent_drops_the_cents_for_the_employee():  # req: FR-PAY-14
+def test_a_refund_drops_the_cents_of_the_employees_share():  # req: FR-PAY-14
     # Actual ordinary wages 89,999.93 + 8,000 = 97,999.93: 4,000.07 allowed; 12,100.14 counted: 8,100.07 refundable.
-    # The employee's share 20% of 8,100.07 = 1,620.014: cents dropped, 1,620.01. 
+    # The contributions on it, 37% of 8,100.07 = 2,997.0259, are 2,997 to the nearest dollar; the employee's share 2,997 / 0.37 x 0.20 = 1,620.
     got = work(month="2026-12-01", items=basic("8000.00"), last_month=True, ytd={"ow": "89999.93", "aw_subject": "12100.14", "aw_paid": "12100.14"})
-    assert figures(got, "refund_wages", "refund_employee") == {"refund_wages": Decimal("8100.07"), "refund_employee": Decimal("1620.01")}
+    assert figures(got, "refund_wages", "refund_total", "refund_employee") == {"refund_wages": Decimal("8100.07"), "refund_total": 2997, "refund_employee": 1620}
+
+
+def test_a_refund_in_the_graduated_range_is_worked_out_at_the_full_rates():  # req: FR-PAY-14
+    # 88,000 + 0.10 of ordinary wages leave 13,999.90 for the 14,961.56 counted: 961.66 refundable. 37% of it is 355.8142, so 356 contributions;
+    # the employee's share 356 / 0.37 x 0.20 = 192.43, cents dropped: 192.
+    got = work(month="2026-12-01", items=basic("0.10"), last_month=True, ytd={"ow": "88000", "aw_subject": "14961.56", "aw_paid": "14961.56"})
+    assert figures(got, "refund_wages", "refund_total", "refund_employee") == {"refund_wages": Decimal("961.66"), "refund_total": 356, "refund_employee": 192}
+
+
+def test_the_cpf_boards_own_refund_example_gives_whole_dollars(monkeypatch):  # req: FR-PAY-14
+    # cpf.gov.sg, "Why does the excess CPF from the Additional Wage ceiling calculator differ from the automatic refund and how do I calculate my employee's
+    # share" (checked 20 Nov 2026): $2,260 refunded at a 32.5% total rate and a 17% employee rate: "($2,260 / 32.5%) x 17% = $1,182 (cents should be
+    # dropped)", 1,182.15 before. The pack's 2026 tables have no 32.5% row, so the example's rates are put in place of the pack's.
+    monkeypatch.setattr(em, "_rates", lambda *_: (Decimal("0.155"), Decimal("0.17")))
+    total, employee = em.cpf_refund("sg-cpf@2026.2", "sc_spr3", em.date(1968, 1, 1), em.date(2026, 12, 1), Decimal("6953.85"))
+    assert (total, employee) == (2260, 1182)
 
 
 def test_a_month_that_pays_additional_wages_with_no_year_to_date_is_refused():  # req: FR-PAY-14

@@ -1681,7 +1681,7 @@ Rules the sources leave open, decided in the oracle and marked for confirmation 
 - **A 29 February birthday** is 1 March in a year with none, so the age band changes the month after that. `[verify]`
 - **Final pay**: an advance is recovered only with consent; the 12-instalment and 25% limits are not applied on it. `[accountant to confirm]`
 - **Run cost and 6030** carry the SDL payable (rounded down once), not the employees' sum (PRD-001 question 27, recommended default).
-- **Refund**: the employee's share is the refunded wages at the employee rate, cents dropped; the refund's total is not compared, since no named policy rounds it. `[verify]`
+- **Refund** (decided 20 Nov 2026 from the CPF Board's own example, which the sources section below quotes): the employee's share is `refund / total rate x employee rate` with the cents dropped, so whole dollars ("$1,182.15" is "$1,182"); the refund's total is the refunded wages at the full table's total rate, to the nearest dollar with 50 cents up (`RND-CPF`'s total). Both are compared. `[accountant to confirm]` the total's rounding: the CPF Board's calculator rounds monthly and its automatic refund over the year, so its figure can differ by a few dollars.
 - **Not covered here:** overrides (FR-PAY-06), the foreign worker levy (O2), the part-month salary of joiners and leavers.
 
 ## Commands

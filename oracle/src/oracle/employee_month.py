@@ -243,6 +243,17 @@ def cpf_split(pack_id: str, group: str, birth: date, month: date, subject: Decim
     return dollars_half_up(subject * (employer + employee)), dollars_down(subject * employee)
 
 
+def cpf_refund(pack_id: str, group: str, birth: date, month: date, wages: Decimal) -> tuple[Decimal, Decimal]:
+    """(refund total, the employee's share) of the additional wages a true-up finds counted beyond the annual ceiling (FR-PAY-14), whatever band the month's
+    own wages are in: the refund is contributions, so the total is the wages at the full table's total rate, to the nearest dollar with 50 cents up (the
+    total's rule in ``RND-CPF``) [accountant to confirm: the CPF Board's calculator rounds monthly, its automatic refund over the year]; the employee's share is the
+    CPF Board's formula, ``refund / total rate x employee rate``, "cents should be dropped", so down to the dollar (its worked example: $2,260 / 32.5% x 17% =
+    $1,182.15 is $1,182; cpf.gov.sg "Why does the excess CPF from the AW ceiling calculator differ ...", checked 20 Nov 2026)."""
+    employer, employee = _rates(pack_id, group, birth, month)
+    total = dollars_half_up(wages * (employer + employee))
+    return total, dollars_down(total / (employer + employee) * employee)
+
+
 # --- SDL and SHG -------------------------------------------------------------------------------------------------------------------
 
 
@@ -397,11 +408,11 @@ def employee_month(person: dict[str, Any], month: date, facts: dict[str, Any], p
 
     subject = ow_subject + aw_subject
     cpf_total = cpf_employee = ZERO
-    refund_employee = ZERO
+    refund_total = refund_employee = ZERO
     if group is not None:
         cpf_total, cpf_employee = cpf_split(cpf_id, group, birth, month, subject)
         if refund_wages > 0:
-            refund_employee = cents_down(refund_wages * _rates(cpf_id, group, birth, month)[1])
+            refund_total, refund_employee = cpf_refund(cpf_id, group, birth, month, refund_wages)
     cpf_employer = cpf_total - cpf_employee
 
     sdl = sdl_employee(sdl_id, month, gross) if employee else ZERO
@@ -429,6 +440,7 @@ def employee_month(person: dict[str, Any], month: date, facts: dict[str, Any], p
         "disburse": net + reimbursements - facts["held"],
         "employer_cost": gross + cpf_employer + sdl,
         "refund_wages": refund_wages,
+        "refund_total": refund_total,
         "refund_employee": refund_employee,
         "violations": check_deductions(gross, facts["deductions"], facts["final"]),
     }
@@ -437,7 +449,7 @@ def employee_month(person: dict[str, Any], month: date, facts: dict[str, Any], p
 # --- the run -----------------------------------------------------------------------------------------------------------------------
 
 FIGURES = ("gross", "ow_subject", "aw_subject", "cpf_total", "cpf_employee", "cpf_employer", "sdl", "shg", "deductions", "reimbursements",
-           "held", "net", "disburse", "employer_cost", "refund_wages", "refund_employee")
+           "held", "net", "disburse", "employer_cost", "refund_wages", "refund_total", "refund_employee")
 DIFFERENCE = ("gross", "cpf_employee", "cpf_employer", "sdl", "shg", "deductions", "reimbursements", "net", "disburse")
 
 
