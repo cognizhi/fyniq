@@ -197,8 +197,131 @@ func peopleLinkOut(l storage.PeopleLinkRow, ok bool, sources []storage.PeopleSou
 	return out
 }
 
+// PeopleProjectionPerson is a person of the employee projection (FR-PPL-06): what accounting needs of them, no pay, bank number or NRIC.
+type PeopleProjectionPerson struct {
+	PersonID    string `json:"person_id" format:"uuid" doc:"The person's ID in Nemura." example:"0192a000-0000-7000-8000-0000000000e1"`
+	DisplayName string `json:"display_name,omitempty" doc:"Their name." example:"Wei Jie Ong"`
+	Status      string `json:"status,omitempty" doc:"Their employment status." example:"active"`
+	Department  string `json:"department_id,omitempty" format:"uuid" doc:"Their department: a dimension value of Fyniq's." example:"0192a000-0000-7000-8000-0000000000d1"`
+	LineManager string `json:"line_manager_person_id,omitempty" format:"uuid" doc:"Their line manager's person ID, for claim routing (FR-AP-17)." example:"0192a000-0000-7000-8000-0000000000e2"`
+	Held        bool   `json:"held" doc:"Whether a tax-clearance hold is open on them (FR-PPL-13)." example:"false"`
+	Removed     bool   `json:"removed" doc:"Whether Nemura removed their record." example:"false"`
+	UserID      string `json:"user_id,omitempty" format:"uuid" doc:"The Fyniq user they were mapped to, explicitly and never by email (FR-PPL-18)." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
+}
+
+// PeopleProjectionPage is a page of the projection's people.
+type PeopleProjectionPage struct {
+	Items      []PeopleProjectionPerson `json:"items" nullable:"false" doc:"The people, by name."`
+	NextCursor string                   `json:"next_cursor,omitempty" doc:"The cursor of the next page; none on the last." example:"eyJhZnRlciI6IjEwMDAifQ"`
+}
+
+// PersonPath names a person of the projection.
+type PersonPath struct {
+	PersonID string `path:"person_id" doc:"The person's ID in Nemura." example:"0192a000-0000-7000-8000-0000000000e1"`
+}
+
+// PersonUserMap maps a person to a Fyniq user.
+type PersonUserMap struct {
+	UserID string `json:"user_id" format:"uuid" doc:"The member of this organisation the person is: no Fyniq role is granted by it." example:"01928f6e-7a3b-7c41-9d2e-5f8a1b3c4d01"`
+}
+
+type (
+	peopleProjectionOutput struct{ Body PeopleProjectionPage }
+	personUserInput        struct {
+		PersonPath
+		KeyHeader
+		PreferHeader
+		Body PersonUserMap
+	}
+	personUserOutput struct {
+		Replayed string `header:"Idempotent-Replayed" doc:"true when this is the saved answer to an earlier request with the same Idempotency-Key."`
+		Applied  string `header:"Preference-Applied" doc:"return=preview when this is a preview: nothing was saved (FR-INT-14)."`
+		Body     PeopleProjectionPerson
+	}
+)
+
+func projectionOut(p peoplelink.Person) PeopleProjectionPerson {
+	out := PeopleProjectionPerson{PersonID: p.ID.String(), DisplayName: p.DisplayName, Status: p.Status, Held: p.Held, Removed: p.Removed}
+	if p.DepartmentValue != uuid.Nil {
+		out.Department = p.DepartmentValue.String()
+	}
+	if p.LineManager != uuid.Nil {
+		out.LineManager = p.LineManager.String()
+	}
+	if p.UserID != uuid.Nil {
+		out.UserID = p.UserID.String()
+	}
+	return out
+}
+
 func registerPeopleLink(a *API) {
 	locks := []string{storage.CodeRetry, storage.CodeLockTimeout}
+
+	register(a, authz.ListPeopleProjection, huma.Operation{
+		OperationID: "listPeopleProjection", Method: http.MethodGet, Path: "/v1/people-link/people", Tags: []string{"People"},
+		Summary: "List the people of the employee projection",
+		Description: "The people Nemura told Fyniq about (FR-PPL-06), by name, a page at a time: their name, status, department, line manager's person ID, whether " +
+			"a hold is open, and the Fyniq user each was mapped to. Never pay, a bank number or an NRIC. Read-only; no side effects.",
+	}, append([]string{CodeCursor}, locks...), func(ctx context.Context, in *PageQuery) (*peopleProjectionOutput, error) {
+		p, _ := authn.From(ctx)
+		out := PeopleProjectionPage{Items: []PeopleProjectionPerson{}}
+		err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+			all, err := u.PeopleLinks().People(ctx)
+			if err != nil {
+				return err
+			}
+			page, next, err := pageOf(all, func(x peoplelink.Person) string { return x.ID.String() }, *in)
+			for _, x := range page {
+				out.Items = append(out.Items, projectionOut(x))
+			}
+			out.NextCursor = next
+			return err
+		})
+		return &peopleProjectionOutput{Body: out}, err
+	})
+
+	register(a, authz.MapPersonToUser, huma.Operation{
+		OperationID: "mapPersonToUser", Method: http.MethodPost, Path: "/v1/people-link/people/{person_id}/user", Tags: []string{"People"},
+		Summary: "Map a person of the projection to a Fyniq user",
+		Description: "Maps a person Nemura told Fyniq about to the member of this organisation they are, explicitly: never by email (FR-PPL-18, NM-INT-12). " +
+			"The mapping grants no Fyniq role. It is what a line manager's claim routing and an approver's own department read (FR-AP-17), and what " +
+			"names a payroll approver's identity. One user maps to one person. Side effects: the projection's change and its audit event by field " +
+			"name. Idempotent with Idempotency-Key; Prefer: return=preview checks it and saves nothing. On the never-list for the AI and MCP (§9.6).",
+	}, append([]string{CodeNotFound, CodeIdempotencyReused, CodeIdempotencyBusy, CodeIdempotencyOld, CodeInvalid, storage.CodePeopleLink}, locks...), func(ctx context.Context, in *personUserInput) (*personUserOutput, error) {
+		person, err := parseID("person_id", in.PersonID)
+		if err != nil {
+			return nil, err
+		}
+		user, err := parseID("body.user_id", in.Body.UserID)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := write(ctx, a, in.IdempotencyKey, in.Prefer, in.Body, http.StatusOK, func(ctx context.Context, u storage.UnitOfWork) (PeopleProjectionPerson, error) {
+			cur, err := u.PeopleLinks().Person(ctx, person)
+			if err != nil {
+				return PeopleProjectionPerson{}, err
+			}
+			if !cur.Known() {
+				return PeopleProjectionPerson{}, problem(CodeNotFound, "No such person in the projection.", "Choose a person from listPeopleProjection.")
+			}
+			roles, err := u.Members().Roles(ctx, user, a.deps.Clock.Now())
+			if err != nil && !errors.Is(err, ports.ErrNotFound) {
+				return PeopleProjectionPerson{}, err
+			}
+			if len(roles) == 0 {
+				return PeopleProjectionPerson{}, invalid([]FieldProblem{{Code: CodeInvalid, Field: "body.user_id", Message: "is not an active member of this organisation", Fix: "Choose a member from the members list"}})
+			}
+			cur.UserID, cur.UpdatedAt = user, a.deps.Clock.Now()
+			if err := u.PeopleLinks().SavePerson(ctx, cur); err != nil {
+				return PeopleProjectionPerson{}, err
+			}
+			return projectionOut(cur), nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &personUserOutput{Replayed: replayedHeader(resp.Replayed), Applied: applied(resp), Body: resp.Body}, nil
+	})
 
 	register(a, authz.GetPeopleLink, huma.Operation{
 		OperationID: "getPeopleLink", Method: http.MethodGet, Path: "/v1/people-link", Tags: []string{"People"},

@@ -611,6 +611,8 @@ var (
 	RequestPeopleLink            = Policy{Operation: "requestPeopleLink", Capability: PeopleAndHR, Need: Create}
 	RequestPeopleUnlink          = Policy{Operation: "requestPeopleUnlink", Capability: PeopleAndHR, Need: Create}
 	ReceivePeopleProjectionEvent = Policy{Operation: "receivePeopleProjectionEvent", Capability: PeopleAndHR, Need: Create, LinkScope: "people.projection.write"}
+	ListPeopleProjection         = Policy{Operation: "listPeopleProjection", Capability: PeopleAndHR, Need: View}
+	MapPersonToUser              = Policy{Operation: "mapPersonToUser", Capability: PeopleAndHR, Need: Create}
 	GetPayrollMapping            = Policy{Operation: "getPayrollMapping", Capability: PayRuns, Need: View}
 	SetPayrollMapping            = Policy{Operation: "setPayrollMapping", Capability: PayRuns, Need: Create}
 	SubmitPayrollRun             = Policy{Operation: "submitPayrollRun", Capability: PeopleAndHR, Need: Create, LinkScope: "payroll.journal.submit"}
@@ -2018,7 +2020,7 @@ var (
 )
 
 // Policies are every policy, by operation. An operation without one is refused.
-var Policies = index(GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
+var Policies = index(ListPeopleProjection, MapPersonToUser, GetPayrollMapping, SetPayrollMapping, SubmitPayrollRun, GetPeopleLink, RequestPeopleLink, RequestPeopleUnlink, ReceivePeopleProjectionEvent, ReceivePeopleHoldEvent, ListIntegrationClients, GetIntegrationClient, CreateIntegrationClient, RevokeIntegrationClient, CreatePersonalAccessToken, ListMyPersonalAccessTokens, RevokeMyPersonalAccessToken, ListPersonalAccessTokens, RevokePersonalAccessToken, RequestPersonalAccessTokenReclass, ListConnectorCatalogue, ListInstallationConnectors, GetInstallationConnector, InstallInstallationConnector,
 	ConfigureInstallationConnector, SetInstallationConnectorSecret, StepInstallationConnector, TestInstallationConnector,
 	ListInstallationChanges, ApproveInstallationChange, RejectInstallationChange, ListOrganisationConnectors, GetOrganisationConnector,
 	InstallOrganisationConnector, ConfigureOrganisationConnector, SetOrganisationConnectorSecret, StepOrganisationConnector,

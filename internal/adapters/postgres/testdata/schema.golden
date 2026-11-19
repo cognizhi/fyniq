@@ -8536,6 +8536,7 @@ CREATE TRIGGER payroll_mapping_entry_guard BEFORE DELETE OR UPDATE ON fyniq.payr
 CREATE TRIGGER payroll_mapping_entry_no_truncate BEFORE TRUNCATE ON fyniq.payroll_mapping_entry FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER payroll_mapping_guard BEFORE DELETE OR UPDATE ON fyniq.payroll_mapping FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER payroll_mapping_no_truncate BEFORE TRUNCATE ON fyniq.payroll_mapping FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
+CREATE TRIGGER payroll_mapping_slot_account BEFORE INSERT ON fyniq.payroll_mapping_entry FOR EACH ROW EXECUTE FUNCTION payroll_mapping_slot_account()
 CREATE TRIGGER payroll_run_receipt_guard BEFORE DELETE OR UPDATE ON fyniq.payroll_run_receipt FOR EACH ROW EXECUTE FUNCTION notification_append_only()
 CREATE TRIGGER payroll_run_receipt_no_truncate BEFORE TRUNCATE ON fyniq.payroll_run_receipt FOR EACH STATEMENT EXECUTE FUNCTION document_version_immutable()
 CREATE TRIGGER pd_anonymisation_immutable BEFORE DELETE OR UPDATE ON fyniq.pd_anonymisation FOR EACH ROW EXECUTE FUNCTION audit_immutable()
@@ -9438,6 +9439,7 @@ payment_batch_holds() → trigger | security invoker | v | search_path=pg_catalo
 payment_batch_payment_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 763964fa08a7cf056831339660d84231
 payment_batch_release_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 0c2e26331f52a0ca299b3ab3aaa9b534
 payroll_entry_needs_receipt() → trigger | security definer | v | search_path=pg_catalog, fyniq, pg_temp | f00c6441f4aa760f66b01d13321806f6
+payroll_mapping_slot_account() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | ce65daa4649c21ec3c51f2ef94c27a8f
 pd_breach_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | aa943103eb58e8ba42a46bdf6d7b932a
 pd_request_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | 84bdfa5651f52981df006a9b1b3fa887
 pd_shredding_run_guard() → trigger | security invoker | v | search_path=pg_catalog, fyniq, pg_temp | e78959af9821f7e3f1ccf60b99d41b64

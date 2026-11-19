@@ -849,6 +849,8 @@ Errors are RFC 9457 problem details with a stable code and a fix. Writes take an
 - `POST /v1/people-link` (requestPeopleLink): Ask to link the organisation to a Nemura organisation
 - `POST /v1/people-link/hold-events` (receivePeopleHoldEvent): Receive a tax-clearance hold event from Nemura
 - `POST /v1/people-link/payroll-runs` (submitPayrollRun): Receive an approved pay run from Nemura and post it
+- `GET /v1/people-link/people` (listPeopleProjection): List the people of the employee projection
+- `POST /v1/people-link/people/{person_id}/user` (mapPersonToUser): Map a person of the projection to a Fyniq user
 - `POST /v1/people-link/projection-events` (receivePeopleProjectionEvent): Receive a person or bank-details event from Nemura
 - `POST /v1/people-link/unlink` (requestPeopleUnlink): Ask to end the link to the people platform
 - `GET /v1/periods` (listPeriods): List the periods
