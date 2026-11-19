@@ -29,7 +29,7 @@ SCHEMA = "kb-schema@2"
 WATCHED_DIRS = ["docs/user-guide"]           # raw sources (kb/schema.md "Layers")
 WATCHED_EXCLUDE = {"docs/user-guide/README.md"}
 FORBIDDEN_SOURCES = ("docs/prd/",)            # internal spec: never a source
-PACKS_DIR = "packs"                           # the statutory packs: packs/<name>/<year>.<n>/ (kb-schema@2 `packs`)
+PACKS_DIRS = ["packs", "internal/nemura/packs"]  # the statutory packs: <dir>/<name>/<year>.<n>/ (kb-schema@2 `packs`); Nemura keeps its own
 PACK_RE = re.compile(r"^([a-z][a-z0-9-]*)@(\d{4})\.(\d+)$")
 
 TYPES = ["concept", "task", "reference", "policy", "decision"]
@@ -144,13 +144,14 @@ def source_status(relpath):
 
 
 def pack_versions():
-    """Every statutory pack version in the repository: {name: [(year, n), ...]} (packs/<name>/<year>.<n>/)."""
+    """Every statutory pack version in the repository: {name: [(year, n), ...]} (packs/<name>/<year>.<n>/, and Nemura's in internal/nemura/packs/)."""
     out = {}
-    base = ROOT / PACKS_DIR
-    for d in sorted(base.iterdir()) if base.is_dir() else []:
-        if d.is_dir():
-            vs = [tuple(int(x) for x in v.name.split(".")) for v in d.iterdir() if v.is_dir() and re.match(r"^\d{4}\.\d+$", v.name)]
-            out[d.name] = sorted(vs)
+    for rel in PACKS_DIRS:
+        base = ROOT / rel
+        for d in sorted(base.iterdir()) if base.is_dir() else []:
+            if d.is_dir():
+                vs = [tuple(int(x) for x in v.name.split(".")) for v in d.iterdir() if v.is_dir() and re.match(r"^\d{4}\.\d+$", v.name)]
+                out[d.name] = sorted(set(out.get(d.name, [])) | set(vs))
     return out
 
 

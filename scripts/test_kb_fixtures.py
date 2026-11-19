@@ -101,6 +101,12 @@ class StaleListsAPageWhosePackChanged(unittest.TestCase):
         self.assertTrue(lines[0].startswith("stale-pack kb/pages/task/a.md"), lines)
         self.assertIn("sg-test@2026.2", lines[0])
 
+    def test_a_page_of_nemuras_own_pack_is_listed_too(self):
+        """The packs of internal/nemura/packs count like Fyniq's: a newer version there makes its page stale."""
+        lines = self.stale("pack-nemura-stale")
+        self.assertEqual(len(lines), 1, lines)
+        self.assertTrue(lines[0].startswith("stale-pack kb/pages/task/a.md"), lines)
+
     def test_a_current_page_is_not_listed(self):
         self.assertEqual(self.stale("pack-current"), [])
 
