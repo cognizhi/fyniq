@@ -4,7 +4,7 @@ type: task
 title: The Home page, search and commands, long work, Settings, the version, and signing out
 summary: Home (pulse, tiles, plans, your work, deadlines, set-up), Search and commands (Ctrl+K), Operations, Settings, the version (Help › About), signing out
 sources:
-  - docs/user-guide/home.md sha256:bc95f1e95db78b56cad9823649d440f3a76c07cc40299fccde793f3ab397cb0c
+  - docs/user-guide/home.md sha256:627ba66ca4b0331f3329a8821e9faaa930eafcfec2b84485c1da49bc8579a580
 data_class: general
 taint: trusted
 status: draft
@@ -90,7 +90,7 @@ aliases:
 - **Payment releaser**: batches waiting for release and payments the bank rejected, then each bank account's balance.
 - The Approver also sees **Waiting for your approval** on Home: the requests that wait for them, the oldest first, each with its step and who that step needs.
 - The Administrator lands on **Settings**, and the Company secretary and the DPO on **Compliance**, where their rows come first: the Administrator's people asking to join, invitations waiting to be accepted, role changes waiting for a second approver and integrations failing; the Company secretary's items to see to, register updates waiting for approval and the upcoming deadlines; the DPO's data requests to answer and breaches still open.
-- The Auditor lands on **Reports**, where **Your engagement** says until when the read-only access lasts and opens the journals, the evidence and the audit trail.
+- The Auditor lands on **Reports**, where **Your engagement** says until when the read-only access lasts and opens the trial balance and the general ledger, the journals, who has access, the evidence and the audit trail.
 - A row whose list the person's roles cannot read is left out rather than shown as nothing to do; with several roles each row shows once.
 - The Owner, the Controller, the Accountant and the Tax agent read the same work from the pulse card, the tiles and the Inbox, so the card does not show for them alone.
 - **Upcoming deadlines** lists the next five statutory deadlines from the calendar, those **Overdue** or **Due soon** first, each with its date; **The statutory calendar** opens it when Compliance is one of the person's areas ([[compliance.calendar]]).

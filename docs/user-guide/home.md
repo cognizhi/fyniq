@@ -101,7 +101,7 @@ first there:
 - **DPO**: data requests to answer and breaches still open.
 
 The Auditor lands on **Reports**, where **Your engagement** says until when their read-only access lasts and opens the
-journals, the evidence and the audit trail.
+trial balance and the general ledger, the journals, who has access, the evidence and the audit trail.
 
 A row whose list your roles cannot read is left out rather than shown as nothing to do. With several roles you see
 each row once. The Owner, the Controller, the Accountant and the Tax agent read the same work from the pulse card, the

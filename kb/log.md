@@ -697,3 +697,5 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 ## [2026-11-20] compile | leave.report-sick recompiled (p1-nemura-leave-time 2.4)
 
 ## [2026-11-20] compile | leave.approve and nemura.my-leave: the month at a glance, certificates to verify (p1-nemura-leave-time 2.3, 2.4)
+
+## [2026-11-20] compile | home.md -> home.overview (the Auditor's engagement opens the trial balance, general ledger and access list)

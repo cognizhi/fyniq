@@ -243,4 +243,12 @@ describe("the app frame", () => {
     await waitFor(() => expect(regions[0]?.textContent).toBe("No approvals waiting"));
     expect(within(nav).getByRole("link", { name: "Inbox" })).toBeTruthy(); // a count of none is no badge
   });
+
+  // req: experience/navigation AI assistant side panel
+  it("keeps the assistant out of the navigation: it is a panel any page opens, not an item", async () => {
+    renderFrame({ ...owner, features: { ...owner.features!, ai_assistant: true } } as typeof owner, "expert", <h1>Home</h1>);
+    const nav = await screen.findByRole("navigation", { name: "Main" });
+    expect(within(nav).queryByText(/assistant|Ask AI|AI assistant/i)).toBeNull();
+    expect(screen.getByRole("button", { name: /assistant/i })).toBeTruthy(); // in the header, on every page
+  });
 });

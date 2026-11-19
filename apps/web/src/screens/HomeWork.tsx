@@ -459,7 +459,10 @@ export function AuditorAccess() {
 }
 
 const auditorPages: { to: string; icon: LucideIcon; title: string; meta: string }[] = [
+  { to: "/reports/statements/tb", icon: FileSearch, title: "Trial balance", meta: "As at any date or revision, each figure traced to its ledger lines" },
+  { to: "/reports/general-ledger", icon: ScrollText, title: "General ledger", meta: "Every account's lines, with the user and time each was posted" },
   { to: "/accounting/journals", icon: FileText, title: "Journals", meta: "Every journal, with its lines, evidence and history" },
+  { to: "/settings/access-review", icon: UserCog, title: "Who has access", meta: "Every member's roles, the external users and the quarterly attestations" },
   { to: "/compliance/evidence", icon: FileSearch, title: "Evidence", meta: "The files kept for each record, searchable and exportable" },
   { to: "/compliance/audit-trail", icon: ScrollText, title: "Audit trail", meta: "Who changed what, when and why, with each change's before and after" },
 ];
