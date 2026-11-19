@@ -82,6 +82,13 @@
   server-sent events changes the web app's reader only. Not built in this change's slices: it needs a measurement in the cloud
   (`[live-verify]`).
 
+- **The entry grid is our own, not AG Grid Community** (`components/EntryGrid.tsx`, PRD-001 rev 0.377, MASTER.md's "AG Grid (entry grids)" changed,
+  owner to confirm). FR-UX-07 asks for range selection, fill down, multi-cell edit and a paste from Excel; in AG Grid those are Enterprise features,
+  so the Community edition would have meant building them on top of a large dependency, over a bundle that is above its budget already. The grid draws
+  only the rows in view (a fixed row height and a scroll position), is an ARIA grid with one tab stop, and keeps amounts as decimal strings: a sum
+  with `=` is worked out on scaled integers, and a division only when it is exact, since a rounded quotient needs a named rounding policy a cell cannot
+  name. Statement tables stay with TanStack Table, as MASTER.md has them.
+
 ## Risks / Trade-offs
 
 - [The 250 KB initial-JavaScript budget against a heavy grid and component kit] → The grid, charts

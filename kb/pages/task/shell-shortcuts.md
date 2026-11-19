@@ -4,7 +4,7 @@ type: task
 title: Use Fyniq from the keyboard
 summary: Shortcuts - ? lists them, G then a letter goes to an area, C then a letter starts a record, Enter moves to the next field; turn off or change keys
 sources:
-  - docs/user-guide/keyboard-shortcuts.md sha256:076ef725a577bd9e6796b6b100023141929169933e0887eb343e687db0d5e023
+  - docs/user-guide/keyboard-shortcuts.md sha256:bd090e33ee5523c443fd7769c3f2a0f3139624ad9de81137f132d23aba30d3e3
 data_class: general
 taint: trusted
 status: published
@@ -52,6 +52,18 @@ aliases:
 - **Ctrl+Enter** (⌘Enter on a Mac) saves it.
 
 (src: docs/user-guide/keyboard-shortcuts.md#move-through-a-form)
+
+## Work in a grid
+
+- A grid is the spreadsheet-like table for bulk work, such as journal lines. It has one tab stop, the active cell; Tab at its last cell goes on to the next thing on the page.
+- **Arrow keys** move between cells, with **Shift** they select a block; **Home**, **End**, **Page Up**, **Page Down**, **Ctrl+Home** and **Ctrl+End** go further; **Tab** and **Shift+Tab** move across the row.
+- Type to edit a cell, or **Enter** or **F2** to edit what it holds: **Enter** saves and moves down, **Escape** cancels, **Delete** clears the selection, **Ctrl+Enter** sets every selected cell to what you typed.
+- In an amount cell, start a sum with **=**, such as **=1250.50\*3-80**: it is worked out exactly; a division is made only when it comes out exact.
+- **Ctrl+D** fills down, **Ctrl+Z** undoes and **Ctrl+Y** redoes (200 steps), **Ctrl+C** copies for a spreadsheet with plain decimals and a minus sign.
+- Pasting cells from Excel or Google Sheets shows what was read, flags cells that do not fit and says how many rows it adds, and sets them only on **Apply paste** or **Enter**; **Escape** leaves the grid as it was. Amounts such as (1,234.56), S$1,234.56 and −1,234.56 are understood.
+- Each row says whether it is ready or what is wrong; a grid holds up to 100,000 rows.
+
+(src: docs/user-guide/keyboard-shortcuts.md#work-in-a-grid)
 
 ## Act on selected rows
 

@@ -10,7 +10,7 @@
 | Product | Fyniq: accounting, compliance, reporting and planning for Singapore start-ups |
 | Name and line | **Fyniq** (one word, capital F), with the line *Intelligence behind every number* (13 Oct 2026). The line belongs on the sign-in page, the first-run welcome and outward material, never in place of a label. It is a promise the UI keeps: every figure opens to its source and history (FR-UX-04), and AI content says where its numbers come from (AI-68). Until a logo exists the wordmark is the name in the UI font; the organisation's own logo (FR-ORG-09) sits beside it |
 | Users | Founders who are not accountants (Basic mode) and accountants, controllers and auditors (Expert mode) |
-| Stack | React 19 SPA, shadcn/ui on Base UI, Tailwind CSS 4, AG Grid (entry grids), TanStack Table (statements), ECharts 6, Lucide icons |
+| Stack | React 19 SPA, shadcn/ui on Base UI, Tailwind CSS 4, our own `EntryGrid` (entry grids; AG Grid's range selection, fill and clipboard are Enterprise features, rev 0.377), TanStack Table (statements), ECharts 6, Lucide icons |
 | Origin | uipro (`ui-ux-pro-max`) review of PRD-001 on 12 Oct 2026, reconciled with the PRD; findings REV-29…40 in `docs/prd/reviews/prd-001-review-2026-10-12.md`. Device classes and motion (§5.1, §9) added for PRD rev 0.10 after a second uipro pass (13 Oct 2026, below) |
 | Screens | Every screen is designed in Claude Design canvases built from `docs/design/screens/` at the five reference frames of §5.1, in light and dark. The canvases are the visual reference; the static prototype is superseded |
 | Dials | Variance 3 (minimal), Motion 3 (subtle), Density 8 (data-dense) |
@@ -153,7 +153,7 @@ Set by the header theme menu and the command palette; "System" follows `prefers-
 | AI badge | `sparkles` icon + "AI" label on `--ai-subtle` with `--ai-subtle-foreground`; on every AI message, proposal, suggestion and AI-drafted text until a human edits and saves it. |
 | Proposal card | `--ai-border` left rule (3 px) plus the AI badge; plain summary, item list, ledger impact table, diff, evidence links, risk tier; **Approve is not focused by default**; tier 2–3 shows "what could go wrong". |
 | Ledger impact table | Debit / Credit / Account (Expert) or a one-line plain summary (Basic); totals always balance visibly. |
-| Data grid (AG Grid) | Sticky header and first column; range select; Ctrl+D fill-down (keyboard alternative to dragging); paste preview; inline status chips; virtualised; row height from the density token. |
+| Data grid (`EntryGrid`) | Sticky header and first column; range select; Ctrl+D fill-down (keyboard alternative to dragging); paste preview; inline status chips; virtualised; row height from the density token. |
 | Statement table (TanStack) | Semantic `<table>` with `<th scope>`; `aria-sort` on sortable columns; printable; each figure is a drill-down button (FR-UX-04). |
 | Stat tile | Label, figure (`--fs-2xl`, tabular), change vs comparison with a sign and an arrow icon (never colour alone), "updated" time, drill-down. |
 | Command palette (cmdk) | ⌘K / Ctrl+K; recent items first; groups: Go to, Create, Reports, Actions, Ask AI (Tab); Expert-only results tagged in Basic mode. |

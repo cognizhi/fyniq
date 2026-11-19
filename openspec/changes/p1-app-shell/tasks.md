@@ -126,6 +126,13 @@
 ## 3. Grids, records and correctness
 
 - [ ] 3.1 The grid (Community edition until the licence arrives) virtualised to 100,000 rows, and statement tables with TanStack. Tests `// req: FR-UX-07` and `// req: NFR-PERF-UI-02` (≥ 50 fps in Playwright tracing)
+  (20 Nov 2026, PRD-001 rev 0.377, FR-UX-07 and FR-UX-20 in part: the shared entry grid, `components/EntryGrid.tsx` with its model `entryGridModel.ts`, `format/arithmetic.ts`
+  (`=` sums exact on scaled integers) and `format/table.ts` (the spreadsheet clipboard's tables). Built on our own windowing, not AG Grid Community (design.md,
+  owner to confirm): keyboard-first (arrows, Shift-selection, Home, End, Page Up and Down, Tab across and out at the end, type or Enter or F2 to edit, Delete, Ctrl+Enter,
+  Ctrl+D, Ctrl+Z, Ctrl+Y, Ctrl+C), a paste preview with the cells that do not fit flagged, inline validation with status chips, 100,000 rows drawn as ~25.
+  Guide `keyboard-shortcuts.md` (Work in a grid), compiled into `shell.shortcuts`. Tests `EntryGrid.test.tsx` (including 100,000 rows and axe), `entryGridModel.test.ts`,
+  `arithmetic.test.ts`, `table.test.ts`, and the Storybook story in four themes. **Left:** using it in the journal lines, bank categorisation, budgets, opening balances and
+  imports screens (each replaces its own table), the ≥ 50 fps Playwright trace of NFR-PERF-UI-02 (it needs a screen that hosts the grid), and statement tables on TanStack Table.)
 - [ ] 3.2 Plain and Accountant views, status chips, guided set-up with the sample company, and teaching empty states. Tests `// req: FR-UX-08`, `// req: FR-UX-09`, `// req: FR-UX-10` and `// req: FR-UX-11`
   (20 Oct 2026, in part: Home's "Set up the company" checklist with progress, from what the API can tell (the profile's
   name, UEN and books' start, the chart, money accounts, contacts, a second member or an invitation, a passkey; a read
