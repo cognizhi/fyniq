@@ -17,6 +17,19 @@
       "format": "date-time",
       "type": "string"
     },
+    "department_value_ids": {
+      "description": "The department values the Approver role it gives is narrowed to (FR-ADM-01); none: not narrowed.",
+      "items": {
+        "examples": [
+          "01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10"
+        ],
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
     "display_name": {
       "description": "Who it is for.",
       "examples": [

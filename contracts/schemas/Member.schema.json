@@ -9,6 +9,13 @@
       ],
       "type": "string"
     },
+    "email": {
+      "description": "Their verified sign-in email, shown to an Owner and an Administrator only (rev 0.375); absent for anyone else, and for a member who has none yet.",
+      "examples": [
+        "weiling@example.sg"
+      ],
+      "type": "string"
+    },
     "expired_roles": {
       "description": "Roles that ended at their end date and that nobody ended: they grant nothing. Give the role again with a new end date, or remove the member (C.2 #6).",
       "items": {

@@ -1738,6 +1738,7 @@ member_invitation | expires_at | timestamp with time zone | not null |
 member_invitation | accepted_at | timestamp with time zone | null | 
 member_invitation | accepted_by | uuid | null | 
 member_invitation | withdrawn_at | timestamp with time zone | null | 
+member_invitation | department_value_ids | uuid[] | not null | '{}'::uuid[]
 migration_archive | organisation_id | uuid | not null | current_org()
 migration_archive | id | uuid | not null | uuidv7()
 migration_archive | run_id | uuid | not null | 
@@ -5579,6 +5580,8 @@ member_invitation | member_invitation_accepted_by_fkey | FOREIGN KEY (accepted_b
 member_invitation | member_invitation_code_hash_not_null | NOT NULL code_hash
 member_invitation | member_invitation_code_key | UNIQUE (organisation_id, code_hash)
 member_invitation | member_invitation_created_at_not_null | NOT NULL created_at
+member_invitation | member_invitation_department_scope | CHECK (((cardinality(department_value_ids) = 0) OR (('approver'::text = ANY (roles)) AND (cardinality(department_value_ids) <= 20))))
+member_invitation | member_invitation_department_value_ids_not_null | NOT NULL department_value_ids
 member_invitation | member_invitation_display_name_not_null | NOT NULL display_name
 member_invitation | member_invitation_expires_at_not_null | NOT NULL expires_at
 member_invitation | member_invitation_expiry_after_creation | CHECK (((expires_at > created_at) AND ((roles_expire_at IS NULL) OR (roles_expire_at > created_at))))

@@ -808,6 +808,10 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 			singapore(p.CoolingOffUntil)+" Singapore time (SEC-35).",
 			"Do it after then, or ask another member to do it.")
 	}
+	if refusal == nil && p.UserID != uuid.Nil && slices.Contains(p.Roles, authz.Approver) && ok && !policy.Public {
+		p.Approver = a.approverScope(ctx.Context(), p) // what their Approver role is narrowed to (FR-ADM-01); the handlers read it from the principal
+		ctx = huma.WithContext(ctx, authn.WithPrincipal(ctx.Context(), p))
+	}
 	var d authz.Decision
 	switch {
 	case refusal != nil:
@@ -829,6 +833,12 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 		if d = authz.Decide(policy, p.Roles, p.AI()); !d.Allowed {
 			refusal = problem(CodeForbidden, fmt.Sprintf("Your roles hold no %q right on %q.", string(policy.Need), policy.Capability),
 				"Ask an Owner or Administrator for a role with that right (PRD-001 Appendix D).")
+		} else if narrowedRefused(p, policy) {
+			// FR-ADM-01: an Approver narrowed to departments reads the records of their departments, and reaches the company's
+			// totals and registers of the sales, purchases and expense claims through their requests only.
+			d = authz.Decision{Reason: "the Approver role is narrowed to departments, which do not reach this read"}
+			refusal = problem(CodeForbidden, "Your Approver role is narrowed to your departments, so this reads the company's records, which are not in them.",
+				"Decide the requests of your departments in the Inbox; ask an Owner or Administrator if you need more")
 		} else if p.Scoped && !authz.ScopeAllows(p.Scopes, policy) {
 			// FR-INT-02: a registered client's scopes narrow its member's roles to whole areas; never approve or release.
 			d = authz.Decision{Reason: fmt.Sprintf("the client's scopes %v do not cover %q on %q", p.Scopes, string(policy.Need), policy.Capability)}
@@ -853,6 +863,43 @@ func (a *API) authorise(ctx huma.Context, next func(huma.Context)) {
 	if _, audited := auditedReads[op.OperationID]; audited && ctx.Status() < 300 { // a mass export (SEC-31)
 		a.afterAuditedRead(ctx.Context(), p)
 	}
+}
+
+// approverScope is what the Approver role of p is narrowed to (FR-ADM-01): narrowed when every live Approver assignment carries a
+// department scope. A scope that cannot be read narrows to nothing, never to everything.
+func (a *API) approverScope(ctx context.Context, p authn.Principal) authn.DepartmentScope {
+	out := authn.DepartmentScope{Narrowed: true}
+	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		assigned, err := u.Members().Roles(ctx, p.UserID, a.deps.Clock.Now())
+		if err != nil {
+			return err
+		}
+		held := 0
+		out = authn.DepartmentScope{Narrowed: true}
+		for _, r := range assigned {
+			if r.Role != string(authz.Approver) {
+				continue
+			}
+			held++
+			if len(r.DepartmentValues) == 0 {
+				out.Narrowed = false
+			}
+			for _, v := range r.DepartmentValues {
+				if !slices.Contains(out.Values, v) {
+					out.Values = append(out.Values, v)
+				}
+			}
+		}
+		if held == 0 {
+			out = authn.DepartmentScope{}
+		}
+		return nil
+	})
+	if err != nil {
+		a.deps.Log.WarnContext(ctx, "api.approver_scope_unread", "error", err.Error(), "request_id", requestID(ctx))
+		return authn.DepartmentScope{Narrowed: true}
+	}
+	return out
 }
 
 func requestID(ctx context.Context) string {

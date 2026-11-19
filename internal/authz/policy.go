@@ -1747,20 +1747,22 @@ var (
 
 // Budgets (FR-PLN-01; p1-planning slice 4, design D6): read by whoever views budgets and forecasts; drafted, changed,
 // copied, imported and asked for approval by whoever prepares them; approved by a person who holds A, never the one
-// who asked. A department's budget holder (C dept) waits for members to carry their department.
+// who asked. A department's budget holder (the Approver's C dept, rev 0.375) reads the budget and the budget against actual, and
+// saves a draft, as their department's lines only; every other budget operation, the forecasts and the planning summary are the
+// company's.
 var (
-	ListBudgets  = Policy{Operation: "listBudgets", Capability: Budgets, Need: View, Unqualified: true}
+	ListBudgets  = Policy{Operation: "listBudgets", Capability: Budgets, Need: View, Unqualified: true, Qualified: []string{"dept"}, Note: "A department's budget holder (C dept) reads their department's lines and totals only."}
 	CreateBudget = Policy{Operation: "createBudget", Capability: Budgets, Need: Create, Unqualified: true}
 	// The generic import's budgets (FR-MIG-03, rev 0.272): each financial year's a draft, approved later.
 	GetBudgetsTemplate    = Policy{Operation: "getBudgetsTemplate", Capability: Budgets, Need: View, Unqualified: true}
 	ImportBudgets         = Policy{Operation: "importBudgets", Capability: Budgets, Need: Create, Unqualified: true}
-	GetBudget             = Policy{Operation: "getBudget", Capability: Budgets, Need: View, Unqualified: true}
-	ReplaceBudget         = Policy{Operation: "replaceBudget", Capability: Budgets, Need: Create, Unqualified: true}
+	GetBudget             = Policy{Operation: "getBudget", Capability: Budgets, Need: View, Unqualified: true, Qualified: []string{"dept"}, Note: "A department's budget holder (C dept) reads their department's lines and totals only."}
+	ReplaceBudget         = Policy{Operation: "replaceBudget", Capability: Budgets, Need: Create, Unqualified: true, Qualified: []string{"dept"}, Note: "A department's budget holder (C dept) replaces their department's lines only; every other line stays as it was."}
 	CopyBudget            = Policy{Operation: "copyBudget", Capability: Budgets, Need: Create, Unqualified: true}
 	ImportBudget          = Policy{Operation: "importBudget", Capability: Budgets, Need: Create, Unqualified: true}
 	RequestBudgetApproval = Policy{Operation: "requestBudgetApproval", Capability: Budgets, Need: Create, Unqualified: true, Note: "Approved by A: recorded and locked."}
 	// Budget vs Actual and Home's planning tiles show the budget's figures: read on the same row as budgets.
-	GetBudgetVsActual  = Policy{Operation: "getBudgetVsActual", Capability: Budgets, Need: View, Unqualified: true}
+	GetBudgetVsActual  = Policy{Operation: "getBudgetVsActual", Capability: Budgets, Need: View, Unqualified: true, Qualified: []string{"dept"}, Note: "A department's budget holder (C dept) reads their department's budget and actuals only."}
 	GetPlanningSummary = Policy{Operation: "getPlanningSummary", Capability: Budgets, Need: View, Unqualified: true}
 	// The short-term cash flow and its what-ifs (FR-PLN-09; p1-planning design D10): read by V on the row, unqualified.
 	GetCashProjection = Policy{Operation: "getCashProjection", Capability: Budgets, Need: View, Unqualified: true}
@@ -2273,8 +2275,13 @@ func rank(r Right) int {
 
 // DeptOnly says whether the roles reach a capability's view only through a department-qualified cell, such as the Approver's
 // "V dept" on the reports (FR-ADM-01): the operation then reads what the person's department scope reaches and nothing else.
-func DeptOnly(roles []Role, c Capability) bool {
-	p := Policy{Operation: "deptOnly", Capability: c, Need: View, Unqualified: true}
+func DeptOnly(roles []Role, c Capability) bool { return DeptOnlyNeed(roles, c, View) }
+
+// DeptOnlyNeed says whether the roles hold the right need on a capability only through a department-qualified cell, such as the
+// Approver's "C dept" on the budgets: what they read or write there is their department scope's and nothing else. A person whose
+// other role holds the right unqualified is not restricted by it.
+func DeptOnlyNeed(roles []Role, c Capability, need Right) bool {
+	p := Policy{Operation: "deptOnly", Capability: c, Need: need, Unqualified: true}
 	if _, ok := holds(p, roles); ok {
 		return false
 	}

@@ -25,6 +25,7 @@ import (
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/domain/project"
 	"github.com/cognizhi/fyniq/internal/domain/team"
+	"github.com/cognizhi/fyniq/internal/ports"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 )
 
@@ -1258,12 +1259,18 @@ func registerBills(a *API) {
 			if err != nil {
 				return err
 			}
+			reach, err := reachOf(ctx, u, p, authz.Bills, authz.View) // an Approver narrowed to departments reads their departments' bills only
+			if err != nil {
+				return err
+			}
 			for _, d := range docs {
 				b, err := a.billOf(ctx, u, v, d, false)
 				if err != nil {
 					return err
 				}
-				out.Body.Items = append(out.Body.Items, b)
+				if reach.holds(billValues(b)) {
+					out.Body.Items = append(out.Body.Items, b)
+				}
 			}
 			return nil
 		})
@@ -1342,7 +1349,17 @@ func registerBills(a *API) {
 				return err
 			}
 			b, err = a.billOf(ctx, u, v, doc, true)
-			return err
+			if err != nil {
+				return err
+			}
+			reach, err := reachOf(ctx, u, p, authz.Bills, authz.View)
+			if err != nil {
+				return err
+			}
+			if !reach.holds(billValues(b)) {
+				return ports.ErrNotFound // a bill of another department is not found, as one of another organisation is
+			}
+			return nil
 		})
 		if err != nil {
 			return nil, err
@@ -1665,4 +1682,13 @@ func registerBills(a *API) {
 					Diff:    []ApprovalDiff{{Field: "status", Before: "posted", After: "reversed"}, {Field: "void_date", After: in.Body.Date}}}
 			})
 	})
+}
+
+// billValues are the dimension values on a bill's lines.
+func billValues(b Bill) []uuid.UUID {
+	var out []uuid.UUID
+	for _, l := range b.Lines {
+		out = append(out, refValues(l.DimensionValueIDs)...)
+	}
+	return out
 }

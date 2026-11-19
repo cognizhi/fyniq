@@ -24,6 +24,12 @@ Source: PRD-001 §8.21 · Priority M · Phase P1
 - **THEN** it reaches only the records, lines and budgets of those values
 - **AND** a role with no department scope reaches nothing under a dept-qualified cell; entity scopes come with multi-entity (P3)
 
+#### Scenario: Budgets, records and invitations by department (rev 0.375)
+- **GIVEN** an Approver whose roles are narrowed to some values of the department dimension
+- **WHEN** they read or plan a budget, or read bills, invoices, expense claims and their requests
+- **THEN** they reach the lines and records whose department values are all among theirs, and nothing else, and are told of a request only when it is theirs
+- **AND** an invitation that gives the Approver role carries the scope, which the redeemed role holds from the first minute
+
 #### Scenario: External user expires
 - **GIVEN** an external user with an expiry date
 - **WHEN** the expiry date passes

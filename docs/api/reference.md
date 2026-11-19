@@ -12098,7 +12098,7 @@ The file of a ready export the caller asked for, in base64 with its SHA-256 (FR-
 
 The year's budget against the books for months of one financial year (FR-RPT-03, design D6): each income and expense account, or account and set of dimension values, with its actual from the balance service, its budget from the year's latest recorded version, the variance and its percentage of the budget (RND-PERCENT), and whether it is favourable. Amounts are signed as the P&L shows them. Read-only; no side effects.
 
-- **Permission:** View on Budgets, forecasts
+- **Permission:** View on Budgets, forecasts. A department's budget holder (C dept) reads their department's budget and actuals only.
 - **Parameters:**
   - `from` (query): The first month (YYYY-MM); left out, the financial year's first month.
   - `to` (query): The last month (YYYY-MM); left out, the last month that has ended.
@@ -18807,7 +18807,7 @@ Planning ahead: the driver-based forecast and its scenarios, worked from the boo
 
 Every budget version, the latest first, with its status and totals, a page at a time; financial_year keeps one year's (FR-PLN-01). Read-only; no side effects.
 
-- **Permission:** View on Budgets, forecasts
+- **Permission:** View on Budgets, forecasts. A department's budget holder (C dept) reads their department's lines and totals only.
 - **Parameters:**
   - `page_size` (query): How many items per page, up to 500.
   - `cursor` (query): The next_cursor of the previous page; leave it out for the first page.
@@ -18855,7 +18855,7 @@ Drafts a budget version for a financial year (FR-PLN-01, design D6): monthly amo
 
 A budget version with its status, its year's months, each line's total and the totals (FR-PLN-01). Read-only; no side effects.
 
-- **Permission:** View on Budgets, forecasts
+- **Permission:** View on Budgets, forecasts. A department's budget holder (C dept) reads their department's lines and totals only.
 - **Parameters:**
   - `budget_id` (path, required): The budget.
 - **Responses:**
@@ -18876,7 +18876,7 @@ A budget version with its status, its year's months, each line's total and the t
 
 Saves a new version of a budget not recorded yet (FR-PLN-01); a recorded one is locked (BUDGET-11): copy it into a revised version instead. A change while its approval waits makes that approval stale. Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing.
 
-- **Permission:** Create on Budgets, forecasts
+- **Permission:** Create on Budgets, forecasts. A department's budget holder (C dept) replaces their department's lines only; every other line stays as it was.
 - **Parameters:**
   - `budget_id` (path, required): The budget.
   - `Idempotency-Key` (header): A key you choose (a UUID is best) that makes the request safe to send again for 24 hours: a repeat returns the original response, and the same key with a different request returns 422 (FR-INT-08).
@@ -20266,7 +20266,7 @@ Records your review of a break-glass and what it released (FM-8, FM-3; PRD-001 r
 
 **List the members** (`listMembers`)
 
-The organisation's active members, in the order they joined, with their names and live roles (FR-ADM-01). Read-only; no side effects.
+The organisation's active members, in the order they joined, with their names, live roles, last sign-in and passkey count, and for an Owner and an Administrator their verified sign-in email (FR-ADM-01, SEC-06). Read-only; no side effects.
 
 - **Permission:** View on Users, roles, team mode
 - **Parameters:**

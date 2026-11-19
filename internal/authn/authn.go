@@ -11,6 +11,7 @@ import (
 	"errors"
 	"net/http"
 	"net/netip"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,6 +49,9 @@ type Principal struct {
 	Class        string       // user, integration or agent
 	Organisation uuid.UUID    // the organisation the session is in; Nil outside any
 	Roles        []authz.Role // the subject's roles in that organisation
+	// Approver is what the person's Approver role is narrowed to (FR-ADM-01), loaded for a person who holds the role when the API
+	// decides a call; the zero value is an Approver role, or none, that is not narrowed.
+	Approver DepartmentScope
 	// Scopes are what an OAuth token was granted (AI-37); empty for a first-party session. Mapping
 	// scopes to operations arrives with the scope catalogue in P1; until then roles decide.
 	Scopes []string
@@ -131,6 +135,28 @@ type NotYet struct{}
 func (NotYet) Authenticate(context.Context, Credentials) (Principal, error) {
 	return Principal{}, errors.Join(ErrUnauthenticated,
 		errors.New("sign-in arrives with the identity and OAuth server (ADR-T3); this build accepts no credentials yet"))
+}
+
+// DepartmentScope is what a person's Approver role is narrowed to: every live Approver assignment of theirs carries department
+// values (Narrowed), and these are the values of all of them (FR-ADM-01, rev 0.253). A narrowed Approver reaches only the
+// records, lines and budgets of these department values; an assignment with no scope is not narrowed, as before.
+type DepartmentScope struct {
+	Narrowed bool
+	Values   []uuid.UUID
+}
+
+// Holds reports whether every one of the record's department values is within the scope, and the record has one: a record in no
+// department is in none of a narrowed person's.
+func (s DepartmentScope) Holds(values []uuid.UUID) bool {
+	if len(values) == 0 {
+		return false
+	}
+	for _, v := range values {
+		if !slices.Contains(s.Values, v) {
+			return false
+		}
+	}
+	return true
 }
 
 type principalKey struct{}

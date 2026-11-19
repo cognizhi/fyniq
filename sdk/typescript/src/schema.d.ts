@@ -11074,7 +11074,7 @@ export interface paths {
         };
         /**
          * List the members
-         * @description The organisation's active members, in the order they joined, with their names and live roles (FR-ADM-01). Read-only; no side effects.
+         * @description The organisation's active members, in the order they joined, with their names, live roles, last sign-in and passkey count, and for an Owner and an Administrator their verified sign-in email (FR-ADM-01, SEC-06). Read-only; no side effects.
          */
         get: operations["listMembers"];
         put?: never;
@@ -41879,6 +41879,11 @@ export interface components {
              * @example Wei Ling Tan
              */
             display_name: string;
+            /**
+             * @description Their verified sign-in email, shown to an Owner and an Administrator only (rev 0.375); absent for anyone else, and for a member who has none yet.
+             * @example weiling@example.sg
+             */
+            email?: string;
             /** @description Roles that ended at their end date and that nobody ended: they grant nothing. Give the role again with a new end date, or remove the member (C.2 #6). */
             expired_roles: components["schemas"]["MemberRole"][] | null;
             /**
@@ -41961,6 +41966,8 @@ export interface components {
              * @example 2026-10-20T09:00:00Z
              */
             created_at: string;
+            /** @description The department values the Approver role it gives is narrowed to (FR-ADM-01); none: not narrowed. */
+            department_value_ids?: string[] | null;
             /**
              * @description Who it is for.
              * @example Wei Ling Tan
@@ -42005,6 +42012,8 @@ export interface components {
              * @example 2026-10-20T09:00:00Z
              */
             created_at: string;
+            /** @description The department values the Approver role it gives is narrowed to (FR-ADM-01); none: not narrowed. */
+            department_value_ids?: string[] | null;
             /**
              * @description Who it is for.
              * @example Wei Ling Tan
@@ -43875,6 +43884,8 @@ export interface components {
             kind: "access" | "correction";
         };
         NewMemberInvitation: {
+            /** @description For an invitation that gives the Approver role: the department values to narrow it to (FR-ADM-01, rev 0.253), fixed from the first minute. Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another set of roles is refused. */
+            department_value_ids?: string[] | null;
             /**
              * @description The name of the person you invite.
              * @example Wei Ling Tan

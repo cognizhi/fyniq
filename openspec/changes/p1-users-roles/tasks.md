@@ -7,7 +7,7 @@
   `authz.Grants` carry all 39 rows of Appendix D in its order, and `TestTheGrantsAreAppendixD` fails when a cell, a row
   or the order differs from the PRD; `TestAnUnknownAreaDenies` refuses every principal on an area Appendix D does not
   name. The per-area matrix tests run each operation's area in `TestAuthorisationMatrix`.)
-- [ ] 1.2 The roles of §6 and their combinations, attribute conditions and field masking, checked in the API and by row-level security scope predicates on sensitive tables. Tests on every role's rights and limits, `// req: access/roles-and-segregation <role> role`, and the permission model test
+- [x] 1.2 The roles of §6 and their combinations, attribute conditions and field masking, checked in the API and by row-level security scope predicates on sensitive tables. Tests on every role's rights and limits, `// req: access/roles-and-segregation <role> role`, and the permission model test
   (20 Nov 2026, with 2.1: attribute conditions for the Approver's department cells (PRD-001 rev 0.371) are enforced twice: the API's policy
   table still refuses a department-qualified read it has no endpoint for, and the database holds a restrictive policy on journal
   lines and balances for the API's role that reaches only the rows of the department values the person's Approver role is
@@ -21,6 +21,16 @@
   department's (`authz.DeptOnly`) for the P&L only, the database adding up the lines of their scope's values; everything the
   filter does not reach is refused. `TestADepartmentsApproverReadsTheirDepartmentsProfitAndLoss`. **Left:** the Approver's budgets
   (C dept) and approvals by department (a bill's lines against the scope), documents' own lines; this task stays open.)
+  (20 Nov 2026, PRD-001 rev 0.375, the rest of the department cells: the Approver's "C dept" on the budgets reads and plans their
+  department's lines (`budget.Scope`; `TestADepartmentsBudgetHolderPlansTheirDepartmentsLines`: the draft they read, a save that replaces
+  their lines only and refuses another department's, a company line and a changed name; Budget vs Actual added up for their
+  department; drafting, copying, importing, asking for approval, the forecasts and the planning summary refused; no scope reaches none).
+  An Approver whose every assignment is narrowed reaches the bills, invoices and expense claims, their files and their requests of their
+  departments only (`TestADepartmentsApproverReachesTheirDepartmentsRecords`: lists and reads, a refused sign leaves the claim unposted,
+  the company's payables and a bill's files refused, a role that reaches the row unqualified or an unscoped Approver unchanged); a
+  request notifies only those it is theirs (`TestAnApproversNotificationFollowsTheirDepartments`). Decided [owner to confirm]: an Approver role
+  with no scope is not narrowed on records and approvals (so nobody loses what they had), purchase orders carry no department so are in none.
+  Built: the department-qualified endpoints, approvals by department and documents' own lines. **Left:** nothing in this task.)
 - [x] 1.3 SOD-1…10, evaluated at action time from the record's history. Tests `// req: SOD-1` through `// req: SOD-10`, one conflict each, blocked in Standard mode
   (20 Oct 2026, provisional (PRD rev 0.42): SOD-6 is the conflict a combination of roles makes, derived from Appendix D
   (`authz.RoleConflicts`: the Administrator with any role holding P, A or R on a transaction row; the Owner role alone
@@ -77,6 +87,10 @@
   fixed for the assignment: migration 000702), the members list shows them and Settings › Members and roles offers the
   department values when the Approver role is chosen. **Left:** an invitation's scope, invitation emails
   (`p1-templates-email`).)
+  (20 Nov 2026, PRD-001 rev 0.375: an invitation that gives the Approver role carries `department_value_ids` (migrations 000706 and 000707;
+  the second Owner signs them with the invitation; the redeemed role holds them from the first minute;
+  `TestAnInvitationNarrowsTheApproverRoleItGives`, `TestAttackAnInvitationsDepartmentScopeNeedsTheApproverRole`), and the invite dialog offers
+  the departments. **Left:** invitation emails (`p1-templates-email`); this task stays open for them alone.)
 - [x] 2.2 Mandatory MFA: TOTP through the `SignIn` port's fake, WebAuthn passkeys in the API, no SMS. Tests `// req: FR-ADM-02` (P1 part) and `// req: SEC-01`, with a replayed assertion refused; sign-in and step-up allow password managers, paste and passkeys (the sign-in half of NFR-A11Y-05, which `p1-app-shell` closes)
   (20 Oct 2026, provisional (PRD rev 0.43): TOTP stays with the sign-in provider; the local sign-in page's second factor
   is its fake, ticked by default. Passkeys in the API (`internal/passkey`, go-webauthn v0.18.2; attestation "none", user

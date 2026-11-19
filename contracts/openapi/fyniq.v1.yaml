@@ -35601,6 +35601,11 @@ components:
           examples:
             - Wei Ling Tan
           type: string
+        email:
+          description: Their verified sign-in email, shown to an Owner and an Administrator only (rev 0.375); absent for anyone else, and for a member who has none yet.
+          examples:
+            - weiling@example.sg
+          type: string
         expired_roles:
           description: "Roles that ended at their end date and that nobody ended: they grant nothing. Give the role again with a new end date, or remove the member (C.2 #6)."
           items:
@@ -35727,6 +35732,15 @@ components:
             - "2026-10-20T09:00:00Z"
           format: date-time
           type: string
+        department_value_ids:
+          description: "The department values the Approver role it gives is narrowed to (FR-ADM-01); none: not narrowed."
+          items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+            type: string
+          type:
+            - array
+            - "null"
         display_name:
           description: Who it is for.
           examples:
@@ -35787,6 +35801,15 @@ components:
             - "2026-10-20T09:00:00Z"
           format: date-time
           type: string
+        department_value_ids:
+          description: "The department values the Approver role it gives is narrowed to (FR-ADM-01); none: not narrowed."
+          items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+            type: string
+          type:
+            - array
+            - "null"
         display_name:
           description: Who it is for.
           examples:
@@ -38575,6 +38598,16 @@ components:
     NewMemberInvitation:
       additionalProperties: false
       properties:
+        department_value_ids:
+          description: "For an invitation that gives the Approver role: the department values to narrow it to (FR-ADM-01, rev 0.253), fixed from the first minute. Appendix D's department-qualified cells then reach only the records, lines and budgets of these values; an Approver role given with none reaches none of them. Another set of roles is refused."
+          items:
+            examples:
+              - 01928f6e-7a3b-7c41-9d2e-5f8a1b3c4e10
+            type: string
+          maxItems: 20
+          type:
+            - array
+            - "null"
         display_name:
           description: The name of the person you invite.
           examples:
@@ -85392,6 +85425,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: Budgets, forecasts
+        note: A department's budget holder (C dept) reads their department's lines and totals only.
         right: V
     post:
       description: "Drafts a budget version for a financial year (FR-PLN-01, design D6): monthly amounts by postable income and expense account and dimension value, one amount for each month of the year, signed as the P&L shows it. Ask for its approval with requestBudgetApproval: approved, it is recorded and locked. It posts nothing. Side effects: the draft, audit events. Every problem comes back together. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
@@ -85708,6 +85742,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: Budgets, forecasts
+        note: A department's budget holder (C dept) reads their department's lines and totals only.
         right: V
     put:
       description: "Saves a new version of a budget not recorded yet (FR-PLN-01); a recorded one is locked (BUDGET-11): copy it into a revised version instead. A change while its approval waits makes that approval stale. Side effects: the new version, audit events. Needs If-Match with its ETag. Idempotent with Idempotency-Key; Prefer: return=preview saves nothing."
@@ -85920,6 +85955,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: Budgets, forecasts
+        note: A department's budget holder (C dept) replaces their department's lines only; every other line stays as it was.
         right: C
   /v1/budgets/{budget_id}/approval:
     post:
@@ -173823,7 +173859,7 @@ paths:
         right: C
   /v1/members:
     get:
-      description: The organisation's active members, in the order they joined, with their names and live roles (FR-ADM-01). Read-only; no side effects.
+      description: The organisation's active members, in the order they joined, with their names, live roles, last sign-in and passkey count, and for an Owner and an Administrator their verified sign-in email (FR-ADM-01, SEC-06). Read-only; no side effects.
       operationId: listMembers
       parameters:
         - description: How many items per page, up to 500.
@@ -219706,6 +219742,7 @@ paths:
         - STORAGE-RETRY-01
       x-fyniq-permission:
         capability: Budgets, forecasts
+        note: A department's budget holder (C dept) reads their department's budget and actuals only.
         right: V
   /v1/reports/general-ledger:
     get:

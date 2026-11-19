@@ -154,6 +154,11 @@ type Audience struct {
 	Need       string      `json:"need,omitempty"`      // the rights, any of which will do: "A", "CA", "P"…
 	Qualified  []string    `json:"qualified,omitempty"` // the qualifiers that count besides an unqualified right; unset, any does
 	Except     []uuid.UUID `json:"except,omitempty"`
+	// Scoped marks an event about a record that department scopes bind (FR-ADM-01), such as an approval request: a member whose
+	// Approver role is narrowed to department values is told only when every one of Departments, the record's department values,
+	// is among them. A record in no department is in none of theirs. Their other roles count as they do.
+	Scoped      bool        `json:"scoped,omitempty"`
+	Departments []uuid.UUID `json:"departments,omitempty"`
 }
 
 // Event is something that happened, to notify.
@@ -246,6 +251,9 @@ func Recipients(a Audience, members []storage.Member) []uuid.UUID {
 		if !in && a.Capability != "" {
 			var roles []authz.Role
 			for _, r := range m.Roles {
+				if a.Scoped && r.Role == string(authz.Approver) && len(r.DepartmentValues) > 0 && !holdsAll(r.DepartmentValues, a.Departments) {
+					continue // a narrowed Approver role does not reach a record outside its departments
+				}
 				roles = append(roles, authz.Role(r.Role))
 			}
 			for i := range len(a.Need) {
@@ -263,18 +271,28 @@ func Recipients(a Audience, members []storage.Member) []uuid.UUID {
 	return out
 }
 
+// holdsAll reports whether every one of values, of which there is at least one, is among scope.
+func holdsAll(scope, values []uuid.UUID) bool {
+	return len(values) > 0 && !slices.ContainsFunc(values, func(v uuid.UUID) bool { return !slices.Contains(scope, v) })
+}
+
+// Held are roles as the assignments Sees reads, none of them narrowed to departments.
+func Held(roles []authz.Role) []storage.RoleAssignment {
+	out := make([]storage.RoleAssignment, 0, len(roles))
+	for _, r := range roles {
+		out = append(out, storage.RoleAssignment{Role: string(r)})
+	}
+	return out
+}
+
 // Sees reports whether user, holding roles now, still sees a notification of an event for the audience audience
 // (SEC-34): one that names them does, and one by row only while their roles hold one of its rights there, so that a
 // role taken away takes the row's notifications with it, from the centre, the bell's count and the email not yet sent.
 // An audience that does not read as one is seen by nobody.
-func Sees(audience json.RawMessage, user uuid.UUID, roles []authz.Role) bool {
+func Sees(audience json.RawMessage, user uuid.UUID, held []storage.RoleAssignment) bool {
 	var a Audience
 	if err := json.Unmarshal(audience, &a); err != nil {
 		return false
-	}
-	held := make([]storage.RoleAssignment, 0, len(roles))
-	for _, r := range roles {
-		held = append(held, storage.RoleAssignment{Role: string(r)})
 	}
 	return len(Recipients(a, []storage.Member{{Membership: storage.Membership{UserID: user, Status: "active"}, Roles: held}})) == 1
 }
@@ -438,14 +456,10 @@ func (f Fanout) Digest(ctx context.Context) (int, error) {
 			if err != nil {
 				return err
 			}
-			live := map[uuid.UUID][]authz.Role{} // the active members' roles now
+			live := map[uuid.UUID][]storage.RoleAssignment{} // the active members' roles now, with the departments an Approver role is narrowed to
 			for _, m := range members {
 				if m.Status == "active" {
-					roles := make([]authz.Role, 0, len(m.Roles))
-					for _, r := range m.Roles {
-						roles = append(roles, authz.Role(r.Role))
-					}
-					live[m.UserID] = roles
+					live[m.UserID] = m.Roles
 				}
 			}
 			for _, cadence := range []string{storage.EmailImmediate, storage.EmailDaily, storage.EmailWeekly} {
