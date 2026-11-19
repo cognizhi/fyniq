@@ -670,4 +670,16 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-19] compile | docs/user-guide/nemura/sign-in.md → nemura.sign-in (the Owner recovery code)
 
+## [2026-11-19] compile | docs/user-guide/nemura/people.md, person.md → nemura.people, nemura.person (the directory and a person's record, p1-nemura-records-packs slice 1)
+
+## [2026-11-19] compile | docs/user-guide/nemura/features.md → nemura.features (the feature switches, p1-nemura-records-packs slice 3)
+
+## [2026-11-19] compile | docs/user-guide/nemura/people.md → nemura.people (Add a person)
+
+## [2026-11-19] compile | docs/user-guide/nemura/packs.md → nemura.packs (the country pack and leave policy, p1-nemura-records-packs slice 4)
+
 ## [2026-11-20] compile | organisation-settings.md, profile-and-security.md, keyboard-shortcuts.md, appearance.md -> settings.organisation, settings.change, preferences.security, shell.shortcuts, preferences.appearance (preferences kept on the server, the starting mode per role, number and date formats, Alt+Shift+M)
+
+## [2026-11-20] compile | accounting.chart: the Balance column from the trial balance (p1-organisation-chart 5.2)
+
+## [2026-11-20] compile | settings.brand: the logo on PDF reports (p1-organisation-chart 2.4)

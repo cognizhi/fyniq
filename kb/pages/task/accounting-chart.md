@@ -4,14 +4,14 @@ type: task
 title: Set up and keep the chart of accounts
 summary: Load the standard chart; add, change, deactivate or merge accounts; system accounts; dimensions, their values and the ones an account requires
 sources:
-  - docs/user-guide/chart-of-accounts.md sha256:005a10b03baefad23dd807e76623661c064cb3942e5a9393cc89662b6c5c2abe
+  - docs/user-guide/chart-of-accounts.md sha256:2d647df626e981f7aa4be38704d51f56c1ec8dae5b464865659dee41c53b0f5d
 data_class: general
 taint: trusted
 status: draft
 human_edited: false
 compiled_by: claude-opus-5-5 via Claude Code (fyniq-knowledge-base skill)
 schema: kb-schema@2
-compiled_at: 2026-11-07
+compiled_at: 2026-11-20
 aliases:
   - revalued at month end
   - monetary account
@@ -66,6 +66,15 @@ aliases:
 - Related: organisation settings ([[settings.organisation]]); contacts, items and their revenue accounts ([[contacts.manage]]).
 
 (src: docs/user-guide/chart-of-accounts.md#add-an-account) (src: docs/user-guide/chart-of-accounts.md#change-an-account) (src: docs/user-guide/chart-of-accounts.md#system-accounts) (src: docs/user-guide/chart-of-accounts.md#related)
+
+## Balances on the chart
+
+- When you can read the reports, the chart shows a **Balance** column: each account's balance at the end of the current month, from the trial balance, in the base currency.
+- An account shows its balance on the side it normally carries: assets and expenses as debits, liabilities, equity and revenue as credits. It reads positive when it is the usual way round.
+- A group shows the total of its accounts; an account with no entries shows nothing; selecting a balance opens the account in the general ledger.
+- The column only shows the ledger; it never changes a figure. Without the reports, or before the books have a period, there is no column.
+
+(src: docs/user-guide/chart-of-accounts.md#balances)
 
 ## Merge an account
 

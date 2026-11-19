@@ -33,6 +33,7 @@
 #show heading.where(level: 1): set text(size: 15pt, weight: "bold", fill: accent)
 #show heading.where(level: 2): set text(size: 9.5pt, weight: "bold", fill: ink)
 
+#if at(r, "logo", default: false) { image("logo.png", height: 11mm, alt: r.author + " logo") }
 #text(size: 9.5pt, weight: "bold", r.author)
 #heading(level: 1, r.title)
 #for l in r.lines [

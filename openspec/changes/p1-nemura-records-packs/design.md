@@ -20,9 +20,9 @@ onboarding (P2); several countries (P3: the pack mechanism allows them, only Sin
 ## Decisions
 
 - **D1. A person is not a member.** `person` is the HR record (every employee, contractor and intern, with or without a
-  login); `member` stays the login. `person.member_id` is unique when set. The existing `reporting_line` is between members
-  today; it moves to persons in slice 1 (a migration that keeps its history and its scope predicates), so a person with no
-  login can still have a manager and be someone's report. Alternative rejected: one table (a contractor with no login would
+  login); `member` stays the login. `person.member_id` is unique when set. **Revised in slice 1:** the existing `reporting_line` stays between members, because a manager must have a login to act and
+  the scope predicates read logins; the person's manager is part of the effective-dated job record, and the API keeps the
+  members' line in step when both people have a login. A person with no login still has a manager. Alternative rejected: one table (a contractor with no login would
   need a fake member, and the scope predicates would hang on logins).
 - **D2. Nemura's own packs, in Nemura's own place.** Pack files live under `internal/nemura/packs/<pack>/<year>.<n>/` and
   are embedded by a Nemura package, in the format Fyniq's packs use (`pack.toml` with `[[sources]]` of URL, section, quote
@@ -54,7 +54,7 @@ onboarding (P2); several countries (P3: the pack mechanism allows them, only Sin
 
 ## Owner decisions needed
 
-### O1. How Nemura reads packs: reuse Fyniq's pure validation library, or copy it (needed before slice 4; D2)
+### O1. How Nemura reads packs: reuse Fyniq's pure validation library, or copy it (needed before slice 4; D2). **Decided: A (19 Nov 2026)**, share the library and add it to the allow-list, with a test that it stays pure
 
 Fyniq's `internal/domain/pack` validates a pack version's metadata, sources, tables and pinned cases. It is a pure library
 (no storage, no clock). Nemura's lane forbids importing it today.
@@ -65,9 +65,9 @@ Fyniq's `internal/domain/pack` validates a pack version's metadata, sources, tab
 | **B. A copy in `internal/nemura/pack`** | No coupling; free to differ | Two validators to keep correct; against the shared-rules intent |
 | **C. Put Nemura's packs in Fyniq's `packs/` and its tables** | Nothing new to build | Nemura would read Fyniq's tables: breaks standalone (NM-ARC-01) and the lane |
 
-Recommendation: **A.** It is the same kind of shared library as money, rounding and the audit event form already on the list.
+Recommendation: **A**, and the owner chose A. Built: `internal/domain/pack` is in `NemuraShared`, and `TestTheSharedPackLibraryStaysPure` fails if it imports module code or an I/O package. It is the same kind of shared library as money, rounding and the audit event form already on the list.
 
-### O2. Who verifies a pack value at go-live (needed before slice 4; NM-PACK-07)
+### O2. Who verifies a pack value at go-live (needed before slice 4; NM-PACK-07). **Decided: A now, B before the first paid person (19 Nov 2026)**, tracked by CTL-NM-07
 
 Appendix A's values were researched from MOM, MSF and CPF Board pages (rechecked 14 Oct 2026). NM-PACK-07 says a value is
 **verified** only when the official page is captured as evidence and checked by a second person on the publisher's side, and
@@ -81,14 +81,13 @@ publishers are the two founders.
 | **C. An external adviser verifies before the first paid person** | Strongest assurance | Cost and delay; the pack stays researched meanwhile |
 
 Recommendation: **A now, B before the first paid person's leave or pay is calculated, C only if the founders want an
-adviser's sign-off.** Slice 4 builds the mechanism for all three; which values ship verified is the owner's.
+adviser's sign-off.** The owner chose A now and B before the first paid person's leave or pay is calculated; PRD-001 rev 0.309 adds the control CTL-NM-07 that tracks the move, and PRD-002 rev 0.9 words NM-PACK-07 so. Slice 4 builds the mechanism for all three.
 
 ## Risks / Trade-offs
 
 - [A statutory value is wrong] → each value has its source URL, quote and retrieval date; pinned tests are worked from the
   official page, not from the table; unverified values decide nothing; Checks #13 shows any live use.
-- [Moving `reporting_line` to persons breaks scopes] → slice 1 keeps the old table's history, re-points the predicates and
-  keeps the NM-SEC-02 attack tests green; nothing ships between the two states.
+- [The two reporting lines drift] → the API writes both in one transaction when both people have a login, and a test checks the members' line follows the manager; the person's manager is the record, the members' line is its scope.
 - [NRIC handled wrongly] → NM-PPL-02, CMP-PD-07 and the lint rule on NRIC names apply from the first column; a test fails on
   an NRIC in a log, an event, a list response or a file name.
 - [Retention of the new record types] → each is in the data inventory and the retention schedule in the slice that adds it.

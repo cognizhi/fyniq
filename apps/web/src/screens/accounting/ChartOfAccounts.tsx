@@ -3,6 +3,9 @@ import { Link } from "@tanstack/react-router";
 import { BookOpen, CircleCheck, GitMerge, Hourglass, Landmark, Lock, Pencil, Plus, Search } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { api, etagOf, newKey } from "../../api/client";
+import { formatAmount } from "../../format/amount";
+import { date } from "../../format/date";
+import { negate, sum } from "../../format/decimal";
 import type { components } from "../../api/schema";
 import { Refusal } from "../../components/Refusal";
 import { ReviewBanner } from "../../components/ReviewBanner";
@@ -19,6 +22,7 @@ import { registerGroups } from "./registerGroups";
 
 type Account = components["schemas"]["Account"];
 type AccountType = Account["type"];
+type Statement = components["schemas"]["FinancialStatement"];
 
 const types: [AccountType, string][] = [
   ["asset", "Assets"],
@@ -50,6 +54,32 @@ export function ordered(accounts: Account[]): { a: Account; depth: number }[] {
     }
   };
   walk("", 0);
+  return out;
+}
+
+// balancesOf reads each account's balance from the trial balance (FR-RPT-01) as the side the account normally carries:
+// assets and expenses as debits, liabilities, equity and revenue as credits, so a balance shows positive when it is the
+// usual way round. An account with no entries has none. A group carries the total of the accounts under it.
+export function balancesOf(accounts: readonly Account[], s: Pick<Statement, "blocks"> | undefined): Map<string, string> {
+  const out = new Map<string, string>();
+  if (!s) return out;
+  const tb = new Map<string, string>();
+  for (const b of s.blocks) for (const g of b.groups) for (const l of g.lines) tb.set(l.account_id, l.amounts[0]?.amount ?? "0");
+  const natural = (a: Account, v: string) => (a.type === "asset" || a.type === "expense" ? v : negate(v));
+  const children = new Map<string, Account[]>();
+  for (const a of accounts) if (a.parent_id) children.set(a.parent_id, [...(children.get(a.parent_id) ?? []), a]);
+  const total = (a: Account): string | undefined => {
+    if (!a.group) {
+      const v = tb.get(a.id);
+      return v === undefined ? undefined : natural(a, v);
+    }
+    const parts = (children.get(a.id) ?? []).map(total).filter((x): x is string => x !== undefined);
+    return parts.length ? sum(parts) : undefined;
+  };
+  for (const a of accounts) {
+    const v = total(a);
+    if (v !== undefined) out.set(a.id, v);
+  }
   return out;
 }
 
@@ -437,6 +467,17 @@ export function ChartOfAccounts() {
   const [editing, setEditing] = useState<Account | "new" | null>(null);
   const [merging, setMerging] = useState<Account | null>(null);
   const waiting = useQuery({ queryKey: ["approvals", "account"], queryFn: waitingMerges });
+  // The balances come from the trial balance at the end of the current month. Someone without the reports, or books
+  // with no period yet, simply see no column: the chart does not wait for them.
+  const tb = useQuery({
+    queryKey: ["accounts", "balances"],
+    retry: false,
+    queryFn: async () => {
+      const r = await api.GET("/v1/reports/statements/{kind}", { params: { path: { kind: "tb" } } });
+      if (r.error || !r.data) throw new Error("no balances");
+      return r.data;
+    },
+  });
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const findId = useId();
@@ -446,6 +487,7 @@ export function ChartOfAccounts() {
   const all = q.data ?? [];
   const needle = find.trim().toLowerCase();
   const byId = new Map(all.map((a) => [a.id, a]));
+  const balances = balancesOf(all, tb.data);
   const merges = waiting.data ?? [];
   const waitingFor = (a: Account) => merges.some((m: Approval) => m.object_key === a.id);
   const rows = ordered(all).filter(({ a }) => (inactive || a.active) && (!needle || a.code.toLowerCase().includes(needle) || a.name.toLowerCase().includes(needle)));
@@ -546,6 +588,7 @@ export function ChartOfAccounts() {
                       <col className="fy-from-medium w-56" />
                       <col className="fy-from-expanded w-24" />
                       <col className="fy-from-expanded w-20" />
+                      {tb.data && <col className="fy-from-medium w-32" />}
                       <col className="w-20 medium:w-44" />
                     </colgroup>
                     <thead>
@@ -561,6 +604,11 @@ export function ChartOfAccounts() {
                         <th scope="col" className="fy-from-expanded">
                           GST
                         </th>
+                        {tb.data && (
+                          <th scope="col" className="fy-from-medium fy-num" title={`The balance at the end of ${date(tb.data.to)}, in ${tb.data.currency}, from the trial balance. A group shows the total of its accounts.`}>
+                            Balance ({tb.data.currency})
+                          </th>
+                        )}
                         <th scope="col">
                           <span className="fy-sr">Flags and actions</span>
                         </th>
@@ -578,6 +626,7 @@ export function ChartOfAccounts() {
                           <td className="fy-from-medium fy-secondary">{a.report_group}</td>
                           <td className="fy-from-expanded fy-secondary">{a.function}</td>
                           <td className="fy-from-expanded fy-mono">{a.default_gst_code}</td>
+                          {tb.data && <td className={a.group ? "fy-from-medium fy-num fy-strong" : "fy-from-medium fy-num"}>{balances.has(a.id) ? a.group ? formatAmount(balances.get(a.id) ?? "0") : <Link to="/reports/general-ledger" search={{ account_id: [a.id] }} title={`Open ${a.code} ${a.name} in the general ledger`}>{formatAmount(balances.get(a.id) ?? "0")}</Link> : ""}</td>}
                           <td>
                             <span className="fy-row fy-row--wrap justify-end gap-2">
                               <Flags a={a} into={a.merged_into_id ? byId.get(a.merged_into_id) : undefined} waiting={waitingFor(a)} />

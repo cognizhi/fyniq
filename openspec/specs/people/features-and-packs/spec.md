@@ -200,6 +200,11 @@ Source: PRD-002 §6 · Priority M · Phase P1
 - **WHEN** one value is unverified
 - **THEN** calculations that do not use it go ahead
 
+#### Scenario: Values at go-live
+- **WHEN** the Singapore pack goes live
+- **THEN** every value ships researched with its official source, each calculation that needs one asks the company for a recorded decision on first use, and the publishers verify the values before the first paid person's leave or pay is calculated
+
+
 ### Requirement: NM-PACK-08 Policies checked rule by rule
 A company policy SHALL be checked against each statutory rule for the people it covers (coverage, start of the right, amount, unit, use, carry-forward, half days, proration, settlement on leaving), and a change SHALL never remove rights already earned.
 

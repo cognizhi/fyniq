@@ -16,6 +16,7 @@ import (
 
 	"github.com/cognizhi/fyniq/internal/authn"
 	"github.com/cognizhi/fyniq/internal/authz"
+	"github.com/cognizhi/fyniq/internal/domain/brand"
 	"github.com/cognizhi/fyniq/internal/domain/money"
 	"github.com/cognizhi/fyniq/internal/ports/storage"
 	"github.com/cognizhi/fyniq/internal/render"
@@ -259,7 +260,7 @@ func (a *API) renderReport(ctx context.Context, r render.Report, created time.Ti
 		return nil, problem(CodeReportRender, "No render service is configured, so the PDF cannot be made.",
 			"Export to Excel or CSV, or ask the operator to configure the render service")
 	}
-	res, err := a.deps.Renderer.Render(ctx, render.Request{Report: &r, Created: created})
+	res, err := a.deps.Renderer.Render(ctx, render.Request{Report: &r, Logo: a.reportLogo(ctx), Created: created})
 	var rp *render.Problem
 	switch {
 	case err == nil:
@@ -271,6 +272,32 @@ func (a *API) renderReport(ctx context.Context, r render.Report, created time.Ti
 		a.deps.Log.ErrorContext(ctx, "render", "error", err.Error())
 	}
 	return nil, problem(CodeReportRender, "The render service did not make the PDF.", "Try again, or export to Excel or CSV; if it persists, report it")
+}
+
+// reportLogo is the logo in force now, as the render service draws it for documents (FR-ORG-09: the PDF reports show the
+// logo the moment it changes; only issued documents keep the one they were issued with). A report without a logo is
+// still a report: a logo that cannot be read is logged and left off, never a reason to refuse the export.
+func (a *API) reportLogo(ctx context.Context) []byte {
+	p, ok := authn.From(ctx)
+	if !ok {
+		return nil
+	}
+	var logo []byte
+	err := a.deps.Store.Do(ctx, p.Organisation, func(ctx context.Context, u storage.UnitOfWork) error {
+		v, err := brand.Current(ctx, u)
+		if err != nil {
+			return err
+		}
+		logo, err = brand.PrintLogo(ctx, a.deps.Staging, p.Organisation, v)
+		return err
+	})
+	if err != nil {
+		if a.deps.Log != nil {
+			a.deps.Log.ErrorContext(ctx, "report logo", "error", err.Error())
+		}
+		return nil
+	}
+	return logo
 }
 
 func registerFinancialExports(a *API) {

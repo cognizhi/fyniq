@@ -32,6 +32,10 @@ var signInWiring = func(app.Deps, func(string) string, *httpserver.Server) (port
 
 // hydraAdmin is Nemura's own OAuth server's admin API at admin, through the platform's egress guard to admin's host only, with a short timeout.
 // The local flavour's guard lets the Docker network through (local.go); the release flavour's reaches public addresses only.
+// restrictedWiring is the key service and the file store for restricted people data. The release build has none until the cloud adapters exist
+// (Cloud KMS and Cloud Storage, [live-verify]): the sealed fields and documents then answer NM_UNAVAILABLE. The local build wires files under NEMURA_DATA_DIR.
+var restrictedWiring = func(getenv func(string) string) (ports.Cipher, ports.BlobStore) { return nil, nil }
+
 var hydraAdmin = func(admin string) ports.OAuthClients {
 	return hydra.New(admin, (&egress.Guard{Propagate: true}).Bounded(0, 10*time.Second).For(egress.HostOf(admin)))
 }
@@ -98,7 +102,7 @@ func apiRoutes(s *httpserver.Server, deps app.Deps, getenv func(string) string, 
 	if err != nil {
 		return err
 	}
-	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, Clock: deps.Clock,
+	d := api.Deps{Sessions: ss, Passkeys: pk, Clients: nemura.APIClientService{Store: store, OAuth: oauth, Clock: deps.Clock}, People: nemura.PeopleService{Store: store, Clock: deps.Clock}, Features: nemura.FeatureService{Store: store, Clock: deps.Clock}, Restricted: restricted(store, deps, getenv), Packs: packsService(store, deps), Clock: deps.Clock,
 		CookieNames: []string{auth.SessionCookie(true), auth.SessionCookie(false)}}
 	if provider != nil {
 		d.SignIn = signInInfo{provider: provider, store: store}
@@ -208,4 +212,17 @@ func (p *passkeys) CompleteStepUp(ctx context.Context, s api.Session, credential
 		return err
 	}
 	return refusal(p.store.CompleteStepUp(ctx, p.rp, s.Organisation, p.clock.Now(), s.ID, s.Member, name, credential))
+}
+
+func restricted(store *nemura.Store, deps app.Deps, getenv func(string) string) nemura.RestrictedService {
+	cipher, blobs := restrictedWiring(getenv)
+	return nemura.RestrictedService{Store: store, Cipher: cipher, Blobs: blobs, Clock: deps.Clock}
+}
+
+func packsService(store *nemura.Store, deps app.Deps) api.Packs {
+	p, err := nemura.NewPacksService(store, deps.Clock)
+	if err != nil {
+		panic(err) // a pack that does not validate is a build error: the files are embedded
+	}
+	return p
 }

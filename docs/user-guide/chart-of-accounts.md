@@ -61,6 +61,17 @@ Select the pencil next to an account, change what you need, and select **Save th
   assets; the company's accountant confirms them. Changing it never changes an asset already
   registered. Leave it empty for none.
 
+## Balances
+
+When you can read the reports, the page shows a **Balance** column: each account's balance at the
+end of the current month, read from the trial balance, in the company's base currency. An account
+shows its balance on the side it normally carries: assets and expenses as debits, liabilities,
+equity and revenue as credits, so a balance reads positive when it is the usual way round and
+negative when it is not. A group shows the total of the accounts under it, and an account with no
+entries shows nothing. Select a balance to open that account in the general ledger. The column
+is a view of the ledger as it stands: it never changes a figure. If the books have no period yet,
+or you do not have the reports, the page shows no column.
+
 ## Merge an account
 
 When two accounts hold the same kind of thing, such as SaaS tools and software subscriptions, merge

@@ -6,7 +6,7 @@ import { noViolations } from "../../test/axe";
 import { invalid } from "../../test/invalid";
 import { renderPage } from "../../test/render";
 import type { components } from "../../api/schema";
-import { ChartOfAccounts, ordered } from "./ChartOfAccounts";
+import { balancesOf, ChartOfAccounts, ordered } from "./ChartOfAccounts";
 
 type Account = components["schemas"]["Account"];
 
@@ -39,6 +39,46 @@ describe("the chart of accounts", () => {
     expect(within(screen.getByRole("table", { name: "Expenses" })).getByText("Old account")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Find an account"), { target: { value: "co-w" } });
     expect(screen.getAllByRole("row")).toHaveLength(2);
+  });
+
+  // req: FR-COA-01
+  // req: FR-RPT-01
+  it("shows each account's balance from the trial balance, the usual side positive, and a group's total", async () => {
+    const liab = acc("a5", "2010", "Accounts payable", { type: "liability", role: "accounts_payable", control: true });
+    const line = (account_id: string, code: string, amount: string) => ({ account_id, code, name: code, amounts: [{ amount, currency: "SGD" }], percents: [] });
+    const tb = {
+      kind: "tb", currency: "SGD", to: "2026-10-31", blocks: [{ key: "trial_balance", title: "Trial balance", measure: false, totals: [], percents: [], groups: [
+        { name: "All", totals: [], percents: [], lines: [line("a1", "6110", "1200.0000"), line("a2", "6115", "300.0000"), line("a3", "1100", "5000.00"), line("a5", "2010", "-750.25")] },
+      ] }],
+    };
+    answer({ "GET /v1/accounts": { status: 200, body: { items: [office, rent, desk, ar, liab] } }, "GET /v1/reports/statements/tb": { status: 200, body: tb } });
+    renderPage(ChartOfAccounts, { path: "/accounting/chart-of-accounts", session: accountant });
+    const expenses = await screen.findByRole("table", { name: "Expenses" });
+    await within(expenses).findByRole("columnheader", { name: "Balance (SGD)" });
+    const row = (code: string) => within(expenses).getByText(code).closest("tr") as HTMLElement;
+    expect(within(row("6110")).getByText("1,200.0000")).toBeTruthy();
+    expect(within(row("6100")).getByText("1,500.0000")).toBeTruthy(); // the group: 1,200.0000 + 300.0000
+    expect(within(within(screen.getByRole("table", { name: "Liabilities" })).getByText("Accounts payable").closest("tr") as HTMLElement).getByText("750.25")).toBeTruthy(); // a credit, shown positive
+    await noViolations(document.body);
+  });
+
+  it("works out balances on the account's usual side without a float", () => {
+    const liab = acc("l", "2010", "AP", { type: "liability" });
+    const eq = acc("e", "3000", "Equity", { type: "equity" });
+    const line = (account_id: string, amount: string) => ({ account_id, code: "x", name: "x", amounts: [{ amount, currency: "SGD" }], percents: [] });
+    const m = balancesOf([ar, liab, eq, desk], { blocks: [{ key: "k", title: "t", measure: false, totals: [], percents: [], groups: [{ name: "g", totals: [], percents: [], lines: [line("a3", "0.10"), line("l", "-0.20"), line("e", "-9007199254740993.05")] }] }] });
+    expect(m.get("a3")).toBe("0.10");
+    expect(m.get("l")).toBe("0.20");
+    expect(m.get("e")).toBe("9007199254740993.05");
+    expect(m.has("a2")).toBe(false); // no entries, no balance
+  });
+
+  it("shows the chart without the column when the balances cannot be read", async () => {
+    answer({ "GET /v1/accounts": { status: 200, body: { items: [office, rent] } }, "GET /v1/reports/statements/tb": { status: 403, body: { code: "API-AUTHZ-01", title: "x", status: 403 } } });
+    renderPage(ChartOfAccounts, { path: "/accounting/chart-of-accounts", session: accountant });
+    const expenses = await screen.findByRole("table", { name: "Expenses" });
+    await waitFor(() => expect(calls()).toContain("GET /v1/reports/statements/tb"));
+    expect(within(expenses).queryByRole("columnheader", { name: /Balance/ })).toBeNull();
   });
 
   // req: FR-COA-01

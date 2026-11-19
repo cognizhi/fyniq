@@ -20,6 +20,7 @@ type Report struct {
 	Rows    []ReportRow  `json:"rows"`            // in order
 	Notes   []ReportNote `json:"notes,omitempty"` // after the table: a failed check, a restated presentation
 	Footer  string       `json:"footer"`          // each page's foot, beside its number: the revision and the platform version
+	Logo    bool         `json:"logo,omitempty"`  // the organisation's logo is sent beside the report, to show above its title (FR-ORG-09); the service sets it
 }
 
 // The kinds of a report's row.
