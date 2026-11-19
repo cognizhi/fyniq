@@ -624,6 +624,8 @@ Append-only. One entry per compile, edit, lint or rollback, written with
 
 ## [2026-11-18] compile | docs/user-guide/approvals.md → approvals.decide (FM-6: unusual items in the weekly review, rev 0.287)
 
+## [2026-11-18] compile | docs/user-guide/journals.md → accounting.journals (the Evidence panel's date it relates to, paste, drop and details)
+
 ## [2026-11-18] compile | docs/user-guide/organisation-settings.md → settings.organisation, settings.change (the Evidence panel's Rules for this activity)
 
 ## [2026-11-18] compile | docs/user-guide/home.md → home.overview (the Approver's requests waiting on Home; QA-UI-08)
