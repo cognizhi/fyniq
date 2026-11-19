@@ -207,10 +207,10 @@ func ReceiveLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Ti
 	}
 	var applyErr error
 	outcome = "applied"
-	sp, err := tx.Begin(ctx) // a savepoint: a refusal rolls the apply back and the inbox still keeps the refusal
-	if err != nil {
+	if _, err := tx.Exec(ctx, "SAVEPOINT link_apply"); err != nil { // a refusal rolls the apply back and the inbox still keeps the refusal
 		return "", err
 	}
+	sp := tx
 	switch env.Header.Type {
 	case TypePayrollPaymentStatus:
 		var ev paymentStatusEvent
@@ -250,8 +250,10 @@ func ReceiveLinkEvent(ctx context.Context, tx pgx.Tx, org uuid.UUID, now time.Ti
 		applyErr = &payroll.Refusal{Code: CodeLinkType, Message: "Nemura does not receive " + env.Header.Type + " from Fyniq."}
 	}
 	if applyErr != nil || outcome == "ignored_older" {
-		_ = sp.Rollback(ctx)
-	} else if err := sp.Commit(ctx); err != nil {
+		if _, err := tx.Exec(ctx, "ROLLBACK TO SAVEPOINT link_apply"); err != nil {
+			return "", err
+		}
+	} else if _, err := tx.Exec(ctx, "RELEASE SAVEPOINT link_apply"); err != nil {
 		return "", err
 	}
 	var code *string
